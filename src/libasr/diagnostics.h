@@ -70,7 +70,7 @@ enum Level {
  */
 enum Stage {
     CPreprocessor, Prescanner, Tokenizer, Parser, Semantic, ASRPass,
-    ASRVerify, CodeGen
+    ASRVerify, CodeGen, ASRParser
 };
 
 /*
@@ -168,6 +168,12 @@ struct Diagnostics {
             const std::vector<Location> &locations, const std::string &error_label) {
         message_label(message, locations, error_label,
             Level::Warning, Stage::CodeGen);
+    }
+
+    void asr_parser_error_label(const std::string &message,
+            const std::vector<Location> &locations, const std::string &error_label) {
+        message_label(message, locations, error_label,
+            Level::Error, Stage::ASRParser);
     }
 
     void codegen_error_label(const std::string &message,

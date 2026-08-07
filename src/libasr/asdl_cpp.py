@@ -2306,6 +2306,590 @@ class JsonVisitorVisitor(ASDLVisitor):
                 self.emit('s.append("\\"Unimplemented%s\\"");' % field.type, 2)
 
 
+class ASRTextSymbolTableCollectorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// ASR text symbol table collector")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class TextSymbolTableCollectorBaseVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit(  "StructType& self() { return static_cast<StructType&>(*this); }", 1)
+        self.emit("public:")
+        super(ASRTextSymbolTableCollectorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if tp.name in ["unit", "symbol"]:
+            self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        if is_simple_sum(sum):
+            return
+        for tp in sum.types:
+            self.visit(tp, base)
+
+    def visitConstructor(self, cons, _):
+        self.emit("void visit_%s(const %s_t &x) {" % (cons.name, cons.name), 1)
+        owning_symtabs = [
+            field for field in cons.fields
+            if field.type == "symbol_table" and field.name != "parent_symtab"
+        ]
+        if owning_symtabs:
+            for field in owning_symtabs:
+                self.emit("self().register_symbol_table(x.m_%s);" % field.name, 2)
+                self.emit("for (auto &item : x.m_%s->get_scope()) {" % field.name, 2)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+        else:
+            self.emit("(void)x;", 2)
+        self.emit("}", 1)
+
+
+class ASRTextSerializationVisitorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        ASRTextSymbolTableCollectorVisitor(self.stream, self.data).visit(mod)
+        self.emit("")
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Lossless ASR text serialization visitor")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class TextSerializationBaseVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit(  "StructType& self() { return static_cast<StructType&>(*this); }", 1)
+        self.emit("public:")
+        self.mod = mod
+        super(ASRTextSerializationVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        super(ASRTextSerializationVisitorVisitor, self).visitType(tp, tp.name)
+
+    def visitSum(self, sum, *args):
+        assert isinstance(sum, asdl.Sum)
+        if is_simple_sum(sum):
+            name = args[0] + "Type"
+            self.make_simple_sum_visitor(name, sum.types)
+        else:
+            for tp in sum.types:
+                self.visit(tp, *args)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        serialized_fields = [field for field in fields if field.type != "location"]
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.emit('self().begin_form("%s", %d);' % (name, len(serialized_fields)), 2)
+        for field in serialized_fields:
+            self.emit('self().begin_field("%s");' % field.name, 2)
+            self.visitField(field, name)
+        self.emit("self().end_form();", 2)
+        if len(serialized_fields) == 0:
+            self.emit("(void)x;", 2)
+        self.emit("}", 1)
+
+    def make_simple_sum_visitor(self, name, types):
+        self.emit("void visit_%s(const %s &x) {" % (name, name), 1)
+        self.emit("switch (x) {", 2)
+        for tp in types:
+            self.emit("case (%s::%s):" % (name, tp.name), 3)
+            self.emit('self().write_keyword("%s");' % tp.name, 4)
+            self.emit("break;", 4)
+        self.emit("}", 2)
+        self.emit("}", 1)
+
+    def emit_sequence(self, field, element):
+        self.emit("self().begin_vector(x.n_%s);" % field.name, 2)
+        self.emit("for (size_t i = 0; i < x.n_%s; i++) {" % field.name, 2)
+        self.emit("self().begin_element(i);", 3)
+        self.emit(element, 3)
+        self.emit("}", 2)
+        self.emit("self().end_vector();", 2)
+
+    def visitField(self, field, cons_name):
+        if (field.type not in asdl.builtin_types and
+                field.type not in self.data.simple_types):
+            if field.type in products:
+                value = "x.m_%s[i]" % field.name if field.seq else "x.m_%s" % field.name
+                statement = "self().visit_%s(%s);" % (field.type, value)
+            elif field.type == "symbol":
+                value = "*x.m_%s[i]" % field.name if field.seq else "*x.m_%s" % field.name
+                statement = "self().write_symbol_ref(%s);" % value
+            else:
+                value = "*x.m_%s[i]" % field.name if field.seq else "*x.m_%s" % field.name
+                statement = "self().visit_%s(%s);" % (field.type, value)
+
+            if field.seq:
+                self.emit_sequence(field, statement)
+            elif field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit(statement, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit(statement, 2)
+            return
+
+        if field.type == "identifier":
+            if field.seq:
+                self.emit_sequence(
+                    field, "self().write_string(x.m_%s[i]);" % field.name)
+            elif field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_string(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit("self().write_string(x.m_%s);" % field.name, 2)
+        elif field.type == "string":
+            assert not field.seq
+            if field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_string(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            elif cons_name == "StringConstant" and field.name == "s":
+                self.emit("self().write_string_constant(x);", 2)
+            else:
+                self.emit("self().write_string(x.m_%s);" % field.name, 2)
+        elif field.type == "node":
+            assert field.seq and not field.opt
+            self.emit_sequence(field, "this->visit_asr(*x.m_%s[i]);" % field.name)
+        elif field.type == "symbol_table":
+            assert not field.seq and not field.opt
+            if field.name == "parent_symtab":
+                self.emit("self().write_symbol_table_ref(*x.m_%s);" % field.name, 2)
+            else:
+                self.emit('self().begin_form("SymbolTable", 2);', 2)
+                self.emit('self().begin_field("id");', 2)
+                self.emit("self().write_symbol_table_ref(*x.m_%s);" % field.name, 2)
+                self.emit('self().begin_field("symbols");', 2)
+                self.emit("self().begin_map(x.m_%s->get_scope().size());" % field.name, 2)
+                self.emit("size_t item_index = 0;", 2)
+                self.emit("for (auto &item : x.m_%s->get_scope()) {" % field.name, 2)
+                self.emit("self().begin_map_entry(item.first, item_index++);", 3)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+                self.emit("self().end_map();", 2)
+                self.emit("self().end_form();", 2)
+        elif field.type == "int":
+            assert not field.seq
+            if field.opt:
+                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("self().write_int(x.m_%s);" % field.name, 3)
+                self.emit("} else {", 2)
+                self.emit("self().write_nil();", 3)
+                self.emit("}", 2)
+            else:
+                self.emit("self().write_int(x.m_%s);" % field.name, 2)
+        elif field.type == "float":
+            assert not field.seq and not field.opt
+            if cons_name == "RealConstant" and field.name == "r":
+                self.emit("self().write_real_constant(x);", 2)
+            else:
+                self.emit("self().write_float(x.m_%s);" % field.name, 2)
+        elif field.type == "bool":
+            assert not field.seq and not field.opt
+            self.emit("self().write_bool(x.m_%s);" % field.name, 2)
+        elif field.type == "void":
+            assert not field.seq and not field.opt
+            self.emit("self().write_bytes(x.m_%s, x.m_n_data);" % field.name, 2)
+        elif field.type in self.data.simple_types:
+            assert not field.seq and not field.opt
+            self.emit("self().visit_%sType(x.m_%s);" % (field.type, field.name), 2)
+        else:
+            raise Exception("Unimplemented ASR text field type: " + field.type)
+
+
+class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.sum_constructors = {}
+        for definition in mod.dfns:
+            if isinstance(definition.value, asdl.Sum) and \
+                    not is_simple_sum(definition.value):
+                self.sum_constructors[definition.name] = [
+                    constructor.name for constructor in definition.value.types
+                ]
+
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Lossless ASR text deserialization visitor")
+        self.emit("")
+        self.emit("template <class StructType, class ValueType>")
+        self.emit("class TextDeserializationBaseVisitor")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("StructType& self() {", 1)
+        self.emit("return static_cast<StructType&>(*this);", 2)
+        self.emit("}", 1)
+        self.emit("public:")
+        self.emit("using TextValue = ValueType;", 1)
+        self.emit("bool deserialize_node(const TextValue &value,", 1)
+        self.emit("        asr_t *&result) {", 2)
+        self.emit("std::string name;", 2)
+        self.emit("if (!self().decode_form_name(value, name)) return false;", 2)
+        for sum_name, constructors in self.sum_constructors.items():
+            for constructor in constructors:
+                self.emit('if (name == "%s") {' % constructor, 2)
+                self.emit("%s_t *node;" % constructor, 3)
+                self.emit("if (!deserialize_%s(value, node)) return false;"
+                    % constructor, 3)
+                self.emit("result = (asr_t *)node;", 3)
+                self.emit("return true;", 3)
+                self.emit("}", 2)
+        self.emit('self().schema_error(value, "unknown ASR constructor \'" +')
+        self.emit("    name + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        self.mod = mod
+        super(ASRTextDeserializationVisitorVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        if is_simple_sum(sum):
+            self.make_simple_sum_deserializer(base, sum.types)
+            return
+        self.emit("bool deserialize_%s(const TextValue &value," % base, 1)
+        self.emit("        %s_t *&result) {" % base, 2)
+        self.emit("std::string name;", 2)
+        self.emit("if (!self().decode_form_name(value, name)) return false;", 2)
+        for constructor in sum.types:
+            self.emit('if (name == "%s") {' % constructor.name, 2)
+            self.emit("%s_t *node;" % constructor.name, 3)
+            self.emit("if (!deserialize_%s(value, node)) return false;"
+                % constructor.name, 3)
+            self.emit("result = (%s_t *)node;" % base, 3)
+            self.emit("return true;", 3)
+            self.emit("}", 2)
+        self.emit('self().schema_error(value, "expected %s constructor, found \'" +'
+            % base, 2)
+        self.emit("    name + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        for constructor in sum.types:
+            self.visit(constructor, base)
+
+    def visitProduct(self, product, name):
+        self.make_product_deserializer(name, product.fields)
+
+    def visitConstructor(self, constructor, _):
+        self.make_constructor_deserializer(
+            constructor.name, constructor.fields)
+
+    def make_simple_sum_deserializer(self, name, constructors):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %sType &result) {" % name, 2)
+        self.emit("std::string keyword;", 2)
+        self.emit("if (!self().decode_keyword(value, keyword)) return false;", 2)
+        for constructor in constructors:
+            self.emit('if (keyword == "%s") {' % constructor.name, 2)
+            self.emit("result = %sType::%s;" % (name, constructor.name), 3)
+            self.emit("return true;", 3)
+            self.emit("}", 2)
+        self.emit('self().schema_error(value, "unknown %s value \'" +' % name, 2)
+        self.emit("    keyword + \"'\");", 3)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+
+    def field_names(self, fields):
+        return [field.name for field in fields if field.type != "location"]
+
+    def emit_form_decode(self, name, fields):
+        names = self.field_names(fields)
+        quoted = ", ".join(['"%s"' % field_name for field_name in names])
+        self.emit("std::vector<const TextValue *> fields;", 2)
+        self.emit('if (!self().decode_form(value, "%s", {%s}, fields)) {'
+            % (name, quoted), 2)
+        self.emit("return false;", 3)
+        self.emit("}", 2)
+        return {field_name: index for index, field_name in enumerate(names)}
+
+    def emit_sequence_decode(self, field, value, local):
+        self.emit("std::vector<const TextValue *> values_%s;" % local, 2)
+        self.emit("if (!self().decode_vector(%s, values_%s)) return false;"
+            % (value, local), 2)
+        if field.type in products:
+            cpp_type = "%s_t" % field.type
+        else:
+            if field.type == "identifier":
+                cpp_type = "char *"
+            elif field.type == "node":
+                cpp_type = "asr_t *"
+            else:
+                cpp_type = "%s_t *" % field.type
+        self.emit("Vec<%s> v_%s;" % (cpp_type, local), 2)
+        self.emit("v_%s.reserve(self().allocator(), values_%s.size());"
+            % (local, local), 2)
+        self.emit("for (const TextValue *item : values_%s) {" % local, 2)
+        if field.type in products:
+            self.emit("%s_t decoded;" % field.type, 3)
+            self.emit("if (!deserialize_%s(*item, decoded)) return false;"
+                % field.type, 3)
+        elif field.type == "identifier":
+            self.emit("char *decoded;", 3)
+            self.emit("if (!self().decode_string(*item, decoded)) return false;", 3)
+        elif field.type == "node":
+            self.emit("asr_t *decoded;", 3)
+            self.emit("if (!deserialize_node(*item, decoded)) return false;", 3)
+        elif field.type == "symbol":
+            self.emit("symbol_t *decoded;", 3)
+            self.emit("if (!self().decode_symbol_ref(*item, decoded)) return false;", 3)
+        else:
+            self.emit("%s_t *decoded;" % field.type, 3)
+            self.emit("if (!deserialize_%s(*item, decoded)) return false;"
+                % field.type, 3)
+        self.emit("v_%s.push_back(self().allocator(), decoded);" % local, 3)
+        self.emit("}", 2)
+
+    def emit_scalar_decode(self, field, value, local, form_value):
+        if field.type == "location":
+            self.emit("Location *m_%s = self().make_location(" % local, 2)
+            self.emit("    self().node_location(%s));" % form_value, 3)
+            return
+
+        if field.opt:
+            if field.type in products:
+                cpp_type = "%s_t *" % field.type
+            elif field.type in ["identifier", "string"]:
+                cpp_type = "char *"
+            else:
+                cpp_type = "%s_t *" % field.type
+            self.emit("%s m_%s = nullptr;" % (cpp_type, local), 2)
+            self.emit("if (!self().is_nil(%s)) {" % value, 2)
+            indent = 3
+        else:
+            indent = 2
+
+        target = "m_%s" % local
+        if not field.opt:
+            if field.type in products:
+                self.emit("%s_t %s;" % (field.type, target), indent)
+            elif field.type in ["identifier", "string"]:
+                self.emit("char *%s;" % target, indent)
+            elif field.type == "int":
+                self.emit("int64_t %s;" % target, indent)
+            elif field.type == "float":
+                self.emit("double %s;" % target, indent)
+            elif field.type == "bool":
+                self.emit("bool %s;" % target, indent)
+            elif field.type == "symbol_table":
+                self.emit("SymbolTable *%s;" % target, indent)
+            elif field.type == "void":
+                self.emit("void *%s;" % target, indent)
+            elif field.type in self.data.simple_types:
+                self.emit("%sType %s;" % (field.type, target), indent)
+            else:
+                self.emit("%s_t *%s;" % (field.type, target), indent)
+
+        if field.opt and field.type in products:
+            self.emit("%s = self().allocator().make_new<%s_t>();"
+                % (target, field.type), indent)
+
+        if field.type in products:
+            expression = "*%s" % target if field.opt else target
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, expression), indent)
+        elif field.type in ["identifier", "string"]:
+            self.emit("if (!self().decode_string(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "int":
+            self.emit("if (!self().decode_int(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "float":
+            self.emit("if (!self().decode_float(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "bool":
+            self.emit("if (!self().decode_bool(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "symbol_table":
+            helper = "decode_symbol_table_ref" \
+                if field.name == "parent_symtab" else "decode_symbol_table"
+            self.emit("if (!self().%s(%s, %s)) return false;"
+                % (helper, value, target), indent)
+        elif field.type == "symbol":
+            self.emit("if (!self().decode_symbol_ref(%s, %s)) return false;"
+                % (value, target), indent)
+        elif field.type == "void":
+            self.emit("if (!self().decode_bytes(%s, %s, "
+                "static_cast<size_t>(m_n_data))) return false;"
+                % (value, target), indent)
+        elif field.type in self.data.simple_types:
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, target), indent)
+        else:
+            self.emit("if (!deserialize_%s(%s, %s)) return false;"
+                % (field.type, value, target), indent)
+
+        if field.opt:
+            self.emit("}", 2)
+
+    def emit_fields(self, name, fields, field_indexes):
+        args = []
+        for field in fields:
+            local = field.name
+            if field.type == "location":
+                value = "value"
+                self.emit_scalar_decode(field, value, local, "value")
+                args.append("m_%s" % local)
+                continue
+            value = "*fields[%d]" % field_indexes[field.name]
+            if field.seq:
+                self.emit_sequence_decode(field, value, local)
+                args.extend(["v_%s.p" % local, "v_%s.n" % local])
+            else:
+                self.emit_scalar_decode(field, value, local, "value")
+                args.append("m_%s" % local)
+        return args
+
+    def make_constructor_deserializer(self, name, fields):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %s_t *&result) {" % name, 2)
+        indexes = self.emit_form_decode(name, fields)
+        self.emit("Location loc = self().node_location(value);", 2)
+        args = self.emit_fields(name, fields, indexes)
+        make_args = ["self().allocator()", "loc"] + args
+        self.emit("result = down_cast2<%s_t>(make_%s_t(%s));"
+            % (name, name, ", ".join(make_args)), 2)
+        self.emit("return true;", 2)
+        self.emit("}", 1)
+
+    def make_product_deserializer(self, name, fields):
+        self.emit("bool deserialize_%s(const TextValue &value," % name, 1)
+        self.emit("        %s_t &result) {" % name, 2)
+        indexes = self.emit_form_decode(name, fields)
+        args = self.emit_fields(name, fields, indexes)
+        arg_index = 0
+        for field in fields:
+            if field.seq:
+                self.emit("result.m_%s = %s;" % (field.name, args[arg_index]), 2)
+                self.emit("result.n_%s = %s;" % (
+                    field.name, args[arg_index + 1]), 2)
+                arg_index += 2
+            else:
+                self.emit("result.m_%s = %s;" % (field.name, args[arg_index]), 2)
+                arg_index += 1
+        self.emit("return true;", 2)
+        self.emit("}", 1)
+
+
+class ASRSymbolHelperVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.symbol_constructors = []
+        self.ownership_constructors = {}
+        super(ASRSymbolHelperVisitor, self).visitModule(mod)
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Exhaustive symbol allocation and fill helpers")
+        self.emit("")
+        self.emit("static inline symbol_t *make_symbol_stub(Allocator &al,")
+        self.emit("        symbolType type, const Location &loc) {")
+        self.emit("switch (type) {", 1)
+        for name in self.symbol_constructors:
+            self.emit("case symbolType::%s: {" % name, 2)
+            self.emit("symbol_t *symbol = "
+                "(symbol_t *)al.make_new<%s_t>();" % name, 3)
+            self.emit("symbol->type = symbolType::%s;" % name, 3)
+            self.emit("symbol->base.type = asrType::symbol;", 3)
+            self.emit("symbol->base.loc = loc;", 3)
+            self.emit("return symbol;", 3)
+            self.emit("}", 2)
+        self.emit("}", 1)
+        self.emit('throw LCompilersException("Unknown ASR symbol type");', 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline void fill_symbol_stub(symbol_t *destination,")
+        self.emit("        const symbol_t *source) {")
+        self.emit("LCOMPILERS_ASSERT(destination != nullptr);", 1)
+        self.emit("LCOMPILERS_ASSERT(source != nullptr);", 1)
+        self.emit("LCOMPILERS_ASSERT(destination->type == source->type);", 1)
+        self.emit("switch (source->type) {", 1)
+        for name in self.symbol_constructors:
+            self.emit("case symbolType::%s:" % name, 2)
+            self.emit("std::memcpy(destination, source, sizeof(%s_t));" % name, 3)
+            self.emit("return;", 3)
+        self.emit("}", 1)
+        self.emit('throw LCompilersException("Unknown ASR symbol type");', 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("static inline bool symbol_type_from_name(")
+        self.emit("        const std::string &name, symbolType &type) {")
+        for name in self.symbol_constructors:
+            self.emit('if (name == "%s") {' % name, 1)
+            self.emit("type = symbolType::%s;" % name, 2)
+            self.emit("return true;", 2)
+            self.emit("}", 1)
+        self.emit("return false;", 1)
+        self.emit("}")
+        self.emit("")
+        self.emit("class SymbolTableParentFixer")
+        self.emit("    : public BaseVisitor<SymbolTableParentFixer> {")
+        self.emit("SymbolTable *current_symtab = nullptr;", 1)
+        self.emit("public:")
+        unit_field = self.ownership_constructors["TranslationUnit"]
+        self.emit("void visit_TranslationUnit(const TranslationUnit_t &x) {", 1)
+        self.emit("current_symtab = x.m_%s;" % unit_field, 2)
+        self.emit("current_symtab->parent = nullptr;", 2)
+        self.emit("current_symtab->asr_owner = (asr_t *)&x;", 2)
+        self.emit("for (auto &item : current_symtab->get_scope()) {", 2)
+        self.emit("this->visit_symbol(*item.second);", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        for name in self.symbol_constructors:
+            self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+            if name in self.ownership_constructors:
+                field = self.ownership_constructors[name]
+                self.emit("SymbolTable *parent = current_symtab;", 2)
+                self.emit("current_symtab = x.m_%s;" % field, 2)
+                self.emit("current_symtab->parent = parent;", 2)
+                self.emit("current_symtab->asr_owner = (asr_t *)&x;", 2)
+                self.emit("for (auto &item : current_symtab->get_scope()) {", 2)
+                self.emit("this->visit_symbol(*item.second);", 3)
+                self.emit("}", 2)
+                self.emit("current_symtab = parent;", 2)
+            else:
+                self.emit("(void)x;", 2)
+            self.emit("}", 1)
+        self.emit("};")
+        self.emit("")
+        self.emit("static inline void fix_symbol_table_parents(")
+        self.emit("        TranslationUnit_t &unit) {")
+        self.emit("SymbolTableParentFixer fixer;", 1)
+        self.emit("fixer.visit_TranslationUnit(unit);", 1)
+        self.emit("}")
+
+    def visitType(self, tp):
+        if tp.name in ["unit", "symbol"]:
+            self.visit(tp.value, tp.name)
+
+    def visitSum(self, sum, base):
+        assert not is_simple_sum(sum)
+        for constructor in sum.types:
+            if base == "symbol":
+                self.symbol_constructors.append(constructor.name)
+            owning = [
+                field.name for field in constructor.fields
+                if field.type == "symbol_table"
+                and field.name != "parent_symtab"
+            ]
+            if owning:
+                assert len(owning) == 1
+                self.ownership_constructors[constructor.name] = owning[0]
+
+
 # Constructors whose serialized (wire) format cannot be derived from their ASDL
 # declaration alone. Every deviation from the generic scheme belongs here, so
 # that SerializationVisitorVisitor and DeserializationVisitorVisitor stay free
@@ -3141,6 +3725,8 @@ HEAD_VISITOR = r"""#pragma once
 
 // Generated by grammar/asdl_cpp.py
 
+#include <cstring>
+
 #include <libasr/alloc.h>
 #include <libasr/location.h>
 #include <libasr/colors.h>
@@ -3187,6 +3773,9 @@ asr_visitor_files = [
         ("serialization", SerializationVisitorVisitor),
         ("deserialization", DeserializationVisitorVisitor),
         ("pickle", PickleVisitorVisitor),
+        ("text", ASRTextSerializationVisitorVisitor),
+        ("text_deserialization", ASRTextDeserializationVisitorVisitor),
+        ("symbol", ASRSymbolHelperVisitor),
         ("json", JsonVisitorVisitor),
         ("lookup_name", DefaultLookupNameVisitor),
         ("tree", TreeVisitorVisitor),

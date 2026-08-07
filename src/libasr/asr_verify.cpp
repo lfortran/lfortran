@@ -1895,16 +1895,47 @@ public:
 
 } // namespace ASR
 
-bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+bool asr_verify(const ASR::TranslationUnit_t &unit,
+            const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(check_external, diagnostics);
+    ASR::VerifyVisitor v(options.check_external, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return false;
     }
+    if (options.require_main_program) {
+        const ASR::Program_t *main_program = nullptr;
+        for (const auto &item : unit.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Program_t>(*item.second)) {
+                continue;
+            }
+            if (main_program != nullptr) {
+                diagnostics.message_label(
+                    "standalone ASR must contain exactly one main program",
+                    {item.second->base.loc}, "second main program",
+                    diag::Level::Error, diag::Stage::ASRVerify);
+                return false;
+            }
+            main_program = ASR::down_cast<ASR::Program_t>(item.second);
+        }
+        if (main_program == nullptr) {
+            diagnostics.message_label(
+                "standalone ASR must contain exactly one main program",
+                {unit.base.base.loc}, "main program is missing",
+                diag::Level::Error, diag::Stage::ASRVerify);
+            return false;
+        }
+    }
     return true;
+}
+
+bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+            diag::Diagnostics &diagnostics) {
+    ASRVerifyOptions options;
+    options.check_external = check_external;
+    return asr_verify(unit, options, diagnostics);
 }
 
 } // namespace LCompilers
