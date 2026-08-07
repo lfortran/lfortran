@@ -4781,6 +4781,8 @@ RUN(NAME coarrays_32 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_33 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_34 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
 
+RUN(NAME coarrays_38 EXTRA_ARGS --coarray=true)
+
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_03 LABELS gfortran llvm metal)
