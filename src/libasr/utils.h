@@ -144,6 +144,9 @@ struct CompilerOptions {
     bool rtlib = false;
     bool use_loop_variable_after_loop = false;
     std::string target = "";
+    std::string march = "";
+    std::string mcpu = "";
+    std::string mtune = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
     bool enable_cpython = false;
