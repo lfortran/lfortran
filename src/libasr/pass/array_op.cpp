@@ -572,33 +572,6 @@ class BitCastArrayReplacer: public ASR::BaseExprReplacer<BitCastArrayReplacer> {
         // Replace the BitCast in the expression with the temporary
         *current_expr = tmp_var;
     }
-
-    void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if( !ASRUtils::is_array(x->m_type) || ASRUtils::is_elemental(x->m_name) ) {
-            return ;
-        }
-        const Location& loc = x->base.base.loc;
-        std::string tmp_name = current_scope->get_unique_name(
-            "__libasr_function_call_tmp_");
-        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(
-                al, loc, current_scope, s2c(al, tmp_name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, x->m_type, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false));
-        current_scope->add_symbol(tmp_name, tmp_sym);
-        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
-
-        // Create assignment: tmp = FunctionCall(...)
-        ASR::expr_t* fn_expr = ASRUtils::EXPR((ASR::asr_t*)x);
-        bc_stmts.push_back(al, ASRUtils::STMT(
-            ASRUtils::make_Assignment_t_util(
-                al, loc, tmp_var, fn_expr, nullptr, false, false)));
-
-        // Replace the FunctionCall in the expression with the temporary
-        *current_expr = tmp_var;
-    }
 };
 
 class BitCastArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<BitCastArrayVisitor> {
@@ -1951,15 +1924,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
-        // Pre-evaluate any BitCast (transfer) or non-elemental FunctionCall nodes
-        // with array results that are nested inside the value expression.
-        // Whole-array operations must not be expanded element-wise.
+        // Pre-evaluate any BitCast (transfer) nodes with array results
+        // that are nested inside the value expression. BitCast is a
+        // whole-array operation and must not be expanded element-wise.
         // We materialize them into temporaries before the loop so that
         // the loop can index into the temporary instead.
-        // Skip when the value IS a BitCast or FunctionCall directly — that case is
+        // Skip when the value IS a BitCast directly — that case is
         // handled specially below.
-        if (!ASR::is_a<ASR::BitCast_t>(*xx.m_value) &&
-            !ASR::is_a<ASR::FunctionCall_t>(*xx.m_value)) {
+        if (!ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
             BitCastArrayVisitor bc_visitor(al);
             bc_visitor.set_scope(current_scope);
             bc_visitor.init_bc_stmts();
