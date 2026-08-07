@@ -269,6 +269,13 @@ class ASRToLLVMVisitor;
             CompilerOptions &compiler_options;
             std::map<uint64_t, llvm::Value*> &llvm_symtab; // llvm_symtab_value
 
+            // Set of ASR Function symbols that are used as a procedure interface
+            // (procedure pointers, dummy procedures, procedure components and
+            // deferred type-bound procedures) anywhere in the translation unit.
+            // Used to keep module-owned abstract interfaces on the descriptor
+            // ABI (see ASRUtils::is_external_implicit_interface_proc). Owned by
+            // the codegen visitor; nullptr until set.
+            const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr;
 
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
@@ -671,9 +678,9 @@ class ASRToLLVMVisitor;
                 llvm::Value* char_kind = nullptr);
 
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
-            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
+            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const = true);
 
-            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
+            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const, bool is_const = true);
             /*
                 Declare + Setup
                 string in the global scope of the llvm module.

@@ -1178,6 +1178,12 @@ namespace LCompilers {
 
     std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
         std::vector<llvm::Type*> args;
+        // External procedures (implicit interface) use the classic Fortran
+        // hidden-length character ABI: a scalar CHARACTER dummy is received as
+        // a bare data pointer and its length as a hidden trailing argument.
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x,
+            proc_iface_syms);
+        std::vector<llvm::Type*> hidden_char_lengths;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -1249,6 +1255,15 @@ namespace LCompilers {
                         is_array_type = false;
                     }
                 }
+                if( charlen_abi && ASRUtils::is_hidden_charlen_string_dummy(arg->m_type) ) {
+                    // Receive the character data pointer directly at the
+                    // argument position, with the per-element length always
+                    // following as a hidden trailing argument (see
+                    // is_hidden_charlen_string_dummy).
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    hidden_char_lengths.push_back(
+                        llvm::Type::getInt64Ty(context));
+                }
                 args.push_back(type);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -1264,6 +1279,7 @@ namespace LCompilers {
                 throw CodeGenError("Argument type not implemented");
             }
         }
+        args.insert(args.end(), hidden_char_lengths.begin(), hidden_char_lengths.end());
         return args;
     }
 
@@ -2780,7 +2796,7 @@ namespace LCompilers {
             rhs_data, rhs_len, char_kind});
     }
 
-    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const){
+    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const){
 
         /*  Don't depend on null_char.
             Fortran can represent null char is a char not as a terminating flag.
@@ -2798,10 +2814,10 @@ namespace LCompilers {
 
         return declare_global_string(
             ASRUtils::get_string_type(str_const->m_type),
-            initial_string, true, "string_const");
+            initial_string, is_const, "string_const");
     }
 
-    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const){
+    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const, bool is_const){
         LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerArray)
         /*
             Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
@@ -2829,11 +2845,15 @@ namespace LCompilers {
             // Create the constant data
             llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
 
-            // Create global variable for the character data
+            // Create global variable for the character data. When this array
+            // constant initializes a writable global (e.g. a CHARACTER array in
+            // a DATA-initialized common block / struct), the backing buffer must
+            // be writable too, otherwise a later assignment to an element would
+            // write into read-only memory and fault at runtime.
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module,
                 char_array_type,
-                true,  // is_const
+                is_const,
                 llvm::GlobalValue::PrivateLinkage,
                 const_data_as_array,
                 "stringArray_const_data"
