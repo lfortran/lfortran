@@ -529,7 +529,8 @@ public:
     }
 
     ASRToLLVMVisitor(Allocator &al, llvm::LLVMContext &context, std::string infile,
-        CompilerOptions &compiler_options_, diag::Diagnostics &diagnostics, LocationManager &lm) :
+        CompilerOptions &compiler_options_,
+        diag::Diagnostics &diagnostics, LocationManager &lm) :
     diag{diagnostics},
     context(context),
     builder(std::make_unique<llvm::IRBuilder<>>(context)),
@@ -1793,6 +1794,9 @@ public:
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
         // correct sizes (respecting alignment) during IR generation.
+        // This deliberately stays the host layout rather than the selected
+        // target's: `--target=wasm32-*` would otherwise switch pointers to
+        // 32 bits here and change every size computed during codegen.
         {
             std::string target_triple = llvm::sys::getDefaultTargetTriple();
             std::string Error;
@@ -27810,7 +27814,8 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
 
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
-        llvm::LLVMContext &context, Allocator &al,
+        llvm::LLVMContext &context,
+        const LLVMTargetConfig &target_config, Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
         const std::string &infile, LocationManager &lm)
@@ -27880,6 +27885,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Error error;
         return error;
     }
+    target_config.apply_target_attributes(*v.module);
     std::string msg;
     llvm::raw_string_ostream err(msg);
     if (llvm::verifyModule(*v.module, &err)) {

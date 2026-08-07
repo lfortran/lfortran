@@ -73,9 +73,12 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--use-loop-variable-after-loop`: Allow using loop variable after the loop
-- `--fast`: Best performance (disable strict standard compliance)
+- `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target
+- `--march TEXT`: Generate code for the selected instruction-set architecture (`native` for the host)
+- `--mcpu TEXT`: Generate and tune code for the selected CPU (`native` for the host)
+- `--mtune TEXT`: Tune code for the selected CPU without changing the instruction set (`native` for the host)
 - `--print-targets`: Print the registered targets
 - `--implicit-typing`: Allow implicit typing
 - `--implicit-interface`: Allow implicit interface

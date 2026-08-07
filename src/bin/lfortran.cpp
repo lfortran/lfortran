@@ -1188,7 +1188,7 @@ int handle_mlir(const std::string &infile,
     }
 
     // ASR -> MLIR -> LLVM
-    LCompilers::LLVMEvaluator e(compiler_options.target);
+    LCompilers::LLVMEvaluator e(compiler_options);
     std::unique_ptr<LCompilers::MLIRModule> m;
     diagnostics.diagnostics.clear();
     LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
@@ -1357,7 +1357,7 @@ int compile_src_to_object_file(const std::string &infile,
         }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
-        LCompilers::LLVMEvaluator e(compiler_options.target);
+        LCompilers::LLVMEvaluator e(compiler_options);
         e.create_empty_object_file(outfile);
         return 0;
     }
@@ -1437,7 +1437,7 @@ int compile_llvm_to_object_file(const std::string& infile,
                                 CompilerOptions& compiler_options)
 {
     std::string input = read_file_ok(infile);
-    LCompilers::LLVMEvaluator e(compiler_options.target);
+    LCompilers::LLVMEvaluator e(compiler_options);
 
     std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
     e.save_object_file(*(m->m_m), outfile);
@@ -2672,6 +2672,28 @@ int main_app(int argc, char *argv[]) {
             "pass options" << std::endl;
         return 1;
     }
+
+#ifdef HAVE_LFORTRAN_LLVM
+    bool uses_llvm_target = opts.arg_backend == "llvm"
+        || opts.arg_backend == "mlir";
+    bool has_cpu_selection = !compiler_options.march.empty()
+            || !compiler_options.mcpu.empty()
+            || !compiler_options.mtune.empty();
+    if (has_cpu_selection && !uses_llvm_target) {
+        std::cerr << "`--march`, `--mcpu`, and `--mtune` require an LLVM-based backend"
+                  << std::endl;
+        return 1;
+    }
+    if (uses_llvm_target && (!compiler_options.target.empty()
+            || has_cpu_selection || compiler_options.po.fast)) {
+        try {
+            LCompilers::resolve_llvm_target_config(compiler_options);
+        } catch (const LCompilers::LCompilersException &e) {
+            std::cerr << e.msg() << std::endl;
+            return 1;
+        }
+    }
+#endif
 
     lcompilers_commandline_options = "";
     for (int i=0; i<argc; i++) {
