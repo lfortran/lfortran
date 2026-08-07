@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:963:7
+   --> tests/errors/continue_compilation_1.f90:966:7
     |
-963 |       foo    end type t_recovery
+966 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:966:7
+   --> tests/errors/continue_compilation_1.f90:969:7
     |
-966 |       class(t_recovery), intent(in) :: self
+969 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1865,3 +1865,21 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
     |
 918 |         print *, real(1., 666)
     |                           ^^^ 
+
+semantic error: 'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants
+   --> tests/errors/continue_compilation_1.f90:954:64
+    |
+954 |     subroutine merge_bits_boz_both_args(); print *, merge_bits(o'12345', z'1234', 32767); end subroutine
+    |                                                                ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
+
+semantic error: 'I' and 'J' arguments of 'dshiftl' cannot both be BOZ literal constants
+   --> tests/errors/continue_compilation_1.f90:955:58
+    |
+955 |     subroutine dshiftl_boz_both_args(); print *, dshiftl(o'12345', z'1234', 5); end subroutine
+    |                                                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
+
+semantic error: 'I' and 'J' arguments of 'dshiftr' cannot both be BOZ literal constants
+   --> tests/errors/continue_compilation_1.f90:956:58
+    |
+956 |     subroutine dshiftr_boz_both_args(); print *, dshiftr(o'12345', z'1234', 5); end subroutine
+    |                                                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants

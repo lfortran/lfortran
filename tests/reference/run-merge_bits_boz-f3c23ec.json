@@ -1,0 +1,13 @@
+{
+    "basename": "run-merge_bits_boz-f3c23ec",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/merge_bits_boz.f90",
+    "infile_hash": "58f2e30dacc964c505ebbc8b5ebb2712710e714541b1b54e41a4bdbc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-merge_bits_boz-f3c23ec.stdout",
+    "stdout_hash": "6c5dd43c3a20146c0cd197fb7a0876180cd528e244b37b408aa7e552",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

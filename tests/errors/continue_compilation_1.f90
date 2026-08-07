@@ -951,6 +951,9 @@ program continue_compilation_1
     subroutine set_caller(this)
         class(MyClass) :: this
     end subroutine
+    subroutine merge_bits_boz_both_args(); print *, merge_bits(o'12345', z'1234', 32767); end subroutine
+    subroutine dshiftl_boz_both_args(); print *, dshiftl(o'12345', z'1234', 5); end subroutine
+    subroutine dshiftr_boz_both_args(); print *, dshiftr(o'12345', z'1234', 5); end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
