@@ -285,11 +285,16 @@ public:
         }
         current_scope = current_scope_copy;
     }
-    /// Is a variable declared in a module scope
-    bool is_module_variable(ASR::Variable_t* const v){
+    /// Is a variable declared in a module scope or global translation unit scope
+    bool is_module_or_global_variable(ASR::Variable_t* const v){
+        if (!v->m_parent_symtab || v->m_parent_symtab->parent == nullptr) {
+            return true;
+        }
         ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
-        return  ASR::is_a<ASR::symbol_t>(*asr_owner) &&
-                ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+        if (!asr_owner || !ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+            return true;
+        }
+        return ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
     }
 
     void visit_Var(const ASR::Var_t &x) {
@@ -300,7 +305,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if(is_module_variable(v)) return;
+                if(is_module_or_global_variable(v)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope
                 // (or a child scope such as an associate block), it is a
@@ -379,7 +384,7 @@ public:
                 continue;
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-            if (is_module_variable(v)) {
+            if (is_module_or_global_variable(v)) {
                 continue;
             }
             if (current_scope && par_func_sym &&
@@ -584,7 +589,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         if (existing_td == nullptr) {
                             ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
                             ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original);
-                            if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
+                            if (owner_sym && ASR::is_a<ASR::Program_t>(*owner_sym)) {
                                 // Cannot create ExternalSymbol pointing into
                                 // a Program; duplicate the abstract interface
                                 // into the module scope instead.
@@ -592,7 +597,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 sd.duplicate_symbol(original, current_scope);
                                 existing_td = current_scope->get_symbol(td_name);
                             } else {
-                                std::string owner_name = std::string(ASRUtils::symbol_name(owner_sym));
+                                std::string owner_name = owner_sym ? std::string(ASRUtils::symbol_name(owner_sym)) : "";
                                 ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
                                     al, type_decl->base.loc,
                                     current_scope,
@@ -623,17 +628,17 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         m_derived_type_or_class_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(derived_type_or_class_type));
                         if( m_derived_type_or_class_type == nullptr ) {
-                            if (!ASR::is_a<ASR::Program_t>(
-                                    *ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(
-                                        derived_type_or_class_type)))) {
+                            ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(derived_type_or_class_type);
+                            ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original_symbol);
+                            if (!owner_sym || !ASR::is_a<ASR::Program_t>(*owner_sym)) {
                                 char* fn_name = ASRUtils::symbol_name(derived_type_or_class_type);
-                                ASR::symbol_t* original_symbol = ASRUtils::symbol_get_past_external(derived_type_or_class_type);
+                                std::string owner_name = owner_sym ? std::string(ASRUtils::symbol_name(owner_sym)) : "";
                                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                     al, derived_type_or_class_type->base.loc,
                                     /* a_symtab */ current_scope,
                                     /* a_name */ fn_name,
                                     original_symbol,
-                                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_symbol)),
+                                    s2c(al, owner_name),
                                     nullptr, 0, ASRUtils::symbol_name(original_symbol), ASR::accessType::Public
                                 );
                                 m_derived_type_or_class_type = ASR::down_cast<ASR::symbol_t>(fn);
@@ -641,9 +646,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             } else {
                                 ASRUtils::SymbolDuplicator sd(al);
                                 sd.duplicate_symbol(derived_type_or_class_type, current_scope);
-                                ASR::down_cast<ASR::Program_t>(
-                                    ASRUtils::get_asr_owner(&var->base))->m_symtab->erase_symbol(
+                                ASR::symbol_t* var_owner = ASRUtils::get_asr_owner(&var->base);
+                                if (var_owner && ASR::is_a<ASR::Program_t>(*var_owner)) {
+                                    ASR::down_cast<ASR::Program_t>(var_owner)->m_symtab->erase_symbol(
                                         ASRUtils::symbol_name(derived_type_or_class_type));
+                                }
                                 m_derived_type_or_class_type = current_scope->get_symbol(
                                     ASRUtils::symbol_name(derived_type_or_class_type));
                             }
@@ -1333,7 +1340,8 @@ public:
                                         ASRUtils::type_get_past_allocatable_pointer(
                                             ASR::down_cast<ASR::Variable_t>(
                                                 ASRUtils::symbol_get_past_external(ext_sym))->m_type))
-                                   && ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner((ext_sym)))) {
+                                    && ASRUtils::get_asr_owner((ext_sym))
+                                    && ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner((ext_sym)))) {
                             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                                     ASRUtils::symbol_get_past_external(ext_sym));
                             // Import the Struct as an `ExternalSymbol` into `Program`
@@ -1371,11 +1379,13 @@ public:
                             std::string sym_name = ASRUtils::symbol_name(sym_);
                             std::string unique_name = current_scope->get_unique_name(sym_name, false);
                             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+                            ASR::symbol_t *s_owner = ASRUtils::get_asr_owner(s);
+                            std::string s_owner_name = s_owner ? std::string(ASRUtils::symbol_name(s_owner)) : "";
                             ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                                 al, t->base.loc,
                                 /* a_symtab */ current_scope,
                                 /* a_name */ s2c(al, unique_name),
-                                s, ASRUtils::symbol_name(ASRUtils::get_asr_owner(s)),
+                                s, s2c(al, s_owner_name),
                                 nullptr, 0, ASRUtils::symbol_name(s), ASR::accessType::Public
                             );
                             sym_ = ASR::down_cast<ASR::symbol_t>(fn);
