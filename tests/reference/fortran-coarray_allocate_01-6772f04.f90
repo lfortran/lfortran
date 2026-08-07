@@ -25,7 +25,7 @@ call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a
 call c_f_pointer(a__coarray_data, a)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), b__coarray_handle,&
          b__coarray_data, stat, errmsg)
-call c_f_pointer(b__coarray_data, b, [10])
+call c_f_pointer(b__coarray_data, b, [10], [1])
 a = lcompilers_prif_this_image()
 call __module_prif_prif_deallocate_coarray(a__coarray_handle)
 nullify (a)

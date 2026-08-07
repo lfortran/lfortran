@@ -638,21 +638,6 @@ class PRIFInterface {
             for (size_t i = 0; i < n_array_dims; i++) {
                 ASR::dimension_t d = dims[i];
                 LCOMPILERS_ASSERT(d.m_length);
-                LCOMPILERS_ASSERT_MSG([&]()->bool{
-                    if (!d.m_start) return true;
-                    int64_t val = 1;
-                    if (ASRUtils::extract_value(d.m_start, val)) {
-                        return val == 1;
-                    }
-                    if (ASR::is_a<ASR::ArrayBound_t>(*d.m_start)) {
-                        ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(d.m_start);
-                        if (ab->m_bound == ASR::arrayboundType::LBound) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }(), "Non-1 lower bounds are not supported yet");
-                
                 ASR::expr_t *len_expr = d.m_length;
                 if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
                     throw LCompilersException("Array dimension length must be an integer");
@@ -667,7 +652,29 @@ class PRIFInterface {
             return nullptr;
         }
 
+        ASR::expr_t* create_lbound_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims) {
+            std::vector<ASR::expr_t*> lb_vec;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (size_t i = 0; i < n_array_dims; i++) {
+                ASR::dimension_t d = dims[i];
+                LCOMPILERS_ASSERT(d.m_start);
+                ASR::expr_t *start_expr = d.m_start;
+                if (!ASRUtils::is_integer(*ASRUtils::expr_type(start_expr))) {
+                    throw LCompilersException("Array dimension start must be an integer");
+                } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start_expr)) != 4) {
+                    start_expr = b.i2i_t(start_expr, int32_type);
+                }
+                lb_vec.push_back(start_expr);
+            }
+            if (lb_vec.size() > 0) {
+                return b.ArrayConstant(lb_vec, int32_type, false);
+            }
+            return nullptr;
+        }
+
         ASR::expr_t* create_shape_expr(const Location &loc, ASR::ttype_t *type) {
+            type = ASRUtils::type_get_past_allocatable_pointer(type);
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
                 std::vector<ASR::expr_t*> shape_vec;
@@ -675,12 +682,6 @@ class PRIFInterface {
                 ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
                 for (size_t i = 0; i < arr->n_dims; i++) {
                     ASR::dimension_t d = arr->m_dims[i];
-                    int64_t lb = 1;
-                    if (d.m_start) {
-                        ASRUtils::extract_value(d.m_start, lb);
-                    }
-                    LCOMPILERS_ASSERT_MSG(lb == 1,
-                        "Array shape with lowerbound specified is not supported");
                     if (d.m_length) {
                         ASR::expr_t *len_expr = d.m_length;
                         if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
@@ -695,6 +696,34 @@ class PRIFInterface {
                 }
                 if (shape_vec.size() > 0) {
                     return b.ArrayConstant(shape_vec, int32_type, false);
+                }
+            }
+            return nullptr;
+        }
+
+        ASR::expr_t* create_lbound_expr(const Location &loc, ASR::ttype_t *type) {
+            type = ASRUtils::type_get_past_allocatable_pointer(type);
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                std::vector<ASR::expr_t*> lb_vec;
+                ASRUtils::ASRBuilder b(al, loc);
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::dimension_t d = arr->m_dims[i];
+                    ASR::expr_t *start_expr = d.m_start;
+                    if (start_expr) {
+                        if (!ASRUtils::is_integer(*ASRUtils::expr_type(start_expr))) {
+                            throw LCompilersException("Array dimension start must be an integer");
+                        } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start_expr)) != 4) {
+                            start_expr = b.i2i_t(start_expr, int32_type);
+                        }
+                        lb_vec.push_back(start_expr);
+                    } else {
+                        lb_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type)));
+                    }
+                }
+                if (lb_vec.size() > 0) {
+                    return b.ArrayConstant(lb_vec, int32_type, false);
                 }
             }
             return nullptr;
@@ -1833,11 +1862,13 @@ class PRIFInterface {
             
             size_t n_array_dims = n_dims;
             ASR::expr_t *shape_expr = nullptr;
+            ASR::expr_t *lbound_expr = nullptr;
             if (n_array_dims > 0) {
                 shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims);
+                lbound_expr = create_lbound_expr_from_dims(loc, dims, n_array_dims);
             }
             ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                ASR::make_CPtrToPointer_t(al, loc, dexpr, expr, shape_expr, nullptr));
+                ASR::make_CPtrToPointer_t(al, loc, dexpr, expr, shape_expr, lbound_expr));
             new_body.push_back(al, cfp_stmt);
         }
 
@@ -1909,8 +1940,9 @@ class PRIFInterface {
                     ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                     ASR::ttype_t *orig_type = original_types[sym];
                     ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                    ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
                     ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
                     new_body.push_back(al, cfp_stmt);
                     continue;
                 }
@@ -1933,8 +1965,9 @@ class PRIFInterface {
 
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                 ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
+                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
                 new_body.push_back(al, cfp_stmt);
 
                 if (var->m_value) {
@@ -2049,10 +2082,11 @@ class PRIFInterface {
                     ASR::symbol_t *var_sym = &(var->base);
                     ASR::ttype_t *orig_type = original_types[var_sym];
                     ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                    ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
 
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
-                                                  shape_expr, nullptr)));
+                                                  shape_expr, lbound_expr)));
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_Assignment_t(al, loc, local_expr, init_value,
                                               nullptr, false, false)));
