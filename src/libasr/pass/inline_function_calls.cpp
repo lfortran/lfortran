@@ -171,6 +171,12 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 return false;
             }
 
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym.second);
+            // Inlining would give each call its own copy of persistent local state.
+            if( variable->m_storage == ASR::storage_typeType::Save ) {
+                return false;
+            }
+
             if( ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable_pointer(
                         ASR::down_cast<ASR::Variable_t>(sym.second)->m_type))) ) {
@@ -178,7 +184,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
 
             // Don't inline functions with assumed-size array parameters
-            ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(sym.second)->m_type;
+            ASR::ttype_t* var_type = variable->m_type;
             if( ASRUtils::is_array(var_type) ) {
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable_pointer(var_type));
