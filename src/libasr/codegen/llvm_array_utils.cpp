@@ -1794,11 +1794,37 @@ namespace LCompilers {
                     }
                     llvm::Value* base_offset = get_offset(source_llvm_type, source_desc);
                     linear_offset = builder->CreateAdd(linear_offset, base_offset);
-                    // Copy element
-                    llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
-                    llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
-                    llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
-                    builder->CreateStore(elem_val, dest_ptr);
+                    // Copy element.
+                    // For string arrays (elem_type == string_descriptor), the backing
+                    // storage is ONE string_descriptor with { char_base*, elem_len }.
+                    // Character data is laid out as a flat byte buffer:
+                    //   element i  =>  { char_base + linear_offset * elem_len, elem_len }
+                    // GEP-ing into the descriptor array by linear_offset would read garbage
+                    // because there is only one descriptor, not N.
+                    if (elem_type == llvm_utils->string_descriptor) {
+                        // Load the single backing string_descriptor at index 0.
+                        llvm::Value* back_desc = builder->CreateLoad(elem_type, src_data);
+                        llvm::Value* char_base = builder->CreateExtractValue(back_desc, {0u});
+                        llvm::Value* elem_len  = builder->CreateExtractValue(back_desc, {1u});
+                        // byte_offset = linear_offset * elem_len
+                        llvm::Value* byte_off = builder->CreateMul(
+                            builder->CreateSExtOrTrunc(linear_offset,
+                                llvm::Type::getInt64Ty(context)),
+                            elem_len);
+                        llvm::Value* elem_char_ptr = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), char_base, byte_off);
+                        // Build a new string_descriptor for this element.
+                        llvm::Value* new_desc = llvm::Constant::getNullValue(elem_type);
+                        new_desc = builder->CreateInsertValue(new_desc, elem_char_ptr, {0u});
+                        new_desc = builder->CreateInsertValue(new_desc, elem_len,      {1u});
+                        llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
+                        builder->CreateStore(new_desc, dest_ptr);
+                    } else {
+                        llvm::Value* src_elem_ptr = builder->CreateGEP(elem_type, src_data, linear_offset);
+                        llvm::Value* elem_val = builder->CreateLoad(elem_type, src_elem_ptr);
+                        llvm::Value* dest_ptr = builder->CreateGEP(elem_type, data_buffer, iter);
+                        builder->CreateStore(elem_val, dest_ptr);
+                    }
                     // Increment iterator
                     llvm::Value* new_iter = builder->CreateAdd(iter,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
