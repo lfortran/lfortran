@@ -496,27 +496,17 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
                 ASR::ttype_t* mem_type = member->m_type;
-                bool is_direct_char = is_bindc &&
-                    !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
-                    !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
-                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
-                if (is_direct_char) {
-                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::type_get_past_array(mem_type));
-                    int64_t slen = 1;
-                    if (s->m_len) {
-                        ASRUtils::extract_value(s->m_len, slen);
-                    }
-                    if (slen < 1) slen = 1;
+                if (ASRUtils::is_inline_character_struct_member(
+                        der_type, mem_type)) {
+                    int64_t inline_bytes =
+                        ASRUtils::inline_character_storage_size(mem_type);
                     llvm_mem_type = llvm::ArrayType::get(
-                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
+                        llvm::Type::getInt8Ty(context), (uint64_t)inline_bytes);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -2450,6 +2440,25 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::get_string_element_in_array(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
         llvm::Value* desired_ptr = get_string_element_in_array_(str_type, data, arr_idx);
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
+    }
+
+    llvm::Value* LLVMUtils::get_inline_string_element(ASR::String_t* str_type,
+            llvm::Value* blob_ptr, llvm::Value* idx, std::string name){
+        int64_t len = 1;
+        if (str_type->m_len) {
+            ASRUtils::extract_value(str_type->m_len, len);
+        }
+        llvm::Value* elem_bytes = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), len * str_type->m_kind);
+        llvm::Value* off = builder->CreateMul(
+            convert_kind(idx, llvm::Type::getInt64Ty(context)), elem_bytes);
+        // blob_ptr points at the inline [count*len x i8] blob; view it as a
+        // flat i8 buffer before indexing to the element.
+        llvm::Value* bytes = builder->CreateBitCast(blob_ptr, character_type);
+        llvm::Value* elem_ptr = create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), bytes, off);
+        return create_string_descriptor(elem_ptr,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len), name);
     }
 
 
@@ -10770,12 +10779,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Type *mem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                         ASRUtils::symbol_type(mem_sym), module);
                     ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
-                    bool is_inline_char = (struct_sym->m_abi == ASR::abiType::BindC ||
-                            struct_sym->m_is_sequence) &&
-                        !ASR::is_a<ASR::Pointer_t>(*member_type) &&
-                        !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type));
-                    if (is_inline_char) {
+                    if (ASRUtils::is_inline_character_struct_member(
+                            struct_sym, member_type)) {
                         llvm::Type* inline_type = llvm_utils->name2dertype[
                             der_type_name]->getElementType(mem_idx);
                         if (src_member->getType()->isPointerTy()) {

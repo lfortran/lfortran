@@ -586,6 +586,15 @@ class ASRToLLVMVisitor;
             llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerArray*/, llvm::Value* arr_idx);
 
             /*
+                Gets an element of a character array stored inline as a flat
+                [count*len x i8] blob (bind(C)/SEQUENCE/COMMON struct member):
+                element data = blob + idx*len*kind, wrapped in a string view
+                descriptor for downstream use.
+            */
+            llvm::Value* get_inline_string_element(ASR::String_t* str_type,
+                llvm::Value* blob_ptr, llvm::Value* idx, std::string name = "");
+
+            /*
                 Corresponds to the process of allocating a string.
                 e.g. --> `allocate(character(10) :: str)`
                 - If deferred length, Use desired amount passed by user.

@@ -472,6 +472,7 @@ RUN(NAME fixed_form_stmt_func_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GF
 RUN(NAME fixed_form_do_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --use-loop-variable-after-loop GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_where_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_module_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_common_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3910,6 +3911,7 @@ RUN(NAME common_39 LABELS gfortran llvm)
 RUN(NAME common_40 LABELS gfortran llvm)
 RUN(NAME common_41 LABELS gfortran llvm)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME common_substring_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
 RUN(NAME statement_02 LABELS gfortran llvmImplicit)
@@ -4583,6 +4585,8 @@ RUN(NAME separate_compilation_47 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_48 LABELS gfortran llvm EXTRAFILES separate_compilation_48a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_49 LABELS gfortran llvm EXTRAFILES separate_compilation_49a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_50 LABELS gfortran llvm EXTRAFILES separate_compilation_50a.f90 separate_compilation_50b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_51 LABELS gfortran llvm EXTRAFILES separate_compilation_51a.f90 separate_compilation_51b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
+RUN(NAME separate_compilation_52 LABELS gfortran llvm EXTRAFILES separate_compilation_52a.f90 separate_compilation_52b.f90 EXTRA_ARGS --implicit-interface --separate-compilation)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

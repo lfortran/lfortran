@@ -4598,7 +4598,7 @@ public:
             ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(make_Struct_t(
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
-                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, false,
+                nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, true,
                 nullptr, 0, nullptr, nullptr, nullptr, 0));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -10844,8 +10844,10 @@ public:
                         ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::DescriptorString));
+                // Replace COMMON block variable with struct member
+                ASR::expr_t* string_var = replace_with_common_block_variables(v_Var);
                 return ASR::make_StringItem_t(al, loc,
-                    v_Var, args.p[0].m_right, char_type, arr_ref_val);
+                    string_var, args.p[0].m_right, char_type, arr_ref_val);
             } else if ( ASRUtils::is_character(*root_v_type) &&
                         ASRUtils::is_array(root_v_type) &&
                         n_subargs > 0) {
