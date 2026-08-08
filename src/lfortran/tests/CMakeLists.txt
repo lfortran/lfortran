@@ -111,6 +111,11 @@ if (WITH_LLVM)
             --strategy valid
             --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
     )
+    add_test(
+        NAME test_asr_reducer_unit
+        COMMAND ${LFORTRAN_TEST_PYTHON}
+            ${CMAKE_SOURCE_DIR}/tests/asr/test_edn.py
+    )
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
