@@ -4,6 +4,24 @@ syntax error: Token ':' is unexpected here
 23 |     a = z[1:5:2]
    |              ^ 
 
+semantic error: The upper cobound `*` must appear only in the last codimension
+  --> tests/errors/continue_compilation_coarrays.f90:29:19
+   |
+29 |     integer :: w1[*, *]
+   |                   ^ 
+
+semantic error: The upper cobound `*` must appear only in the last codimension
+  --> tests/errors/continue_compilation_coarrays.f90:32:19
+   |
+32 |     integer :: w2[*, 2]
+   |                   ^ 
+
+semantic error: The last upper cobound of a coarray must be `*`
+  --> tests/errors/continue_compilation_coarrays.f90:35:5
+   |
+35 |     integer, codimension[3, 2] :: w3
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Variable 'x' is not a coarray; coindex notation [..] requires a codimension attribute
  --> tests/errors/continue_compilation_coarrays.f90:5:9
   |

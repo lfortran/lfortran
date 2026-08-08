@@ -7642,7 +7642,28 @@ public:
                                     AST::codimension_typeType::CodimensionStar
                                     ? ASR::codimension_typeType::CodimensionStar
                                     : ASR::codimension_typeType::CodimensionExpr;
+                                if (asr_codim.m_end_star ==
+                                        ASR::codimension_typeType::CodimensionStar &&
+                                        c + 1 != ac->n_codim) {
+                                    diag.add(Diagnostic(
+                                        "The upper cobound `*` must appear "
+                                        "only in the last codimension",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {ast_codim.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
                                 codims.push_back(al, asr_codim);
+                            }
+                            if (ac->n_codim == 0 ||
+                                    codims[codims.size() - 1].m_end_star !=
+                                        ASR::codimension_typeType::CodimensionStar) {
+                                diag.add(Diagnostic(
+                                    "The last upper cobound of a coarray must be `*`",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {x.base.base.loc})
+                                    }));
+                                throw SemanticAbort();
                             }
                         } else {
                             diag.add(Diagnostic(
@@ -7768,6 +7789,17 @@ public:
                             AST::codimension_typeType::CodimensionStar
                             ? ASR::codimension_typeType::CodimensionStar
                             : ASR::codimension_typeType::CodimensionExpr;
+                        if (asr_codim.m_end_star ==
+                                ASR::codimension_typeType::CodimensionStar &&
+                                c + 1 != s.n_codim) {
+                            diag.add(Diagnostic(
+                                "The upper cobound `*` must appear "
+                                "only in the last codimension",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {ast_codim.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         codims.push_back(al, asr_codim);
                     }
                 }

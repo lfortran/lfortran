@@ -25,4 +25,13 @@ program continue_compilation_coarrays
     real :: cod[4]
     print *,cod[5]
 
+    ! Assumed codimension `*` must be the last codimension → ERROR
+    integer :: w1[*, *]
+
+    ! Assumed codimension `*` not in the last position → ERROR
+    integer :: w2[*, 2]
+
+    ! CODIMENSION attribute: last cobound must be `*` → ERROR
+    integer, codimension[3, 2] :: w3
+
 end program continue_compilation_coarrays
