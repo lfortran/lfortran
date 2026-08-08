@@ -1297,6 +1297,35 @@ public:
                     continue;
                 }
 
+                ASR::ttype_t *actual_type =
+                    ASRUtils::expr_type(passed_arg_expr);
+                ASR::ttype_t *formal_type = callee_param->m_type;
+                bool class_argument =
+                    ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_array(actual_type)) ||
+                    ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_array(formal_type));
+                bool procedure_argument =
+                    ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_array(actual_type)) ||
+                    ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_array(formal_type));
+                if (!diagnostics.has_error() &&
+                        !ASRUtils::is_intrinsic_symbol(x.m_name) &&
+                        !is_method && !class_argument &&
+                        !procedure_argument) {
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            actual_type, formal_type,
+                            passed_arg_expr, func->m_args[i]),
+                        "asr.verify.call.actual_type_matches_formal",
+                        "Actual argument type " +
+                            ASRUtils::get_type_code(actual_type) +
+                            " does not match formal argument type " +
+                            ASRUtils::get_type_code(formal_type),
+                        passed_arg_expr->base.loc);
+                }
+
                 if (check_external &&
                     !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
                     (callee_param->m_intent == ASR::intentType::Out ||
@@ -1652,6 +1681,55 @@ public:
             visit_expr(*x.m_length);
         }
         _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
+    }
+
+    void visit_Integer(const Integer_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.integer_kind_supported",
+            "Integer kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_UnsignedInteger(const UnsignedInteger_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.unsigned_integer_kind_supported",
+            "UnsignedInteger kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Real(const Real_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.real_kind_supported",
+            "Real kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Complex(const Complex_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.complex_kind_supported",
+            "Complex kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Logical(const Logical_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.logical_kind_supported",
+            "Logical kind " + std::to_string(x.m_kind) +
+                " is not supported");
     }
 
     void visit_Array(const Array_t& x) {

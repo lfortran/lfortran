@@ -33,7 +33,7 @@ def run(command, timeout):
         ) from error
 
 
-def anchor_span(path, anchor):
+def anchor_span(path, anchor, occurrence=1):
     matches = []
     for line_number, line in enumerate(
             path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -43,12 +43,12 @@ def anchor_span(path, anchor):
                 match.start() + 1,
                 match.end(),
             ))
-    if len(matches) != 1:
+    if occurrence < 1 or len(matches) < occurrence:
         raise RuntimeError(
-            f"{path}: expected exactly one anchor {anchor!r}, "
-            f"found {len(matches)}"
+            f"{path}: expected anchor {anchor!r} occurrence {occurrence}, "
+            f"found {len(matches)} total"
         )
-    return matches[0]
+    return matches[occurrence - 1]
 
 
 def verify_initial_asr(lfortran, fixture, timeout):
@@ -135,7 +135,7 @@ def check_verify(lfortran, fixture, test, timeout):
     _, first_line, last_line, first_col, last_col, code, message = \
         match.groups()
     expected_line, expected_first_col, expected_last_col = anchor_span(
-        fixture, test["anchor"])
+        fixture, test["anchor"], test.get("anchor_occurrence", 1))
     actual_span = (
         int(first_line),
         int(last_line),
