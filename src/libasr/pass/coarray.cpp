@@ -1761,11 +1761,8 @@ class PRIFInterface {
                 if (ci == corank - 1) {
                     LCOMPILERS_ASSERT(ub_expr == nullptr);
                 } else {
-                    if (ub_expr) {
-                        uco_elems.push_back(al, b.i2i_t(ub_expr, i64));
-                    } else {
-                        uco_elems.push_back(al, b.i64(0));
-                    }
+                    LCOMPILERS_ASSERT(ub_expr);
+                    uco_elems.push_back(al, b.i2i_t(ub_expr, i64));
                 }
             }
             

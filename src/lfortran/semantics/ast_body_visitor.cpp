@@ -3285,10 +3285,9 @@ public:
                                 // The lower bound implicitly defaults to 1.
                                 new_codim.m_start = const_1;
                             }
-                            if (coarray_ast.m_coargs[j].m_end) {
-                                this->visit_expr(*(coarray_ast.m_coargs[j].m_end));
-                                new_codim.m_end = ASRUtils::EXPR(tmp);
-                            }
+                            LCOMPILERS_ASSERT_MSG(coarray_ast.m_coargs[j].m_end, "missing ucobound")
+                            this->visit_expr(*(coarray_ast.m_coargs[j].m_end));
+                            new_codim.m_end = ASRUtils::EXPR(tmp);
                             new_codim.m_end_star = ASR::codimension_typeType::CodimensionExpr;
                         }
                         codims_vec.push_back(al, new_codim);
