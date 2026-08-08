@@ -28,7 +28,7 @@ call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8
 call c_f_pointer(a__coarray_data, a)
 call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8*int(10, kind=8), null(),&
          b__coarray_handle, b__coarray_data, stat, errmsg)
-call c_f_pointer(b__coarray_data, b, [10])
+call c_f_pointer(b__coarray_data, b, [10], [1])
 call __module_prif_prif_allocate_coarray([int(1, kind=8), int(1, kind=8)], [int(2, kind=8)], 4_8, null(),&
          x__coarray_handle, x__coarray_data, stat, errmsg)
 call c_f_pointer(x__coarray_data, x)

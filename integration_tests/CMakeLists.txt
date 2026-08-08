@@ -1847,6 +1847,8 @@ RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale w
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
+RUN(NAME extends_type_of_01 LABELS gfortran llvm)
+
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3942,6 +3944,7 @@ RUN(NAME save_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
+RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4780,6 +4783,8 @@ RUN(NAME coarrays_33 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_34 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
 RUN(NAME coarrays_35 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_36 EXTRA_ARGS --coarray=true)
+
+RUN(NAME coarrays_37 EXTRA_ARGS --coarray=true)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)

@@ -15,7 +15,7 @@ type(prif_coarray_handle) :: x__coarray_handle
 call __module_prif_prif_init(stat)
 call __module_prif_prif_allocate_coarray([int(2, kind=8)], [integer(8) :: ], 4_8*int(5, kind=8), null(),&
          x__coarray_handle, x__coarray_data)
-call c_f_pointer(x__coarray_data, x, [5])
+call c_f_pointer(x__coarray_data, x, [5], [1])
 call __module_prif_prif_sync_all()
 a = lcompilers_prif_lcobound_with_dim_k4(x__coarray_handle, 1)
 b = lcompilers_prif_ucobound_with_dim_k4(x__coarray_handle, 1)
