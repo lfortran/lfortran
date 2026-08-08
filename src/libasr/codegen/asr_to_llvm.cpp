@@ -3822,6 +3822,16 @@ public:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(32, 1, true));
                 break;
             }
+            case ASRUtils::IntrinsicElementalFunctions::CoRank: {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                } else {
+                    int64_t cr = ASRUtils::expr_corank(x.m_args[0]);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                    tmp = llvm::ConstantInt::get(context, llvm::APInt(kind * 8, cr, true));
+                }
+                break;
+            }
             case ASRUtils::IntrinsicElementalFunctions::Expm1: {
                 switch (x.m_overload_id) {
                     case 0: {

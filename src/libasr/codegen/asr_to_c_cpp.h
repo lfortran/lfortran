@@ -3155,6 +3155,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = result;
                 return;
             }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::CoRank)) : {
+                if (x.m_value) {
+                    this->visit_expr(*x.m_value);
+                } else {
+                    int64_t cr = ASRUtils::expr_corank(x.m_args[0]);
+                    src = std::to_string(cr);
+                }
+                return;
+            }
             default : {
                 throw LCompilersException("IntrinsicElementalFunction: `"
                     + ASRUtils::get_intrinsic_name(x.m_intrinsic_id)

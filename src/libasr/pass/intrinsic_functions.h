@@ -157,6 +157,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     NumImages,
     LCoBound,
     UCoBound,
+    CoRank,
     SignFromValue,
     Logical,
     Nint,
@@ -1959,6 +1960,56 @@ namespace UCoBound {
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound), final_args.p, final_args.n, 0, return_type, nullptr);
     }
 }
+
+namespace CoRank {
+
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1,
+            "corank() takes exactly 1 argument",
+            x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_CoRank(Allocator &al, const Location &loc,
+            ASR::ttype_t *t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t cr = expr_corank(args[0]);
+        if (cr <= 0) {
+            diag.add(diag::Diagnostic(
+                "Argument to 'corank' must be a coarray",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("This argument is not a coarray", {loc})}));
+            return nullptr;
+        }
+        return make_ConstantWithType(make_IntegerConstant_t, cr, t1, loc);
+    }
+
+    static inline ASR::asr_t* create_CoRank(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (args.size() != 1) {
+            diag.add(diag::Diagnostic(
+                "corank() takes exactly 1 argument",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("Takes 1 argument", {loc})}));
+            return nullptr;
+        }
+        int64_t cr = expr_corank(args[0]);
+        if (cr <= 0) {
+            diag.add(diag::Diagnostic(
+                "Argument to 'corank' must be a coarray",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("This argument is not a coarray", {loc})}));
+            return nullptr;
+        }
+        ASR::ttype_t *return_type = TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *m_value = eval_CoRank(al, loc, return_type, args, diag);
+        if (diag.has_error()) {
+            return nullptr;
+        }
+        return ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::CoRank),
+            args.p, args.n, 0, return_type, m_value);
+    }
+
+} // namespace CoRank
+
 namespace NumImages {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {

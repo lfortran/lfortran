@@ -7231,6 +7231,35 @@ static inline int64_t symbol_corank(ASR::symbol_t* s) {
     return 0;
 }
 
+static inline int64_t expr_corank(const ASR::expr_t* expr) {
+    if (!expr) return 0;
+    while (expr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return symbol_corank(sym);
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            return symbol_corank(sym);
+        } else if (ASR::is_a<ASR::CoarrayRef_t>(*expr)) {
+            const ASR::CoarrayRef_t* ref = ASR::down_cast<ASR::CoarrayRef_t>(expr);
+            int64_t r = expr_corank(ref->m_var);
+            if (r > 0) return r;
+            return ref->n_coindices;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::Cast_t>(expr)->m_arg;
+        } else {
+            break;
+        }
+    }
+    return 0;
+}
+
 static inline void import_struct_t(Allocator& al,
     const Location& loc, ASR::ttype_t*& var_type,
     ASR::intentType intent, SymbolTable* current_scope, ASR::expr_t* var) {
