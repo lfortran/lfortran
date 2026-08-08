@@ -122,16 +122,21 @@ public:
         std::map<const SymbolTable *, size_t> ids)
         : options(options), symtab_ids(std::move(ids)) {
         output.reserve(100000);
-        output += "#asr/v1";
-        if (options.indent) {
-            output.push_back('\n');
-        } else {
-            output.push_back(' ');
-        }
     }
 
     std::string take_output() {
         return std::move(output);
+    }
+
+    void begin_document() {
+        begin_form("ASRText", 2);
+        begin_field("version");
+        write_int(1);
+        begin_field("value");
+    }
+
+    void end_document() {
+        end_form();
     }
 
     void begin_form(const char *name, size_t field_count) {
@@ -820,21 +825,32 @@ public:
     }
 
     Result<ASR::TranslationUnit_t *> decode(const TextValue &root) {
-        if (root.kind != ASRText::ValueKind::Tagged ||
-                root.tag != "asr/v1" || root.tagged_value == nullptr) {
-            schema_error(root, "ASR text must start with #asr/v1");
+        std::vector<const TextValue *> document_fields;
+        if (!decode_form(root, "ASRText",
+                {"version", "value"}, document_fields)) {
             return Error();
         }
-        if (!collect_symbol_tables(*root.tagged_value) ||
+        int64_t version;
+        if (!decode_int(*document_fields[0], version)) {
+            return Error();
+        }
+        if (version != 1) {
+            schema_error(*document_fields[0],
+                "unsupported ASR text format version " +
+                std::to_string(version));
+            return Error();
+        }
+        const TextValue &value = *document_fields[1];
+        if (!collect_symbol_tables(value) ||
                 !predeclare_symbols()) {
             return Error();
         }
         ASR::unit_t *unit;
-        if (!deserialize_unit(*root.tagged_value, unit)) {
+        if (!deserialize_unit(value, unit)) {
             return Error();
         }
         if (!ASR::is_a<ASR::TranslationUnit_t>(*unit)) {
-            schema_error(*root.tagged_value,
+            schema_error(value,
                 "ASR text root must be a TranslationUnit");
             return Error();
         }
@@ -855,7 +871,9 @@ std::string asr_to_text(const ASR::asr_t &asr,
             *ASR::down_cast2<ASR::TranslationUnit_t>(&asr));
     }
     ASRTextWriter writer(options, std::move(collector.ids));
+    writer.begin_document();
     writer.visit_asr(asr);
+    writer.end_document();
     return writer.take_output();
 }
 
