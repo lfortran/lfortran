@@ -1,0 +1,10 @@
+[[test]]
+filename = "compile/asr_text_compile_01.asr"
+expect = "compile"
+
+[[test]]
+filename = "verify/assignment_realloc_nonallocatable.asr"
+expect = "verify"
+diagnostic = "asr.verify.assignment.realloc_lhs_requires_allocatable"
+message = "Reallocation of non allocatable variable is not allowed"
+anchor = "Assignment"

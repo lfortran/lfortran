@@ -5,7 +5,7 @@
 # bin ... run the CodeGen and output bin, compare against reference bin
 
 [[test]]
-filename = "asr/asr_text_compile_01.asr"
+filename = "asr/compile/asr_text_compile_01.asr"
 asr_clojure = true
 llvm = true
 

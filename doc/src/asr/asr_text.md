@@ -67,6 +67,11 @@ The parser accepts named and positional constructors. The two forms can appear
 in one file, but a single constructor cannot mix positional members with
 keyword/member pairs. Committed regression fixtures should use named form.
 
+`--verify-asr` parses a standalone ASR file and runs only its initial verifier.
+It does not execute ASR passes or code generation, so corpus runners can
+distinguish an accepted initial verifier rejection from any later compiler
+failure.
+
 ## Data forms
 
 ASR text uses:
@@ -140,3 +145,18 @@ requirements. Consequently:
 - structurally decoded but invalid ASR produces an ASR verifier diagnostic;
 - verifier-valid standalone ASR proceeds through the normal pass and LLVM
   pipeline.
+
+## Regression corpus
+
+`tests/asr/tests.toml` registers direct ASR regression fixtures with one of two
+expected outcomes:
+
+- `compile`: initial verification succeeds and the production compiler emits a
+  nonempty executable;
+- `verify`: initial verification fails with the exact stable diagnostic code,
+  message, and constructor-token span declared by the manifest.
+
+The registered runner first calls `--verify-asr`. It only invokes the normal
+LLVM and linker pipeline for fixtures whose expected initial result is
+successful verification. This prevents a compile regression from being hidden
+by making the initial verifier reject previously valid ASR.

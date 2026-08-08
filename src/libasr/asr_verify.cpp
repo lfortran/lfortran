@@ -71,6 +71,8 @@ public:
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
     #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
+    #define require_id(cond, error_code, error_msg) ASRUtils::require_impl((cond), (error_code), (error_msg), x.base.base.loc, diagnostics);
+    #define require_with_loc_id(cond, error_code, error_msg, loc) ASRUtils::require_impl((cond), (error_code), (error_msg), loc, diagnostics);
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -403,7 +405,8 @@ public:
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
             }
-            require(is_allocatable,
+            require_id(is_allocatable,
+                "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
         if (x.m_move_allocation) {
@@ -1915,7 +1918,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
                 diagnostics.message_label(
                     "standalone ASR must contain exactly one main program",
                     {item.second->base.loc}, "second main program",
-                    diag::Level::Error, diag::Stage::ASRVerify);
+                    diag::Level::Error, diag::Stage::ASRVerify,
+                    "asr.verify.translation_unit.multiple_main_programs");
                 return false;
             }
             main_program = ASR::down_cast<ASR::Program_t>(item.second);
@@ -1924,7 +1928,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             diagnostics.message_label(
                 "standalone ASR must contain exactly one main program",
                 {unit.base.base.loc}, "main program is missing",
-                diag::Level::Error, diag::Stage::ASRVerify);
+                diag::Level::Error, diag::Stage::ASRVerify,
+                "asr.verify.translation_unit.main_program_missing");
             return false;
         }
     }
