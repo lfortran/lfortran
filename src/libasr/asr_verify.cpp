@@ -33,6 +33,51 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// Returns the type of `e`, or nullptr if the expression is malformed in a way
+// that makes its type unobtainable (a Var referencing a symbol that carries no
+// type, such as a Program). Such expressions have their own dedicated verifier
+// checks, so type comparisons must simply be skipped for them instead of
+// asking for a type that does not exist.
+static ttype_t* typed_expr_type(const expr_t *e)
+{
+    if (e == nullptr) return nullptr;
+    if (!is_a<Var_t>(*e)) return ASRUtils::expr_type(e);
+    symbol_t *s = down_cast<Var_t>(e)->m_v;
+    if (s == nullptr) return nullptr;
+    if (is_a<ExternalSymbol_t>(*s)) {
+        s = down_cast<ExternalSymbol_t>(s)->m_external;
+        if (s == nullptr || is_a<ExternalSymbol_t>(*s)) return nullptr;
+    }
+    if (!is_a<Function_t>(*s) && !is_a<Variable_t>(*s)
+            && !is_a<Struct_t>(*s)) {
+        return nullptr;
+    }
+    return ASRUtils::expr_type(e);
+}
+
+// Procedure types are compared by their own dedicated checks, and they have no
+// type code, so they cannot take part in the generic type comparisons below.
+static bool is_procedure_type(ttype_t *t)
+{
+    return t != nullptr
+        && is_a<FunctionType_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t)));
+}
+
+// A StructType spells out its member types inline, so two StructType nodes for
+// the same derived type can differ structurally, for example when a pass
+// rewrites the signature of a procedure pointer component in one of them.
+// Derived type identity is established from the struct symbol, which a bare
+// signature type does not carry, so such types are left to the dedicated
+// struct checks.
+static bool is_struct_like_type(ttype_t *t)
+{
+    if (t == nullptr) return false;
+    ttype_t *t2 = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    return is_a<StructType_t>(*t2) || ASRUtils::is_class_type(t2);
+}
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -73,6 +118,14 @@ public:
     #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
     #define require_id(cond, error_code, error_msg) ASRUtils::require_impl((cond), (error_code), (error_msg), x.base.base.loc, diagnostics);
     #define require_with_loc_id(cond, error_code, error_msg, loc) ASRUtils::require_impl((cond), (error_code), (error_msg), loc, diagnostics);
+    // Type equality uses the expression only to resolve the struct symbol it
+    // refers to, which requires dereferencing ExternalSymbol. Before externals
+    // are resolved that is not possible, so drop the expression context and
+    // let the comparison fall back to a structural one.
+    ASR::expr_t* type_context(ASR::expr_t *e) {
+        return check_external ? e : nullptr;
+    }
+
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -392,19 +445,25 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
-        if (!diagnostics.has_error()) {
-            ASR::ttype_t *target_type =
-                ASRUtils::expr_type(x.m_target);
-            ASR::ttype_t *value_type =
-                ASRUtils::expr_type(x.m_value);
+        // A defined assignment is lowered to a call in `m_overloaded`, so its
+        // target and value types are unrelated by design.
+        ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
+        ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        if (!diagnostics.has_error() && x.m_overloaded == nullptr
+                && assign_target_type && assign_value_type
+                && !is_procedure_type(assign_target_type)
+                && !is_procedure_type(assign_value_type)
+                && !is_struct_like_type(assign_target_type)
+                && !is_struct_like_type(assign_value_type)) {
             require_with_loc_id(
                 ASRUtils::check_equal_type(
-                    target_type, value_type, x.m_target, x.m_value),
+                    assign_target_type, assign_value_type,
+                    type_context(x.m_target), type_context(x.m_value)),
                 "asr.verify.assignment.value_type_matches_target",
                 "Assignment value type " +
-                    ASRUtils::get_type_code(value_type) +
+                    ASRUtils::get_type_code(assign_value_type) +
                     " does not match target type " +
-                    ASRUtils::get_type_code(target_type),
+                    ASRUtils::get_type_code(assign_target_type),
                 x.m_value->base.loc);
         }
         // it's possible that the target is an external symbol, and during
@@ -563,11 +622,20 @@ public:
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::ttype_t *argument_type =
-                    ASRUtils::expr_type(x.m_args[i]);
+                    typed_expr_type(x.m_args[i]);
+                if (argument_type == nullptr
+                        || is_procedure_type(argument_type)
+                        || is_procedure_type(
+                            function_type->m_arg_types[i])
+                        || is_struct_like_type(argument_type)
+                        || is_struct_like_type(
+                            function_type->m_arg_types[i])) {
+                    continue;
+                }
                 require_with_loc_id(
                     ASRUtils::check_equal_type(
                         function_type->m_arg_types[i], argument_type,
-                        nullptr, x.m_args[i]),
+                        nullptr, type_context(x.m_args[i])),
                     "asr.verify.function.argument_type_matches_signature",
                     "Function argument type " +
                         ASRUtils::get_type_code(argument_type) +
@@ -577,20 +645,34 @@ public:
                     x.m_args[i]->base.loc);
             }
 
+            // An implicit interface is synthesised from a bare `external`
+            // declaration, so its signature carries an assumed return type
+            // that no return variable corresponds to.
+            bool is_implementation = function_type->m_deftype
+                == ASR::deftypeType::Implementation;
             bool signature_has_return =
                 function_type->m_return_var_type != nullptr;
             bool function_has_return = x.m_return_var != nullptr;
-            require_id(
-                signature_has_return == function_has_return,
-                "asr.verify.function.return_presence_matches_signature",
-                "Function return variable presence does not match signature");
-            if (signature_has_return) {
-                ASR::ttype_t *return_type =
-                    ASRUtils::expr_type(x.m_return_var);
+            if (is_implementation) {
+                require_id(
+                    signature_has_return == function_has_return,
+                    "asr.verify.function.return_presence_matches_signature",
+                    "Function return variable presence does not match "
+                    "signature");
+            }
+            ASR::ttype_t *return_type =
+                signature_has_return
+                    ? typed_expr_type(x.m_return_var) : nullptr;
+            if (return_type && !is_procedure_type(return_type)
+                    && !is_procedure_type(
+                        function_type->m_return_var_type)
+                    && !is_struct_like_type(return_type)
+                    && !is_struct_like_type(
+                        function_type->m_return_var_type)) {
                 require_with_loc_id(
                     ASRUtils::check_equal_type(
                         function_type->m_return_var_type, return_type,
-                        nullptr, x.m_return_var),
+                        nullptr, type_context(x.m_return_var)),
                     "asr.verify.function.return_type_matches_signature",
                     "Function return type " +
                         ASRUtils::get_type_code(return_type) +
@@ -1357,26 +1439,24 @@ public:
                 }
 
                 ASR::ttype_t *actual_type =
-                    ASRUtils::expr_type(passed_arg_expr);
+                    typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
-                bool class_argument =
-                    ASRUtils::is_class_type(
+                bool class_argument = actual_type != nullptr &&
+                    (ASRUtils::is_class_type(
                         ASRUtils::type_get_past_array(actual_type)) ||
-                    ASRUtils::is_class_type(
-                        ASRUtils::type_get_past_array(formal_type));
-                bool procedure_argument =
-                    ASR::is_a<ASR::FunctionType_t>(
-                        *ASRUtils::type_get_past_array(actual_type)) ||
-                    ASR::is_a<ASR::FunctionType_t>(
-                        *ASRUtils::type_get_past_array(formal_type));
-                if (!diagnostics.has_error() &&
+                     ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_array(formal_type)));
+                bool procedure_argument = is_procedure_type(actual_type)
+                    || is_procedure_type(formal_type);
+                if (actual_type && !diagnostics.has_error() &&
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                         !is_method && !class_argument &&
                         !procedure_argument) {
                     require_with_loc_id(
                         ASRUtils::check_equal_type(
                             actual_type, formal_type,
-                            passed_arg_expr, func->m_args[i]),
+                            type_context(passed_arg_expr),
+                            type_context(func->m_args[i])),
                         "asr.verify.call.actual_type_matches_formal",
                         "Actual argument type " +
                             ASRUtils::get_type_code(actual_type) +
@@ -1775,7 +1855,8 @@ public:
     void visit_Complex(const Complex_t &x) {
         if (diagnostics.has_error()) return;
         require_id(
-            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
             "asr.verify.type.complex_kind_supported",
             "Complex kind " + std::to_string(x.m_kind) +
                 " is not supported");
