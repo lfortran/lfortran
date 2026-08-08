@@ -392,6 +392,21 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        if (!diagnostics.has_error()) {
+            ASR::ttype_t *target_type =
+                ASRUtils::expr_type(x.m_target);
+            ASR::ttype_t *value_type =
+                ASRUtils::expr_type(x.m_value);
+            require_with_loc_id(
+                ASRUtils::check_equal_type(
+                    target_type, value_type, x.m_target, x.m_value),
+                "asr.verify.assignment.value_type_matches_target",
+                "Assignment value type " +
+                    ASRUtils::get_type_code(value_type) +
+                    " does not match target type " +
+                    ASRUtils::get_type_code(target_type),
+                x.m_value->base.loc);
+        }
         // it's possible that the target is an external symbol, and during
         // initial deserialization pass, so we don't do the below verification
         if ( check_external && x.m_realloc_lhs ) {
@@ -421,9 +436,11 @@ public:
                                             ASRUtils::is_allocatable(value_type) &&
                                             ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
 
-            require(is_target_allocatable_array,
+            require_id(is_target_allocatable_array,
+                "asr.verify.assignment.move_target_allocatable_array",
                 "Move assignment target must be an allocatable array");
-            require(is_value_allocatable_array,
+            require_id(is_value_allocatable_array,
+                "asr.verify.assignment.move_value_allocatable_array",
                 "Move assignment value must be an allocatable array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);

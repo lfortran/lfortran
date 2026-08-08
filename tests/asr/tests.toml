@@ -23,3 +23,10 @@ expect = "verify"
 diagnostic = "asr.verify.type.real_kind_supported"
 message = "Real kind 1 is not supported"
 anchor = "Real"
+
+[[test]]
+filename = "verify/assignment_value_type_mismatch.asr"
+expect = "verify"
+diagnostic = "asr.verify.assignment.value_type_matches_target"
+message = "Assignment value type i32 does not match target type i16"
+anchor = "IntegerConstant"
