@@ -109,6 +109,10 @@ public:
     Result<std::string> get_c3(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager,
         int64_t default_lower_bound);
+    // GPU kernel source for the backend selected by --gpu, with no host-side
+    // kernel-registration shim, so that external toolchains can consume it.
+    Result<std::string> get_gpu_kernel_source(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager);
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::unique_ptr<MLIRModule>> get_mlir(

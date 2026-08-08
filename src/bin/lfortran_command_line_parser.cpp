@@ -307,6 +307,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asm", opts.show_asm, "Show assembly for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-wat", opts.show_wat, "Show WAT (WebAssembly Text Format) and exit")->group(group_output_debugging_options);
         app.add_flag("--show-julia", opts.show_julia, "Show Julia translation source for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--show-gpu-kernel-source", opts.show_gpu_kernel_source, "Show the GPU kernel source for the backend selected by --gpu and exit")->group(group_output_debugging_options);
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);

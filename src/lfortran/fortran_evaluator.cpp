@@ -5,6 +5,8 @@
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/asr_to_julia.h>
+#include <libasr/codegen/asr_to_cuda.h>
+#include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
@@ -583,6 +585,30 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
+}
+
+Result<std::string> FortranEvaluator::get_gpu_kernel_source(
+        ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics,
+        LCompilers::PassManager& pass_manager)
+{
+    // The kernels only exist once gpu_offload has run, so the passes have to
+    // be applied before either backend is asked for source.
+    Allocator al(64*1024*1024);
+    compiler_options.po.always_run = false;
+    compiler_options.po.run_fun = "f";
+    if (!pass_manager.has_user_defined_passes()) {
+        pass_manager.use_default_passes();
+    }
+    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    if (compiler_options.gpu_backend == "cuda") {
+        return asr_to_cuda(al, asr, diagnostics, compiler_options, false);
+    } else if (compiler_options.gpu_backend == "metal") {
+        return asr_to_metal(al, asr, diagnostics, compiler_options);
+    }
+    diagnostics.add(diag::Diagnostic(
+        "no GPU backend selected, pass --gpu=cuda or --gpu=metal",
+        diag::Level::Error, diag::Stage::CodeGen));
+    return Error();
 }
 
 Result<std::string> FortranEvaluator::get_julia(const std::string &code,
