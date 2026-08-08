@@ -163,6 +163,12 @@ the compiler build type. This prevents a compile regression from being hidden
 by making the initial verifier reject previously valid ASR and identifies a
 pass that corrupts previously valid ASR as a post-initial compiler failure.
 
+The reusable APIs in `src/lfortran/pipeline.h` own Fortran-or-ASR loading and
+the phase-aware ASR-to-default-passes-to-LLVM-to-object path. The CLI and
+direct-ASR tools therefore share the same implementation. Fuzz campaigns still
+invoke the CLI in isolated subprocesses so assertions and signals cannot stop
+the controller.
+
 ## Deterministic mutation fuzzing
 
 `tests/asr/fuzz.py` dynamically prints the verified pre-pass ASR produced from
