@@ -3157,6 +3157,12 @@ int main(int argc, char *argv[])
     try {
         return main_app(argc, argv);
     } catch(const LCompilers::LCompilersException &e) {
+        if (e.error_code() ==
+                LFORTRAN_ASR_PASS_VERIFY_FAILED) {
+            std::cerr << "ASR_FUZZ_FAILURE phase=pass "
+                << e.msg() << std::endl;
+            return 3;
+        }
         std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
         std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
         get_local_addresses(d);

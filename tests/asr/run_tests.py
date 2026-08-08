@@ -77,6 +77,7 @@ def check_compile(lfortran, fixture, timeout):
             str(fixture),
             "--no-error-banner",
             "--no-color",
+            "--verify-all-passes",
             "-c",
             "-o",
             str(object_output),
@@ -97,6 +98,7 @@ def check_compile(lfortran, fixture, timeout):
             str(fixture),
             "--no-error-banner",
             "--no-color",
+            "--verify-all-passes",
             "-o",
             str(output),
         ], timeout)

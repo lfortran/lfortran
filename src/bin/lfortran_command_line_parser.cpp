@@ -323,6 +323,8 @@ namespace LCompilers::CommandLineInterface {
         // Pass and transformation-related flags
         app.add_option("--pass", opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
         app.add_option("--skip-pass", opts.skip_pass, "Skip an ASR pass in default pipeline")->group(group_pass_transformation_options);
+        app.add_flag("--verify-all-passes", compiler_options.po.verify_all_passes,
+            "Verify ASR after every pass")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);

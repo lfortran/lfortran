@@ -43,6 +43,7 @@ struct PassOptions {
     bool dump_all_passes = false; // For developer debugging
     bool dump_fortran = false; // For developer debugging
     bool pass_cumulative = false; // Apply passes cumulatively
+    bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
     bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;

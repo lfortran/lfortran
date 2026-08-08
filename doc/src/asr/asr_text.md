@@ -158,5 +158,7 @@ expected outcomes:
 
 The registered runner first calls `--verify-asr`. It only invokes the normal
 LLVM and linker pipeline for fixtures whose expected initial result is
-successful verification. This prevents a compile regression from being hidden
-by making the initial verifier reject previously valid ASR.
+successful verification, with `--verify-all-passes` enabled independently of
+the compiler build type. This prevents a compile regression from being hidden
+by making the initial verifier reject previously valid ASR and identifies a
+pass that corrupts previously valid ASR as a post-initial compiler failure.
