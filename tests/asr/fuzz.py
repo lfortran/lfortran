@@ -12,6 +12,8 @@ import sys
 import tempfile
 
 import toml
+import edn
+import asr_generator
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,6 +63,11 @@ DECLARATION_BOOLEAN_FIELD = re.compile(
 PASS_FAILURE = re.compile(
     r"ASR_FUZZ_FAILURE phase=pass pass=([^\s]+)"
 )
+PASS_EVENT = re.compile(r"ASR Pass starts: '([^']+)'")
+VERIFY_CODE = re.compile(
+    r"ASR verify pass error \[([^\]]+)\]"
+)
+TEXT_ONLY_FORMS = {"ASRText", "SymbolTable", "SymbolRef"}
 
 
 def sha256(text):
@@ -171,6 +178,34 @@ def apply_mutation(text, mutation):
     return text[:mutation.start] + mutation.new + text[mutation.end:]
 
 
+def asr_features(text):
+    root = edn.parse(text)
+    constructors = set()
+    enums = set()
+
+    def visit(node):
+        field_key_indexes = set()
+        if node.kind == "list" and node.children:
+            head = node.children[0]
+            if head.kind == "atom" and not head.value.startswith(":"):
+                if head.value not in TEXT_ONLY_FORMS:
+                    constructors.add(head.value)
+            field_key_indexes = {
+                value_index - 1
+                for _, value_index in edn.named_fields(node)
+            }
+        for index, child in enumerate(node.children):
+            if index in field_key_indexes:
+                continue
+            if (child.kind == "atom" and
+                    child.value.startswith(":")):
+                enums.add(child.value[1:])
+            visit(child)
+
+    visit(root)
+    return constructors, enums
+
+
 def generate_initial_asr(lfortran, source, timeout):
     result = run([
         str(lfortran),
@@ -245,6 +280,7 @@ def run_oracle(lfortran, candidate, timeout):
             str(lfortran),
             str(fixture),
             "--verify-all-passes",
+            "--verbose",
             "--no-error-banner",
             "--no-color",
             "-c",
@@ -295,6 +331,34 @@ def serialize_command(result):
         "stderr": result.stderr,
         "timed_out": result.timed_out,
     }
+
+
+def update_coverage(
+        coverage, source_name, mutation_description, candidate, result):
+    constructors, enums = asr_features(candidate)
+    coverage["constructors"].update(constructors)
+    coverage["enums"].update(enums)
+    coverage["sources"].add(source_name)
+    coverage["mutations"].add(mutation_description)
+    coverage["outcomes"].add(result.outcome)
+    coverage["phases"].add(result.phase)
+    for command in result.commands:
+        coverage["passes"].update(PASS_EVENT.findall(command.stderr))
+        coverage["verifier_rules"].update(
+            VERIFY_CODE.findall(command.stderr))
+
+
+def write_coverage(path, coverage, cases):
+    path.mkdir(parents=True, exist_ok=True)
+    data = {"cases": cases}
+    data.update({
+        key: sorted(value)
+        for key, value in coverage.items()
+    })
+    (path / "coverage.json").write_text(
+        json.dumps(data, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def persist_failure(artifacts, case_index, candidate, metadata, result):
@@ -360,6 +424,11 @@ def main():
         choices=["valid", "invalid", "mixed"],
         default="mixed",
     )
+    parser.add_argument(
+        "--generator",
+        choices=["mutation", "schema-valid", "schema-invalid", "all"],
+        default="mutation",
+    )
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument(
         "--artifacts",
@@ -373,35 +442,77 @@ def main():
     if args.replay:
         return replay(lfortran, args.replay.resolve(), args.timeout)
 
-    sources = load_sources(args.manifest, args.source)
     seeds = []
-    for source in sources:
-        text = generate_initial_asr(lfortran, source, args.timeout)
-        mutations = discover_mutations(text)
-        eligible = [
-            mutation for mutation in mutations
-            if args.strategy == "mixed" or
-            mutation.lane == args.strategy
-        ]
-        if eligible:
-            seeds.append((source, text, eligible))
-    if not seeds:
+    if args.generator in {"mutation", "all"}:
+        sources = load_sources(args.manifest, args.source)
+        for source in sources:
+            text = generate_initial_asr(lfortran, source, args.timeout)
+            mutations = discover_mutations(text)
+            eligible = [
+                mutation for mutation in mutations
+                if args.strategy == "mixed" or
+                mutation.lane == args.strategy
+            ]
+            if eligible:
+                seeds.append((source, text, eligible))
+    if args.generator == "mutation" and not seeds:
         print("no mutable ASR seeds were generated", file=sys.stderr)
         return 2
 
     rng = random.Random(args.seed)
     counts = {"compile": 0, "verify": 0, "failure": 0}
+    coverage = {
+        "constructors": set(),
+        "enums": set(),
+        "verifier_rules": set(),
+        "passes": set(),
+        "phases": set(),
+        "mutations": set(),
+        "sources": set(),
+        "outcomes": set(),
+    }
     failures = []
     for case_index in range(args.cases):
-        source, initial, mutations = rng.choice(seeds)
-        mutation = rng.choice(mutations)
-        candidate = apply_mutation(initial, mutation)
+        available_modes = []
+        if seeds:
+            available_modes.append("mutation")
+        if args.generator in {"schema-valid", "all"}:
+            available_modes.append("schema-valid")
+        if args.generator in {"schema-invalid", "all"}:
+            available_modes.append("schema-invalid")
+        mode = rng.choice(available_modes)
+        if mode == "mutation":
+            source, initial, mutations = rng.choice(seeds)
+            mutation = rng.choice(mutations)
+            candidate = apply_mutation(initial, mutation)
+            source_name = source.name
+            mutation_description = mutation.description
+            mutation_summary = f"{mutation.old}->{mutation.new}"
+            case_metadata = {
+                "source": str(source),
+                "source_sha256": hashlib.sha256(
+                    source.read_bytes()).hexdigest(),
+                "initial_asr_sha256": sha256(initial),
+                "mutation": dataclasses.asdict(mutation),
+            }
+        else:
+            generator_seed = rng.getrandbits(64)
+            candidate, mutation_description = asr_generator.generate(
+                mode, generator_seed)
+            source_name = mode
+            mutation_summary = f"generator_seed={generator_seed}"
+            case_metadata = {
+                "generator": mode,
+                "generator_seed": generator_seed,
+            }
         result = run_oracle(lfortran, candidate, args.timeout)
         counts[result.outcome] += 1
+        update_coverage(
+            coverage, source_name, mutation_description, candidate, result)
         print(
-            f"case={case_index} source={source.name} "
-            f"mutation={mutation.description!r} "
-            f"{mutation.old}->{mutation.new} "
+            f"case={case_index} source={source_name} "
+            f"mutation={mutation_description!r} "
+            f"{mutation_summary} "
             f"outcome={result.outcome} phase={result.phase}"
         )
         if not result.accepted:
@@ -409,12 +520,8 @@ def main():
                 "format_version": 1,
                 "random_seed": args.seed,
                 "case_index": case_index,
-                "source": str(source),
-                "source_sha256": hashlib.sha256(
-                    source.read_bytes()).hexdigest(),
-                "initial_asr_sha256": sha256(initial),
-                "mutation": dataclasses.asdict(mutation),
             }
+            metadata.update(case_metadata)
             artifact = persist_failure(
                 args.artifacts, case_index, candidate, metadata, result)
             failures.append(artifact)
@@ -423,6 +530,14 @@ def main():
         f"summary compile={counts['compile']} verify={counts['verify']} "
         f"failure={counts['failure']}"
     )
+    print(
+        f"coverage constructors={len(coverage['constructors'])} "
+        f"enums={len(coverage['enums'])} "
+        f"verifier_rules={len(coverage['verifier_rules'])} "
+        f"passes={len(coverage['passes'])} "
+        f"phases={len(coverage['phases'])}"
+    )
+    write_coverage(args.artifacts, coverage, args.cases)
     if failures:
         print("unexpected failures:", file=sys.stderr)
         for failure in failures:

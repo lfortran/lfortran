@@ -21,6 +21,15 @@ on:
           - mixed
           - valid
           - invalid
+      generator:
+        description: Input generator
+        default: all
+        type: choice
+        options:
+          - all
+          - mutation
+          - schema-valid
+          - schema-invalid
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -63,6 +72,7 @@ jobs:
           ASR_FUZZ_CASES: ${{ inputs.cases || '1000' }}
           ASR_FUZZ_SEED: ${{ inputs.seed || github.run_number }}
           ASR_FUZZ_STRATEGY: ${{ inputs.strategy || 'mixed' }}
+          ASR_FUZZ_GENERATOR: ${{ inputs.generator || 'all' }}
           ASR_FUZZ_TIMEOUT: "60"
           ASR_FUZZ_ARTIFACTS: asr-fuzz-artifacts
           ASAN_OPTIONS: detect_leaks=0:halt_on_error=1:abort_on_error=1

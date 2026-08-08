@@ -108,8 +108,19 @@ if (WITH_LLVM)
             --source ${CMAKE_SOURCE_DIR}/integration_tests/assign_to1.f90
             --seed 1
             --cases 4
+            --generator mutation
             --strategy valid
-            --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
+            --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
+    )
+    add_test(
+        NAME test_asr_schema_generator_smoke
+        COMMAND ${LFORTRAN_TEST_PYTHON}
+            ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+            --lfortran $<TARGET_FILE:lfortran>
+            --seed 2
+            --cases 4
+            --generator schema-valid
+            --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
     )
     add_test(
         NAME test_asr_reducer_unit

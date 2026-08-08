@@ -168,12 +168,16 @@ pass that corrupts previously valid ASR as a post-initial compiler failure.
 `tests/asr/fuzz.py` dynamically prints the verified pre-pass ASR produced from
 registered integration-test seeds, applies one field-aware mutation, and runs
 the two-outcome oracle in isolated compiler subprocesses.
+It also has deterministic schema-generated modes that construct small
+verifier-valid integer programs or intentionally invalid ASR directly, without
+using the Fortran frontend.
 
 ```console
 python tests/asr/fuzz.py \
   --lfortran src/bin/lfortran \
   --seed 1234 \
-  --cases 1000
+  --cases 1000 \
+  --generator all
 ```
 
 Each case first runs initial verification. A verifier rejection is accepted;
@@ -183,6 +187,9 @@ verification failures, LLVM failures, object failures, and link failures are
 persisted under `asr-fuzz-artifacts/` as the exact ASR input plus JSON metadata.
 The metadata records the source integration test, random seed, case index,
 mutation, input hashes, failing phase, commands, and output.
+Each campaign also writes `coverage.json` containing the ASR constructors,
+enum values, verifier rules, passes, mutation classes, seed sources, outcomes,
+and failure phases observed during the run.
 
 Persisted failures can be replayed without regenerating or mutating the seed:
 
