@@ -162,3 +162,32 @@ successful verification, with `--verify-all-passes` enabled independently of
 the compiler build type. This prevents a compile regression from being hidden
 by making the initial verifier reject previously valid ASR and identifies a
 pass that corrupts previously valid ASR as a post-initial compiler failure.
+
+## Deterministic mutation fuzzing
+
+`tests/asr/fuzz.py` dynamically prints the verified pre-pass ASR produced from
+registered integration-test seeds, applies one field-aware mutation, and runs
+the two-outcome oracle in isolated compiler subprocesses.
+
+```console
+python tests/asr/fuzz.py \
+  --lfortran src/bin/lfortran \
+  --seed 1234 \
+  --cases 1000
+```
+
+Each case first runs initial verification. A verifier rejection is accepted;
+verifier-valid ASR must then emit both an object and an executable with
+post-pass verification enabled. Timeouts, signals, parser failures, pass
+verification failures, LLVM failures, object failures, and link failures are
+persisted under `asr-fuzz-artifacts/` as the exact ASR input plus JSON metadata.
+The metadata records the source integration test, random seed, case index,
+mutation, input hashes, failing phase, commands, and output.
+
+Persisted failures can be replayed without regenerating or mutating the seed:
+
+```console
+python tests/asr/fuzz.py \
+  --lfortran src/bin/lfortran \
+  --replay asr-fuzz-artifacts/failure-000000-....json
+```

@@ -100,6 +100,17 @@ if (WITH_LLVM)
             --lfortran $<TARGET_FILE:lfortran>
             --manifest ${CMAKE_SOURCE_DIR}/tests/asr/tests.toml
     )
+    add_test(
+        NAME test_asr_fuzzer_smoke
+        COMMAND ${LFORTRAN_TEST_PYTHON}
+            ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+            --lfortran $<TARGET_FILE:lfortran>
+            --source ${CMAKE_SOURCE_DIR}/integration_tests/assign_to1.f90
+            --seed 1
+            --cases 4
+            --strategy valid
+            --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
+    )
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
