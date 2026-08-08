@@ -22,7 +22,7 @@ It prints every non-location field using the exact field names in
 ```clojure
 #asr/v1
 (Var
-  :v #asr/sym [:st1 "x"]
+  :v (SymbolRef 1 "x")
 )
 ```
 
@@ -34,7 +34,7 @@ lfortran input.f90 --show-asr --clojure --no-member-names
 
 ```clojure
 #asr/v1
-(Var #asr/sym [:st1 "x"])
+(Var (SymbolRef 1 "x"))
 ```
 
 `--no-indent` emits either form on one line. Canonical ASR text never contains
@@ -79,10 +79,15 @@ ASR text uses:
 All non-location fields are explicit in canonical named output, including
 absent optional fields, empty sequences, and false logical values.
 
-ASR-specific values use namespaced tagged elements:
+`SymbolRef` is a reserved text-format form that identifies a symbol by its
+document-local symbol table ID and exact symbol-table key:
 
-- `#asr/sym [:st0 "name"]` identifies a symbol by textual symbol table and
-  exact name;
+```clojure
+(SymbolRef 1 "x")
+```
+
+Other ASR-specific values use namespaced tagged elements:
+
 - `#asr/bytes "..."` stores an exact raw constant payload;
 - `#asr/float64 "..."` and `#asr/real128 "..."` preserve values that cannot
   round-trip through an EDN decimal;
@@ -96,8 +101,8 @@ as the dereference reader macro.
 
 ASR contains a graph rather than a pure tree. Symbol tables own symbol
 definitions, while expressions, types, and other symbols refer back to those
-definitions. Canonical text assigns deterministic IDs such as `:st0` to owning
-symbol tables before printing any references.
+definitions. Canonical text assigns deterministic integer IDs such as `0` and
+`1` to owning symbol tables before printing any references.
 
 The decoder first creates all symbol tables and typed symbol shells, then fills
 definitions and resolves references. This permits forward references and

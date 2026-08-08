@@ -290,18 +290,17 @@ public:
     }
 
     void write_symbol_table_ref(const SymbolTable &symtab) {
-        output += ":st";
         output += std::to_string(symbol_table_id(symtab));
     }
 
     void write_symbol_ref(const ASR::symbol_t &symbol) {
-        output += "#asr/sym [:st";
+        output += "(SymbolRef ";
         output += std::to_string(
             symbol_table_id(*ASRUtils::symbol_parent_symtab(&symbol)));
         output.push_back(' ');
         std::string name = ASRUtils::symbol_name(&symbol);
         write_escaped_string(name.data(), name.size());
-        output.push_back(']');
+        output.push_back(')');
     }
 };
 
@@ -345,18 +344,19 @@ public:
 private:
     Allocator &al;
     diag::Diagnostics &diagnostics;
-    std::map<std::string, SymbolTable *> symbol_tables;
-    std::map<std::string, const TextValue *> symbol_table_forms;
-    std::set<std::string> decoded_symbol_tables;
+    std::map<int64_t, SymbolTable *> symbol_tables;
+    std::map<int64_t, const TextValue *> symbol_table_forms;
+    std::set<int64_t> decoded_symbol_tables;
     bool failed = false;
 
-    bool decode_symbol_table_id(const TextValue &value, std::string &id) {
-        if (value.kind != ASRText::ValueKind::Keyword ||
-                value.text.empty()) {
-            schema_error(value, "expected a symbol table ID keyword");
+    bool decode_symbol_table_id(const TextValue &value, int64_t &id) {
+        if (value.kind != ASRText::ValueKind::Integer ||
+                value.int_value < 0) {
+            schema_error(value,
+                "expected a nonnegative integer symbol table ID");
             return false;
         }
-        id = value.text;
+        id = value.int_value;
         return true;
     }
 
@@ -403,13 +403,13 @@ private:
                         {"id", "symbols"}, fields)) {
                     return false;
                 }
-                std::string id;
+                int64_t id;
                 if (!decode_symbol_table_id(*fields[0], id)) {
                     return false;
                 }
                 if (symbol_tables.find(id) != symbol_tables.end()) {
                     schema_error(*fields[0],
-                        "duplicate symbol table ID :" + id);
+                        "duplicate symbol table ID " + std::to_string(id));
                     return false;
                 }
                 symbol_tables[id] = al.make_new<SymbolTable>(nullptr);
@@ -735,13 +735,14 @@ public:
 
     bool decode_symbol_table_ref(const TextValue &value,
             SymbolTable *&result) {
-        std::string id;
+        int64_t id;
         if (!decode_symbol_table_id(value, id)) {
             return false;
         }
         auto found = symbol_tables.find(id);
         if (found == symbol_tables.end()) {
-            schema_error(value, "unknown symbol table ID :" + id);
+            schema_error(value, "unknown symbol table ID " +
+                std::to_string(id));
             return false;
         }
         result = found->second;
@@ -750,21 +751,16 @@ public:
 
     bool decode_symbol_ref(const TextValue &value,
             ASR::symbol_t *&result) {
-        if (value.kind != ASRText::ValueKind::Tagged ||
-                value.tag != "asr/sym" ||
-                value.tagged_value == nullptr ||
-                value.tagged_value->kind != ASRText::ValueKind::Vector ||
-                value.tagged_value->elements.size() != 2) {
-            schema_error(value,
-                "expected #asr/sym [:symbol-table \"name\"]");
+        std::vector<const TextValue *> fields;
+        if (!decode_form(value, "SymbolRef",
+                {"symtab", "name"}, fields)) {
             return false;
         }
         SymbolTable *symtab;
-        if (!decode_symbol_table_ref(
-                *value.tagged_value->elements[0], symtab)) {
+        if (!decode_symbol_table_ref(*fields[0], symtab)) {
             return false;
         }
-        const TextValue &name = *value.tagged_value->elements[1];
+        const TextValue &name = *fields[1];
         if (name.kind != ASRText::ValueKind::String) {
             schema_error(name, "symbol name must be a string");
             return false;
@@ -783,13 +779,14 @@ public:
         if (!decode_form(value, "SymbolTable", {"id", "symbols"}, fields)) {
             return false;
         }
-        std::string id;
+        int64_t id;
         if (!decode_symbol_table_id(*fields[0], id)) {
             return false;
         }
         auto found = symbol_tables.find(id);
         if (found == symbol_tables.end()) {
-            schema_error(*fields[0], "unknown symbol table ID :" + id);
+            schema_error(*fields[0], "unknown symbol table ID " +
+                std::to_string(id));
             return false;
         }
         result = found->second;
