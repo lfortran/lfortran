@@ -1631,47 +1631,43 @@ namespace LCompilers {
                         stride = builder->CreateMul(stride, shape_dim);
                     }
                     
-                    llvm::Value* val_alloca = llvm_utils->CreateAlloca(*builder, llvm_data_type, nullptr, "val_alloca");
-                    
-                    llvm::BasicBlock *pad_block = nullptr;
-                    llvm::BasicBlock *src_block = llvm::BasicBlock::Create(context, "order_src");
-                    llvm::BasicBlock *end_block = llvm::BasicBlock::Create(context, "order_end");
-                    
                     if (pad != nullptr) {
-                        pad_block = llvm::BasicBlock::Create(context, "order_pad");
+                        llvm::Value* val_alloca = llvm_utils->CreateAlloca(*builder, llvm_data_type, nullptr, "val_alloca");
                         llvm::Value* is_pad = builder->CreateICmpSGE(source_index, source_size);
-                        builder->CreateCondBr(is_pad, pad_block, src_block);
-                        
-                        llvm_utils->start_new_block(pad_block);
-                        llvm::Value* pad_idx = builder->CreateSRem(
-                            builder->CreateSub(source_index, source_size), pad_size);
-                        llvm::Value* pad_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, pad_base, pad_idx);
+
+                        llvm_utils->create_if_else(is_pad, [&]() {
+                            llvm::Value* pad_idx = builder->CreateSRem(
+                                builder->CreateSub(source_index, source_size), pad_size);
+                            llvm::Value* pad_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, pad_base, pad_idx);
+                            if (is_struct_type) {
+                                ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
+                                llvm_utils->deepcopy(array_expr, pad_ptr, val_alloca, elem_type, elem_type, module);
+                            } else {
+                                builder->CreateStore(llvm_utils->CreateLoad2(llvm_data_type, pad_ptr), val_alloca);
+                            }
+                        }, [&]() {
+                            llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
+                            if (is_struct_type) {
+                                ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
+                                llvm_utils->deepcopy(array_expr, src_ptr, val_alloca, elem_type, elem_type, module);
+                            } else {
+                                builder->CreateStore(llvm_utils->CreateLoad2(llvm_data_type, src_ptr), val_alloca);
+                            }
+                        }, "order_pad");
+
+                        llvm::Value* final_val = llvm_utils->CreateLoad2(llvm_data_type, val_alloca);
+                        llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
+                        builder->CreateStore(final_val, dst_ptr);
+                    } else {
+                        llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
+                        llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
                         if (is_struct_type) {
                             ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
-                            llvm_utils->deepcopy(array_expr, pad_ptr, val_alloca, elem_type, elem_type, module);
+                            llvm_utils->deepcopy(array_expr, src_ptr, dst_ptr, elem_type, elem_type, module);
                         } else {
-                            builder->CreateStore(llvm_utils->CreateLoad2(llvm_data_type, pad_ptr), val_alloca);
+                            builder->CreateStore(llvm_utils->CreateLoad2(llvm_data_type, src_ptr), dst_ptr);
                         }
-                        builder->CreateBr(end_block);
-                    } else {
-                        builder->CreateBr(src_block);
                     }
-                    
-                    llvm_utils->start_new_block(src_block);
-                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
-                    if (is_struct_type) {
-                        ASR::ttype_t* elem_type = ASRUtils::extract_type(asr_data_type);
-                        llvm_utils->deepcopy(array_expr, src_ptr, val_alloca, elem_type, elem_type, module);
-                    } else {
-                        builder->CreateStore(llvm_utils->CreateLoad2(llvm_data_type, src_ptr), val_alloca);
-                    }
-                    builder->CreateBr(end_block);
-                    
-                    llvm_utils->start_new_block(end_block);
-                    
-                    llvm::Value* final_val = llvm_utils->CreateLoad2(llvm_data_type, val_alloca);
-                    llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
-                    builder->CreateStore(final_val, dst_ptr);
 
                     llvm::Value* idx_next = builder->CreateAdd(idx_val,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
