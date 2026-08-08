@@ -3994,6 +3994,66 @@ public:
         return nullptr;
     }
 
+    // #12311: a type-bound procedure that overrides (or implements a deferred)
+    // binding from a parent type must have a compatible interface: same
+    // number of explicit (non passed-object) dummy arguments, with matching
+    // types. Mirrors flang's "must have compatible interfaces" check.
+    void check_override_interface_compatible(ASR::Struct_t *clss,
+            const std::string &pname, ASR::Function_t *child_func,
+            bool child_is_nopass, const Location &child_loc) {
+        if (clss->m_parent == nullptr) {
+            return;
+        }
+        ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(clss->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent_sym)) {
+            return;
+        }
+        ASR::Struct_t *parent_clss = ASR::down_cast<ASR::Struct_t>(parent_sym);
+        ASR::symbol_t *base_decl_sym = resolve_type_bound_proc_in_parent_chain(parent_clss, pname);
+        if (base_decl_sym == nullptr) {
+            return;
+        }
+        ASR::symbol_t *base_decl_past_ext = ASRUtils::symbol_get_past_external(base_decl_sym);
+        if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*base_decl_past_ext)) {
+            return;
+        }
+        ASR::StructMethodDeclaration_t *base_decl
+            = ASR::down_cast<ASR::StructMethodDeclaration_t>(base_decl_past_ext);
+        ASR::symbol_t *base_proc_sym = ASRUtils::symbol_get_past_external(base_decl->m_proc);
+        if (!ASR::is_a<ASR::Function_t>(*base_proc_sym)) {
+            return;
+        }
+        ASR::Function_t *base_func = ASR::down_cast<ASR::Function_t>(base_proc_sym);
+
+        size_t base_skip = (!base_decl->m_is_nopass && base_func->n_args > 0) ? 1 : 0;
+        size_t child_skip = (!child_is_nopass && child_func->n_args > 0) ? 1 : 0;
+        size_t base_n = base_func->n_args - base_skip;
+        size_t child_n = child_func->n_args - child_skip;
+
+        bool compatible = (base_n == child_n);
+        if (compatible) {
+            for (size_t i = 0; i < base_n; i++) {
+                ASR::expr_t *base_arg = base_func->m_args[i + base_skip];
+                ASR::expr_t *child_arg = child_func->m_args[i + child_skip];
+                ASR::ttype_t *base_type = ASRUtils::expr_type(base_arg);
+                ASR::ttype_t *child_type = ASRUtils::expr_type(child_arg);
+                if (!ASRUtils::types_equal(base_type, child_type, base_arg, child_arg)) {
+                    compatible = false;
+                    break;
+                }
+            }
+        }
+        if (!compatible) {
+            diag.add(diag::Diagnostic(
+                "A type-bound procedure and its override must have compatible interfaces",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {child_loc}),
+                    diag::Label("Declaration of '" + pname + "'", {base_func->base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
     void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
         SymbolTable* enclosing_scope) {
         if (template_struct->n_kind_params == 0) {
@@ -4382,6 +4442,9 @@ public:
                 }
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
+                }
+                if (!is_deferred) {
+                    check_override_interface_compatible(clss, pname.first, func, is_nopass, loc);
                 }
                 ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,

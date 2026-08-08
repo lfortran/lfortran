@@ -5064,6 +5064,10 @@ filename = "errors/interface_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/interface_override_incompatible_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/intrinsics_334.f90"
 asr = true
 

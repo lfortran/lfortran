@@ -1,0 +1,12 @@
+semantic error: A type-bound procedure and its override must have compatible interfaces
+  --> tests/errors/interface_override_incompatible_01.f90:24:7
+   |
+24 |       procedure :: method
+   |       ^^^^^^^^^^^^^^^^^^^^ 
+   |
+ 9 |          subroutine method(self,a)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |          end subroutine method
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ Declaration of 'method'
