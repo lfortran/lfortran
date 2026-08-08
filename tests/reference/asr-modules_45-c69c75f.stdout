@@ -245,6 +245,7 @@
                     [(Allocate
                         [((Var 7 profile_name)
                         []
+                        []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
                         (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -254,6 +255,7 @@
                     )
                     (Allocate
                         [((Var 7 compiler_name)
+                        []
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
                         ()
@@ -266,6 +268,7 @@
                         [((Var 7 profiles)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]

@@ -893,6 +893,8 @@ public:
                     alloc_arg.m_len_expr = len_expr;
                     alloc_arg.m_type = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_codims = nullptr;
+                    alloc_arg.n_codims = 0;
                     alloc_args.push_back(al, alloc_arg);
                 
                     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);

@@ -585,17 +585,26 @@ class PRIFInterface {
 
         ASR::expr_t* get_dynamic_total_size_in_bytes_expr(const Location &loc,
                                             ASR::Variable_t *var,
-                                            ASR::dimension_t *dims, size_t n_dims) {
+                                            ASR::dimension_t *dims, size_t n_dims,
+                                            ASR::expr_t *source = nullptr) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::expr_t *elem_size = get_size_in_bytes_expr(loc, var->m_type);
             ASR::expr_t *total = elem_size;
-            for (size_t i = 0; i < n_dims; i++) {
-                if (!dims[i].m_length) {
-                    LCOMPILERS_ASSERT_MSG(false, "Deferred dimensions are not supported yet");
+            if (n_dims > 0 && dims) {
+                for (size_t i = 0; i < n_dims; i++) {
+                    if (!dims[i].m_length) {
+                        LCOMPILERS_ASSERT_MSG(false, "Deferred dimensions are not supported yet");
+                    }
+                    ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
+                    total = b.Mul(total, len);
                 }
-                ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
-                total = b.Mul(total, len);
+            } else if (source && n_dims > 0) {
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::expr_t *dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    ASR::expr_t *len_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, source, dim_idx, int64_type, nullptr));
+                    total = b.Mul(total, len_expr);
+                }
             }
             return total;
         }
@@ -631,7 +640,7 @@ class PRIFInterface {
             return type;
         }
 
-        ASR::expr_t* create_shape_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims) {
+        ASR::expr_t* create_shape_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims, ASR::expr_t *source = nullptr) {
             std::vector<ASR::expr_t*> shape_vec;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
@@ -643,6 +652,10 @@ class PRIFInterface {
                     throw LCompilersException("Array dimension length must be an integer");
                 } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
                     len_expr = b.i2i_t(len_expr, int32_type);
+                }
+                else if (source) {
+                    ASR::expr_t *dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int32_type));
+                    len_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, source, dim_idx, int32_type, nullptr));
                 }
                 shape_vec.push_back(len_expr);
             }
@@ -1740,7 +1753,9 @@ class PRIFInterface {
             }
         }
 
-        void emit_allocate_call(ASR::Variable_t *var, ASR::expr_t *hexpr, ASR::expr_t *dexpr,
+        void emit_allocate_call(ASR::Variable_t *var,
+                                ASR::codimension_t *codims, size_t n_codims,
+                                ASR::expr_t *hexpr, ASR::expr_t *dexpr,
                                 ASR::symbol_t *alloc_sub, ASR::symbol_t *handle_struct,
                                 ASR::ttype_t *i64, const Location &loc,
                                 Vec<ASR::stmt_t*> &new_body,
@@ -1755,19 +1770,28 @@ class PRIFInterface {
             Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
             Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
             for (int64_t ci = 0; ci < corank; ci++) {
-                int64_t lb = 1;
-                if (ci < (int64_t)var->n_codims && var->m_codims[ci].m_start) {
-                    ASRUtils::extract_value(var->m_codims[ci].m_start, lb);
+                ASR::expr_t *lb_expr = nullptr;
+                ASR::expr_t *ub_expr = nullptr;
+
+                if (n_codims > 0 && codims && ci < (int64_t)n_codims) {
+                    lb_expr = codims[ci].m_start;
+                    ub_expr = codims[ci].m_end;
+                } else if (ci < (int64_t)var->n_codims) {
+                    lb_expr = var->m_codims[ci].m_start;
+                    ub_expr = var->m_codims[ci].m_end;
                 }
-                lco_elems.push_back(al, b.i64(lb));
+
+                if (lb_expr) {
+                    lco_elems.push_back(al, b.i2i_t(lb_expr, i64));
+                } else {
+                    lco_elems.push_back(al, b.i64(1));
+                }
+
                 if (ci == corank - 1) {
-                    LCOMPILERS_ASSERT(var->m_codims[ci].m_end == nullptr);
-                }
-                if (ci < corank - 1 && ci < (int64_t)var->n_codims
-                    && var->m_codims[ci].m_end) {
-                    int64_t ub = 0;
-                    ASRUtils::extract_value(var->m_codims[ci].m_end, ub);
-                    uco_elems.push_back(al, b.i64(ub));
+                    LCOMPILERS_ASSERT(ub_expr == nullptr);
+                } else {
+                    LCOMPILERS_ASSERT(ub_expr);
+                    uco_elems.push_back(al, b.i2i_t(ub_expr, i64));
                 }
             }
             
@@ -1835,8 +1859,10 @@ class PRIFInterface {
 
         void make_allocate_coarray_stmts(const Location &loc, ASR::expr_t *expr,
                                          ASR::dimension_t *dims, size_t n_dims,
+                                         ASR::codimension_t *codims, size_t n_codims,
                                          ASR::expr_t *stat, ASR::expr_t *errmsg,
-                                         Vec<ASR::stmt_t*> &new_body) {
+                                         Vec<ASR::stmt_t*> &new_body,
+                                         ASR::expr_t *source = nullptr) {
             ASR::symbol_t *sym = nullptr;
             if (expr->type == ASR::exprType::Var) {
                 sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
@@ -1844,6 +1870,9 @@ class PRIFInterface {
             LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Variable_t>(*sym));
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
             LCOMPILERS_ASSERT(var->n_codims > 0 && ASRUtils::is_allocatable(original_types[sym]));
+
+            ASR::dimension_t *var_dims = nullptr;
+            size_t n_array_dims = ASRUtils::extract_dimensions_from_ttype(var->m_type, var_dims);
 
             ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
@@ -1856,19 +1885,20 @@ class PRIFInterface {
             ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_orig));
             ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_orig));
 
-            ASR::expr_t *sz = get_dynamic_total_size_in_bytes_expr(loc, var, dims, n_dims);
+            ASR::expr_t *sz = get_dynamic_total_size_in_bytes_expr(loc, var, dims, n_dims, source);
             
-            emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
+            emit_allocate_call(var, codims, n_codims, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
             
-            size_t n_array_dims = n_dims;
+
             ASR::expr_t *shape_expr = nullptr;
             ASR::expr_t *lbound_expr = nullptr;
             if (n_array_dims > 0) {
-                shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims);
+                shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims, source);
                 lbound_expr = create_lbound_expr_from_dims(loc, dims, n_array_dims);
             }
+            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                ASR::make_CPtrToPointer_t(al, loc, dexpr, expr, shape_expr, lbound_expr));
+                ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
             new_body.push_back(al, cfp_stmt);
         }
 
@@ -1961,7 +1991,7 @@ class PRIFInterface {
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
 
-                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
+                emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
 
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                 ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
@@ -2065,7 +2095,7 @@ class PRIFInterface {
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
 
-                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
+                emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
 
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
@@ -2872,8 +2902,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                             if (is_co) {
                                 ASR::dimension_t *dims = x->m_args[j].m_dims;
                                 size_t n_dims = x->m_args[j].n_dims;
+                                ASR::codimension_t *codims = x->m_args[j].m_codims;
+                                size_t n_codims = x->m_args[j].n_codims;
                                 replacer.prif.make_allocate_coarray_stmts(
-                                    x->base.base.loc, a, dims, n_dims, x->m_stat, x->m_errmsg, body);
+                                    x->base.base.loc, a, dims, n_dims, codims, n_codims, x->m_stat, x->m_errmsg, body, x->m_source);
                             } else {
                                 non_coarray_args.push_back(replacer.al, x->m_args[j]);
                             }
