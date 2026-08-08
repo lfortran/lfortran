@@ -2396,6 +2396,9 @@ public:
         else if(intrinsic_func_name == "Rand") intrinsic_func_name = "rand";
         else if(intrinsic_func_name == "ThisImage") intrinsic_func_name = "this_image";
         else if(intrinsic_func_name == "NumImages") intrinsic_func_name = "num_images";
+        else if(intrinsic_func_name == "LCoBound") intrinsic_func_name = "lcobound";
+        else if(intrinsic_func_name == "UCoBound") intrinsic_func_name = "ucobound";
+        else if(intrinsic_func_name == "CoRank") intrinsic_func_name = "corank";
         else if(intrinsic_func_name == "ErfcScaled") intrinsic_func_name = "erfc_scaled";
         else if(intrinsic_func_name == "StringConcat") {{visit_expr(*x.m_args[0]);out+=src;} out+="//"; {visit_expr(*x.m_args[1]);out+=src;} src=std::move(out);return;}
         visit_IntrinsicElementalFunction_helper(out, intrinsic_func_name, x);

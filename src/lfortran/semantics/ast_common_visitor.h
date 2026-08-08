@@ -1914,6 +1914,7 @@ public:
         {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
         {"lcobound", IntrinsicSignature({"coarray", "dim", "kind"}, 1, 3)},
         {"ucobound", IntrinsicSignature({"coarray", "dim", "kind"}, 1, 3)},
+        {"corank", IntrinsicSignature({"coarray"}, 1, 1)},
         {"achar", IntrinsicSignature({"I", "kind"}, 1, 2)},
         {"iachar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"set_exponent", IntrinsicSignature({"X", "I"}, 2, 2)},
@@ -13473,7 +13474,7 @@ public:
                         );
                         temp = ASRUtils::EXPR(array_cast);
                     } else if (!(intrinsic_name == "len" || intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
-                        intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
+                        intrinsic_name == "rank" || intrinsic_name == "corank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of")) {
                         diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
@@ -15806,7 +15807,7 @@ public:
     void is_coarray_or_atomic(std::string intrinsic_name, const Location& loc){
         std::vector<std::string> coarray_intrinsics, atomic_intrinsics;
         coarray_intrinsics = {"co_reduce", "lcobound", "ucobound", "failed_images",
-            "image_status", "get_team", "image_index", "stopped_images", "team_number", "coshape", "corank",
+            "image_status", "get_team", "image_index", "stopped_images", "team_number", "coshape",
             "event_query"};
         atomic_intrinsics = {"atomic_add", "atomic_and", "atomic_cas", "atomic_define", "atomic_fetch_add", "atomic_fetch_and",
             "atomic_fetch_or", "atomic_fetch_xor", "atomic_or", "atomic_ref", "atomic_xor"};
@@ -16043,7 +16044,7 @@ public:
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
-                    std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
+                    std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "corank", "tiny", "huge", "bit_size", "new_line", "digits",
                         "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "loc"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&

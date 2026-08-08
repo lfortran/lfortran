@@ -2678,6 +2678,13 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
                 ASR::expr_t *call = prif.make_prif_ucobound_call(
                     x->base.base.loc, x->m_type, coarray, dim);
                 *current_expr = call;
+            } else if (intrinsic_name == "CoRank") {
+                if (x->m_value) {
+                    *current_expr = x->m_value;
+                } else {
+                    int64_t cr = ASRUtils::expr_corank(x->m_args[0]);
+                    *current_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x->base.base.loc, cr, x->m_type));
+                }
             } else {
                 ASR::BaseExprReplacer<CoarrayPrifReplacer>::replace_IntrinsicElementalFunction(x);
             }
