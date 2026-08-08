@@ -4605,6 +4605,11 @@ public:
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
                     result_desc_type, order, x.m_order, pad, x.m_pad);
+                if (!compiler_options.stack_arrays) {
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(result_desc_type, tmp);
+                    llvm::Value* raw_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                    heap_fixed_size_arrays.push_back(al, builder->CreateBitCast(raw_data, llvm_utils->i8_ptr));
+                }
                 // If the result type is PointerArray, extract the data pointer
                 // from the descriptor, since the assignment expects a raw pointer.
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
@@ -4652,6 +4657,11 @@ public:
                         shape_type, shape, asr_shape_type, module.get(),
                         const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
                         result_desc_type, order, x.m_order, pad, x.m_pad);
+                    if (!compiler_options.stack_arrays) {
+                        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(result_desc_type, tmp);
+                        llvm::Value* raw_data = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                        heap_fixed_size_arrays.push_back(al, builder->CreateBitCast(raw_data, llvm_utils->i8_ptr));
+                    }
                     // If the result type is PointerArray, extract the data pointer
                     // from the descriptor, since the assignment expects a raw pointer.
                     if (result_ptype != ASR::array_physical_typeType::DescriptorArray) {

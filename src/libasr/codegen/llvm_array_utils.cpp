@@ -1793,10 +1793,14 @@ namespace LCompilers {
             llvm::Type* llvm_data_type = llvm_utils->get_el_type(array_exp, ASRUtils::extract_type(asr_data_type), module);
             if(ASRUtils::is_character(*asr_data_type)){
                 llvm::Value* dest_str_desc_loaded = builder->CreateLoad(llvm_data_type->getPointerTo(), first_ptr);
+                llvm::Value* old_dest_data = llvm_utils->get_stringArray_data(asr_data_type, dest, true);
+                llvm_utils->lfortran_free(old_dest_data);
                 llvm::Value* src_str_desc = builder->CreateLoad(llvm_data_type,
                     builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr));
                 builder->CreateStore(src_str_desc, dest_str_desc_loaded);
             } else {
+                llvm::Value* old_dest_data = builder->CreateLoad(llvm_data_type->getPointerTo(), first_ptr);
+                llvm_utils->lfortran_free(old_dest_data);
                 builder->CreateStore(builder->CreateLoad(llvm_data_type->getPointerTo(), src_data_ptr), first_ptr);
             }
 
