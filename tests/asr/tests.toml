@@ -30,3 +30,10 @@ expect = "verify"
 diagnostic = "asr.verify.assignment.value_type_matches_target"
 message = "Assignment value type i32 does not match target type i16"
 anchor = "IntegerConstant"
+
+[[test]]
+filename = "verify/function_signature_argument_mismatch.asr"
+expect = "verify"
+diagnostic = "asr.verify.function.argument_type_matches_signature"
+message = "Function argument type r32 does not match signature type r64"
+anchor = "Var"
