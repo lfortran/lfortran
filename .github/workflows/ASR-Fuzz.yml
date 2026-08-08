@@ -63,7 +63,7 @@ jobs:
             -DWITH_LLVM=yes \
             -DWITH_LFORTRAN_ASSERT=yes \
             -DWITH_RUNTIME_STACKTRACE=yes
-          cmake --build build-asr-fuzz --target lfortran -j2
+          cmake --build build-asr-fuzz --target lfortran lfortran_runtime -j2
 
       - name: Run deterministic ASR campaign
         shell: bash -e -l {0}
