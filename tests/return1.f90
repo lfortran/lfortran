@@ -1,5 +1,5 @@
 subroutine example (s)
-    character s* 32
+    character s* "32"
     write (*,*) s
     return
 end
