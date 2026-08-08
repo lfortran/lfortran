@@ -8057,6 +8057,45 @@ public:
                 llvm_symtab[h] = local_copy;
             }
         }
+
+        // Third pass: handle explicit-length dummy strings (scalars).
+        // Create a local descriptor so `len(s)` evaluates to `n` instead of the caller's descriptor length.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* arg = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::is_array(arg->m_type)) continue;
+            if (ASRUtils::is_allocatable(arg->m_type) || ASRUtils::is_pointer(arg->m_type)) continue;
+            if (!ASRUtils::is_character(*arg->m_type)) continue;
+            
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(arg->m_type);
+            
+            if (str_type->m_len_kind == ASR::ExpressionLength && str_type->m_len != nullptr) {
+                uint32_t h = get_hash((ASR::asr_t*)arg);
+                llvm::Value* current_desc = llvm_symtab[h];
+                
+                uint64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(str_type->m_len));
+                this->visit_expr_wrapper(str_type->m_len, true);
+                llvm::Value* evaluated_len = tmp;
+                ptr_loads = ptr_loads_copy;
+                
+                evaluated_len = llvm_utils->convert_kind(evaluated_len, llvm::Type::getInt64Ty(context));
+                
+                llvm::Value* data_ptr = builder->CreateLoad(
+                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    llvm_utils->create_gep2(llvm_utils->string_descriptor, current_desc, 0));
+                
+                llvm::Value* local_desc = builder->CreateAlloca(
+                    llvm_utils->string_descriptor, nullptr, std::string(arg->m_name) + "_local_desc");
+                
+                builder->CreateStore(data_ptr, llvm_utils->create_gep2(llvm_utils->string_descriptor, local_desc, 0));
+                builder->CreateStore(evaluated_len, llvm_utils->create_gep2(llvm_utils->string_descriptor, local_desc, 1));
+                
+                llvm_symtab[h] = local_desc;
+            }
+        }
     }
 
     template <typename T>
