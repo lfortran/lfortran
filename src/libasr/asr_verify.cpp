@@ -1441,16 +1441,18 @@ public:
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
-                bool class_argument = actual_type != nullptr &&
-                    (ASRUtils::is_class_type(
-                        ASRUtils::type_get_past_array(actual_type)) ||
-                     ASRUtils::is_class_type(
-                        ASRUtils::type_get_past_array(formal_type)));
+                // Derived type arguments are skipped for the same reason
+                // as in the signature check above, and this also covers a
+                // polymorphic argument passed as a pointer or allocatable,
+                // whose type only looks like a plain struct once those
+                // wrappers are stripped.
+                bool struct_argument = is_struct_like_type(actual_type)
+                    || is_struct_like_type(formal_type);
                 bool procedure_argument = is_procedure_type(actual_type)
                     || is_procedure_type(formal_type);
                 if (actual_type && !diagnostics.has_error() &&
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
-                        !is_method && !class_argument &&
+                        !is_method && !struct_argument &&
                         !procedure_argument) {
                     require_with_loc_id(
                         ASRUtils::check_equal_type(

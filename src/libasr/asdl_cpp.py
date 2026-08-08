@@ -2636,7 +2636,7 @@ class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
             % (local, local), 2)
         self.emit("for (const TextValue *item : values_%s) {" % local, 2)
         if field.type in products:
-            self.emit("%s_t decoded;" % field.type, 3)
+            self.emit("%s_t decoded{};" % field.type, 3)
             self.emit("if (!deserialize_%s(*item, decoded)) return false;"
                 % field.type, 3)
         elif field.type == "identifier":

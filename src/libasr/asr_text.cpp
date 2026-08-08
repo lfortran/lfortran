@@ -267,7 +267,7 @@ public:
         if (value.m_type && ASR::is_a<ASR::String_t>(*value.m_type)) {
             ASR::String_t *string_type =
                 ASR::down_cast<ASR::String_t>(value.m_type);
-            int64_t length;
+            int64_t length = 0;
             if (string_type->m_len &&
                     ASRUtils::extract_value(string_type->m_len, length) &&
                     length >= 0) {

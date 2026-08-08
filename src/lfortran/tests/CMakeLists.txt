@@ -93,7 +93,10 @@ if (XEUS_LFORTRAN_WASM_BUILD)
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
-if (WITH_LLVM)
+# These tests drive the lfortran executable. This directory is configured
+# before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
+# condition under which src/bin creates the target instead.
+if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3 REQUIRED)
     # Producing an executable needs a working end-to-end link, which the
     # Windows CI job does not provide: it builds and unit tests the compiler
