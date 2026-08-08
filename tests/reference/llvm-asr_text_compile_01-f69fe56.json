@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-asr_text_compile_01-f69fe56",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/asr/compile/asr_text_compile_01.asr",
+    "infile_hash": "1fcecc27bb1c058c9341f84283cff85908078c052715cf1e73b52771",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-asr_text_compile_01-f69fe56.stdout",
+    "stdout_hash": "761ea8839ff92d863bae5c05a59cb2250daaa8ffacf3ac6bf2dc9106",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

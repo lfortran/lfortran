@@ -1,0 +1,20 @@
+(ASRText
+  :version 1
+  :value (TranslationUnit
+    :symtab (SymbolTable
+      :id 0
+      :symbols {
+        "asr_text_compile_01" (Program
+          :symtab (SymbolTable
+            :id 1
+            :symbols {}
+          )
+          :name "asr_text_compile_01"
+          :dependencies []
+          :body []
+        )
+      }
+    )
+    :items []
+  )
+)

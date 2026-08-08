@@ -1,0 +1,39 @@
+[[test]]
+filename = "compile/asr_text_compile_01.asr"
+expect = "compile"
+
+[[test]]
+filename = "verify/assignment_realloc_nonallocatable.asr"
+expect = "verify"
+diagnostic = "asr.verify.assignment.realloc_lhs_requires_allocatable"
+message = "Reallocation of non allocatable variable is not allowed"
+anchor = "Assignment"
+
+[[test]]
+filename = "verify/call_actual_type_mismatch.asr"
+expect = "verify"
+diagnostic = "asr.verify.call.actual_type_matches_formal"
+message = "Actual argument type i16 does not match formal argument type i32"
+anchor = "Var"
+anchor_occurrence = 2
+
+[[test]]
+filename = "verify/unsupported_real_kind.asr"
+expect = "verify"
+diagnostic = "asr.verify.type.real_kind_supported"
+message = "Real kind 1 is not supported"
+anchor = "Real"
+
+[[test]]
+filename = "verify/assignment_value_type_mismatch.asr"
+expect = "verify"
+diagnostic = "asr.verify.assignment.value_type_matches_target"
+message = "Assignment value type i32 does not match target type i16"
+anchor = "IntegerConstant"
+
+[[test]]
+filename = "verify/function_signature_argument_mismatch.asr"
+expect = "verify"
+diagnostic = "asr.verify.function.argument_type_matches_signature"
+message = "Function argument type r32 does not match signature type r64"
+anchor = "Var"
