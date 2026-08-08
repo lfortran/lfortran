@@ -1,11 +1,11 @@
 #asr/v1
 (TranslationUnit
   :symtab (SymbolTable
-    :id :st0
+    :id 0
     :symbols {
       "asr_text_compile_01" (Program
         :symtab (SymbolTable
-          :id :st1
+          :id 1
           :symbols {}
         )
         :name "asr_text_compile_01"
