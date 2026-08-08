@@ -107,6 +107,8 @@ struct CompilerOptions {
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";
+    // Toolchain driver used to compile and link GPU device code.
+    std::string device_compiler = "nvcc";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
