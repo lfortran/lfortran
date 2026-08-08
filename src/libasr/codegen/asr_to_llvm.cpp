@@ -8433,26 +8433,28 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)sym.second);
                     LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                     llvm::Value* str_desc = llvm_symtab[h];
-                    bool is_opt = (var->m_presence == ASR::presenceType::Optional);
-                    if (is_opt) {
-                        // Guard: only write length if the descriptor pointer is non-null
-                        // (i.e. the optional argument was actually provided).
-                        llvm::Value* is_null = builder->CreateICmpEQ(
-                            str_desc,
-                            llvm::ConstantPointerNull::get(
-                                llvm::cast<llvm::PointerType>(str_desc->getType())));
-                        llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                        llvm::BasicBlock* set_len_bb =
-                            llvm::BasicBlock::Create(context, "opt_str_set_len", fn);
-                        llvm::BasicBlock* skip_bb =
-                            llvm::BasicBlock::Create(context, "opt_str_skip_len", fn);
-                        builder->CreateCondBr(is_null, skip_bb, set_len_bb);
-                        builder->SetInsertPoint(set_len_bb);
-                        setup_string_length(str_desc, str_t, str_t->m_len);
-                        builder->CreateBr(skip_bb);
-                        builder->SetInsertPoint(skip_bb);
-                    } else {
-                        setup_string_length(str_desc, str_t, str_t->m_len);
+                    if (str_desc->getType()->isPointerTy()) {
+                        bool is_opt = (var->m_presence == ASR::presenceType::Optional);
+                        if (is_opt) {
+                            // Guard: only write length if the descriptor pointer is non-null
+                            // (i.e. the optional argument was actually provided).
+                            llvm::Value* is_null = builder->CreateICmpEQ(
+                                str_desc,
+                                llvm::ConstantPointerNull::get(
+                                    llvm::cast<llvm::PointerType>(str_desc->getType())));
+                            llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                            llvm::BasicBlock* set_len_bb =
+                                llvm::BasicBlock::Create(context, "opt_str_set_len", fn);
+                            llvm::BasicBlock* skip_bb =
+                                llvm::BasicBlock::Create(context, "opt_str_skip_len", fn);
+                            builder->CreateCondBr(is_null, skip_bb, set_len_bb);
+                            builder->SetInsertPoint(set_len_bb);
+                            setup_string_length(str_desc, str_t, str_t->m_len);
+                            builder->CreateBr(skip_bb);
+                            builder->SetInsertPoint(skip_bb);
+                        } else {
+                            setup_string_length(str_desc, str_t, str_t->m_len);
+                        }
                     }
                 }
             }

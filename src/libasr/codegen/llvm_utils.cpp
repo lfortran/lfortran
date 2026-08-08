@@ -2374,7 +2374,17 @@ namespace LCompilers {
         switch (str_type->m_physical_type)
         {
             case ASR::DescriptorString:{
-                ptr_to_data = create_gep2(string_descriptor, str, 0);
+                if (!str->getType()->isPointerTy()) {
+                    if (get_pointer_to_data) {
+                        llvm::Value* str_ptr = CreateAlloca(str->getType(), nullptr, "str_val");
+                        builder->CreateStore(str, str_ptr);
+                        ptr_to_data = create_gep2(string_descriptor, str_ptr, 0);
+                    } else {
+                        return builder->CreateExtractValue(str, 0);
+                    }
+                } else {
+                    ptr_to_data = create_gep2(string_descriptor, str, 0);
+                }
                 break;
             }
             case ASR::CChar:{
@@ -2405,6 +2415,15 @@ namespace LCompilers {
             switch (str_type->m_physical_type)
             {
                 case ASR::DescriptorString:{
+                    if (!str->getType()->isPointerTy()) {
+                        if (get_pointer_to_len) {
+                            llvm::Value* str_ptr = CreateAlloca(str->getType(), nullptr, "str_val");
+                            builder->CreateStore(str, str_ptr);
+                            return create_gep2(string_descriptor, str_ptr, 1);
+                        } else {
+                            return builder->CreateExtractValue(str, 1);
+                        }
+                    }
                     llvm::Value* ptr_to_len = create_gep2(string_descriptor, str, 1);
                     if(get_pointer_to_len){
                         return ptr_to_len;
