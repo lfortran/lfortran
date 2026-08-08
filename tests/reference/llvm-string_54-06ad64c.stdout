@@ -22,6 +22,10 @@ FINALIZE_SYMTABLE_double_:                        ; preds = %return
 
 define void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char) {
 .entry:
+  %0 = call i32 @__module_string_54_mod_double_(i32* %x)
+  %1 = sext i32 %0 to i64
+  %2 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 1
+  store i64 %1, i64* %2, align 8
   br label %return
 
 return:                                           ; preds = %.entry
