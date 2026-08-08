@@ -105,7 +105,7 @@ if (WITH_LLVM)
         COMMAND ${LFORTRAN_TEST_PYTHON}
             ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
             --lfortran $<TARGET_FILE:lfortran>
-            --source ${CMAKE_SOURCE_DIR}/integration_tests/assign_to1.f90
+            --source ${CMAKE_SOURCE_DIR}/examples/expr2.f90
             --seed 1
             --cases 4
             --generator mutation
