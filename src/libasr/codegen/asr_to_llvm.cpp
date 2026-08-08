@@ -8410,15 +8410,52 @@ public:
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
                 }
             }
-            if (ASRUtils::is_string_only(symbol_type) && ASRUtils::is_allocatable(symbol_type)) {                                                                  
-                ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);                                             
-                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len) {                                      
-                    uint32_t h = get_hash((ASR::asr_t*)sym.second);                                                   
-                    LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());                                           
-                    llvm::Value* str_desc = llvm_symtab[h];                                                         
-                    setup_string_length(str_desc, str_t, str_t->m_len);                                     
-                }                                                                                            
-            }                                                                                                              
+            if (ASRUtils::is_string_only(symbol_type) && ASRUtils::is_allocatable(symbol_type)) {
+                ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);
+                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len) {
+                    uint32_t h = get_hash((ASR::asr_t*)sym.second);
+                    LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                    llvm::Value* str_desc = llvm_symtab[h];
+                    setup_string_length(str_desc, str_t, str_t->m_len);
+                }
+            }
+            // For non-allocatable ExpressionLength string dummy arguments (including optional
+            // ones like `character(len=n), optional`), the call site may pass in a zeroed
+            // dummy descriptor (elem_len = 0) when the argument is absent. Set the length
+            // field from the declared length expression now, guarding with a null-check for
+            // optional arguments so we don't write through a null pointer.
+            if (ASRUtils::is_string_only(symbol_type) &&
+                !ASRUtils::is_allocatable(symbol_type) &&
+                !ASRUtils::is_pointer(symbol_type)) {
+                ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);
+                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len) {
+                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym.second);
+                    uint32_t h = get_hash((ASR::asr_t*)sym.second);
+                    LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                    llvm::Value* str_desc = llvm_symtab[h];
+                    bool is_opt = (var->m_presence == ASR::presenceType::Optional);
+                    if (is_opt) {
+                        // Guard: only write length if the descriptor pointer is non-null
+                        // (i.e. the optional argument was actually provided).
+                        llvm::Value* is_null = builder->CreateICmpEQ(
+                            str_desc,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(str_desc->getType())));
+                        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* set_len_bb =
+                            llvm::BasicBlock::Create(context, "opt_str_set_len", fn);
+                        llvm::BasicBlock* skip_bb =
+                            llvm::BasicBlock::Create(context, "opt_str_skip_len", fn);
+                        builder->CreateCondBr(is_null, skip_bb, set_len_bb);
+                        builder->SetInsertPoint(set_len_bb);
+                        setup_string_length(str_desc, str_t, str_t->m_len);
+                        builder->CreateBr(skip_bb);
+                        builder->SetInsertPoint(skip_bb);
+                    } else {
+                        setup_string_length(str_desc, str_t, str_t->m_len);
+                    }
+                }
+            }
             if( !(ASRUtils::is_pointer(symbol_type) || ASRUtils::is_allocatable(symbol_type)) &&
                 ASRUtils::is_array(symbol_type) &&
                 ASRUtils::extract_physical_type(symbol_type)
