@@ -1,4 +1,4 @@
-program test_corank
+program corank_01
     implicit none
 
     integer :: a[*]
@@ -9,4 +9,4 @@ program test_corank
     print *, corank(b)
     print *, corank(c)
 
-end program test_corank
+end program corank_01

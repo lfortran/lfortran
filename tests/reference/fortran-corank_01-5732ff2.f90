@@ -4,43 +4,27 @@ end type prif_coarray_handle
 
 program corank_01
 implicit none
-type :: t
-    integer(4) :: a
-    integer(4) :: b
-end type t
-integer(4) :: c1
-integer(4) :: c2
-integer(4) :: c3
-integer(4) :: c4
-integer(4) :: c5
-type(t) :: s
+integer(4), pointer :: a
+type(c_ptr) :: a__coarray_data
+type(prif_coarray_handle) :: a__coarray_handle
+integer(4), pointer :: b
+type(c_ptr) :: b__coarray_data
+type(prif_coarray_handle) :: b__coarray_handle
+integer(4), pointer :: c
+type(c_ptr) :: c__coarray_data
+type(prif_coarray_handle) :: c__coarray_handle
 integer(4) :: stat
-integer(4), pointer :: x
-type(c_ptr) :: x__coarray_data
-type(prif_coarray_handle) :: x__coarray_handle
-integer(4), dimension(:), pointer :: y
-type(c_ptr) :: y__coarray_data
-type(prif_coarray_handle) :: y__coarray_handle
-integer(4), pointer :: z
-type(c_ptr) :: z__coarray_data
-type(prif_coarray_handle) :: z__coarray_handle
 call __module_prif_prif_init(stat)
-call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
-call c_f_pointer(x__coarray_data, x)
-call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(5, kind=8), null(), y__coarray_handle,&
-         y__coarray_data)
-call c_f_pointer(y__coarray_data, y, [5], [1])
-call __module_prif_prif_allocate_coarray([1_8, 1_8, 1_8], [2_8, 3_8], 4_8, null(), z__coarray_handle, z__coarray_data)
-call c_f_pointer(z__coarray_data, z)
+call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle, a__coarray_data)
+call c_f_pointer(a__coarray_data, a)
+call __module_prif_prif_allocate_coarray([1_8, 1_8], [2_8], 4_8, null(), b__coarray_handle, b__coarray_data)
+call c_f_pointer(b__coarray_data, b)
+call __module_prif_prif_allocate_coarray([1_8, 1_8, 1_8], [2_8, 3_8], 4_8, null(), c__coarray_handle, c__coarray_data)
+call c_f_pointer(c__coarray_data, c)
 call __module_prif_prif_sync_all()
-c1 = 1
-c2 = 1
-c3 = 3
-c4 = 1
-c5 = 2
-c1 = 1
-c2 = 1
-c3 = 3
+print *, 1
+print *, 2
+print *, 3
 call __module_prif_prif_stop(.false.)
 
 contains

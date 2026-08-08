@@ -2,11 +2,11 @@
     "basename": "fortran-corank_01-5732ff2",
     "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
     "infile": "tests/corank_01.f90",
-    "infile_hash": "cc127753efa48e884209b54d28c719a775cc721a52c03344335924c2",
+    "infile_hash": "48c3ba998d750116fe2086aa710be0a62d5bbf97f611254ceac1f909",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-corank_01-5732ff2.f90",
-    "stdout_hash": "288cc58e26c53336a0f8cb938fbe9d453d7ca06b49a17cebce81ab01",
+    "stdout_hash": "a62c7259c0f8e19e16e2ef8fe17ed05c9e454f8546d0150961d7d026",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
