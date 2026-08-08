@@ -61,8 +61,10 @@ target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
+    # The default Emscripten stack is 64kb, which is far too small for the
+    # recursive descent parsers and ASR visitors; use a native-sized stack.
     set(WASM_LINK_FLAGS
-      "-Oz -g0 -fexceptions -Wall -Wextra -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT"
+      "-Oz -g0 -fexceptions -Wall -Wextra -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s STACK_SIZE=8mb"
     )
     set_target_properties(test_lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(test_lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})
@@ -93,35 +95,47 @@ add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
 if (WITH_LLVM)
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3 REQUIRED)
+    # Producing an executable needs a working end-to-end link, which the
+    # Windows CI job does not provide: it builds and unit tests the compiler
+    # but never runs the integration suite. Parsing and verification are still
+    # covered there; only the phases past object emission are skipped.
+    if (WIN32)
+        set(LFORTRAN_ASR_CORPUS_ARGS --skip-compile)
+    else()
+        set(LFORTRAN_ASR_CORPUS_ARGS "")
+    endif()
     add_test(
         NAME test_asr_corpus
         COMMAND ${LFORTRAN_TEST_PYTHON}
             ${CMAKE_SOURCE_DIR}/tests/asr/run_tests.py
             --lfortran $<TARGET_FILE:lfortran>
             --manifest ${CMAKE_SOURCE_DIR}/tests/asr/tests.toml
+            ${LFORTRAN_ASR_CORPUS_ARGS}
     )
-    add_test(
-        NAME test_asr_fuzzer_smoke
-        COMMAND ${LFORTRAN_TEST_PYTHON}
-            ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
-            --lfortran $<TARGET_FILE:lfortran>
-            --source ${CMAKE_SOURCE_DIR}/examples/expr2.f90
-            --seed 1
-            --cases 4
-            --generator mutation
-            --strategy valid
-            --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
-    )
-    add_test(
-        NAME test_asr_schema_generator_smoke
-        COMMAND ${LFORTRAN_TEST_PYTHON}
-            ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
-            --lfortran $<TARGET_FILE:lfortran>
-            --seed 2
-            --cases 4
-            --generator schema-valid
-            --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
-    )
+    if (NOT WIN32)
+        add_test(
+            NAME test_asr_fuzzer_smoke
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --source ${CMAKE_SOURCE_DIR}/examples/expr2.f90
+                --seed 1
+                --cases 4
+                --generator mutation
+                --strategy valid
+                --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
+        )
+        add_test(
+            NAME test_asr_schema_generator_smoke
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --seed 2
+                --cases 4
+                --generator schema-valid
+                --artifacts ${CMAKE_BINARY_DIR}/asr-fuzz-artifacts
+        )
+    endif()
     add_test(
         NAME test_asr_reducer_unit
         COMMAND ${LFORTRAN_TEST_PYTHON}

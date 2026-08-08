@@ -169,14 +169,23 @@ def main():
     parser.add_argument("--lfortran", required=True, type=pathlib.Path)
     parser.add_argument("--manifest", required=True, type=pathlib.Path)
     parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument(
+        "--skip-compile", action="store_true",
+        help="skip fixtures that must link an executable, for platforms "
+             "where the toolchain cannot link one")
     args = parser.parse_args()
 
     manifest = args.manifest.resolve()
     root = manifest.parent
     tests = toml.load(manifest)["test"]
     failures = []
+    skipped = 0
     for test in tests:
         fixture = (root / test["filename"]).resolve()
+        if args.skip_compile and test["expect"] == "compile":
+            skipped += 1
+            print(f"SKIP {test['expect']:7} {test['filename']}")
+            continue
         try:
             if test["expect"] == "compile":
                 check_compile(args.lfortran, fixture, args.timeout)
@@ -194,7 +203,7 @@ def main():
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
-    print(f"{len(tests)} ASR corpus tests passed")
+    print(f"{len(tests) - skipped} ASR corpus tests passed, {skipped} skipped")
     return 0
 
 
