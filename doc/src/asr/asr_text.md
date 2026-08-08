@@ -8,6 +8,10 @@ The format is an EDN-compatible data subset. A standard EDN reader can read it
 when handlers for the namespaced `#asr/*` tags are registered. LFortran reads
 the format as data only; it does not evaluate Clojure code.
 
+Every document is wrapped in `ASRText`. Its `version` field selects the text
+encoding version independently of the LFortran or `ASR.asdl` version, and its
+`value` field contains the translation unit.
+
 ## Printing ASR text
 
 The named form is canonical:
@@ -20,9 +24,11 @@ It prints every non-location field using the exact field names in
 `src/libasr/ASR.asdl`:
 
 ```clojure
-#asr/v1
-(Var
-  :v (SymbolRef 1 "x")
+(ASRText
+  :version 1
+  :value (Var
+    :v (SymbolRef 1 "x")
+  )
 )
 ```
 
@@ -33,8 +39,7 @@ lfortran input.f90 --show-asr --clojure --no-member-names
 ```
 
 ```clojure
-#asr/v1
-(Var (SymbolRef 1 "x"))
+(ASRText 1 (Var (SymbolRef 1 "x")))
 ```
 
 `--no-indent` emits either form on one line. Canonical ASR text never contains
