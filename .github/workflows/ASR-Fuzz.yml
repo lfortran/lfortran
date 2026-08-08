@@ -1,0 +1,79 @@
+name: ASR fuzz
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: Number of mutations
+        default: "1000"
+        required: true
+      seed:
+        description: Deterministic random seed
+        default: "0"
+        required: true
+      strategy:
+        description: Mutation strategy
+        default: mixed
+        type: choice
+        options:
+          - mixed
+          - valid
+          - invalid
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    name: ASan/UBSan ASR mutation campaign
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: "2.0.4-0"
+          environment-file: ci/environment.yml
+
+      - name: Configure sanitizer build
+        shell: bash -e -l {0}
+        run: |
+          bash build0.sh
+          cmake -S . -B build-asr-fuzz -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DWITH_LLVM=yes \
+            -DWITH_LFORTRAN_ASSERT=yes \
+            -DWITH_RUNTIME_STACKTRACE=yes
+          cmake --build build-asr-fuzz --target lfortran -j2
+
+      - name: Run deterministic ASR campaign
+        shell: bash -e -l {0}
+        env:
+          LFORTRAN: build-asr-fuzz/src/bin/lfortran
+          ASR_FUZZ_CASES: ${{ inputs.cases || '1000' }}
+          ASR_FUZZ_SEED: ${{ inputs.seed || github.run_number }}
+          ASR_FUZZ_STRATEGY: ${{ inputs.strategy || 'mixed' }}
+          ASR_FUZZ_TIMEOUT: "60"
+          ASR_FUZZ_ARTIFACTS: asr-fuzz-artifacts
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: bash ci/fuzz_asr.sh
+
+      - name: Upload failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asr-fuzz-${{ github.run_id }}
+          path: asr-fuzz-artifacts/
+          if-no-files-found: ignore
+          retention-days: 30

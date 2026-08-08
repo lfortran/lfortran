@@ -211,3 +211,10 @@ the original failure artifact.
 direct LLVM visitor or an explicit classification naming its lowering pass,
 helper path, metadata role, or non-executable status. New unclassified
 constructors fail the registered CTest.
+
+`ci/fuzz_asr.sh` is the common campaign entry point. The scheduled
+`.github/workflows/ASR-Fuzz.yml` job builds LFortran with AddressSanitizer,
+UndefinedBehaviorSanitizer, assertions, and runtime stack traces, runs a
+deterministic mutation campaign, and uploads every persisted failure artifact.
+Manual workflow runs can override the case count, random seed, and mutation
+strategy.
