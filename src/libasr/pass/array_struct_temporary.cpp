@@ -1106,6 +1106,8 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     alloc_arg.m_len_expr = len_allocate_expr;
     alloc_arg.m_type = nullptr;
     alloc_arg.m_sym_subclass = nullptr;
+    alloc_arg.m_codims = nullptr;
+    alloc_arg.n_codims = 0;
     alloc_args.push_back(al, alloc_arg);
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
@@ -1230,6 +1232,8 @@ ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
     alloc_arg.m_sym_subclass = ASRUtils::symbol_get_past_external(
         ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
     alloc_arg.m_len_expr = nullptr;
+    alloc_arg.m_codims = nullptr;
+    alloc_arg.n_codims = 0;
     alloc_args.push_back(al, alloc_arg);
 
     return ASRUtils::STMT(ASR::make_Allocate_t(

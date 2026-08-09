@@ -1481,6 +1481,8 @@ namespace MoveAlloc {
                 ASRUtils::symbol_type(from_struct)) : nullptr;
             alloc_arg.m_len_expr = len_expr;
             alloc_arg.m_sym_subclass = from_struct;
+            alloc_arg.m_codims = nullptr;
+            alloc_arg.n_codims = 0;
             alloc_args.push_back(al, alloc_arg);
             if_body.push_back(ASRUtils::STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
                 nullptr, nullptr, nullptr)));
