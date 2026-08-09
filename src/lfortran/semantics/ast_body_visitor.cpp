@@ -3266,7 +3266,15 @@ public:
                         new_codim.m_start = nullptr;
                         new_codim.m_end = nullptr;
                         if (coarray_ast.m_coargs[j].m_star == AST::codimension_typeType::CodimensionStar) {
-                            LCOMPILERS_ASSERT_MSG(j == coarray_ast.n_coargs - 1, "star may only appear in the final ucobound");
+                            if (j != coarray_ast.n_coargs - 1) {
+                                diag.add(Diagnostic(
+                                    "The upper cobound `*` must appear "
+                                    "only in the last codimension",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {coarray_ast.m_coargs[j].loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
                             if (coarray_ast.m_coargs[j].m_start) {
                                 this->visit_expr(*(coarray_ast.m_coargs[j].m_start));
                                 new_codim.m_start = ASRUtils::EXPR(tmp);
@@ -3276,7 +3284,14 @@ public:
                             new_codim.m_end = nullptr;
                             new_codim.m_end_star = ASR::codimension_typeType::CodimensionStar;
                         } else {
-                            LCOMPILERS_ASSERT_MSG(j < coarray_ast.n_coargs - 1, "the final ucobound must be star");
+                            if (j == coarray_ast.n_coargs - 1) {
+                                diag.add(Diagnostic(
+                                    "The last upper cobound of a coarray must be `*`",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {coarray_ast.m_coargs[j].loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
                             if (coarray_ast.m_coargs[j].m_start) {
                                 this->visit_expr(*(coarray_ast.m_coargs[j].m_start));
                                 new_codim.m_start = ASRUtils::EXPR(tmp);

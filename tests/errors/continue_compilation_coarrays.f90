@@ -25,4 +25,12 @@ program continue_compilation_coarrays
     real :: cod[4]
     print *,cod[5]
 
+    ! ALLOCATE coarray-spec: multiple `*` cobounds -> ERROR
+    integer, allocatable :: acoarr[:,:]
+    allocate(acoarr[*, *])
+
+    ! ALLOCATE coarray-spec: last cobound must be `*` -> ERROR
+    integer, allocatable :: acoarr2[:,:]
+    allocate(acoarr2[2, 2])
+
 end program continue_compilation_coarrays
