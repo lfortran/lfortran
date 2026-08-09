@@ -93,14 +93,23 @@ if (XEUS_LFORTRAN_WASM_BUILD)
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
-if (WITH_LLVM)
-    add_test(
-        NAME test_asr_text_compile
-        COMMAND $<TARGET_FILE:lfortran>
-            ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
-            --no-color
-            -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
-    )
+# These tests drive the lfortran executable. This directory is configured
+# before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
+# condition under which src/bin creates the target instead.
+if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
+    # Emitting an executable needs a working end-to-end link, which the
+    # Windows CI job does not provide: it builds and unit tests the compiler
+    # but never runs the integration suite. Object emission is still covered
+    # there by the test below.
+    if (NOT WIN32)
+        add_test(
+            NAME test_asr_text_compile
+            COMMAND $<TARGET_FILE:lfortran>
+                ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                --no-color
+                -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
+        )
+    endif()
     add_test(
         NAME test_asr_text_object
         COMMAND $<TARGET_FILE:lfortran>
