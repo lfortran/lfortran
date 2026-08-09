@@ -1141,10 +1141,6 @@ program continue_compilation_1
         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
     end subroutine
 
-    subroutine allocate_func_target_01()
-        allocate(character(-1) :: FUNC8)
-    end subroutine allocate_func_target_01
-
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.
@@ -1155,10 +1151,6 @@ program continue_compilation_1
         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
     end subroutine
 end program
-
-function func8() result(res) bind(c)
-    character(:), pointer :: res
-end function func8
 
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
@@ -2097,3 +2089,11 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+subroutine allocate_func_target_01()
+    allocate(character(-1) :: FUNC8)
+end subroutine allocate_func_target_01
+
+function func8() result(res) bind(c)
+    character(:), pointer :: res
+end function func8
