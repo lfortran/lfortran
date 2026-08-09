@@ -4,46 +4,64 @@ syntax error: Token ':' is unexpected here
 23 |     a = z[1:5:2]
    |              ^ 
 
-semantic error: A nonallocatable coarray must have an explicit coshape; a deferred codimension (`:`) is only permitted for allocatable coarrays
-  --> tests/errors/continue_compilation_coarrays.f90:37:22
+semantic error: The upper cobound `*` must appear only in the last codimension
+  --> tests/errors/continue_compilation_coarrays.f90:37:19
    |
-37 |     integer :: c828a[:]
+37 |     integer :: w1[*, *]
+   |                   ^ 
+
+semantic error: The upper cobound `*` must appear only in the last codimension
+  --> tests/errors/continue_compilation_coarrays.f90:40:19
+   |
+40 |     integer :: w2[*, 2]
+   |                   ^ 
+
+semantic error: The last upper cobound of a coarray must be `*`
+  --> tests/errors/continue_compilation_coarrays.f90:43:29
+   |
+43 |     integer, codimension[3, 2] :: w3
+   |                             ^ 
+
+semantic error: A nonallocatable coarray must have an explicit coshape; a deferred codimension (`:`) is only permitted for allocatable coarrays
+  --> tests/errors/continue_compilation_coarrays.f90:46:22
+   |
+46 |     integer :: c828a[:]
    |                      ^ 
 
 semantic error: A nonallocatable coarray must have an explicit coshape; a deferred codimension (`:`) is only permitted for allocatable coarrays
-  --> tests/errors/continue_compilation_coarrays.f90:38:22
+  --> tests/errors/continue_compilation_coarrays.f90:47:22
    |
-38 |     integer :: c828b[:,*]
+47 |     integer :: c828b[:,*]
    |                      ^ 
 
 semantic error: A nonallocatable coarray must have an explicit coshape; a deferred codimension (`:`) is only permitted for allocatable coarrays
-  --> tests/errors/continue_compilation_coarrays.f90:39:24
+  --> tests/errors/continue_compilation_coarrays.f90:48:24
    |
-39 |     integer :: c828c[2,:,*]
+48 |     integer :: c828c[2,:,*]
    |                        ^ 
 
 semantic error: A coarray with the `allocatable` attribute must have a deferred coshape (every codimension written as `:`)
-  --> tests/errors/continue_compilation_coarrays.f90:42:35
+  --> tests/errors/continue_compilation_coarrays.f90:51:35
    |
-42 |     integer, allocatable :: c827a[*]
+51 |     integer, allocatable :: c827a[*]
    |                                   ^ 
 
 semantic error: A coarray with the `allocatable` attribute must have a deferred coshape (every codimension written as `:`)
-  --> tests/errors/continue_compilation_coarrays.f90:43:37
+  --> tests/errors/continue_compilation_coarrays.f90:52:37
    |
-43 |     integer, allocatable :: c827b[:,*]
+52 |     integer, allocatable :: c827b[:,*]
    |                                     ^ 
 
 semantic error: A coarray with the `allocatable` attribute must have a deferred coshape (every codimension written as `:`)
-  --> tests/errors/continue_compilation_coarrays.f90:44:37
+  --> tests/errors/continue_compilation_coarrays.f90:53:37
    |
-44 |     integer, allocatable :: c827c[:,4,:]
+53 |     integer, allocatable :: c827c[:,4,:]
    |                                     ^ 
 
 semantic error: A coarray with the `allocatable` attribute must have a deferred coshape (every codimension written as `:`)
-  --> tests/errors/continue_compilation_coarrays.f90:45:26
+  --> tests/errors/continue_compilation_coarrays.f90:54:26
    |
-45 |     integer, codimension[2,10,*], allocatable :: c827d
+54 |     integer, codimension[2,10,*], allocatable :: c827d
    |                          ^ 
 
 semantic error: Variable 'x' is not a coarray; coindex notation [..] requires a codimension attribute

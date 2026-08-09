@@ -33,6 +33,15 @@ program continue_compilation_coarrays
     integer, allocatable :: acoarr2[:,:]
     allocate(acoarr2[2, 2])
 
+    ! Assumed codimension `*` must be the last codimension → ERROR
+    integer :: w1[*, *]
+
+    ! Assumed codimension `*` not in the last position → ERROR
+    integer :: w2[*, 2]
+
+    ! CODIMENSION attribute: last cobound must be `*` → ERROR
+    integer, codimension[3, 2] :: w3
+
     ! C828: a nonallocatable coarray may not have a deferred coshape -> ERROR
     integer :: c828a[:]
     integer :: c828b[:,*]
