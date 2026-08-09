@@ -1122,21 +1122,68 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         };
         
+        // Attempt to evaluate an expression to a compile-time integer constant.
+        // Returns true and sets `val` on success.
+        bool try_eval_int_const(ASR::expr_t* expr, int64_t& val) {
+            if (!expr) return false;
+            // Direct integer constant
+            if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+                val = ASR::down_cast<ASR::IntegerConstant_t>(expr)->m_n;
+                return true;
+            }
+            // ArraySize(arr, dim) — evaluate via fixed size for dim-less (whole-array) SIZE
+            if (ASR::is_a<ASR::ArraySize_t>(*expr)) {
+                ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(expr);
+                if (as->m_dim == nullptr) {
+                    // size(arr) — total element count
+                    int64_t sz = ASRUtils::get_fixed_size_of_array(
+                        ASRUtils::expr_type(as->m_v));
+                    if (sz > 0) { val = sz; return true; }
+                }
+                // size(arr, dim) — we only handle dim=1 for 1-D arrays
+                if (as->m_dim && ASR::is_a<ASR::IntegerConstant_t>(*as->m_dim)) {
+                    int64_t dim_idx = ASR::down_cast<ASR::IntegerConstant_t>(as->m_dim)->m_n;
+                    ASR::ttype_t* arr_type = ASRUtils::expr_type(as->m_v);
+                    ASR::Array_t* arr = nullptr;
+                    if (ASR::is_a<ASR::Array_t>(*arr_type))
+                        arr = ASR::down_cast<ASR::Array_t>(arr_type);
+                    else if (ASR::is_a<ASR::Allocatable_t>(*arr_type) &&
+                             ASR::is_a<ASR::Array_t>(*ASR::down_cast<ASR::Allocatable_t>(arr_type)->m_type))
+                        arr = ASR::down_cast<ASR::Array_t>(ASR::down_cast<ASR::Allocatable_t>(arr_type)->m_type);
+                    if (arr && dim_idx >= 1 && (size_t)dim_idx <= arr->n_dims) {
+                        ASR::dimension_t& d = arr->m_dims[dim_idx - 1];
+                        if (d.m_length && ASR::is_a<ASR::IntegerConstant_t>(*d.m_length)) {
+                            val = ASR::down_cast<ASR::IntegerConstant_t>(d.m_length)->m_n;
+                            return true;
+                        }
+                    }
+                }
+            }
+            // Fallback: use constant-folded value stored by the semantic pass
+            ASR::expr_t* v = ASRUtils::expr_value(expr);
+            if (v && ASR::is_a<ASR::IntegerConstant_t>(*v)) {
+                val = ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n;
+                return true;
+            }
+            return false;
+        }
+
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
             ASR::expr_t* start = idl->m_start;
             ASR::expr_t* end = idl->m_end;
             ASR::expr_t* step = idl->m_increment;
-            
-            if (!ASR::is_a<ASR::IntegerConstant_t>(*start) ||
-                !ASR::is_a<ASR::IntegerConstant_t>(*end)) {
+
+            int64_t start_val, end_val;
+            if (!try_eval_int_const(start, start_val) ||
+                !try_eval_int_const(end,   end_val)) {
                 return false;
             }
-            
-            int64_t start_val = ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
-            int64_t end_val = ASR::down_cast<ASR::IntegerConstant_t>(end)->m_n;
             int64_t step_val = 1;
-            if (step && ASR::is_a<ASR::IntegerConstant_t>(*step)) {
-                step_val = ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n;
+            if (step) {
+                int64_t sv = 1;
+                if (try_eval_int_const(step, sv)) {
+                    step_val = sv;
+                }
             }
             
             if (step_val == 0 || (step_val > 0 && start_val > end_val) || 

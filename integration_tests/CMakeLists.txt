@@ -1260,6 +1260,7 @@ RUN(NAME format_105 LABELS gfortran llvm)
 RUN(NAME format_106 LABELS gfortran llvm)
 RUN(NAME format_107 LABELS gfortran llvm)
 RUN(NAME format_108 LABELS gfortran llvm)
+RUN(NAME format_109 LABELS gfortran llvm) # implied-do I/O with size() bound and scalar sibling
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
