@@ -42,6 +42,18 @@ program continue_compilation_coarrays
     ! CODIMENSION attribute: last cobound must be `*` → ERROR
     integer, codimension[3, 2] :: w3
 
+    ! last ucobound must be '*' -> ERROR
+    real :: w4[4]
+
+    ! last ucobound must be '*' -> ERROR
+    real :: w5[2:4]
+
+    ! last ucobound must be '*' -> ERROR
+    real, codimension[5] :: w6
+
+    ! last ucobound must be '*' -> ERROR
+    real, codimension[2:5] :: w7
+
     ! C828: a nonallocatable coarray may not have a deferred coshape -> ERROR
     integer :: c828a[:]
     integer :: c828b[:,*]
