@@ -22,8 +22,8 @@ program continue_compilation_coarrays
     integer :: z[*], a
     a = z[1:5:2]
 
-    real :: cod[4]
-    print *,cod[5]
+    real :: cod[4,*]
+    print *,cod[5,1]
 
     ! ALLOCATE coarray-spec: multiple `*` cobounds -> ERROR
     integer, allocatable :: acoarr[:,:]
@@ -32,5 +32,16 @@ program continue_compilation_coarrays
     ! ALLOCATE coarray-spec: last cobound must be `*` -> ERROR
     integer, allocatable :: acoarr2[:,:]
     allocate(acoarr2[2, 2])
+
+    ! C828: a nonallocatable coarray may not have a deferred coshape -> ERROR
+    integer :: c828a[:]
+    integer :: c828b[:,*]
+    integer :: c828c[2,:,*]
+
+    ! C827: an allocatable coarray may not have an explicit coshape -> ERROR
+    integer, allocatable :: c827a[*]
+    integer, allocatable :: c827b[:,*]
+    integer, allocatable :: c827c[:,4,:]
+    integer, codimension[2,10,*], allocatable :: c827d
 
 end program continue_compilation_coarrays
