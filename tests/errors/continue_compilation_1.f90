@@ -966,14 +966,7 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
-    subroutine allocate_func_target_01()
-        allocate(character(-1) :: FUNC8)
-    end subroutine allocate_func_target_01
 end program
-
-function func8() result(res) bind(c)
-    character(:), pointer :: res
-end function func8
 
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
@@ -990,4 +983,12 @@ contains
       real :: res(size(x))
     end function foo
 end module
+
+subroutine allocate_func_target_01()
+    allocate(character(-1) :: FUNC8)
+end subroutine allocate_func_target_01
+
+function func8() result(res) bind(c)
+    character(:), pointer :: res
+end function func8
 
