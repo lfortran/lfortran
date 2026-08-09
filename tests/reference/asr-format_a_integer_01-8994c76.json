@@ -1,0 +1,13 @@
+{
+    "basename": "asr-format_a_integer_01-8994c76",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/warnings/format_a_integer_01.f90",
+    "infile_hash": "516e5e7aa88ef0e94c1e66557f2c7592adbcd1cf0c319578f9fb0c93",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-format_a_integer_01-8994c76.stderr",
+    "stderr_hash": "a27a6ef08962a0f4a5bb8a1d529b4b9451ed44365ae9adb91403529e",
+    "returncode": 0
+}
