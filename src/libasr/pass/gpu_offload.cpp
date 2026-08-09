@@ -7104,6 +7104,8 @@ public:
                         host_arg.m_len_expr = nullptr;
                         host_arg.m_sym_subclass = nullptr;
                         host_arg.m_type = nullptr;
+                        host_arg.m_codims = nullptr;
+                        host_arg.n_codims = 0;
 
                         Vec<ASR::alloc_arg_t> alloc_vec;
                         alloc_vec.reserve(al, 1);

@@ -1373,10 +1373,20 @@ namespace SameTypeAs {
         }
         // Both types are known at compile time, compare them
         ASRUtils::ASRBuilder b(al, loc);
-        bool same = ASRUtils::types_equal(
-            ASRUtils::type_get_past_allocatable_pointer(arg_type0),
-            ASRUtils::type_get_past_allocatable_pointer(arg_type1),
-            nullptr, nullptr);
+        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+
+        if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
+            ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[0]));
+            ASR::symbol_t *sym1 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[1]));
+            if (sym0 && sym1 && ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
+                return b.bool_t(sym0 == sym1, return_type);
+            }
+        }
+
+        bool same = ASRUtils::types_equal(t0, t1, nullptr, nullptr);
         return b.bool_t(same, return_type);
     }
 
@@ -1398,11 +1408,7 @@ namespace ExtendsTypeOf {
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
         ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
-        // Same type => extends_type_of is true
-        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
-            return b.bool_t(true, return_type);
-        }
-        // Check if A's type extends MOLD's type via parent chain
+
         if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
             ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(args[0]));
@@ -1410,14 +1416,18 @@ namespace ExtendsTypeOf {
                 ASRUtils::get_struct_sym_from_struct_expr(args[1]));
             if (sym0 && sym1 &&
                 ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
-                // is_parent(a, b) checks if a is in b's parent chain
-                // extends_type_of(A, MOLD) means A extends MOLD,
-                // so MOLD must be in A's parent chain
+                if (sym0 == sym1) {
+                    return b.bool_t(true, return_type);
+                }
                 bool extends = ASRUtils::is_parent(
                     ASR::down_cast<ASR::Struct_t>(sym1),
                     ASR::down_cast<ASR::Struct_t>(sym0));
                 return b.bool_t(extends, return_type);
             }
+        }
+
+        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
+            return b.bool_t(true, return_type);
         }
         return b.bool_t(false, return_type);
     }
@@ -1867,12 +1877,6 @@ namespace LCoBound {
         }
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
         if (!dim) {
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t dim_t;
-            dim_t.loc = loc;
-            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            
             int n_dims = 0;
             if (ASR::is_a<ASR::Var_t>(*args[0])) {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
@@ -1881,9 +1885,21 @@ namespace LCoBound {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
                 n_dims = ASRUtils::symbol_corank(sym);
             }
-            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            dims.push_back(al, dim_t);
-            return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, n_dims);
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i, int_type));
+                Vec<ASR::expr_t*> elem_args;
+                elem_args.reserve(al, 2);
+                elem_args.push_back(al, args[0]);
+                elem_args.push_back(al, dim_);
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                    al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound),
+                    elem_args.p, elem_args.n, 0, return_type, nullptr)));
+            }
+            return ASRUtils::make_ArrayConstructor_t_util(al, loc, arr_args.p,
+                arr_args.size(), return_type, ASR::arraystorageType::ColMajor);
         }
 
         Vec<ASR::expr_t*> final_args;
@@ -1920,12 +1936,6 @@ namespace UCoBound {
         }
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
         if (!dim) {
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 1);
-            ASR::dimension_t dim_t;
-            dim_t.loc = loc;
-            dim_t.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            
             int n_dims = 0;
             if (ASR::is_a<ASR::Var_t>(*args[0])) {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
@@ -1934,9 +1944,21 @@ namespace UCoBound {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
                 n_dims = ASRUtils::symbol_corank(sym);
             }
-            dim_t.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            dims.push_back(al, dim_t);
-            return_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, return_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, n_dims);
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i, int_type));
+                Vec<ASR::expr_t*> elem_args;
+                elem_args.reserve(al, 2);
+                elem_args.push_back(al, args[0]);
+                elem_args.push_back(al, dim_);
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                    al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound),
+                    elem_args.p, elem_args.n, 0, return_type, nullptr)));
+            }
+            return ASRUtils::make_ArrayConstructor_t_util(al, loc, arr_args.p,
+                arr_args.size(), return_type, ASR::arraystorageType::ColMajor);
         }
 
         Vec<ASR::expr_t*> final_args;

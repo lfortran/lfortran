@@ -625,7 +625,7 @@ program continue_compilation_1
 
     type(container(4)) :: obj1
     type(container) :: obj2
-
+    call set_caller(1)
     arr_idl = (i, i = 1, 4)
     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
@@ -948,6 +948,9 @@ program continue_compilation_1
         common /equivalence_common_overrun/ first, second
         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     end subroutine equivalence_common_array_overrun
+    subroutine set_caller(this)
+        class(MyClass) :: this
+    end subroutine
 
     subroutine findloc_character_kind_mismatch()
         implicit none
@@ -972,3 +975,4 @@ contains
       real :: res(size(x))
     end function foo
 end module
+

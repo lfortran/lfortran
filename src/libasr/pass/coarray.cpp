@@ -585,17 +585,26 @@ class PRIFInterface {
 
         ASR::expr_t* get_dynamic_total_size_in_bytes_expr(const Location &loc,
                                             ASR::Variable_t *var,
-                                            ASR::dimension_t *dims, size_t n_dims) {
+                                            ASR::dimension_t *dims, size_t n_dims,
+                                            ASR::expr_t *source = nullptr) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::expr_t *elem_size = get_size_in_bytes_expr(loc, var->m_type);
             ASR::expr_t *total = elem_size;
-            for (size_t i = 0; i < n_dims; i++) {
-                if (!dims[i].m_length) {
-                    return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int64_type));
+            if (n_dims > 0 && dims) {
+                for (size_t i = 0; i < n_dims; i++) {
+                    if (!dims[i].m_length) {
+                        LCOMPILERS_ASSERT_MSG(false, "Deferred dimensions are not supported yet");
+                    }
+                    ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
+                    total = b.Mul(total, len);
                 }
-                ASR::expr_t *len = b.i2i_t(dims[i].m_length, int64_type);
-                total = b.Mul(total, len);
+            } else if (source && n_dims > 0) {
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::expr_t *dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    ASR::expr_t *len_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, source, dim_idx, int64_type, nullptr));
+                    total = b.Mul(total, len_expr);
+                }
             }
             return total;
         }
@@ -631,23 +640,24 @@ class PRIFInterface {
             return type;
         }
 
-        ASR::expr_t* create_shape_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims) {
+        ASR::expr_t* create_shape_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims, ASR::expr_t *source = nullptr) {
             std::vector<ASR::expr_t*> shape_vec;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             for (size_t i = 0; i < n_array_dims; i++) {
                 ASR::dimension_t d = dims[i];
-                if (d.m_length) {
-                    ASR::expr_t *len_expr = d.m_length;
-                    if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
-                        throw LCompilersException("Array dimension length must be an integer");
-                    } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
-                        len_expr = b.i2i_t(len_expr, int32_type);
-                    }
-                    shape_vec.push_back(len_expr);
-                } else {
-                    shape_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32_type)));
+                LCOMPILERS_ASSERT(d.m_length);
+                ASR::expr_t *len_expr = d.m_length;
+                if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
+                    throw LCompilersException("Array dimension length must be an integer");
+                } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(len_expr)) != 4) {
+                    len_expr = b.i2i_t(len_expr, int32_type);
                 }
+                else if (source) {
+                    ASR::expr_t *dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int32_type));
+                    len_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, source, dim_idx, int32_type, nullptr));
+                }
+                shape_vec.push_back(len_expr);
             }
             if (shape_vec.size() > 0) {
                 return b.ArrayConstant(shape_vec, int32_type, false);
@@ -655,7 +665,29 @@ class PRIFInterface {
             return nullptr;
         }
 
+        ASR::expr_t* create_lbound_expr_from_dims(const Location &loc, ASR::dimension_t *dims, size_t n_array_dims) {
+            std::vector<ASR::expr_t*> lb_vec;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (size_t i = 0; i < n_array_dims; i++) {
+                ASR::dimension_t d = dims[i];
+                LCOMPILERS_ASSERT(d.m_start);
+                ASR::expr_t *start_expr = d.m_start;
+                if (!ASRUtils::is_integer(*ASRUtils::expr_type(start_expr))) {
+                    throw LCompilersException("Array dimension start must be an integer");
+                } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start_expr)) != 4) {
+                    start_expr = b.i2i_t(start_expr, int32_type);
+                }
+                lb_vec.push_back(start_expr);
+            }
+            if (lb_vec.size() > 0) {
+                return b.ArrayConstant(lb_vec, int32_type, false);
+            }
+            return nullptr;
+        }
+
         ASR::expr_t* create_shape_expr(const Location &loc, ASR::ttype_t *type) {
+            type = ASRUtils::type_get_past_allocatable_pointer(type);
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
                 std::vector<ASR::expr_t*> shape_vec;
@@ -663,12 +695,6 @@ class PRIFInterface {
                 ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
                 for (size_t i = 0; i < arr->n_dims; i++) {
                     ASR::dimension_t d = arr->m_dims[i];
-                    int64_t lb = 1;
-                    if (d.m_start) {
-                        ASRUtils::extract_value(d.m_start, lb);
-                    }
-                    LCOMPILERS_ASSERT_MSG(lb == 1,
-                        "Array shape with lowerbound specified is not supported");
                     if (d.m_length) {
                         ASR::expr_t *len_expr = d.m_length;
                         if (!ASRUtils::is_integer(*ASRUtils::expr_type(len_expr))) {
@@ -683,6 +709,34 @@ class PRIFInterface {
                 }
                 if (shape_vec.size() > 0) {
                     return b.ArrayConstant(shape_vec, int32_type, false);
+                }
+            }
+            return nullptr;
+        }
+
+        ASR::expr_t* create_lbound_expr(const Location &loc, ASR::ttype_t *type) {
+            type = ASRUtils::type_get_past_allocatable_pointer(type);
+            if (ASR::is_a<ASR::Array_t>(*type)) {
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                std::vector<ASR::expr_t*> lb_vec;
+                ASRUtils::ASRBuilder b(al, loc);
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                for (size_t i = 0; i < arr->n_dims; i++) {
+                    ASR::dimension_t d = arr->m_dims[i];
+                    ASR::expr_t *start_expr = d.m_start;
+                    if (start_expr) {
+                        if (!ASRUtils::is_integer(*ASRUtils::expr_type(start_expr))) {
+                            throw LCompilersException("Array dimension start must be an integer");
+                        } else if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start_expr)) != 4) {
+                            start_expr = b.i2i_t(start_expr, int32_type);
+                        }
+                        lb_vec.push_back(start_expr);
+                    } else {
+                        lb_vec.push_back(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int32_type)));
+                    }
+                }
+                if (lb_vec.size() > 0) {
+                    return b.ArrayConstant(lb_vec, int32_type, false);
                 }
             }
             return nullptr;
@@ -875,6 +929,27 @@ class PRIFInterface {
             return struct_sym;
         }
 
+        void convert_team_type(const Location &loc, ASR::expr_t *team) {
+            if (team && ASR::is_a<ASR::Var_t>(*team)) {
+                ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
+                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
+                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
+                if (team_var->m_type_declaration != prif_decl) {
+                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
+                    team_var->m_type_declaration = prif_decl;
+                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
+                    LCOMPILERS_ASSERT(orig_decl != nullptr);
+                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
+                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
+                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
+                    if (parent_symtab->get_symbol(sym_name)) {
+                        parent_symtab->erase_symbol(sym_name);
+                    }
+                }
+            }
+        }
 
         ASR::symbol_t* get_or_create_prif_init_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -1019,6 +1094,111 @@ class PRIFInterface {
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
 
+
+        ASR::symbol_t* get_or_create_prif_change_team_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_change_team");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+            
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true);
+
+            ASR::symbol_t *team_sym = declare_variable(
+                fn_symtab, loc, "team", team_type, ASR::intentType::In, team_type_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t *team = ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_sym));
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 4);
+            args.push_back(al, team);
+            declare_prif_status_args(fn_symtab, loc, args);
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, true, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::stmt_t* make_prif_change_team_call(const Location &loc,
+                                             ASR::expr_t *team,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_change_team_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            convert_team_type(loc, team);
+            
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = team;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = stat;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg;
+            ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
+        ASR::symbol_t* get_or_create_prif_end_team_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_end_team");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASRUtils::ASRBuilder b(al, loc);
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 3);
+            declare_prif_status_args(fn_symtab, loc, args);
+
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, true, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        ASR::stmt_t* make_prif_end_team_call(const Location &loc,
+                                             ASR::expr_t *stat = nullptr,
+                                             ASR::expr_t *errmsg = nullptr,
+                                             ASR::expr_t *errmsg_alloc = nullptr) {
+            ASR::symbol_t *sub = get_or_create_prif_end_team_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
+            
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 3);
+
+            ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = stat;
+            ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = errmsg;
+            ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = errmsg_alloc;
+
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+
+            return ASRUtils::STMT(ASR::make_SubroutineCall_t(
+                al, loc, sub, nullptr, call_args.p, call_args.n, nullptr, false));
+        }
+
         ASR::symbol_t* get_or_create_prif_form_team_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", "prif_form_team");
@@ -1078,27 +1258,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_form_team_sub(loc);
             select_errmsg_arg(errmsg, errmsg_alloc);
-            
-            // Convert team_type to __module_prif_prif_team_type
-            if (team && ASR::is_a<ASR::Var_t>(*team)) {
-                ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
-                ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*team_var->m_type));
-                ASR::symbol_t *prif_decl = get_or_create_prif_team_type_struct(loc);
-                if (team_var->m_type_declaration != prif_decl) {
-                    ASR::symbol_t *orig_decl = team_var->m_type_declaration;
-                    team_var->m_type_declaration = prif_decl;
-                    team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
-                    LCOMPILERS_ASSERT(orig_decl != nullptr);
-                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
-                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                    if (parent_symtab->get_symbol(sym_name)) {
-                        parent_symtab->erase_symbol(sym_name);
-                    }
-                }
-            }
+            convert_team_type(loc, team);
             
             // Note: team_number might be passed as int32, we should cast to int64
             ASRUtils::ASRBuilder b(al, loc);
@@ -1486,6 +1646,7 @@ class PRIFInterface {
                                              ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_sync_team_sub(loc);
             select_errmsg_arg(errmsg, errmsg_alloc);
+            convert_team_type(loc, team);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = team;
@@ -1592,7 +1753,9 @@ class PRIFInterface {
             }
         }
 
-        void emit_allocate_call(ASR::Variable_t *var, ASR::expr_t *hexpr, ASR::expr_t *dexpr,
+        void emit_allocate_call(ASR::Variable_t *var,
+                                ASR::codimension_t *codims, size_t n_codims,
+                                ASR::expr_t *hexpr, ASR::expr_t *dexpr,
                                 ASR::symbol_t *alloc_sub, ASR::symbol_t *handle_struct,
                                 ASR::ttype_t *i64, const Location &loc,
                                 Vec<ASR::stmt_t*> &new_body,
@@ -1607,19 +1770,28 @@ class PRIFInterface {
             Vec<ASR::expr_t*> lco_elems; lco_elems.reserve(al, corank);
             Vec<ASR::expr_t*> uco_elems; uco_elems.reserve(al, corank > 1 ? corank - 1 : 0);
             for (int64_t ci = 0; ci < corank; ci++) {
-                int64_t lb = 1;
-                if (ci < (int64_t)var->n_codims && var->m_codims[ci].m_start) {
-                    ASRUtils::extract_value(var->m_codims[ci].m_start, lb);
+                ASR::expr_t *lb_expr = nullptr;
+                ASR::expr_t *ub_expr = nullptr;
+
+                if (n_codims > 0 && codims && ci < (int64_t)n_codims) {
+                    lb_expr = codims[ci].m_start;
+                    ub_expr = codims[ci].m_end;
+                } else if (ci < (int64_t)var->n_codims) {
+                    lb_expr = var->m_codims[ci].m_start;
+                    ub_expr = var->m_codims[ci].m_end;
                 }
-                lco_elems.push_back(al, b.i64(lb));
+
+                if (lb_expr) {
+                    lco_elems.push_back(al, b.i2i_t(lb_expr, i64));
+                } else {
+                    lco_elems.push_back(al, b.i64(1));
+                }
+
                 if (ci == corank - 1) {
-                    LCOMPILERS_ASSERT(var->m_codims[ci].m_end == nullptr);
-                }
-                if (ci < corank - 1 && ci < (int64_t)var->n_codims
-                    && var->m_codims[ci].m_end) {
-                    int64_t ub = 0;
-                    ASRUtils::extract_value(var->m_codims[ci].m_end, ub);
-                    uco_elems.push_back(al, b.i64(ub));
+                    LCOMPILERS_ASSERT(ub_expr == nullptr);
+                } else {
+                    LCOMPILERS_ASSERT(ub_expr);
+                    uco_elems.push_back(al, b.i2i_t(ub_expr, i64));
                 }
             }
             
@@ -1687,8 +1859,10 @@ class PRIFInterface {
 
         void make_allocate_coarray_stmts(const Location &loc, ASR::expr_t *expr,
                                          ASR::dimension_t *dims, size_t n_dims,
+                                         ASR::codimension_t *codims, size_t n_codims,
                                          ASR::expr_t *stat, ASR::expr_t *errmsg,
-                                         Vec<ASR::stmt_t*> &new_body) {
+                                         Vec<ASR::stmt_t*> &new_body,
+                                         ASR::expr_t *source = nullptr) {
             ASR::symbol_t *sym = nullptr;
             if (expr->type == ASR::exprType::Var) {
                 sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
@@ -1696,6 +1870,9 @@ class PRIFInterface {
             LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Variable_t>(*sym));
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
             LCOMPILERS_ASSERT(var->n_codims > 0 && ASRUtils::is_allocatable(original_types[sym]));
+
+            ASR::dimension_t *var_dims = nullptr;
+            size_t n_array_dims = ASRUtils::extract_dimensions_from_ttype(var->m_type, var_dims);
 
             ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::symbol_t *handle_struct = get_or_create_prif_coarray_handle_struct(loc);
@@ -1708,17 +1885,20 @@ class PRIFInterface {
             ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_orig));
             ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_orig));
 
-            ASR::expr_t *sz = get_dynamic_total_size_in_bytes_expr(loc, var, dims, n_dims);
+            ASR::expr_t *sz = get_dynamic_total_size_in_bytes_expr(loc, var, dims, n_dims, source);
             
-            emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
+            emit_allocate_call(var, codims, n_codims, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body, sz, stat, errmsg);
             
-            size_t n_array_dims = n_dims;
+
             ASR::expr_t *shape_expr = nullptr;
+            ASR::expr_t *lbound_expr = nullptr;
             if (n_array_dims > 0) {
-                shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims);
+                shape_expr = create_shape_expr_from_dims(loc, dims, n_array_dims, source);
+                lbound_expr = create_lbound_expr_from_dims(loc, dims, n_array_dims);
             }
+            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                ASR::make_CPtrToPointer_t(al, loc, dexpr, expr, shape_expr, nullptr));
+                ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
             new_body.push_back(al, cfp_stmt);
         }
 
@@ -1790,8 +1970,9 @@ class PRIFInterface {
                     ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                     ASR::ttype_t *orig_type = original_types[sym];
                     ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                    ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
                     ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
+                        ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
                     new_body.push_back(al, cfp_stmt);
                     continue;
                 }
@@ -1810,12 +1991,13 @@ class PRIFInterface {
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
 
-                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
+                emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, new_body);
 
                 ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym_use));
                 ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
                 ASR::stmt_t *cfp_stmt = ASRUtils::STMT(
-                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, nullptr));
+                    ASR::make_CPtrToPointer_t(al, loc, dexpr, var_expr, shape_expr, lbound_expr));
                 new_body.push_back(al, cfp_stmt);
 
                 if (var->m_value) {
@@ -1913,7 +2095,7 @@ class PRIFInterface {
                 ASR::expr_t *hexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
                 ASR::expr_t *dexpr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dsym_use));
 
-                emit_allocate_call(var, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
+                emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub, handle_struct, i64, loc, body);
 
                 // If the saved coarray had an initial value (e.g., x[*] = 0),
                 // bind the data pointer to a local variable and assign the value.
@@ -1930,10 +2112,11 @@ class PRIFInterface {
                     ASR::symbol_t *var_sym = &(var->base);
                     ASR::ttype_t *orig_type = original_types[var_sym];
                     ASR::expr_t *shape_expr = create_shape_expr(loc, orig_type);
+                    ASR::expr_t *lbound_expr = create_lbound_expr(loc, orig_type);
 
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
-                                                  shape_expr, nullptr)));
+                                                  shape_expr, lbound_expr)));
                     body.push_back(al, ASRUtils::STMT(
                         ASR::make_Assignment_t(al, loc, local_expr, init_value,
                                               nullptr, false, false)));
@@ -1969,8 +2152,8 @@ class PRIFInterface {
                 LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
-                    if (coindices[i].m_left) {
-                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    if (coindices[i].m_index) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_index, int64_type));
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -2023,8 +2206,8 @@ class PRIFInterface {
                 LCOMPILERS_ASSERT(false);
             } else {
                 for (size_t i = 0; i < n_coindices; i++) {
-                    if (coindices[i].m_left) {
-                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_left, int64_type));
+                    if (coindices[i].m_index) {
+                        sub_elems.push_back(al, b.i2i_t(coindices[i].m_index, int64_type));
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
@@ -2157,31 +2340,6 @@ class PRIFInterface {
                 al, loc, wrapper_fn, wrapper_fn, nullptr, 0,
                 type, nullptr, nullptr));
         }
-        ASR::symbol_t* get_or_create_prif_lcobound_no_dim_sub(const Location &loc) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_lcobound_no_dim");
-            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) return existing;
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
-            ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
-            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-            ASR::dimension_t d; d.loc = loc;
-            d.m_start = nullptr;
-            d.m_length = nullptr;
-            dims.push_back(al, d);
-            ASR::ttype_t *lcobounds_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
-            
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-            ASR::symbol_t *lcobounds_sym = declare_variable(fn_symtab, loc, "lcobounds", lcobounds_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-            Vec<ASR::expr_t*> args; args.reserve(al, 2);
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, lcobounds_sym)));
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, false, false, false, nullptr, 0, false, false, false, nullptr);
-            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
-            return ASR::down_cast<ASR::symbol_t>(fn);
-        }
-
         ASR::symbol_t* get_or_create_prif_lcobound_with_dim_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
             std::string sym_name = get_mangled_name("prif", "prif_lcobound_with_dim");
@@ -2199,31 +2357,6 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, lcobound_sym)));
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, false, false, false, nullptr, 0, false, false, false, nullptr);
-            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
-            return ASR::down_cast<ASR::symbol_t>(fn);
-        }
-
-        ASR::symbol_t* get_or_create_prif_ucobound_no_dim_sub(const Location &loc) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = get_mangled_name("prif", "prif_ucobound_no_dim");
-            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) return existing;
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-            ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
-            ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
-            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-            ASR::dimension_t d; d.loc = loc;
-            d.m_start = nullptr;
-            d.m_length = nullptr;
-            dims.push_back(al, d);
-            ASR::ttype_t *ucobounds_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
-
-            ASR::symbol_t *coarray_sym = declare_variable(fn_symtab, loc, "coarray", handle_struct_type, ASR::intentType::In, handle_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-            ASR::symbol_t *ucobounds_sym = declare_variable(fn_symtab, loc, "ucobounds", ucobounds_type, ASR::intentType::Out, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-            Vec<ASR::expr_t*> args; args.reserve(al, 2);
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ucobounds_sym)));
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, false, false, false, nullptr, 0, false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -2252,18 +2385,11 @@ class PRIFInterface {
         }
 
         ASR::expr_t* make_prif_lcobound_call(const Location &loc, ASR::ttype_t *type, ASR::expr_t *coarray, ASR::expr_t *dim) {
-            int corank = 1;
-            if (ASR::is_a<ASR::Var_t>(*coarray)) {
-                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(coarray)->m_v);
-                corank = ASRUtils::symbol_corank(sym);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*coarray)) {
-                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(coarray)->m_m);
-                corank = ASRUtils::symbol_corank(sym);
-            }
+            LCOMPILERS_ASSERT(dim != nullptr);
             SymbolTable *global_scope = unit.m_symtab;
             int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
-            std::string sym_name = std::string("lcompilers_prif_lcobound") + (dim ? "_with_dim_k" + std::to_string(result_kind) : "_no_dim_" + std::to_string(corank) + "_k" + std::to_string(result_kind));
-            std::string dep_name = get_mangled_name("prif", dim ? "prif_lcobound_with_dim" : "prif_lcobound_no_dim");
+            std::string sym_name = "lcompilers_prif_lcobound_with_dim_k" + std::to_string(result_kind);
+            std::string dep_name = get_mangled_name("prif", "prif_lcobound_with_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
@@ -2277,49 +2403,27 @@ class PRIFInterface {
                     fn_symtab, loc, "coarray_ptr", handle_struct_type, ASR::intentType::In, handle_sym,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
 
-                ASR::symbol_t *dim_sym = nullptr;
-                if (dim) {
-                    ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                    dim_sym = declare_variable(
-                        fn_symtab, loc, "dim_val", int32_type, ASR::intentType::In, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
-                }
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::symbol_t *dim_sym = declare_variable(
+                    fn_symtab, loc, "dim_val", int32_type, ASR::intentType::In, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
 
-                ASR::symbol_t *sub;
+                ASR::symbol_t *sub = get_or_create_prif_lcobound_with_dim_sub(loc);
                 Vec<ASR::call_arg_t> call_args; 
-                
+                call_args.reserve(al, 3);
+
                 ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-                ASR::ttype_t *sub_res_type = int64_type;
-                if (!dim) {
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                    ASR::dimension_t d; d.loc = loc;
-                    d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                    d.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, corank, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                    dims.push_back(al, d);
-                    sub_res_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
-                }
-
                 ASR::symbol_t *sub_res_sym = declare_variable(
-                    fn_symtab, loc, "sub_res", sub_res_type, ASR::intentType::Local, nullptr,
+                    fn_symtab, loc, "sub_res", int64_type, ASR::intentType::Local, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-
-                if (dim) {
-                    sub = get_or_create_prif_lcobound_with_dim_sub(loc);
-                    call_args.reserve(al, 3);
-                } else {
-                    sub = get_or_create_prif_lcobound_no_dim_sub(loc);
-                    call_args.reserve(al, 2);
-                }
 
                 ASR::call_arg_t sub_coarray_arg; sub_coarray_arg.loc = loc;
                 sub_coarray_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym));
                 call_args.push_back(al, sub_coarray_arg);
 
-                if (dim) {
-                    ASR::call_arg_t sub_dim_arg; sub_dim_arg.loc = loc;
-                    sub_dim_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym));
-                    call_args.push_back(al, sub_dim_arg);
-                }
+                ASR::call_arg_t sub_dim_arg; sub_dim_arg.loc = loc;
+                sub_dim_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym));
+                call_args.push_back(al, sub_dim_arg);
 
                 ASR::call_arg_t arg; arg.loc = loc;
                 arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sub_res_sym));
@@ -2341,9 +2445,9 @@ class PRIFInterface {
                 deps.push_back(al, s2c(al, dep_name));
 
                 Vec<ASR::expr_t*> wrapper_args;
-                wrapper_args.reserve(al, dim ? 2 : 1);
+                wrapper_args.reserve(al, 2);
                 wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
-                if (dim) wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
+                wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
 
                 ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                     al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
@@ -2357,31 +2461,22 @@ class PRIFInterface {
             }
 
             Vec<ASR::call_arg_t> call_wrapper_args;
-            call_wrapper_args.reserve(al, dim ? 2 : 1);
+            call_wrapper_args.reserve(al, 2);
             ASR::call_arg_t w_coarray_arg; w_coarray_arg.loc = loc;
             w_coarray_arg.m_value = make_prif_handle_expr(loc, coarray);
             call_wrapper_args.push_back(al, w_coarray_arg);
-            if (dim) {
-                ASR::call_arg_t w_dim_arg; w_dim_arg.loc = loc;
-                w_dim_arg.m_value = dim;
-                call_wrapper_args.push_back(al, w_dim_arg);
-            }
+            ASR::call_arg_t w_dim_arg; w_dim_arg.loc = loc;
+            w_dim_arg.m_value = dim;
+            call_wrapper_args.push_back(al, w_dim_arg);
             return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, wrapper_fn, wrapper_fn, call_wrapper_args.p, call_wrapper_args.n, type, nullptr, nullptr));
         }
 
         ASR::expr_t* make_prif_ucobound_call(const Location &loc, ASR::ttype_t *type, ASR::expr_t *coarray, ASR::expr_t *dim) {
-            int corank = 1;
-            if (ASR::is_a<ASR::Var_t>(*coarray)) {
-                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(coarray)->m_v);
-                corank = ASRUtils::symbol_corank(sym);
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*coarray)) {
-                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(coarray)->m_m);
-                corank = ASRUtils::symbol_corank(sym);
-            }
+            LCOMPILERS_ASSERT(dim != nullptr);
             SymbolTable *global_scope = unit.m_symtab;
             int result_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
-            std::string sym_name = std::string("lcompilers_prif_ucobound") + (dim ? "_with_dim_k" + std::to_string(result_kind) : "_no_dim_" + std::to_string(corank) + "_k" + std::to_string(result_kind));
-            std::string dep_name = get_mangled_name("prif", dim ? "prif_ucobound_with_dim" : "prif_ucobound_no_dim");
+            std::string sym_name = "lcompilers_prif_ucobound_with_dim_k" + std::to_string(result_kind);
+            std::string dep_name = get_mangled_name("prif", "prif_ucobound_with_dim");
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
             ASR::ttype_t *handle_struct_type = ASRUtils::make_StructType_t_util(al, loc, handle_sym, true);
             ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
@@ -2395,49 +2490,27 @@ class PRIFInterface {
                     fn_symtab, loc, "coarray_ptr", handle_struct_type, ASR::intentType::In, handle_sym,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
 
-                ASR::symbol_t *dim_sym = nullptr;
-                if (dim) {
-                    ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-                    dim_sym = declare_variable(
-                        fn_symtab, loc, "dim_val", int32_type, ASR::intentType::In, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
-                }
+                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::symbol_t *dim_sym = declare_variable(
+                    fn_symtab, loc, "dim_val", int32_type, ASR::intentType::In, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, true);
 
-                ASR::symbol_t *sub;
+                ASR::symbol_t *sub = get_or_create_prif_ucobound_with_dim_sub(loc);
                 Vec<ASR::call_arg_t> call_args; 
-                
+                call_args.reserve(al, 3);
+
                 ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-                ASR::ttype_t *sub_res_type = int64_type;
-                if (!dim) {
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
-                    ASR::dimension_t d; d.loc = loc;
-                    d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                    d.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, corank, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-                    dims.push_back(al, d);
-                    sub_res_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int64_type, dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
-                }
-
                 ASR::symbol_t *sub_res_sym = declare_variable(
-                    fn_symtab, loc, "sub_res", sub_res_type, ASR::intentType::Local, nullptr,
+                    fn_symtab, loc, "sub_res", int64_type, ASR::intentType::Local, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-
-                if (dim) {
-                    sub = get_or_create_prif_ucobound_with_dim_sub(loc);
-                    call_args.reserve(al, 3);
-                } else {
-                    sub = get_or_create_prif_ucobound_no_dim_sub(loc);
-                    call_args.reserve(al, 2);
-                }
 
                 ASR::call_arg_t sub_coarray_arg; sub_coarray_arg.loc = loc;
                 sub_coarray_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym));
                 call_args.push_back(al, sub_coarray_arg);
 
-                if (dim) {
-                    ASR::call_arg_t sub_dim_arg; sub_dim_arg.loc = loc;
-                    sub_dim_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym));
-                    call_args.push_back(al, sub_dim_arg);
-                }
+                ASR::call_arg_t sub_dim_arg; sub_dim_arg.loc = loc;
+                sub_dim_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym));
+                call_args.push_back(al, sub_dim_arg);
 
                 ASR::call_arg_t arg; arg.loc = loc;
                 arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sub_res_sym));
@@ -2459,9 +2532,9 @@ class PRIFInterface {
                 deps.push_back(al, s2c(al, dep_name));
 
                 Vec<ASR::expr_t*> wrapper_args;
-                wrapper_args.reserve(al, dim ? 2 : 1);
+                wrapper_args.reserve(al, 2);
                 wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
-                if (dim) wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
+                wrapper_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
 
                 ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                     al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
@@ -2475,15 +2548,13 @@ class PRIFInterface {
             }
 
             Vec<ASR::call_arg_t> call_wrapper_args;
-            call_wrapper_args.reserve(al, dim ? 2 : 1);
+            call_wrapper_args.reserve(al, 2);
             ASR::call_arg_t w_coarray_arg; w_coarray_arg.loc = loc;
             w_coarray_arg.m_value = make_prif_handle_expr(loc, coarray);
             call_wrapper_args.push_back(al, w_coarray_arg);
-            if (dim) {
-                ASR::call_arg_t w_dim_arg; w_dim_arg.loc = loc;
-                w_dim_arg.m_value = dim;
-                call_wrapper_args.push_back(al, w_dim_arg);
-            }
+            ASR::call_arg_t w_dim_arg; w_dim_arg.loc = loc;
+            w_dim_arg.m_value = dim;
+            call_wrapper_args.push_back(al, w_dim_arg);
             return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, wrapper_fn, wrapper_fn, call_wrapper_args.p, call_wrapper_args.n, type, nullptr, nullptr));
         }
 
@@ -2515,13 +2586,15 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
                 *current_expr = call;
             } else if (intrinsic_name == "LCoBound") {
                 ASR::expr_t *coarray = x->m_args[0];
-                ASR::expr_t *dim = x->n_args >= 2 ? x->m_args[1] : nullptr;
+                LCOMPILERS_ASSERT(x->n_args >= 2);
+                ASR::expr_t *dim = x->m_args[1];
                 ASR::expr_t *call = prif.make_prif_lcobound_call(
                     x->base.base.loc, x->m_type, coarray, dim);
                 *current_expr = call;
             } else if (intrinsic_name == "UCoBound") {
                 ASR::expr_t *coarray = x->m_args[0];
-                ASR::expr_t *dim = x->n_args >= 2 ? x->m_args[1] : nullptr;
+                LCOMPILERS_ASSERT(x->n_args >= 2);
+                ASR::expr_t *dim = x->m_args[1];
                 ASR::expr_t *call = prif.make_prif_ucobound_call(
                     x->base.base.loc, x->m_type, coarray, dim);
                 *current_expr = call;
@@ -2593,6 +2666,17 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                     ASR::SyncTeam_t *x = ASR::down_cast<ASR::SyncTeam_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_sync_team_call(
                         x->base.base.loc, x->m_team, x->m_stat, x->m_errmsg));
+
+                } else if (m_body[i]->type == ASR::stmtType::ChangeTeam) {
+                    ASR::ChangeTeam_t *x = ASR::down_cast<ASR::ChangeTeam_t>(m_body[i]);
+                    body.push_back(replacer.al, replacer.prif.make_prif_change_team_call(
+                        x->base.base.loc, x->m_team, x->m_stat, x->m_errmsg));
+                    transform_stmts(x->m_body, x->n_body);
+                    for (size_t j = 0; j < x->n_body; j++) {
+                        body.push_back(replacer.al, x->m_body[j]);
+                    }
+                    body.push_back(replacer.al, replacer.prif.make_prif_end_team_call(
+                        x->base.base.loc, x->m_end_stat, x->m_end_errmsg));
                 } else if (m_body[i]->type == ASR::stmtType::FormTeam) {
                     ASR::FormTeam_t *x = ASR::down_cast<ASR::FormTeam_t>(m_body[i]);
                     body.push_back(replacer.al, replacer.prif.make_prif_form_team_call(
@@ -2708,8 +2792,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                             if (is_co) {
                                 ASR::dimension_t *dims = x->m_args[j].m_dims;
                                 size_t n_dims = x->m_args[j].n_dims;
+                                ASR::codimension_t *codims = x->m_args[j].m_codims;
+                                size_t n_codims = x->m_args[j].n_codims;
                                 replacer.prif.make_allocate_coarray_stmts(
-                                    x->base.base.loc, a, dims, n_dims, x->m_stat, x->m_errmsg, body);
+                                    x->base.base.loc, a, dims, n_dims, codims, n_codims, x->m_stat, x->m_errmsg, body, x->m_source);
                             } else {
                                 non_coarray_args.push_back(replacer.al, x->m_args[j]);
                             }

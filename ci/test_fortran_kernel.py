@@ -9,6 +9,7 @@ class IRKernelTests(jkt.KernelTests):
     file_extension = ".f90"
 
     code_hello_world = 'print *, "hello, world"'
+    code_clear_output = 'use lfortran_display; call clear_output()'
     #code_stderr = "1x"
 
     #complete_code_samples = ['1', 'print *, "hello, world"',
@@ -21,6 +22,14 @@ class IRKernelTests(jkt.KernelTests):
         {'code': "1+2+3", 'result': "6"},
         {'code': "1+2", 'result': "3"},
         {'code': "integer :: x; x = 5; x*2", 'result': "10"},
+    ]
+
+    code_display_data = [
+        {
+            'code': 'use lfortran_display; '
+                    'call display_data("text/html", "<b>Hello</b>")',
+            'mime': 'text/html',
+        },
     ]
 
 if __name__ == '__main__':

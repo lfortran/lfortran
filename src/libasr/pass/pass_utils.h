@@ -260,6 +260,7 @@ namespace LCompilers {
                     alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_type = nullptr; alloc_arg.m_dims = res_arr->m_dims;
                     alloc_arg.n_dims = res_arr->n_dims; alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_codims = nullptr; alloc_arg.n_codims = 0;
                     alloc_args.push_back(al, alloc_arg);
 
                     ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,

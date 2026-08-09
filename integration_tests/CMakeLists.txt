@@ -1259,6 +1259,8 @@ RUN(NAME format_104 LABELS gfortran llvm)
 RUN(NAME format_105 LABELS gfortran llvm)
 RUN(NAME format_106 LABELS gfortran llvm)
 RUN(NAME format_107 LABELS gfortran llvm)
+RUN(NAME format_108 LABELS gfortran llvm)
+RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1845,6 +1847,8 @@ RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
+
+RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -3082,9 +3086,11 @@ RUN(NAME inquire_unit_exist LABELS gfortran llvm)
 RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
+RUN(NAME backspace_iomsg_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_endfile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_endfile_02 LABELS gfortran llvm)
 RUN(NAME test_endfile_03 LABELS gfortran llvm)
+RUN(NAME endfile_iomsg_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_01 LABELS gfortran llvm)
 RUN(NAME class_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3939,6 +3945,7 @@ RUN(NAME save_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
+RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4774,6 +4781,11 @@ RUN(NAME coarrays_30 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_31 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_32 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_33 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_34 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
+RUN(NAME coarrays_35 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_36 EXTRA_ARGS --coarray=true)
+
+RUN(NAME coarrays_37 EXTRA_ARGS --coarray=true)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)
@@ -4993,7 +5005,9 @@ RUN(NAME equivalence_42 LABELS gfortran llvm)
 RUN(NAME equivalence_43 LABELS gfortran llvm)
 RUN(NAME equivalence_44 LABELS gfortran llvm)
 RUN(NAME equivalence_45 LABELS gfortran llvm)
+RUN(NAME equivalence_46 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
+RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
