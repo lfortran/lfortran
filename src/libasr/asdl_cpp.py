@@ -2677,7 +2677,7 @@ class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
         target = "m_%s" % local
         if not field.opt:
             if field.type in products:
-                self.emit("%s_t %s;" % (field.type, target), indent)
+                self.emit("%s_t %s{};" % (field.type, target), indent)
             elif field.type in ["identifier", "string"]:
                 self.emit("char *%s;" % target, indent)
             elif field.type == "int":
