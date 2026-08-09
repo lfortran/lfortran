@@ -39,3 +39,15 @@ semantic error: Coarray 'cod' coindex 1 is out of bounds: 5 not in [1, 4]
    |
 26 |     print *,cod[5]
    |                 ^ 
+
+semantic error: The upper cobound `*` must appear only in the last codimension
+  --> tests/errors/continue_compilation_coarrays.f90:30:21
+   |
+30 |     allocate(acoarr[*, *])
+   |                     ^ 
+
+semantic error: The last upper cobound of a coarray must be `*`
+  --> tests/errors/continue_compilation_coarrays.f90:34:25
+   |
+34 |     allocate(acoarr2[2, 2])
+   |                         ^ 
