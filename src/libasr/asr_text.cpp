@@ -24,6 +24,47 @@ namespace LCompilers {
 
 namespace {
 
+// Returns true if `value` is well-formed UTF-8: the encoding the text format
+// is defined in. Overlong forms, surrogates and out-of-range code points are
+// rejected, so a value that survives this check can be written as a string.
+bool is_valid_utf8(const char *value, size_t size) {
+    size_t i = 0;
+    while (i < size) {
+        const unsigned char c = static_cast<unsigned char>(value[i]);
+        size_t length;
+        uint32_t code_point;
+        if (c < 0x80) {
+            i++;
+            continue;
+        } else if ((c & 0xe0) == 0xc0) {
+            length = 2;
+            code_point = c & 0x1f;
+        } else if ((c & 0xf0) == 0xe0) {
+            length = 3;
+            code_point = c & 0x0f;
+        } else if ((c & 0xf8) == 0xf0) {
+            length = 4;
+            code_point = c & 0x07;
+        } else {
+            return false;
+        }
+        if (i + length > size) return false;
+        for (size_t k = 1; k < length; k++) {
+            const unsigned char cont =
+                static_cast<unsigned char>(value[i + k]);
+            if ((cont & 0xc0) != 0x80) return false;
+            code_point = (code_point << 6) | (cont & 0x3f);
+        }
+        if (length == 2 && code_point < 0x80) return false;
+        if (length == 3 && code_point < 0x800) return false;
+        if (length == 4 && code_point < 0x10000) return false;
+        if (code_point > 0x10ffff) return false;
+        if (code_point >= 0xd800 && code_point <= 0xdfff) return false;
+        i += length;
+    }
+    return true;
+}
+
 std::string byte_hex(const uint8_t *bytes, size_t size) {
     static const char digits[] = "0123456789abcdef";
     std::string result;
@@ -81,7 +122,17 @@ class ASRTextWriter
         }
     }
 
+    // A Fortran character value is a byte array, while a text string is a
+    // sequence of characters. Bytes that are not valid UTF-8 therefore have no
+    // string spelling: writing them raw would produce a document that no text
+    // reader can decode, and escaping them as \\u00XX would silently turn one
+    // byte into a two byte character. Such values are written as #asr/bytes
+    // instead, which keeps the document valid UTF-8 and byte exact.
     void write_escaped_string(const char *value, size_t size) {
+        if (!is_valid_utf8(value, size)) {
+            write_bytes(value, size);
+            return;
+        }
         output.push_back('"');
         for (size_t i = 0; i < size; i++) {
             const unsigned char c = static_cast<unsigned char>(value[i]);
@@ -91,9 +142,9 @@ class ASRTextWriter
                 case '\n': output += "\\n"; break;
                 case '\r': output += "\\r"; break;
                 case '\t': output += "\\t"; break;
-                case '\b': output += "\\b"; break;
-                case '\f': output += "\\f"; break;
                 default:
+                    // Only \\t, \\r, \\n, \\\\, \\" and \\uNNNN are portable escapes,
+                    // so everything else control-like is written as \\uNNNN.
                     if (c < 0x20 || c == 0x7f) {
                         std::ostringstream hex;
                         hex << "\\u" << std::hex << std::setw(4)
@@ -126,17 +177,6 @@ public:
 
     std::string take_output() {
         return std::move(output);
-    }
-
-    void begin_document() {
-        begin_form("ASRText", 2);
-        begin_field("version");
-        write_int(1);
-        begin_field("value");
-    }
-
-    void end_document() {
-        end_form();
     }
 
     void begin_form(const char *name, size_t field_count) {
@@ -458,9 +498,8 @@ private:
             }
             SymbolTable *symtab = symbol_tables[table_item.first];
             for (const ASRText::MapEntry &entry : fields[1]->entries) {
-                if (entry.key->kind != ASRText::ValueKind::String) {
-                    schema_error(*entry.key,
-                        "symbol table names must be strings");
+                std::string entry_name;
+                if (!decode_text(*entry.key, entry_name)) {
                     return false;
                 }
                 std::string constructor;
@@ -473,12 +512,12 @@ private:
                         "' is not an ASR symbol constructor");
                     return false;
                 }
-                if (symtab->get_symbol(entry.key->text) != nullptr) {
+                if (symtab->get_symbol(entry_name) != nullptr) {
                     schema_error(*entry.key, "duplicate symbol '" +
-                        entry.key->text + "'");
+                        entry_name + "'");
                     return false;
                 }
-                symtab->add_symbol(entry.key->text,
+                symtab->add_symbol(entry_name,
                     ASR::make_symbol_stub(
                         al, type, node_location(*entry.value)));
             }
@@ -607,14 +646,38 @@ public:
         return true;
     }
 
+    // The writer falls back to #asr/bytes for a value that is not valid
+    // UTF-8, so everything that accepts a string must accept that form too,
+    // otherwise the writer could emit a document the reader rejects.
+    bool decode_text(const TextValue &value, std::string &result) {
+        if (value.kind == ASRText::ValueKind::String) {
+            result = value.text;
+            return true;
+        }
+        if (value.kind == ASRText::ValueKind::Tagged &&
+                value.tag == "asr/bytes" &&
+                value.tagged_value != nullptr &&
+                value.tagged_value->kind == ASRText::ValueKind::String) {
+            std::vector<uint8_t> bytes;
+            if (!parse_hex(value.tagged_value->text, bytes)) {
+                schema_error(value, "invalid #asr/bytes payload");
+                return false;
+            }
+            result.assign(bytes.begin(), bytes.end());
+            return true;
+        }
+        schema_error(value, "expected a string or #asr/bytes");
+        return false;
+    }
+
     bool decode_string(const TextValue &value, char *&result) {
-        if (value.kind != ASRText::ValueKind::String) {
-            schema_error(value, "expected a string");
+        std::string text;
+        if (!decode_text(value, text)) {
             return false;
         }
-        result = static_cast<char *>(al.alloc(value.text.size() + 1));
-        std::memcpy(result, value.text.data(), value.text.size());
-        result[value.text.size()] = '\0';
+        result = static_cast<char *>(al.alloc(text.size() + 1));
+        std::memcpy(result, text.data(), text.size());
+        result[text.size()] = '\0';
         return true;
     }
 
@@ -766,13 +829,13 @@ public:
             return false;
         }
         const TextValue &name = *fields[1];
-        if (name.kind != ASRText::ValueKind::String) {
-            schema_error(name, "symbol name must be a string");
+        std::string name_text;
+        if (!decode_text(name, name_text)) {
             return false;
         }
-        result = symtab->get_symbol(name.text);
+        result = symtab->get_symbol(name_text);
         if (result == nullptr) {
-            schema_error(name, "unknown symbol '" + name.text + "'");
+            schema_error(name, "unknown symbol '" + name_text + "'");
             return false;
         }
         return true;
@@ -804,16 +867,15 @@ public:
             return false;
         }
         for (const ASRText::MapEntry &entry : fields[1]->entries) {
-            if (entry.key->kind != ASRText::ValueKind::String) {
-                schema_error(*entry.key,
-                    "symbol table names must be strings");
+            std::string entry_name;
+            if (!decode_text(*entry.key, entry_name)) {
                 return false;
             }
             ASR::symbol_t *decoded;
             if (!deserialize_symbol(*entry.value, decoded)) {
                 return false;
             }
-            ASR::symbol_t *stub = result->get_symbol(entry.key->text);
+            ASR::symbol_t *stub = result->get_symbol(entry_name);
             if (stub == nullptr || stub->type != decoded->type) {
                 schema_error(*entry.value,
                     "symbol definition does not match its declaration");
@@ -825,22 +887,7 @@ public:
     }
 
     Result<ASR::TranslationUnit_t *> decode(const TextValue &root) {
-        std::vector<const TextValue *> document_fields;
-        if (!decode_form(root, "ASRText",
-                {"version", "value"}, document_fields)) {
-            return Error();
-        }
-        int64_t version;
-        if (!decode_int(*document_fields[0], version)) {
-            return Error();
-        }
-        if (version != 1) {
-            schema_error(*document_fields[0],
-                "unsupported ASR text format version " +
-                std::to_string(version));
-            return Error();
-        }
-        const TextValue &value = *document_fields[1];
+        const TextValue &value = root;
         if (!collect_symbol_tables(value) ||
                 !predeclare_symbols()) {
             return Error();
@@ -871,9 +918,7 @@ std::string asr_to_text(const ASR::asr_t &asr,
             *ASR::down_cast2<ASR::TranslationUnit_t>(&asr));
     }
     ASRTextWriter writer(options, std::move(collector.ids));
-    writer.begin_document();
     writer.visit_asr(asr);
-    writer.end_document();
     return writer.take_output();
 }
 

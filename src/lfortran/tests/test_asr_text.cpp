@@ -40,8 +40,7 @@ end program
     const std::string named =
         LCompilers::asr_to_text(*result.result, named_options);
 
-    CHECK(named.rfind("(ASRText :version 1 :value ", 0) == 0);
-    CHECK(named.find("(TranslationUnit :symtab ") != std::string::npos);
+    CHECK(named.rfind("(TranslationUnit :symtab ", 0) == 0);
     CHECK(named.find("(Var :v (SymbolRef ") != std::string::npos);
     CHECK(named.find(":realloc_lhs false") != std::string::npos);
     CHECK(named.find("\033") == std::string::npos);
@@ -53,9 +52,7 @@ end program
     const std::string positional =
         LCompilers::asr_to_text(*result.result, positional_options);
 
-    CHECK(positional.rfind("(ASRText 1 ", 0) == 0);
-    CHECK(positional.find("(TranslationUnit (SymbolTable ") !=
-        std::string::npos);
+    CHECK(positional.rfind("(TranslationUnit (SymbolTable ", 0) == 0);
     CHECK(positional.find("(Var (SymbolRef ") != std::string::npos);
     CHECK(positional.find(":realloc_lhs") == std::string::npos);
     CHECK(LCompilers::asr_to_text(*result.result, named_options) == named);
@@ -146,11 +143,10 @@ end subroutine
 
 TEST_CASE("ASR text supports explicit location overrides") {
     const std::string text =
-        "(ASRText :version 1 :value "
         "#asr/loc [[1 2] "
         "(TranslationUnit "
         ":symtab (SymbolTable :id 0 :symbols {}) "
-        ":items [])])";
+        ":items [])]";
 
     Allocator allocator(1024 * 1024);
     LocationManager lm;
@@ -165,9 +161,8 @@ TEST_CASE("ASR text supports explicit location overrides") {
 
 TEST_CASE("ASR text reports schema errors separately from verification") {
     const std::string text =
-        "(ASRText :version 1 :value "
         "(TranslationUnit "
-        ":symtab (SymbolTable :id 0 :symbols {})))";
+        ":symtab (SymbolTable :id 0 :symbols {}))";
 
     Allocator allocator(1024 * 1024);
     LocationManager lm;
