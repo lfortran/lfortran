@@ -481,7 +481,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         if name in products:
             self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
         else:
@@ -567,7 +567,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def visitField(self, field):
@@ -671,7 +671,7 @@ class ASRPassWalkVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
 
         if is_symtab_present:
             self.emit("current_scope = current_scope_copy;", 2)
@@ -789,7 +789,7 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
 
         if is_symtab_present:
             self.emit("current_scope = current_scope_copy;", 2)
@@ -948,7 +948,7 @@ class TreeVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -1834,7 +1834,7 @@ class PickleVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -2160,7 +2160,7 @@ class JsonVisitorVisitor(ASDLVisitor):
 
         self.emit(    'dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
-        self.emit(    'if ((bool&)x) { } // Suppress unused warning', 2)
+        self.emit(    '(void)x; // Suppress unused warning', 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
@@ -2416,7 +2416,7 @@ class SerializationVisitorVisitor(ASDLVisitor):
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
             # above, but we would need to change emit to return a string.
-            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+            self.emit("(void)x; // Suppress unused warning", 2)
         self.emit("}", 1)
 
     def make_simple_sum_visitor(self, name, types):
