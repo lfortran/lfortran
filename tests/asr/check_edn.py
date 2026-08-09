@@ -69,6 +69,11 @@ def check(reader, name, raw):
     except UnicodeDecodeError as error:
         raise RuntimeError("%s: output is not valid UTF-8: %s"
                            % (name, error)) from error
+    # The compiler writes "\n"; capturing its stdout on Windows turns that into
+    # "\r\n". Undo the translation so this checks what was written rather than
+    # how the pipe delivered it. A carriage return is whitespace to Clojure and
+    # to the ASR text parser, but edn_format rejects it.
+    text = text.replace("\r\n", "\n")
     try:
         reader.loads(text)
     except Exception as error:
