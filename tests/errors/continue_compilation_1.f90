@@ -958,6 +958,11 @@ program continue_compilation_1
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
     end subroutine
+
+    subroutine construct_name()
+        b1:block
+        end block b2
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
