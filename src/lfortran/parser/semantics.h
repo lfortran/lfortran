@@ -1934,7 +1934,12 @@ return make_Program_t(al, a_loc,
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
-            throw LCompilers::LCompilersException("statement name is inconsistent"); \
+            p.diag.add(LCompilers::diag::Diagnostic( \
+                "end construct name '" + last \
+                    + "' does not match construct name '" + first + "'", \
+                LCompilers::diag::Level::Error, \
+                LCompilers::diag::Stage::Parser, \
+                {LCompilers::diag::Label("", {(id_last)->loc})})); \
         }
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
