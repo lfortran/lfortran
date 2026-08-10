@@ -3325,6 +3325,7 @@ RUN(NAME sin_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME sin_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cos_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bits_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME iand_ior_ieor_boz LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bits_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bits_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME bits_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #bgt, #bge, #blt, #ble

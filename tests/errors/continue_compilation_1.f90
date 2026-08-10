@@ -958,6 +958,12 @@ program continue_compilation_1
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
     end subroutine
+
+    subroutine iand_ior_ieor_boz_both_args()
+        print *, iand(o'12345', z'1234')
+        print *, ior(o'12345', z'1234')
+        print *, ieor(o'12345', z'1234')
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

@@ -10617,6 +10617,28 @@ public:
         return int_const->m_intboz_type != ASR::integerbozType::Decimal;
     }
 
+    // Per the Fortran standard, IAND, IOR, and IEOR each require that their
+    // two integer arguments not both be BOZ literal constants: if only one
+    // argument is BOZ, it is converted to the kind of the other; if both are
+    // BOZ there is no other kind to convert to, so this is forbidden.
+    void reject_both_boz_args(const std::string& intrinsic_name, Vec<ASR::expr_t*>& args) {
+        static const std::set<std::string> both_boz_forbidden = {
+            "iand", "ior", "ieor"
+        };
+        if (both_boz_forbidden.find(intrinsic_name) == both_boz_forbidden.end()) {
+            return;
+        }
+        if (args.size() >= 2 && args[0] != nullptr && args[1] != nullptr &&
+                is_boz_integer_constant(args[0]) && is_boz_integer_constant(args[1])) {
+            diag.semantic_error_label(
+                "'I' and 'J' arguments of '" + intrinsic_name + "' cannot both be BOZ literal constants",
+                {args[0]->base.loc, args[1]->base.loc},
+                "both arguments are BOZ literal constants"
+            );
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -12835,6 +12857,7 @@ public:
                 for (size_t i = 0; i < args.size(); i++) {
                     expr_args.push_back(al, args[i].m_value);
                 }
+                reject_both_boz_args(intrinsic_name, expr_args);
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
                 return create_func(al, loc, expr_args, diag);
@@ -16103,6 +16126,7 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    reject_both_boz_args(var_name, args);
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
