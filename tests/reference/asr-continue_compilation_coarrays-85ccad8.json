@@ -2,12 +2,12 @@
     "basename": "asr-continue_compilation_coarrays-85ccad8",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/continue_compilation_coarrays.f90",
-    "infile_hash": "bc88c0e8bee99db5bbfb1b26a404faf4666f4b9b010dcb8edd00aa4e",
+    "infile_hash": "3e21f4be08d463045474dca170c5b1d5319d37462a048b8aa1e34aff",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-continue_compilation_coarrays-85ccad8.stderr",
-    "stderr_hash": "62940ff3a25c23ffbfd8f55f1bd7c059882588df25851c5a5f46c4e6",
+    "stderr_hash": "f733310b9a6ca59dbb06c009dc9521dc936e86551a69162b8a7fa52a",
     "returncode": 1
 }

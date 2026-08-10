@@ -7771,6 +7771,70 @@ public:
                         codims.push_back(al, asr_codim);
                     }
                 }
+                if (corank > 0) {
+                    // C827: A coarray with the ALLOCATABLE attribute shall have
+                    // a coarray-spec that is a deferred-coshape-spec-list (i.e.
+                    // every codimension is a bare ':', no explicit bounds or '*').
+                    // C828: A nonallocatable coarray shall have a coarray-spec
+                    // that is an explicit-coshape-spec (every codimension but the
+                    // last has an explicit upper cobound, and the last is '*').
+                    for (size_t c = 0; c < codims.size(); c++) {
+                        const ASR::codimension_t &codim = codims[c];
+                        bool is_deferred = (codim.m_end == nullptr &&
+                            codim.m_start == nullptr &&
+                            codim.m_end_star != ASR::codimension_typeType::CodimensionStar);
+                        if (is_allocatable) {
+                            if (!is_deferred) {
+                                diag.add(Diagnostic(
+                                    "A coarray with the `allocatable` attribute "
+                                    "must have a deferred coshape (every "
+                                    "codimension written as `:`)",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        } else {
+                            if (is_deferred) {
+                                diag.add(Diagnostic(
+                                    "A nonallocatable coarray must have an "
+                                    "explicit coshape; a deferred codimension "
+                                    "(`:`) is only permitted for allocatable "
+                                    "coarrays",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            } else if (c == codims.size() - 1) {
+                                if (codim.m_end_star != ASR::codimension_typeType::CodimensionStar) {
+                                    diag.add(Diagnostic(
+                                        "The last upper cobound of a coarray "
+                                        "must be `*`",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {codim.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                            } else if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
+                                diag.add(Diagnostic(
+                                    "The upper cobound `*` must appear only "
+                                    "in the last codimension",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            } else if (codim.m_end == nullptr) {
+                                diag.add(Diagnostic(
+                                    "A nonallocatable coarray's codimension "
+                                    "must have an explicit upper cobound",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
                 if (!is_argument && !is_allocatable && !is_pointer
                         && !is_dimension_star && dims.size() > 0) {
                     for (size_t j = 0; j < dims.size(); j++) {
