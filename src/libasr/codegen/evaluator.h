@@ -89,11 +89,11 @@ public:
     static void print_targets();
     static std::string get_default_target_triple();
 
-    template<class T>
-    T execfn(const std::string &name) {
+    template<class T, class... Args>
+    T execfn(const std::string &name, Args... args) {
         intptr_t addr = get_symbol_address(name);
-        T (*f)() = (T (*)())addr;
-        return f();
+        T (*f)(Args...) = (T (*)(Args...))addr;
+        return f(args...);
     }
 };
 
@@ -114,11 +114,11 @@ public:
     intptr_t get_symbol_address(const std::string &name);
     llvm::LLVMContext &get_context();
 
-    template<class T>
-    T execfn(const std::string &name) {
+    template<class T, class... Args>
+    T execfn(const std::string &name, Args... args) {
         intptr_t addr = get_symbol_address(name);
-        T (*f)() = (T (*)())addr;
-        return f();
+        T (*f)(Args...) = (T (*)(Args...))addr;
+        return f(args...);
     }
 
 private:
