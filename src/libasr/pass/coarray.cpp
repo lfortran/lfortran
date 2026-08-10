@@ -1666,7 +1666,6 @@ class PRIFInterface {
 
                 if (is_save && scope != unit.m_symtab) {
                     companion_scope = unit.m_symtab;
-                    companion_scope->asr_owner = (ASR::asr_t*)&unit;
                     hname = companion_scope->get_unique_name(vname + "__coarray_handle");
                     dname = companion_scope->get_unique_name(vname + "__coarray_data");
                 }

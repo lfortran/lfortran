@@ -287,14 +287,13 @@ public:
     }
     /// Is a variable declared in a module scope or global translation unit scope
     bool is_module_or_global_variable(ASR::Variable_t* const v){
-        if (!v->m_parent_symtab || v->m_parent_symtab->parent == nullptr) {
-            return true;
-        }
+        LCOMPILERS_ASSERT(v->m_parent_symtab && v->m_parent_symtab->asr_owner)
         ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
-        if (!asr_owner || !ASR::is_a<ASR::symbol_t>(*asr_owner)) {
-            return true;
-        }
-        return ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+        const bool is_global_scope = ASR::is_a<ASR::unit_t>(*asr_owner) 
+                                    && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)asr_owner);
+        const bool is_module_scoped = ASR::is_a<ASR::symbol_t>(*asr_owner) 
+                                    && ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+        return is_global_scope || is_module_scoped;
     }
 
     void visit_Var(const ASR::Var_t &x) {
