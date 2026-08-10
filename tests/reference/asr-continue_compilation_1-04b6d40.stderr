@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:972:7
+   --> tests/errors/continue_compilation_1.f90:980:7
     |
-972 |       foo    end type t_recovery
+980 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:975:7
+   --> tests/errors/continue_compilation_1.f90:983:7
     |
-975 |       class(t_recovery), intent(in) :: self
+983 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1866,20 +1866,26 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
 918 |         print *, real(1., 666)
     |                           ^^^ 
 
-semantic error: 'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:955:29
+semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
+   --> tests/errors/continue_compilation_1.f90:959:18
     |
-955 |         print *, merge_bits(o'12345', z'1234', 32767)
+959 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants
+   --> tests/errors/continue_compilation_1.f90:963:29
+    |
+963 |         print *, merge_bits(o'12345', z'1234', 32767)
     |                             ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
 
 semantic error: 'I' and 'J' arguments of 'dshiftl' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:958:26
+   --> tests/errors/continue_compilation_1.f90:966:26
     |
-958 |         print *, dshiftl(o'12345', z'1234', 5)
+966 |         print *, dshiftl(o'12345', z'1234', 5)
     |                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
 
 semantic error: 'I' and 'J' arguments of 'dshiftr' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:961:26
+   --> tests/errors/continue_compilation_1.f90:969:26
     |
-961 |         print *, dshiftr(o'12345', z'1234', 5)
+969 |         print *, dshiftr(o'12345', z'1234', 5)
     |                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
