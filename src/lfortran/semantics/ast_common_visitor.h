@@ -17176,15 +17176,24 @@ public:
 
         ASR::ttype_t* n_type = ASRUtils::expr_type(n);
         ASR::ttype_t* w_type = ASRUtils::expr_type(w);
+        // shifta is elemental, so the result has the shape of whichever argument is an array
+        ASR::ttype_t* ret_type = ASRUtils::is_array(n_type) ? n_type : w_type;
 
-        if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
+        if (!ASRUtils::check_equal_type(ASRUtils::type_get_past_array(n_type),
+                ASRUtils::type_get_past_array(w_type), nullptr, nullptr)) {
             if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
+                // cast w to the kind of n, keeping the shape of w
+                ASR::ttype_t* cast_type = ASRUtils::type_get_past_array(n_type);
+                if (ASRUtils::is_array(w_type)) {
+                    ASR::Array_t* w_array = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(w_type));
+                    cast_type = ASRUtils::make_Array_t_util(al, loc, cast_type, w_array->m_dims, w_array->n_dims);
+                }
+                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, cast_type, nullptr, nullptr));
             }
         }
 
         return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
-                            n, w, n_type);
+                            n, w, ret_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
