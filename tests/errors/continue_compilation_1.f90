@@ -951,6 +951,13 @@ program continue_compilation_1
     subroutine set_caller(this)
         class(MyClass) :: this
     end subroutine
+
+    subroutine findloc_character_kind_mismatch()
+        implicit none
+        character(kind=4, len=1) :: names(1)
+        character(kind=1, len=1) :: key
+        print *, findloc(names, key)
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
