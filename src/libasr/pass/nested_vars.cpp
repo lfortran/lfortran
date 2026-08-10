@@ -589,7 +589,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         if (existing_td == nullptr) {
                             ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
                             ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original);
-                            if (owner_sym && ASR::is_a<ASR::Program_t>(*owner_sym)) {
+                            if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
                                 // Cannot create ExternalSymbol pointing into
                                 // a Program; duplicate the abstract interface
                                 // into the module scope instead.
@@ -597,7 +597,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 sd.duplicate_symbol(original, current_scope);
                                 existing_td = current_scope->get_symbol(td_name);
                             } else {
-                                std::string owner_name = owner_sym ? std::string(ASRUtils::symbol_name(owner_sym)) : "";
+                                std::string owner_name = std::string(ASRUtils::symbol_name(owner_sym));
                                 ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
                                     al, type_decl->base.loc,
                                     current_scope,
