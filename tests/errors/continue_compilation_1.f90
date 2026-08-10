@@ -966,6 +966,12 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
+
+    subroutine iand_ior_ieor_boz_both_args()
+        print *, iand(o'12345', z'1234')
+        print *, ior(o'12345', z'1234')
+        print *, ieor(o'12345', z'1234')
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
