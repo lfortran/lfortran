@@ -77,6 +77,9 @@ libunwind = "==1.7.2"
 
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
+[feature.build]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
 [feature.build.dependencies]
 pytest = "==8.1.1"
 jupyter = "==1.0.0"
@@ -95,10 +98,20 @@ ninja = "==1.11.1"
 re2c = "==3.1"
 
 # Dependencies to build the project to be installed on the build machine.
-# feature.default.build-dependencies
-[dependencies]
+# feature.default.build-dependencies.
+# These live in a feature (rather than in [dependencies]) so that the platform
+# restriction below applies: the wasm-host environment adds the
+# emscripten-wasm32 platform to the workspace, and an environment is only
+# solved for the platforms shared by all of its features.
+[feature.native]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
+[feature.native.dependencies]
 python = "==3.12"
 
+
+[feature.test]
+platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [feature.test.dependencies]
 python = "==3.12"
@@ -115,7 +128,117 @@ m2-bison = "==3.0.4"
 [feature.build.tasks]
 build = "bash ./build1.sh"
 
+# ─── WASM kernel / JupyterLite ("lab") ───────────────────────────────────────
+# See doc/src/jupyterlite.md. Three environments are involved:
+#   wasm-build  native tools + Emscripten toolchain (runs the build scripts)
+#   wasm-host   WASM *target* libraries (llvm, xeus, xeus-lite) and the runtime
+#               .mod files; never executed on the host, only linked against
+#   lite        jupyterlite-xeus, assembles and serves the site
+
+[feature.wasm-build]
+# The Emscripten cross toolchain is not published for win-64.
+platforms = ["osx-arm64", "linux-64"]
+channels = [
+    "https://prefix.dev/emscripten-forge-4x",
+    "https://prefix.dev/conda-forge",
+]
+
+[feature.wasm-build.dependencies]
+cmake = "*"
+emscripten_emscripten-wasm32 = "==4.0.9"
+# python (for build0.sh) is unpinned: the emscripten toolchain requires >=3.13
+python = "*"
+re2c = "==3.1"
+
+[feature.wasm-build.target.unix.dependencies]
+bison = "==3.4"
+
+[feature.wasm-host]
+channels = [
+    "https://prefix.dev/emscripten-forge-4x",
+    "https://prefix.dev/conda-forge",
+]
+platforms = ["emscripten-wasm32"]
+
+[feature.wasm-host.dependencies]
+xeus-lite = "*"
+xeus = "*"
+nlohmann_json = "*"
+llvm = "*"
+
+[feature.lite]
+platforms = ["osx-arm64", "linux-64"]
+
+[feature.lite.dependencies]
+python = "==3.12"
+jupyter_server = "*"
+jupyterlite-xeus = "*"
+
+# The wasm-host environment targets emscripten-wasm32, which this machine
+# cannot run, so pixi only installs it when asked for that platform explicitly.
+[feature.wasm-build.tasks.wasm-host-env]
+cmd = "pixi install -e wasm-host --platform emscripten-wasm32"
+
+# Build the runtime .mod files with a native lfortran and install them into the
+# wasm-host environment. Only needed again after changes under src/runtime/.
+# It rebuilds a native lfortran from scratch, so it is cached on its inputs.
+[feature.wasm-build.tasks.wasm-mods]
+cmd = "./wasm-build0.sh"
+env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
+depends-on = ["wasm-host-env"]
+inputs = ["src/runtime/**", "wasm-build0.sh", "build0.sh", "grammar/**"]
+
+# Cross-compile LFortran and the xlfortran kernel to WebAssembly.
+[feature.wasm-build.tasks.wasm-kernel]
+cmd = "./wasm-build1.sh"
+env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
+depends-on = ["wasm-mods"]
+inputs = [
+    "src/**/*.cpp",
+    "src/**/*.h",
+    "src/**/*.hpp",
+    "src/**/*.f90",
+    "src/**/CMakeLists.txt",
+    "CMakeLists.txt",
+    "cmake/**",
+    "wasm-build1.sh",
+]
+# Outputs must live outside .pixi/, which pixi's glob walker skips.
+outputs = [
+    "build-wasm/xlfortran.js",
+    "build-wasm/xlfortran.wasm",
+    "build-wasm/xlfortran.data",
+]
+
+# Run the evaluator test-suite inside the WASM runtime, as CI does.
+[feature.wasm-build.tasks.wasm-test]
+cmd = "node test_lfortran.js"
+cwd = "build-wasm/src/lfortran/tests"
+depends-on = ["wasm-kernel"]
+
+# Assemble the JupyterLite site into dist/, embedding the kernel and the demo
+# notebooks. default_channels has to be given explicitly: jupyterlite-xeus
+# otherwise reads the channels out of the prefix's conda-meta/history, which
+# pixi (unlike micromamba) does not write.
+[feature.lite.tasks.lab-build]
+cmd = "jupyter lite build --XeusAddon.prefix=$PREFIX --XeusAddon.default_channels=\"['https://prefix.dev/emscripten-forge-4x','https://prefix.dev/conda-forge']\" --contents share/lfortran/nb/Demo1.ipynb --contents share/lfortran/nb/Demo2.ipynb --contents share/lfortran/nb/Variables.ipynb --contents share/lfortran/nb/Mandelbrot.ipynb --contents share/lfortran/nb/Rich_Display.ipynb --output-dir dist"
+env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
+depends-on = [{ task = "wasm-kernel", environment = "wasm-build" }]
+inputs = [
+    "build-wasm/xlfortran.js",
+    "build-wasm/xlfortran.wasm",
+    "build-wasm/xlfortran.data",
+    "share/lfortran/nb/*.ipynb",
+]
+outputs = ["dist/xeus/wasm-host/bin/xlfortran.js"]
+
+# Serve the site at http://localhost:8000/lab/index.html
+[feature.lite.tasks.lab]
+cmd = "python -m http.server -d dist 8000"
+depends-on = ["lab-build"]
+
 [environments]
+default = {features = ["native"]}
 llvm7 = {features = ["llvm7", "build"]}
 llvm8 = {features = ["llvm8", "build"]}
 llvm9 = {features = ["llvm9", "build"]}
@@ -133,3 +256,6 @@ llvm20 = {features = ["llvm20", "build"]}
 llvm21 = {features = ["llvm21", "build"]}
 llvm22 = {features = ["llvm22", "build"]}
 test = {features = ["test"]}
+wasm-build = {features = ["wasm-build"], no-default-feature = true}
+wasm-host = {features = ["wasm-host"], no-default-feature = true}
+lite = {features = ["lite"], no-default-feature = true}

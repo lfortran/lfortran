@@ -11,25 +11,28 @@ compiled to WebAssembly and executed by the browser through the `xlfortran`
 
 This page explains how to build and run that site locally, so that bugs seen in
 the online lab can be reproduced and fixed without going through CI, and how to
-turn such a bug into a test.
+turn such a bug into a test. The short version, on Linux or macOS:
+
+```bash
+pixi run lab   # builds the WASM kernel and the site, then serves it at
+               # http://localhost:8000/lab/index.html
+```
 
 ## How the deployed site is produced
 
 The site is built and deployed by the `build_xlfortran_jupyterlite` and
 `deploy_jupyterlite` jobs in `.github/workflows/Exhaustive-Checks-CI.yml`.
 The jobs run on every push to `main` (and on PRs labelled
-`Tests::Run-Exhaustive`) and do exactly the steps documented below:
+`Tests::Run-Exhaustive`) and run the same scripts the pixi tasks below wrap:
 
-1. `./build0.sh` — generate the parser / AST / ASR headers.
-2. `./wasm-build0.sh` — build a *native* `lfortran` and use it to compile the
-   runtime `.mod` files, which are installed into the WASM *host* environment.
-3. `./wasm-build1.sh` — cross-compile LFortran and the `xlfortran` kernel to
-   WebAssembly with Emscripten.
-4. `node build-wasm/src/lfortran/tests/test_lfortran.js` — run the evaluator
-   test-suite inside the WASM runtime.
-5. `jupyter lite build` — assemble the JupyterLite site (`dist/`), embedding the
-   kernel and the demo notebooks from `share/lfortran/nb/`.
-6. Deploy `dist/` to GitHub Pages.
+| CI step | Local equivalent |
+| --- | --- |
+| `./build0.sh` — generate the parser / AST / ASR headers | (run automatically) |
+| `./wasm-build0.sh` — build a *native* `lfortran` and compile the runtime `.mod` files into the WASM *host* environment | `pixi run wasm-mods` |
+| `./wasm-build1.sh` — cross-compile LFortran and the `xlfortran` kernel to WebAssembly with Emscripten | `pixi run wasm-kernel` |
+| `node build-wasm/src/lfortran/tests/test_lfortran.js` — evaluator test-suite inside the WASM runtime | `pixi run wasm-test` |
+| `jupyter lite build` — assemble the site (`dist/`) with the kernel and the demo notebooks from `share/lfortran/nb/` | `pixi run lab-build` |
+| Deploy `dist/` to GitHub Pages | `pixi run lab` (serves it locally instead) |
 
 ## Three ways to reproduce a lab bug locally
 
@@ -39,7 +42,7 @@ Pick the cheapest one that still shows the bug:
 | --- | --- | --- |
 | C++ evaluator test (`FortranEvaluator::evaluate2`) | native build only | Almost always — this is also the form the *fix* has to be tested in. See "Writing a test" below. |
 | Native Jupyter kernel (`-DWITH_XEUS=yes`) + JupyterLab | native build only | You need real notebook behaviour: rich display (`display_data`), streams, cell-by-cell state, error rendering. |
-| Full JupyterLite/WASM build | ~30–60 min the first time | The bug is WASM-specific, or you want to confirm the fix in exactly the deployed artifact. |
+| Full JupyterLite/WASM build (`pixi run lab`) | ~30–60 min the first time | The bug is WASM-specific, or you want to confirm the fix in exactly the deployed artifact. |
 
 The kernel logic is shared by all three: `src/lfortran/fortran_kernel.cpp`
 drives `FortranEvaluator` (`src/lfortran/fortran_evaluator.cpp`), and each
@@ -82,162 +85,110 @@ containing a `module ... end module`) is evaluated as a sequence of separate
 
 ## Option B — full JupyterLite build
 
-All commands are run **from the repository root** (`jupyter lite build` resolves
-its `--contents` paths relative to the current directory). Uses
-[micromamba](https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html),
-like CI; `conda`/`mamba` work the same way. If you do not have it:
-`pixi global install micromamba` (or the official install script).
-
-These steps were run end-to-end on macOS (arm64, Darwin 24.6) as well as on
-Linux in CI. Expect ~30–60 min and ~10 GB for the first full build; `dist/`
-alone is about 250 MB.
-
-### Quick reference
-
-Once the environments of step 0 exist, the whole loop is:
+Everything is driven by [pixi](https://pixi.sh) tasks defined in `pixi.toml`:
 
 ```bash
-export MAMBA_ROOT_PREFIX=$HOME/micromamba
-export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
-
-micromamba run -n lf ./build0.sh                              # only after grammar changes
-micromamba run -n lf ./wasm-build0.sh                         # only after src/runtime changes
-micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
-micromamba run -n xeus-lite-host jupyter lite build \
-    --XeusAddon.prefix=$PREFIX --output-dir dist
-python3 -m http.server -d dist 8000                           # http://localhost:8000/lab/index.html
+pixi run wasm-kernel   # cross-compile LFortran + the xlfortran kernel to WASM
+pixi run lab           # assemble the site and serve it
 ```
 
-The rest of this section explains each step.
+`lab` depends on `wasm-kernel`, so `pixi run lab` on its own builds everything
+it needs. Then open <http://localhost:8000/lab/index.html> — the local
+equivalent of the deployed URL. A plain `file://` open does **not** work: the
+kernel is loaded by a web worker and needs a real HTTP origin.
 
-### 0. Environments (once)
+Pixi creates the required environments on first use; expect ~30–60 min and
+several GB for the first full build (`dist/` alone is about 250 MB). The build
+tasks declare `inputs`/`outputs`, so re-running `pixi run lab` with nothing
+changed is a cache hit and starts serving in under a second; edit a source file
+and only the affected steps re-run.
 
-Four environments are involved:
+Supported on Linux and macOS — the Emscripten cross toolchain is not published
+for Windows. Verified end-to-end on macOS (arm64) and, in CI, on Linux.
+
+### The tasks
+
+| Task | What it does |
+| --- | --- |
+| `pixi run wasm-host-env` | Installs the `wasm-host` environment (see below). Pulled in automatically. |
+| `pixi run wasm-mods` | `wasm-build0.sh`: builds a native `lfortran` and compiles the runtime `.mod` files into the `wasm-host` environment. |
+| `pixi run wasm-kernel` | `wasm-build1.sh`: cross-compiles LFortran and `xlfortran` to WebAssembly into `build-wasm/`. |
+| `pixi run wasm-test` | Runs the evaluator test-suite inside the WASM runtime under `node`, exactly as CI does. |
+| `pixi run lab-build` | `jupyter lite build`: assembles the site into `dist/`, embedding the kernel and the demo notebooks. |
+| `pixi run lab` | Serves `dist/` at <http://localhost:8000/lab/index.html>. |
+
+Each task depends on the previous ones, so any of them can be invoked directly.
+
+Two things about these tasks are worth knowing when editing `pixi.toml`:
+
+* Task `outputs` must live outside `.pixi/`, which pixi's glob walker skips —
+  that is why `wasm-kernel` declares `build-wasm/xlfortran.*` rather than the
+  installed copies in the `wasm-host` environment.
+* `lab-build` passes `--XeusAddon.default_channels` explicitly. `jupyterlite-xeus`
+  otherwise recovers the channel list from the prefix's `conda-meta/history`,
+  which micromamba writes and pixi does not; without it the build fails late
+  with `Cannot detect channels from prefix ...`.
+
+### The environments
+
+Three pixi environments back these tasks:
 
 | Environment | Purpose |
 | --- | --- |
-| `lf` | native dev tools (python, cmake, re2c, bison) for `build0.sh` / `wasm-build0.sh` |
-| `xeus-lfortran-wasm-build` | Emscripten toolchain (`emcmake`, `emmake`, `node`) |
-| `xeus-lfortran-wasm-host` | WASM *target* libraries: `llvm`, `xeus`, `xeus-lite`, plus the runtime `.mod` files |
-| `xeus-lite-host` | `jupyterlite-xeus` + `jupyter_server`, to assemble and serve the site |
+| `wasm-build` | native tools (python, cmake, re2c, bison) plus the Emscripten toolchain (`emcmake`, `emmake`, `node`) |
+| `wasm-host` | WASM *target* libraries — `llvm`, `xeus`, `xeus-lite`, `nlohmann_json` — plus the runtime `.mod` files |
+| `lite` | `jupyterlite-xeus` + `jupyter_server`, to assemble and serve the site |
+
+`wasm-host` targets the `emscripten-wasm32` platform, which the host machine
+cannot execute, so pixi only installs it when that platform is named
+explicitly. That is what the `wasm-host-env` task does:
 
 ```bash
-export MAMBA_ROOT_PREFIX=$HOME/micromamba
-
-# Native dev environment, named "lf" (CI uses ci/environment_linux.yml on Linux)
-micromamba create -f ci/environment.yml -y
-micromamba install -n lf bison=3.4 -c conda-forge -y   # not in the yml on macOS
-
-# Emscripten build toolchain
-micromamba create -f environment-wasm-build.yml -y
-
-# WASM host (target) environment
-micromamba create -f environment-wasm-host.yml -y \
-    --platform=emscripten-wasm32 \
-    -c https://prefix.dev/emscripten-forge-4x \
-    -c https://prefix.dev/conda-forge
-
-# JupyterLite site builder
-micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
+pixi install -e wasm-host --platform emscripten-wasm32
 ```
 
-Both build scripts read `PREFIX`, which must point at the *host* environment:
+Its directory, `.pixi/envs/wasm-host`, is what the build scripts see as
+`$PREFIX`; the tasks set that variable for you.
 
-```bash
-export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
-```
+Because that environment adds `emscripten-wasm32` to the workspace, every other
+feature in `pixi.toml` declares an explicit `platforms` list — an environment is
+only solved for the platforms shared by all of its features, and packages like
+`python` do not exist for `emscripten-wasm32`.
 
-### 1. Generate the parser/ASR headers
+### What each step actually does
 
-```bash
-micromamba run -n lf ./build0.sh
-```
+1. **`wasm-mods` / `wasm-build0.sh`** builds a throwaway native `lfortran` (in
+   `asset_dir/`, without LLVM), compiles `src/runtime/**/*.f90` with it, and
+   copies the resulting `.mod` files into `$PREFIX/lib/`. They are preloaded
+   into the WASM virtual filesystem at `/lib/` at link time, which is how
+   `use iso_c_binding` and `use lfortran_display` resolve in the browser.
+   Re-run after any change under `src/runtime/`:
 
-### 2. Build the runtime `.mod` files (`wasm-build0.sh`)
+   ```bash
+   pixi run wasm-mods
+   ls .pixi/envs/wasm-host/lib/*.mod
+   ```
 
-```bash
-micromamba run -n lf ./wasm-build0.sh
-```
+2. **`wasm-kernel` / `wasm-build1.sh`** configures `build-wasm/` via `emcmake`
+   with `-DXEUS_LFORTRAN_WASM_BUILD=yes`, builds `xlfortran.js`,
+   `xlfortran.wasm` and `xlfortran.data` there and installs them into
+   `$PREFIX/bin/`, alongside the
+   kernelspec in `$PREFIX/share/jupyter/kernels/fortran/` (generated from
+   `share/jupyter/kernels/fortran/wasm_kernel.json.in`). This is the slow step
+   (it links LLVM); incremental rebuilds after a source edit are much faster.
 
-This builds a throwaway native `lfortran` (in `asset_dir/`, without LLVM),
-compiles `src/runtime/**/*.f90` with it, and copies the resulting `.mod` files
-into `$PREFIX/lib/`. They are preloaded into the WASM virtual filesystem at
-`/lib/` at link time, which is how `use iso_c_binding` and `use lfortran_display`
-resolve in the browser. Verify:
-
-```bash
-ls $PREFIX/lib/*.mod
-```
-
-Re-run this step whenever you change anything under `src/runtime/`.
-
-### 3. Cross-compile the kernel (`wasm-build1.sh`)
-
-```bash
-micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
-```
-
-This configures `build-wasm/` via `emcmake` with `-DXEUS_LFORTRAN_WASM_BUILD=yes`
-and installs `xlfortran.js`, `xlfortran.wasm` and `xlfortran.data` into
-`$PREFIX/bin/`, alongside the kernelspec in `$PREFIX/share/jupyter/kernels/fortran/`
-(generated from `share/jupyter/kernels/fortran/wasm_kernel.json.in`).
-
-This is the slow step (it links LLVM); subsequent incremental rebuilds after a
-source edit are much faster.
-
-### 4. Run the WASM test-suite
-
-```bash
-(cd build-wasm/src/lfortran/tests && \
-    micromamba run -n xeus-lfortran-wasm-build node test_lfortran.js)
-```
-
-It must be run from that directory, so that the preloaded `.data` file next to
-`test_lfortran.js` is found.
-
-This is the same command CI runs, and is the cheapest way to check a WASM-only
-bug — no browser involved. See "Writing a test" below.
-
-### 5. Assemble the JupyterLite site
-
-```bash
-micromamba run -n xeus-lite-host jupyter lite build \
-    --XeusAddon.prefix=$PREFIX \
-    --contents share/lfortran/nb/Demo1.ipynb \
-    --contents share/lfortran/nb/Demo2.ipynb \
-    --contents share/lfortran/nb/Variables.ipynb \
-    --contents share/lfortran/nb/Mandelbrot.ipynb \
-    --contents share/lfortran/nb/Rich_Display.ipynb \
-    --output-dir dist
-```
-
-Add `--contents my_bug.ipynb` to ship your own reproducer notebook into the
-site.
-
-### 6. Serve it
-
-```bash
-python3 -m http.server -d dist 8000
-```
-
-or, equivalently,
-
-```bash
-micromamba run -n xeus-lite-host jupyter lite serve --output-dir dist
-```
-
-Then open <http://localhost:8000/lab/index.html> — the local equivalent of the
-deployed URL. A plain `file://` open does **not** work: the kernel is loaded by
-a web worker and needs a real HTTP origin.
+3. **`lab-build` / `jupyter lite build`** assembles `dist/` from the kernel in
+   the `wasm-host` environment plus the demo notebooks in `share/lfortran/nb/`
+   (`Demo1`, `Demo2`, `Variables`, `Mandelbrot`, `Rich_Display`) — the same set
+   the deployed site ships. To add your own reproducer notebook, add another
+   `--contents` flag to the `lab-build` task in `pixi.toml`.
 
 ### Edit → rebuild loop
 
 After changing LFortran sources:
 
 ```bash
-micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh   # (add wasm-build0.sh first if src/runtime changed)
-micromamba run -n xeus-lite-host jupyter lite build --XeusAddon.prefix=$PREFIX --output-dir dist
-python3 -m http.server -d dist 8000
+pixi run lab       # rebuilds the kernel and the site, then serves it
 ```
 
 Then hard-reload the browser page (JupyterLite caches aggressively in a service
@@ -249,17 +200,41 @@ storage to pick up a new `--contents` version.
 
 ### Troubleshooting
 
-* `Running build0.sh failed` — `build0.sh` invokes `python` (not `python3`); run
-  it inside the `lf` environment.
-* `no runtime .mod files found in .../lib` — step 2 was skipped or `PREFIX`
-  points at the wrong environment.
-* `XEUS_LFORTRAN_WASM_BUILD requires Emscripten` — `wasm-build1.sh` was not run
-  through `emcmake`, i.e. not inside the `xeus-lfortran-wasm-build` environment.
+* `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
+* `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
+  with `pixi install -e wasm-host --platform emscripten-wasm32` (the
+  `wasm-host-env` task).
 * `Module 'x' modfile was not found` in the browser but not natively — the
-  module's `.mod` file was not preloaded; check `$PREFIX/lib/*.mod` and relink.
+  module's `.mod` file was not preloaded; check `.pixi/envs/wasm-host/lib/*.mod`
+  and rebuild with `pixi run wasm-kernel`.
 * Blank page or "kernel failed to start" — check the browser console; usually a
-  missing `xlfortran.data`, meaning `jupyter lite build` ran against a stale
-  `--XeusAddon.prefix`.
+  missing `xlfortran.data`, meaning `lab-build` ran against a stale kernel.
+  Re-run `pixi run wasm-kernel` then `pixi run lab`.
+* `Cannot detect channels from prefix ...` — the `--XeusAddon.default_channels`
+  argument was dropped from the `lab-build` task; see above.
+* A task is skipped when you expected it to run — its `inputs` did not change.
+  Touch the relevant file, or delete the task's `outputs` (for example
+  `rm -rf build-wasm/xlfortran.*`), and re-run.
+* `Incompatible format: LFortran Modfile` in the browser — the preloaded `.mod`
+  files predate a modfile-format change, and `wasm-mods` only watches
+  `src/runtime/`. Force it: `rm -rf .pixi/envs/wasm-host/lib/*.mod` and run
+  `pixi run wasm-mods` after touching `wasm-build0.sh`, or just
+  `rm -rf .pixi/envs/wasm-host` and rebuild.
+* To start over: `rm -rf build-wasm dist .pixi/envs/wasm-host`.
+
+### Running the same commands as CI
+
+CI does not use pixi; it drives the same three scripts with micromamba
+environments built from `ci/environment_linux.yml`, `environment-wasm-build.yml`
+and `environment-wasm-host.yml` (see `.github/workflows/Exhaustive-Checks-CI.yml`).
+The scripts are identical — only the environment manager and the value of
+`PREFIX` differ:
+
+```bash
+export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
+micromamba run -n lf ./wasm-build0.sh
+micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+```
 
 ## Writing a test for a lab bug
 
@@ -353,18 +328,21 @@ cmake --build build -j --target test_lfortran
 
 (or `ctest -R test_lfortran` from `build/` to run the whole suite).
 
-Inside WASM (assuming the Option B environments exist), the fast incremental
-loop is to rebuild just the test binary:
+Inside WASM:
 
 ```bash
-export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
-micromamba run -n xeus-lfortran-wasm-build emmake make -C build-wasm test_lfortran -j8
-(cd build-wasm/src/lfortran/tests && \
-    micromamba run -n xeus-lfortran-wasm-build node test_lfortran.js -tc="FortranEvaluator module*")
+pixi run wasm-test
 ```
 
-A full `./wasm-build1.sh` (which also relinks `xlfortran`) is only needed before
-rebuilding the site.
+That rebuilds the kernel first. For a tighter loop, rebuild and run only the
+test binary — `xlfortran` itself does not need relinking until you rebuild the
+site:
+
+```bash
+pixi run -e wasm-build emmake make -C build-wasm test_lfortran -j8
+(cd build-wasm/src/lfortran/tests && \
+    pixi run -e wasm-build node test_lfortran.js -tc="FortranEvaluator module*")
+```
 
 For the JupyterLite build, `src/lfortran/tests/CMakeLists.txt` reduces the test
 sources to `test_llvm.cpp` only, so every test you add there is automatically
