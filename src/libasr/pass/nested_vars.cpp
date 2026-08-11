@@ -285,11 +285,15 @@ public:
         }
         current_scope = current_scope_copy;
     }
-    /// Is a variable declared in a module scope
-    bool is_module_variable(ASR::Variable_t* const v){
+    /// Is a variable declared in a module scope or global translation unit scope
+    bool is_module_or_global_variable(ASR::Variable_t* const v){
+        LCOMPILERS_ASSERT(v->m_parent_symtab && v->m_parent_symtab->asr_owner)
         ASR::asr_t* const asr_owner = v->m_parent_symtab->asr_owner;
-        return  ASR::is_a<ASR::symbol_t>(*asr_owner) &&
-                ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+        const bool is_global_scope = ASR::is_a<ASR::unit_t>(*asr_owner) 
+                                    && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)asr_owner);
+        const bool is_module_scoped = ASR::is_a<ASR::symbol_t>(*asr_owner) 
+                                    && ASR::is_a<ASR::Module_t>(*(ASR::symbol_t*)asr_owner);
+        return is_global_scope || is_module_scoped;
     }
 
     void visit_Var(const ASR::Var_t &x) {
@@ -300,7 +304,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if(is_module_variable(v)) return;
+                if(is_module_or_global_variable(v)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope
                 // (or a child scope such as an associate block), it is a
@@ -379,7 +383,7 @@ public:
                 continue;
             }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-            if (is_module_variable(v)) {
+            if (is_module_or_global_variable(v)) {
                 continue;
             }
             if (current_scope && par_func_sym &&
