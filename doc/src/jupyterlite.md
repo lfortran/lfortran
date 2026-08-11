@@ -235,6 +235,16 @@ notebook keeps its locally-stored version even after a rebuild — use
 * To check whether the problem is the build or the browser, serve `dist/` and
   load it in a fresh browser profile. If the kernel works there, `dist/` is
   fine and the browser state is stale.
+* The kernel indicator spins at *Connecting* forever and cells stay at `[*]`,
+  in one browser profile only — a browser extension or a hardening preference
+  is blocking the kernel's web worker. This survives clearing site data and
+  changing ports, and a private window does not help because extensions may
+  run there too. Confirm with a brand-new profile (`about:profiles` in Firefox,
+  a new profile directory in Chrome); if that works, bisect with Firefox's
+  *Help → Troubleshoot Mode* (extensions off, preferences kept). Script
+  blockers such as NoScript or JShelter, and `privacy.resistFingerprinting`,
+  are the usual causes. Note that wasm itself may still test fine — the block
+  is on the worker, not on WebAssembly.
 * `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
 * `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
   with `pixi install -e wasm-host --platform emscripten-wasm32` (the
