@@ -10,10 +10,16 @@ syntax error: implicit statement must appear before declaration and executable s
 928 |         implicit none
     |         ^^^^^^^^^^^^^^ 
 
-syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:970:7
+syntax error: end construct name 'b2' does not match construct name 'b1'
+   --> tests/errors/continue_compilation_1.f90:964:19
     |
-970 |       foo    end type t_recovery
+964 |         end block b2
+    |                   ^^ 
+
+syntax error: Token 'foo' (of type 'identifier') is unexpected here
+   --> tests/errors/continue_compilation_1.f90:975:7
+    |
+975 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +551,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:973:7
+   --> tests/errors/continue_compilation_1.f90:978:7
     |
-973 |       class(t_recovery), intent(in) :: self
+978 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
