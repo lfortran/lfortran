@@ -1,6 +1,9 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <cstring>
+#include <iostream>
+#include <sstream>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -1690,4 +1693,95 @@ end function
     r = e.evaluate2("old_c()");
     CHECK(r.ok);
     CHECK(r.result.i32 == 1);
+}
+
+// A module declared in an earlier cell is in a parent scope, not in the cell
+// being compiled. Resolving `use` has to look through the chain; otherwise a
+// modfile is searched for on disk, of which there is none in a notebook.
+
+TEST_CASE("FortranEvaluator module using another module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module ma
+implicit none
+integer, parameter :: c = 5
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(module mb
+use ma
+implicit none
+end module
+)").ok);
+    // A program unit resolves `use` through load_module(), which is the path
+    // that used to report "modfile was not found" for ma, a dependency of mb.
+    CHECK(e.evaluate2(R"(program p
+use mb
+implicit none
+if (c /= 5) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator re-exported module symbol across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // mtop re-exports msub's procedure: its scope holds an ExternalSymbol
+    // pointing into msub. The copy taken for the next cell has to point at the
+    // copy of msub, not at the original, or the symbol looks absent.
+    CHECK(e.evaluate2(R"(module msub
+implicit none
+contains
+    integer function twice(i)
+        integer, intent(in) :: i
+        twice = 2 * i
+    end function
+end module
+module mtop
+use msub
+implicit none
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mtop
+implicit none
+if (twice(3) /= 6) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator optional argument across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Calling this with the optional argument absent only works if the pass
+    // that replaces optional arguments with presence flags has been applied to
+    // the procedure in the earlier cell as well as to this cell's call.
+    CHECK(e.evaluate2(R"(module mopt
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (present(lbl)) then
+            if (x(1) /= 1.0) error stop
+        else
+            if (x(1) /= 1.0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mopt
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+call s(a, "with label")
+end program
+)").ok);
 }

@@ -429,6 +429,32 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
 }
 #endif
 
+namespace {
+
+// The duplicated symbols carry ExternalSymbols whose m_external still points
+// into the modules they were copied from. A later cell resolves a module by
+// name and finds the copy, so an ExternalSymbol pointing at the original does
+// not match it and the symbol looks absent. Point them at the copies.
+static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *s = item.second;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+            ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+            ASR::symbol_t *mod = tu->get_symbol(es->m_module_name);
+            if (mod == nullptr || !ASR::is_a<ASR::Module_t>(*mod)) continue;
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);
+            ASR::symbol_t *target = m->m_symtab->find_scoped_symbol(
+                es->m_original_name, es->n_scope_names, es->m_scope_names);
+            if (target != nullptr) es->m_external = target;
+        } else {
+            SymbolTable *inner = ASRUtils::symbol_symtab(s);
+            if (inner != nullptr) relink_external_symbols(inner, tu);
+        }
+    }
+}
+
+} // namespace
+
 SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
 {
     // ASR passes rewrite what they are given: pass_array_by_data replaces a
@@ -455,6 +481,7 @@ SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
         if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
         duplicator.duplicate_symbol(item.second, snapshot);
     }
+    relink_external_symbols(snapshot, snapshot);
     return snapshot;
 }
 
