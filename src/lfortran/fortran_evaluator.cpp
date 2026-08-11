@@ -472,12 +472,18 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
     // then, while later cells resolve to the new declaration. That is the
     // behaviour of a Python notebook, where re-running a cell rebinds the name
     // and objects created earlier keep the old one.
-    if (symbol_table) {
-        // Everything declared before this cell is already compiled, so it is
-        // referenced rather than emitted again.
-        symbol_table->mark_all_variables_external(al);
+    //
+    // Ordinary compilation has none of this: one translation unit, no chaining
+    // and no copying, so that it is not slowed down by it.
+    SymbolTable *cell_scope = symbol_table;
+    if (compiler_options.interactive) {
+        if (symbol_table) {
+            // Everything declared before this cell is already compiled, so it
+            // is referenced rather than emitted again.
+            symbol_table->mark_all_variables_external(al);
+        }
+        cell_scope = al.make_new<SymbolTable>(symbol_table);
     }
-    SymbolTable *cell_scope = al.make_new<SymbolTable>(symbol_table);
     auto res = LFortran::ast_to_asr(al, ast, diagnostics, cell_scope,
         compiler_options.symtab_only, compiler_options, lm);
     if (res.ok) {
@@ -486,9 +492,11 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-    // The next cell is parented to a snapshot of this one, not to the tree
-    // about to be handed to the passes.
-    symbol_table = snapshot_cell_scope(*asr);
+    if (compiler_options.interactive) {
+        // The next cell is parented to a snapshot of this one, not to the tree
+        // about to be handed to the passes.
+        symbol_table = snapshot_cell_scope(*asr);
+    }
 
     return asr;
 }
