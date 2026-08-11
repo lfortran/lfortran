@@ -235,26 +235,28 @@ notebook keeps its locally-stored version even after a rebuild — use
 * To check whether the problem is the build or the browser, serve `dist/` and
   load it in a fresh browser profile. If the kernel works there, `dist/` is
   fine and the browser state is stale.
-* The kernel indicator spins at *Connecting* forever and cells stay at `[*]`,
-  in one browser profile only. **Check first whether the page is open in a
-  Firefox container tab** (Multi-Account Containers): a container gets its own
-  storage partition, and the kernel's service worker plus IndexedDB stall in
-  it. Open the site in a fresh, non-container tab, and assign `localhost` to
-  *No Container* to make that permanent.
+* The kernel indicator spins at *Connecting* and cells stay at `[*]`, with the
+  server log showing every asset fetched successfully. This has been observed
+  **intermittently** on Firefox 153/macOS against a known-good `dist/`: the
+  same build, server and browser start the kernel on one load and hang on the
+  next. No configuration difference has been pinned down — a fresh profile, a
+  private window, a container tab and Troubleshoot Mode each appeared to fix
+  it and then later reproduced the hang, so treat any such "fix" with
+  suspicion until it survives several attempts.
 
-  The trap when diagnosing this: *disabling* the containers extension does not
-  fix an existing tab, because the tab keeps its container identity, so the
-  obvious test comes back negative and points you at preferences instead.
-  Firefox's *Help → Troubleshoot Mode* does fix it, since the tab is opened
-  fresh with the extension off.
+  What is known:
 
-  If a plain tab still hangs, the cause is elsewhere in the profile. Confirm
-  with a brand-new profile (`about:profiles`); if that works, bisect with
-  Troubleshoot Mode, then extensions one at a time, then hardware acceleration
-  (the other thing Troubleshoot Mode changes). Script blockers such as NoScript
-  or JShelter, and `privacy.resistFingerprinting`, are other known causes.
-  Note that WebAssembly itself may test fine throughout — the block is on the
-  worker's storage or messaging, not on wasm.
+  * WebAssembly, workers, storage quota and the service worker are *not* the
+    obstacle — `dist/` loads and executes fine under headless Firefox of the
+    same version, including with the service worker controlling the page.
+  * Recovery, cheapest first: *Kernel → Restart Kernel…*, then reload the
+    page, then a fresh storage context (private window or new profile).
+
+  Before chasing the browser, confirm where the fault actually is: if a
+  headless run of the same `dist/` executes cells (see below), the build is
+  good and the problem is browser-side only. Compiler bugs found in the lab
+  should be reduced to an evaluator test in any case, which needs no browser
+  at all.
 * `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
 * `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
   with `pixi install -e wasm-host --platform emscripten-wasm32` (the
