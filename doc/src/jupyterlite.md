@@ -127,7 +127,10 @@ Two things about these tasks are worth knowing when editing `pixi.toml`:
 * `lab-build` passes `--XeusAddon.default_channels` explicitly. `jupyterlite-xeus`
   otherwise recovers the channel list from the prefix's `conda-meta/history`,
   which micromamba writes and pixi does not; without it the build fails late
-  with `Cannot detect channels from prefix ...`.
+  with `Cannot detect channels from prefix ...`. The flag must be **repeated
+  once per channel** — passing a quoted list (`="['a','b']"`) makes traitlets
+  store the bracketed text as a single channel, which builds without error but
+  produces a site whose kernel fails to start.
 
 ### The environments
 
@@ -210,6 +213,10 @@ storage to pick up a new `--contents` version.
 * Blank page or "kernel failed to start" — check the browser console; usually a
   missing `xlfortran.data`, meaning `lab-build` ran against a stale kernel.
   Re-run `pixi run wasm-kernel` then `pixi run lab`.
+* `Failed to detect channel from <url> with known channels ...` in the browser
+  console, followed by the kernel never becoming ready — the channel list in
+  `dist/xeus/wasm-host/empack_env_meta.json` does not match the channels the
+  packages came from. Check that file: `channels` must be a list of plain URLs.
 * `Cannot detect channels from prefix ...` — the `--XeusAddon.default_channels`
   argument was dropped from the `lab-build` task; see above.
 * A task is skipped when you expected it to run — its `inputs` did not change.
