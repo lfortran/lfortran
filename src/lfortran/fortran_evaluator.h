@@ -83,10 +83,9 @@ public:
     Result<ASR::TranslationUnit_t*> get_asr3(
         LCompilers::LFortran::AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm);
-    // Deep copy of a translation unit, so that ASR passes can rewrite symbols
-    // without touching the session ASR kept across interactive evaluations.
-    Result<ASR::TranslationUnit_t*> copy_asr(ASR::TranslationUnit_t &asr,
-        diag::Diagnostics &diagnostics);
+    // Copy of a cell's symbols, taken before the ASR passes rewrite them, to
+    // serve as the parent scope of the next cell.
+    SymbolTable* snapshot_cell_scope(ASR::TranslationUnit_t &asr);
 #ifdef HAVE_LFORTRAN_LLVM
     // Turn definitions the JIT already holds into declarations.
     void drop_redefinitions(LLVMModule &m);

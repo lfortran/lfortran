@@ -109,8 +109,14 @@ public:
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
             "The TranslationUnit::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == nullptr,
-            "The TranslationUnit::m_symtab->parent must be nullptr");
+        // Interactive evaluation chains one TranslationUnit per cell, each
+        // scope parented to the previous cell's, so that later cells see
+        // earlier declarations and may shadow them. Outside that, a
+        // TranslationUnit is the root and has no parent.
+        require(x.m_symtab->parent == nullptr ||
+                ASRUtils::is_tu_scope(x.m_symtab->parent),
+            "The TranslationUnit::m_symtab->parent must be nullptr or the "
+            "symbol table of another TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "TranslationUnit::m_symtab->counter must be unique");
         require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,

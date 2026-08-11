@@ -1870,11 +1870,25 @@ public:
         fname2arg_type["lbound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
         fname2arg_type["ubound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
 
+        // In interactive mode this translation unit is one cell, parented to
+        // the previous cell's, and code here may use anything declared by an
+        // earlier cell. Those symbols were emitted when their own cell was
+        // compiled and are marked ExternalUndefined, so walking them here only
+        // declares them. Oldest cell first, so that a name redeclared by a
+        // newer cell is the one left in llvm_symtab.
+        std::vector<SymbolTable*> cell_scopes;
+        for (SymbolTable *s = x.m_symtab; s != nullptr; s = s->parent) {
+            cell_scopes.push_back(s);
+        }
+        std::reverse(cell_scopes.begin(), cell_scopes.end());
+
         // Process Variables first:
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second) ||
-                is_a<ASR::Enum_t>(*item.second)) {
-                visit_symbol(*item.second);
+        for (SymbolTable *scope : cell_scopes) {
+            for (auto &item : scope->get_scope()) {
+                if (is_a<ASR::Variable_t>(*item.second) ||
+                    is_a<ASR::Enum_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                }
             }
         }
 
@@ -1894,9 +1908,11 @@ public:
 
         prototype_only = true;
         // Generate function prototypes
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
-                visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+        for (SymbolTable *scope : cell_scopes) {
+            for (auto &item : scope->get_scope()) {
+                if (is_a<ASR::Function_t>(*item.second)) {
+                    visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+                }
             }
         }
         prototype_only = false;
@@ -1908,15 +1924,28 @@ public:
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
             if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
-            ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+            ASR::symbol_t *mod = nullptr;
+            for (SymbolTable *scope : cell_scopes) {
+                if (ASR::symbol_t *m = scope->get_symbol(item)) mod = m;
+            }
             if (mod == nullptr) continue;
             visit_symbol(*mod);
         }
+        for (SymbolTable *scope : cell_scopes) {
+            if (scope == x.m_symtab) continue;
+            for (auto &item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                }
+            }
+        }
 
         // Then do all the procedures
-        for (auto &item : x.m_symtab->get_scope()) {
-            if( ASR::is_a<ASR::Function_t>(*item.second) ) {
-                visit_symbol(*item.second);
+        for (SymbolTable *scope : cell_scopes) {
+            for (auto &item : scope->get_scope()) {
+                if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    visit_symbol(*item.second);
+                }
             }
         }
 
