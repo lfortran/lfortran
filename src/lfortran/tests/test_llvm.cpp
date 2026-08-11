@@ -1543,3 +1543,51 @@ TEST_CASE("FortranEvaluator program unit in a cell") {
     CHECK(r.result.i32 == 5);
 }
 
+TEST_CASE("FortranEvaluator array-argument module procedure across cells") {
+    // ASR passes rewrite symbols in place. In interactive mode the symbol
+    // table is the session state, so a pass that specialises a procedure --
+    // pass_array_by_data, for an assumed-shape array argument -- used to
+    // leave the module holding only the mangled specialisation, and the next
+    // cell failed with "Function 'sf' not found".
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module mf\n"
+        "implicit none\n"
+        "contains\n"
+        "integer function sf(a)\n"
+        "real, intent(in) :: a(:)\n"
+        "sf = size(a)\n"
+        "end function sf\n"
+        "end module mf\n");
+    CHECK(r.ok);
+
+    // called from a later cell
+    r = e.evaluate2("use mf\nreal :: v(3)\nv = 1\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(v)\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+
+    // and from another cell again, with a different array
+    r = e.evaluate2("real :: w(5)\nw = 2\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(w)\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 5);
+
+    // from inside a program unit too
+    r = e.evaluate2(
+        "program pf\n"
+        "use mf\n"
+        "implicit none\n"
+        "real :: u(7)\n"
+        "u = 3\n"
+        "print *, sf(u)\n"
+        "end program pf\n");
+    CHECK(r.ok);
+}

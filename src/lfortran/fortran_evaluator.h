@@ -2,6 +2,7 @@
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
 #include <memory>
+#include <set>
 
 #include <libasr/alloc.h>
 #include <lfortran/parser/parser.h>
@@ -82,6 +83,14 @@ public:
     Result<ASR::TranslationUnit_t*> get_asr3(
         LCompilers::LFortran::AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm);
+    // Deep copy of a translation unit, so that ASR passes can rewrite symbols
+    // without touching the session ASR kept across interactive evaluations.
+    Result<ASR::TranslationUnit_t*> copy_asr(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics);
+#ifdef HAVE_LFORTRAN_LLVM
+    // Turn definitions the JIT already holds into declarations.
+    void drop_redefinitions(LLVMModule &m);
+#endif
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
@@ -133,6 +142,11 @@ private:
 #ifdef HAVE_LFORTRAN_LLVM
     std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
+    // Functions already defined by an earlier evaluation. Compiler-generated
+    // helpers (intrinsic lowerings, procedure specialisations) are recreated
+    // by the passes on every evaluation; redefining them would be rejected by
+    // the JIT, so later modules only declare them. See drop_redefinitions().
+    std::set<std::string> defined_symbols;
 #endif
 #ifdef __EMSCRIPTEN__
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;

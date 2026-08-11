@@ -1,6 +1,7 @@
 #include <array>
 #include <cstring>
 #include <fstream>
+#include <set>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -21,10 +22,13 @@
 #include <libasr/pickle.h>
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
+#include <libasr/serialization.h>
 
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #ifdef HAVE_LFORTRAN_MLIR
 #include <libasr/codegen/asr_to_mlir.h>
@@ -160,7 +164,36 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             ASRUtils::EXPR(asr->m_items[asr->n_items - 1])));
 
     // ASR -> LLVM
-    Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
+    //
+    // In interactive mode `asr` *is* the session state: its global symbol table
+    // persists across evaluations. ASR passes rewrite symbols in place --
+    // pass_array_by_data, for example, replaces a module procedure that takes
+    // an assumed-shape array with a specialised one under a mangled name --
+    // so running them on the session ASR corrupts it for later cells, which
+    // then fail with "Function '<name>' not found".
+    //
+    // Compile a throwaway copy instead and leave the session ASR pristine.
+    // Codegen still resolves to the code emitted by earlier cells: a procedure
+    // from an earlier evaluation is marked ExternalUndefined (see
+    // SymbolTable::mark_all_variables_external), the pass propagates that ABI
+    // to the specialisation it derives, and generate_function() then emits a
+    // declaration rather than a definition, which the JIT binds to the
+    // definition the earlier cell compiled.
+    //
+    // Only interactive mode pays for the copy; batch compilation runs the
+    // passes directly on its own ASR, as before.
+    ASR::TranslationUnit_t* asr_to_compile = asr;
+    if (compiler_options.interactive) {
+        Result<ASR::TranslationUnit_t*> asr_copy = copy_asr(*asr, diagnostics);
+        if (asr_copy.ok) {
+            asr_to_compile = asr_copy.result;
+        } else {
+            LCOMPILERS_ASSERT(diagnostics.has_error())
+            return asr_copy.error;
+        }
+    }
+
+    Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr_to_compile,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
         nullptr);
     std::unique_ptr<LCompilers::LLVMModule> m;
@@ -188,8 +221,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
-    if (asr->m_symtab->get_symbol(run_fn) != nullptr) {
-        ASR::symbol_t *fn_sym = asr->m_symtab->get_symbol(run_fn);
+    // This has to look at the tree that was compiled: `run_fn` does not exist
+    // in the session ASR, it is created by the wrap-global-statements pass, so
+    // in interactive mode it only ever appears in the copy.
+    if (asr_to_compile->m_symtab->get_symbol(run_fn) != nullptr) {
+        ASR::symbol_t *fn_sym = asr_to_compile->m_symtab->get_symbol(run_fn);
         if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(fn_sym);
             if (fn->m_return_var) {
@@ -199,6 +235,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
                 }
             }
         }
+    }
+
+    if (compiler_options.interactive) {
+        drop_redefinitions(*m);
     }
 
     // LLVM -> Machine code -> Execution
@@ -392,6 +432,51 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res2.error;
+    }
+}
+
+
+#ifdef HAVE_LFORTRAN_LLVM
+void FortranEvaluator::drop_redefinitions(LLVMModule &m)
+{
+    // Each interactive evaluation compiles a fresh copy of the session ASR, so
+    // the passes regenerate their helper procedures every time: intrinsic
+    // lowerings such as __lcompilers_optimization_mod_i32, or the
+    // pass_array_by_data specialisation of a procedure that lives in the
+    // session. Adding a second definition of a symbol the JIT already holds is
+    // an error, and the existing definition is equivalent, so keep the
+    // declaration and drop the body.
+    for (llvm::Function &fn : *m.m_m) {
+        if (fn.isDeclaration()) continue;
+        std::string name = fn.getName().str();
+        if (!defined_symbols.insert(name).second) {
+            fn.deleteBody();
+        }
+    }
+}
+#endif
+
+Result<ASR::TranslationUnit_t*> FortranEvaluator::copy_asr(
+    ASR::TranslationUnit_t &asr, diag::Diagnostics &diagnostics)
+{
+    // Round-trip through the ASR serializer, the same mechanism modfiles use.
+    // It copies every node, so the passes run on memory the session never
+    // looks at again.
+    try {
+        std::string binary = serialize(asr);
+        // Fresh symbol table ids: reusing the originals' would re-register them
+        // in the global symtab map, so lookups against the session ASR would
+        // land in the copy instead.
+        ASR::asr_t* copy = deserialize_asr(al, binary,
+            /* load_symtab_id */ false, /* offset */ 0);
+        ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(copy);
+        fix_external_symbols(*tu, *tu->m_symtab);
+        return tu;
+    } catch (const LCompilersException &e) {
+        diagnostics.diagnostics.push_back(diag::Diagnostic(
+            "Failed to copy the interactive ASR: " + e.msg(),
+            diag::Level::Error, diag::Stage::ASRPass));
+        return Error();
     }
 }
 
