@@ -1785,3 +1785,38 @@ call s(a, "with label")
 end program
 )").ok);
 }
+
+TEST_CASE("FortranEvaluator re-run a cell calling an optional argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mopt2
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (x(1) /= 1.0) error stop
+        if (present(lbl)) then
+            if (len(lbl) == 0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    // Running the same cell twice has to keep working. The pass that replaces
+    // optional arguments with presence flags rewrites the procedure in place,
+    // so if it were let at the copy handed to the next cell, `lbl` would come
+    // back as a required argument and this call would stop compiling.
+    const char *cell = R"(program p
+use mopt2
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}

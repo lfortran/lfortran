@@ -440,7 +440,7 @@ static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
         ASR::symbol_t *s = item.second;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
             ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(s);
-            ASR::symbol_t *mod = tu->get_symbol(es->m_module_name);
+            ASR::symbol_t *mod = tu->resolve_symbol(es->m_module_name);
             if (mod == nullptr || !ASR::is_a<ASR::Module_t>(*mod)) continue;
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);
             ASR::symbol_t *target = m->m_symtab->find_scoped_symbol(
@@ -470,19 +470,49 @@ SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
     // copied: later cells resolve names and read signatures, they never re-run
     // this cell's statements. The copy carries the same names at the same
     // depth, so it mangles to the same symbols this cell just compiled.
-    SymbolTable* snapshot = al.make_new<SymbolTable>(asr.m_symtab->parent);
-    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, asr.base.base.loc,
-        snapshot, nullptr, 0);
-    snapshot->asr_owner = owner;
+    //
+    // The earlier cells are copied too. Passes do not only add symbols, they
+    // also rewrite the ones they are given in place: the pass that replaces
+    // optional arguments with presence flags rewrites the procedure itself, so
+    // an earlier cell's procedure that this cell's passes touched would be
+    // presented to the next cell with its optional arguments already gone, and
+    // a call omitting them would no longer compile. Each cell therefore hands
+    // the next one a chain that no pass has seen.
+    SymbolTable* parent = copy_cell_chain(asr.m_symtab->parent,
+        asr.base.base.loc);
+    SymbolTable* snapshot = copy_cell_scope(asr.m_symtab, parent,
+        asr.base.base.loc);
+    return snapshot;
+}
+
+// One TranslationUnit scope's symbols, copied into a fresh scope. Only symbols
+// are copied: later cells resolve names and read signatures, they never re-run
+// an earlier cell's statements. The copy carries the same names at the same
+// depth, so it mangles to the same symbols that cell compiled to.
+SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
+    SymbolTable *parent, const Location &loc)
+{
+    SymbolTable* copy = al.make_new<SymbolTable>(parent);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, loc, copy, nullptr, 0);
+    copy->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
-    for (auto &item : asr.m_symtab->get_scope()) {
+    for (auto &item : scope->get_scope()) {
         // A program unit is executed by the cell that declares it and its name
         // is not referenceable from Fortran, so later cells have no use for it.
         if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
-        duplicator.duplicate_symbol(item.second, snapshot);
+        duplicator.duplicate_symbol(item.second, copy);
     }
-    relink_external_symbols(snapshot, snapshot);
-    return snapshot;
+    relink_external_symbols(copy, copy);
+    return copy;
+}
+
+// The chain of earlier cells, oldest first, copied scope by scope.
+SymbolTable* FortranEvaluator::copy_cell_chain(SymbolTable *chain,
+    const Location &loc)
+{
+    if (chain == nullptr) return nullptr;
+    SymbolTable *parent = copy_cell_chain(chain->parent, loc);
+    return copy_cell_scope(chain, parent, loc);
 }
 
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
