@@ -1475,3 +1475,71 @@ define i64 @__lfortran_evaluate_1()
     CHECK(we.execfn<int64_t>("__lfortran_evaluate_1") == 42);
 }
 #endif
+
+TEST_CASE("FortranEvaluator program unit in a cell") {
+    // A cell holding a complete program unit must run it. Before this was
+    // fixed the program was compiled and never called, so the cell produced
+    // no output at all -- prints, and any display_data, silently did nothing.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module counter_mod\n"
+        "implicit none\n"
+        "integer :: counter = 0\n"
+        "end module counter_mod\n");
+    CHECK(r.ok);
+
+    r = e.evaluate2(
+        "program bump\n"
+        "use counter_mod\n"
+        "implicit none\n"
+        "counter = counter + 1\n"
+        "end program bump\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+
+    r = e.evaluate2("use counter_mod\ncounter\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+
+    // Re-running the same cell is the ordinary notebook loop: the program is
+    // redefined under the same name and runs again.
+    r = e.evaluate2(
+        "program bump\n"
+        "use counter_mod\n"
+        "implicit none\n"
+        "counter = counter + 1\n"
+        "end program bump\n");
+    CHECK(r.ok);
+
+    r = e.evaluate2("use counter_mod\ncounter\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+
+    // A program under a different name also runs, and loose statements keep
+    // working afterwards.
+    r = e.evaluate2(
+        "program bump2\n"
+        "use counter_mod\n"
+        "implicit none\n"
+        "counter = counter + 10\n"
+        "end program bump2\n");
+    CHECK(r.ok);
+
+    r = e.evaluate2("use counter_mod\ncounter\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 12);
+
+    r = e.evaluate2("integer :: leftover\n");
+    CHECK(r.ok);
+    r = e.evaluate2("leftover = 5\n");
+    CHECK(r.ok);
+    r = e.evaluate2("leftover\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 5);
+}
+

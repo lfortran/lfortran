@@ -6311,15 +6311,25 @@ public:
         set_api_lp->set_is_set_present(false);
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
-        // Generate code for the main program
+        // Generate code for the main program.
+        // In interactive mode (REPL, Jupyter) the program is not a process
+        // entry point: the evaluator calls it directly, and several cells may
+        // each define a program, so it gets a per-evaluation name derived from
+        // the run function and an argument-less signature that execfn() can
+        // call. Outside interactive mode this is the usual `main`.
         std::vector<llvm::Type*> command_line_args = {
             llvm::Type::getInt32Ty(context),
             character_type->getPointerTo()
         };
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(context), command_line_args, false);
+        bool interactive_program = compiler_options.interactive;
+        std::string program_fn_name = interactive_program
+            ? compiler_options.po.run_fun + "_program" : "main";
+        llvm::FunctionType *function_type = interactive_program
+            ? llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false)
+            : llvm::FunctionType::get(llvm::Type::getInt32Ty(context),
+                command_line_args, false);
         llvm::Function *F = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, "main", module.get());
+                llvm::Function::ExternalLinkage, program_fn_name, module.get());
         if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
@@ -6376,8 +6386,15 @@ public:
                     llvm::Function::ExternalLinkage, "_lpython_call_initial_functions", module.get());
             }
             std::vector<llvm::Value *> args;
-            for (llvm::Argument &llvm_arg : F->args()) {
-                args.push_back(&llvm_arg);
+            if (interactive_program) {
+                // No argc/argv to forward: the evaluator calls this directly.
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 0)));
+                args.push_back(llvm::ConstantPointerNull::get(
+                    character_type->getPointerTo()));
+            } else {
+                for (llvm::Argument &llvm_arg : F->args()) {
+                    args.push_back(&llvm_arg);
+                }
             }
             builder->CreateCall(fn, args);
         }
@@ -6482,9 +6499,13 @@ public:
             }
             builder->CreateCall(fn, {});
         }
-        llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
-            llvm::APInt(32, 0));
-        builder->CreateRet(ret_val2);
+        if (interactive_program) {
+            builder->CreateRetVoid();
+        } else {
+            llvm::Value *ret_val2 = llvm::ConstantInt::get(context,
+                llvm::APInt(32, 0));
+            builder->CreateRet(ret_val2);
+        }
         dict_api_lp->set_is_dict_present(is_dict_present_copy_lp);
         dict_api_sc->set_is_dict_present(is_dict_present_copy_sc);
         set_api_lp->set_is_set_present(is_set_present_copy_lp);

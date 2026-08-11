@@ -179,6 +179,12 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     if (character_result) {
         return_type = "character";
     }
+    // A cell may contain a program unit. In interactive mode it is compiled
+    // into `run_fn + "_program"` (see visit_Program) and has to be called from
+    // here; otherwise the program is compiled and never runs, and the cell
+    // silently produces no output at all.
+    std::string program_fn = run_fn + "_program";
+    bool has_program = (m->get_return_type(program_fn) == "void");
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
@@ -203,6 +209,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
+    if (has_program) {
+        e.execfn<void>(program_fn);
+    }
     if (return_type == "integer4") {
         int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::integer4;
@@ -253,7 +262,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         e.execfn<void>(run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
-        result.type = EvalResult::none;
+        result.type = has_program ? EvalResult::statement : EvalResult::none;
     } else {
         throw LCompilersException("FortranEvaluator::evaluate(): Return type not supported");
     }
@@ -395,6 +404,19 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
     if (symbol_table) {
         if (symbol_table->get_symbol(run_fn) != nullptr) {
             symbol_table->erase_symbol(run_fn);
+        }
+        // Remove program units left by earlier evaluations. A program cannot be
+        // referenced from a later cell, and keeping it would make re-running a
+        // cell that defines one fail with "symbol already declared", which is
+        // the ordinary edit-and-run-again loop in a notebook.
+        std::vector<std::string> old_programs;
+        for (auto &item : symbol_table->get_scope()) {
+            if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                old_programs.push_back(item.first);
+            }
+        }
+        for (auto &name : old_programs) {
+            symbol_table->erase_symbol(name);
         }
         symbol_table->mark_all_variables_external(al);
     }
