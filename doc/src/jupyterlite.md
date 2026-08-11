@@ -194,15 +194,40 @@ After changing LFortran sources:
 pixi run lab       # rebuilds the kernel and the site, then serves it
 ```
 
-Then hard-reload the browser page (JupyterLite caches aggressively in a service
-worker and in browser storage). If stale behaviour persists, open the site in a
-private window, or clear site data for `localhost:8000`. Notebook *contents* in
-JupyterLite are stored in browser local storage, so an edited notebook keeps its
-locally-stored version even after a rebuild — use "File → Reset" or clear
-storage to pick up a new `--contents` version.
+**Then clear the browser state — a reload is not enough.** JupyterLite installs
+a service worker that serves the app itself from cache, and `jupyterlite-xeus`
+keeps the unpacked kernel packages in IndexedDB. Both survive a rebuild *and* a
+hard reload, so after replacing `dist/` the browser can keep running the
+previous build — including a previously broken one, which looks exactly like
+"my fix did nothing".
+
+The reliable options, in order of convenience:
+
+* Open the site in a **private/incognito window** — fresh state every time.
+  This is the sanest default while iterating.
+* Chrome DevTools → Application → Storage → **Clear site data**, then reload.
+  Firefox: DevTools → Storage → right-click the origin → Delete All, and
+  unregister the service worker in `about:debugging#/runtime/this-firefox`.
+
+A quick way to tell whether you are looking at cached content: watch the
+`python -m http.server` log while you load the page. A genuinely fresh load
+requests `/lab/index.html`, `/build/lab/bundle.js` and a long list of
+`/build/*.js` and `/extensions/...` files. If you only see `jupyter-lite.json`
+and the `xeus/` kernel assets, the app came from the service worker.
+
+Notebook *contents* are likewise stored in browser storage, so an edited
+notebook keeps its locally-stored version even after a rebuild — use
+"File → Reset" or clear storage to pick up a new `--contents` version.
 
 ### Troubleshooting
 
+* The site behaves as it did before your rebuild (an old bug is still there, a
+  fix has no effect, the kernel still fails to start) — almost always the
+  service worker / IndexedDB cache described above. Retry in a private window
+  before debugging anything else.
+* To check whether the problem is the build or the browser, serve `dist/` and
+  load it in a fresh browser profile. If the kernel works there, `dist/` is
+  fine and the browser state is stale.
 * `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
 * `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
   with `pixi install -e wasm-host --platform emscripten-wasm32` (the
