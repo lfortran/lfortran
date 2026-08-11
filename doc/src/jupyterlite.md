@@ -250,12 +250,18 @@ notebook keeps its locally-stored version even after a rebuild — use
   ```
 
   The `327` fallback proxies every filesystem syscall through a synchronous
-  `XMLHttpRequest` to the service worker, and racing that has been seen to
-  kill the kernel worker at startup. `ci/lite_server.py` — used by the `lab`
-  task — sends `Cross-Origin-Opener-Policy: same-origin` and
+  `XMLHttpRequest` to the service worker, and racing that kills the kernel
+  worker at startup. `ci/lite_server.py` — used by the `lab` task — sends
+  `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp` so the `654` path is taken
   instead. A plain `python -m http.server` sends neither. Check with
-  `self.crossOriginIsolated` in the console; it must be `true`.
+  `self.crossOriginIsolated` in the console; it must be `true`. In the server
+  log, a healthy start fetches `654.*.js`; `327.*.js` means the page is not
+  isolated. This was an intermittent hang on Firefox 153/macOS that the
+  isolated server resolved.
+
+  Ignore `Trying to send message on removed socket` in the console — it
+  appears on healthy startups too.
 
   Note that the deployed GitHub Pages site cannot set these headers, so it
   runs the `327` fallback. A hang that reproduces there but not locally is
