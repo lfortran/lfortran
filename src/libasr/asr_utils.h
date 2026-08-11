@@ -1564,6 +1564,24 @@ static inline bool is_tu_scope(const SymbolTable *s) {
     return s->asr_owner != nullptr && ASR::is_a<ASR::unit_t>(*s->asr_owner);
 }
 
+// Interactive evaluation compiles one TranslationUnit per cell, chained by
+// scope, and a cell may redeclare a name an earlier cell already used. Both
+// declarations stay live -- code compiled earlier keeps using the old one -- so
+// they need distinct symbols. Qualify by the cell a symbol belongs to, the way
+// symbols in a module are qualified by the module. The first cell is
+// unqualified, so that it and ordinary compilation produce identical symbols.
+static inline std::string cell_prefix(const SymbolTable *s) {
+    const SymbolTable *tu = s;
+    while (tu != nullptr && !is_tu_scope(tu)) tu = tu->parent;
+    if (tu == nullptr) return "";
+    int depth = 1;
+    for (const SymbolTable *p = tu->parent; p != nullptr; p = p->parent) {
+        if (is_tu_scope(p)) depth++;
+    }
+    if (depth == 1) return "";
+    return "__cell" + std::to_string(depth) + "_";
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
