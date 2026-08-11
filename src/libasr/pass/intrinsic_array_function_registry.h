@@ -1949,11 +1949,6 @@ namespace Coshape {
 
     static ASR::expr_t *eval_Coshape(Allocator &/*al*/, const Location &/*loc*/,
             ASR::ttype_t */*type*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        // Evaluate only if coarrays are disabled. If coarrays are enabled, we keep it as an ASR node.
-        if (lcompilers_commandline_options.find("coarray") != std::string::npos) {
-            return nullptr;
-        }
-        // For single image fallback, we could evaluate it, but for now returning nullptr defers to instantiation.
         return nullptr;
     }
 
