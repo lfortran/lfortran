@@ -5323,3 +5323,9 @@ filename = "cobounds_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "coshape_01.f90"
+fortran = true
+pass = "coarray"
+options = "--coarray=true"
