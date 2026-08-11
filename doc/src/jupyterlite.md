@@ -236,27 +236,36 @@ notebook keeps its locally-stored version even after a rebuild — use
   load it in a fresh browser profile. If the kernel works there, `dist/` is
   fine and the browser state is stale.
 * The kernel indicator spins at *Connecting* and cells stay at `[*]`, with the
-  server log showing every asset fetched successfully. This has been observed
-  **intermittently** on Firefox 153/macOS against a known-good `dist/`: the
-  same build, server and browser start the kernel on one load and hang on the
-  next. No configuration difference has been pinned down — a fresh profile, a
-  private window, a container tab and Troubleshoot Mode each appeared to fix
-  it and then later reproduced the hang, so treat any such "fix" with
-  suspicion until it survives several attempts.
+  server log showing every asset fetched successfully. Open the browser console
+  and look at the stack of the first error. If it runs through
+  `xeus-extension/static/327.*.js` and ends in `___syscall_openat` with
+  `InvalidStateError: An attempt was made to use an object that is not, or is
+  no longer, usable`, the page is **not cross-origin isolated**.
 
-  What is known:
+  `jupyterlite-xeus` chooses its kernel worker accordingly:
 
-  * WebAssembly, workers, storage quota and the service worker are *not* the
-    obstacle — `dist/` loads and executes fine under headless Firefox of the
-    same version, including with the service worker controlling the page.
-  * Recovery, cheapest first: *Kernel → Restart Kernel…*, then reload the
-    page, then a fresh storage context (private window or new profile).
+  ```js
+  crossOriginIsolated ? new Worker(URL(654))   // SharedArrayBuffer + Atomics.wait
+                      : new Worker(URL(327))   // sync XHR via the service worker
+  ```
 
-  Before chasing the browser, confirm where the fault actually is: if a
-  headless run of the same `dist/` executes cells (see below), the build is
-  good and the problem is browser-side only. Compiler bugs found in the lab
-  should be reduced to an evaluator test in any case, which needs no browser
-  at all.
+  The `327` fallback proxies every filesystem syscall through a synchronous
+  `XMLHttpRequest` to the service worker, and racing that has been seen to
+  kill the kernel worker at startup. `ci/lite_server.py` — used by the `lab`
+  task — sends `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp` so the `654` path is taken
+  instead. A plain `python -m http.server` sends neither. Check with
+  `self.crossOriginIsolated` in the console; it must be `true`.
+
+  Note that the deployed GitHub Pages site cannot set these headers, so it
+  runs the `327` fallback. A hang that reproduces there but not locally is
+  most likely this, not a compiler bug.
+
+  If `crossOriginIsolated` is `true` and the kernel still hangs, the cause is
+  something else and the console stack will differ. Recovery, cheapest first:
+  *Kernel → Restart Kernel…*, reload, then a fresh storage context (private
+  window or new profile). Before chasing the browser, confirm where the fault
+  is: if a headless run of the same `dist/` executes cells, the build is good.
 * `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
 * `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
   with `pixi install -e wasm-host --platform emscripten-wasm32` (the

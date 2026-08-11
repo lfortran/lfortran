@@ -232,9 +232,11 @@ inputs = [
 ]
 outputs = ["dist/xeus/wasm-host/bin/xlfortran.js"]
 
-# Serve the site at http://localhost:8000/lab/index.html
+# Serve the site at http://127.0.0.1:8000/lab/index.html.
+# ci/lite_server.py (not `python -m http.server`) because the kernel needs the
+# page to be cross-origin isolated; see the comments there.
 [feature.lite.tasks.lab]
-cmd = "python -m http.server -d dist 8000"
+cmd = "python ci/lite_server.py -d dist 8000"
 depends-on = ["lab-build"]
 
 [environments]
