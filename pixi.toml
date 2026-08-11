@@ -221,7 +221,7 @@ depends-on = ["wasm-kernel"]
 # otherwise reads the channels out of the prefix's conda-meta/history, which
 # pixi (unlike micromamba) does not write.
 [feature.lite.tasks.lab-build]
-cmd = "jupyter lite build --XeusAddon.prefix=$PREFIX --XeusAddon.default_channels=https://prefix.dev/emscripten-forge-4x --XeusAddon.default_channels=https://prefix.dev/conda-forge --contents share/lfortran/nb/Demo1.ipynb --contents share/lfortran/nb/Demo2.ipynb --contents share/lfortran/nb/Variables.ipynb --contents share/lfortran/nb/Mandelbrot.ipynb --contents share/lfortran/nb/Rich_Display.ipynb --output-dir dist"
+cmd = "jupyter lite build --XeusAddon.prefix=$PREFIX --XeusAddon.default_channels=https://prefix.dev/emscripten-forge-4x --XeusAddon.default_channels=https://prefix.dev/conda-forge --contents share/lfortran/nb/Demo1.ipynb --contents share/lfortran/nb/Demo2.ipynb --contents share/lfortran/nb/Variables.ipynb --contents share/lfortran/nb/Mandelbrot.ipynb --contents share/lfortran/nb/Rich_Display.ipynb --contents share/lfortran/nb/Plot.ipynb --output-dir dist"
 env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
 depends-on = [{ task = "wasm-kernel", environment = "wasm-build" }]
 inputs = [
