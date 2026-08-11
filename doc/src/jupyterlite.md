@@ -205,9 +205,16 @@ The reliable options, in order of convenience:
 
 * Open the site in a **private/incognito window** — fresh state every time.
   This is the sanest default while iterating.
-* Chrome DevTools → Application → Storage → **Clear site data**, then reload.
-  Firefox: DevTools → Storage → right-click the origin → Delete All, and
-  unregister the service worker in `about:debugging#/runtime/this-firefox`.
+* Clear the origin's storage: in Firefox click the **padlock** in the URL bar →
+  *Clear cookies and site data…*; in Chrome use DevTools → Application →
+  Storage → *Clear site data*. Both drop the service worker, IndexedDB and
+  local storage in one step. Note this also discards notebooks you edited
+  inside the lab, which live in browser storage.
+* Serve on another port (`python3 -m http.server -d dist 8001`). A different
+  port is a different origin, so there is no service worker and no cached app.
+
+A hard reload (`Cmd`/`Ctrl`+`Shift`+`R`) is *not* sufficient on its own: it
+bypasses the HTTP cache, but the service worker still answers first.
 
 A quick way to tell whether you are looking at cached content: watch the
 `python -m http.server` log while you load the page. A genuinely fresh load
