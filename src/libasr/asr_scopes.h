@@ -50,13 +50,11 @@ struct SymbolTable {
         return scope[name];
     }
 
-    SymbolTable* get_global_scope() {
-        SymbolTable* global_scope = this;
-        while (global_scope->parent) {
-            global_scope = global_scope->parent;
-        }
-        return global_scope;
-    }
+    // The symbol table of the TranslationUnit this scope belongs to. In
+    // interactive mode there is one TranslationUnit per cell, chained through
+    // `parent`, so this stops at the innermost one: new symbols belong to the
+    // cell being compiled, not to the first cell of the session.
+    SymbolTable* get_global_scope();
 
     const std::map<std::string, ASR::symbol_t*>& get_scope() const {
         return scope;

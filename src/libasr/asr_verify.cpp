@@ -164,7 +164,7 @@ public:
             "The Program::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
             "The Program::m_symtab->parent is not the right parent");
-        require(x.m_symtab->parent->parent == nullptr,
+        require(ASRUtils::is_tu_scope(x.m_symtab->parent),
             "The Program::m_symtab's parent must be TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "Program::m_symtab->counter must be unique");
@@ -336,7 +336,7 @@ public:
             "The Module::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
             "The Module::m_symtab->parent is not the right parent");
-        require(x.m_symtab->parent->parent == nullptr,
+        require(ASRUtils::is_tu_scope(x.m_symtab->parent),
             "The Module::m_symtab's parent must be TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "Module::m_symtab->counter must be unique");

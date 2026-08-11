@@ -1928,12 +1928,23 @@ public:
         for (auto &item : build_order) {
             if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
             ASR::symbol_t *mod = nullptr;
+            SymbolTable *mod_scope = nullptr;
             for (SymbolTable *scope : cell_scopes) {
-                if (ASR::symbol_t *m = scope->get_symbol(item)) mod = m;
+                if (ASR::symbol_t *m = scope->get_symbol(item)) {
+                    mod = m;
+                    mod_scope = scope;
+                }
             }
             if (mod == nullptr) continue;
+            // An earlier cell's symbols are already defined in the JIT, and
+            // this cell holds them as they were before the ASR passes ran, so
+            // their bodies are not in a lowered form we could emit anyway.
+            // Declare them, do not define them.
+            prototype_only = (mod_scope != x.m_symtab);
             visit_symbol(*mod);
+            prototype_only = false;
         }
+        prototype_only = true;
         for (SymbolTable *scope : cell_scopes) {
             if (scope == x.m_symtab) continue;
             for (auto &item : scope->get_scope()) {
@@ -1942,17 +1953,19 @@ public:
                 }
             }
         }
+        prototype_only = false;
 
         // Then do all the procedures
         for (SymbolTable *scope : cell_scopes) {
             mangle_prefix = ASRUtils::cell_prefix(scope);
-            (void)0;
+            prototype_only = (scope != x.m_symtab);
             for (auto &item : scope->get_scope()) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     visit_symbol(*item.second);
                 }
             }
         }
+        prototype_only = false;
 
         // Then the main program
         for (auto &item : x.m_symtab->get_scope()) {

@@ -449,7 +449,12 @@ SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
         snapshot, nullptr, 0);
     snapshot->asr_owner = owner;
     ASRUtils::SymbolDuplicator duplicator(al);
-    duplicator.duplicate_SymbolTable(asr.m_symtab, snapshot);
+    for (auto &item : asr.m_symtab->get_scope()) {
+        // A program unit is executed by the cell that declares it and its name
+        // is not referenceable from Fortran, so later cells have no use for it.
+        if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
+        duplicator.duplicate_symbol(item.second, snapshot);
+    }
     return snapshot;
 }
 

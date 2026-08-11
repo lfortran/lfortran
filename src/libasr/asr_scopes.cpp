@@ -26,6 +26,14 @@ SymbolTable::SymbolTable(SymbolTable *parent) : parent{parent} {
     counter = symbol_table_counter;
 }
 
+SymbolTable* SymbolTable::get_global_scope() {
+    SymbolTable* s = this;
+    while (s->parent && !ASRUtils::is_tu_scope(s)) {
+        s = s->parent;
+    }
+    return s;
+}
+
 void SymbolTable::reset_global_counter() {
     symbol_table_counter = 0;
 }

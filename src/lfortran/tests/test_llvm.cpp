@@ -1591,3 +1591,103 @@ TEST_CASE("FortranEvaluator array-argument module procedure across cells") {
         "end program pf\n");
     CHECK(r.ok);
 }
+
+// Shadowing across interactive cells. Each cell is its own TranslationUnit,
+// chained through SymbolTable::parent, so re-declaring a name in a later cell
+// does not overwrite the earlier one: code compiled in earlier cells keeps
+// using the binding that was in scope when it was compiled, and new code sees
+// the new one. This mirrors what Python does in a notebook.
+
+TEST_CASE("FortranEvaluator shadow a variable across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("integer :: i").ok);
+    CHECK(e.evaluate2("i = 1").ok);
+    // A function compiled now binds to the `i` that exists now.
+    CHECK(e.evaluate2(R"(integer function old_i()
+old_i = i
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_i()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-declaring `i` shadows it; the old one stays alive.
+    CHECK(e.evaluate2("integer :: i").ok);
+    CHECK(e.evaluate2("i = 2").ok);
+    r = e.evaluate2("i");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    r = e.evaluate2("old_i()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
+TEST_CASE("FortranEvaluator shadow a function across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(integer function f()
+f = 1
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("f()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-defining `f` shadows it: new code calls the new one.
+    CHECK(e.evaluate2(R"(integer function f()
+f = 2
+end function
+)").ok);
+    r = e.evaluate2("f()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+
+    // The first `f` is still there. Fortran gives no way to name it once it
+    // is shadowed, so this checks the symbol the first cell emitted: the two
+    // definitions live under different names (the second cell qualifies its
+    // symbols by its cell) and both are defined in the JIT.
+    CHECK(e.get_llvm_evaluator().execfn<int32_t>("f") == 1);
+}
+
+TEST_CASE("FortranEvaluator shadow a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module m
+implicit none
+integer, parameter :: c = 1
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function old_c()
+use m, only: c
+old_c = c
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    CHECK(e.evaluate2(R"(module m
+implicit none
+integer, parameter :: c = 2
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function new_c()
+use m, only: c
+new_c = c
+end function
+)").ok);
+    r = e.evaluate2("new_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    // The function compiled against the first `m` still sees c == 1.
+    r = e.evaluate2("old_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
