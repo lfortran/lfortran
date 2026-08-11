@@ -236,15 +236,25 @@ notebook keeps its locally-stored version even after a rebuild — use
   load it in a fresh browser profile. If the kernel works there, `dist/` is
   fine and the browser state is stale.
 * The kernel indicator spins at *Connecting* forever and cells stay at `[*]`,
-  in one browser profile only — a browser extension or a hardening preference
-  is blocking the kernel's web worker. This survives clearing site data and
-  changing ports, and a private window does not help because extensions may
-  run there too. Confirm with a brand-new profile (`about:profiles` in Firefox,
-  a new profile directory in Chrome); if that works, bisect with Firefox's
-  *Help → Troubleshoot Mode* (extensions off, preferences kept). Script
-  blockers such as NoScript or JShelter, and `privacy.resistFingerprinting`,
-  are the usual causes. Note that wasm itself may still test fine — the block
-  is on the worker, not on WebAssembly.
+  in one browser profile only. **Check first whether the page is open in a
+  Firefox container tab** (Multi-Account Containers): a container gets its own
+  storage partition, and the kernel's service worker plus IndexedDB stall in
+  it. Open the site in a fresh, non-container tab, and assign `localhost` to
+  *No Container* to make that permanent.
+
+  The trap when diagnosing this: *disabling* the containers extension does not
+  fix an existing tab, because the tab keeps its container identity, so the
+  obvious test comes back negative and points you at preferences instead.
+  Firefox's *Help → Troubleshoot Mode* does fix it, since the tab is opened
+  fresh with the extension off.
+
+  If a plain tab still hangs, the cause is elsewhere in the profile. Confirm
+  with a brand-new profile (`about:profiles`); if that works, bisect with
+  Troubleshoot Mode, then extensions one at a time, then hardware acceleration
+  (the other thing Troubleshoot Mode changes). Script blockers such as NoScript
+  or JShelter, and `privacy.resistFingerprinting`, are other known causes.
+  Note that WebAssembly itself may test fine throughout — the block is on the
+  worker's storage or messaging, not on wasm.
 * `no runtime .mod files found in .../lib` — run `pixi run wasm-mods`.
 * `does not support 'osx-arm64' on this machine` for `wasm-host` — install it
   with `pixi install -e wasm-host --platform emscripten-wasm32` (the
