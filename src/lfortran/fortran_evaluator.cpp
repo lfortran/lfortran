@@ -1,3 +1,5 @@
+#include <array>
+#include <cstring>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -37,6 +39,27 @@ namespace LCompilers {
 #endif
 
 namespace LCompilers {
+
+class StringDescriptor {
+    std::array<unsigned char, sizeof(char *) + sizeof(int64_t)> storage{};
+
+public:
+    void *pointer() {
+        return storage.data();
+    }
+
+    char *data() const {
+        char *data;
+        std::memcpy(&data, storage.data(), sizeof(data));
+        return data;
+    }
+
+    int64_t length() const {
+        int64_t length;
+        std::memcpy(&length, storage.data() + sizeof(char *), sizeof(length));
+        return length;
+    }
+};
 
 
 /* ------------------------------------------------------------------------- */
@@ -131,6 +154,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.asr = pickle(*asr, true, false, false, false);
     }
 
+    bool character_result = asr->n_items > 0
+        && asr->m_items[asr->n_items - 1]->type == ASR::asrType::expr
+        && ASRUtils::is_character(*ASRUtils::expr_type(
+            ASRUtils::EXPR(asr->m_items[asr->n_items - 1])));
+
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
@@ -148,6 +176,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     std::string return_type = m->get_return_type(run_fn);
+    if (character_result) {
+        return_type = "character";
+    }
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
@@ -202,6 +233,22 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
+    } else if (return_type == "character") {
+        StringDescriptor descriptor;
+        e.execfn<void>(run_fn, descriptor.pointer());
+        result.type = EvalResult::character;
+        char *data = descriptor.data();
+        int64_t length = descriptor.length();
+        if (data && length > 0) {
+            result.str.assign(data, length);
+        }
+        if (data) {
+            const std::string allocator_fn = compiler_options.detect_leaks
+                ? "_lfortran_get_compiler_mem_dbg_allocator"
+                : "_lfortran_get_default_allocator";
+            void *allocator = e.execfn<void *>(allocator_fn);
+            e.execfn<void>("_lfortran_free_alloc", allocator, data);
+        }
     } else if (return_type == "void") {
         e.execfn<void>(run_fn);
         result.type = EvalResult::statement;

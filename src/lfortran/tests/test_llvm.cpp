@@ -477,6 +477,17 @@ r
     CHECK(r.result.f32 == 3);
 }
 
+TEST_CASE("FortranEvaluator character result") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("'hello'");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "hello");
+}
+
 TEST_CASE("FortranEvaluator 3") {
     CompilerOptions cu;
     cu.interactive = true;
