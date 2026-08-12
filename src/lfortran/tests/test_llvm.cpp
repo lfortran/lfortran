@@ -1820,3 +1820,39 @@ end program
     CHECK(e.evaluate2(cell).ok);
     CHECK(e.evaluate2(cell).ok);
 }
+
+TEST_CASE("FortranEvaluator call a procedure no earlier cell called") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // `untouched` is never called in the cell that declares it. Dead-code
+    // elimination would drop it there, leaving the next cell's call with no
+    // definition to link to.
+    CHECK(e.evaluate2(R"(module munused
+implicit none
+integer :: counter = 0
+contains
+    subroutine called_now()
+        counter = counter + 1
+    end subroutine
+    subroutine untouched()
+        counter = counter + 10
+    end subroutine
+end module
+
+program p1
+use munused
+implicit none
+call called_now()
+if (counter /= 1) error stop
+end program
+)").ok);
+    CHECK(e.evaluate2(R"(program p2
+use munused
+implicit none
+call untouched()
+if (counter /= 11) error stop
+end program
+)").ok);
+}

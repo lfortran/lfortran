@@ -619,6 +619,13 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
 
+    if (compiler_options.interactive) {
+        // Nothing in this cell may call a procedure the user declared, but a
+        // later cell still can, so it has to be emitted. Dropping it here
+        // leaves the later cell's call with no definition to link to.
+        pass_manager.skip_pass("unused_functions");
+    }
+
     if (compiler_options.generate_code_for_global_procedures) {
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
