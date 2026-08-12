@@ -14266,10 +14266,10 @@ static bool peek_next_is_assignment(char *line_ptr) {
     return (*ptr == '=');
 }
 
-// Helper to convert string to lowercase
-static void to_lowercase(char *str) {
+// Helper to convert string to uppercase
+static void to_uppercase(char *str) {
     for (int i = 0; str[i]; i++) {
-        str[i] = tolower(str[i]);
+        str[i] = toupper(str[i]);
     }
 }
 
@@ -14299,11 +14299,11 @@ static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, in
         case LFORTRAN_NML_LOGICAL2:
         case LFORTRAN_NML_LOGICAL4:
         case LFORTRAN_NML_LOGICAL8: {
-            char lower[32];
-            strncpy(lower, value_str, 31);
-            lower[31] = '\0';
-            to_lowercase(lower);
-            bool val = (strstr(lower, "t") != NULL || strstr(lower, "1") != NULL);
+            char upper[256];
+            strncpy(upper, value_str, sizeof(upper) - 1);
+            upper[sizeof(upper) - 1] = '\0';
+            to_uppercase(upper);
+            bool val = (strstr(upper, "T") != NULL || strstr(upper, "1") != NULL);
             if (item->type == LFORTRAN_NML_LOGICAL1) *(int8_t*)ptr = val ? 1 : 0;
             else if (item->type == LFORTRAN_NML_LOGICAL2) *(int16_t*)ptr = val ? 1 : 0;
             else if (item->type == LFORTRAN_NML_LOGICAL4) *(int32_t*)ptr = val ? 1 : 0;
@@ -14582,7 +14582,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             internal_free(token);
             token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
             if (token) {
-                to_lowercase(token);
+                to_uppercase(token);
                 if (strcmp(token, group->group_name) == 0) {
                     found_group = true;
                     internal_free(token);
@@ -14634,7 +14634,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         }
 
         // Parse name=value (may include array subscript like "arr(2,3)")
-        to_lowercase(token);
+        to_uppercase(token);
         char *name = token;
 
         // Parse array subscript if present
