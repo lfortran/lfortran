@@ -1856,3 +1856,40 @@ if (counter /= 11) error stop
 end program
 )").ok);
 }
+
+TEST_CASE("FortranEvaluator shadow a subroutine across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("integer :: r").ok);
+    CHECK(e.evaluate2(R"(subroutine sub()
+r = 1
+end subroutine
+)").ok);
+    // Compiled now, so it calls the `sub` that exists now.
+    CHECK(e.evaluate2(R"(subroutine call_old_sub()
+call sub()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call call_old_sub()").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-defining `sub` shadows it: a call made now runs the new one.
+    CHECK(e.evaluate2(R"(subroutine sub()
+r = 2
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call sub()").ok);
+    r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+
+    // The subroutine compiled against the first `sub` still runs the first one.
+    CHECK(e.evaluate2("call call_old_sub()").ok);
+    r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
