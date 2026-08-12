@@ -86,6 +86,9 @@ public:
     // Copy of a cell's symbols, taken before the ASR passes rewrite them, to
     // serve as the parent scope of the next cell.
     SymbolTable* snapshot_cell_scope(ASR::TranslationUnit_t &asr);
+    SymbolTable* copy_cell_scope(SymbolTable *scope, SymbolTable *parent,
+        const Location &loc);
+    SymbolTable* copy_cell_chain(SymbolTable *chain, const Location &loc);
 #ifdef HAVE_LFORTRAN_LLVM
     // Turn definitions the JIT already holds into declarations.
     void drop_redefinitions(LLVMModule &m);

@@ -1923,6 +1923,7 @@ public:
         // TODO: handle dependencies across modules and main program
 
         // Then do all the modules in the right order
+        std::set<ASR::symbol_t*> visited_modules;
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
@@ -1936,6 +1937,7 @@ public:
                 }
             }
             if (mod == nullptr) continue;
+            if (!visited_modules.insert(mod).second) continue;
             // An earlier cell's symbols are already defined in the JIT, and
             // this cell holds them as they were before the ASR passes ran, so
             // their bodies are not in a lowered form we could emit anyway.
@@ -1949,6 +1951,9 @@ public:
             if (scope == x.m_symtab) continue;
             for (auto &item : scope->get_scope()) {
                 if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    // A module an earlier cell declared may already have been
+                    // emitted above as a dependency of this cell's modules.
+                    if (!visited_modules.insert(item.second).second) continue;
                     visit_symbol(*item.second);
                 }
             }
