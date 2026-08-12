@@ -228,7 +228,7 @@ public:
 
         std::vector<ArgInfo> indices = get_arg_indices_used::get(&x->base, current_scope);
 
-        SymbolTable* global_scope = current_scope->get_global_scope();
+        SymbolTable* global_scope = current_scope->get_tu_scope();
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
         SymbolTable* new_function_scope_copy = new_function_scope;
