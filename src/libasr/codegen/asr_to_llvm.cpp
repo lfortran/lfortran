@@ -1922,8 +1922,25 @@ public:
 
         // TODO: handle dependencies across modules and main program
 
-        // Then do all the modules in the right order
+        // An earlier cell's modules first, and only declared: their symbols are
+        // already defined in the JIT, and this cell holds them as they were
+        // before the ASR passes ran, so their bodies are not in a lowered form
+        // we could emit anyway. This cell's own modules are emitted below and
+        // may call into them, so they have to be declared by then.
         std::set<ASR::symbol_t*> visited_modules;
+        prototype_only = true;
+        for (SymbolTable *scope : cell_scopes) {
+            if (scope == x.m_symtab) continue;
+            for (auto &item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    if (!visited_modules.insert(item.second).second) continue;
+                    visit_symbol(*item.second);
+                }
+            }
+        }
+        prototype_only = false;
+
+        // Then do all the modules in the right order
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
@@ -1937,28 +1954,12 @@ public:
                 }
             }
             if (mod == nullptr) continue;
+            // A module an earlier cell declared has been declared above.
             if (!visited_modules.insert(mod).second) continue;
-            // An earlier cell's symbols are already defined in the JIT, and
-            // this cell holds them as they were before the ASR passes ran, so
-            // their bodies are not in a lowered form we could emit anyway.
-            // Declare them, do not define them.
             prototype_only = (mod_scope != x.m_symtab);
             visit_symbol(*mod);
             prototype_only = false;
         }
-        prototype_only = true;
-        for (SymbolTable *scope : cell_scopes) {
-            if (scope == x.m_symtab) continue;
-            for (auto &item : scope->get_scope()) {
-                if (ASR::is_a<ASR::Module_t>(*item.second)) {
-                    // A module an earlier cell declared may already have been
-                    // emitted above as a dependency of this cell's modules.
-                    if (!visited_modules.insert(item.second).second) continue;
-                    visit_symbol(*item.second);
-                }
-            }
-        }
-        prototype_only = false;
 
         // Then do all the procedures
         for (SymbolTable *scope : cell_scopes) {

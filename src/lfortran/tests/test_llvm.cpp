@@ -16,6 +16,7 @@
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
+#include <libasr/modfile.h>
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
 
@@ -2060,4 +2061,58 @@ if (twice(3) /= 6) error stop
 if (twice(1.5) /= 3.0) error stop
 end program
 )").ok);
+}
+
+TEST_CASE("FortranEvaluator a modfile module used by a cell's module") {
+    // A module loaded from a modfile is held by the cell that first used it,
+    // so a later cell resolves it through the chain and its module calls into
+    // the copy. That copy has to be declared before this cell's own modules
+    // are emitted, or the call has nothing to link to.
+    const char *modsrc = R"(module mcellmod
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)";
+    {
+        Allocator al(1024*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "mcellmod.f90";
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(std::strlen(modsrc));
+        LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
+            LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics, nullptr,
+                false, co, lm));
+        std::ofstream out("mcellmod.mod", std::ios::binary);
+        out << LCompilers::save_modfile(*asr, lm);
+    }
+
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *cell = R"(module mcell
+use mcellmod
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mcell
+implicit none
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    std::remove("mcellmod.mod");
 }
