@@ -1654,7 +1654,13 @@ end function
     // is shadowed, so this checks the symbol the first cell emitted: the two
     // definitions live under different names (the second cell qualifies its
     // symbols by its cell) and both are defined in the JIT.
+    //
+    // The WASM build executes through WasmLFortranExecutor and has no JIT to
+    // look a symbol up in. `FortranEvaluator old and new function side by
+    // side` covers the same ground there, in Fortran rather than by symbol.
+#ifndef __EMSCRIPTEN__
     CHECK(e.get_llvm_evaluator().execfn<int32_t>("f") == 1);
+#endif
 }
 
 TEST_CASE("FortranEvaluator shadow a module across cells") {
