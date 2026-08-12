@@ -5,11 +5,11 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             f1:
                                 (Variable
-                                    2
+                                    3
                                     f1
                                     []
                                     Local
@@ -33,7 +33,7 @@
                                 ),
                             f2:
                                 (Variable
-                                    2
+                                    3
                                     f2
                                     []
                                     Local
@@ -57,7 +57,7 @@
                                 ),
                             f3:
                                 (Variable
-                                    2
+                                    3
                                     f3
                                     []
                                     Local
@@ -81,7 +81,7 @@
                                 ),
                             f4:
                                 (Variable
-                                    2
+                                    3
                                     f4
                                     []
                                     Local
@@ -105,7 +105,7 @@
                                 ),
                             f5:
                                 (Variable
-                                    2
+                                    3
                                     f5
                                     []
                                     Local
@@ -129,7 +129,7 @@
                                 ),
                             f6:
                                 (Variable
-                                    2
+                                    3
                                     f6
                                     []
                                     ReturnVar
@@ -170,7 +170,7 @@
                     []
                     []
                     [(Assignment
-                        (Var 2 f1)
+                        (Var 3 f1)
                         (RealConstant
                             5.000000
                             (Real 4)
@@ -180,7 +180,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f2)
+                        (Var 3 f2)
                         (RealBinOp
                             (RealConstant
                                 5.000000
@@ -202,7 +202,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f3)
+                        (Var 3 f3)
                         (RealBinOp
                             (RealBinOp
                                 (RealConstant
@@ -236,7 +236,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f4)
+                        (Var 3 f4)
                         (RealBinOp
                             (RealConstant
                                 5.000000
@@ -270,7 +270,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f5)
+                        (Var 3 f5)
                         (RealBinOp
                             (RealConstant
                                 5.000000
@@ -292,7 +292,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 f6)
+                        (Var 3 f6)
                         (RealBinOp
                             (RealConstant
                                 4.000000
@@ -313,7 +313,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 2 f6)
+                    (Var 3 f6)
                     Public
                     .false.
                     .false.
