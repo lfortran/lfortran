@@ -1,6 +1,7 @@
 #include <array>
 #include <cstring>
 #include <fstream>
+#include <set>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -25,6 +26,8 @@
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #ifdef HAVE_LFORTRAN_MLIR
 #include <libasr/codegen/asr_to_mlir.h>
@@ -159,7 +162,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         && ASRUtils::is_character(*ASRUtils::expr_type(
             ASRUtils::EXPR(asr->m_items[asr->n_items - 1])));
 
-    // ASR -> LLVM
+    // ASR -> LLVM. The passes rewrite this tree; that is fine, it is this
+    // cell's own and is discarded afterwards. What later cells resolve
+    // against is the snapshot taken in get_asr3().
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
         nullptr);
@@ -188,6 +193,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // With full-width logical types, logicals are now i32/i64 in LLVM
     // (same as integers). Check the ASR to distinguish logical from integer.
+    // This has to look at the tree that was compiled: `run_fn` does not exist
+    // in the session ASR, it is created by the wrap-global-statements pass, so
+    // in interactive mode it only ever appears in the copy.
     if (asr->m_symtab->get_symbol(run_fn) != nullptr) {
         ASR::symbol_t *fn_sym = asr->m_symtab->get_symbol(run_fn);
         if (ASR::is_a<ASR::Function_t>(*fn_sym)) {
@@ -199,6 +207,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
                 }
             }
         }
+    }
+
+    if (compiler_options.interactive) {
+        drop_redefinitions(*m);
     }
 
     // LLVM -> Machine code -> Execution
@@ -395,32 +407,83 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
     }
 }
 
+
+#ifdef HAVE_LFORTRAN_LLVM
+void FortranEvaluator::drop_redefinitions(LLVMModule &m)
+{
+    // Each interactive evaluation compiles a fresh copy of the session ASR, so
+    // the passes regenerate their helper procedures every time: intrinsic
+    // lowerings such as __lcompilers_optimization_mod_i32, or the
+    // pass_array_by_data specialisation of a procedure that lives in the
+    // session. Adding a second definition of a symbol the JIT already holds is
+    // an error, and the existing definition is equivalent, so keep the
+    // declaration and drop the body.
+    for (llvm::Function &fn : *m.m_m) {
+        if (fn.isDeclaration()) continue;
+        std::string name = fn.getName().str();
+        if (!defined_symbols.insert(name).second) {
+            fn.deleteBody();
+        }
+    }
+}
+#endif
+
+SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
+{
+    // ASR passes rewrite what they are given: pass_array_by_data replaces a
+    // procedure taking an assumed-shape array with a specialisation under a
+    // mangled name, for instance. This cell's scope is the parent of the next
+    // cell's, so if later cells resolved names against the tree the passes
+    // just rewrote, they would see lowered signatures instead of the ones the
+    // user wrote.
+    //
+    // So the cell is compiled from the tree semantic analysis produced -- the
+    // passes may do as they like to it, it is thrown away afterwards -- while
+    // the chain gets a copy of its symbols taken beforehand. Only symbols are
+    // copied: later cells resolve names and read signatures, they never re-run
+    // this cell's statements. The copy carries the same names at the same
+    // depth, so it mangles to the same symbols this cell just compiled.
+    SymbolTable* snapshot = al.make_new<SymbolTable>(asr.m_symtab->parent);
+    ASR::asr_t* owner = ASR::make_TranslationUnit_t(al, asr.base.base.loc,
+        snapshot, nullptr, 0);
+    snapshot->asr_owner = owner;
+    ASRUtils::SymbolDuplicator duplicator(al);
+    for (auto &item : asr.m_symtab->get_scope()) {
+        // A program unit is executed by the cell that declares it and its name
+        // is not referenceable from Fortran, so later cells have no use for it.
+        if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
+        duplicator.duplicate_symbol(item.second, snapshot);
+    }
+    return snapshot;
+}
+
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
     LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm)
 {
     ASR::TranslationUnit_t* asr;
     // AST -> ASR
-    // Remove the old execution function if it exists
-    if (symbol_table) {
-        if (symbol_table->get_symbol(run_fn) != nullptr) {
-            symbol_table->erase_symbol(run_fn);
+    //
+    // Each interactive evaluation gets its own TranslationUnit, whose scope is
+    // parented to the previous one. Cells are therefore purely additive: a cell
+    // sees everything declared before it, and nothing can reach forward into a
+    // later cell. Redeclaring a name shadows the earlier one the way a nested
+    // scope does, so code compiled earlier keeps using what it resolved to
+    // then, while later cells resolve to the new declaration. That is the
+    // behaviour of a Python notebook, where re-running a cell rebinds the name
+    // and objects created earlier keep the old one.
+    //
+    // Ordinary compilation has none of this: one translation unit, no chaining
+    // and no copying, so that it is not slowed down by it.
+    SymbolTable *cell_scope = symbol_table;
+    if (compiler_options.interactive) {
+        if (symbol_table) {
+            // Everything declared before this cell is already compiled, so it
+            // is referenced rather than emitted again.
+            symbol_table->mark_all_variables_external(al);
         }
-        // Remove program units left by earlier evaluations. A program cannot be
-        // referenced from a later cell, and keeping it would make re-running a
-        // cell that defines one fail with "symbol already declared", which is
-        // the ordinary edit-and-run-again loop in a notebook.
-        std::vector<std::string> old_programs;
-        for (auto &item : symbol_table->get_scope()) {
-            if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                old_programs.push_back(item.first);
-            }
-        }
-        for (auto &name : old_programs) {
-            symbol_table->erase_symbol(name);
-        }
-        symbol_table->mark_all_variables_external(al);
+        cell_scope = al.make_new<SymbolTable>(symbol_table);
     }
-    auto res = LFortran::ast_to_asr(al, ast, diagnostics, symbol_table,
+    auto res = LFortran::ast_to_asr(al, ast, diagnostics, cell_scope,
         compiler_options.symtab_only, compiler_options, lm);
     if (res.ok) {
         asr = res.result;
@@ -428,7 +491,11 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-    if (!symbol_table) symbol_table = asr->m_symtab;
+    if (compiler_options.interactive) {
+        // The next cell is parented to a snapshot of this one, not to the tree
+        // about to be handed to the passes.
+        symbol_table = snapshot_cell_scope(*asr);
+    }
 
     return asr;
 }
