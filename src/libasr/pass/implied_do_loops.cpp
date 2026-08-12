@@ -763,10 +763,25 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
-        if (result_var != nullptr &&
+        bool has_direct_target = result_var != nullptr &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
-            resultvar2value[result_var] == &(x->base)) {
+            resultvar2value[result_var] == &(x->base);
+        if (has_direct_target) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        // If this ArrayConstant is the value being assigned directly to a
+        // target (e.g. `arr = [1, 2, 3]`) and that target doesn't need to
+        // be (re)allocated here, there's no need to materialize a
+        // "_array_constant_" temporary in this pass. array_op (and, for
+        // struct-array cases, array_struct_temporary right after this
+        // pass) already lower an ArrayConstant directly against an
+        // existing target. Creating a temp here duplicates that work and,
+        // more importantly, this replacer runs unconditionally on every
+        // ArrayConstant encountered -- including ones that aren't part of
+        // an executable statement at all, e.g. inside a function's type
+        // signature -- which caused issue #12138.
+        if (has_direct_target && !(allocate_target && realloc_lhs)) {
+            return;
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
