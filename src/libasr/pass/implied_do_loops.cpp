@@ -772,15 +772,42 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         // If this ArrayConstant is the value being assigned directly to a
         // target (e.g. `arr = [1, 2, 3]`) and that target doesn't need to
         // be (re)allocated here, there's no need to materialize a
-        // "_array_constant_" temporary in this pass. array_op (and, for
+        // "_array_constant_" temporary in this pass -- array_op (and, for
         // struct-array cases, array_struct_temporary right after this
         // pass) already lower an ArrayConstant directly against an
         // existing target. Creating a temp here duplicates that work and,
-        // more importantly, this replacer runs unconditionally on every
-        // ArrayConstant encountered -- including ones that aren't part of
-        // an executable statement at all, e.g. inside a function's type
-        // signature -- which caused issue #12138.
-        if (has_direct_target && !(allocate_target && realloc_lhs)) {
+        // more importantly, this replacer used to run unconditionally on
+        // every ArrayConstant encountered -- including ones that aren't
+        // part of an executable statement at all, e.g. inside a
+        // function's type signature -- which caused issue #12138.
+        //
+        // This is only safe when the target's array bounds all start at
+        // the default lower bound of 1: array_op's own
+        // replace_ArrayConstant indexes into the target using the
+        // ArrayConstant's own (always 1-based) dimensions, not the
+        // target's declared bounds. For a target with a non-default
+        // lower bound (e.g. `integer :: y(-1:1)`), that produces
+        // out-of-bounds indices, so in that case we still materialize a
+        // temp here (whose type carries the target's real bounds) and
+        // let the final whole-array copy `target = temp` handle the
+        // bound-shifted assignment correctly at runtime.
+        bool target_has_default_lower_bound = true;
+        if (has_direct_target) {
+            ASR::dimension_t* target_dims = nullptr;
+            size_t target_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(result_var), target_dims);
+            for (size_t i = 0; i < target_n_dims; i++) {
+                int64_t start_val = 0;
+                if (target_dims[i].m_start == nullptr ||
+                    !ASRUtils::extract_value(target_dims[i].m_start, start_val) ||
+                    start_val != 1) {
+                    target_has_default_lower_bound = false;
+                    break;
+                }
+            }
+        }
+        if (has_direct_target && !(allocate_target && realloc_lhs) &&
+            target_has_default_lower_bound) {
             return;
         }
         ASR::ttype_t* result_type_ = nullptr;
