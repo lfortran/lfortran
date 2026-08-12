@@ -8964,10 +8964,68 @@ public:
                                 }
                                 value = init_expr;
                             } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
-                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr)) {
+                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr) || ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
+                                // Issue #12120: a top-level IntegerBinOp/RealBinOp/ComplexBinOp/IntegerCompare
+                                // used to be accepted as "constant" without checking its operands, so e.g.
+                                // `mod(this_image() + num_images() - 2, num_images()) + 1` was silently
+                                // accepted even though this_image()/num_images() are not PARAMETERs.
+                                // Walk the expression tree and require every leaf to be either an
+                                // already-folded constant or a reference to a PARAMETER variable.
+                                bool all_operands_constant = true;
+                                std::vector<ASR::expr_t*> pending_exprs;
+                                pending_exprs.push_back(init_expr);
+                                while (!pending_exprs.empty() && all_operands_constant) {
+                                    ASR::expr_t* e = pending_exprs.back();
+                                    pending_exprs.pop_back();
+                                    if (e == nullptr) {
+                                        continue;
+                                    }
+                                    if (ASRUtils::expr_value(e) != nullptr) {
+                                        continue;
+                                    }
+                                    if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                                        ASR::IntegerBinOp_t* b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                                        pending_exprs.push_back(b->m_left);
+                                        pending_exprs.push_back(b->m_right);
+                                    } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                                        ASR::RealBinOp_t* b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                                        pending_exprs.push_back(b->m_left);
+                                        pending_exprs.push_back(b->m_right);
+                                    } else if (ASR::is_a<ASR::ComplexBinOp_t>(*e)) {
+                                        ASR::ComplexBinOp_t* b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                                        pending_exprs.push_back(b->m_left);
+                                        pending_exprs.push_back(b->m_right);
+                                    } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                                        ASR::IntegerCompare_t* b = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                                        pending_exprs.push_back(b->m_left);
+                                        pending_exprs.push_back(b->m_right);
+                                    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                                        pending_exprs.push_back(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+                                    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                                        pending_exprs.push_back(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+                                    } else if (ASR::is_a<ASR::Var_t>(*e)) {
+                                        ASR::symbol_t* var_sym = ASRUtils::symbol_get_past_external(
+                                            ASR::down_cast<ASR::Var_t>(e)->m_v);
+                                        if (!(ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                                                ASR::down_cast<ASR::Variable_t>(var_sym)->m_storage ==
+                                                    ASR::storage_typeType::Parameter)) {
+                                            all_operands_constant = false;
+                                        }
+                                    } else {
+                                        all_operands_constant = false;
+                                    }
+                                }
+                                if (!all_operands_constant) {
+                                    diag.add(Diagnostic(
+                                        "Initialization of `" + std::string(x.m_syms[i].m_name) +
+                                        "` must reduce to a compile time constant.",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
                                 value = init_expr;
-                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr) ||
-                                ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
+                            } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr)) {
                                 value = init_expr;
                             } else {
                                 diag.add(Diagnostic(
