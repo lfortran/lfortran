@@ -374,6 +374,18 @@ time_section "🧪 Testing M_intrinsics" '
   cd ..
 '
 
+time_section "🧪 Testing gtk-fortran" '
+  git clone https://github.com/vmagnin/gtk-fortran
+  cd gtk-fortran
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout f96d3279b2d7163f9ba2faf266d6ed1ef5222a20
+  micromamba install -c conda-forge fpm
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
+
+  print_success "Done with gtk-fortran"
+  cd ..
+'
+
 if [[ "$(uname)" != "Darwin" ]]; then
 
 time_section "🧪 Testing fortran_mpi" '
