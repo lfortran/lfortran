@@ -430,11 +430,14 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
 
 namespace {
 
-// The duplicated symbols carry ExternalSymbols whose m_external still points
-// into the modules they were copied from. A later cell resolves a module by
-// name and finds the copy, so an ExternalSymbol pointing at the original does
-// not match it and the symbol looks absent. Point them at the copies.
-static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
+// The duplicated symbols still point into the scopes they were copied from: an
+// ExternalSymbol at the module it names, a generic procedure at the specific
+// procedures it resolves to. A later cell resolves a name and finds the copy,
+// so anything still pointing at an original does not match it. Point them at
+// the copies.
+static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
+    SymbolTable *tu)
+{
     for (auto &item : scope->get_scope()) {
         ASR::symbol_t *s = item.second;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
@@ -445,9 +448,26 @@ static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
             ASR::symbol_t *target = m->m_symtab->find_scoped_symbol(
                 es->m_original_name, es->n_scope_names, es->m_scope_names);
             if (target != nullptr) es->m_external = target;
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
+            // A later cell that resolves the generic would otherwise call the
+            // original specific procedure, which is not the one this cell
+            // compiled and which code generation never declares. The list is
+            // shared with the original, so it is replaced, not written to.
+            ASR::GenericProcedure_t *gp
+                = ASR::down_cast<ASR::GenericProcedure_t>(s);
+            Vec<ASR::symbol_t*> procs;
+            procs.reserve(al, gp->n_procs);
+            for (size_t i = 0; i < gp->n_procs; i++) {
+                ASR::symbol_t *proc = gp->m_procs[i];
+                ASR::symbol_t *copy = scope->resolve_symbol(
+                    ASRUtils::symbol_name(proc));
+                procs.push_back(al, copy != nullptr ? copy : proc);
+            }
+            gp->m_procs = procs.p;
+            gp->n_procs = procs.size();
         } else {
             SymbolTable *inner = ASRUtils::symbol_symtab(s);
-            if (inner != nullptr) relink_external_symbols(inner, tu);
+            if (inner != nullptr) relink_copied_symbols(al, inner, tu);
         }
     }
 }
@@ -501,7 +521,7 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
         if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
         duplicator.duplicate_symbol(item.second, copy);
     }
-    relink_external_symbols(copy, copy);
+    relink_copied_symbols(al, copy, copy);
     return copy;
 }
 

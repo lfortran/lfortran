@@ -2027,3 +2027,37 @@ if (a1() == a2()) error stop
     CHECK(r.result.i32 == 2);
     CHECK(e.evaluate2("if (a1() /= a2()) error stop").ok);
 }
+
+TEST_CASE("FortranEvaluator generic procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the first cell's generic interface has to resolve to the
+    // copies of its specific procedures. Pointing at the originals selects a
+    // procedure that this cell does not hold and never declares.
+    CHECK(e.evaluate2(R"(module mgen
+implicit none
+interface twice
+    module procedure twice_int
+    module procedure twice_real
+end interface
+contains
+    integer function twice_int(i)
+        integer, intent(in) :: i
+        twice_int = 2 * i
+    end function
+    real function twice_real(x)
+        real, intent(in) :: x
+        twice_real = 2 * x
+    end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mgen
+implicit none
+if (twice(3) /= 6) error stop
+if (twice(1.5) /= 3.0) error stop
+end program
+)").ok);
+}
