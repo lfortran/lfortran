@@ -32,6 +32,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     FindLoc,
     Product,
     Shape,
+    Coshape,
     Sum,
     Iparity,
     Transpose,
@@ -67,6 +68,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(FindLoc)
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
+        ARRAY_INTRINSIC_NAME_CASE(Coshape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
         ARRAY_INTRINSIC_NAME_CASE(Iparity)
         ARRAY_INTRINSIC_NAME_CASE(Transpose)
@@ -1944,6 +1946,55 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
 }
 
 } // namespace ArrIntrinsic
+
+namespace Coshape {
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics &diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 2,
+            "`coshape` intrinsic accepts 1 or 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`coarray` argument of `coshape` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Coshape(Allocator &/*al*/, const Location &/*loc*/,
+            ASR::ttype_t */*type*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Coshape(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASRBuilder b(al, loc);
+        Vec<ASR::expr_t *>m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]);
+        int kind = 4; // default kind
+        if (args.n > 1 && args[1]) {
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
+                append_error(diag, "`kind` argument of `coshape` must be a scalar integer", loc);
+                return nullptr;
+            }
+            if (!extract_value(args[1], kind)) {
+                append_error(diag, "The `kind` argument must be a scalar integer constant expression", loc);
+                return nullptr;
+            }
+            m_args.push_back(al, args[1]);
+        }
+        
+        int corank = ASRUtils::expr_corank(args[0]);
+        ASR::ttype_t *return_type = b.Array({corank}, TYPE(ASR::make_Integer_t(al, loc, kind)));
+        ASR::expr_t *m_value = eval_Coshape(al, loc, return_type, args, diag);
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Coshape),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Coshape(Allocator &/*al*/,
+            const Location &/*loc*/, SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/,
+            ASR::ttype_t */*return_type*/, Vec<ASR::call_arg_t>& /*new_args*/, int64_t,
+            int /*index_kind*/) {
+        throw LCompilersException("Coshape instantiation without coarrays is not supported yet");
+    }
+} // namespace Coshape
 
 namespace Shape {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
@@ -7429,6 +7480,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Product::instantiate_Product, &Product::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Shape),
             {&Shape::instantiate_Shape, &Shape::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Coshape),
+            {&Coshape::instantiate_Coshape, &Coshape::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Iparity),
@@ -7474,6 +7527,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
+        {"coshape", {&Coshape::create_Coshape, &Coshape::eval_Coshape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
         {"iparity", {&Iparity::create_Iparity, &Iparity::eval_Iparity}},
         {"cshift", {&Cshift::create_Cshift, &Cshift::eval_Cshift}},
@@ -7559,6 +7613,7 @@ namespace IntrinsicArrayFunctionRegistry {
     static inline bool handle_dim(IntrinsicArrayFunctions id) {
         // Dim argument is already handled for the following
         if( id == IntrinsicArrayFunctions::Shape  ||
+            id == IntrinsicArrayFunctions::Coshape ||
             id == IntrinsicArrayFunctions::MaxLoc ||
             id == IntrinsicArrayFunctions::MinLoc ||
             id == IntrinsicArrayFunctions::FindLoc ) {

@@ -1861,6 +1861,7 @@ public:
         {"atan2d", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"atan2pi", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"shape", IntrinsicSignature({"source", "kind"}, 1, 2)},
+        {"coshape", IntrinsicSignature({"coarray", "kind"}, 1, 2)},
         {"mod", IntrinsicSignature({"a", "p"}, 2, 2)},
         {"repeat", IntrinsicSignature({"string", "ncopies"}, 2, 2)},
         {"verify", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
@@ -15671,7 +15672,7 @@ public:
             {"logical", 1}, {"storage_size", 1}, {"anint", 1}, {"nint", 1}, {"aint", 1},
             {"floor", 1}, {"ceiling", 1}, {"aimag", 1}, {"maskl", 1}, {"maskr", 1},
             {"ichar", 1}, {"char", 1}, {"achar", 1}, {"iachar", 1}, {"real", 1},
-            {"int", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1},
+            {"int", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1}, {"coshape", 1},
             {"ieee_real", 1}, {"ieee_int", 2}, {"lbound", 2}, {"ubound", 2}, {"size", 2},
             {"verify", 3}, {"index", 3}, {"scan", 3}, {"cmplx", 2}
         };
