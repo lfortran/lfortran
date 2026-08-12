@@ -4371,6 +4371,19 @@ public:
                 is_intent_in = true;
             }
             array = llvm_symtab[v_h];
+            if (array == nullptr) {
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_v);
+                ptr_loads = ptr_loads_copy;
+                array = tmp;
+                if (!array->getType()->isPointerTy()) {
+                    llvm::Value* val = array;
+                    llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, val->getType());
+                    builder->CreateStore(val, alloc);
+                    array = alloc;
+                }
+            }
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 ASR::Struct_t* der_symbol = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v->m_type_declaration));
@@ -9153,11 +9166,15 @@ public:
         } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
             bool load_cptr = true;
-            if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
-                ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
-                load_cptr = !is_cptr_dummy_passed_by_value(p_var);
+            if (ASR::is_a<ASR::CPtr_t>(*p_type)) {
+                if (ptr->getType() == p_llvm_type) {
+                    load_cptr = false;
+                } else if (ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
+                    ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
+                    load_cptr = !is_cptr_dummy_passed_by_value(p_var);
+                }
             }
-            if (load_cptr) {
+            if (load_cptr && ptr->getType() != p_llvm_type) {
                 ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
             }
         }
@@ -15713,6 +15730,12 @@ public:
         } else if (ASRUtils::is_character(*x_m_type)) { // Sepcial Case.
             tmp = llvm_utils->declare_constant_stringArray(al, &x);
             return;
+        } else {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                this->visit_expr(*el);
+                values.push_back(llvm::cast<llvm::Constant>(tmp));
+            }
         }
 
         llvm::Constant *ConstArray = llvm::ConstantArray::get(arr_type, values);

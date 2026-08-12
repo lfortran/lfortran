@@ -7687,6 +7687,10 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
                                 s2c(al, str), type));
             return value;
         }
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr: {
+            return ((ASR::expr_t**)data)[i];
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
