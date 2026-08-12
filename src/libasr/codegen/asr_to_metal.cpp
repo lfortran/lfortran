@@ -3466,7 +3466,27 @@ public:
                         ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
                     rhs_is_local_alloc = local_alloc_arrays.count(rname) > 0;
                 }
-                if (target_is_local_alloc && rhs_is_array_or_alloc) {
+                // Direct assignment of an ArrayConstant to a target
+                // (e.g. r = [10.0, 20.0, 30.0, 40.0] where the temp
+                // materialization was skipped upstream in
+                // implied_do_loops because the target's compile-time
+                // size matches exactly). Emit element-wise literal
+                // assignments instead of relying on indexable RHS
+                // codegen, since an ArrayConstant has no runtime
+                // address to subscript in the generated Metal source.
+                if (ASR::is_a<ASR::ArrayConstant_t>(*a->m_value)) {
+                    ASR::ArrayConstant_t *ac =
+                        ASR::down_cast<ASR::ArrayConstant_t>(a->m_value);
+                    size_t n_elem =
+                        ASRUtils::get_constant_ArrayConstant_size(ac);
+                    for (size_t ei = 0; ei < n_elem; ei++) {
+                        visit_expr(a->m_target);
+                        src << "[" << ei << "] = "
+                            << ASRUtils::fetch_ArrayConstant_value(ac, ei)
+                            << ";\n";
+                        if (ei + 1 < n_elem) src << get_indent();
+                    }
+                } else if (target_is_local_alloc && rhs_is_array_or_alloc) {
                     // Copy between local allocatable arrays
                     std::string tname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
