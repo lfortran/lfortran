@@ -806,8 +806,28 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 }
             }
         }
+        // Beyond matching bounds, the target's size must also be known
+        // at compile time and exactly match the ArrayConstant's size.
+        // Otherwise we lose the runtime "Array shape mismatch" check:
+        // when the target's size can only be known at runtime (e.g. a
+        // dummy array dimensioned by another argument, `y(x)`), the old
+        // behavior materialized a temp sized from the ArrayConstant's
+        // own (compile-time-known) size and then did a whole-array copy
+        // `target = temp`, which is where asr_to_llvm emits the runtime
+        // shape-mismatch check. array_op's elementwise lowering has no
+        // such check -- it would silently write only as many elements
+        // as the ArrayConstant has, regardless of the target's actual
+        // runtime size. See tests/errors/array_bounds_check_02.f90.
+        bool target_size_matches_constant = false;
+        if (has_direct_target && is_result_var_fixed_size) {
+            int64_t target_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(result_var));
+            int64_t constant_size = ASRUtils::get_fixed_size_of_array(x->m_type);
+            if (target_size >= 0 && constant_size >= 0 && target_size == constant_size) {
+                target_size_matches_constant = true;
+            }
+        }
         if (has_direct_target && !(allocate_target && realloc_lhs) &&
-            target_has_default_lower_bound) {
+            target_has_default_lower_bound && target_size_matches_constant) {
             return;
         }
         ASR::ttype_t* result_type_ = nullptr;
