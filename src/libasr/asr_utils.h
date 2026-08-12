@@ -1552,10 +1552,40 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
+// True if this scope belongs to a TranslationUnit.
+//
+// Interactive evaluation chains one TranslationUnit per cell, each scope
+// parented to the previous cell's, so a scope chain no longer ends at the only
+// TranslationUnit -- it passes through one per cell. Walks that look for "the"
+// translation unit therefore have to stop at the nearest one, which is the cell
+// currently being compiled. With a single TranslationUnit (ordinary
+// compilation) the nearest one is also the root, so nothing changes.
+static inline bool is_tu_scope(const SymbolTable *s) {
+    return s->asr_owner != nullptr && ASR::is_a<ASR::unit_t>(*s->asr_owner);
+}
+
+// Interactive evaluation compiles one TranslationUnit per cell, chained by
+// scope, and a cell may redeclare a name an earlier cell already used. Both
+// declarations stay live -- code compiled earlier keeps using the old one -- so
+// they need distinct symbols. Qualify by the cell a symbol belongs to, the way
+// symbols in a module are qualified by the module. The first cell is
+// unqualified, so that it and ordinary compilation produce identical symbols.
+static inline std::string cell_prefix(const SymbolTable *s) {
+    const SymbolTable *tu = s;
+    while (tu != nullptr && !is_tu_scope(tu)) tu = tu->parent;
+    if (tu == nullptr) return "";
+    int depth = 1;
+    for (const SymbolTable *p = tu->parent; p != nullptr; p = p->parent) {
+        if (is_tu_scope(p)) depth++;
+    }
+    if (depth == 1) return "";
+    return "__cell" + std::to_string(depth) + "_";
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         ASR::symbol_t *asr_owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
         if (ASR::is_a<ASR::Module_t>(*asr_owner)) {
             return ASR::down_cast<ASR::Module_t>(asr_owner);
@@ -1591,7 +1621,7 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
 // or no asr_owner yet
 static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         if (s->asr_owner != nullptr) {
             ASR::symbol_t *asr_owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
             if (ASR::is_a<ASR::Module_t>(*asr_owner)) {
@@ -2693,7 +2723,7 @@ static inline Vec<ASR::expr_t*> call_arg2expr(Allocator &al, const Vec<ASR::call
 // Returns the TranslationUnit_t's symbol table by going via parents
 static inline SymbolTable *get_tu_symtab(SymbolTable *symtab) {
     SymbolTable *s = symtab;
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         s = s->parent;
     }
     LCOMPILERS_ASSERT(ASR::is_a<ASR::unit_t>(*s->asr_owner))
@@ -2705,7 +2735,7 @@ static inline Vec<char*> get_scope_names(Allocator &al, const SymbolTable *symta
     Vec<char*> scope_names;
     scope_names.reserve(al, 4);
     const SymbolTable *s = symtab;
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         char *owner_name = symbol_name(ASR::down_cast<ASR::symbol_t>(s->asr_owner));
         scope_names.push_back(al, owner_name);
         s = s->parent;

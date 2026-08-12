@@ -21165,7 +21165,7 @@ public:
                 // Only do this for top-level modules (whose parent is the
                 // TranslationUnit), not for nested modules like enums.
                 if (std::string(es0->m_module_name) != std::string(m->m_name)) {
-                    ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(es0->m_module_name);
+                    ASR::symbol_t* origin_mod_sym = current_scope->get_tu_scope()->get_symbol(es0->m_module_name);
                     if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
                         current_module_dependencies.push_back(al, es0->m_module_name);
                     }
@@ -21618,7 +21618,7 @@ public:
             // Only do this for top-level modules (whose parent is the
             // TranslationUnit), not for nested modules like enums.
             if (std::string(ext_sym->m_module_name) != std::string(m->m_name)) {
-                ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(ext_sym->m_module_name);
+                ASR::symbol_t* origin_mod_sym = current_scope->get_tu_scope()->get_symbol(ext_sym->m_module_name);
                 if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
                     current_module_dependencies.push_back(al, ext_sym->m_module_name);
                 }

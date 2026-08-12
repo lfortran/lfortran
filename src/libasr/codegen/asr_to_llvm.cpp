@@ -1870,11 +1870,26 @@ public:
         fname2arg_type["lbound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
         fname2arg_type["ubound"] = std::make_pair(bound_arg, bound_arg->getPointerTo());
 
+        // In interactive mode this translation unit is one cell, parented to
+        // the previous cell's, and code here may use anything declared by an
+        // earlier cell. Those symbols were emitted when their own cell was
+        // compiled and are marked ExternalUndefined, so walking them here only
+        // declares them. Oldest cell first, so that a name redeclared by a
+        // newer cell is the one left in llvm_symtab.
+        std::vector<SymbolTable*> cell_scopes;
+        for (SymbolTable *s = x.m_symtab; s != nullptr; s = s->parent) {
+            cell_scopes.push_back(s);
+        }
+        std::reverse(cell_scopes.begin(), cell_scopes.end());
+
         // Process Variables first:
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Variable_t>(*item.second) ||
-                is_a<ASR::Enum_t>(*item.second)) {
-                visit_symbol(*item.second);
+        for (SymbolTable *scope : cell_scopes) {
+            mangle_prefix = ASRUtils::cell_prefix(scope);
+            for (auto &item : scope->get_scope()) {
+                if (is_a<ASR::Variable_t>(*item.second) ||
+                    is_a<ASR::Enum_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                }
             }
         }
 
@@ -1894,12 +1909,16 @@ public:
 
         prototype_only = true;
         // Generate function prototypes
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
-                visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+        for (SymbolTable *scope : cell_scopes) {
+            mangle_prefix = ASRUtils::cell_prefix(scope);
+            for (auto &item : scope->get_scope()) {
+                if (is_a<ASR::Function_t>(*item.second)) {
+                    visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+                }
             }
         }
         prototype_only = false;
+        mangle_prefix = "";
 
         // TODO: handle dependencies across modules and main program
 
@@ -1908,17 +1927,45 @@ public:
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
             if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
-            ASR::symbol_t *mod = x.m_symtab->get_symbol(item);
+            ASR::symbol_t *mod = nullptr;
+            SymbolTable *mod_scope = nullptr;
+            for (SymbolTable *scope : cell_scopes) {
+                if (ASR::symbol_t *m = scope->get_symbol(item)) {
+                    mod = m;
+                    mod_scope = scope;
+                }
+            }
             if (mod == nullptr) continue;
+            // An earlier cell's symbols are already defined in the JIT, and
+            // this cell holds them as they were before the ASR passes ran, so
+            // their bodies are not in a lowered form we could emit anyway.
+            // Declare them, do not define them.
+            prototype_only = (mod_scope != x.m_symtab);
             visit_symbol(*mod);
+            prototype_only = false;
         }
-
-        // Then do all the procedures
-        for (auto &item : x.m_symtab->get_scope()) {
-            if( ASR::is_a<ASR::Function_t>(*item.second) ) {
-                visit_symbol(*item.second);
+        prototype_only = true;
+        for (SymbolTable *scope : cell_scopes) {
+            if (scope == x.m_symtab) continue;
+            for (auto &item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    visit_symbol(*item.second);
+                }
             }
         }
+        prototype_only = false;
+
+        // Then do all the procedures
+        for (SymbolTable *scope : cell_scopes) {
+            mangle_prefix = ASRUtils::cell_prefix(scope);
+            prototype_only = (scope != x.m_symtab);
+            for (auto &item : scope->get_scope()) {
+                if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                    visit_symbol(*item.second);
+                }
+            }
+        }
+        prototype_only = false;
 
         // Then the main program
         for (auto &item : x.m_symtab->get_scope()) {
@@ -5617,10 +5664,12 @@ public:
                 llvm_var_name = x.m_name;
             } else {
                 // bind(c, name='') — empty name, use mangled name
-                llvm_var_name = mangle_prefix + x.m_name;
+                llvm_var_name = tu_symbol_prefix(x.m_parent_symtab, mangle_prefix, x.m_name)
+                    + x.m_name;
             }
         } else {
-            llvm_var_name = mangle_prefix + x.m_name;
+            llvm_var_name = tu_symbol_prefix(x.m_parent_symtab, mangle_prefix, x.m_name)
+                + x.m_name;
         }
 
         if (alias_target) {
@@ -6213,10 +6262,29 @@ public:
         llvm_symtab_fn[h]->removeFromParent();
     }
 
+    // Qualification for a symbol declared directly by a translation unit.
+    // Interactive evaluation compiles one TranslationUnit per cell, so a
+    // symbol of an earlier cell must be named the way that cell named it,
+    // whichever cell is currently being compiled. Everything else (module
+    // members, nested procedures) keeps the prefix of the scope being walked.
+    std::string tu_symbol_prefix(const SymbolTable *parent,
+            const std::string &ambient, const std::string &sym_name) {
+        // The per-evaluation wrapper and the program of a cell already carry
+        // the evaluation counter and are looked up by that name, so they are
+        // left alone.
+        if (sym_name.rfind("__lfortran_evaluate_", 0) == 0) {
+            return "";
+        }
+        if (parent != nullptr && ASRUtils::is_tu_scope(parent)) {
+            return ASRUtils::cell_prefix(parent);
+        }
+        return ambient;
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
-        mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+        mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
 
         start_module_init_function_prototype(x);
         std::vector<ASR::symbol_t*> variables;
@@ -6252,10 +6320,10 @@ public:
                         }
                     }
                 }
-                mangle_prefix = "__module_" + root_module + "_";
+                mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + root_module + "_";
             }
             instantiate_function(*v);
-            mangle_prefix = "__module_" + std::string(x.m_name) + "_";
+            mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
         }
         for (auto &sym: variables) {
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(
@@ -6267,7 +6335,7 @@ public:
         finish_module_init_function_prototype(x);
 
         visit_procedures(x);
-        mangle_prefix = "";
+        mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
     }
 
@@ -8180,7 +8248,8 @@ public:
             // Compute the mangled function name using centralized logic
             ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
             std::string fn_name = compute_llvm_function_name(
-                sym_name, ftype, compiler_options, mangle_prefix, parent_function
+                sym_name, ftype, compiler_options,
+                tu_symbol_prefix(x.m_symtab->parent, mangle_prefix, sym_name), parent_function
             );
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
