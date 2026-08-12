@@ -7940,7 +7940,9 @@ public:
                     char_length = ASRUtils::EXPR(tmp);
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
                     if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
-                        int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
+                        // a negative length specifier declares a zero length string
+                        int64_t lhs_len = std::max<int64_t>(
+                            ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n, 0);
                         lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
                     } else {
@@ -9927,6 +9929,13 @@ public:
                 }
             } else {
                 determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+            }
+
+            // a negative length specifier declares a zero length string
+            int64_t char_len;
+            if (str->m_len && ASRUtils::extract_value(str->m_len, char_len) && char_len < 0) {
+                str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             }
 
             if (is_assumed_rank) {
