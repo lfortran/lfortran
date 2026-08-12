@@ -1052,15 +1052,19 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool generate_object_code,
                             bool load_submodules) {
     LCOMPILERS_ASSERT(symtab);
-    if (symtab->get_symbol(module_name) != nullptr) {
-        ASR::symbol_t *m = symtab->get_symbol(module_name);
+    // In interactive mode each cell is a TranslationUnit chained to the
+    // previous one, so a module declared in an earlier cell lives in a parent
+    // scope. Resolve through the chain: without this the module is not found
+    // here and a modfile is looked for on disk, which there is none of.
+    if (ASR::symbol_t *m = symtab->resolve_symbol(module_name)) {
         if (ASR::is_a<ASR::Module_t>(*m)) {
             return ASR::down_cast<ASR::Module_t>(m);
         } else {
             err("The symbol '" + module_name + "' is not a module", loc);
         }
     }
-    LCOMPILERS_ASSERT(symtab->parent == nullptr);
+    LCOMPILERS_ASSERT(symtab->parent == nullptr ||
+        ASRUtils::is_tu_scope(symtab->parent));
     ASR::TranslationUnit_t* mod1 = nullptr;
     Result<ASR::TranslationUnit_t*, ErrorMessage> res
         = find_and_load_module(al, module_name, *symtab, intrinsic, pass_options, lm);
