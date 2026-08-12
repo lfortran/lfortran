@@ -627,6 +627,11 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
                                      + "_" + std::to_string(eval_count);
     if (llvm::Function *fn = mod->getFunction(logical_stem))
         fn->setName(unique_stem);
+    // Same for the program unit of this evaluation, if the cell defined one:
+    // get_symbol_address() rewrites every "__lfortran_evaluate_" name, so this
+    // one has to carry the instance id too.
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
+        fn->setName(unique_stem + "_program");
 
     const std::string triple = "wasm32-unknown-emscripten";
     std::string err;
