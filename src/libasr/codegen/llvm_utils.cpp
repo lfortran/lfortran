@@ -9996,6 +9996,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10046,6 +10048,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
@@ -10076,6 +10079,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {    
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10095,6 +10100,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module) 
@@ -10124,6 +10130,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {    
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10160,6 +10168,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module)
@@ -10188,6 +10197,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMStruct::fill_intrinsic_type_allocate_body(ASR::ttype_t* ttype, llvm::Function* func, llvm::Module* module)
     {
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10234,6 +10245,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     void LLVMStruct::copy_dimension_descriptors(
