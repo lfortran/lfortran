@@ -145,6 +145,7 @@ channels = [
 
 [feature.wasm-build.dependencies]
 cmake = "*"
+ninja = "==1.11.1"
 emscripten_emscripten-wasm32 = "==4.0.9"
 # python (for build0.sh) is unpinned: the emscripten toolchain requires >=3.13
 python = "*"

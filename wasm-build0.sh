@@ -22,8 +22,9 @@ rm -rf asset_dir
 unset CC CXX AR RANLIB NM CFLAGS CXXFLAGS LDFLAGS
 
 # Build lfortran binary only; skip the runtime cmake sub-project.
-cmake -S . -B asset_dir \
-    -DCMAKE_BUILD_TYPE=Release \
+# Debug + Ninja: this compiler is only used to emit runtime .mod files.
+cmake -S . -B asset_dir -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=no \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_RUNTIME_LIBRARY=no \
