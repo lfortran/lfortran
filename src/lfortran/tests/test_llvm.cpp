@@ -1893,3 +1893,131 @@ end subroutine
     CHECK(r.ok);
     CHECK(r.result.i32 == 1);
 }
+
+// Both bindings have to be reachable from a single cell: an accessor compiled
+// against the old one and an accessor compiled against the new one, called
+// side by side. Re-evaluating the old accessor then rebinds it to the new
+// symbol, which is what a notebook user re-running a cell expects.
+
+TEST_CASE("FortranEvaluator old and new variable side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *accessor = R"(integer function f1()
+f1 = x
+end function
+)";
+    CHECK(e.evaluate2("integer :: x").ok);
+    CHECK(e.evaluate2("x = 1").ok);
+    CHECK(e.evaluate2(accessor).ok);
+    CHECK(e.evaluate2("integer :: x").ok);
+    CHECK(e.evaluate2("x = 2").ok);
+    CHECK(e.evaluate2(R"(integer function f2()
+f2 = x
+end function
+)").ok);
+    // One cell, both accessors: the two `x` are live at the same time.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("f1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("f2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2(R"(if (f1() /= 1) error stop
+if (f2() /= 2) error stop
+if (f1() == f2()) error stop
+)").ok);
+
+    // Re-evaluating f1 rebinds it to the `x` that is in scope now.
+    CHECK(e.evaluate2(accessor).ok);
+    r = e.evaluate2("f1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (f1() /= f2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator old and new function side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *caller = R"(integer function g1()
+g1 = f()
+end function
+)";
+    CHECK(e.evaluate2(R"(integer function f()
+f = 1
+end function
+)").ok);
+    CHECK(e.evaluate2(caller).ok);
+    CHECK(e.evaluate2(R"(integer function f()
+f = 2
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(integer function g2()
+g2 = f()
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("g1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("g2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2(R"(if (g1() /= 1) error stop
+if (g2() /= 2) error stop
+if (g1() == g2()) error stop
+)").ok);
+
+    CHECK(e.evaluate2(caller).ok);
+    r = e.evaluate2("g1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (g1() /= g2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator old and new module side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *accessor = R"(integer function a1()
+use mshadow, only: c
+a1 = c
+end function
+)";
+    CHECK(e.evaluate2(R"(module mshadow
+implicit none
+integer, parameter :: c = 1
+end module
+)").ok);
+    CHECK(e.evaluate2(accessor).ok);
+    CHECK(e.evaluate2(R"(module mshadow
+implicit none
+integer, parameter :: c = 2
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function a2()
+use mshadow, only: c
+a2 = c
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("a1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("a2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    // Both modules are usable at the same time, from one cell.
+    CHECK(e.evaluate2(R"(if (a1() /= 1) error stop
+if (a2() /= 2) error stop
+if (a1() == a2()) error stop
+)").ok);
+
+    CHECK(e.evaluate2(accessor).ok);
+    r = e.evaluate2("a1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (a1() /= a2()) error stop").ok);
+}
