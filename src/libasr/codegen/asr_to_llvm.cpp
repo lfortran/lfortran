@@ -8054,11 +8054,13 @@ public:
                     if (arg->m_value_attr &&
                         ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                         !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
-                        !ASRUtils::is_array(arg->m_type) &&
-                        llvm_arg.getType()->isPointerTy()) {
+                        !ASRUtils::is_array(arg->m_type)) {
                         llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(
                             nullptr, arg->m_type, module.get());
-                        llvm::Value* loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
+                        llvm::Value* loaded = llvm_sym;
+                        if (llvm_sym->getType()->isPointerTy()) {
+                            loaded = llvm_utils->CreateLoad2(val_type, llvm_sym);
+                        }
                         llvm::Value* local_copy = builder->CreateAlloca(
                             val_type, nullptr, std::string(arg->m_name) + "_value");
                         builder->CreateStore(loaded, local_copy);
@@ -15929,8 +15931,8 @@ public:
         llvm::Value* x_v;
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
-        if (x->m_value_attr) {
-            // Already a value, such as value argument
+        if (x->m_value_attr && !x_v->getType()->isPointerTy()) {
+            // Already a value, such as value argument passed in register
             tmp = x_v;
             return;
         }
@@ -24203,7 +24205,11 @@ public:
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
-                    if (orig_arg != nullptr && orig_arg->m_value_attr) {
+                    if (orig_arg != nullptr && orig_arg->m_value_attr &&
+                        !ASRUtils::is_array(orig_arg->m_type) &&
+                        !ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                        !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                        !ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(orig_arg->m_type))) {
                         use_value = true;
                     }
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
@@ -24225,7 +24231,11 @@ public:
                         use_value = true;
                     }
                     if (use_value) {
-                        tmp = value;
+                        if (value->getType()->isPointerTy()) {
+                            tmp = llvm_utils->CreateLoad2(target_type, value);
+                        } else {
+                            tmp = value;
+                        }
                     }
                     if (!use_value && orig_arg != nullptr) {
                         // Create alloca to get a pointer, but do it
@@ -24973,11 +24983,8 @@ public:
             // function parameter type. This handles cases like passing a
             // CFI descriptor (%array*) to a function declared with i8**
             // parameter type.
-            if (x_abi == ASR::abiType::BindC && callee_fn_type) {
-                const char* fn_name = callee_fn_type->m_bindc_name;
-                if (!fn_name) {
-                    fn_name = ASRUtils::symbol_name(func_subrout);
-                }
+            const char* fn_name = (callee_fn_type && callee_fn_type->m_bindc_name) ? callee_fn_type->m_bindc_name : (func_subrout ? ASRUtils::symbol_name(func_subrout) : nullptr);
+            if (fn_name) {
                 llvm::Function* fn = module->getFunction(fn_name);
                 if (fn && i < fn->getFunctionType()->getNumParams()) {
                     llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
@@ -24990,7 +24997,7 @@ public:
                             tmp = target;
                         } else if (tmp->getType()->isPointerTy() && !expected_type->isPointerTy()) {
                             // A pointer (e.g. the address of an array element or a
-                            // struct member) is being passed to a by-value bind(C)
+                            // struct member) is being passed to a by-value
                             // parameter. Load the scalar the pointer refers to
                             // instead of emitting an invalid pointer-to-scalar
                             // bitcast.
