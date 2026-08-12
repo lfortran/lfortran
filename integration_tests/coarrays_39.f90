@@ -27,7 +27,7 @@ program coarrays_39
         print *, 'FAIL 1a: size(coshape(s)) =', size(coshape(s))
         error stop
     end if
-    if (any(coshape(s)(1) /= 6)) then      ! extent = ceil(6/1) = 6
+    if (any(coshape(s) /= [6])) then      ! extent = ceil(6/1) = 6
         print *, 'FAIL 1b: coshape(s) =', coshape(s)
         error stop
     end if
@@ -71,9 +71,7 @@ program coarrays_39
 
     !======================================================
     ! 6. COARRAY argument: allocatable coarrays
-    !    (must be allocated before coshape is well-defined on it
-    !     for most compilers' runtime checks, though corank/shape
-    !     of an assumed-size codim is fixed at declaration)
+    !    (must be allocated before coshape is well-defined)
     !======================================================
     allocate(la[*])
     if (any(coshape(la) /= [6])) then

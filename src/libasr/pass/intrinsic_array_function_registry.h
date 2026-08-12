@@ -1940,7 +1940,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
 namespace Coshape {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics &diagnostics) {
-        ASRUtils::require_impl(x.n_args >= 1,
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 2,
             "`coshape` intrinsic accepts 1 or 2 arguments",
             x.base.base.loc, diagnostics);
         ASRUtils::require_impl(x.m_args[0], "`coarray` argument of `coshape` "
@@ -1964,7 +1964,7 @@ namespace Coshape {
                 return nullptr;
             }
             if (!extract_value(args[1], kind)) {
-                append_error(diag, "Only constant value for `kind` is supported for now", loc);
+                append_error(diag, "The `kind` argument must be a scalar integer constant expression", loc);
                 return nullptr;
             }
             m_args.push_back(al, args[1]);
