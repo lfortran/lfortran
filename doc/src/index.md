@@ -153,6 +153,7 @@ progress
 design
 developer_tutorial
 ast_and_asr
+jupyterlite
 contributing
 ```
 

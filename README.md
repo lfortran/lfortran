@@ -15,6 +15,11 @@ Try online: https://dev.lfortran.org/
 Try LFortran in a JupyterLite notebook:
 [![JupyterLite](https://jupyterlite.rtfd.io/en/latest/_static/badge.svg)](https://lfortran.github.io/lfortran/)
 
+To build and run that JupyterLite site locally, use `pixi run lab` and open
+<http://localhost:8000/lab/index.html>. See
+[doc/src/jupyterlite.md](doc/src/jupyterlite.md) for details and for how to
+write tests for bugs found in the lab.
+
 # Documentation
 
 All documentation, installation instructions, motivation, design, ... is
