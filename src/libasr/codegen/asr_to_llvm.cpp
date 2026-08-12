@@ -24189,6 +24189,7 @@ public:
                     }
                 }else {
                     bool use_value = false;
+                    bool pass_by_value = false;
                     ASR::Variable_t *orig_arg = nullptr;
                     if( func_subrout->type == ASR::symbolType::Function ) {
                         ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
@@ -24210,6 +24211,7 @@ public:
                         !ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
                         !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
                         !ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(orig_arg->m_type))) {
+                        pass_by_value = true;
                         use_value = true;
                     }
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
@@ -24231,7 +24233,7 @@ public:
                         use_value = true;
                     }
                     if (use_value) {
-                        if (value->getType()->isPointerTy()) {
+                        if (pass_by_value && value->getType()->isPointerTy()) {
                             tmp = llvm_utils->CreateLoad2(target_type, value);
                         } else {
                             tmp = value;
