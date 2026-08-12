@@ -15609,7 +15609,7 @@ public:
                 LCOMPILERS_ASSERT(false);
             }
         } else {
-            throw CodeGenError("ConstArray type not supported yet");
+            el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, x_m_type, module.get());
         }
         // Create <n x float> type, where `n` is the length of the `x` constant array
         int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
@@ -15669,7 +15669,7 @@ public:
                 LCOMPILERS_ASSERT(false);
             }
         } else {
-            throw CodeGenError("ConstArray type not supported yet");
+            el_type = llvm_utils->get_type_from_ttype_t_util(nullptr, x_m_type, module.get());
         }
 
         // Declaring array constant as global constant and directly using it
@@ -15906,8 +15906,8 @@ public:
         llvm::Value* x_v;
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
-        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
-            // Already a value, such as value argument to bind(c)
+        if (x->m_value_attr) {
+            // Already a value, such as value argument
             tmp = x_v;
             return;
         }
@@ -16032,8 +16032,8 @@ public:
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
-                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
-                    // Already a value, such as value argument to bind(c)
+                if (x->m_value_attr) {
+                    // Already a value, such as value argument
                     break;
                 }
                 if( ASRUtils::is_array(x->m_type) ) {
@@ -23604,13 +23604,11 @@ public:
 
                             if ((x_abi == ASR::abiType::Source || x_abi == ASR::abiType::ExternalUndefined)
                                      && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
-                                if ( orig_arg_intent != ASRUtils::intent_out &&
-                                        arg->m_intent == intent_local ) {
-                                    // Local variable of type
-                                    // CPtr is a void**, so we
-                                    // have to load it
+                                if ( orig_arg == nullptr || orig_arg->m_value_attr || (orig_arg_intent != ASRUtils::intent_out && orig_arg_intent != ASRUtils::intent_inout) ) {
                                     llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
-                                    tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                    if (tmp->getType() == cptr_type->getPointerTo()) {
+                                        tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                    }
                                 }
                             } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
@@ -23652,13 +23650,11 @@ public:
                                             }
                                         }
                                     } else if (is_a<ASR::CPtr_t>(*arg_type)) {
-                                        if ( arg->m_intent == intent_local ||
-                                                arg->m_intent == ASRUtils::intent_out) {
-                                            // Local variable or Dummy out argument
-                                            // of type CPtr is a void**, so we
-                                            // have to load it
+                                        if ( orig_arg == nullptr || orig_arg->m_value_attr || (orig_arg_intent != ASRUtils::intent_out && orig_arg_intent != ASRUtils::intent_inout) ) {
                                             llvm::Type* cptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
-                                            tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                            if (tmp->getType() == cptr_type->getPointerTo()) {
+                                                tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                            }
                                         }
                                     } else {
                                         if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)
@@ -23719,7 +23715,9 @@ public:
                                     !is_func_type_arg &&
                                     !ASRUtils::is_character(*arg->m_type) &&
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) && 
-                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                                    !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) &&
+                                    !ASR::is_a<ASR::CPtr_t>(*arg->m_type) &&
+                                    !ASR::is_a<ASR::CPtr_t>(*orig_arg->m_type)) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
 
@@ -24130,8 +24128,7 @@ public:
                         size_t arg_idx = i;
                         if (arg_idx < func->n_args && func->m_args[arg_idx] != nullptr) {
                             struct_orig_arg = EXPR2VAR(func->m_args[arg_idx]);
-                            if (struct_orig_arg && struct_orig_arg->m_abi == ASR::abiType::BindC
-                                && struct_orig_arg->m_value_attr) {
+                            if (struct_orig_arg && struct_orig_arg->m_value_attr) {
                                 pass_by_value = true;
                             }
                         }
@@ -24183,8 +24180,7 @@ public:
                     } else {
                         LCOMPILERS_ASSERT(false)
                     }
-                    if (orig_arg != nullptr && orig_arg->m_abi == ASR::abiType::BindC
-                        && orig_arg->m_value_attr) {
+                    if (orig_arg != nullptr && orig_arg->m_value_attr) {
                         use_value = true;
                     }
                     if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {

@@ -906,8 +906,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t* v_type = ASR::down_cast<ASR::Integer_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind, false);
                 } else {
                     type = getIntType(a_kind, true);
@@ -917,8 +916,7 @@ namespace LCompilers {
             case (ASR::ttypeType::UnsignedInteger) : {
                 ASR::UnsignedInteger_t* v_type = ASR::down_cast<ASR::UnsignedInteger_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind, false);
                 } else {
                     type = getIntType(a_kind, true);
@@ -946,8 +944,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Real) : {
                 ASR::Real_t* v_type = ASR::down_cast<ASR::Real_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getFPType(a_kind, false);
                 } else {
                     type = getFPType(a_kind, true);
@@ -1006,8 +1003,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind);
                 } else {
                     type = getIntType(a_kind)->getPointerTo();
@@ -1072,8 +1068,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::EnumType: {
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = llvm::Type::getInt32Ty(context);
                 } else {
                     type = llvm::Type::getInt32Ty(context)->getPointerTo();
@@ -1226,9 +1221,7 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
-                if( (arg->m_intent == ASRUtils::intent_out ||
-                     arg->m_intent == ASRUtils::intent_inout ||
-                     (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
+                if( (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
                 }
