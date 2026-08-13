@@ -23846,7 +23846,9 @@ public:
                                 ASRUtils::is_pointer(orig_arg->m_type)) {
                             expected_type = expected_type->getPointerTo();
                         }
-                        if (tmp->getType() != expected_type) {
+                        if (tmp->getType() != expected_type &&
+                                tmp->getType()->isPointerTy() &&
+                                expected_type->isPointerTy()) {
                             tmp = builder->CreateBitCast(tmp, expected_type);
                         }
                     }
@@ -24877,7 +24879,9 @@ public:
                     llvm::Function* fn = module->getFunction(fn_name);
                     if (fn) {
                         llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
-                        if (tmp->getType() != expected_type) {
+                        if (tmp->getType() != expected_type &&
+                                tmp->getType()->isPointerTy() &&
+                                expected_type->isPointerTy()) {
                             tmp = builder->CreateBitCast(tmp, expected_type);
                         }
                     }
@@ -25020,6 +25024,7 @@ public:
                 llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
                 if (tmp->getType() != expected_type) {
                     if (tmp->getType() == llvm_utils->string_descriptor->getPointerTo() &&
+                            expected_type->isPointerTy() &&
                             expected_type != llvm_utils->string_descriptor->getPointerTo()) {
                         llvm::Value* data_gep = llvm_utils->create_gep2(
                             llvm_utils->string_descriptor, tmp, 0);
@@ -25040,7 +25045,8 @@ public:
                         // instead of emitting an invalid pointer-to-scalar
                         // bitcast.
                         tmp = llvm_utils->CreateLoad2(expected_type, tmp);
-                    } else {
+                    } else if (tmp->getType()->isPointerTy() &&
+                            expected_type->isPointerTy()) {
                         tmp = builder->CreateBitCast(tmp, expected_type);
                     }
                 }
