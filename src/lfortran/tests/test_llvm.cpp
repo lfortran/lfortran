@@ -2151,3 +2151,35 @@ end program
     CHECK(e.evaluate2(cell).ok);
     CHECK(e.evaluate2(cell).ok);
 }
+
+TEST_CASE("FortranEvaluator a type-bound procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the type carries the binding, which names the procedure it
+    // binds to. Left pointing at the original, the call reaches a procedure
+    // this cell does not hold and code generation never declares.
+    CHECK(e.evaluate2(R"(module mtb
+implicit none
+type :: point
+    real :: x
+contains
+    procedure :: norm
+end type
+contains
+real function norm(self)
+class(point), intent(in) :: self
+norm = abs(self%x)
+end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mtb
+implicit none
+type(point) :: a
+a%x = -2.0
+if (a%norm() /= 2.0) error stop
+end program
+)").ok);
+}

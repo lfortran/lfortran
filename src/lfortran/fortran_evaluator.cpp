@@ -430,6 +430,25 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
 
 namespace {
 
+// A generic procedure and a custom operator name the specific procedures they
+// resolve to. A later cell that resolves one would otherwise call the original
+// specific procedure, which is not the one this cell compiled and which code
+// generation never declares. The list is shared with the original, so it is
+// replaced, not written to.
+static void relink_procs(Allocator &al, SymbolTable *scope,
+    ASR::symbol_t **&m_procs, size_t &n_procs)
+{
+    Vec<ASR::symbol_t*> procs;
+    procs.reserve(al, n_procs);
+    for (size_t i = 0; i < n_procs; i++) {
+        ASR::symbol_t *copy = scope->resolve_symbol(
+            ASRUtils::symbol_name(m_procs[i]));
+        procs.push_back(al, copy != nullptr ? copy : m_procs[i]);
+    }
+    m_procs = procs.p;
+    n_procs = procs.size();
+}
+
 // The duplicated symbols still point into the scopes they were copied from: an
 // ExternalSymbol at the module it names, a generic procedure at the specific
 // procedures it resolves to. A later cell resolves a name and finds the copy,
@@ -449,25 +468,50 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                 es->m_original_name, es->n_scope_names, es->m_scope_names);
             if (target != nullptr) es->m_external = target;
         } else if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
-            // A later cell that resolves the generic would otherwise call the
-            // original specific procedure, which is not the one this cell
-            // compiled and which code generation never declares. The list is
-            // shared with the original, so it is replaced, not written to.
             ASR::GenericProcedure_t *gp
                 = ASR::down_cast<ASR::GenericProcedure_t>(s);
-            Vec<ASR::symbol_t*> procs;
-            procs.reserve(al, gp->n_procs);
-            for (size_t i = 0; i < gp->n_procs; i++) {
-                ASR::symbol_t *proc = gp->m_procs[i];
-                ASR::symbol_t *copy = scope->resolve_symbol(
-                    ASRUtils::symbol_name(proc));
-                procs.push_back(al, copy != nullptr ? copy : proc);
+            relink_procs(al, scope, gp->m_procs, gp->n_procs);
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*s)) {
+            ASR::CustomOperator_t *co
+                = ASR::down_cast<ASR::CustomOperator_t>(s);
+            relink_procs(al, scope, co->m_procs, co->n_procs);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+            // A type-bound procedure names the procedure it binds to, and a
+            // later cell calls whatever it names. Left pointing at the
+            // original, that is a procedure code generation never declares.
+            ASR::StructMethodDeclaration_t *m
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(s);
+            // From the scope holding the derived type, not from the type's
+            // own scope: the binding carries the name of the procedure, and
+            // looking it up there finds the binding itself.
+            SymbolTable *outer = scope->parent;
+            ASR::symbol_t *copy = outer == nullptr ? nullptr
+                : outer->resolve_symbol(ASRUtils::symbol_name(m->m_proc));
+            if (copy != nullptr && ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(copy))) {
+                m->m_proc = copy;
             }
-            gp->m_procs = procs.p;
-            gp->n_procs = procs.size();
-        } else {
-            SymbolTable *inner = ASRUtils::symbol_symtab(s);
-            if (inner != nullptr) relink_copied_symbols(al, inner, tu);
+        } else if (ASR::is_a<ASR::Variable_t>(*s)) {
+            // A variable of a derived type names the type it was declared
+            // with. Left pointing at the original, a dummy argument of a
+            // copied procedure is of a different type than the one a later
+            // cell declares from the copy, and the call does not type check.
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (v->m_type_declaration != nullptr) {
+                ASR::symbol_t *copy = scope->resolve_symbol(
+                    ASRUtils::symbol_name(v->m_type_declaration));
+                if (copy != nullptr) v->m_type_declaration = copy;
+            }
+        } else if (ASR::is_a<ASR::Module_t>(*s)
+                || ASR::is_a<ASR::Function_t>(*s)
+                || ASR::is_a<ASR::Struct_t>(*s)
+                || ASR::is_a<ASR::Enum_t>(*s)
+                || ASR::is_a<ASR::Union_t>(*s)
+                || ASR::is_a<ASR::Block_t>(*s)
+                || ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+            // Only the symbols that own a scope: asking any other kind for one
+            // is an error, not an empty answer.
+            relink_copied_symbols(al, ASRUtils::symbol_symtab(s), tu);
         }
     }
 }
