@@ -2116,3 +2116,38 @@ end program
     CHECK(e.evaluate2(cell).ok);
     std::remove("mcellmod.mod");
 }
+
+TEST_CASE("FortranEvaluator a program unit using an earlier cell's module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mearly
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)").ok);
+    // A program unit loads the submodules of what it uses, and that walks the
+    // dependencies of mlate. mearly is one of them and it is a parent scope
+    // away, not a modfile on disk.
+    const char *cell = R"(module mlate
+use mearly
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mlate
+implicit none
+call show()
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
