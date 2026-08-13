@@ -112,7 +112,14 @@ uint32_t FortranEvaluator::open_cell(const std::string &code,
 {
     uint32_t start = cell_ends.empty() ? 0 : cell_ends.back();
     LocationManager::FileLocations fl;
-    fl.in_filename = "<cell " + std::to_string(cell_files.size() + 1) + ">";
+    // A cell has no file of its own, so it is named after its place in the
+    // session. Interactive mode is also how a file holding statements outside
+    // any program unit is compiled; that has a name already, and it is the one
+    // to report.
+    fl.in_filename = lm.files.empty() ? "" : lm.files.back().in_filename;
+    if (fl.in_filename.empty()) {
+        fl.in_filename = "<cell " + std::to_string(cell_files.size() + 1) + ">";
+    }
     fl.source = code;
     lm.files = cell_files;
     lm.file_ends = cell_ends;
@@ -128,6 +135,7 @@ uint32_t FortranEvaluator::open_cell(const std::string &code,
 // zero. This cell starts further along, so they are moved up to where it is.
 void FortranEvaluator::close_cell(const std::string &code, LocationManager &lm)
 {
+    if (lm.files.empty() || lm.file_ends.empty()) return;
     LocationManager::FileLocations &fl = lm.files.back();
     if (fl.out_start.empty()) {
         fl.out_start = {cell_start, cell_start + (uint32_t)code.size()};
@@ -171,10 +179,6 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 {
 #ifdef HAVE_LFORTRAN_LLVM
     EvalResult result;
-
-    if (compiler_options.interactive) {
-        cell_start = open_cell(code_orig, lm);
-    }
 
     // Src -> AST
     Result<LFortran::AST::TranslationUnit_t*> res = get_ast2(
@@ -355,6 +359,13 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             diag::Diagnostics &diagnostics)
 {
     // Src -> AST
+    // Every interactive entry point comes through here, so this is where a
+    // cell is opened: the kernel calls get_ast() and get_asr() directly for
+    // its magics, and closing a cell that was never opened reads off the end
+    // of an empty vector.
+    if (compiler_options.interactive) {
+        cell_start = open_cell(code_orig, lm);
+    }
     const std::string *code=&code_orig;
     std::string tmp;
     if (compiler_options.c_preprocessor) {

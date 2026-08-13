@@ -2264,12 +2264,9 @@ TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
     // cell. Each cell is compiled on its own; without a range of its own, the
     // location is read as a position in this cell and quotes its text.
     const char *cell = "use mdp; integer, parameter :: dp = kind(0.0)\n";
+    // As the prompt and the kernel set it up: nothing, the evaluator names the
+    // cell and keeps its text.
     LCompilers::LocationManager lm;
-    // As the prompt and the kernel set it up: one file, this cell.
-    LCompilers::LocationManager::FileLocations fl;
-    fl.in_filename = "input";
-    lm.files.push_back(fl);
-    lm.file_ends.push_back(std::strlen(cell));
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     LCompilers::diag::Diagnostics d;
@@ -2284,4 +2281,55 @@ TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
     // The quoted line is the one that declares dp, not this cell's text.
     CHECK(message.find("module mdp; integer, parameter :: dp = kind(0.0d0)")
         != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator the calls the kernel makes") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The kernel reaches the evaluator through get_ast(), get_asr() and
+    // get_llvm() as well, for its %%showast, %%showasr and %%showllvm magics --
+    // Demo1.ipynb ends on three such cells. Each is a cell of its own, and a
+    // cell that is never opened cannot be closed.
+    auto kernel_lm = []() { return LCompilers::LocationManager(); };
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.evaluate("1+3", false, lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 1);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: i\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 2);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_asr("integer :: j\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 3);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm("integer :: k\n", lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 4);
+    }
+    {
+        // A file compiled in interactive mode -- which is how a file holding
+        // statements outside any program unit is compiled -- keeps its name.
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "some_file.f90";
+        lm.files.push_back(fl);
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: m\n", lm, d).ok);
+        CHECK(lm.files.back().in_filename == "some_file.f90");
+    }
 }
