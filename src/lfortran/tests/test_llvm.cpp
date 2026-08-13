@@ -2183,3 +2183,73 @@ if (a%norm() /= 2.0) error stop
 end program
 )").ok);
 }
+
+TEST_CASE("FortranEvaluator a derived type argument from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A function returning a derived type is turned into a subroutine by a
+    // pass, and the JIT holds it in that form, so the copy has to be
+    // transformed the same way. Its dummy arguments also name the type they
+    // were declared with, which has to be this chain's copy of it or the call
+    // does not type check.
+    CHECK(e.evaluate2(R"(module mret
+implicit none
+type :: vec
+    real :: x
+end type
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mret
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = addv(a, b)
+if (c%x /= 3.0) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A custom operator names its specific procedures the way a generic
+    // interface does, and asking it for a scope it does not have used to
+    // abort the copy outright.
+    const char *cell = R"(module mop
+implicit none
+type :: vec
+    real :: x
+end type
+interface operator(+)
+    module procedure addv
+end interface
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+program p
+use mop
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = a + b
+if (c%x /= 3.0) error stop
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
