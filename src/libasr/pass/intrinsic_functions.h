@@ -1844,8 +1844,9 @@ namespace ThisImage {
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t *m_value = nullptr;
         return_type = ASRUtils::extract_type(return_type);
+        size_t diag_count_before = diag.diagnostics.size();
         m_value = eval_ThisImage(al, loc, return_type, args, diag);
-        if (diag.has_error()) {
+        if (diag.diagnostics.size() > diag_count_before) {
             return nullptr;
         }
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
@@ -1991,8 +1992,9 @@ namespace NumImages {
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t *m_value = nullptr;
         return_type = ASRUtils::extract_type(return_type);
+        size_t diag_count_before = diag.diagnostics.size();
         m_value = eval_NumImages(al, loc, return_type, args, diag);
-        if (diag.has_error()) {
+        if (diag.diagnostics.size() > diag_count_before) {
             return nullptr;
         }
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),

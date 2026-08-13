@@ -538,6 +538,12 @@ semantic error: equivalence between a common block variable and this array eleme
 949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: Initialization of `expected` must reduce to a compile time constant.
+   --> tests/errors/continue_compilation_1.f90:963:9
+    |
+963 |         integer :: expected = mod(this_image() + num_images() - 2, num_images()) + 1  ! {Error} Initialization of `expected` must reduce to a compile time constant.
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
