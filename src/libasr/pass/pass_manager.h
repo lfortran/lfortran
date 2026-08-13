@@ -433,6 +433,13 @@ namespace LCompilers {
             apply_default_passes = false;
         }
 
+        void skip_pass(const std::string &pass_name) {
+            if( std::find(_skip_passes.begin(), _skip_passes.end(), pass_name)
+                    == _skip_passes.end() ) {
+                _skip_passes.push_back(pass_name);
+            }
+        }
+
         bool has_user_defined_passes() const {
             return !_user_defined_passes.empty();
         }

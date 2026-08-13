@@ -1546,6 +1546,54 @@ TEST_CASE("FortranEvaluator program unit in a cell") {
     CHECK(r.result.i32 == 5);
 }
 
+TEST_CASE("FortranEvaluator array-argument module procedure across cells") {
+    // ASR passes rewrite symbols in place. In interactive mode the symbol
+    // table is the session state, so a pass that specialises a procedure --
+    // pass_array_by_data, for an assumed-shape array argument -- used to
+    // leave the module holding only the mangled specialisation, and the next
+    // cell failed with "Function 'sf' not found".
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module mf\n"
+        "implicit none\n"
+        "contains\n"
+        "integer function sf(a)\n"
+        "real, intent(in) :: a(:)\n"
+        "sf = size(a)\n"
+        "end function sf\n"
+        "end module mf\n");
+    CHECK(r.ok);
+
+    // called from a later cell
+    r = e.evaluate2("use mf\nreal :: v(3)\nv = 1\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(v)\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+
+    // and from another cell again, with a different array
+    r = e.evaluate2("real :: w(5)\nw = 2\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(w)\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 5);
+
+    // from inside a program unit too
+    r = e.evaluate2(
+        "program pf\n"
+        "use mf\n"
+        "implicit none\n"
+        "real :: u(7)\n"
+        "u = 3\n"
+        "print *, sf(u)\n"
+        "end program pf\n");
+    CHECK(r.ok);
+}
 
 // Shadowing across interactive cells. Each cell is its own TranslationUnit,
 // chained through SymbolTable::parent, so re-declaring a name in a later cell
@@ -1657,10 +1705,163 @@ end function
 // being compiled. Resolving `use` has to look through the chain; otherwise a
 // modfile is searched for on disk, of which there is none in a notebook.
 
+TEST_CASE("FortranEvaluator module using another module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module ma
+implicit none
+integer, parameter :: c = 5
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(module mb
+use ma
+implicit none
+end module
+)").ok);
+    // A program unit resolves `use` through load_module(), which is the path
+    // that used to report "modfile was not found" for ma, a dependency of mb.
+    CHECK(e.evaluate2(R"(program p
+use mb
+implicit none
+if (c /= 5) error stop
+end program
+)").ok);
+}
 
+TEST_CASE("FortranEvaluator re-exported module symbol across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // mtop re-exports msub's procedure: its scope holds an ExternalSymbol
+    // pointing into msub. The copy taken for the next cell has to point at the
+    // copy of msub, not at the original, or the symbol looks absent.
+    CHECK(e.evaluate2(R"(module msub
+implicit none
+contains
+    integer function twice(i)
+        integer, intent(in) :: i
+        twice = 2 * i
+    end function
+end module
+module mtop
+use msub
+implicit none
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mtop
+implicit none
+if (twice(3) /= 6) error stop
+end program
+)").ok);
+}
 
+TEST_CASE("FortranEvaluator optional argument across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Calling this with the optional argument absent only works if the pass
+    // that replaces optional arguments with presence flags has been applied to
+    // the procedure in the earlier cell as well as to this cell's call.
+    CHECK(e.evaluate2(R"(module mopt
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (present(lbl)) then
+            if (x(1) /= 1.0) error stop
+        else
+            if (x(1) /= 1.0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mopt
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+call s(a, "with label")
+end program
+)").ok);
+}
 
+TEST_CASE("FortranEvaluator re-run a cell calling an optional argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mopt2
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (x(1) /= 1.0) error stop
+        if (present(lbl)) then
+            if (len(lbl) == 0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    // Running the same cell twice has to keep working. The pass that replaces
+    // optional arguments with presence flags rewrites the procedure in place,
+    // so if it were let at the copy handed to the next cell, `lbl` would come
+    // back as a required argument and this call would stop compiling.
+    const char *cell = R"(program p
+use mopt2
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
 
+TEST_CASE("FortranEvaluator call a procedure no earlier cell called") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // `untouched` is never called in the cell that declares it. Dead-code
+    // elimination would drop it there, leaving the next cell's call with no
+    // definition to link to.
+    CHECK(e.evaluate2(R"(module munused
+implicit none
+integer :: counter = 0
+contains
+    subroutine called_now()
+        counter = counter + 1
+    end subroutine
+    subroutine untouched()
+        counter = counter + 10
+    end subroutine
+end module
+
+program p1
+use munused
+implicit none
+call called_now()
+if (counter /= 1) error stop
+end program
+)").ok);
+    CHECK(e.evaluate2(R"(program p2
+use munused
+implicit none
+call untouched()
+if (counter /= 11) error stop
+end program
+)").ok);
+}
 
 TEST_CASE("FortranEvaluator shadow a subroutine across cells") {
     CompilerOptions cu;
