@@ -100,11 +100,62 @@ WasmLFortranExecutor &FortranEvaluator::get_wasm_executor() {
 #endif
 #endif
 
+// Each cell is compiled on its own but a later cell refers to the symbols of
+// an earlier one, and a diagnostic about such a symbol has to quote the cell it
+// came from. So the cells are laid out one after another in one address space:
+// this cell parses at an offset past every cell before it, and `lm` carries all
+// of them, each with its own text. Without that, a location from an earlier
+// cell is read as a position in this one and quotes whatever text happens to
+// be there.
+uint32_t FortranEvaluator::open_cell(const std::string &code,
+    LocationManager &lm)
+{
+    uint32_t start = cell_ends.empty() ? 0 : cell_ends.back();
+    LocationManager::FileLocations fl;
+    // A cell has no file of its own, so it is named after its place in the
+    // session. Interactive mode is also how a file holding statements outside
+    // any program unit is compiled; that has a name already, and it is the one
+    // to report.
+    fl.in_filename = lm.files.empty() ? "" : lm.files.back().in_filename;
+    if (fl.in_filename.empty()) {
+        fl.in_filename = "<cell " + std::to_string(cell_files.size() + 1) + ">";
+    }
+    fl.source = code;
+    lm.files = cell_files;
+    lm.file_ends = cell_ends;
+    lm.files.push_back(fl);
+    // Provisional, so that a diagnostic raised before the cell is closed still
+    // resolves to this cell. close_cell() corrects it once the text the parser
+    // is given is known.
+    lm.file_ends.push_back(start + code.size());
+    return start;
+}
+
+// The prescanner fills in the intervals of the file it is given, counting from
+// zero. This cell starts further along, so they are moved up to where it is.
+void FortranEvaluator::close_cell(const std::string &code, LocationManager &lm)
+{
+    if (lm.files.empty() || lm.file_ends.empty()) return;
+    LocationManager::FileLocations &fl = lm.files.back();
+    if (fl.out_start.empty()) {
+        fl.out_start = {cell_start, cell_start + (uint32_t)code.size()};
+        fl.in_start = {0, (uint32_t)code.size()};
+        lm.get_newlines(fl.source, fl.in_newlines);
+    } else {
+        for (size_t i = 0; i < fl.out_start.size(); i++) {
+            fl.out_start[i] += cell_start;
+        }
+    }
+    lm.file_ends.back() = cell_start + code.size();
+    cell_files.push_back(fl);
+    cell_ends.push_back(lm.file_ends.back());
+}
+
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    {
+    if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
         std::ofstream out("input");
@@ -308,6 +359,13 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             diag::Diagnostics &diagnostics)
 {
     // Src -> AST
+    // Every interactive entry point comes through here, so this is where a
+    // cell is opened: the kernel calls get_ast() and get_asr() directly for
+    // its magics, and closing a cell that was never opened reads off the end
+    // of an empty vector.
+    if (compiler_options.interactive) {
+        cell_start = open_cell(code_orig, lm);
+    }
     const std::string *code=&code_orig;
     std::string tmp;
     if (compiler_options.c_preprocessor) {
@@ -325,6 +383,7 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             tmp = res.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
+            if (compiler_options.interactive) close_cell(*cpp_input, lm);
             return res.error;
         }
         code = &tmp;
@@ -341,12 +400,15 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             tmp = prescan_res.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
+            if (compiler_options.interactive) close_cell(*code, lm);
             return prescan_res.error;
         }
         code = &tmp;
     }
+    if (compiler_options.interactive) close_cell(*code, lm);
     Result<LFortran::AST::TranslationUnit_t*>
-        res = LFortran::parse(al, *code, diagnostics, compiler_options);
+        res = LFortran::parse(al, *code, diagnostics, compiler_options,
+            compiler_options.interactive ? cell_start : 0);
     if (res.ok) {
         return res.result;
     } else {
@@ -430,11 +492,33 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
 
 namespace {
 
-// The duplicated symbols carry ExternalSymbols whose m_external still points
-// into the modules they were copied from. A later cell resolves a module by
-// name and finds the copy, so an ExternalSymbol pointing at the original does
-// not match it and the symbol looks absent. Point them at the copies.
-static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
+// A generic procedure and a custom operator name the specific procedures they
+// resolve to. A later cell that resolves one would otherwise call the original
+// specific procedure, which is not the one this cell compiled and which code
+// generation never declares. The list is shared with the original, so it is
+// replaced, not written to.
+static void relink_procs(Allocator &al, SymbolTable *scope,
+    ASR::symbol_t **&m_procs, size_t &n_procs)
+{
+    Vec<ASR::symbol_t*> procs;
+    procs.reserve(al, n_procs);
+    for (size_t i = 0; i < n_procs; i++) {
+        ASR::symbol_t *copy = scope->resolve_symbol(
+            ASRUtils::symbol_name(m_procs[i]));
+        procs.push_back(al, copy != nullptr ? copy : m_procs[i]);
+    }
+    m_procs = procs.p;
+    n_procs = procs.size();
+}
+
+// The duplicated symbols still point into the scopes they were copied from: an
+// ExternalSymbol at the module it names, a generic procedure at the specific
+// procedures it resolves to. A later cell resolves a name and finds the copy,
+// so anything still pointing at an original does not match it. Point them at
+// the copies.
+static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
+    SymbolTable *tu)
+{
     for (auto &item : scope->get_scope()) {
         ASR::symbol_t *s = item.second;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
@@ -445,9 +529,51 @@ static void relink_external_symbols(SymbolTable *scope, SymbolTable *tu) {
             ASR::symbol_t *target = m->m_symtab->find_scoped_symbol(
                 es->m_original_name, es->n_scope_names, es->m_scope_names);
             if (target != nullptr) es->m_external = target;
-        } else {
-            SymbolTable *inner = ASRUtils::symbol_symtab(s);
-            if (inner != nullptr) relink_external_symbols(inner, tu);
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
+            ASR::GenericProcedure_t *gp
+                = ASR::down_cast<ASR::GenericProcedure_t>(s);
+            relink_procs(al, scope, gp->m_procs, gp->n_procs);
+        } else if (ASR::is_a<ASR::CustomOperator_t>(*s)) {
+            ASR::CustomOperator_t *co
+                = ASR::down_cast<ASR::CustomOperator_t>(s);
+            relink_procs(al, scope, co->m_procs, co->n_procs);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+            // A type-bound procedure names the procedure it binds to, and a
+            // later cell calls whatever it names. Left pointing at the
+            // original, that is a procedure code generation never declares.
+            ASR::StructMethodDeclaration_t *m
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(s);
+            // From the scope holding the derived type, not from the type's
+            // own scope: the binding carries the name of the procedure, and
+            // looking it up there finds the binding itself.
+            SymbolTable *outer = scope->parent;
+            ASR::symbol_t *copy = outer == nullptr ? nullptr
+                : outer->resolve_symbol(ASRUtils::symbol_name(m->m_proc));
+            if (copy != nullptr && ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(copy))) {
+                m->m_proc = copy;
+            }
+        } else if (ASR::is_a<ASR::Variable_t>(*s)) {
+            // A variable of a derived type names the type it was declared
+            // with. Left pointing at the original, a dummy argument of a
+            // copied procedure is of a different type than the one a later
+            // cell declares from the copy, and the call does not type check.
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (v->m_type_declaration != nullptr) {
+                ASR::symbol_t *copy = scope->resolve_symbol(
+                    ASRUtils::symbol_name(v->m_type_declaration));
+                if (copy != nullptr) v->m_type_declaration = copy;
+            }
+        } else if (ASR::is_a<ASR::Module_t>(*s)
+                || ASR::is_a<ASR::Function_t>(*s)
+                || ASR::is_a<ASR::Struct_t>(*s)
+                || ASR::is_a<ASR::Enum_t>(*s)
+                || ASR::is_a<ASR::Union_t>(*s)
+                || ASR::is_a<ASR::Block_t>(*s)
+                || ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+            // Only the symbols that own a scope: asking any other kind for one
+            // is an error, not an empty answer.
+            relink_copied_symbols(al, ASRUtils::symbol_symtab(s), tu);
         }
     }
 }
@@ -501,7 +627,7 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
         if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
         duplicator.duplicate_symbol(item.second, copy);
     }
-    relink_external_symbols(copy, copy);
+    relink_copied_symbols(al, copy, copy);
     return copy;
 }
 

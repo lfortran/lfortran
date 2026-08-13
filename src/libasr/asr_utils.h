@@ -3567,7 +3567,8 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     private:
     Allocator& al;
     ASR::call_arg_t* m_args;
-    size_t n_args;
+    // Only read by an assert, which is compiled out of a release build.
+    [[maybe_unused]] size_t n_args;
     std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:

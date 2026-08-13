@@ -958,6 +958,14 @@ program continue_compilation_1
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
     end subroutine
+
+    subroutine implied_do_loop_variable_not_integer()
+        implicit none
+        real :: r_idx
+        real :: values(3)
+        values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+        print *, values(1)
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

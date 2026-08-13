@@ -153,7 +153,14 @@ void populate_span(diag::Span &s, const LocationManager &lm,
         s.last_column = s.first_column;
     }
     std::string input;
-    if (read_file(s.filename, input)) {
+    // An interactive cell is only ever in memory, so the text comes with the
+    // location rather than from a file of that name.
+    const std::string *in_memory = lm.source_at(first_pos);
+    if (in_memory != nullptr) {
+        for (uint32_t i = s.first_line; i <= s.last_line; i++) {
+            s.source_code.push_back(get_line(*in_memory, i));
+        }
+    } else if (read_file(s.filename, input)) {
         for (uint32_t i = s.first_line; i <= s.last_line; i++) {
             s.source_code.push_back(get_line(input, i));
         }

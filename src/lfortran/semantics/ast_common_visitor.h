@@ -7416,8 +7416,13 @@ public:
                                     ASR::down_cast<ASR::Function_t>(external)->m_access == ASR::accessType::Private) {
                                     current_scope->erase_symbol(sym);
                                 } else {
+                                    // The name is in scope because of a `use`,
+                                    // which is the one thing to say about it:
+                                    // nothing in this scope declared it.
                                     diag.add(Diagnostic(
-                                        "Symbol is already declared in the same scope",
+                                        "Symbol '" + std::string(sym) + "' is use-associated"
+                                        " from module '" + std::string(ext->m_module_name)
+                                        + "' and cannot be redeclared",
                                         Level::Error, Stage::Semantic, {
                                             Label("redeclaration",{s.loc}),
                                             Label("original declaration",{orig_decl->base.loc}, false)
@@ -16704,6 +16709,24 @@ public:
         implicit_interface_parent_scope = nullptr;
     }
 
+    // The loop variable of an implied-do has to be a scalar integer. Left to
+    // reach the pass that expands the loop, anything else fails there with an
+    // internal error, having passed semantic analysis.
+    void check_implied_do_loop_variable(ASR::expr_t* a_var, const std::string &name,
+        const Location &loc)
+    {
+        ASR::ttype_t* var_type = ASRUtils::expr_type(a_var);
+        if (ASRUtils::is_integer(*ASRUtils::type_get_past_allocatable_pointer(var_type))
+                && !ASRUtils::is_array(var_type)) {
+            return;
+        }
+        diag.add(Diagnostic("The implied do loop variable '" + name
+            + "' must be a scalar integer, not "
+            + ASRUtils::type_to_str_with_kind(var_type, a_var),
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -16765,6 +16788,7 @@ public:
             }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
@@ -17035,6 +17059,7 @@ public:
             }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
