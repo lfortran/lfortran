@@ -2419,7 +2419,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
 
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             
             // create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym, true))),
@@ -3659,7 +3659,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("teams_thread_data" + thread_data_module_name.substr(24));
             
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             
             // Create tdata variable
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", 

@@ -1221,7 +1221,7 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
-                if( (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) &&
+                if( !arg->m_value_attr && (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
                 }
