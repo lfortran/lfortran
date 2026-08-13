@@ -39,6 +39,9 @@
 
 namespace nl = nlohmann;
 
+static constexpr const char* mime_bundle_prefix =
+    "__lfortran_mime_bundle_v1__\n";
+
 // ── Jupyter display_data bridge ──────────────────────────────────────────────
 // These C-linkage symbols are called from JIT'd Fortran code via bind(C)
 // declarations provided by the lfortran_display runtime module.
@@ -388,7 +391,19 @@ namespace LCompilers::LFortran {
             }
             case (LCompilers::FortranEvaluator::EvalResult::character) : {
                 nl::json pub_data;
-                pub_data["text/plain"] = r.str;
+                if (startswith(r.str, mime_bundle_prefix)) {
+                    std::size_t mime_start = std::char_traits<char>::length(
+                        mime_bundle_prefix);
+                    std::size_t mime_end = r.str.find('\n', mime_start);
+                    if (mime_end == std::string::npos || mime_end == mime_start) {
+                        throw LCompilersException("Invalid MIME bundle result");
+                    }
+                    std::string mime_type = r.str.substr(
+                        mime_start, mime_end - mime_start);
+                    pub_data[mime_type] = r.str.substr(mime_end + 1);
+                } else {
+                    pub_data["text/plain"] = r.str;
+                }
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
