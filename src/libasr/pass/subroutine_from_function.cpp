@@ -36,6 +36,34 @@ public:
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
             : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP){}
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // In interactive mode procedures declared or loaded by earlier
+            // cells live in ancestor TranslationUnit scopes. Transform their
+            // aggregate return values too, so calls in this cell use the same
+            // signature as the definitions already emitted by the JIT.
+            for (SymbolTable *scope = x.m_symtab->parent; scope != nullptr;
+                    scope = scope->parent) {
+                if (!ASRUtils::is_tu_scope(scope)) continue;
+                for (auto &item : scope->get_scope()) {
+                    if (ASR::is_a<ASR::Module_t>(*item.second) ||
+                            ASR::is_a<ASR::Function_t>(*item.second)) {
+                        this->visit_symbol(*item.second);
+                    }
+                }
+            }
+            ASR::BaseWalkVisitor<CreateFunctionFromSubroutine>::visit_TranslationUnit(x);
+        }
+
+        void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+                x.m_external);
+            if (ASR::is_a<ASR::Function_t>(*target)) {
+                this->visit_Function(*down_cast<ASR::Function_t>(target));
+            } else if (ASR::is_a<ASR::Module_t>(*target)) {
+                this->visit_Module(*down_cast<ASR::Module_t>(target));
+            }
+        }
+
 
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
