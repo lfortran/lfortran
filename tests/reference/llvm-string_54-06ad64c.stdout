@@ -2,7 +2,7 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%string_descriptor = type <{ ptr, i64 }>
+%string_descriptor = type <{ i8*, i64 }>
 
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -10,32 +10,41 @@ target datalayout = "..."
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @__module_string_54_mod_double_(ptr %x) {
+define i32 @__module_string_54_mod_double_(i32* %x) {
 .entry:
   %ret = alloca i32, align 4
-  %0 = load i32, ptr %x, align 4
+  %0 = load i32, i32* %x, align 4
   %1 = mul i32 %0, 2
-  store i32 %1, ptr %ret, align 4
+  store i32 %1, i32* %ret, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_double_
 
 FINALIZE_SYMTABLE_double_:                        ; preds = %return
-  %2 = load i32, ptr %ret, align 4
+  %2 = load i32, i32* %ret, align 4
   ret i32 %2
 }
 
-define void @__module_string_54_mod_foo_sub(ptr %x, ptr %char) {
+define void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char) {
 .entry:
-  %0 = getelementptr %string_descriptor, ptr %char, i32 0, i32 1
-  %1 = load i64, ptr %0, align 8
-  %2 = trunc i64 %1 to i32
-  %3 = icmp ne i32 %2, 20
-  br i1 %3, label %then, label %else
+  %str_desc_local = alloca %string_descriptor, align 8
+  %0 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 0
+  store i8* %1, i8** %2, align 8
+  %3 = call i32 @__module_string_54_mod_double_(i32* %x)
+  %4 = sext i32 %3 to i64
+  %5 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
+  store i64 %4, i64* %5, align 8
+  %6 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
+  %7 = load i64, i64* %6, align 8
+  %8 = trunc i64 %7 to i32
+  %9 = icmp ne i32 %8, 20
+  br i1 %9, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (ptr, ...) @_lcompilers_print_error(ptr @1, ptr @"ERROR STOP", ptr @0)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
@@ -53,31 +62,31 @@ FINALIZE_SYMTABLE_foo_sub:                        ; preds = %return
   ret void
 }
 
-declare void @_lcompilers_print_error(ptr, ...)
+declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
 
-define i32 @main(i32 %0, ptr %1) {
+define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %2 = call ptr @_lfortran_get_default_allocator()
+  %2 = call i8* @_lfortran_get_default_allocator()
   %char = alloca %string_descriptor, align 8
-  call void @_lpython_call_initial_functions(i32 %0, ptr %1)
-  store %string_descriptor zeroinitializer, ptr %char, align 1
-  %3 = getelementptr %string_descriptor, ptr %char, i32 0, i32 1
-  store i64 10, ptr %3, align 8
-  %4 = getelementptr %string_descriptor, ptr %char, i32 0, i32 0
-  %5 = call ptr @_lfortran_get_default_allocator()
-  %6 = call ptr @_lfortran_malloc_alloc(ptr %5, i64 10)
-  store ptr %6, ptr %4, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store %string_descriptor zeroinitializer, %string_descriptor* %char, align 1
+  %3 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 1
+  store i64 10, i64* %3, align 8
+  %4 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
+  %5 = call i8* @_lfortran_get_default_allocator()
+  %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 10)
+  store i8* %6, i8** %4, align 8
   %x = alloca i32, align 4
-  store i32 10, ptr %x, align 4
-  call void @__module_string_54_mod_foo_sub(ptr %x, ptr %char)
+  store i32 10, i32* %x, align 4
+  call void @__module_string_54_mod_foo_sub(i32* %x, %string_descriptor* %char)
   br i1 false, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (ptr, ...) @_lcompilers_print_error(ptr @3, ptr @"ERROR STOP", ptr @2)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont
@@ -95,17 +104,17 @@ FINALIZE_SYMTABLE_string_54:                      ; preds = %return
   br label %Finalize_Variable_char
 
 Finalize_Variable_char:                           ; preds = %FINALIZE_SYMTABLE_string_54
-  %7 = getelementptr %string_descriptor, ptr %char, i32 0, i32 0
-  %8 = load ptr, ptr %7, align 8
-  call void @_lfortran_free_alloc(ptr %2, ptr %8)
+  %7 = getelementptr %string_descriptor, %string_descriptor* %char, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %8)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
-declare void @_lpython_call_initial_functions(i32, ptr)
+declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare ptr @_lfortran_malloc_alloc(ptr, i64)
+declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
-declare ptr @_lfortran_get_default_allocator()
+declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_free_alloc(ptr, ptr)
+declare void @_lfortran_free_alloc(i8*, i8*)

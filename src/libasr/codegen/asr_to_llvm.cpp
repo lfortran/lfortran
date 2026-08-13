@@ -8516,17 +8516,22 @@ public:
             }
             // For non-allocatable ExpressionLength string dummy arguments (including optional
             // ones like `character(len=n), optional`), when the argument is absent, the call
-            // site may pass a zeroed dummy descriptor (elem_len = 0) (e.g. from 
+            // site may pass a zeroed dummy descriptor (elem_len = 0) (e.g. from
             // transform_optional_argument_functions) or a NULL pointer (e.g. on bind(C) paths).
             // We create a local copy of the descriptor to safely set the declared length
             // without mutating the caller's descriptor, and guard the copy with a null-check.
-            if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC &&
+            // Bind(C) functions are excluded: their string dummies are not passed as
+            // by-reference string descriptors (e.g. `character, value` is a by-value
+            // argument), so there is no descriptor to copy or fix up.
+            if (ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC &&
                 ASRUtils::is_string_only(symbol_type) &&
                 !ASRUtils::is_allocatable(symbol_type) &&
                 !ASRUtils::is_pointer(symbol_type)) {
                 ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);
-                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len) {
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym.second);
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym.second);
+                if (str_t->m_len_kind == ASR::ExpressionLength && str_t->m_len &&
+                    str_t->m_physical_type == ASR::DescriptorString &&
+                    !var->m_value_attr) {
                     uint32_t h = get_hash((ASR::asr_t*)sym.second);
                     LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                     llvm::Value* arg_str_desc = llvm_symtab[h];
