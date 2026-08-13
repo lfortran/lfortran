@@ -1893,6 +1893,13 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 return true;
             }
 
+            // A zero-argument intrinsic reaching here (not constant-folded via
+            // m_value) is inherently non-constant, e.g. this_image(), num_images().
+            // Without this check the loop below is vacuously true for zero args.
+            if (intrinsic_elemental_function->n_args == 0) {
+                return false;
+            }
+
             for( size_t i = 0; i < intrinsic_elemental_function->n_args; i++ ) {
                 if( !ASRUtils::is_value_constant(intrinsic_elemental_function->m_args[i]) ) {
                     return false;
