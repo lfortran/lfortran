@@ -46,7 +46,7 @@ public:
     struct EvalResult {
         enum {
             integer4, integer8, real4, real8, complex4, complex8, boolean,
-            character, statement, none
+            character, display_data, statement, none
         } type;
         union {
             bool b;
@@ -58,6 +58,7 @@ public:
             struct {double re, im;} c64;
         };
         std::string str;
+        std::string mime_type;
         std::string ast;
         std::string asr;
         std::string llvm_ir;

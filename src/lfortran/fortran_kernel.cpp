@@ -395,6 +395,12 @@ namespace LCompilers::LFortran {
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
+            case (LCompilers::FortranEvaluator::EvalResult::display_data) : {
+                nl::json pub_data;
+                pub_data[r.mime_type] = r.str;
+                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
+                break;
+            }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {
                 break;
             }

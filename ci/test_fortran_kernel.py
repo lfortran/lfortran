@@ -23,6 +23,30 @@ class IRKernelTests(jkt.KernelTests):
         {'code': "1+2", 'result': "3"},
         {'code': "integer :: x; x = 5; x*2", 'result': "10"},
         {'code': "'hello'", 'result': "hello"},
+        {
+            'code': 'use lfortran_display; '
+                    'type(mime_bundle) :: summary; '
+                    'summary = mime_bundle("text/html", "<b>Hello</b>"); '
+                    'summary',
+            'mime': 'text/html',
+            'result': '<b>Hello</b>',
+        },
+        {
+            'code': 'summary',
+            'mime': 'text/html',
+            'result': '<b>Hello</b>',
+        },
+        {
+            'code': 'use lfortran_display; '
+                    'mime_bundle("image/svg+xml", '
+                    "'<svg viewBox=\"0 0 10 10\"></svg>')",
+            'mime': 'image/svg+xml',
+            'result': '<svg viewBox="0 0 10 10"></svg>',
+        },
+        {
+            'code': "'__lfortran_mime_bundle_v1__'",
+            'result': '__lfortran_mime_bundle_v1__',
+        },
     ]
 
     code_display_data = [
