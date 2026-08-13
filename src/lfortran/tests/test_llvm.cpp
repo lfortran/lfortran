@@ -2174,14 +2174,31 @@ norm = abs(self%x)
 end function
 end module
 )").ok);
-    CHECK(e.evaluate2(R"(program p
+    const char *caller = R"(program p
 use mtb
 implicit none
 type(point) :: a
 a%x = -2.0
 if (a%norm() /= 2.0) error stop
 end program
-)").ok);
+)";
+#ifdef _WIN32
+    // Running this hangs on Windows, and so does calling any procedure of an
+    // earlier cell that takes a polymorphic argument -- a bug of its own, see
+    // https://github.com/lfortran/lfortran/issues/12494, and not one this fix
+    // introduced: before it the call did not compile at all. Compiling is what
+    // this test is about: without the fix above it fails with "Function code
+    // not generated for 'norm'".
+    {
+        LCompilers::LocationManager lm;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm(caller, lm, lpm, d).ok);
+    }
+#else
+    CHECK(e.evaluate2(caller).ok);
+#endif
 }
 
 TEST_CASE("FortranEvaluator a derived type argument from an earlier cell") {
