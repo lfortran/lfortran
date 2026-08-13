@@ -24003,7 +24003,8 @@ public:
                                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)));
                             }
                         } else if (orig_arg && orig_arg->m_abi == ASR::abiType::BindC &&
-                                   orig_arg->m_value_attr) {
+                                   orig_arg->m_value_attr &&
+                                   !ASR::is_a<ASR::CPtr_t>(*arg_type)) {
                             // Only load scalar StructInstanceMember for true BindC
                             // pass-by-value (m_value_attr = true). For implicit
                             // interfaces, m_value_attr is false and the callee
@@ -24950,6 +24951,32 @@ public:
                     llvm_utils->create_gep2(cfi_type, descriptor,
                         LLVMArrUtils::SimpleCMODescriptor::CFI_FIELD_VERSION));
                 tmp = descriptor;
+            }
+
+            // Source-ABI body-less external interfaces use the external
+            // character ABI: pass the address of the character data, not
+            // LFortran's internal string descriptor. Keep the descriptor
+            // pointer type so the LLVM declaration remains consistent.
+            ASR::symbol_t* called_sym = symbol_get_past_external(x.m_name);
+            bool is_proc_ptr_call = called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
+            if (orig_arg && callee_fn_type && !is_proc_ptr_call &&
+                    x.m_dt == nullptr && !callee_fn_type->m_module &&
+                    func_subrout->type == ASR::symbolType::Function &&
+                    callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
+                    callee_fn_type->m_abi == ASR::abiType::Source &&
+                    !ASRUtils::is_array(orig_arg->m_type) &&
+                    ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
+                    tmp->getType() == llvm_utils->string_descriptor->getPointerTo()) {
+                ASR::Function_t* called_fn =
+                    ASR::down_cast<ASR::Function_t>(func_subrout);
+                if (called_fn->n_body == 0) {
+                    llvm::Value* data_gep = llvm_utils->create_gep2(
+                        llvm_utils->string_descriptor, tmp, 0);
+                    llvm::Value* data_ptr = llvm_utils->CreateLoad2(
+                        llvm::Type::getInt8Ty(context)->getPointerTo(), data_gep);
+                    tmp = builder->CreateBitCast(
+                        data_ptr, llvm_utils->string_descriptor->getPointerTo());
+                }
             }
 
             // For calls, ensure the argument type matches the
