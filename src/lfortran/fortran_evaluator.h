@@ -155,6 +155,19 @@ private:
 #endif
     SymbolTable *symbol_table;
     std::string run_fn;
+    // One entry per cell evaluated so far, each covering a range of its own,
+    // so that a location taken from an earlier cell still points at that
+    // cell's text. Only used in interactive mode.
+    std::vector<LocationManager::FileLocations> cell_files;
+    std::vector<uint32_t> cell_ends;
+    // Where the cell being compiled starts.
+    uint32_t cell_start = 0;
+
+    // Puts the chain of cells, this one last, into `lm` and returns the
+    // position this cell starts at.
+    uint32_t open_cell(const std::string &code, LocationManager &lm);
+    // Moves this cell's intervals to where the cell starts and records it.
+    void close_cell(const std::string &code, LocationManager &lm);
 };
 
 } // namespace LCompilers

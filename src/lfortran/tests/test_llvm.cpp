@@ -2253,3 +2253,35 @@ end program
     CHECK(e.evaluate2(cell).ok);
     CHECK(e.evaluate2(cell).ok);
 }
+
+TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("module mdp; integer, parameter :: dp = kind(0.0d0); end module\n").ok);
+    // The name is declared by the first cell, so the message has to quote that
+    // cell. Each cell is compiled on its own; without a range of its own, the
+    // location is read as a position in this cell and quotes its text.
+    const char *cell = "use mdp; integer, parameter :: dp = kind(0.0)\n";
+    LCompilers::LocationManager lm;
+    // As the prompt and the kernel set it up: one file, this cell.
+    LCompilers::LocationManager::FileLocations fl;
+    fl.in_filename = "input";
+    lm.files.push_back(fl);
+    lm.file_ends.push_back(std::strlen(cell));
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate(cell, false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    std::string message = d.render(lm, cu);
+    CHECK(message.find("use-associated from module 'mdp'") != std::string::npos);
+    CHECK(message.find("<cell 1>") != std::string::npos);
+    CHECK(message.find("<cell 2>") != std::string::npos);
+    // The quoted line is the one that declares dp, not this cell's text.
+    CHECK(message.find("module mdp; integer, parameter :: dp = kind(0.0d0)")
+        != std::string::npos);
+}

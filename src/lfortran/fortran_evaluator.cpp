@@ -100,11 +100,54 @@ WasmLFortranExecutor &FortranEvaluator::get_wasm_executor() {
 #endif
 #endif
 
+// Each cell is compiled on its own but a later cell refers to the symbols of
+// an earlier one, and a diagnostic about such a symbol has to quote the cell it
+// came from. So the cells are laid out one after another in one address space:
+// this cell parses at an offset past every cell before it, and `lm` carries all
+// of them, each with its own text. Without that, a location from an earlier
+// cell is read as a position in this one and quotes whatever text happens to
+// be there.
+uint32_t FortranEvaluator::open_cell(const std::string &code,
+    LocationManager &lm)
+{
+    uint32_t start = cell_ends.empty() ? 0 : cell_ends.back();
+    LocationManager::FileLocations fl;
+    fl.in_filename = "<cell " + std::to_string(cell_files.size() + 1) + ">";
+    fl.source = code;
+    lm.files = cell_files;
+    lm.file_ends = cell_ends;
+    lm.files.push_back(fl);
+    // Provisional, so that a diagnostic raised before the cell is closed still
+    // resolves to this cell. close_cell() corrects it once the text the parser
+    // is given is known.
+    lm.file_ends.push_back(start + code.size());
+    return start;
+}
+
+// The prescanner fills in the intervals of the file it is given, counting from
+// zero. This cell starts further along, so they are moved up to where it is.
+void FortranEvaluator::close_cell(const std::string &code, LocationManager &lm)
+{
+    LocationManager::FileLocations &fl = lm.files.back();
+    if (fl.out_start.empty()) {
+        fl.out_start = {cell_start, cell_start + (uint32_t)code.size()};
+        fl.in_start = {0, (uint32_t)code.size()};
+        lm.get_newlines(fl.source, fl.in_newlines);
+    } else {
+        for (size_t i = 0; i < fl.out_start.size(); i++) {
+            fl.out_start[i] += cell_start;
+        }
+    }
+    lm.file_ends.back() = cell_start + code.size();
+    cell_files.push_back(fl);
+    cell_ends.push_back(lm.file_ends.back());
+}
+
 Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::string &code) {
     LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
-    {
+    if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
         std::ofstream out("input");
@@ -128,6 +171,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 {
 #ifdef HAVE_LFORTRAN_LLVM
     EvalResult result;
+
+    if (compiler_options.interactive) {
+        cell_start = open_cell(code_orig, lm);
+    }
 
     // Src -> AST
     Result<LFortran::AST::TranslationUnit_t*> res = get_ast2(
@@ -325,6 +372,7 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             tmp = res.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
+            if (compiler_options.interactive) close_cell(*cpp_input, lm);
             return res.error;
         }
         code = &tmp;
@@ -341,12 +389,15 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
             tmp = prescan_res.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
+            if (compiler_options.interactive) close_cell(*code, lm);
             return prescan_res.error;
         }
         code = &tmp;
     }
+    if (compiler_options.interactive) close_cell(*code, lm);
     Result<LFortran::AST::TranslationUnit_t*>
-        res = LFortran::parse(al, *code, diagnostics, compiler_options);
+        res = LFortran::parse(al, *code, diagnostics, compiler_options,
+            compiler_options.interactive ? cell_start : 0);
     if (res.ok) {
         return res.result;
     } else {
