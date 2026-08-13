@@ -7416,8 +7416,13 @@ public:
                                     ASR::down_cast<ASR::Function_t>(external)->m_access == ASR::accessType::Private) {
                                     current_scope->erase_symbol(sym);
                                 } else {
+                                    // The name is in scope because of a `use`,
+                                    // which is the one thing to say about it:
+                                    // nothing in this scope declared it.
                                     diag.add(Diagnostic(
-                                        "Symbol is already declared in the same scope",
+                                        "Symbol '" + std::string(sym) + "' is use-associated"
+                                        " from module '" + std::string(ext->m_module_name)
+                                        + "' and cannot be redeclared",
                                         Level::Error, Stage::Semantic, {
                                             Label("redeclaration",{s.loc}),
                                             Label("original declaration",{orig_decl->base.loc}, false)
