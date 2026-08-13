@@ -172,9 +172,9 @@ TEST_CASE("ASRText parser: strings, plain and with escapes") {
     CHECK(d->root->kind == ValueKind::String);
     CHECK(d->root->text == "hello");
 
-    d = parse_ok(R"("a\nb\tc\r\\d\"e\bf\fg")");
+    d = parse_ok(R"("a\nb\tc\r\\d\"e")");
     CHECK(d->root->kind == ValueKind::String);
-    CHECK(d->root->text == std::string("a\nb\tc\r\\d\"e\bf\fg"));
+    CHECK(d->root->text == std::string("a\nb\tc\r\\d\"e"));
 }
 
 TEST_CASE("ASRText parser: string preserves UTF-8 bytes as-is") {
@@ -209,10 +209,14 @@ TEST_CASE("ASRText parser: invalid escapes are rejected") {
     parse_fails("\"\\v\"");     // \v is a C escape, not an EDN escape
     parse_fails("\"\\x41\"");   // \x is not an EDN escape
     parse_fails("\"\\q\"");     // unknown escape
+    parse_fails("\"\\b\"");     // \b is not an EDN escape
+    parse_fails("\"\\f\"");     // \f is not an EDN escape
     parse_fails(R"("\u12")");   // truncated unicode escape
     parse_fails(R"("\u12zz")"); // invalid hex digits
+    parse_fails(R"("\uD800")"); // UTF-16 surrogate
     parse_fails("\"abc");       // unterminated string
     parse_fails("\"abc\\");     // unterminated escape at end of input
+    parse_fails("\"\xFF\"");    // raw byte is not well-formed UTF-8
 }
 
 TEST_CASE("ASRText parser: lists") {
