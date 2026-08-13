@@ -178,3 +178,24 @@ TEST_CASE("ASR text reports schema errors separately from verification") {
         "expects 2 positional fields or exactly 2 named fields") !=
         std::string::npos);
 }
+
+TEST_CASE("ASR text rejects a negative ArrayConstant n_data") {
+    const std::string text =
+        "(TranslationUnit "
+        ":symtab (SymbolTable :id 0 :symbols {}) "
+        ":items [(ArrayConstant :n_data -1 :data #asr/bytes \"\" "
+        ":type (Integer :kind 4) :storage_format :ColMajor)])";
+
+    Allocator allocator(1024 * 1024);
+    LocationManager lm;
+    Diagnostics diagnostics;
+    Result<LCompilers::ASR::TranslationUnit_t *> parsed =
+        LCompilers::asr_from_text(
+            allocator, text, "n_data.asr", lm, diagnostics);
+    CHECK_FALSE(parsed.ok);
+    REQUIRE(!diagnostics.diagnostics.empty());
+    CHECK(diagnostics.diagnostics.back().stage ==
+        LCompilers::diag::Stage::ASRParser);
+    CHECK(diagnostics.diagnostics.back().message.find(
+        "n_data must be non-negative") != std::string::npos);
+}

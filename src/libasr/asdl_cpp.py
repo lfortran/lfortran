@@ -2736,8 +2736,7 @@ class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
             self.emit("if (!self().decode_symbol_ref(%s, %s)) return false;"
                 % (value, target), indent)
         elif field.type == "void":
-            self.emit("if (!self().decode_bytes(%s, %s, "
-                "static_cast<size_t>(m_n_data))) return false;"
+            self.emit("if (!self().decode_bytes(%s, %s, m_n_data)) return false;"
                 % (value, target), indent)
         elif field.type in self.data.simple_types:
             self.emit("if (!deserialize_%s(%s, %s)) return false;"

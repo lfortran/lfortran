@@ -740,7 +740,17 @@ public:
     }
 
     bool decode_bytes(const TextValue &value, void *&result,
-            size_t expected_size) {
+            int64_t n_data) {
+        if (n_data < 0) {
+            schema_error(value, "n_data must be non-negative");
+            return false;
+        }
+        if (static_cast<uint64_t>(n_data) >
+                std::numeric_limits<size_t>::max()) {
+            schema_error(value, "n_data is too large");
+            return false;
+        }
+        const size_t expected_size = static_cast<size_t>(n_data);
         if (value.kind != ASRText::ValueKind::Tagged ||
                 value.tag != "asr/bytes" ||
                 value.tagged_value == nullptr ||
