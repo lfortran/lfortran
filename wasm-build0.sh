@@ -10,12 +10,6 @@ set -ex
 
 export PREFIX=${PREFIX:-$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host}
 
-if [ "$(uname)" = "Darwin" ]; then
-    CORES=$(sysctl -n hw.ncpu)
-else
-    CORES=$(nproc)
-fi
-
 rm -rf asset_dir
 
 # Unset any emscripten compiler overrides so cmake picks up the native toolchain.
@@ -35,7 +29,7 @@ cmake -S . -B asset_dir -G Ninja \
     -DWITH_KOKKOS=no \
     -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
 
-cmake --build asset_dir -j"$CORES" --target lfortran
+cmake --build asset_dir --target lfortran
 
 # Compile runtime modules using the freshly built lfortran.
 LFORTRAN="$(pwd)/asset_dir/src/bin/lfortran"
