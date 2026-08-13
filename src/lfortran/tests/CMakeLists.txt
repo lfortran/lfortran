@@ -120,16 +120,18 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     )
     # The format claims to be an EDN data subset; enforce that with a reader
     # that knows nothing about LFortran.
-    find_program(LFORTRAN_TEST_PYTHON NAMES python python3 REQUIRED)
-    add_test(
-        NAME test_asr_text_edn_conformance
-        COMMAND ${LFORTRAN_TEST_PYTHON}
-            ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
-            --lfortran $<TARGET_FILE:lfortran>
-            --input ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
-            --input ${CMAKE_SOURCE_DIR}/tests/asr/edn_strings_01.f90
-            --input ${CMAKE_SOURCE_DIR}/examples/expr2.f90
-    )
+    find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
+    if (LFORTRAN_TEST_PYTHON)
+        add_test(
+            NAME test_asr_text_edn_conformance
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --input ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                --input ${CMAKE_SOURCE_DIR}/tests/asr/edn_strings_01.f90
+                --input ${CMAKE_SOURCE_DIR}/examples/expr2.f90
+        )
+    endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
