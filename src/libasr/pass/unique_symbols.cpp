@@ -32,11 +32,6 @@ namespace LCompilers {
 
 using ASR::down_cast;
 
-uint64_t static inline get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
-
 class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
@@ -81,8 +76,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             return curr_name;
         } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
             // mangle intrinsic functions
-            uint64_t hash = get_hash(current_scope->asr_owner);
-            return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
+            return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";

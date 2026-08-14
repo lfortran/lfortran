@@ -21,7 +21,7 @@ enum Platform {
 std::string pf2s(Platform);
 Platform get_platform();
 
-std::string get_unique_ID();
+std::string get_unique_ID(const std::string &file_path);
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
 std::string generate_visualize_html(std::string &astr_data_json);
 

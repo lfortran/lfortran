@@ -121,7 +121,6 @@ std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
-const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
@@ -1279,6 +1278,7 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
     }
+    lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCompilers::get_unique_ID(infile) : "";
     LCompilers::diag::Diagnostics diagnostics;
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
@@ -1286,7 +1286,6 @@ int compile_src_to_object_file(const std::string &infile,
             asr_text_allocator, fe, lm, diagnostics,
             from_asr && found_main != nullptr);
     t2 = std::chrono::high_resolution_clock::now();
-    lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -1399,7 +1398,7 @@ int compile_src_to_object_file(const std::string &infile,
                 if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
-                        .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
+                        .filename().replace_extension(".mlir.tmp_" + LCompilers::get_unique_ID(infile) + ".o")).string();
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -2157,11 +2156,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (backend == Backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
                         std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
-                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
-                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
-                        ".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o").string();
-                    compile_cmd += mlir_tmp_o + " ";
-                    mlir_temp_object_files.push_back(mlir_tmp_o);
+                        std::string obj_file_path = std::filesystem::path(s).string();// "do_concurrent_01.tmp_yDR0nDW17GGvAia86INkc2.o"
+                        obj_file_path.insert(obj_file_path.find('.'), ".mlir");
+                        compile_cmd += obj_file_path + " ";
+                        mlir_temp_object_files.push_back(obj_file_path);
                 }
             }
             if(!extra_library_flags.empty()) {
@@ -2185,7 +2183,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::string metal_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
+                    + "/lfortran_gpu_metal_" + LCompilers::get_unique_ID(metal_runtime_src) + ".o";
                 std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
@@ -2218,9 +2216,9 @@ int link_executable(const std::vector<std::string> &infiles,
 
                 // Write CUDA kernel source to a temp .cu file
                 std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".cu";
+                    + "/lfortran_gpu_kernel_" + LCompilers::get_unique_ID(cuda_source) + ".cu";
                 std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".o";
+                    + "/lfortran_gpu_kernel_" + LCompilers::get_unique_ID(cuda_source) + ".o";
                 {
                     std::ofstream cu_out(cuda_kernel_src);
                     cu_out << cuda_source;
@@ -2240,7 +2238,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::string cuda_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/lfortran_gpu_cuda.cu";
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
+                    + "/lfortran_gpu_cuda_" + LCompilers::get_unique_ID(cuda_runtime_src) + ".o";
                 std::string cuda_rt_cmd = "nvcc -c -O2"
                     " -I" + runtime_library_dir + "/../libasr/runtime"
                     " -o " + cuda_runtime_obj
@@ -2667,7 +2665,6 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    lcompilers_unique_ID_separate_compilation = ( parser.opts.compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures ) ? LCOMPILERS_UNIQUE_ID : "";
     if (parser.opts.compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
@@ -2999,7 +2996,7 @@ int main_app(int argc, char *argv[]) {
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
-                                .filename().replace_extension(".tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
+                                .filename().replace_extension(".tmp_" + LCompilers::get_unique_ID(arg_file) + ".o")).string();
         temp_object_files.push_back(tmp_o);
         if (opts.from_asr && arg_file == opts.arg_file) {
             any_asr_src = true;
