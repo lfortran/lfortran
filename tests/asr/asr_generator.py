@@ -36,12 +36,25 @@ def logical_type(kind=4):
     return f"(Logical :kind {kind})"
 
 
+def complex_type(kind):
+    return f"(Complex :kind {kind})"
+
+
+def complex_constant(re, im, kind):
+    return (
+        f"(ComplexConstant :re {re!r} :im {im!r} "
+        f":type {complex_type(kind)})"
+    )
+
+
 def type_of(declaration):
     name, kind = declaration
     if name == "integer":
         return integer_type(kind)
     if name == "real":
         return real_type(kind)
+    if name == "complex":
+        return complex_type(kind)
     return logical_type(kind)
 
 
@@ -141,10 +154,12 @@ def array_type(element, lengths):
     )
 
 
-def array_item(table, name, index, element):
+def array_item(table, name, indices, element):
+    entries = " ".join(
+        f"(array_index :left nil :right {index} :step nil)"
+        for index in indices)
     return (
-        f"(ArrayItem :v {var(table, name)} "
-        f":args [(array_index :left nil :right {index} :step nil)] "
+        f"(ArrayItem :v {var(table, name)} :args [{entries}] "
         f":type {type_of(element)} :storage_format :ColMajor :value nil)"
     )
 
@@ -305,11 +320,21 @@ def generate_valid(seed):
     arrays = []
     for index in range(rng.randint(0, 2)):
         name = f"a{index}"
-        kind = rng.choice(INTEGER_KINDS)
-        length = rng.randint(1, 4)
-        arrays.append((name, kind, length))
+        if rng.choice([False, True]):
+            element = ("integer", rng.choice(INTEGER_KINDS))
+        else:
+            element = ("real", rng.choice(REAL_KINDS))
+        lengths = [rng.randint(1, 4) for _ in range(rng.choice([1, 1, 2]))]
+        arrays.append((name, element, lengths))
         symbols[name] = variable(
-            PROGRAM_SYMTAB, name, array_type(("integer", kind), [length]))
+            PROGRAM_SYMTAB, name, array_type(element, lengths))
+
+    complexes = []
+    if rng.choice([False, True]):
+        name = "c0"
+        kind = rng.choice(REAL_KINDS)
+        complexes.append((name, kind))
+        symbols[name] = variable(PROGRAM_SYMTAB, name, ("complex", kind))
 
     integer_names_by_kind = {}
     for name, kind in integers:
@@ -332,30 +357,48 @@ def generate_valid(seed):
             PROGRAM_SYMTAB, name,
             logical_expression(rng, integer_names_by_kind.get(4, []), kind))
 
-    def array_statement():
-        name, kind, length = rng.choice(arrays)
-        element = ("integer", kind)
-        # The index stays within the declared bounds so the program is also
-        # well defined at runtime, not merely well formed.
-        index = integer_constant(rng.randint(1, length), 4)
-        target = array_item(PROGRAM_SYMTAB, name, index, element)
-        value = integer_expression(
+    def element_expression(element):
+        name, kind = element
+        if name == "real":
+            return real_expression(rng, kind)
+        return integer_expression(
             rng, kind, integer_names_by_kind.get(kind, []))
+
+    def bounded_indices(lengths):
+        # Indices stay within the declared bounds so a generated program is
+        # well defined at runtime, not merely well formed.
+        return [integer_constant(rng.randint(1, length), 4)
+                for length in lengths]
+
+    def array_statement():
+        name, element, lengths = rng.choice(arrays)
+        target = array_item(
+            PROGRAM_SYMTAB, name, bounded_indices(lengths), element)
         return (
-            f"(Assignment :target {target} :value {value} "
+            f"(Assignment :target {target} "
+            f":value {element_expression(element)} "
             f":overloaded nil :realloc_lhs false :move_allocation false)"
         )
 
     def array_read_statement():
-        name, kind, length = rng.choice(arrays)
-        element = ("integer", kind)
-        index = integer_constant(rng.randint(1, length), 4)
-        scalars = [n for n, k in integers if k == kind]
+        name, element, lengths = rng.choice(arrays)
+        element_name, kind = element
+        pool = integers if element_name == "integer" else reals
+        scalars = [n for n, k in pool if k == kind]
         if not scalars:
             return array_statement()
         return assignment(
             PROGRAM_SYMTAB, rng.choice(scalars),
-            array_item(PROGRAM_SYMTAB, name, index, element))
+            array_item(
+                PROGRAM_SYMTAB, name, bounded_indices(lengths), element))
+
+    def complex_statement():
+        name, kind = rng.choice(complexes)
+        return assignment(
+            PROGRAM_SYMTAB, name,
+            complex_constant(
+                round(rng.uniform(-4.0, 4.0), 3),
+                round(rng.uniform(-4.0, 4.0), 3), kind))
 
     choices = [integer_statement]
     if reals:
@@ -365,6 +408,8 @@ def generate_valid(seed):
     if arrays:
         choices.append(array_statement)
         choices.append(array_read_statement)
+    if complexes:
+        choices.append(complex_statement)
 
     body = [rng.choice(choices)() for _ in range(rng.randint(1, 5))]
 
