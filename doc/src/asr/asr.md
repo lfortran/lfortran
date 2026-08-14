@@ -14,6 +14,9 @@ equivalent to the original code.
 
 ASR can be used to do Fortran-level transformations (such as optimizations).
 
+For the lossless direct representation used by compiler tests and tools, see
+the [ASR text format](asr_text.md).
+
 ## Abstract Syntax Description Language (ASDL)
 
 Abstract Syntax Description Language describes the abstract syntax of the compiler

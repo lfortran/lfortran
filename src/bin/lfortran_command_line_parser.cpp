@@ -193,6 +193,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         fast_opts.arg_file = fast_opts.arg_files[0];
+        fast_opts.from_asr = endswith(fast_opts.arg_file, ".asr");
         compiler_options.use_colors = true;
         compiler_options.use_runtime_colors = false;
         compiler_options.indent = true;
@@ -289,6 +290,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-tokens", opts.show_tokens, "Show tokens for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-ast", opts.show_ast, "Show AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-asr", opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--from-asr", opts.from_asr,
+            "Parse the input file as ASR text")->group(group_output_debugging_options);
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
@@ -296,7 +299,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
-        app.add_flag("--clojure", compiler_options.po.clojure, "Print ASR in clojure format")->group(group_output_debugging_options);
+        app.add_flag("--clojure", compiler_options.po.clojure,
+            "Print lossless ASR in canonical Clojure/EDN format")->group(group_output_debugging_options);
+        app.add_flag("--no-member-names", compiler_options.po.no_member_names,
+            "Omit ASR member names in Clojure/EDN output")->group(group_output_debugging_options);
         app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format")->group(group_output_debugging_options);
         app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization")->group(group_output_debugging_options);
         app.add_flag("--show-llvm", opts.show_llvm, "Show LLVM IR for the given file and exit")->group(group_output_debugging_options);
@@ -537,14 +543,49 @@ namespace LCompilers::CommandLineInterface {
         // if it's the only file, then we use that file
         // to set the compiler_options
         if (opts.arg_files.size() > 0) {
-            opts.arg_file = opts.arg_files[0];
-            for (const auto& file : opts.arg_files) {
-                // if any Fortran file is present, use the first file to
-                // set compiler_options
-                if (endswith(file, ".f90") || endswith(file, ".f") ||
-                    endswith(file, ".F90") || endswith(file, ".F")) {
-                    opts.arg_file = file;
-                    break;
+            auto is_fortran_source = [](const std::string &file) {
+                return endswith(file, ".f90") || endswith(file, ".f") ||
+                    endswith(file, ".F90") || endswith(file, ".F");
+            };
+            size_t asr_file_count = 0;
+            std::string asr_file;
+            for (const std::string &file : opts.arg_files) {
+                if (endswith(file, ".asr")) {
+                    asr_file_count++;
+                    asr_file = file;
+                }
+            }
+            if (opts.from_asr) {
+                opts.arg_file = opts.arg_files[0];
+                for (size_t i = 1; i < opts.arg_files.size(); i++) {
+                    if (is_fortran_source(opts.arg_files[i]) ||
+                            endswith(opts.arg_files[i], ".asr") ||
+                            endswith(opts.arg_files[i], ".ll")) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+            } else if (asr_file_count > 0) {
+                if (asr_file_count != 1) {
+                    throw lc::LCompilersException(
+                        "Exactly one ASR input file is supported");
+                }
+                for (const std::string &file : opts.arg_files) {
+                    if (file != asr_file &&
+                            (is_fortran_source(file) || endswith(file, ".ll"))) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+                opts.from_asr = true;
+                opts.arg_file = asr_file;
+            } else {
+                opts.arg_file = opts.arg_files[0];
+                for (const auto& file : opts.arg_files) {
+                    if (is_fortran_source(file)) {
+                        opts.arg_file = file;
+                        break;
+                    }
                 }
             }
         }

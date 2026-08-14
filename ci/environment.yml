@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - toml=0.10.2
+  - edn_format=0.8.0
   - pytest=8.1.1
   - jupyter=1.0.0
   - nbconvert=7.4.0

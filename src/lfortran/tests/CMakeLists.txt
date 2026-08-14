@@ -27,6 +27,8 @@ set(SRC
     test_serialization.cpp
     test_pickle.cpp
     test_error_rendering.cpp
+    test_asr_text.cpp
+    test_asr_text_parser.cpp
 )
 
 if (WITH_JSON)
@@ -59,8 +61,10 @@ target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
+    # The default Emscripten stack is 64kb, which is far too small for the
+    # recursive descent parsers and ASR visitors; use a native-sized stack.
     set(WASM_LINK_FLAGS
-      "-Oz -g0 -fexceptions -Wall -Wextra -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT"
+      "-Oz -g0 -fexceptions -Wall -Wextra -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s STACK_SIZE=8mb"
     )
     set_target_properties(test_lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(test_lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})
@@ -89,7 +93,45 @@ if (XEUS_LFORTRAN_WASM_BUILD)
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 
-if (WITH_LLVM)
+# These tests drive the lfortran executable. This directory is configured
+# before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
+# condition under which src/bin creates the target instead.
+if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
+    # Emitting an executable needs a working end-to-end link, which the
+    # Windows CI job does not provide: it builds and unit tests the compiler
+    # but never runs the integration suite. Object emission is still covered
+    # there by the test below.
+    if (NOT WIN32)
+        add_test(
+            NAME test_asr_text_compile
+            COMMAND $<TARGET_FILE:lfortran>
+                ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                --no-color
+                -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
+        )
+    endif()
+    add_test(
+        NAME test_asr_text_object
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+            --no-color
+            -c
+            -o ${PROJECT_BINARY_DIR}/asr_text_compile_01.o
+    )
+    # The format claims to be an EDN data subset; enforce that with a reader
+    # that knows nothing about LFortran.
+    find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
+    if (LFORTRAN_TEST_PYTHON)
+        add_test(
+            NAME test_asr_text_edn_conformance
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --input ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                --input ${CMAKE_SOURCE_DIR}/tests/asr/edn_strings_01.f90
+                --input ${CMAKE_SOURCE_DIR}/examples/expr2.f90
+        )
+    endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")

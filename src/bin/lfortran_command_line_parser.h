@@ -36,6 +36,7 @@ namespace LCompilers::CommandLineInterface {
         bool show_tokens = false;
         bool show_ast = false;
         bool show_asr = false;
+        bool from_asr = false;
         bool show_ast_f90 = false;
         std::string arg_pass;
         bool arg_no_color = false;

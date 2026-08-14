@@ -58,6 +58,7 @@ struct PassOptions {
     bool mangle_underscore_external = false;
     bool json = false;
     bool clojure = false;
+    bool no_member_names = false;
     bool no_loc = false;
     bool visualize = false;
     bool tree = false;
