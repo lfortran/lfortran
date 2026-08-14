@@ -130,11 +130,32 @@ def assignment(table, name, value, realloc=False, move=False):
     )
 
 
+def array_type(element, lengths):
+    dimensions = " ".join(
+        f"(dimension :start {integer_constant(1, 4)} "
+        f":length {integer_constant(length, 4)})"
+        for length in lengths)
+    return (
+        f"(Array :type {type_of(element)} :dims [{dimensions}] "
+        f":physical_type :FixedSizeArray)"
+    )
+
+
+def array_item(table, name, index, element):
+    return (
+        f"(ArrayItem :v {var(table, name)} "
+        f":args [(array_index :left nil :right {index} :step nil)] "
+        f":type {type_of(element)} :storage_format :ColMajor :value nil)"
+    )
+
+
 def variable(table, name, declaration, intent="Local"):
+    rendered = declaration if isinstance(declaration, str) \
+        else type_of(declaration)
     return (
         f"(Variable :parent_symtab {table} :name {string(name)} "
         f":dependencies [] :intent :{intent} :symbolic_value nil :value nil "
-        f":storage :Default :type {type_of(declaration)} "
+        f":storage :Default :type {rendered} "
         f":type_declaration nil :abi :Source :access :Public "
         f":presence :Required :value_attr false :target_attr false "
         f":contiguous_attr false :bindc_name nil :is_volatile false "
@@ -196,6 +217,43 @@ def subroutine(name, parameter, body):
     )
 
 
+def function_symbol(name, parameter_name, kind):
+    """A contained function returning the same integer kind it takes."""
+    symbols = {
+        parameter_name: variable(
+            PROCEDURE_SYMTAB, parameter_name, ("integer", kind), "In"),
+        name: variable(
+            PROCEDURE_SYMTAB, name, ("integer", kind), "ReturnVar"),
+    }
+    entries = " ".join(
+        f"{string(key)} {value}" for key, value in symbols.items())
+    body = assignment(
+        PROCEDURE_SYMTAB, name, var(PROCEDURE_SYMTAB, parameter_name))
+    return (
+        f"(Function :symtab (SymbolTable :id {PROCEDURE_SYMTAB} "
+        f":symbols {{{entries}}}) :name {string(name)} "
+        f":function_signature (FunctionType "
+        f":arg_types [{integer_type(kind)}] "
+        f":return_var_type {integer_type(kind)} "
+        f":abi :Source :deftype :Implementation :bindc_name nil "
+        f":elemental false :pure false :module false :inline false "
+        f":static false :restrictions [] :is_restriction false) "
+        f":dependencies [] "
+        f":args [{var(PROCEDURE_SYMTAB, parameter_name)}] "
+        f":body [{body}] "
+        f":return_var {var(PROCEDURE_SYMTAB, name)} :access :Public "
+        f":deterministic true :side_effect_free true :module_file nil)"
+    )
+
+
+def function_call(name, argument, kind):
+    return (
+        f"(FunctionCall :name {symbol_ref(PROGRAM_SYMTAB, name)} "
+        f":original_name nil :args [(call_arg :value {argument})] "
+        f":type {integer_type(kind)} :value nil :dt nil)"
+    )
+
+
 def subroutine_call(name, argument):
     return (
         f"(SubroutineCall :name {symbol_ref(PROGRAM_SYMTAB, name)} "
@@ -244,6 +302,15 @@ def generate_valid(seed):
     loop_index = "idx"
     symbols[loop_index] = integer_variable(PROGRAM_SYMTAB, loop_index, 4)
 
+    arrays = []
+    for index in range(rng.randint(0, 2)):
+        name = f"a{index}"
+        kind = rng.choice(INTEGER_KINDS)
+        length = rng.randint(1, 4)
+        arrays.append((name, kind, length))
+        symbols[name] = variable(
+            PROGRAM_SYMTAB, name, array_type(("integer", kind), [length]))
+
     integer_names_by_kind = {}
     for name, kind in integers:
         integer_names_by_kind.setdefault(kind, []).append(name)
@@ -265,11 +332,39 @@ def generate_valid(seed):
             PROGRAM_SYMTAB, name,
             logical_expression(rng, integer_names_by_kind.get(4, []), kind))
 
+    def array_statement():
+        name, kind, length = rng.choice(arrays)
+        element = ("integer", kind)
+        # The index stays within the declared bounds so the program is also
+        # well defined at runtime, not merely well formed.
+        index = integer_constant(rng.randint(1, length), 4)
+        target = array_item(PROGRAM_SYMTAB, name, index, element)
+        value = integer_expression(
+            rng, kind, integer_names_by_kind.get(kind, []))
+        return (
+            f"(Assignment :target {target} :value {value} "
+            f":overloaded nil :realloc_lhs false :move_allocation false)"
+        )
+
+    def array_read_statement():
+        name, kind, length = rng.choice(arrays)
+        element = ("integer", kind)
+        index = integer_constant(rng.randint(1, length), 4)
+        scalars = [n for n, k in integers if k == kind]
+        if not scalars:
+            return array_statement()
+        return assignment(
+            PROGRAM_SYMTAB, rng.choice(scalars),
+            array_item(PROGRAM_SYMTAB, name, index, element))
+
     choices = [integer_statement]
     if reals:
         choices.append(real_statement)
     if logicals:
         choices.append(logical_statement)
+    if arrays:
+        choices.append(array_statement)
+        choices.append(array_read_statement)
 
     body = [rng.choice(choices)() for _ in range(rng.randint(1, 5))]
 
@@ -285,15 +380,24 @@ def generate_valid(seed):
 
     description = "schema-valid integer program"
     if rng.choice([False, True]):
-        # A contained subroutine exercises a second scope, a call signature,
+        # A contained procedure exercises a second scope, a call signature,
         # and the actual-versus-formal argument agreement the verifier checks.
+        # Only one is generated per program: both would claim the same symbol
+        # table id.
         name, kind = rng.choice(integers)
-        symbols["helper"] = subroutine(
-            "helper", ("arg", kind),
-            [assignment(
-                PROCEDURE_SYMTAB, "local", var(PROCEDURE_SYMTAB, "arg"))])
-        body.append(subroutine_call("helper", var(PROGRAM_SYMTAB, name)))
-        description = "schema-valid program with a contained subroutine"
+        if rng.choice([False, True]):
+            symbols["helper"] = subroutine(
+                "helper", ("arg", kind),
+                [assignment(
+                    PROCEDURE_SYMTAB, "local", var(PROCEDURE_SYMTAB, "arg"))])
+            body.append(subroutine_call("helper", var(PROGRAM_SYMTAB, name)))
+            description = "schema-valid program with a contained subroutine"
+        else:
+            symbols["helper"] = function_symbol("helper", "arg", kind)
+            body.append(assignment(
+                PROGRAM_SYMTAB, name,
+                function_call("helper", var(PROGRAM_SYMTAB, name), kind)))
+            description = "schema-valid program with a contained function"
 
     return translation_unit(symbols, body), description
 
