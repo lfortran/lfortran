@@ -25,6 +25,7 @@
 #include <libasr/codegen/asr_to_wasm.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/pipeline.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
 #include <libasr/pass/replace_do_loops.h>
@@ -794,32 +795,6 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return has_error_w_cc;
 }
 
-LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> load_input_asr(
-    const std::string &input, const std::string &infile, bool from_asr,
-    Allocator &asr_text_allocator, LCompilers::FortranEvaluator &evaluator,
-    LCompilers::LocationManager &lm,
-    LCompilers::diag::Diagnostics &diagnostics,
-    bool require_main_program=false)
-{
-    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> result =
-        from_asr
-        ? LCompilers::asr_from_text(asr_text_allocator, input, infile, lm,
-            diagnostics)
-        : evaluator.get_asr2(input, lm, diagnostics);
-    if (!result.ok || !from_asr) {
-        return result;
-    }
-
-    LCompilers::ASRVerifyOptions verify_options;
-    verify_options.check_external = true;
-    verify_options.require_main_program = require_main_program;
-    if (!LCompilers::asr_verify(
-            *result.result, verify_options, diagnostics)) {
-        return LCompilers::Error();
-    }
-    return result;
-}
-
 int verify_asr_input(const std::string &infile,
         CompilerOptions &compiler_options)
 {
@@ -861,7 +836,7 @@ int verify_asr_input(const std::string &infile,
     }
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        r = load_input_asr(input, infile, from_asr, asr_text_allocator,
+        r = LCompilers::load_input_asr(input, infile, from_asr, asr_text_allocator,
             fe, lm, diagnostics);
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -1219,7 +1194,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     }
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> asr =
-        load_input_asr(input, infile, from_asr, asr_text_allocator,
+        LCompilers::load_input_asr(input, infile, from_asr, asr_text_allocator,
             fe, lm, diagnostics);
     if (!asr.ok) {
         std::cerr << diagnostics.render(lm, compiler_options);
@@ -1306,7 +1281,7 @@ int compile_src_to_object_file(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-        result = load_input_asr(input, infile, from_asr,
+        result = LCompilers::load_input_asr(input, infile, from_asr,
             asr_text_allocator, fe, lm, diagnostics,
             from_asr && found_main != nullptr);
     t2 = std::chrono::high_resolution_clock::now();
@@ -1331,9 +1306,6 @@ int compile_src_to_object_file(const std::string &infile,
         if (err) return err;
     }
 
-    // ASR -> LLVM
-    LCompilers::LLVMEvaluator e(compiler_options.target);
-
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
@@ -1349,6 +1321,7 @@ int compile_src_to_object_file(const std::string &infile,
         }
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
+        LCompilers::LLVMEvaluator e(compiler_options.target);
         e.create_empty_object_file(outfile);
         return 0;
     }
@@ -1362,51 +1335,17 @@ int compile_src_to_object_file(const std::string &infile,
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
-    std::unique_ptr<LCompilers::LLVMModule> m;
     diagnostics.diagnostics.clear();
-    if (compiler_options.emit_debug_info) {
-#ifndef HAVE_RUNTIME_STACKTRACE
-        diagnostics.add(LCompilers::diag::Diagnostic(
-            "The `runtime stacktrace` is not enabled. To get the stack traces "
-            "or debugging information, please re-build LFortran with "
-            "`-DWITH_RUNTIME_STACKTRACE=yes`",
-            LCompilers::diag::Level::Error,
-            LCompilers::diag::Stage::Semantic, {})
-        );
-        std::cerr << diagnostics.render(lm, compiler_options);
-        return 1;
-#endif
-    }
-
-    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, lm, infile, &time_opt);
+    LCompilers::ASRObjectResult pipeline_result =
+        LCompilers::compile_asr_to_object(
+            *asr, infile, outfile, assembly, compiler_options, lpm,
+            fe, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (res.ok) {
-        m = std::move(res.result);
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 5;
+    if (!pipeline_result.ok) {
+        return pipeline_result.status;
     }
-
-    // LLVM -> Machine code (saves to an object file)
-    if (assembly) {
-        e.save_asm_file(*(m->m_m), outfile);
-    } else {
-        t1 = std::chrono::high_resolution_clock::now();
-        e.save_object_file(*(m->m_m), outfile);
-        t2 = std::chrono::high_resolution_clock::now();
-        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    }
-
-    // CUDA: save the generated kernel source alongside the object file
-    // so the link step (possibly a separate invocation) can find it.
-    if (compiler_options.gpu_backend == "cuda"
-            && !compiler_options.gpu_cuda_source.empty()) {
-        std::string cuda_sidecar = outfile + ".cuda.cu";
-        std::ofstream cu_out(cuda_sidecar);
-        cu_out << compiler_options.gpu_cuda_source;
-        cu_out.close();
-    }
+    time_opt = pipeline_result.optimization_time_us;
+    time_llvm_to_bin = pipeline_result.object_time_us;
 
     if(compiler_options.po.enable_gpu_offloading) {
 #ifdef HAVE_LFORTRAN_MLIR
@@ -1424,7 +1363,8 @@ int compile_src_to_object_file(const std::string &infile,
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
                         .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
-                    e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
+                    fe.get_llvm_evaluator().save_object_file(
+                        *(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
                     return 1;
