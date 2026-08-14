@@ -66,8 +66,16 @@ object files and libraries provide dependencies rather than the entry point.
 
 The parser accepts named and positional constructors. The two forms can appear
 in one file, but a single constructor cannot mix positional members with
-keyword/member pairs. Hand-written `.asr` fixtures may use named form for
-readability. `asr_clojure` reference output is positional.
+keyword/member pairs. Committed `.asr` fixtures use the positional form,
+the same form as `asr_clojure` reference output: a corpus is expected to
+grow large, and a fixture written positionally is a fraction of the size.
+A valid fixture can therefore be regenerated with
+`--show-asr --clojure --no-member-names`.
+
+`--verify-asr` parses a standalone ASR file and runs only its initial verifier.
+It does not execute ASR passes or code generation, so corpus runners can
+distinguish an accepted initial verifier rejection from any later compiler
+failure.
 
 ## Grammar
 
@@ -202,3 +210,27 @@ requirements. Consequently:
 - structurally decoded but invalid ASR produces an ASR verifier diagnostic;
 - verifier-valid standalone ASR proceeds through the normal pass and LLVM
   pipeline.
+
+## Regression corpus
+
+A minimized ASR graph is checked in under `tests/asr/` and registered in
+`tests/tests.toml` like any other reference test, so the ordinary reference
+suite runs it:
+
+- `tests/asr/compile/` holds graphs the verifier accepts, registered with
+  `llvm = true` so they must compile and run;
+- `tests/asr/verify/` holds graphs the verifier rejects, registered with
+  `asr = true` so the stored reference captures the exact diagnostic, its
+  stable code, and the span it points at.
+
+Because the diagnostic code is part of the rendered message, a fixture pins
+the specific verifier rule it exercises rather than the wording alone.
+
+Fixtures are stored in the printer's indented form, so a diagnostic points at
+a single short line rather than at one long one, and the caret identifies the
+offending constructor. Regenerate a valid fixture with
+`--show-asr --clojure --no-member-names`.
+
+The reusable APIs in `src/lfortran/pipeline.h` own Fortran-or-ASR loading and
+the phase-aware ASR-to-default-passes-to-LLVM-to-object path, so the CLI and
+the direct-ASR tools share one implementation.

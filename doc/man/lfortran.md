@@ -44,6 +44,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--clojure`: Print lossless ASR in canonical Clojure/EDN format
 - `--no-member-names`: Omit ASR member names in Clojure/EDN output
 - `--from-asr`: Parse the input file as ASR text
+- `--verify-asr`: Parse and verify standalone ASR text without running passes
 - `--no-loc`: Skip location information in ASR/AST Json format
 - `--visualize`: Print ASR/AST Visualization
 - `--pass TEXT`: Apply the ASR pass and show ASR (implies --show-asr)

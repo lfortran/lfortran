@@ -820,6 +820,30 @@ LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> load_input_asr(
     return result;
 }
 
+int verify_asr_input(const std::string &infile,
+        CompilerOptions &compiler_options)
+{
+    std::string input = read_file_ok(infile);
+    Allocator al(64*1024*1024);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> result =
+        LCompilers::asr_from_text(
+            al, input, infile, lm, diagnostics);
+    if (!result.ok) {
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 2;
+    }
+
+    LCompilers::ASRVerifyOptions verify_options;
+    verify_options.check_external = true;
+    verify_options.require_main_program = true;
+    bool verified = LCompilers::asr_verify(
+        *result.result, verify_options, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    return verified ? 0 : 1;
+}
+
 [[maybe_unused]] int emit_asr(const std::string &infile,
     LCompilers::PassManager& pass_manager,
     CompilerOptions &compiler_options, bool from_asr=false)
@@ -2658,6 +2682,18 @@ int main_app(int argc, char *argv[]) {
             return 1;
         }
     }
+    if (opts.verify_asr && !opts.from_asr) {
+        std::cerr << "error: --verify-asr requires direct ASR input"
+            << std::endl;
+        return 1;
+    }
+    if (opts.verify_asr &&
+            (opts.show_asr || opts.show_llvm || opts.arg_S || opts.arg_c ||
+             !opts.arg_pass.empty() || !opts.skip_pass.empty())) {
+        std::cerr << "error: --verify-asr cannot be combined with output or "
+            "pass options" << std::endl;
+        return 1;
+    }
 
     lcompilers_commandline_options = "";
     for (int i=0; i<argc; i++) {
@@ -2863,6 +2899,9 @@ int main_app(int argc, char *argv[]) {
     }
     if ( compiler_options.semantics_only ) {
         return run_parser_and_semantics(opts.arg_file, compiler_options);
+    }
+    if (opts.verify_asr) {
+        return verify_asr_input(opts.arg_file, compiler_options);
     }
     if (opts.show_asr) {
         return emit_asr(opts.arg_file, lfortran_pass_manager,

@@ -102,6 +102,8 @@ end program
     const LCompilers::diag::Diagnostic &verify_error =
         invalid_diagnostics.diagnostics.back();
     CHECK(verify_error.stage == LCompilers::diag::Stage::ASRVerify);
+    CHECK(verify_error.code ==
+        "asr.verify.assignment.realloc_lhs_requires_allocatable");
     CHECK(verify_error.message ==
         "Reallocation of non allocatable variable is not allowed");
     REQUIRE(!verify_error.labels.empty());
@@ -137,6 +139,8 @@ end subroutine
     REQUIRE(!diagnostics.diagnostics.empty());
     CHECK(diagnostics.diagnostics.back().stage ==
         LCompilers::diag::Stage::ASRVerify);
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.translation_unit.main_program_missing");
     CHECK(diagnostics.diagnostics.back().message ==
         "standalone ASR must contain exactly one main program");
 }

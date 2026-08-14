@@ -292,6 +292,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asr", opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--from-asr", opts.from_asr,
             "Parse the input file as ASR text")->group(group_output_debugging_options);
+        app.add_flag("--verify-asr", opts.verify_asr,
+            "Parse and verify standalone ASR text without running passes")->group(group_output_debugging_options);
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
