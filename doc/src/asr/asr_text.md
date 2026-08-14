@@ -290,6 +290,30 @@ the original failure artifact. The reduced file is written in the indented
 positional form the committed fixtures use, so it can be added to
 `tests/asr/verify/` directly.
 
+### Running a campaign locally
+
+The registered CTest cases are smoke tests: a handful of cases, so the harness
+cannot rot as the passes change. A real campaign is run by hand, and is worth
+running against a sanitizer build, where a mutation that corrupts memory is
+reported at the point of corruption rather than as a later crash:
+
+```console
+cmake -S . -B build-asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON \
+    -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
+cmake --build build-asan -j
+python tests/asr/fuzz.py \
+  --lfortran build-asan/src/bin/lfortran \
+  --seed 0 \
+  --cases 1000 \
+  --generator all \
+  --strategy mixed
+```
+
+Campaigns are deliberately not scheduled in CI: a finding needs a person to
+triage it, and a scheduled job with no owner turns red and stops meaning
+anything. Run one when the ASR, the passes or the verifier change in a way
+worth stress testing.
+
 `tests/asr/check_llvm_coverage.py` compares every constructor generated from
 `ASR.asdl` with the LLVM visitor and
 `tests/asr/llvm_constructor_coverage.toml`. A constructor must either have a
