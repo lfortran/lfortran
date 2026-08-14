@@ -2984,11 +2984,11 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
         }
         case FLOAT_80_TYPE: {
             /* x86 80-bit extended precision is stored in 10 bytes (x86_fp80).
-             * Load it into a long double (which is 80-bit on x86 Linux) for
-             * formatting. On non-x86 platforms, long double may be 64-bit,
-             * but in that case kind=10 wouldn't be used anyway. */
-            long double val80;
-            memcpy(&val80, arg, 10);
+             * Load it into a long double for formatting. Clamp copy size to
+             * sizeof(val80) to prevent overflow on platforms where sizeof(long double) < 10. */
+            long double val80 = 0.0L;
+            size_t copy_bytes = sizeof(val80) < 10 ? sizeof(val80) : 10;
+            memcpy(&val80, arg, copy_bytes);
             format_long_double_fortran(result, val80);
             break;
         }
