@@ -267,3 +267,18 @@ python tests/asr/fuzz.py \
   --lfortran src/bin/lfortran \
   --replay asr-fuzz-artifacts/failure-000000-....json
 ```
+
+The structural reducer greedily removes vector elements and symbol-table
+entries, replaces optional fields with `nil`, and shrinks numeric values while
+requiring the same initial-verification status and normalized failure phase:
+
+```console
+python tests/asr/reduce.py \
+  --lfortran src/bin/lfortran \
+  --metadata asr-fuzz-artifacts/failure-000000-....json
+```
+
+It writes a canonical `.min.asr` file and reduction journal without modifying
+the original failure artifact. The reduced file is written in the indented
+positional form the committed fixtures use, so it can be added to
+`tests/asr/verify/` directly.

@@ -146,6 +146,11 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
             )
         endif()
+        add_test(
+            NAME test_asr_reducer_unit
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/test_edn.py
+        )
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
