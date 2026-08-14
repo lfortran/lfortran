@@ -1830,6 +1830,56 @@ public:
         _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
+    void visit_Integer(const Integer_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.integer_kind_supported",
+            "Integer kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_UnsignedInteger(const UnsignedInteger_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.unsigned_integer_kind_supported",
+            "UnsignedInteger kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Real(const Real_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.real_kind_supported",
+            "Real kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Complex(const Complex_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.complex_kind_supported",
+            "Complex kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Logical(const Logical_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.logical_kind_supported",
+            "Logical kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");

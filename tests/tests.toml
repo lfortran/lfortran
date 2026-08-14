@@ -5354,3 +5354,7 @@ asr = true
 [[test]]
 filename = "asr/verify/function_signature_argument_mismatch.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/unsupported_real_kind.asr"
+asr = true
