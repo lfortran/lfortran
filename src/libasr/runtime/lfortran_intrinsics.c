@@ -2521,7 +2521,7 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
         16/*FLOAT_128: 16 bytes = 128 bits*/,
-        10/*FLOAT_80: 10 bytes = x86_fp80 (80-bit extended precision)*/ };
+        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2983,13 +2983,13 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             break;
         }
         case FLOAT_80_TYPE: {
-            /* x86 80-bit extended precision is stored in 10 bytes (x86_fp80).
-             * Load it into a long double for formatting. Clamp copy size to
-             * sizeof(val80) to prevent overflow on platforms where sizeof(long double) < 10. */
-            long double val80 = 0.0L;
-            size_t copy_bytes = sizeof(val80) < 10 ? sizeof(val80) : 10;
-            memcpy(&val80, arg, copy_bytes);
-            format_long_double_fortran(result, val80);
+            /* Load the native platform long double from memory.
+             * sizeof(long double) = 16 on Linux x86-64 (x86_fp80 padded),
+             *                    = 16 on Apple Silicon (fp128),
+             *                    =  8 on macOS x86-64 (mapped to double). */
+            long double val = 0.0L;
+            memcpy(&val, arg, sizeof(val));
+            format_long_double_fortran(result, val);
             break;
         }
         default :

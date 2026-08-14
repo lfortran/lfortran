@@ -609,7 +609,16 @@ namespace LCompilers {
                     type_ptr =  llvm::Type::getDoubleTy(context)->getPointerTo();
                     break;
                 case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context)->getPointerTo();
+#else
+                    // Linux/Windows x86: 80-bit extended precision
                     type_ptr = llvm::Type::getX86_FP80Ty(context)->getPointerTo();
+#endif
                     break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
@@ -627,7 +636,16 @@ namespace LCompilers {
                     type_ptr = llvm::Type::getDoubleTy(context);
                     break;
                 case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context);
+#else
+                    // Linux/Windows x86: 80-bit extended precision
                     type_ptr = llvm::Type::getX86_FP80Ty(context);
+#endif
                     break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context);

@@ -3339,7 +3339,13 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         ASR::is_a<ASR::Logical_t>(*type)) {
         int64_t kind = extract_kind_from_ttype_t(type);
         if (kind == 10 && ASR::is_a<ASR::Real_t>(*type)) {
+#if defined(__APPLE__) && !defined(__aarch64__)
+            // macOS x86-64: long double mapped to 64-bit double by Apple
+            return {8, 8};
+#else
+            // Linux x86-64 (x86_fp80, padded to 16) or Apple Silicon (fp128)
             return {16, 16};
+#endif
         }
         if (kind > 0) return {kind, kind};
         return {-1, -1};
