@@ -962,6 +962,15 @@ program continue_compilation_1
         implicit none
         integer :: expected = mod(this_image() + num_images() - 2, num_images()) + 1  ! {Error} Initialization of `expected` must reduce to a compile time constant.
     end subroutine non_constant_binop_initializer
+
+
+    subroutine implied_do_loop_variable_not_integer()
+        implicit none
+        real :: r_idx
+        real :: values(3)
+        values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+        print *, values(1)
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

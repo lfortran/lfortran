@@ -1,0 +1,8 @@
+semantic error: Symbol 'dp_ua' is use-associated from module 'use_associated_redeclaration_1_mod' and cannot be redeclared
+ --> tests/errors/use_associated_redeclaration_1.f90:9:27
+  |
+9 |     integer, parameter :: dp_ua = kind(0.0)
+  |                           ^^^^^^^^^^^^^^^^^ redeclaration
+  |
+3 |     integer, parameter :: dp_ua = kind(0.0d0)
+  |                           ~~~~~~~~~~~~~~~~~~~ original declaration

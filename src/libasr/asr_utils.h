@@ -1982,6 +1982,61 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return is_constant;
+        } case ASR::exprType::IntegerCompare:
+          case ASR::exprType::UnsignedIntegerCompare:
+          case ASR::exprType::RealCompare:
+          case ASR::exprType::ComplexCompare:
+          case ASR::exprType::LogicalCompare: {
+            // All *Compare_t ASR nodes share the same (left, op, right, type, value) layout,
+            // so a single reinterpret via the base fields is not available in the generated
+            // ASR API; downcast per-type instead.
+            ASR::expr_t *cmp_left = nullptr, *cmp_right = nullptr;
+            switch (a_value->type) {
+                case ASR::exprType::IntegerCompare: {
+                    ASR::IntegerCompare_t* c = ASR::down_cast<ASR::IntegerCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::UnsignedIntegerCompare: {
+                    ASR::UnsignedIntegerCompare_t* c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::RealCompare: {
+                    ASR::RealCompare_t* c = ASR::down_cast<ASR::RealCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::ComplexCompare: {
+                    ASR::ComplexCompare_t* c = ASR::down_cast<ASR::ComplexCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                default: {
+                    ASR::LogicalCompare_t* c = ASR::down_cast<ASR::LogicalCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+            }
+            return is_value_constant(cmp_left) && is_value_constant(cmp_right);
+        } case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(a_value);
+            if (!is_value_constant(array_section->m_v)) {
+                return false;
+            }
+            for (size_t i = 0; i < array_section->n_args; i++) {
+                ASR::array_index_t idx = array_section->m_args[i];
+                if (idx.m_left && !is_value_constant(idx.m_left)) {
+                    return false;
+                }
+                if (idx.m_right && !is_value_constant(idx.m_right)) {
+                    return false;
+                }
+                if (idx.m_step && !is_value_constant(idx.m_step)) {
+                    return false;
+                }
+            }
+            return true;
         } default: {
             return false;
         }
@@ -3574,7 +3629,8 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     private:
     Allocator& al;
     ASR::call_arg_t* m_args;
-    size_t n_args;
+    // Only read by an assert, which is compiled out of a release build.
+    [[maybe_unused]] size_t n_args;
     std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:

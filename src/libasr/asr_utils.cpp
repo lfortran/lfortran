@@ -1265,7 +1265,11 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         std::vector<std::string> modules_list
             = determine_module_dependencies(*tu);
         for (auto &item : modules_list) {
-            if (symtab->get_symbol(item)
+            // In interactive mode a module a dependency names may have been
+            // declared by an earlier cell, so it lives in a parent scope.
+            // Resolve through the chain, or a modfile is looked for on disk,
+            // of which a notebook has none.
+            if (symtab->resolve_symbol(item)
                     == nullptr) {
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
                 ASR::TranslationUnit_t *mod1 = nullptr;

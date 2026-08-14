@@ -71,4 +71,4 @@ free to contact Ondřej Čertík (ondrej@certik.us).
 
 # Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lfortran/lfortran&type=Date)](https://star-history.com/#lfortran/lfortran&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=lfortran/lfortran&type=Date)](https://star-history.dera.page/#lfortran/lfortran&Date)

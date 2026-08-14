@@ -89,6 +89,27 @@ public:
             }
         }
 
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // In interactive mode each cell is a TranslationUnit chained to
+            // the previous one, so earlier cells' symbols live in ancestor
+            // scopes. Their functions were turned into subroutines when their
+            // own cell was compiled, and the JIT holds them in that form, so
+            // transform them here too: this cell's calls to them are rewritten
+            // below to match, and code generation declares the signature that
+            // was emitted then.
+            for (SymbolTable *s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if (!ASRUtils::is_tu_scope(s)) continue;
+                for (auto &a : s->get_scope()) {
+                    if (ASR::is_a<ASR::Module_t>(*a.second) ||
+                        ASR::is_a<ASR::Function_t>(*a.second)) {
+                        this->visit_symbol(*a.second);
+                    }
+                }
+            }
+            ASR::BaseWalkVisitor<CreateFunctionFromSubroutine>
+                ::visit_TranslationUnit(x);
+        }
+
         void visit_Variable(const ASR::Variable_t &x){
             ASR::Variable_t* x_ptr = &const_cast<ASR::Variable_t&>(x);
             if(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))){

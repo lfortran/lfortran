@@ -16,6 +16,7 @@
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
+#include <libasr/modfile.h>
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
 
@@ -2026,4 +2027,326 @@ if (a1() == a2()) error stop
     CHECK(r.ok);
     CHECK(r.result.i32 == 2);
     CHECK(e.evaluate2("if (a1() /= a2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator generic procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the first cell's generic interface has to resolve to the
+    // copies of its specific procedures. Pointing at the originals selects a
+    // procedure that this cell does not hold and never declares.
+    CHECK(e.evaluate2(R"(module mgen
+implicit none
+interface twice
+    module procedure twice_int
+    module procedure twice_real
+end interface
+contains
+    integer function twice_int(i)
+        integer, intent(in) :: i
+        twice_int = 2 * i
+    end function
+    real function twice_real(x)
+        real, intent(in) :: x
+        twice_real = 2 * x
+    end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mgen
+implicit none
+if (twice(3) /= 6) error stop
+if (twice(1.5) /= 3.0) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator a modfile module used by a cell's module") {
+    // A module loaded from a modfile is held by the cell that first used it,
+    // so a later cell resolves it through the chain and its module calls into
+    // the copy. That copy has to be declared before this cell's own modules
+    // are emitted, or the call has nothing to link to.
+    const char *modsrc = R"(module mcellmod
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)";
+    {
+        Allocator al(1024*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "mcellmod.f90";
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(std::strlen(modsrc));
+        LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
+            LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics, nullptr,
+                false, co, lm));
+        std::ofstream out("mcellmod.mod", std::ios::binary);
+        out << LCompilers::save_modfile(*asr, lm);
+    }
+
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *cell = R"(module mcell
+use mcellmod
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mcell
+implicit none
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    std::remove("mcellmod.mod");
+}
+
+TEST_CASE("FortranEvaluator a program unit using an earlier cell's module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mearly
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)").ok);
+    // A program unit loads the submodules of what it uses, and that walks the
+    // dependencies of mlate. mearly is one of them and it is a parent scope
+    // away, not a modfile on disk.
+    const char *cell = R"(module mlate
+use mearly
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mlate
+implicit none
+call show()
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator a type-bound procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the type carries the binding, which names the procedure it
+    // binds to. Left pointing at the original, the call reaches a procedure
+    // this cell does not hold and code generation never declares.
+    CHECK(e.evaluate2(R"(module mtb
+implicit none
+type :: point
+    real :: x
+contains
+    procedure :: norm
+end type
+contains
+real function norm(self)
+class(point), intent(in) :: self
+norm = abs(self%x)
+end function
+end module
+)").ok);
+    const char *caller = R"(program p
+use mtb
+implicit none
+type(point) :: a
+a%x = -2.0
+if (a%norm() /= 2.0) error stop
+end program
+)";
+#ifdef _WIN32
+    // Running this hangs on Windows, and so does calling any procedure of an
+    // earlier cell that takes a polymorphic argument -- a bug of its own, see
+    // https://github.com/lfortran/lfortran/issues/12494, and not one this fix
+    // introduced: before it the call did not compile at all. Compiling is what
+    // this test is about: without the fix above it fails with "Function code
+    // not generated for 'norm'".
+    {
+        LCompilers::LocationManager lm;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm(caller, lm, lpm, d).ok);
+    }
+#else
+    CHECK(e.evaluate2(caller).ok);
+#endif
+}
+
+TEST_CASE("FortranEvaluator a derived type argument from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A function returning a derived type is turned into a subroutine by a
+    // pass, and the JIT holds it in that form, so the copy has to be
+    // transformed the same way. Its dummy arguments also name the type they
+    // were declared with, which has to be this chain's copy of it or the call
+    // does not type check.
+    CHECK(e.evaluate2(R"(module mret
+implicit none
+type :: vec
+    real :: x
+end type
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mret
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = addv(a, b)
+if (c%x /= 3.0) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A custom operator names its specific procedures the way a generic
+    // interface does, and asking it for a scope it does not have used to
+    // abort the copy outright.
+    const char *cell = R"(module mop
+implicit none
+type :: vec
+    real :: x
+end type
+interface operator(+)
+    module procedure addv
+end interface
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+program p
+use mop
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = a + b
+if (c%x /= 3.0) error stop
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("module mdp; integer, parameter :: dp = kind(0.0d0); end module\n").ok);
+    // The name is declared by the first cell, so the message has to quote that
+    // cell. Each cell is compiled on its own; without a range of its own, the
+    // location is read as a position in this cell and quotes its text.
+    const char *cell = "use mdp; integer, parameter :: dp = kind(0.0)\n";
+    // As the prompt and the kernel set it up: nothing, the evaluator names the
+    // cell and keeps its text.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate(cell, false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    std::string message = d.render(lm, cu);
+    CHECK(message.find("use-associated from module 'mdp'") != std::string::npos);
+    CHECK(message.find("<cell 1>") != std::string::npos);
+    CHECK(message.find("<cell 2>") != std::string::npos);
+    // The quoted line is the one that declares dp, not this cell's text.
+    CHECK(message.find("module mdp; integer, parameter :: dp = kind(0.0d0)")
+        != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator the calls the kernel makes") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The kernel reaches the evaluator through get_ast(), get_asr() and
+    // get_llvm() as well, for its %%showast, %%showasr and %%showllvm magics --
+    // Demo1.ipynb ends on three such cells. Each is a cell of its own, and a
+    // cell that is never opened cannot be closed.
+    auto kernel_lm = []() { return LCompilers::LocationManager(); };
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.evaluate("1+3", false, lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 1);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: i\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 2);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_asr("integer :: j\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 3);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm("integer :: k\n", lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 4);
+    }
+    {
+        // A file compiled in interactive mode -- which is how a file holding
+        // statements outside any program unit is compiled -- keeps its name.
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "some_file.f90";
+        lm.files.push_back(fl);
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: m\n", lm, d).ok);
+        CHECK(lm.files.back().in_filename == "some_file.f90");
+    }
 }

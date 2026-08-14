@@ -449,15 +449,8 @@ int prompt(bool verbose, CompilerOptions &cu)
             LCompilers::LocationManager lm;
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
-            {
-                LCompilers::LocationManager::FileLocations fl;
-                fl.in_filename = "input";
-                // `input` is only used for error rendering
-                std::ofstream out("input");
-                out << input;
-                lm.files.push_back(fl);
-                lm.file_ends.push_back(input.size());
-            }
+            // The evaluator names this cell and keeps its text; nothing has
+            // to be written out for the error rendering to quote it.
             LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
             res = e.evaluate(input, verbose, lm, lpm, diagnostics);
             if (res.ok) {
