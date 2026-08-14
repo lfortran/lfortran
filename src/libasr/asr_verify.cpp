@@ -33,6 +33,51 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// Returns the type of `e`, or nullptr if the expression is malformed in a way
+// that makes its type unobtainable (a Var referencing a symbol that carries no
+// type, such as a Program). Such expressions have their own dedicated verifier
+// checks, so type comparisons must simply be skipped for them instead of
+// asking for a type that does not exist.
+static ttype_t* typed_expr_type(const expr_t *e)
+{
+    if (e == nullptr) return nullptr;
+    if (!is_a<Var_t>(*e)) return ASRUtils::expr_type(e);
+    symbol_t *s = down_cast<Var_t>(e)->m_v;
+    if (s == nullptr) return nullptr;
+    if (is_a<ExternalSymbol_t>(*s)) {
+        s = down_cast<ExternalSymbol_t>(s)->m_external;
+        if (s == nullptr || is_a<ExternalSymbol_t>(*s)) return nullptr;
+    }
+    if (!is_a<Function_t>(*s) && !is_a<Variable_t>(*s)
+            && !is_a<Struct_t>(*s)) {
+        return nullptr;
+    }
+    return ASRUtils::expr_type(e);
+}
+
+// Procedure types are compared by their own dedicated checks, and they have no
+// type code, so they cannot take part in the generic type comparisons below.
+static bool is_procedure_type(ttype_t *t)
+{
+    return t != nullptr
+        && is_a<FunctionType_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t)));
+}
+
+// A StructType spells out its member types inline, so two StructType nodes for
+// the same derived type can differ structurally, for example when a pass
+// rewrites the signature of a procedure pointer component in one of them.
+// Derived type identity is established from the struct symbol, which a bare
+// signature type does not carry, so such types are left to the dedicated
+// struct checks.
+static bool is_struct_like_type(ttype_t *t)
+{
+    if (t == nullptr) return false;
+    ttype_t *t2 = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    return is_a<StructType_t>(*t2) || ASRUtils::is_class_type(t2);
+}
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -73,6 +118,14 @@ public:
     #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
     #define require_id(cond, error_code, error_msg) ASRUtils::require_impl((cond), (error_code), (error_msg), x.base.base.loc, diagnostics);
     #define require_with_loc_id(cond, error_code, error_msg, loc) ASRUtils::require_impl((cond), (error_code), (error_msg), loc, diagnostics);
+    // Type equality uses the expression only to resolve the struct symbol it
+    // refers to, which requires dereferencing ExternalSymbol. Before externals
+    // are resolved that is not possible, so drop the expression context and
+    // let the comparison fall back to a structural one.
+    ASR::expr_t* type_context(ASR::expr_t *e) {
+        return check_external ? e : nullptr;
+    }
+
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -1301,6 +1354,35 @@ public:
                                     " cannot be nullptr.");
                     }
                     continue;
+                }
+
+                ASR::ttype_t *actual_type =
+                    typed_expr_type(passed_arg_expr);
+                ASR::ttype_t *formal_type = callee_param->m_type;
+                // Derived type arguments are skipped for the same reason
+                // as in the signature check above, and this also covers a
+                // polymorphic argument passed as a pointer or allocatable,
+                // whose type only looks like a plain struct once those
+                // wrappers are stripped.
+                bool struct_argument = is_struct_like_type(actual_type)
+                    || is_struct_like_type(formal_type);
+                bool procedure_argument = is_procedure_type(actual_type)
+                    || is_procedure_type(formal_type);
+                if (actual_type && !diagnostics.has_error() &&
+                        !ASRUtils::is_intrinsic_symbol(x.m_name) &&
+                        !is_method && !struct_argument &&
+                        !procedure_argument) {
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            actual_type, formal_type,
+                            type_context(passed_arg_expr),
+                            type_context(func->m_args[i])),
+                        "asr.verify.call.actual_type_matches_formal",
+                        "Actual argument type " +
+                            ASRUtils::get_type_code(actual_type) +
+                            " does not match formal argument type " +
+                            ASRUtils::get_type_code(formal_type),
+                        passed_arg_expr->base.loc);
                 }
 
                 if (check_external &&
