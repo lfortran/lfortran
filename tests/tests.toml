@@ -5350,3 +5350,7 @@ asr = true
 [[test]]
 filename = "asr/verify/assignment_value_type_mismatch.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/function_signature_argument_mismatch.asr"
+asr = true

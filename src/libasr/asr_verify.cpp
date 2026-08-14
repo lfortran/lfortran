@@ -620,9 +620,74 @@ public:
                     " but isn't found in its dependency list.");
         }
 
-        require(ASRUtils::get_FunctionType(x)->n_arg_types == x.n_args,
+        ASR::FunctionType_t *function_type =
+            ASRUtils::get_FunctionType(x);
+        require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (!diagnostics.has_error()) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::ttype_t *argument_type =
+                    typed_expr_type(x.m_args[i]);
+                if (argument_type == nullptr
+                        || is_procedure_type(argument_type)
+                        || is_procedure_type(
+                            function_type->m_arg_types[i])
+                        || is_struct_like_type(argument_type)
+                        || is_struct_like_type(
+                            function_type->m_arg_types[i])) {
+                    continue;
+                }
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_arg_types[i], argument_type,
+                        nullptr, type_context(x.m_args[i])),
+                    "asr.verify.function.argument_type_matches_signature",
+                    "Function argument type " +
+                        ASRUtils::get_type_code(argument_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_arg_types[i]),
+                    x.m_args[i]->base.loc);
+            }
+
+            // An implicit interface is synthesised from a bare `external`
+            // declaration, so its signature carries an assumed return type
+            // that no return variable corresponds to.
+            bool is_implementation = function_type->m_deftype
+                == ASR::deftypeType::Implementation;
+            bool signature_has_return =
+                function_type->m_return_var_type != nullptr;
+            bool function_has_return = x.m_return_var != nullptr;
+            if (is_implementation) {
+                require_id(
+                    signature_has_return == function_has_return,
+                    "asr.verify.function.return_presence_matches_signature",
+                    "Function return variable presence does not match "
+                    "signature");
+            }
+            ASR::ttype_t *return_type =
+                signature_has_return
+                    ? typed_expr_type(x.m_return_var) : nullptr;
+            if (return_type && !is_procedure_type(return_type)
+                    && !is_procedure_type(
+                        function_type->m_return_var_type)
+                    && !is_struct_like_type(return_type)
+                    && !is_struct_like_type(
+                        function_type->m_return_var_type)) {
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_return_var_type, return_type,
+                        nullptr, type_context(x.m_return_var)),
+                    "asr.verify.function.return_type_matches_signature",
+                    "Function return type " +
+                        ASRUtils::get_type_code(return_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_return_var_type),
+                    x.m_return_var->base.loc);
+            }
+        }
 
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
