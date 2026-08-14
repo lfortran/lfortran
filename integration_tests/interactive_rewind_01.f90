@@ -1,6 +1,6 @@
 integer :: a(2)
 logical :: is_open
-open (10, file='test.txt', status='replace')
+open (10, file='interactive_rewind_01.txt', status='replace')
 a = (/ 1, 2 /)
 write (10, *) a
 rewind (10)

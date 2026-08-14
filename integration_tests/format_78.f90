@@ -8,8 +8,8 @@ program format_78
     x = 3.14
 
     ! Open file with decimal comma mode
-    open(unit=10, file="test.txt", status="replace", &
-         decimal="comma", form="formatted", action="readwrite")
+        open(unit=10, file="format_78.txt", status="replace", &
+            decimal="comma", form="formatted", action="readwrite")
 
     ! Write value
     write(10, '(F6.2)') x
