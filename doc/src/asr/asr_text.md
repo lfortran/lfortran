@@ -289,3 +289,10 @@ It writes a canonical `.min.asr` file and reduction journal without modifying
 the original failure artifact. The reduced file is written in the indented
 positional form the committed fixtures use, so it can be added to
 `tests/asr/verify/` directly.
+
+`tests/asr/check_llvm_coverage.py` compares every constructor generated from
+`ASR.asdl` with the LLVM visitor and
+`tests/asr/llvm_constructor_coverage.toml`. A constructor must either have a
+direct LLVM visitor or an explicit classification naming its lowering pass,
+helper path, metadata role, or non-executable status. New unclassified
+constructors fail the registered CTest.
