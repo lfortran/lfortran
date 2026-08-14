@@ -1849,14 +1849,50 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::StructConstant: {
             return true;
         }
-        case ASR::exprType::RealBinOp:
-        case ASR::exprType::IntegerUnaryMinus:
-        case ASR::exprType::RealUnaryMinus:
-        case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StructInstanceMember:
         case ASR::exprType::StringLen:
         case ASR::exprType::ArrayItem: {
             return is_value_constant(expr_value(a_value));
+        }
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp: {
+            // Issue #12120 follow-up: a BinOp whose overall value hasn't been
+            // constant-folded (e.g. because one operand is a non-foldable
+            // intrinsic array function like count()) can still be constant if
+            // both operands are. Recurse instead of relying on expr_value() alone.
+            if (is_value_constant(expr_value(a_value))) {
+                return true;
+            }
+            ASR::expr_t *bin_left = nullptr, *bin_right = nullptr;
+            switch (a_value->type) {
+                case ASR::exprType::IntegerBinOp: {
+                    ASR::IntegerBinOp_t* b = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+                case ASR::exprType::RealBinOp: {
+                    ASR::RealBinOp_t* b = ASR::down_cast<ASR::RealBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+                default: {
+                    ASR::ComplexBinOp_t* b = ASR::down_cast<ASR::ComplexBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+            }
+            return is_value_constant(bin_left) && is_value_constant(bin_right);
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus: {
+            if (is_value_constant(expr_value(a_value))) {
+                return true;
+            }
+            ASR::expr_t *unary_arg = (a_value->type == ASR::exprType::IntegerUnaryMinus) ?
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(a_value)->m_arg :
+                ASR::down_cast<ASR::RealUnaryMinus_t>(a_value)->m_arg;
+            return is_value_constant(unary_arg);
         }
         case ASR::exprType::ArrayConstructor: {
             if (is_value_constant(expr_value(a_value))) {

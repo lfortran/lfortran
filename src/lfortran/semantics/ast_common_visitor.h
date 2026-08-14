@@ -8968,24 +8968,13 @@ public:
                                     }
                                 }
                                 value = init_expr;
-                            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*init_expr) || ASR::is_a<ASR::RealBinOp_t>(*init_expr) ||
-                                        ASR::is_a<ASR::ComplexBinOp_t>(*init_expr) || ASR::is_a<ASR::IntegerCompare_t>(*init_expr)) {
-                                // Issue #12120: use the general ASRUtils::is_value_constant() check instead of a
-                                // hand-rolled tree-walk, so that e.g. `mod(this_image() + num_images() - 2, num_images()) + 1`
-                                // is correctly rejected (this_image()/num_images() are not PARAMETERs) while intrinsic
-                                // calls such as `mod(param1, param2)` with constant arguments are still accepted
-                                // (see PR #12490 review discussion).
-                                if (!ASRUtils::is_value_constant(init_expr)) {
-                                    diag.add(Diagnostic(
-                                        "Initialization of `" + std::string(x.m_syms[i].m_name) +
-                                        "` must reduce to a compile time constant.",
-                                        Level::Error, Stage::Semantic, {
-                                            Label("",{x.base.base.loc})
-                                        }));
-                                    throw SemanticAbort();
-                                }
-                                value = init_expr;
                             } else if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr) || ASR::is_a<ASR::BitCast_t>(*init_expr)) {
+                                // Note (issue #12120): a plain IntegerBinOp/RealBinOp/ComplexBinOp/IntegerCompare
+                                // initializer no longer has its own branch here. If it were constant, the
+                                // `is_value_constant(init_expr)` sibling branch above would already have matched;
+                                // reaching this point means it is not constant, so it correctly falls through
+                                // to the final `else` below and is rejected (per Jainam-not-a-robot's review
+                                // on PR #12490).
                                 value = init_expr;
                             } else {
                                 diag.add(Diagnostic(
