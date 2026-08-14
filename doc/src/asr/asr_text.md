@@ -231,6 +231,10 @@ a single short line rather than at one long one, and the caret identifies the
 offending constructor. Regenerate a valid fixture with
 `--show-asr --clojure --no-member-names`.
 
+`--verify-all-passes` runs the verifier after every ASR pass regardless of
+the build type, so a pass that corrupts a previously valid graph is reported
+against that pass instead of surfacing later as an unrelated failure.
+
 The reusable APIs in `src/lfortran/pipeline.h` own Fortran-or-ASR loading and
 the phase-aware ASR-to-default-passes-to-LLVM-to-object path, so the CLI and
 the direct-ASR tools share one implementation.
