@@ -17,7 +17,7 @@ the encoding described here.
 
 ## Printing ASR text
 
-The named form is canonical:
+The named form is the default for interactive dumps:
 
 ```console
 lfortran input.f90 --show-asr --clojure
@@ -32,7 +32,8 @@ It prints every non-location field using the exact field names in
 )
 ```
 
-The positional form omits field names but preserves ASDL declaration order:
+The positional form omits field names but preserves ASDL declaration order.
+`asr_clojure` reference tests use this form so the stored dumps stay small:
 
 ```console
 lfortran input.f90 --show-asr --clojure --no-member-names
@@ -42,7 +43,7 @@ lfortran input.f90 --show-asr --clojure --no-member-names
 (Var (SymbolRef 1 "x"))
 ```
 
-`--no-indent` emits either form on one line. Canonical ASR text never contains
+`--no-indent` emits either form on one line. Printed ASR text never contains
 color escape sequences, elides intrinsic modules, or truncates constant data.
 
 The legacy output of `--show-asr` without `--clojure` remains available during
@@ -65,7 +66,8 @@ object files and libraries provide dependencies rather than the entry point.
 
 The parser accepts named and positional constructors. The two forms can appear
 in one file, but a single constructor cannot mix positional members with
-keyword/member pairs. Committed regression fixtures should use named form.
+keyword/member pairs. Hand-written `.asr` fixtures may use named form for
+readability. `asr_clojure` reference output is positional.
 
 ## Grammar
 
