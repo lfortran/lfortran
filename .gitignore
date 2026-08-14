@@ -268,5 +268,6 @@ doc/man/lfortran.1
 /re_*.f90
 /test_ref
 /test_lfortran
+/asr-fuzz-artifacts/
 /test_gfortran
 /test_flang
