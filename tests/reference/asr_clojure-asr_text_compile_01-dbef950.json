@@ -1,0 +1,13 @@
+{
+    "basename": "asr_clojure-asr_text_compile_01-dbef950",
+    "cmd": "lfortran --show-asr --no-color --no-indent --clojure --no-member-names {infile} -o {outfile}",
+    "infile": "tests/asr/asr_text_compile_01.asr",
+    "infile_hash": "155d5df7bf6abc83787aa71f57c779440ba7899de4f5db187fedf817",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_clojure-asr_text_compile_01-dbef950.stdout",
+    "stdout_hash": "cbf95fb480f60cde68102ac79ecba70c513c9ce39a79b3c996e861ce",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

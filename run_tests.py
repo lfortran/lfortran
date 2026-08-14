@@ -600,7 +600,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_clojure",
-            "lfortran --show-asr --no-color --no-indent --clojure {infile} -o {outfile}",
+            "lfortran --show-asr --no-color --no-indent --clojure --no-member-names {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
