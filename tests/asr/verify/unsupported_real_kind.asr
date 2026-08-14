@@ -1,0 +1,43 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "p" (Program
+        (SymbolTable
+          1
+          {
+            "x" (Variable
+              1
+              "x"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Real
+                1
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+            )
+          }
+        )
+        "p"
+        []
+        []
+      )
+    }
+  )
+  []
+)

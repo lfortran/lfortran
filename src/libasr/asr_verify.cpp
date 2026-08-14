@@ -33,6 +33,51 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// Returns the type of `e`, or nullptr if the expression is malformed in a way
+// that makes its type unobtainable (a Var referencing a symbol that carries no
+// type, such as a Program). Such expressions have their own dedicated verifier
+// checks, so type comparisons must simply be skipped for them instead of
+// asking for a type that does not exist.
+static ttype_t* typed_expr_type(const expr_t *e)
+{
+    if (e == nullptr) return nullptr;
+    if (!is_a<Var_t>(*e)) return ASRUtils::expr_type(e);
+    symbol_t *s = down_cast<Var_t>(e)->m_v;
+    if (s == nullptr) return nullptr;
+    if (is_a<ExternalSymbol_t>(*s)) {
+        s = down_cast<ExternalSymbol_t>(s)->m_external;
+        if (s == nullptr || is_a<ExternalSymbol_t>(*s)) return nullptr;
+    }
+    if (!is_a<Function_t>(*s) && !is_a<Variable_t>(*s)
+            && !is_a<Struct_t>(*s)) {
+        return nullptr;
+    }
+    return ASRUtils::expr_type(e);
+}
+
+// Procedure types are compared by their own dedicated checks, and they have no
+// type code, so they cannot take part in the generic type comparisons below.
+static bool is_procedure_type(ttype_t *t)
+{
+    return t != nullptr
+        && is_a<FunctionType_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t)));
+}
+
+// A StructType spells out its member types inline, so two StructType nodes for
+// the same derived type can differ structurally, for example when a pass
+// rewrites the signature of a procedure pointer component in one of them.
+// Derived type identity is established from the struct symbol, which a bare
+// signature type does not carry, so such types are left to the dedicated
+// struct checks.
+static bool is_struct_like_type(ttype_t *t)
+{
+    if (t == nullptr) return false;
+    ttype_t *t2 = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    return is_a<StructType_t>(*t2) || ASRUtils::is_class_type(t2);
+}
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -71,6 +116,16 @@ public:
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
     #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
+    #define require_id(cond, error_code, error_msg) ASRUtils::require_impl((cond), (error_code), (error_msg), x.base.base.loc, diagnostics);
+    #define require_with_loc_id(cond, error_code, error_msg, loc) ASRUtils::require_impl((cond), (error_code), (error_msg), loc, diagnostics);
+    // Type equality uses the expression only to resolve the struct symbol it
+    // refers to, which requires dereferencing ExternalSymbol. Before externals
+    // are resolved that is not possible, so drop the expression context and
+    // let the comparison fall back to a structural one.
+    ASR::expr_t* type_context(ASR::expr_t *e) {
+        return check_external ? e : nullptr;
+    }
+
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -396,6 +451,27 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        // A defined assignment is lowered to a call in `m_overloaded`, so its
+        // target and value types are unrelated by design.
+        ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
+        ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        if (!diagnostics.has_error() && x.m_overloaded == nullptr
+                && assign_target_type && assign_value_type
+                && !is_procedure_type(assign_target_type)
+                && !is_procedure_type(assign_value_type)
+                && !is_struct_like_type(assign_target_type)
+                && !is_struct_like_type(assign_value_type)) {
+            require_with_loc_id(
+                ASRUtils::check_equal_type(
+                    assign_target_type, assign_value_type,
+                    type_context(x.m_target), type_context(x.m_value)),
+                "asr.verify.assignment.value_type_matches_target",
+                "Assignment value type " +
+                    ASRUtils::get_type_code(assign_value_type) +
+                    " does not match target type " +
+                    ASRUtils::get_type_code(assign_target_type),
+                x.m_value->base.loc);
+        }
         // it's possible that the target is an external symbol, and during
         // initial deserialization pass, so we don't do the below verification
         if ( check_external && x.m_realloc_lhs ) {
@@ -409,7 +485,8 @@ public:
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
             }
-            require(is_allocatable,
+            require_id(is_allocatable,
+                "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
         if (x.m_move_allocation) {
@@ -424,9 +501,11 @@ public:
                                             ASRUtils::is_allocatable(value_type) &&
                                             ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
 
-            require(is_target_allocatable_array,
+            require_id(is_target_allocatable_array,
+                "asr.verify.assignment.move_target_allocatable_array",
                 "Move assignment target must be an allocatable array");
-            require(is_value_allocatable_array,
+            require_id(is_value_allocatable_array,
+                "asr.verify.assignment.move_value_allocatable_array",
                 "Move assignment value must be an allocatable array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
@@ -541,9 +620,74 @@ public:
                     " but isn't found in its dependency list.");
         }
 
-        require(ASRUtils::get_FunctionType(x)->n_arg_types == x.n_args,
+        ASR::FunctionType_t *function_type =
+            ASRUtils::get_FunctionType(x);
+        require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (!diagnostics.has_error()) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::ttype_t *argument_type =
+                    typed_expr_type(x.m_args[i]);
+                if (argument_type == nullptr
+                        || is_procedure_type(argument_type)
+                        || is_procedure_type(
+                            function_type->m_arg_types[i])
+                        || is_struct_like_type(argument_type)
+                        || is_struct_like_type(
+                            function_type->m_arg_types[i])) {
+                    continue;
+                }
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_arg_types[i], argument_type,
+                        nullptr, type_context(x.m_args[i])),
+                    "asr.verify.function.argument_type_matches_signature",
+                    "Function argument type " +
+                        ASRUtils::get_type_code(argument_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_arg_types[i]),
+                    x.m_args[i]->base.loc);
+            }
+
+            // An implicit interface is synthesised from a bare `external`
+            // declaration, so its signature carries an assumed return type
+            // that no return variable corresponds to.
+            bool is_implementation = function_type->m_deftype
+                == ASR::deftypeType::Implementation;
+            bool signature_has_return =
+                function_type->m_return_var_type != nullptr;
+            bool function_has_return = x.m_return_var != nullptr;
+            if (is_implementation) {
+                require_id(
+                    signature_has_return == function_has_return,
+                    "asr.verify.function.return_presence_matches_signature",
+                    "Function return variable presence does not match "
+                    "signature");
+            }
+            ASR::ttype_t *return_type =
+                signature_has_return
+                    ? typed_expr_type(x.m_return_var) : nullptr;
+            if (return_type && !is_procedure_type(return_type)
+                    && !is_procedure_type(
+                        function_type->m_return_var_type)
+                    && !is_struct_like_type(return_type)
+                    && !is_struct_like_type(
+                        function_type->m_return_var_type)) {
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_return_var_type, return_type,
+                        nullptr, type_context(x.m_return_var)),
+                    "asr.verify.function.return_type_matches_signature",
+                    "Function return type " +
+                        ASRUtils::get_type_code(return_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_return_var_type),
+                    x.m_return_var->base.loc);
+            }
+        }
 
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
@@ -1300,6 +1444,35 @@ public:
                     continue;
                 }
 
+                ASR::ttype_t *actual_type =
+                    typed_expr_type(passed_arg_expr);
+                ASR::ttype_t *formal_type = callee_param->m_type;
+                // Derived type arguments are skipped for the same reason
+                // as in the signature check above, and this also covers a
+                // polymorphic argument passed as a pointer or allocatable,
+                // whose type only looks like a plain struct once those
+                // wrappers are stripped.
+                bool struct_argument = is_struct_like_type(actual_type)
+                    || is_struct_like_type(formal_type);
+                bool procedure_argument = is_procedure_type(actual_type)
+                    || is_procedure_type(formal_type);
+                if (actual_type && !diagnostics.has_error() &&
+                        !ASRUtils::is_intrinsic_symbol(x.m_name) &&
+                        !is_method && !struct_argument &&
+                        !procedure_argument) {
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            actual_type, formal_type,
+                            type_context(passed_arg_expr),
+                            type_context(func->m_args[i])),
+                        "asr.verify.call.actual_type_matches_formal",
+                        "Actual argument type " +
+                            ASRUtils::get_type_code(actual_type) +
+                            " does not match formal argument type " +
+                            ASRUtils::get_type_code(formal_type),
+                        passed_arg_expr->base.loc);
+                }
+
                 if (check_external &&
                     !ASR::is_a<ASR::FunctionType_t>(*callee_param->m_type) &&
                     (callee_param->m_intent == ASR::intentType::Out ||
@@ -1657,6 +1830,56 @@ public:
         _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
+    void visit_Integer(const Integer_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.integer_kind_supported",
+            "Integer kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_UnsignedInteger(const UnsignedInteger_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.unsigned_integer_kind_supported",
+            "UnsignedInteger kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Real(const Real_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.real_kind_supported",
+            "Real kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Complex(const Complex_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.complex_kind_supported",
+            "Complex kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Logical(const Logical_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.logical_kind_supported",
+            "Logical kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
@@ -1921,7 +2144,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
                 diagnostics.message_label(
                     "standalone ASR must contain exactly one main program",
                     {item.second->base.loc}, "second main program",
-                    diag::Level::Error, diag::Stage::ASRVerify);
+                    diag::Level::Error, diag::Stage::ASRVerify,
+                    "asr.verify.translation_unit.multiple_main_programs");
                 return false;
             }
             main_program = ASR::down_cast<ASR::Program_t>(item.second);
@@ -1930,7 +2154,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             diagnostics.message_label(
                 "standalone ASR must contain exactly one main program",
                 {unit.base.base.loc}, "main program is missing",
-                diag::Level::Error, diag::Stage::ASRVerify);
+                diag::Level::Error, diag::Stage::ASRVerify,
+                "asr.verify.translation_unit.main_program_missing");
             return false;
         }
     }

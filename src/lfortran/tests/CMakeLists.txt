@@ -105,7 +105,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         add_test(
             NAME test_asr_text_compile
             COMMAND $<TARGET_FILE:lfortran>
-                ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
                 --no-color
                 -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
         )
@@ -113,7 +113,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     add_test(
         NAME test_asr_text_object
         COMMAND $<TARGET_FILE:lfortran>
-            ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+            ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
             --no-color
             -c
             -o ${PROJECT_BINARY_DIR}/asr_text_compile_01.o
@@ -127,7 +127,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
                 --lfortran $<TARGET_FILE:lfortran>
-                --input ${CMAKE_SOURCE_DIR}/tests/asr/asr_text_compile_01.asr
+                --input ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
                 --input ${CMAKE_SOURCE_DIR}/tests/asr/edn_strings_01.f90
                 --input ${CMAKE_SOURCE_DIR}/examples/expr2.f90
         )

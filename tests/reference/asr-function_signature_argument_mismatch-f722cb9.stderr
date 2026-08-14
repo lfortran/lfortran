@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.function.argument_type_matches_signature]: Function argument type r32 does not match signature type r64
+  --> tests/asr/verify/function_signature_argument_mismatch.asr:57:12
+   |
+57 |           (Var
+   |            ^^^ failed here

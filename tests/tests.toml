@@ -5,9 +5,13 @@
 # bin ... run the CodeGen and output bin, compare against reference bin
 
 [[test]]
-filename = "asr/asr_text_compile_01.asr"
+filename = "asr/compile/asr_text_compile_01.asr"
 asr_clojure = true
 llvm = true
+
+[[test]]
+filename = "asr/verify/assignment_realloc_nonallocatable.asr"
+asr = true
 
 [[test]]
 filename = "subroutine1.f90"
@@ -5338,3 +5342,19 @@ filename = "coshape_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "asr/verify/call_actual_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_value_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_signature_argument_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/unsupported_real_kind.asr"
+asr = true
