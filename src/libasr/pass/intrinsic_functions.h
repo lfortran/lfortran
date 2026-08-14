@@ -8127,6 +8127,10 @@ namespace Epsilon {
                 epsilon_val = std::numeric_limits<float>::epsilon(); break;
             } case 8: {
                 epsilon_val = std::numeric_limits<double>::epsilon(); break;
+            } case 10: {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    std::numeric_limits<long double>::epsilon(),
+                    arg_type);
             } case 16: {
                 return ASRUtils::make_RealConstant_r16(al, loc,
                     lf_float128_from_str("1.92592994438723585305597794258492732e-34"),
@@ -8153,6 +8157,8 @@ namespace Precision {
                 precision_val = 6; break;
             } case 8: {
                 precision_val = 15; break;
+            } case 10: {
+                precision_val = 18; break;
             } case 16: {
                 precision_val = 33; break;
             } default: {
@@ -8177,6 +8183,10 @@ namespace Tiny {
                 tiny_value = std::numeric_limits<float>::min(); break;
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
+            } case 10: {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    std::numeric_limits<long double>::min(),
+                    arg_type);
             } case 16: {
                 return ASRUtils::make_RealConstant_r16(al, loc,
                     lf_float128_from_str("3.36210314311209350626267781732175260e-4932"),
@@ -8266,6 +8276,10 @@ namespace Huge {
                     huge_value = std::numeric_limits<float>::max(); break;
                 } case 8: {
                     huge_value = std::numeric_limits<double>::max(); break;
+                } case 10: {
+                    return ASRUtils::make_RealConstant_r10(al, loc,
+                        std::numeric_limits<long double>::max(),
+                        arg_type);
                 } case 16: {
                     return ASRUtils::make_RealConstant_r16(al, loc,
                         lf_float128_from_str("1.18973149535723176508575932662800702e4932"),

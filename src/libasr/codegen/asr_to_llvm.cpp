@@ -15454,6 +15454,16 @@ public:
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
                 break;
             }
+            case 10 : {
+                // x86 80-bit extended precision (x86_fp80).
+                const uint8_t* bytes = ASRUtils::real_constant_get_r10_bytes(&x);
+                uint64_t words[2] = {0, 0};
+                std::memcpy(words, bytes, 10);
+                llvm::APInt bits(80, llvm::ArrayRef<uint64_t>(words, 2));
+                llvm::APFloat apf(llvm::APFloat::x87DoubleExtended(), bits);
+                tmp = llvm::ConstantFP::get(context, apf);
+                break;
+            }
             case 16 : {
                 const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
                 uint64_t lo, hi;
@@ -15491,6 +15501,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (10) :
+                    el_type = llvm::Type::getX86_FP80Ty(context); break;
                 case (16) :
                     el_type = llvm::Type::getFP128Ty(context); break;
                 default :
@@ -15551,6 +15563,8 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (10) :
+                    el_type = llvm::Type::getX86_FP80Ty(context); break;
                 case (16) :
                     el_type = llvm::Type::getFP128Ty(context); break;
                 default :

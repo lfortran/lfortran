@@ -608,11 +608,14 @@ namespace LCompilers {
                 case 8:
                     type_ptr =  llvm::Type::getDoubleTy(context)->getPointerTo();
                     break;
+                case 10:
+                    type_ptr = llvm::Type::getX86_FP80Ty(context)->getPointerTo();
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128 bits real kinds are supported.");
             }
         } else {
             switch(a_kind)
@@ -623,11 +626,14 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getDoubleTy(context);
                     break;
+                case 10:
+                    type_ptr = llvm::Type::getX86_FP80Ty(context);
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context);
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128bits real kinds are supported.");
             }
         }
         return type_ptr;
