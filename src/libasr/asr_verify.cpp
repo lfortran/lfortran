@@ -1533,6 +1533,50 @@ public:
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                         !is_method && !struct_argument &&
                         !procedure_argument) {
+                    // check_equal_type strips Allocatable and Pointer.
+                    // An allocatable or pointer dummy requires an actual
+                    // of the same wrapper; the other direction is valid
+                    // Fortran (an allocatable actual may be passed to a
+                    // nonallocatable dummy). Rank must agree unless the
+                    // dummy is assumed-rank.
+                    if (ASRUtils::is_allocatable(formal_type)) {
+                        require_with_loc_id(
+                            ASRUtils::is_allocatable(actual_type),
+                            "asr.verify.call.actual_allocatable_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " is not allocatable, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                    }
+                    if (ASRUtils::is_pointer(formal_type)) {
+                        require_with_loc_id(
+                            ASRUtils::is_pointer(actual_type),
+                            "asr.verify.call.actual_pointer_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " is not a pointer, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                    }
+                    bool formal_assumed_rank = ASRUtils::is_array(formal_type)
+                        && ASRUtils::extract_physical_type(formal_type)
+                            == ASR::array_physical_typeType::AssumedRankArray;
+                    bool elemental = ASRUtils::get_FunctionType(func)
+                        ->m_elemental;
+                    if (!formal_assumed_rank && !elemental) {
+                        require_with_loc_id(
+                            ASRUtils::extract_n_dims_from_ttype(actual_type)
+                                == ASRUtils::extract_n_dims_from_ttype(
+                                    formal_type),
+                            "asr.verify.call.actual_rank_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " does not match formal argument rank of "
+                                "type " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                    }
                     require_with_loc_id(
                         ASRUtils::check_equal_type(
                             actual_type, formal_type,
