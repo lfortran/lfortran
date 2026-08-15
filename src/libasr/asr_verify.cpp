@@ -84,6 +84,7 @@ private:
     // For checking correct parent symbtab relationship
     SymbolTable *current_symtab;
     bool check_external;
+    bool check_standalone_rules;
     diag::Diagnostics &diagnostics;
     std::string current_name;
 
@@ -110,7 +111,9 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
+    VerifyVisitor(bool check_external, bool check_standalone_rules,
+        diag::Diagnostics &diagnostics) : check_external{check_external},
+        check_standalone_rules{check_standalone_rules},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
@@ -859,6 +862,46 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        // A compile time value is stored into the variable's own storage,
+        // so a value whose type disagrees with the declaration produces a
+        // store LLVM rejects. The frontend casts such initializers; a graph
+        // from another producer may not have.
+        for (ASR::expr_t *initial : {x.m_symbolic_value, x.m_value}) {
+            ASR::ttype_t *initial_type = typed_expr_type(initial);
+            if (diagnostics.has_error() || initial_type == nullptr
+                    || x.m_type == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            ASR::ttype_t *actual = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(initial_type));
+            // A character initializer is padded or truncated to the
+            // declared length, so the two legitimately differ. A kind at or
+            // above the parameterized derived type sentinel is a type
+            // parameter rather than a storage size, and a parameterized type
+            // carries it on the declaration or on the initializer depending
+            // on where it has been substituted, so it is not comparable.
+            // Equivalence can attach another object's initializer across
+            // type families (integer storage viewed as real); that is not
+            // a Cast, and the backend reinterprets the bits.
+            if (is_struct_like_type(declared) || is_procedure_type(declared)
+                    || is_struct_like_type(actual) || is_procedure_type(actual)
+                    || declared->type != actual->type
+                    || ASR::is_a<ASR::String_t>(*declared)
+                    || ASRUtils::extract_kind_from_ttype_t(declared) >= 1000
+                    || ASRUtils::extract_kind_from_ttype_t(actual) >= 1000) {
+                continue;
+            }
+            require_id(
+                ASRUtils::check_equal_type(
+                    declared, actual, nullptr, nullptr),
+                "asr.verify.variable.initializer_type_matches",
+                "Variable '" + std::string(x.m_name) + "' initializer type " +
+                    ASRUtils::get_type_code(actual) +
+                    " does not match declared type " +
+                    ASRUtils::get_type_code(declared));
+        }
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
             "Variable::m_parent_symtab cannot be nullptr");
@@ -1236,6 +1279,30 @@ public:
                     "ArrayItem::m_type cannot be array.")
             }
         }
+        // An ArrayItem carries the type of the element it selects, and the
+        // backend stores through a pointer derived from that type. If it
+        // disagrees with the array's own element type the store is malformed
+        // and LLVM rejects the module it produces.
+        ASR::ttype_t *array_type = typed_expr_type(x.m_v);
+        if (!diagnostics.has_error() && array_type != nullptr
+                && x.m_type != nullptr) {
+            ASR::ttype_t *element = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(array_type));
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            if (!is_struct_like_type(element) && !is_procedure_type(element)
+                    && !is_struct_like_type(declared)
+                    && !is_procedure_type(declared)
+                    && element->type == declared->type) {
+                require_id(
+                    ASRUtils::check_equal_type(
+                        element, declared, nullptr, nullptr),
+                    "asr.verify.array_item.type_matches_element",
+                    "ArrayItem type " + ASRUtils::get_type_code(declared) +
+                        " does not match array element type " +
+                        ASRUtils::get_type_code(element));
+            }
+        }
         handle_ArrayItemSection(x);
     }
 
@@ -1259,6 +1326,8 @@ public:
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
                 "ArraySize::m_v must be an array");
         }
+        verify_dimension_argument("ArraySize", x.m_v, x.m_dim,
+            x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
@@ -1323,7 +1392,11 @@ public:
     // Check if method_name exists in the struct's symtab (walking parent chain).
     bool struct_has_member(ASR::Struct_t* struct_type, const std::string& method_name) {
         ASR::Struct_t* current = struct_type;
+        std::set<ASR::Struct_t*> seen;
         while (current) {
+            if (!seen.insert(current).second) {
+                break;
+            }
             if (current->m_symtab->get_symbol(method_name) != nullptr) {
                 return true;
             }
@@ -1880,6 +1953,238 @@ public:
                 " is not supported");
     }
 
+    // An operation combines two operands of one type into a result of that
+    // type, and a comparison combines two operands of one type into a
+    // logical. The frontend guarantees this by inserting explicit Cast
+    // nodes, so a disagreement means the graph came from somewhere that did
+    // not, and the backend must not paper over it: LLVM rejects the module
+    // it produces from such a node. Array shape is not compared, since an
+    // elemental operation legitimately mixes ranks.
+    void verify_binary_operands(const char *name, ASR::expr_t *left,
+            ASR::expr_t *right, ASR::ttype_t *result, bool is_compare,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        ASR::ttype_t *left_type = typed_expr_type(left);
+        ASR::ttype_t *right_type = typed_expr_type(right);
+        if (left_type == nullptr || right_type == nullptr) return;
+        if (is_procedure_type(left_type) || is_procedure_type(right_type)
+                || is_struct_like_type(left_type)
+                || is_struct_like_type(right_type)) {
+            return;
+        }
+        ASR::ttype_t *left_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(left_type));
+        ASR::ttype_t *right_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(right_type));
+        // Only a kind disagreement inside one type family is checked. The
+        // frontend still emits a few operations whose operands differ in
+        // family, such as a real minus an integer, and the backend converts
+        // those; a kind disagreement is what it cannot lower.
+        if (left_scalar->type != right_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, right_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.operand_types_match",
+            std::string(name) + " operand types " +
+                ASRUtils::get_type_code(left_scalar) + " and " +
+                ASRUtils::get_type_code(right_scalar) + " do not match",
+            loc);
+        if (is_compare || result == nullptr) return;
+        ASR::ttype_t *result_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(result));
+        if (left_scalar->type != result_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, result_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.result_type_matches_operands",
+            std::string(name) + " result type " +
+                ASRUtils::get_type_code(result_scalar) +
+                " does not match operand type " +
+                ASRUtils::get_type_code(left_scalar),
+            loc);
+    }
+
+    void visit_IntegerBinOp(const IntegerBinOp_t &x) {
+        verify_binary_operands("IntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerBinOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const UnsignedIntegerBinOp_t &x) {
+        verify_binary_operands("UnsignedIntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerBinOp(x);
+    }
+
+    void visit_RealBinOp(const RealBinOp_t &x) {
+        verify_binary_operands("RealBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealBinOp(x);
+    }
+
+    void visit_ComplexBinOp(const ComplexBinOp_t &x) {
+        verify_binary_operands("ComplexBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexBinOp(x);
+    }
+
+    void visit_LogicalBinOp(const LogicalBinOp_t &x) {
+        verify_binary_operands("LogicalBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalBinOp(x);
+    }
+
+    void visit_IntegerCompare(const IntegerCompare_t &x) {
+        verify_binary_operands("IntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerCompare(x);
+    }
+
+    void visit_UnsignedIntegerCompare(const UnsignedIntegerCompare_t &x) {
+        verify_binary_operands("UnsignedIntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerCompare(x);
+    }
+
+    void visit_RealCompare(const RealCompare_t &x) {
+        verify_binary_operands("RealCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealCompare(x);
+    }
+
+    void visit_ComplexCompare(const ComplexCompare_t &x) {
+        verify_binary_operands("ComplexCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexCompare(x);
+    }
+
+    void visit_LogicalCompare(const LogicalCompare_t &x) {
+        verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
+    // A StructConstructor's arguments fill the type's members in
+    // declaration order, parent members first, and a later pass lowers it
+    // into one assignment per member. A type that disagrees with its member
+    // therefore surfaces as a broken assignment inside that pass rather than
+    // here, so it is checked up front. The pass also indexes the member list
+    // positionally, so a count mismatch is a memory error waiting to happen.
+    void visit_StructConstructor(const StructConstructor_t &x) {
+        ASR::symbol_t *struct_sym = x.m_dt_sym == nullptr
+            ? nullptr : ASRUtils::symbol_get_past_external(x.m_dt_sym);
+        if (!diagnostics.has_error() && struct_sym != nullptr
+                && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            std::vector<ASR::Struct_t*> chain;
+            std::set<ASR::Struct_t*> seen;
+            ASR::Struct_t *struct_type =
+                ASR::down_cast<ASR::Struct_t>(struct_sym);
+            while (struct_type != nullptr) {
+                require_id(seen.insert(struct_type).second,
+                    "asr.verify.struct_constructor.parent_chain_acyclic",
+                    "StructConstructor type '" +
+                        std::string(struct_type->m_name) +
+                        "' has a cyclic parent chain");
+                chain.push_back(struct_type);
+                if (struct_type->m_parent == nullptr) break;
+                ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                    struct_type->m_parent);
+                if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                    break;
+                }
+                struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+            }
+            std::vector<ASR::symbol_t*> members;
+            for (auto it = chain.rbegin(); it != chain.rend(); it++) {
+                for (size_t i = 0; i < (*it)->n_members; i++) {
+                    members.push_back(
+                        (*it)->m_symtab->get_symbol((*it)->m_members[i]));
+                }
+            }
+            require_id(members.size() == x.n_args,
+                "asr.verify.struct_constructor.argument_count",
+                "StructConstructor has " + std::to_string(x.n_args) +
+                    " arguments but the type has " +
+                    std::to_string(members.size()) + " members");
+            if (members.size() == x.n_args) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    ASR::ttype_t *actual =
+                        typed_expr_type(x.m_args[i].m_value);
+                    if (actual == nullptr || members[i] == nullptr
+                            || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                        continue;
+                    }
+                    ASR::ttype_t *declared =
+                        ASR::down_cast<ASR::Variable_t>(members[i])->m_type;
+                    if (declared == nullptr) continue;
+                    ASR::ttype_t *member_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                declared));
+                    ASR::ttype_t *actual_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                actual));
+                    if (is_struct_like_type(member_scalar)
+                            || is_procedure_type(member_scalar)
+                            || is_struct_like_type(actual_scalar)
+                            || is_procedure_type(actual_scalar)
+                            || member_scalar->type != actual_scalar->type) {
+                        continue;
+                    }
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            member_scalar, actual_scalar, nullptr, nullptr),
+                        "asr.verify.struct_constructor.argument_type_matches_member",
+                        "StructConstructor argument type " +
+                            ASRUtils::get_type_code(actual_scalar) +
+                            " does not match member '" +
+                            std::string(ASRUtils::symbol_name(members[i])) +
+                            "' of type " +
+                            ASRUtils::get_type_code(member_scalar),
+                        x.m_args[i].m_value->base.loc);
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
+    }
+
+    // `dim` selects one of the array's dimensions, so a constant outside
+    // 1..rank is invalid. The pass that folds these intrinsics indexes
+    // `dims[dim - 1]` directly, so an out of range constant reads outside the
+    // dimension array and crashes the compiler rather than diagnosing it.
+    void verify_dimension_argument(const char *name, ASR::expr_t *array,
+            ASR::expr_t *dim, const Location &loc) {
+        if (!check_standalone_rules || diagnostics.has_error()
+                || array == nullptr || dim == nullptr) {
+            return;
+        }
+        // Only a literal dimension over a plain variable is checked. The
+        // rank of a general expression, such as the result of `spread`, is
+        // not reliably known before the array passes run, and a dimension
+        // that is merely constant foldable is not worth guessing at here.
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*dim)) return;
+        if (!ASR::is_a<ASR::Var_t>(*array)) return;
+        ASR::ttype_t *array_type = typed_expr_type(array);
+        if (array_type == nullptr) return;
+        int rank = ASRUtils::extract_n_dims_from_ttype(array_type);
+        if (rank <= 0) return;
+        int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
+        require_with_loc_id(
+            value >= 1 && value <= rank,
+            "asr.verify.array_dimension.dim_within_rank",
+            std::string(name) + " dimension " + std::to_string(value) +
+                " is out of range for an array of rank " +
+                std::to_string(rank),
+            loc);
+    }
+
+    void visit_ArrayBound(const ArrayBound_t &x) {
+        verify_dimension_argument("ArrayBound", x.m_v, x.m_dim,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayBound(x);
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
@@ -2127,7 +2432,8 @@ public:
 bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(options.check_external, diagnostics);
+    ASR::VerifyVisitor v(options.check_external,
+        options.check_standalone_rules, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

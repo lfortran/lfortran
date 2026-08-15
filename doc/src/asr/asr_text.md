@@ -218,7 +218,10 @@ A minimized ASR graph is checked in under `tests/asr/` and registered in
 suite runs it:
 
 - `tests/asr/compile/` holds graphs the verifier accepts, registered with
-  `llvm = true` so they must compile and run;
+  `llvm = true` so they must lower to LLVM IR. A registered CTest also
+  links every one of them into an executable, which is the property the
+  fuzzer's contract turns on. They are not run: a generated program may
+  fault at runtime for reasons no ASR verifier could predict;
 - `tests/asr/verify/` holds graphs the verifier rejects, registered with
   `asr = true` so the stored reference captures the exact diagnostic, its
   stable code, and the span it points at.

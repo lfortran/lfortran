@@ -269,5 +269,7 @@ doc/man/lfortran.1
 /test_ref
 /test_lfortran
 /asr-fuzz-artifacts/
+# Runtime OPEN(status="scratch") files; they land in cwd.
+_lfortran_generated_file*
 /test_gfortran
 /test_flang

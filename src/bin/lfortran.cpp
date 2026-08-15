@@ -813,6 +813,7 @@ int verify_asr_input(const std::string &infile,
     LCompilers::ASRVerifyOptions verify_options;
     verify_options.check_external = true;
     verify_options.require_main_program = true;
+    verify_options.check_standalone_rules = true;
     bool verified = LCompilers::asr_verify(
         *result.result, verify_options, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);

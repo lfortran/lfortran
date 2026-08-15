@@ -97,27 +97,38 @@ add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
 # before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
 # condition under which src/bin creates the target instead.
 if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
-    # Emitting an executable needs a working end-to-end link, which the
-    # Windows CI job does not provide: it builds and unit tests the compiler
-    # but never runs the integration suite. Object emission is still covered
-    # there by the test below.
-    if (NOT WIN32)
+    # Every fixture under tests/asr/compile/ must link an executable. That is
+    # the second half of the contract the fuzzer enforces, and it is what
+    # proves the ASR was well formed enough to reach a binary. The programs
+    # are deliberately not run: a generated program may fault at runtime for
+    # reasons no ASR verifier could predict, so only linking is a property of
+    # the ASR itself.
+    file(GLOB LFORTRAN_ASR_COMPILE_FIXTURES CONFIGURE_DEPENDS
+        ${CMAKE_SOURCE_DIR}/tests/asr/compile/*.asr)
+    foreach(fixture ${LFORTRAN_ASR_COMPILE_FIXTURES})
+        get_filename_component(fixture_name ${fixture} NAME_WE)
+        # Emitting an executable needs a working end-to-end link, which the
+        # Windows CI job does not provide: it builds and unit tests the
+        # compiler but never runs the integration suite. Object emission is
+        # still covered there by the test below.
+        if (NOT WIN32)
+            add_test(
+                NAME test_asr_compile_${fixture_name}
+                COMMAND $<TARGET_FILE:lfortran>
+                    ${fixture}
+                    --no-color
+                    -o ${PROJECT_BINARY_DIR}/${fixture_name}
+            )
+        endif()
         add_test(
-            NAME test_asr_text_compile
+            NAME test_asr_object_${fixture_name}
             COMMAND $<TARGET_FILE:lfortran>
-                ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
+                ${fixture}
                 --no-color
-                -o ${PROJECT_BINARY_DIR}/asr_text_compile_01
+                -c
+                -o ${PROJECT_BINARY_DIR}/${fixture_name}.o
         )
-    endif()
-    add_test(
-        NAME test_asr_text_object
-        COMMAND $<TARGET_FILE:lfortran>
-            ${CMAKE_SOURCE_DIR}/tests/asr/compile/asr_text_compile_01.asr
-            --no-color
-            -c
-            -o ${PROJECT_BINARY_DIR}/asr_text_compile_01.o
-    )
+    endforeach()
     # The format claims to be an EDN data subset; enforce that with a reader
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
