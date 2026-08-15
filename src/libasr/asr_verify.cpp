@@ -33,12 +33,58 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// Returns the type of `e`, or nullptr if the expression is malformed in a way
+// that makes its type unobtainable (a Var referencing a symbol that carries no
+// type, such as a Program). Such expressions have their own dedicated verifier
+// checks, so type comparisons must simply be skipped for them instead of
+// asking for a type that does not exist.
+static ttype_t* typed_expr_type(const expr_t *e)
+{
+    if (e == nullptr) return nullptr;
+    if (!is_a<Var_t>(*e)) return ASRUtils::expr_type(e);
+    symbol_t *s = down_cast<Var_t>(e)->m_v;
+    if (s == nullptr) return nullptr;
+    if (is_a<ExternalSymbol_t>(*s)) {
+        s = down_cast<ExternalSymbol_t>(s)->m_external;
+        if (s == nullptr || is_a<ExternalSymbol_t>(*s)) return nullptr;
+    }
+    if (!is_a<Function_t>(*s) && !is_a<Variable_t>(*s)
+            && !is_a<Struct_t>(*s)) {
+        return nullptr;
+    }
+    return ASRUtils::expr_type(e);
+}
+
+// Procedure types are compared by their own dedicated checks, and they have no
+// type code, so they cannot take part in the generic type comparisons below.
+static bool is_procedure_type(ttype_t *t)
+{
+    return t != nullptr
+        && is_a<FunctionType_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t)));
+}
+
+// A StructType spells out its member types inline, so two StructType nodes for
+// the same derived type can differ structurally, for example when a pass
+// rewrites the signature of a procedure pointer component in one of them.
+// Derived type identity is established from the struct symbol, which a bare
+// signature type does not carry, so such types are left to the dedicated
+// struct checks.
+static bool is_struct_like_type(ttype_t *t)
+{
+    if (t == nullptr) return false;
+    ttype_t *t2 = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    return is_a<StructType_t>(*t2) || ASRUtils::is_class_type(t2);
+}
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
     // For checking correct parent symbtab relationship
     SymbolTable *current_symtab;
     bool check_external;
+    bool check_standalone_rules;
     diag::Diagnostics &diagnostics;
     std::string current_name;
 
@@ -65,12 +111,24 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
+    VerifyVisitor(bool check_external, bool check_standalone_rules,
+        diag::Diagnostics &diagnostics) : check_external{check_external},
+        check_standalone_rules{check_standalone_rules},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
     #define require_with_loc(cond, error_msg, loc) ASRUtils::require_impl((cond), (error_msg), loc, diagnostics);
+    #define require_id(cond, error_code, error_msg) ASRUtils::require_impl((cond), (error_code), (error_msg), x.base.base.loc, diagnostics);
+    #define require_with_loc_id(cond, error_code, error_msg, loc) ASRUtils::require_impl((cond), (error_code), (error_msg), loc, diagnostics);
+    // Type equality uses the expression only to resolve the struct symbol it
+    // refers to, which requires dereferencing ExternalSymbol. Before externals
+    // are resolved that is not possible, so drop the expression context and
+    // let the comparison fall back to a structural one.
+    ASR::expr_t* type_context(ASR::expr_t *e) {
+        return check_external ? e : nullptr;
+    }
+
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
     // symbol table `symtab` or any of its parents *and* if the symbol in the
     // symbol table is equal to `sym`. It returns false otherwise, such as in the
@@ -109,8 +167,14 @@ public:
         current_symtab = x.m_symtab;
         require(x.m_symtab != nullptr,
             "The TranslationUnit::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == nullptr,
-            "The TranslationUnit::m_symtab->parent must be nullptr");
+        // Interactive evaluation chains one TranslationUnit per cell, each
+        // scope parented to the previous cell's, so that later cells see
+        // earlier declarations and may shadow them. Outside that, a
+        // TranslationUnit is the root and has no parent.
+        require(x.m_symtab->parent == nullptr ||
+                ASRUtils::is_tu_scope(x.m_symtab->parent),
+            "The TranslationUnit::m_symtab->parent must be nullptr or the "
+            "symbol table of another TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "TranslationUnit::m_symtab->counter must be unique");
         require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
@@ -158,7 +222,7 @@ public:
             "The Program::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
             "The Program::m_symtab->parent is not the right parent");
-        require(x.m_symtab->parent->parent == nullptr,
+        require(ASRUtils::is_tu_scope(x.m_symtab->parent),
             "The Program::m_symtab's parent must be TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "Program::m_symtab->counter must be unique");
@@ -330,7 +394,7 @@ public:
             "The Module::m_symtab cannot be nullptr");
         require(x.m_symtab->parent == parent_symtab,
             "The Module::m_symtab->parent is not the right parent");
-        require(x.m_symtab->parent->parent == nullptr,
+        require(ASRUtils::is_tu_scope(x.m_symtab->parent),
             "The Module::m_symtab's parent must be TranslationUnit");
         require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
             "Module::m_symtab->counter must be unique");
@@ -390,6 +454,27 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        // A defined assignment is lowered to a call in `m_overloaded`, so its
+        // target and value types are unrelated by design.
+        ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
+        ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        if (!diagnostics.has_error() && x.m_overloaded == nullptr
+                && assign_target_type && assign_value_type
+                && !is_procedure_type(assign_target_type)
+                && !is_procedure_type(assign_value_type)
+                && !is_struct_like_type(assign_target_type)
+                && !is_struct_like_type(assign_value_type)) {
+            require_with_loc_id(
+                ASRUtils::check_equal_type(
+                    assign_target_type, assign_value_type,
+                    type_context(x.m_target), type_context(x.m_value)),
+                "asr.verify.assignment.value_type_matches_target",
+                "Assignment value type " +
+                    ASRUtils::get_type_code(assign_value_type) +
+                    " does not match target type " +
+                    ASRUtils::get_type_code(assign_target_type),
+                x.m_value->base.loc);
+        }
         // it's possible that the target is an external symbol, and during
         // initial deserialization pass, so we don't do the below verification
         if ( check_external && x.m_realloc_lhs ) {
@@ -403,7 +488,8 @@ public:
                 ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
                 is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
             }
-            require(is_allocatable,
+            require_id(is_allocatable,
+                "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
         if (x.m_move_allocation) {
@@ -418,9 +504,11 @@ public:
                                             ASRUtils::is_allocatable(value_type) &&
                                             ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
 
-            require(is_target_allocatable_array,
+            require_id(is_target_allocatable_array,
+                "asr.verify.assignment.move_target_allocatable_array",
                 "Move assignment target must be an allocatable array");
-            require(is_value_allocatable_array,
+            require_id(is_value_allocatable_array,
+                "asr.verify.assignment.move_value_allocatable_array",
                 "Move assignment value must be an allocatable array");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
@@ -535,9 +623,74 @@ public:
                     " but isn't found in its dependency list.");
         }
 
-        require(ASRUtils::get_FunctionType(x)->n_arg_types == x.n_args,
+        ASR::FunctionType_t *function_type =
+            ASRUtils::get_FunctionType(x);
+        require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (!diagnostics.has_error()) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::ttype_t *argument_type =
+                    typed_expr_type(x.m_args[i]);
+                if (argument_type == nullptr
+                        || is_procedure_type(argument_type)
+                        || is_procedure_type(
+                            function_type->m_arg_types[i])
+                        || is_struct_like_type(argument_type)
+                        || is_struct_like_type(
+                            function_type->m_arg_types[i])) {
+                    continue;
+                }
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_arg_types[i], argument_type,
+                        nullptr, type_context(x.m_args[i])),
+                    "asr.verify.function.argument_type_matches_signature",
+                    "Function argument type " +
+                        ASRUtils::get_type_code(argument_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_arg_types[i]),
+                    x.m_args[i]->base.loc);
+            }
+
+            // An implicit interface is synthesised from a bare `external`
+            // declaration, so its signature carries an assumed return type
+            // that no return variable corresponds to.
+            bool is_implementation = function_type->m_deftype
+                == ASR::deftypeType::Implementation;
+            bool signature_has_return =
+                function_type->m_return_var_type != nullptr;
+            bool function_has_return = x.m_return_var != nullptr;
+            if (is_implementation) {
+                require_id(
+                    signature_has_return == function_has_return,
+                    "asr.verify.function.return_presence_matches_signature",
+                    "Function return variable presence does not match "
+                    "signature");
+            }
+            ASR::ttype_t *return_type =
+                signature_has_return
+                    ? typed_expr_type(x.m_return_var) : nullptr;
+            if (return_type && !is_procedure_type(return_type)
+                    && !is_procedure_type(
+                        function_type->m_return_var_type)
+                    && !is_struct_like_type(return_type)
+                    && !is_struct_like_type(
+                        function_type->m_return_var_type)) {
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(
+                        function_type->m_return_var_type, return_type,
+                        nullptr, type_context(x.m_return_var)),
+                    "asr.verify.function.return_type_matches_signature",
+                    "Function return type " +
+                        ASRUtils::get_type_code(return_type) +
+                        " does not match signature type " +
+                        ASRUtils::get_type_code(
+                            function_type->m_return_var_type),
+                    x.m_return_var->base.loc);
+            }
+        }
 
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
@@ -709,6 +862,46 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        // A compile time value is stored into the variable's own storage,
+        // so a value whose type disagrees with the declaration produces a
+        // store LLVM rejects. The frontend casts such initializers; a graph
+        // from another producer may not have.
+        for (ASR::expr_t *initial : {x.m_symbolic_value, x.m_value}) {
+            ASR::ttype_t *initial_type = typed_expr_type(initial);
+            if (diagnostics.has_error() || initial_type == nullptr
+                    || x.m_type == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            ASR::ttype_t *actual = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(initial_type));
+            // A character initializer is padded or truncated to the
+            // declared length, so the two legitimately differ. A kind at or
+            // above the parameterized derived type sentinel is a type
+            // parameter rather than a storage size, and a parameterized type
+            // carries it on the declaration or on the initializer depending
+            // on where it has been substituted, so it is not comparable.
+            // Equivalence can attach another object's initializer across
+            // type families (integer storage viewed as real); that is not
+            // a Cast, and the backend reinterprets the bits.
+            if (is_struct_like_type(declared) || is_procedure_type(declared)
+                    || is_struct_like_type(actual) || is_procedure_type(actual)
+                    || declared->type != actual->type
+                    || ASR::is_a<ASR::String_t>(*declared)
+                    || ASRUtils::extract_kind_from_ttype_t(declared) >= 1000
+                    || ASRUtils::extract_kind_from_ttype_t(actual) >= 1000) {
+                continue;
+            }
+            require_id(
+                ASRUtils::check_equal_type(
+                    declared, actual, nullptr, nullptr),
+                "asr.verify.variable.initializer_type_matches",
+                "Variable '" + std::string(x.m_name) + "' initializer type " +
+                    ASRUtils::get_type_code(actual) +
+                    " does not match declared type " +
+                    ASRUtils::get_type_code(declared));
+        }
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
             "Variable::m_parent_symtab cannot be nullptr");
@@ -1086,7 +1279,46 @@ public:
                     "ArrayItem::m_type cannot be array.")
             }
         }
+        // An ArrayItem carries the type of the element it selects, and the
+        // backend stores through a pointer derived from that type. If it
+        // disagrees with the array's own element type the store is malformed
+        // and LLVM rejects the module it produces.
+        ASR::ttype_t *array_type = typed_expr_type(x.m_v);
+        if (!diagnostics.has_error() && array_type != nullptr
+                && x.m_type != nullptr) {
+            ASR::ttype_t *element = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(array_type));
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            if (!is_struct_like_type(element) && !is_procedure_type(element)
+                    && !is_struct_like_type(declared)
+                    && !is_procedure_type(declared)
+                    && element->type == declared->type) {
+                require_id(
+                    ASRUtils::check_equal_type(
+                        element, declared, nullptr, nullptr),
+                    "asr.verify.array_item.type_matches_element",
+                    "ArrayItem type " + ASRUtils::get_type_code(declared) +
+                        " does not match array element type " +
+                        ASRUtils::get_type_code(element));
+            }
+        }
         handle_ArrayItemSection(x);
+    }
+
+    void visit_CoarrayRef(const CoarrayRef_t &x) {
+        if (check_external) {
+            for (size_t i = 0; i < x.n_coindices; i++) {
+                ASR::coarray_index_t ci = x.m_coindices[i];
+                if (ci.m_star == ASR::codimension_typeType::CodimensionStar) {
+                    require(ci.m_index == nullptr, "coarray_index_t with star must have nullptr index");
+                    require(i == x.n_coindices-1, "coarray_index_t with star may only appear in the final codimension");
+                } else {
+                    require(ci.m_index != nullptr, "coarray_index_t without star must have a valid index");
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_CoarrayRef(x);
     }
 
     void visit_ArraySize(const ArraySize_t& x) {
@@ -1094,6 +1326,8 @@ public:
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
                 "ArraySize::m_v must be an array");
         }
+        verify_dimension_argument("ArraySize", x.m_v, x.m_dim,
+            x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
@@ -1158,7 +1392,11 @@ public:
     // Check if method_name exists in the struct's symtab (walking parent chain).
     bool struct_has_member(ASR::Struct_t* struct_type, const std::string& method_name) {
         ASR::Struct_t* current = struct_type;
+        std::set<ASR::Struct_t*> seen;
         while (current) {
+            if (!seen.insert(current).second) {
+                break;
+            }
             if (current->m_symtab->get_symbol(method_name) != nullptr) {
                 return true;
             }
@@ -1277,6 +1515,35 @@ public:
                                     " cannot be nullptr.");
                     }
                     continue;
+                }
+
+                ASR::ttype_t *actual_type =
+                    typed_expr_type(passed_arg_expr);
+                ASR::ttype_t *formal_type = callee_param->m_type;
+                // Derived type arguments are skipped for the same reason
+                // as in the signature check above, and this also covers a
+                // polymorphic argument passed as a pointer or allocatable,
+                // whose type only looks like a plain struct once those
+                // wrappers are stripped.
+                bool struct_argument = is_struct_like_type(actual_type)
+                    || is_struct_like_type(formal_type);
+                bool procedure_argument = is_procedure_type(actual_type)
+                    || is_procedure_type(formal_type);
+                if (actual_type && !diagnostics.has_error() &&
+                        !ASRUtils::is_intrinsic_symbol(x.m_name) &&
+                        !is_method && !struct_argument &&
+                        !procedure_argument) {
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            actual_type, formal_type,
+                            type_context(passed_arg_expr),
+                            type_context(func->m_args[i])),
+                        "asr.verify.call.actual_type_matches_formal",
+                        "Actual argument type " +
+                            ASRUtils::get_type_code(actual_type) +
+                            " does not match formal argument type " +
+                            ASRUtils::get_type_code(formal_type),
+                        passed_arg_expr->base.loc);
                 }
 
                 if (check_external &&
@@ -1636,6 +1903,288 @@ public:
         _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
     }
 
+    void visit_Integer(const Integer_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.integer_kind_supported",
+            "Integer kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_UnsignedInteger(const UnsignedInteger_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.unsigned_integer_kind_supported",
+            "UnsignedInteger kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Real(const Real_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.real_kind_supported",
+            "Real kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Complex(const Complex_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
+                x.m_kind >= 1000,
+            "asr.verify.type.complex_kind_supported",
+            "Complex kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    void visit_Logical(const Logical_t &x) {
+        if (diagnostics.has_error()) return;
+        require_id(
+            x.m_kind == 1 || x.m_kind == 2 ||
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind >= 1000,
+            "asr.verify.type.logical_kind_supported",
+            "Logical kind " + std::to_string(x.m_kind) +
+                " is not supported");
+    }
+
+    // An operation combines two operands of one type into a result of that
+    // type, and a comparison combines two operands of one type into a
+    // logical. The frontend guarantees this by inserting explicit Cast
+    // nodes, so a disagreement means the graph came from somewhere that did
+    // not, and the backend must not paper over it: LLVM rejects the module
+    // it produces from such a node. Array shape is not compared, since an
+    // elemental operation legitimately mixes ranks.
+    void verify_binary_operands(const char *name, ASR::expr_t *left,
+            ASR::expr_t *right, ASR::ttype_t *result, bool is_compare,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        ASR::ttype_t *left_type = typed_expr_type(left);
+        ASR::ttype_t *right_type = typed_expr_type(right);
+        if (left_type == nullptr || right_type == nullptr) return;
+        if (is_procedure_type(left_type) || is_procedure_type(right_type)
+                || is_struct_like_type(left_type)
+                || is_struct_like_type(right_type)) {
+            return;
+        }
+        ASR::ttype_t *left_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(left_type));
+        ASR::ttype_t *right_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(right_type));
+        // Only a kind disagreement inside one type family is checked. The
+        // frontend still emits a few operations whose operands differ in
+        // family, such as a real minus an integer, and the backend converts
+        // those; a kind disagreement is what it cannot lower.
+        if (left_scalar->type != right_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, right_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.operand_types_match",
+            std::string(name) + " operand types " +
+                ASRUtils::get_type_code(left_scalar) + " and " +
+                ASRUtils::get_type_code(right_scalar) + " do not match",
+            loc);
+        if (is_compare || result == nullptr) return;
+        ASR::ttype_t *result_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(result));
+        if (left_scalar->type != result_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, result_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.result_type_matches_operands",
+            std::string(name) + " result type " +
+                ASRUtils::get_type_code(result_scalar) +
+                " does not match operand type " +
+                ASRUtils::get_type_code(left_scalar),
+            loc);
+    }
+
+    void visit_IntegerBinOp(const IntegerBinOp_t &x) {
+        verify_binary_operands("IntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerBinOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const UnsignedIntegerBinOp_t &x) {
+        verify_binary_operands("UnsignedIntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerBinOp(x);
+    }
+
+    void visit_RealBinOp(const RealBinOp_t &x) {
+        verify_binary_operands("RealBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealBinOp(x);
+    }
+
+    void visit_ComplexBinOp(const ComplexBinOp_t &x) {
+        verify_binary_operands("ComplexBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexBinOp(x);
+    }
+
+    void visit_LogicalBinOp(const LogicalBinOp_t &x) {
+        verify_binary_operands("LogicalBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalBinOp(x);
+    }
+
+    void visit_IntegerCompare(const IntegerCompare_t &x) {
+        verify_binary_operands("IntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerCompare(x);
+    }
+
+    void visit_UnsignedIntegerCompare(const UnsignedIntegerCompare_t &x) {
+        verify_binary_operands("UnsignedIntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerCompare(x);
+    }
+
+    void visit_RealCompare(const RealCompare_t &x) {
+        verify_binary_operands("RealCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealCompare(x);
+    }
+
+    void visit_ComplexCompare(const ComplexCompare_t &x) {
+        verify_binary_operands("ComplexCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexCompare(x);
+    }
+
+    void visit_LogicalCompare(const LogicalCompare_t &x) {
+        verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
+    // A StructConstructor's arguments fill the type's members in
+    // declaration order, parent members first, and a later pass lowers it
+    // into one assignment per member. A type that disagrees with its member
+    // therefore surfaces as a broken assignment inside that pass rather than
+    // here, so it is checked up front. The pass also indexes the member list
+    // positionally, so a count mismatch is a memory error waiting to happen.
+    void visit_StructConstructor(const StructConstructor_t &x) {
+        ASR::symbol_t *struct_sym = x.m_dt_sym == nullptr
+            ? nullptr : ASRUtils::symbol_get_past_external(x.m_dt_sym);
+        if (!diagnostics.has_error() && struct_sym != nullptr
+                && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            std::vector<ASR::Struct_t*> chain;
+            std::set<ASR::Struct_t*> seen;
+            ASR::Struct_t *struct_type =
+                ASR::down_cast<ASR::Struct_t>(struct_sym);
+            while (struct_type != nullptr) {
+                require_id(seen.insert(struct_type).second,
+                    "asr.verify.struct_constructor.parent_chain_acyclic",
+                    "StructConstructor type '" +
+                        std::string(struct_type->m_name) +
+                        "' has a cyclic parent chain");
+                chain.push_back(struct_type);
+                if (struct_type->m_parent == nullptr) break;
+                ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                    struct_type->m_parent);
+                if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                    break;
+                }
+                struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+            }
+            std::vector<ASR::symbol_t*> members;
+            for (auto it = chain.rbegin(); it != chain.rend(); it++) {
+                for (size_t i = 0; i < (*it)->n_members; i++) {
+                    members.push_back(
+                        (*it)->m_symtab->get_symbol((*it)->m_members[i]));
+                }
+            }
+            require_id(members.size() == x.n_args,
+                "asr.verify.struct_constructor.argument_count",
+                "StructConstructor has " + std::to_string(x.n_args) +
+                    " arguments but the type has " +
+                    std::to_string(members.size()) + " members");
+            if (members.size() == x.n_args) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    ASR::ttype_t *actual =
+                        typed_expr_type(x.m_args[i].m_value);
+                    if (actual == nullptr || members[i] == nullptr
+                            || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                        continue;
+                    }
+                    ASR::ttype_t *declared =
+                        ASR::down_cast<ASR::Variable_t>(members[i])->m_type;
+                    if (declared == nullptr) continue;
+                    ASR::ttype_t *member_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                declared));
+                    ASR::ttype_t *actual_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                actual));
+                    if (is_struct_like_type(member_scalar)
+                            || is_procedure_type(member_scalar)
+                            || is_struct_like_type(actual_scalar)
+                            || is_procedure_type(actual_scalar)
+                            || member_scalar->type != actual_scalar->type) {
+                        continue;
+                    }
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            member_scalar, actual_scalar, nullptr, nullptr),
+                        "asr.verify.struct_constructor.argument_type_matches_member",
+                        "StructConstructor argument type " +
+                            ASRUtils::get_type_code(actual_scalar) +
+                            " does not match member '" +
+                            std::string(ASRUtils::symbol_name(members[i])) +
+                            "' of type " +
+                            ASRUtils::get_type_code(member_scalar),
+                        x.m_args[i].m_value->base.loc);
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
+    }
+
+    // `dim` selects one of the array's dimensions, so a constant outside
+    // 1..rank is invalid. The pass that folds these intrinsics indexes
+    // `dims[dim - 1]` directly, so an out of range constant reads outside the
+    // dimension array and crashes the compiler rather than diagnosing it.
+    void verify_dimension_argument(const char *name, ASR::expr_t *array,
+            ASR::expr_t *dim, const Location &loc) {
+        if (!check_standalone_rules || diagnostics.has_error()
+                || array == nullptr || dim == nullptr) {
+            return;
+        }
+        // Only a literal dimension over a plain variable is checked. The
+        // rank of a general expression, such as the result of `spread`, is
+        // not reliably known before the array passes run, and a dimension
+        // that is merely constant foldable is not worth guessing at here.
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*dim)) return;
+        if (!ASR::is_a<ASR::Var_t>(*array)) return;
+        ASR::ttype_t *array_type = typed_expr_type(array);
+        if (array_type == nullptr) return;
+        int rank = ASRUtils::extract_n_dims_from_ttype(array_type);
+        if (rank <= 0) return;
+        int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
+        require_with_loc_id(
+            value >= 1 && value <= rank,
+            "asr.verify.array_dimension.dim_within_rank",
+            std::string(name) + " dimension " + std::to_string(value) +
+                " is out of range for an array of rank " +
+                std::to_string(rank),
+            loc);
+    }
+
+    void visit_ArrayBound(const ArrayBound_t &x) {
+        verify_dimension_argument("ArrayBound", x.m_v, x.m_dim,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayBound(x);
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
@@ -1792,23 +2341,28 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 
+    void verify_sync_stat_list(const std::string &stmt_name, const Location &loc, ASR::expr_t *stat, ASR::expr_t *errmsg,
+            const std::string &stat_name="m_stat", const std::string &errmsg_name="m_errmsg") {
+        if (stat) {
+            ASR::ttype_t *stat_type = ASRUtils::expr_type(stat);
+            require_with_loc(!ASRUtils::is_array(stat_type),
+                stmt_name + "::" + stat_name + " must be a scalar", loc);
+            require_with_loc(ASRUtils::is_integer(*stat_type),
+                stmt_name + "::" + stat_name + " must be of integer type, found " +
+                ASRUtils::type_to_str_fortran_expr(stat_type, stat), loc);
+        }
+        if (errmsg) {
+            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(errmsg);
+            require_with_loc(!ASRUtils::is_array(errmsg_type),
+                stmt_name + "::" + errmsg_name + " must be a scalar", loc);
+            require_with_loc(ASRUtils::is_character(*errmsg_type),
+                stmt_name + "::" + errmsg_name + " must be of string type, found " +
+                ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg), loc);
+        }
+    }
+
     void visit_SyncAll(const SyncAll_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncAll::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncAll::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncAll::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncAll::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncAll", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);
     }
 
@@ -1820,63 +2374,24 @@ public:
             require(ASRUtils::is_integer(*image_set_type),
                 "SyncImages::m_image_set must be of integer type");
         }
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncImages::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncImages::m_stat must be of integer type, found " +
-                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_stat), x.m_stat));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncImages::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncImages::m_errmsg must be of string type, found " +
-                ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_errmsg), x.m_errmsg));
-        }
+        verify_sync_stat_list("SyncImages", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncImages(x);
     }
 
     void visit_SyncMemory(const SyncMemory_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncMemory::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncMemory::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncMemory::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncMemory::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncMemory", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncMemory(x);
     }
 
     void visit_SyncTeam(const SyncTeam_t &x) {
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "SyncTeam::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "SyncTeam::m_stat must be of integer type, found " +
-                std::string(ASRUtils::get_type_code(stat_type)));
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "SyncTeam::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "SyncTeam::m_errmsg must be of string type, found " +
-                std::string(ASRUtils::get_type_code(errmsg_type)));
-        }
+        verify_sync_stat_list("SyncTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncTeam(x);
+    }
+
+    void visit_ChangeTeam(const ChangeTeam_t &x) {
+        verify_sync_stat_list("ChangeTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
+        verify_sync_stat_list("ChangeTeam", x.base.base.loc, x.m_end_stat, x.m_end_errmsg, "m_end_stat", "m_end_errmsg");
+        BaseWalkVisitor<VerifyVisitor>::visit_ChangeTeam(x);
     }
 
     void visit_FormTeam(const FormTeam_t &x) {
@@ -1893,20 +2408,7 @@ public:
             require(ASRUtils::is_integer(*new_index_type),
                 "FormTeam::m_new_index must be of integer type");
         }
-        if (x.m_stat) {
-            ASR::ttype_t *stat_type = ASRUtils::expr_type(x.m_stat);
-            require(!ASRUtils::is_array(stat_type),
-                "FormTeam::m_stat must be a scalar");
-            require(ASRUtils::is_integer(*stat_type),
-                "FormTeam::m_stat must be of integer type");
-        }
-        if (x.m_errmsg) {
-            ASR::ttype_t *errmsg_type = ASRUtils::expr_type(x.m_errmsg);
-            require(!ASRUtils::is_array(errmsg_type),
-                "FormTeam::m_errmsg must be a scalar");
-            require(ASRUtils::is_character(*errmsg_type),
-                "FormTeam::m_errmsg must be of string type");
-        }
+        verify_sync_stat_list("FormTeam", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_FormTeam(x);
     }
 
@@ -1927,16 +2429,50 @@ public:
 
 } // namespace ASR
 
-bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+bool asr_verify(const ASR::TranslationUnit_t &unit,
+            const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(check_external, diagnostics);
+    ASR::VerifyVisitor v(options.check_external,
+        options.check_standalone_rules, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return false;
     }
+    if (options.require_main_program) {
+        const ASR::Program_t *main_program = nullptr;
+        for (const auto &item : unit.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Program_t>(*item.second)) {
+                continue;
+            }
+            if (main_program != nullptr) {
+                diagnostics.message_label(
+                    "standalone ASR must contain exactly one main program",
+                    {item.second->base.loc}, "second main program",
+                    diag::Level::Error, diag::Stage::ASRVerify,
+                    "asr.verify.translation_unit.multiple_main_programs");
+                return false;
+            }
+            main_program = ASR::down_cast<ASR::Program_t>(item.second);
+        }
+        if (main_program == nullptr) {
+            diagnostics.message_label(
+                "standalone ASR must contain exactly one main program",
+                {unit.base.base.loc}, "main program is missing",
+                diag::Level::Error, diag::Stage::ASRVerify,
+                "asr.verify.translation_unit.main_program_missing");
+            return false;
+        }
+    }
     return true;
+}
+
+bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
+            diag::Diagnostics &diagnostics) {
+    ASRVerifyOptions options;
+    options.check_external = check_external;
+    return asr_verify(unit, options, diagnostics);
 }
 
 } // namespace LCompilers

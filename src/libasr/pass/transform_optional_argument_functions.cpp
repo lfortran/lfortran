@@ -231,6 +231,28 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // In interactive mode each cell is a TranslationUnit chained to
+            // the previous one. A procedure declared in an earlier cell was
+            // transformed when that cell was compiled, and this cell's calls
+            // to it have to be transformed the same way, so visit the earlier
+            // cells too. Transforming is idempotent: once a procedure takes a
+            // presence flag instead of an optional argument, there is nothing
+            // left for is_optional_argument_present() to find.
+            for (SymbolTable *s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if( !ASRUtils::is_tu_scope(s) ) continue;
+                for (auto &item : s->get_scope()) {
+                    if (is_a<ASR::Function_t>(*item.second)) {
+                        ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
+                        if (is_optional_argument_present(f)) {
+                            transform_functions_with_optional_arguments(f);
+                        }
+                    }
+                }
+                for (auto &item : s->get_scope()) {
+                    this->visit_symbol(*item.second);
+                }
+            }
+
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
                     ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);

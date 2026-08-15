@@ -191,13 +191,17 @@ namespace LCompilers {
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
-                    std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed in the pass: "
-                        + passes[i]);
-                };
+                verify_after_pass = true;
 #endif
+                if (verify_after_pass &&
+                        !asr_verify(*asr, true, diagnostics)) {
+                    std::cerr << diagnostics.render2();
+                    throw LCompilersException(
+                        "pass=" + passes[i],
+                        LFORTRAN_ASR_PASS_VERIFY_FAILED);
+                }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 if (pass_options.time_report) {
                     int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
@@ -407,13 +411,17 @@ namespace LCompilers {
                         << "\n" << fortran_code.result << "\n";
                     outfile.close();
                 }
+                bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
-                if (!asr_verify(*asr, true, diagnostics)) {
-                    std::cerr << diagnostics.render2();
-                    throw LCompilersException("Verify failed in the pass: "
-                        + passes[i]);
-                };
+                verify_after_pass = true;
 #endif
+                if (verify_after_pass &&
+                        !asr_verify(*asr, true, diagnostics)) {
+                    std::cerr << diagnostics.render2();
+                    throw LCompilersException(
+                        "pass=" + passes[i],
+                        LFORTRAN_ASR_PASS_VERIFY_FAILED);
+                }
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass ends: '" << passes[i] << "'\n";
                 }
@@ -431,6 +439,13 @@ namespace LCompilers {
 
         void do_not_use_default_passes() {
             apply_default_passes = false;
+        }
+
+        void skip_pass(const std::string &pass_name) {
+            if( std::find(_skip_passes.begin(), _skip_passes.end(), pass_name)
+                    == _skip_passes.end() ) {
+                _skip_passes.push_back(pass_name);
+            }
         }
 
         bool has_user_defined_passes() const {

@@ -1098,6 +1098,7 @@ RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
 RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
 RUN(NAME product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME product_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME product_03 LABELS gfortran llvm)
 
 #gfortran 11-12 does not support reduce()
 RUN(NAME reduce_01 LABELS  llvm llvm_wasm llvm_wasm_emcc) 
@@ -1260,6 +1261,7 @@ RUN(NAME format_105 LABELS gfortran llvm)
 RUN(NAME format_106 LABELS gfortran llvm)
 RUN(NAME format_107 LABELS gfortran llvm)
 RUN(NAME format_108 LABELS gfortran llvm)
+RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1846,6 +1848,8 @@ RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
+
+RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -3942,6 +3946,7 @@ RUN(NAME save_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
+RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3999,6 +4004,7 @@ RUN(NAME character_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_32 LABELS gfortran llvm)
 RUN(NAME character_33 LABELS gfortran llvm)
+RUN(NAME character_34 LABELS gfortran llvm)
 RUN(NAME character_assignment_01 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4777,6 +4783,12 @@ RUN(NAME coarrays_30 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_31 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_32 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_33 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_34 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
+RUN(NAME coarrays_35 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_36 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_37 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_38 EXTRA_ARGS --coarray=true)
+RUN(NAME coarrays_39 EXTRA_ARGS --coarray=true NUM_IMAGES=6)
 
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal)

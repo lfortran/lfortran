@@ -104,8 +104,10 @@ if (HAVE_BUILD_TO_WASM)
     # STANDALONE_WASM is disabling support for exceptions, so it is currently omitted
     # In build_to_wasm.sh, we need CMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" flags for exception support
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
+    # "-s STACK_SIZE": the 64kb Emscripten default is far too small for the
+    # recursive descent parsers and ASR visitors; use a native-sized stack.
     set(WASM_LINK_FLAGS
-      "-g0 -Oz -fexceptions --preload-file asset_dir -Wall -Wextra --no-entry -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
+      "-g0 -Oz -fexceptions --preload-file asset_dir -Wall -Wextra --no-entry -s ASSERTIONS -s ALLOW_MEMORY_GROWTH=1 -s WASM_BIGINT -s STACK_SIZE=8mb -s \"EXPORTED_RUNTIME_METHODS=['cwrap']\""
     )
     set_target_properties(lfortran PROPERTIES COMPILE_FLAGS ${WASM_COMPILE_FLAGS})
     set_target_properties(lfortran PROPERTIES LINK_FLAGS ${WASM_LINK_FLAGS})

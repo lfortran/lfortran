@@ -221,6 +221,8 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             alloc_arg.loc = loc_;
             alloc_arg.m_a = result_var_;
             alloc_arg.m_sym_subclass = nullptr;
+            alloc_arg.m_codims = nullptr;
+            alloc_arg.n_codims = 0;
             Vec<ASR::dimension_t> alloc_dims;
             alloc_dims.reserve(al, n_dims);
             for( int j = 1; j <= n_dims + 1; j++ ) {

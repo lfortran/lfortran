@@ -103,6 +103,9 @@ src/libasr/asr_lookup_name_visitor.h
 src/libasr/asr_pass_walk_visitor.h
 src/libasr/asr_pickle_visitor.h
 src/libasr/asr_serialization_visitor.h
+src/libasr/asr_symbol_visitor.h
+src/libasr/asr_text_visitor.h
+src/libasr/asr_text_deserialization_visitor.h
 src/libasr/asr_stmt_base_replacer_visitor.h
 src/libasr/asr_tree_visitor.h
 src/libasr/asr_walk_visitor.h
@@ -185,6 +188,8 @@ __pycache__/
 ## Distribution / packaging
 .Python
 build/
+build-wasm/
+.jupyterlite.doit.db
 develop-eggs/
 dist/
 downloads/
@@ -263,5 +268,8 @@ doc/man/lfortran.1
 /re_*.f90
 /test_ref
 /test_lfortran
+/asr-fuzz-artifacts/
+# Runtime OPEN(status="scratch") files; they land in cwd.
+_lfortran_generated_file*
 /test_gfortran
 /test_flang

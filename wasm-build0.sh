@@ -10,20 +10,15 @@ set -ex
 
 export PREFIX=${PREFIX:-$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host}
 
-if [ "$(uname)" = "Darwin" ]; then
-    CORES=$(sysctl -n hw.ncpu)
-else
-    CORES=$(nproc)
-fi
-
 rm -rf asset_dir
 
 # Unset any emscripten compiler overrides so cmake picks up the native toolchain.
 unset CC CXX AR RANLIB NM CFLAGS CXXFLAGS LDFLAGS
 
 # Build lfortran binary only; skip the runtime cmake sub-project.
-cmake -S . -B asset_dir \
-    -DCMAKE_BUILD_TYPE=Release \
+# Debug + Ninja: this compiler is only used to emit runtime .mod files.
+cmake -S . -B asset_dir -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=no \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_RUNTIME_LIBRARY=no \
@@ -34,7 +29,7 @@ cmake -S . -B asset_dir \
     -DWITH_KOKKOS=no \
     -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
 
-cmake --build asset_dir -j"$CORES" --target lfortran
+cmake --build asset_dir --target lfortran
 
 # Compile runtime modules using the freshly built lfortran.
 LFORTRAN="$(pwd)/asset_dir/src/bin/lfortran"
@@ -49,6 +44,7 @@ $LFORTRAN --backend=cpp -c -J "$MODDIR" "$RTDIR/custom/lfortran_intrinsic_custom
 $LFORTRAN --backend=cpp -c -J "$MODDIR" -I "$MODDIR" "$RTDIR/pure/lfortran_intrinsic_ieee_arithmetic.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" "$RTDIR/pure/lfortran_intrinsic_iso_c_binding.f90"
 $LFORTRAN --backend=cpp -c -J "$MODDIR" -I "$MODDIR" "$RTDIR/openmp/omp_lib.f90"
+$LFORTRAN --backend=cpp -c -J "$MODDIR" -I "$MODDIR" "$RTDIR/impure/lfortran_display.f90"
 
 popd > /dev/null
 

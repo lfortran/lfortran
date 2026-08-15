@@ -1107,6 +1107,8 @@ class ASRBuilder {
             ASRUtils::symbol_type(sym_subclass)) : nullptr;
         alloc_arg.m_len_expr = nullptr;
         alloc_arg.m_sym_subclass = sym_subclass;
+        alloc_arg.m_codims = nullptr;
+        alloc_arg.n_codims = 0;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
@@ -1122,6 +1124,8 @@ class ASRBuilder {
         alloc_arg.m_type = nullptr;
         alloc_arg.m_sym_subclass = nullptr;
         alloc_arg.m_len_expr = len_expr;
+        alloc_arg.m_codims = nullptr;
+        alloc_arg.n_codims = 0;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));

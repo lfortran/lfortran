@@ -951,6 +951,21 @@ program continue_compilation_1
     subroutine set_caller(this)
         class(MyClass) :: this
     end subroutine
+
+    subroutine findloc_character_kind_mismatch()
+        implicit none
+        character(kind=4, len=1) :: names(1)
+        character(kind=1, len=1) :: key
+        print *, findloc(names, key)
+    end subroutine
+
+    subroutine implied_do_loop_variable_not_integer()
+        implicit none
+        real :: r_idx
+        real :: values(3)
+        values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+        print *, values(1)
+    end subroutine
 end program
 
 

@@ -1140,7 +1140,7 @@ public:
 
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
-        SymbolTable* tu_symtab = current_scope->get_global_scope();
+        SymbolTable* tu_symtab = current_scope->get_tu_scope();
         std::string proc_name = to_lower(std::string(x.m_name));
 
         ASR::Function_t* proc_interface = nullptr;
@@ -3385,7 +3385,7 @@ public:
         std::string base_module_name = "file_common_block_";
         std::string base_struct_instance_name = "struct_instance_";
 
-        SymbolTable* global_scope = current_scope->get_global_scope();
+        SymbolTable* global_scope = current_scope->get_tu_scope();
 
         if (x.m_name) {
             ASR::symbol_t* gs = global_scope->get_symbol(x.m_name);
@@ -4404,7 +4404,7 @@ public:
         current_module_dependencies.push_back(al, msym_cc);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
-        SymbolTable *tu_symtab = current_scope->get_global_scope();
+        SymbolTable *tu_symtab = current_scope->get_tu_scope();
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
