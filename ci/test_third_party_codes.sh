@@ -162,7 +162,9 @@ time_section "🧪 Testing caffeine" '
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
   export CAF_IMAGES=4
-  ./run-fpm.sh test --verbose 
+  # Print a symbolized backtrace if an image dies with a fatal signal
+  export GASNET_BACKTRACE=1
+  ./run-fpm.sh test --verbose
 
   print_success "Done with caffeine"
   cd ..
