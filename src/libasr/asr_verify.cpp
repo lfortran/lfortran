@@ -624,6 +624,180 @@ public:
             require(arg_found, self_arg_name + " must be present in " +
                     std::string(x.m_name) + " procedures.");
         }
+        verify_binding_override(x, x_m_proc);
+    }
+
+    // The position of the passed-object dummy argument of a binding, or
+    // `n_args` when the binding has none.
+    size_t passed_object_index(const StructMethodDeclaration_t &x,
+            ASR::Function_t *proc) {
+        if (x.m_is_nopass) return proc->n_args;
+        if (x.m_self_argument == nullptr) return 0;
+        std::string self_name = x.m_self_argument;
+        for (size_t i = 0; i < proc->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i])) continue;
+            if (self_name == std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(proc->m_args[i])->m_v))) {
+                return i;
+            }
+        }
+        return proc->n_args;
+    }
+
+    // The binding of the same name that `x` overrides, searched up the
+    // parent chain of the derived type `x` belongs to, or nullptr.
+    ASR::StructMethodDeclaration_t* overridden_binding(
+            const StructMethodDeclaration_t &x) {
+        SymbolTable *symtab = x.m_parent_symtab;
+        if (symtab == nullptr || symtab->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*symtab->asr_owner)) {
+            return nullptr;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
+        if (!ASR::is_a<ASR::Struct_t>(*owner)) return nullptr;
+        ASR::symbol_t *parent = ASR::down_cast<ASR::Struct_t>(owner)->m_parent;
+        // A parent cycle is diagnosed on its own; here it must only not loop.
+        std::set<const ASR::Struct_t*> seen;
+        while (parent != nullptr) {
+            parent = ASRUtils::symbol_get_past_external(parent);
+            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                return nullptr;
+            }
+            ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(parent);
+            if (!seen.insert(s).second) return nullptr;
+            ASR::symbol_t *sym = s->m_symtab->get_symbol(std::string(x.m_name));
+            if (sym != nullptr &&
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+                return ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            }
+            parent = s->m_parent;
+        }
+        return nullptr;
+    }
+
+    // Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
+    // overrides must have the same interface apart from the passed-object
+    // dummy argument. Nothing downstream re-derives this, so a mismatch means
+    // a dispatch through the parent type calls a procedure whose signature
+    // does not match the call site the parent's interface promised.
+    void verify_binding_override(const StructMethodDeclaration_t &x,
+            ASR::Function_t *proc) {
+        if (!check_external) return;
+        ASR::StructMethodDeclaration_t *base_decl = overridden_binding(x);
+        if (base_decl == nullptr) return;
+        ASR::symbol_t *base_sym =
+            ASRUtils::symbol_get_past_external(base_decl->m_proc);
+        if (base_sym == nullptr || !ASR::is_a<ASR::Function_t>(*base_sym)) {
+            return;
+        }
+        ASR::Function_t *base = ASR::down_cast<ASR::Function_t>(base_sym);
+        // An inherited binding names the very same procedure; only a binding
+        // that names a different one overrides anything.
+        if (base == proc) return;
+
+        std::string what = "Type bound procedure '" + std::string(x.m_name) +
+            "' overriding '" + std::string(base->m_name) + "'";
+        require_id(x.m_is_nopass == base_decl->m_is_nopass,
+            "asr.verify.binding_override.nopass_matches",
+            what + " must agree on the NOPASS attribute");
+        bool base_is_function = base->m_return_var != nullptr;
+        bool is_function = proc->m_return_var != nullptr;
+        require_id(base_is_function == is_function,
+            "asr.verify.binding_override.result_kind_matches",
+            what + " must be a " +
+            std::string(base_is_function ? "function" : "subroutine"));
+        if (base_is_function && is_function) {
+            ASR::ttype_t *base_type = typed_expr_type(base->m_return_var);
+            ASR::ttype_t *type = typed_expr_type(proc->m_return_var);
+            if (base_type != nullptr && type != nullptr &&
+                    !is_struct_like_type(base_type) &&
+                    !is_struct_like_type(type)) {
+                require_id(ASRUtils::check_equal_type(type, base_type,
+                        type_context(proc->m_return_var),
+                        type_context(base->m_return_var)),
+                    "asr.verify.binding_override.result_type_matches",
+                    what + " must return " +
+                    ASRUtils::get_type_code(base_type) + ", not " +
+                    ASRUtils::get_type_code(type));
+            }
+        }
+        require_id(proc->n_args == base->n_args,
+            "asr.verify.binding_override.argument_count_matches",
+            what + " must take " + std::to_string(base->n_args) +
+            " arguments, not " + std::to_string(proc->n_args));
+
+        size_t self_index = passed_object_index(x, proc);
+        size_t base_self_index = passed_object_index(*base_decl, base);
+        require_id(self_index == base_self_index,
+            "asr.verify.binding_override.passed_object_matches",
+            what + " must take its passed-object dummy argument in the same "
+            "position");
+        for (size_t i = 0; i < proc->n_args; i++) {
+            // The passed-object dummy argument is declared with the type it
+            // is bound to, so the two deliberately differ there.
+            if (i == self_index) continue;
+            verify_override_argument(what, i, proc, base, x.base.base.loc);
+        }
+    }
+
+    void verify_override_argument(const std::string &what, size_t i,
+            ASR::Function_t *proc, ASR::Function_t *base,
+            const Location &loc) {
+        if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i]) ||
+                !ASR::is_a<ASR::Var_t>(*base->m_args[i])) {
+            return;
+        }
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(proc->m_args[i])->m_v;
+        ASR::symbol_t *base_sym =
+            ASR::down_cast<ASR::Var_t>(base->m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+                !ASR::is_a<ASR::Variable_t>(*base_sym)) {
+            return;
+        }
+        ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::Variable_t *base_arg = ASR::down_cast<ASR::Variable_t>(base_sym);
+        std::string which = what + ", argument " + std::to_string(i + 1) +
+            " '" + std::string(arg->m_name) + "',";
+        require_with_loc_id(arg->m_intent == base_arg->m_intent,
+            "asr.verify.binding_override.argument_intent_matches",
+            which + " must have the same intent as '" +
+            std::string(base_arg->m_name) + "'", loc);
+        require_with_loc_id(arg->m_presence == base_arg->m_presence,
+            "asr.verify.binding_override.argument_presence_matches",
+            which + " must agree with '" + std::string(base_arg->m_name) +
+            "' on the OPTIONAL attribute", loc);
+        ASR::ttype_t *type = arg->m_type;
+        ASR::ttype_t *base_type = base_arg->m_type;
+        if (type == nullptr || base_type == nullptr) return;
+        require_with_loc_id(ASRUtils::is_allocatable(type) ==
+                ASRUtils::is_allocatable(base_type),
+            "asr.verify.binding_override.argument_allocatable_matches",
+            which + " must agree with '" + std::string(base_arg->m_name) +
+            "' on the ALLOCATABLE attribute", loc);
+        require_with_loc_id(ASRUtils::is_pointer(type) ==
+                ASRUtils::is_pointer(base_type),
+            "asr.verify.binding_override.argument_pointer_matches",
+            which + " must agree with '" + std::string(base_arg->m_name) +
+            "' on the POINTER attribute", loc);
+        require_with_loc_id(ASRUtils::extract_n_dims_from_ttype(type) ==
+                ASRUtils::extract_n_dims_from_ttype(base_type),
+            "asr.verify.binding_override.argument_rank_matches",
+            which + " must have rank " + std::to_string(
+                ASRUtils::extract_n_dims_from_ttype(base_type)), loc);
+        // A derived type argument spells its members out inline, so two
+        // structurally different types can name the same type; those are
+        // compared by the dedicated struct checks instead.
+        if (is_struct_like_type(type) || is_struct_like_type(base_type) ||
+                is_procedure_type(type) || is_procedure_type(base_type)) {
+            return;
+        }
+        require_with_loc_id(ASRUtils::check_equal_type(type, base_type,
+                type_context(proc->m_args[i]),
+                type_context(base->m_args[i])),
+            "asr.verify.binding_override.argument_type_matches",
+            which + " must have type " +
+            ASRUtils::get_type_code(base_type) + ", not " +
+            ASRUtils::get_type_code(type), loc);
     }
 
     // A procedure's dummy variables and its result variable are declared by

@@ -5450,3 +5450,31 @@ asr = true
 [[test]]
 filename = "asr/verify/module_dependency_missing.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_intent.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_allocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_rank.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_result_kind.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_nopass.asr"
+asr = true
