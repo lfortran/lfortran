@@ -1,0 +1,13 @@
+{
+    "basename": "asr-struct_member_of_unrelated_type-83fb240",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/struct_member_of_unrelated_type.asr",
+    "infile_hash": "c643d5ceb07ffe5eb007b2a7da3b40fd14cf112fe49c0a3a211434c7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-struct_member_of_unrelated_type-83fb240.stderr",
+    "stderr_hash": "9463cb000babc53191cf8cfa0ef6ae17ae82948406a51cb2c949bcb5",
+    "returncode": 2
+}

@@ -5478,3 +5478,23 @@ asr = true
 [[test]]
 filename = "asr/verify/binding_override_nopass.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/method_call_actual_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_statement_names_a_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_call_result_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_argument_interface_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_member_of_unrelated_type.asr"
+asr = true

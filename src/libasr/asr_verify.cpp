@@ -1769,6 +1769,24 @@ public:
         return false;
     }
 
+    // True when `name` is a type in the parent chain of `struct_type`, which
+    // is what an implicit parent component is named after.
+    bool struct_extends(ASR::Struct_t *struct_type, const std::string &name) {
+        ASR::symbol_t *parent = struct_type->m_parent;
+        std::set<ASR::Struct_t*> seen;
+        while (parent != nullptr) {
+            parent = ASRUtils::symbol_get_past_external(parent);
+            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                return false;
+            }
+            ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(parent);
+            if (!seen.insert(s).second) return false;
+            if (name == std::string(s->m_name)) return true;
+            parent = s->m_parent;
+        }
+        return false;
+    }
+
     // Verify that the method being called is actually a member of the struct
     // that dt points to.
     template <typename T>
@@ -1792,6 +1810,94 @@ public:
         require(struct_has_member(struct_type, method_name),
             "Method '" + method_name + "' not found in struct '" +
             std::string(struct_type->m_name) + "' (or its parents).");
+    }
+
+    // A component reference names a component of the type it is read from.
+    // One that names a component of some other type sends the backend
+    // looking for a field the type does not have.
+    void visit_StructInstanceMember(const StructInstanceMember_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_StructInstanceMember(x);
+        if (!check_external || x.m_m == nullptr || x.m_v == nullptr ||
+                diagnostics.has_error()) {
+            return;
+        }
+        ASR::symbol_t *struct_sym = get_struct_from_dt_expr(x.m_v);
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return;
+        }
+        std::string member_name = ASR::is_a<ASR::ExternalSymbol_t>(*x.m_m)
+            ? std::string(ASR::down_cast<ASR::ExternalSymbol_t>(
+                  x.m_m)->m_original_name)
+            : std::string(ASRUtils::symbol_name(x.m_m));
+        ASR::Struct_t *struct_type = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        // An extended type has an implicit parent component named after the
+        // type it extends, and that component is the parent type's symbol
+        // rather than an entry in this type's scope.
+        require_id(struct_has_member(struct_type, member_name) ||
+                struct_extends(struct_type, member_name),
+            "asr.verify.struct_member.belongs_to_struct",
+            "'" + std::string(struct_type->m_name) +
+            "' has no member named '" + member_name + "'");
+    }
+
+    static ASR::FunctionType_t* as_procedure_type(ASR::ttype_t *t) {
+        if (t == nullptr) return nullptr;
+        ASR::ttype_t *t2 = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t));
+        if (!ASR::is_a<ASR::FunctionType_t>(*t2)) return nullptr;
+        return ASR::down_cast<ASR::FunctionType_t>(t2);
+    }
+
+    // A dummy procedure declares the interface the caller must satisfy. The
+    // actual procedure is called through that interface, so a disagreement
+    // is an indirect call with the wrong signature -- the one thing a
+    // dummy procedure exists to rule out.
+    void verify_procedure_argument(ASR::ttype_t *actual_type,
+            ASR::ttype_t *formal_type, const char *name,
+            const Location &loc) {
+        ASR::FunctionType_t *actual = as_procedure_type(actual_type);
+        ASR::FunctionType_t *formal = as_procedure_type(formal_type);
+        if (actual == nullptr || formal == nullptr) return;
+        std::string which = "Procedure argument '" + std::string(name) + "'";
+        require_with_loc_id(
+            (actual->m_return_var_type == nullptr) ==
+                (formal->m_return_var_type == nullptr),
+            "asr.verify.call.procedure_argument_matches_formal",
+            which + " must be a " + std::string(
+                formal->m_return_var_type == nullptr
+                    ? "subroutine" : "function"),
+            loc);
+        require_with_loc_id(actual->n_arg_types == formal->n_arg_types,
+            "asr.verify.call.procedure_argument_matches_formal",
+            which + " must take " + std::to_string(formal->n_arg_types) +
+            " arguments, not " + std::to_string(actual->n_arg_types), loc);
+        for (size_t i = 0; i < actual->n_arg_types; i++) {
+            ASR::ttype_t *a = actual->m_arg_types[i];
+            ASR::ttype_t *f = formal->m_arg_types[i];
+            if (is_struct_like_type(a) || is_struct_like_type(f) ||
+                    is_procedure_type(a) || is_procedure_type(f)) {
+                continue;
+            }
+            require_with_loc_id(
+                ASRUtils::check_equal_type(a, f, nullptr, nullptr),
+                "asr.verify.call.procedure_argument_matches_formal",
+                which + " argument " + std::to_string(i + 1) +
+                " must have type " + ASRUtils::get_type_code(f) + ", not " +
+                ASRUtils::get_type_code(a), loc);
+        }
+        if (actual->m_return_var_type != nullptr &&
+                formal->m_return_var_type != nullptr &&
+                !is_struct_like_type(actual->m_return_var_type) &&
+                !is_struct_like_type(formal->m_return_var_type)) {
+            require_with_loc_id(
+                ASRUtils::check_equal_type(actual->m_return_var_type,
+                    formal->m_return_var_type, nullptr, nullptr),
+                "asr.verify.call.procedure_argument_matches_formal",
+                which + " must return " +
+                ASRUtils::get_type_code(formal->m_return_var_type) +
+                ", not " +
+                ASRUtils::get_type_code(actual->m_return_var_type), loc);
+        }
     }
 
     template <typename T>
@@ -1884,9 +1990,17 @@ public:
                     || is_struct_like_type(formal_type);
                 bool procedure_argument = is_procedure_type(actual_type)
                     || is_procedure_type(formal_type);
+                if (procedure_argument && check_standalone_rules) {
+                    verify_procedure_argument(
+                        actual_type, formal_type, callee_param->m_name,
+                        passed_arg_expr->base.loc);
+                }
+                // A type-bound call is checked like any other: only its
+                // passed-object dummy argument is special, and the loop has
+                // already skipped that one.
                 if (actual_type && !diagnostics.has_error() &&
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
-                        !is_method && !struct_argument &&
+                        !struct_argument &&
                         !procedure_argument) {
                     // These wrapper and rank rules hold for a complete
                     // standalone graph. After a pass the dummy may have been
@@ -2055,6 +2169,23 @@ public:
                 require(ASR::is_a<ASR::Function_t>(*s) ||
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
+            }
+            // A CALL statement discards no result, because a procedure
+            // invoked by one has none to discard.
+            ASR::symbol_t *called = s;
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*called)) {
+                called = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                        called)->m_proc);
+            }
+            if (called != nullptr && ASR::is_a<ASR::Function_t>(*called)) {
+                require_id(ASR::down_cast<ASR::Function_t>(
+                        called)->m_return_var == nullptr,
+                    "asr.verify.call.subroutine_returns_nothing",
+                    "SubroutineCall::m_name '" +
+                    std::string(symbol_name(x.m_name)) +
+                    "' returns a value, so it cannot be called as a "
+                    "subroutine");
             }
         }
 
@@ -2242,6 +2373,24 @@ public:
             require(fn_->m_return_var != nullptr,
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
+            // The call site's result type is what the surrounding expression
+            // was typed against; the callee's is what the call actually
+            // produces. Where they disagree, the two disagree about the call.
+            ASR::ttype_t *returned = typed_expr_type(fn_->m_return_var);
+            if (returned != nullptr && x.m_type != nullptr &&
+                    !ASRUtils::is_intrinsic_symbol(x.m_name) &&
+                    !is_struct_like_type(returned) &&
+                    !is_struct_like_type(x.m_type) &&
+                    !is_procedure_type(returned) &&
+                    !is_procedure_type(x.m_type)) {
+                require_id(ASRUtils::check_equal_type(x.m_type, returned,
+                        nullptr, type_context(fn_->m_return_var)),
+                    "asr.verify.call.result_type_matches_callee",
+                    "FunctionCall to '" + std::string(fn_->m_name) +
+                    "' has type " + ASRUtils::get_type_code(x.m_type) +
+                    ", but the function returns " +
+                    ASRUtils::get_type_code(returned));
+            }
         }
         verify_args(x);
         visit_ttype(*x.m_type);
