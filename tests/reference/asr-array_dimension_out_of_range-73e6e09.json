@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_dimension_out_of_range-73e6e09",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/array_dimension_out_of_range.asr",
+    "infile_hash": "9b2e48f2bb4621268f0769a10c50cf206ed893bd9332386fa456180e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_dimension_out_of_range-73e6e09.stderr",
+    "stderr_hash": "f2fd5753154bc0f09087c923eece29cda876d307c3c58c49fa33ba4e",
+    "returncode": 2
+}

@@ -84,6 +84,7 @@ private:
     // For checking correct parent symbtab relationship
     SymbolTable *current_symtab;
     bool check_external;
+    bool check_standalone_rules;
     diag::Diagnostics &diagnostics;
     std::string current_name;
 
@@ -110,7 +111,9 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
-    VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
+    VerifyVisitor(bool check_external, bool check_standalone_rules,
+        diag::Diagnostics &diagnostics) : check_external{check_external},
+        check_standalone_rules{check_standalone_rules},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
@@ -1317,6 +1320,8 @@ public:
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
                 "ArraySize::m_v must be an array");
         }
+        verify_dimension_argument("ArraySize", x.m_v, x.m_dim,
+            x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
     }
 
@@ -2126,6 +2131,42 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
     }
 
+    // `dim` selects one of the array's dimensions, so a constant outside
+    // 1..rank is invalid. The pass that folds these intrinsics indexes
+    // `dims[dim - 1]` directly, so an out of range constant reads outside the
+    // dimension array and crashes the compiler rather than diagnosing it.
+    void verify_dimension_argument(const char *name, ASR::expr_t *array,
+            ASR::expr_t *dim, const Location &loc) {
+        if (!check_standalone_rules || diagnostics.has_error()
+                || array == nullptr || dim == nullptr) {
+            return;
+        }
+        // Only a literal dimension over a plain variable is checked. The
+        // rank of a general expression, such as the result of `spread`, is
+        // not reliably known before the array passes run, and a dimension
+        // that is merely constant foldable is not worth guessing at here.
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*dim)) return;
+        if (!ASR::is_a<ASR::Var_t>(*array)) return;
+        ASR::ttype_t *array_type = typed_expr_type(array);
+        if (array_type == nullptr) return;
+        int rank = ASRUtils::extract_n_dims_from_ttype(array_type);
+        if (rank <= 0) return;
+        int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
+        require_with_loc_id(
+            value >= 1 && value <= rank,
+            "asr.verify.array_dimension.dim_within_rank",
+            std::string(name) + " dimension " + std::to_string(value) +
+                " is out of range for an array of rank " +
+                std::to_string(rank),
+            loc);
+    }
+
+    void visit_ArrayBound(const ArrayBound_t &x) {
+        verify_dimension_argument("ArrayBound", x.m_v, x.m_dim,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayBound(x);
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
@@ -2373,7 +2414,8 @@ public:
 bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(options.check_external, diagnostics);
+    ASR::VerifyVisitor v(options.check_external,
+        options.check_standalone_rules, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

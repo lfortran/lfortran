@@ -5374,3 +5374,7 @@ asr = true
 [[test]]
 filename = "asr/verify/struct_constructor_argument_kind_mismatch.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/array_dimension_out_of_range.asr"
+asr = true
