@@ -5370,3 +5370,7 @@ asr = true
 [[test]]
 filename = "asr/verify/variable_initializer_kind_mismatch.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/struct_constructor_argument_kind_mismatch.asr"
+asr = true

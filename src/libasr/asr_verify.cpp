@@ -2049,6 +2049,83 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
     }
 
+    // A StructConstructor's arguments fill the type's members in
+    // declaration order, parent members first, and a later pass lowers it
+    // into one assignment per member. A type that disagrees with its member
+    // therefore surfaces as a broken assignment inside that pass rather than
+    // here, so it is checked up front. The pass also indexes the member list
+    // positionally, so a count mismatch is a memory error waiting to happen.
+    void visit_StructConstructor(const StructConstructor_t &x) {
+        ASR::symbol_t *struct_sym = x.m_dt_sym == nullptr
+            ? nullptr : ASRUtils::symbol_get_past_external(x.m_dt_sym);
+        if (!diagnostics.has_error() && struct_sym != nullptr
+                && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            std::vector<ASR::Struct_t*> chain;
+            ASR::Struct_t *struct_type =
+                ASR::down_cast<ASR::Struct_t>(struct_sym);
+            while (struct_type != nullptr) {
+                chain.push_back(struct_type);
+                if (struct_type->m_parent == nullptr) break;
+                ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                    struct_type->m_parent);
+                if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                    break;
+                }
+                struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+            }
+            std::vector<ASR::symbol_t*> members;
+            for (auto it = chain.rbegin(); it != chain.rend(); it++) {
+                for (size_t i = 0; i < (*it)->n_members; i++) {
+                    members.push_back(
+                        (*it)->m_symtab->get_symbol((*it)->m_members[i]));
+                }
+            }
+            require_id(members.size() == x.n_args,
+                "asr.verify.struct_constructor.argument_count",
+                "StructConstructor has " + std::to_string(x.n_args) +
+                    " arguments but the type has " +
+                    std::to_string(members.size()) + " members");
+            if (members.size() == x.n_args) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    ASR::ttype_t *actual =
+                        typed_expr_type(x.m_args[i].m_value);
+                    if (actual == nullptr || members[i] == nullptr
+                            || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                        continue;
+                    }
+                    ASR::ttype_t *declared =
+                        ASR::down_cast<ASR::Variable_t>(members[i])->m_type;
+                    if (declared == nullptr) continue;
+                    ASR::ttype_t *member_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                declared));
+                    ASR::ttype_t *actual_scalar =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                actual));
+                    if (is_struct_like_type(member_scalar)
+                            || is_procedure_type(member_scalar)
+                            || member_scalar->type != actual_scalar->type) {
+                        continue;
+                    }
+                    require_with_loc_id(
+                        ASRUtils::check_equal_type(
+                            member_scalar, actual_scalar, nullptr, nullptr),
+                        "asr.verify.struct_constructor.argument_type_matches_member",
+                        "StructConstructor argument type " +
+                            ASRUtils::get_type_code(actual_scalar) +
+                            " does not match member '" +
+                            std::string(ASRUtils::symbol_name(members[i])) +
+                            "' of type " +
+                            ASRUtils::get_type_code(member_scalar),
+                        x.m_args[i].m_value->base.loc);
+                }
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
