@@ -5348,6 +5348,18 @@ filename = "asr/verify/call_actual_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/call_rank_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_allocatable_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_pointer_mismatch.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_value_type_mismatch.asr"
 asr = true
 

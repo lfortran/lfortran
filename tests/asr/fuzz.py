@@ -60,6 +60,10 @@ DECLARATION_BOOLEAN_FIELD = re.compile(
     r":(value_attr|target_attr|contiguous_attr|"
     r"is_volatile|is_protected)\s+(true|false)"
 )
+PRESENCE_FIELD = re.compile(r":presence\s+:(Required|Optional)")
+INTENT_FIELD = re.compile(
+    r":intent\s+:(Local|In|Out|InOut|ReturnVar|Unspecified)"
+)
 PASS_FAILURE = re.compile(
     r"ASR_FUZZ_FAILURE phase=pass pass=([^\s]+)"
 )
@@ -132,6 +136,20 @@ def discover_mutations(text):
     for match in KIND_FIELD.finditer(text):
         mutations.extend(replacement_mutations(
             match, ["1", "2", "4", "8"], "type kind", "mixed"))
+
+    for match in PRESENCE_FIELD.finditer(text):
+        old = match.group(1)
+        replacement = "Optional" if old == "Required" else "Required"
+        mutations.extend(replacement_mutations(
+            match, [replacement], "argument presence", "mixed"))
+
+    for match in INTENT_FIELD.finditer(text):
+        old = match.group(1)
+        if old not in {"In", "Out", "InOut"}:
+            continue
+        mutations.extend(replacement_mutations(
+            match, ["In", "Out", "InOut"],
+            "argument intent", "mixed"))
 
     for pattern, lane in (
             (INVALID_BOOLEAN_FIELD, "invalid"),

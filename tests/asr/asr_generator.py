@@ -154,6 +154,15 @@ def array_type(element, lengths):
     )
 
 
+def deferred_array_type(element, rank=1):
+    dimensions = " ".join(
+        "(dimension :start nil :length nil)" for _ in range(rank))
+    return (
+        f"(Array :type {type_of(element)} :dims [{dimensions}] "
+        f":physical_type :DescriptorArray)"
+    )
+
+
 def array_item(table, name, indices, element):
     entries = " ".join(
         f"(array_index :left nil :right {index} :step nil)"
@@ -164,15 +173,25 @@ def array_item(table, name, indices, element):
     )
 
 
-def variable(table, name, declaration, intent="Local"):
+def wrap_type(rendered, allocatable=False, pointer=False):
+    if allocatable:
+        rendered = f"(Allocatable :type {rendered})"
+    if pointer:
+        rendered = f"(Pointer :type {rendered})"
+    return rendered
+
+
+def variable(table, name, declaration, intent="Local", presence="Required",
+             allocatable=False, pointer=False):
     rendered = declaration if isinstance(declaration, str) \
         else type_of(declaration)
+    rendered = wrap_type(rendered, allocatable=allocatable, pointer=pointer)
     return (
         f"(Variable :parent_symtab {table} :name {string(name)} "
         f":dependencies [] :intent :{intent} :symbolic_value nil :value nil "
         f":storage :Default :type {rendered} "
         f":type_declaration nil :abi :Source :access :Public "
-        f":presence :Required :value_attr false :target_attr false "
+        f":presence :{presence} :value_attr false :target_attr false "
         f":contiguous_attr false :bindc_name nil :is_volatile false "
         f":is_protected false :pass_attr :NotMethod :self_argument nil "
         f":codims [])"
@@ -209,25 +228,74 @@ def if_statement(test, body):
 def subroutine(name, parameter, body):
     """A contained subroutine taking one integer argument by value."""
     parameter_name, kind = parameter
-    symbols = {
-        parameter_name: variable(
-            PROCEDURE_SYMTAB, parameter_name, ("integer", kind), "In"),
-        "local": variable(
-            PROCEDURE_SYMTAB, "local", ("integer", kind)),
+    return procedure(
+        name, False,
+        [dummy("arg", ("integer", kind), "In")],
+        body if body else [assignment(
+            PROCEDURE_SYMTAB, "local", var(PROCEDURE_SYMTAB, "arg"))],
+        extra_locals=[("local", ("integer", kind))])
+
+
+def dummy(name, declaration, intent="In", presence="Required",
+          allocatable=False, pointer=False):
+    return {
+        "name": name,
+        "declaration": declaration,
+        "intent": intent,
+        "presence": presence,
+        "allocatable": allocatable,
+        "pointer": pointer,
+        "type": wrap_type(
+            declaration if isinstance(declaration, str)
+            else type_of(declaration),
+            allocatable=allocatable, pointer=pointer),
     }
+
+
+def procedure(name, returns, dummies, body, extra_locals=None):
+    """A contained subroutine or function with an explicit dummy list."""
+    symbols = {}
+    for dummy_arg in dummies:
+        symbols[dummy_arg["name"]] = variable(
+            PROCEDURE_SYMTAB, dummy_arg["name"], dummy_arg["declaration"],
+            dummy_arg["intent"], dummy_arg["presence"],
+            dummy_arg["allocatable"], dummy_arg["pointer"])
+    for local_name, declaration in extra_locals or []:
+        symbols[local_name] = variable(
+            PROCEDURE_SYMTAB, local_name, declaration)
+    return_type = "nil"
+    return_var = "nil"
+    if returns:
+        ret_decl = dummies[0]["declaration"] if dummies else ("integer", 4)
+        symbols[name] = variable(
+            PROCEDURE_SYMTAB, name, ret_decl, "ReturnVar")
+        return_type = type_of(ret_decl) if isinstance(ret_decl, tuple) \
+            else ret_decl
+        return_var = var(PROCEDURE_SYMTAB, name)
+        if not body:
+            if dummies:
+                body = [assignment(
+                    PROCEDURE_SYMTAB, name,
+                    var(PROCEDURE_SYMTAB, dummies[0]["name"]))]
+            else:
+                body = []
+    arg_types = " ".join(dummy_arg["type"] for dummy_arg in dummies)
+    args = " ".join(var(PROCEDURE_SYMTAB, dummy_arg["name"])
+                    for dummy_arg in dummies)
     entries = " ".join(
         f"{string(key)} {value}" for key, value in symbols.items())
     return (
         f"(Function :symtab (SymbolTable :id {PROCEDURE_SYMTAB} "
         f":symbols {{{entries}}}) :name {string(name)} "
         f":function_signature (FunctionType "
-        f":arg_types [{integer_type(kind)}] :return_var_type nil "
+        f":arg_types [{arg_types}] :return_var_type {return_type} "
         f":abi :Source :deftype :Implementation :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
         f":static false :restrictions [] :is_restriction false) "
         f":dependencies [] "
-        f":args [{var(PROCEDURE_SYMTAB, parameter_name)}] "
-        f":body [{' '.join(body)}] :return_var nil :access :Public "
+        f":args [{args}] "
+        f":body [{' '.join(body or [])}] "
+        f":return_var {return_var} :access :Public "
         f":deterministic true :side_effect_free true :module_file nil)"
     )
 
@@ -270,10 +338,29 @@ def function_call(name, argument, kind):
 
 
 def subroutine_call(name, argument):
+    return call_stmt(name, [argument])
+
+
+def call_args(values):
+    return " ".join(
+        "(call_arg :value nil)" if value is None
+        else f"(call_arg :value {value})"
+        for value in values)
+
+
+def call_stmt(name, arguments):
     return (
         f"(SubroutineCall :name {symbol_ref(PROGRAM_SYMTAB, name)} "
-        f":original_name nil :args [(call_arg :value {argument})] "
+        f":original_name nil :args [{call_args(arguments)}] "
         f":dt nil :strict_bounds_checking false)"
+    )
+
+
+def function_call_args(name, arguments, result_type):
+    return (
+        f"(FunctionCall :name {symbol_ref(PROGRAM_SYMTAB, name)} "
+        f":original_name nil :args [{call_args(arguments)}] "
+        f":type {result_type} :value nil :dt nil)"
     )
 
 
@@ -430,34 +517,265 @@ def generate_valid(seed):
         # Only one is generated per program: both would claim the same symbol
         # table id.
         name, kind = rng.choice(integers)
-        if rng.choice([False, True]):
-            symbols["helper"] = subroutine(
-                "helper", ("arg", kind),
-                [assignment(
-                    PROCEDURE_SYMTAB, "local", var(PROCEDURE_SYMTAB, "arg"))])
-            body.append(subroutine_call("helper", var(PROGRAM_SYMTAB, name)))
-            description = "schema-valid program with a contained subroutine"
-        else:
+        flavor = rng.choice([
+            "plain", "optional", "allocatable", "pointer",
+            "intent_out", "two_arg_optional",
+        ])
+        if flavor == "plain" and rng.choice([False, True]):
             symbols["helper"] = function_symbol("helper", "arg", kind)
             body.append(assignment(
                 PROGRAM_SYMTAB, name,
                 function_call("helper", var(PROGRAM_SYMTAB, name), kind)))
             description = "schema-valid program with a contained function"
+        else:
+            dummies, actuals, extra_locals, desc = valid_call_shape(
+                rng, flavor, name, kind, symbols)
+            symbols["helper"] = procedure(
+                "helper", False, dummies, [], extra_locals)
+            body.append(call_stmt("helper", actuals))
+            description = desc
 
     return translation_unit(symbols, body), description
 
 
+def valid_call_shape(rng, flavor, name, kind, symbols):
+    extra_locals = [("local", ("integer", kind))]
+    if flavor == "optional":
+        return (
+            [dummy("arg", ("integer", kind), "In", "Optional")],
+            [var(PROGRAM_SYMTAB, name)] if rng.choice([False, True]) else [],
+            extra_locals,
+            "schema-valid optional argument call",
+        )
+    if flavor == "allocatable":
+        actual = f"alloc_{name}"
+        symbols[actual] = variable(
+            PROGRAM_SYMTAB, actual, ("integer", kind),
+            allocatable=True)
+        return (
+            [dummy("arg", ("integer", kind), "InOut", allocatable=True)],
+            [var(PROGRAM_SYMTAB, actual)],
+            extra_locals,
+            "schema-valid allocatable argument call",
+        )
+    if flavor == "pointer":
+        actual = f"ptr_{name}"
+        symbols[actual] = variable(
+            PROGRAM_SYMTAB, actual, ("integer", kind), pointer=True)
+        return (
+            [dummy("arg", ("integer", kind), "InOut", pointer=True)],
+            [var(PROGRAM_SYMTAB, actual)],
+            extra_locals,
+            "schema-valid pointer argument call",
+        )
+    if flavor == "intent_out":
+        return (
+            [dummy("arg", ("integer", kind), "Out")],
+            [var(PROGRAM_SYMTAB, name)],
+            extra_locals,
+            "schema-valid intent(out) argument call",
+        )
+    if flavor == "two_arg_optional":
+        second = dummy("opt", ("integer", kind), "In", "Optional")
+        actuals = [var(PROGRAM_SYMTAB, name)]
+        if rng.choice([False, True]):
+            actuals.append(var(PROGRAM_SYMTAB, name))
+        return (
+            [dummy("arg", ("integer", kind), "In"), second],
+            actuals,
+            extra_locals,
+            "schema-valid required-plus-optional call",
+        )
+    return (
+        [dummy("arg", ("integer", kind), "In")],
+        [var(PROGRAM_SYMTAB, name)],
+        extra_locals,
+        "schema-valid program with a contained subroutine",
+    )
+
+
 def generate_invalid(seed):
     rng = random.Random(seed)
-    if rng.choice([False, True]):
-        text, _ = generate_valid(seed)
-        text = text.replace(
-            ":realloc_lhs false", ":realloc_lhs true", 1)
-        return text, "schema-invalid nonallocatable realloc_lhs"
+    builders = [
+        invalid_realloc_lhs,
+        invalid_real_kind,
+        invalid_call_kind,
+        invalid_call_family,
+        invalid_call_allocatable_to_plain,
+        invalid_call_plain_to_allocatable,
+        invalid_call_pointer_to_plain,
+        invalid_call_plain_to_pointer,
+        invalid_call_omit_required,
+        invalid_call_extra_arg,
+        invalid_call_scalar_to_array,
+        invalid_call_array_to_scalar,
+        invalid_call_intent_in_to_out,
+        invalid_call_optional_wrong_kind,
+        invalid_function_call_kind,
+        invalid_call_plain_array_to_allocatable_array,
+        invalid_call_allocatable_array_to_plain_array,
+    ]
+    return rng.choice(builders)(rng)
 
+
+def invalid_realloc_lhs(rng):
+    text, _ = generate_valid(rng.randrange(1 << 30))
+    text = text.replace(":realloc_lhs false", ":realloc_lhs true", 1)
+    return text, "schema-invalid nonallocatable realloc_lhs"
+
+
+def invalid_real_kind(_rng):
     text = translation_unit(
         {"x": real_variable(PROGRAM_SYMTAB, "x", 1)}, [])
     return text, "schema-invalid unsupported real kind"
+
+
+def _mismatch_program(dummies, actuals, actual_vars, description,
+                      returns=False):
+    symbols = dict(actual_vars)
+    symbols["helper"] = procedure("helper", returns, dummies, [])
+    if returns:
+        result = "res"
+        symbols[result] = variable(
+            PROGRAM_SYMTAB, result, dummies[0]["declaration"]
+            if dummies else ("integer", 4))
+        result_type = dummies[0]["type"] if dummies else integer_type(4)
+        body = [assignment(
+            PROGRAM_SYMTAB, result,
+            function_call_args("helper", actuals, result_type))]
+    else:
+        body = [call_stmt("helper", actuals)]
+    return translation_unit(symbols, body), description
+
+
+def invalid_call_kind(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 2)},
+        "schema-invalid call kind mismatch")
+
+
+def invalid_call_family(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": real_variable(PROGRAM_SYMTAB, "x", 4)},
+        "schema-invalid call family mismatch")
+
+
+def invalid_call_allocatable_to_plain(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(
+            PROGRAM_SYMTAB, "x", ("integer", 4), allocatable=True)},
+        "schema-invalid allocatable actual to nonallocatable dummy")
+
+
+def invalid_call_plain_to_allocatable(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "InOut", allocatable=True)],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        "schema-invalid nonallocatable actual to allocatable dummy")
+
+
+def invalid_call_pointer_to_plain(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(
+            PROGRAM_SYMTAB, "x", ("integer", 4), pointer=True)},
+        "schema-invalid pointer actual to nonpointer dummy")
+
+
+def invalid_call_plain_to_pointer(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "InOut", pointer=True)],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        "schema-invalid nonpointer actual to pointer dummy")
+
+
+def invalid_call_omit_required(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [],
+        {},
+        "schema-invalid omitted required argument")
+
+
+def invalid_call_extra_arg(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x"), var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        "schema-invalid extra actual argument")
+
+
+def invalid_call_scalar_to_array(_rng):
+    dummy_type = array_type(("integer", 4), [3])
+    return _mismatch_program(
+        [dummy("arg", dummy_type, "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        "schema-invalid scalar actual to array dummy")
+
+
+def invalid_call_array_to_scalar(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(
+            PROGRAM_SYMTAB, "x", array_type(("integer", 4), [3]))},
+        "schema-invalid array actual to scalar dummy")
+
+
+def invalid_call_intent_in_to_out(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "Out")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(PROGRAM_SYMTAB, "x", ("integer", 4), "In")},
+        "schema-invalid intent(in) actual to intent(out) dummy")
+
+
+def invalid_call_optional_wrong_kind(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In", "Optional")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 8)},
+        "schema-invalid optional actual kind mismatch")
+
+
+def invalid_call_plain_array_to_allocatable_array(_rng):
+    dummy_type = deferred_array_type(("integer", 4), 1)
+    actual_type = array_type(("integer", 4), [3])
+    return _mismatch_program(
+        [dummy("arg", dummy_type, "InOut", allocatable=True)],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(PROGRAM_SYMTAB, "x", actual_type)},
+        "schema-invalid plain array to allocatable array dummy")
+
+
+def invalid_call_allocatable_array_to_plain_array(_rng):
+    dummy_type = array_type(("integer", 4), [3])
+    actual_type = deferred_array_type(("integer", 4), 1)
+    return _mismatch_program(
+        [dummy("arg", dummy_type, "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": variable(
+            PROGRAM_SYMTAB, "x", actual_type, allocatable=True)},
+        "schema-invalid allocatable array to plain array dummy")
+
+
+def invalid_function_call_kind(_rng):
+    return _mismatch_program(
+        [dummy("arg", ("integer", 4), "In")],
+        [var(PROGRAM_SYMTAB, "x")],
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 2)},
+        "schema-invalid function-call kind mismatch",
+        returns=True)
 
 
 def generate(mode, seed):
