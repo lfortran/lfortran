@@ -103,9 +103,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # are deliberately not run: a generated program may fault at runtime for
     # reasons no ASR verifier could predict, so only linking is a property of
     # the ASR itself.
-    #
-    # Adding a fixture needs a re-configure for the glob to pick it up.
-    file(GLOB LFORTRAN_ASR_COMPILE_FIXTURES
+    file(GLOB LFORTRAN_ASR_COMPILE_FIXTURES CONFIGURE_DEPENDS
         ${CMAKE_SOURCE_DIR}/tests/asr/compile/*.asr)
     foreach(fixture ${LFORTRAN_ASR_COMPILE_FIXTURES})
         get_filename_component(fixture_name ${fixture} NAME_WE)

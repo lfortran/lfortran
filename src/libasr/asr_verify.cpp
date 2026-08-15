@@ -883,7 +883,7 @@ public:
             // carries it on the declaration or on the initializer depending
             // on where it has been substituted, so it is not comparable.
             if (is_struct_like_type(declared) || is_procedure_type(declared)
-                    || declared->type != actual->type
+                    || is_struct_like_type(actual) || is_procedure_type(actual)
                     || ASR::is_a<ASR::String_t>(*declared)
                     || ASRUtils::extract_kind_from_ttype_t(declared) >= 1000
                     || ASRUtils::extract_kind_from_ttype_t(actual) >= 1000) {
@@ -1287,7 +1287,8 @@ public:
             ASR::ttype_t *declared = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(x.m_type));
             if (!is_struct_like_type(element) && !is_procedure_type(element)
-                    && element->type == declared->type) {
+                    && !is_struct_like_type(declared)
+                    && !is_procedure_type(declared)) {
                 require_id(
                     ASRUtils::check_equal_type(
                         element, declared, nullptr, nullptr),
@@ -1386,7 +1387,11 @@ public:
     // Check if method_name exists in the struct's symtab (walking parent chain).
     bool struct_has_member(ASR::Struct_t* struct_type, const std::string& method_name) {
         ASR::Struct_t* current = struct_type;
+        std::set<ASR::Struct_t*> seen;
         while (current) {
+            if (!seen.insert(current).second) {
+                break;
+            }
             if (current->m_symtab->get_symbol(method_name) != nullptr) {
                 return true;
             }
@@ -2066,9 +2071,15 @@ public:
         if (!diagnostics.has_error() && struct_sym != nullptr
                 && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
             std::vector<ASR::Struct_t*> chain;
+            std::set<ASR::Struct_t*> seen;
             ASR::Struct_t *struct_type =
                 ASR::down_cast<ASR::Struct_t>(struct_sym);
             while (struct_type != nullptr) {
+                require_id(seen.insert(struct_type).second,
+                    "asr.verify.struct_constructor.parent_chain_acyclic",
+                    "StructConstructor type '" +
+                        std::string(struct_type->m_name) +
+                        "' has a cyclic parent chain");
                 chain.push_back(struct_type);
                 if (struct_type->m_parent == nullptr) break;
                 ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
@@ -2111,7 +2122,8 @@ public:
                                 actual));
                     if (is_struct_like_type(member_scalar)
                             || is_procedure_type(member_scalar)
-                            || member_scalar->type != actual_scalar->type) {
+                            || is_struct_like_type(actual_scalar)
+                            || is_procedure_type(actual_scalar)) {
                         continue;
                     }
                     require_with_loc_id(
