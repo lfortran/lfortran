@@ -269,15 +269,59 @@ public:
         current_symtab = parent_symtab;
     }
 
+    // A generic name resolves to one of its specific procedures, so every
+    // entry has to be something that can be called.
+    void verify_specific_procedures(const std::string &what,
+            symbol_t **procs, size_t n_procs, const Location &loc) {
+        for (size_t i = 0; i < n_procs; i++) {
+            require_with_loc_id(procs[i] != nullptr,
+                "asr.verify.generic_procedure.specific_is_procedure",
+                what + " cannot have a null specific procedure", loc);
+            ASR::symbol_t *proc = check_external
+                ? ASRUtils::symbol_get_past_external(procs[i]) : procs[i];
+            require_with_loc_id(proc != nullptr &&
+                    (ASR::is_a<ASR::Function_t>(*proc) ||
+                     ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) ||
+                     ASR::is_a<ASR::GenericProcedure_t>(*proc) ||
+                     ASR::is_a<ASR::ExternalSymbol_t>(*proc)),
+                "asr.verify.generic_procedure.specific_is_procedure",
+                what + " specific procedure '" +
+                std::string(ASRUtils::symbol_name(procs[i])) +
+                "' must be a procedure, not " +
+                ASRUtils::symbol_type_name(*procs[i]), loc);
+        }
+    }
+
     void visit_GenericProcedure(const GenericProcedure_t& x) {
         require(x.m_name != nullptr,
             "GenericProcedure::m_name cannot be nullptr");
         std::string gen_name = x.m_name;
         require(x.m_parent_symtab != nullptr,
             gen_name + "::m_parent_symtab cannot be nullptr");
-        for (size_t i=0; i < x.n_procs; i++) {
-            // They are already visited so just check the nullptr
-            LCOMPILERS_ASSERT(x.m_procs[i]);
+        verify_specific_procedures("GenericProcedure '" + gen_name + "'",
+            x.m_procs, x.n_procs, x.base.base.loc);
+    }
+
+    // A namelist group is a list of variables; I/O reads and writes each one
+    // by its declared type.
+    void visit_Namelist(const Namelist_t& x) {
+        require(x.m_group_name != nullptr,
+            "Namelist::m_group_name cannot be nullptr");
+        for (size_t i = 0; i < x.n_var_list; i++) {
+            require(x.m_var_list[i] != nullptr,
+                "Namelist '" + std::string(x.m_group_name) +
+                "' cannot have a null member");
+            ASR::symbol_t *member = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_var_list[i])
+                : x.m_var_list[i];
+            require_id(member != nullptr &&
+                    (ASR::is_a<ASR::Variable_t>(*member) ||
+                     ASR::is_a<ASR::ExternalSymbol_t>(*member)),
+                "asr.verify.namelist.member_is_variable",
+                "Namelist '" + std::string(x.m_group_name) + "' member '" +
+                std::string(ASRUtils::symbol_name(x.m_var_list[i])) +
+                "' must be a variable, not " +
+                ASRUtils::symbol_type_name(*x.m_var_list[i]));
         }
     }
 
@@ -287,10 +331,8 @@ public:
         std::string cus_name = x.m_name;
         require(x.m_parent_symtab != nullptr,
             cus_name + "::m_parent_symtab cannot be nullptr");
-        for (size_t i=0; i < x.n_procs; i++) {
-            // They are already visited so just check the nullptr
-            LCOMPILERS_ASSERT(x.m_procs[i]);
-        }
+        verify_specific_procedures("CustomOperator '" + cus_name + "'",
+            x.m_procs, x.n_procs, x.base.base.loc);
     }
 
     void visit_Block(const Block_t& x) {
@@ -361,9 +403,12 @@ public:
         require(symtab_in_scope(current_symtab, x.m_m),
             "Block " + std::string(ASRUtils::symbol_name(x.m_m)) +
             " should resolve in current scope.");
+        require_id(ASR::is_a<ASR::Block_t>(*x.m_m),
+            "asr.verify.block_call.target_is_block",
+            "BlockCall::m_m '" + std::string(ASRUtils::symbol_name(x.m_m)) +
+            "' must be a block");
         SymbolTable *parent_symtab = current_symtab;
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        LCOMPILERS_ASSERT(block); // already checked above, just making sure
         current_symtab = block->m_symtab;
         for (size_t i=0; i<block->n_body; i++) {
             visit_stmt(*(block->m_body[i]));
@@ -418,6 +463,17 @@ public:
                 "A module dependency must not be an empty string");
             require(valid_name(x.m_dependencies[i]),
                 "A module dependency must be a valid string");
+            // A complete graph carries every module it uses. A dependency
+            // with nothing behind it names a module whose declarations the
+            // compiler will never see, which is the shape a lost `use` takes.
+            if (check_standalone_rules) {
+                require_id(parent_symtab->get_symbol(
+                        std::string(x.m_dependencies[i])) != nullptr,
+                    "asr.verify.module.dependency_is_present",
+                    "Module '" + std::string(x.m_name) + "' depends on '" +
+                    std::string(x.m_dependencies[i]) +
+                    "', which is not in this translation unit");
+            }
         }
         for( auto& dep: module_dependencies ) {
             if( dep != x.m_name ) {
@@ -535,7 +591,25 @@ public:
             "StructMethodDeclaration::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
 
-        ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(x.m_proc);
+        // A binding names a procedure. It may name it through an
+        // ExternalSymbol, and a generic binding names a GenericProcedure
+        // whose specifics carry the signatures, so only a Function has an
+        // argument list to look at here.
+        ASR::symbol_t *proc_sym = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_proc) : x.m_proc;
+        require_id(proc_sym != nullptr &&
+                (ASR::is_a<ASR::Function_t>(*proc_sym) ||
+                 ASR::is_a<ASR::GenericProcedure_t>(*proc_sym) ||
+                 ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ||
+                 ASR::is_a<ASR::ExternalSymbol_t>(*proc_sym)),
+            "asr.verify.struct_method.proc_is_procedure",
+            "StructMethodDeclaration::m_proc of '" + std::string(x.m_name) +
+            "' must be a procedure, not " +
+            ASRUtils::symbol_type_name(*x.m_proc));
+        if (!ASR::is_a<ASR::Function_t>(*proc_sym)) {
+            return;
+        }
+        ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(proc_sym);
         if( x.m_self_argument ) {
             bool arg_found = false;
             std::string self_arg_name = std::string(x.m_self_argument);
@@ -550,6 +624,28 @@ public:
             require(arg_found, self_arg_name + " must be present in " +
                     std::string(x.m_name) + " procedures.");
         }
+    }
+
+    // A procedure's dummy variables and its result variable are declared by
+    // the procedure itself. One that resolves in an enclosing scope instead
+    // is a host variable the procedure would then write through as if it
+    // owned it. A dummy procedure is exempt: it names the procedure symbol
+    // itself, which lives where that procedure was declared. Only for a
+    // complete graph: a procedure the frontend synthesizes for an implicit
+    // interface borrows both its dummies and its result from the caller.
+    void require_own_symbol(ASR::expr_t *e, const std::string &owner,
+            const std::string &what) {
+        if (!check_standalone_rules) return;
+        if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
+        require_with_loc_id(
+            ASRUtils::symbol_parent_symtab(sym) == current_symtab,
+            "asr.verify.function.argument_declared_locally",
+            "The " + what + " of '" + owner + "', '" +
+            std::string(ASRUtils::symbol_name(sym)) +
+            "', is not declared in it",
+            e->base.loc);
     }
 
     void visit_Function(const Function_t &x) {
@@ -580,6 +676,8 @@ public:
         visit_ttype(*x.m_function_signature);
         for (size_t i=0; i<x.n_args; i++) {
             LCOMPILERS_ASSERT(x.m_args[i]);
+            require_own_symbol(x.m_args[i], func_name,
+                "dummy argument " + std::to_string(i + 1));
             visit_expr(*x.m_args[i]);
         }
         for (size_t i=0; i<x.n_body; i++) {
@@ -587,6 +685,7 @@ public:
             visit_stmt(*x.m_body[i]);
         }
         if (x.m_return_var) {
+            require_own_symbol(x.m_return_var, func_name, "result variable");
             visit_expr(*x.m_return_var);
         }
 
@@ -740,6 +839,16 @@ public:
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        // A member name is how the rest of the compiler finds the member's
+        // declaration, and every lookup of one that is not there has to
+        // invent an answer.
+        for (size_t i = 0; i < x.n_members; i++) {
+            require_id(x.m_symtab->get_symbol(std::string(x.m_members[i]))
+                    != nullptr,
+                "asr.verify.user_defined_type.member_is_declared",
+                "'" + std::string(x.m_name) + "' lists the member '" +
+                std::string(x.m_members[i]) + "', which it does not declare");
+        }
         std::vector<std::string> struct_dependencies;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
@@ -786,7 +895,31 @@ public:
         current_symtab = parent_symtab;
     }
 
+    // A derived type extends another derived type and nothing else. Every
+    // member lookup, every dispatch and every layout decision walks this
+    // chain, so a parent that is not a type is followed straight into the
+    // wrong node.
     void visit_Struct(const Struct_t& x) {
+        if (x.m_parent != nullptr) {
+            ASR::symbol_t *parent = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_parent) : x.m_parent;
+            require_id(parent != nullptr &&
+                    (ASR::is_a<ASR::Struct_t>(*parent) ||
+                     ASR::is_a<ASR::ExternalSymbol_t>(*parent)),
+                "asr.verify.struct.parent_is_struct",
+                "Struct::m_parent of '" + std::string(x.m_name) +
+                "' must be a derived type, not " +
+                ASRUtils::symbol_type_name(*x.m_parent));
+            // Only for a complete graph: a specialization of a parameterized
+            // derived type is created in the scope that instantiates it and
+            // extends a type declared elsewhere.
+            if (check_standalone_rules) {
+                require_id(symtab_in_scope(current_symtab, x.m_parent),
+                    "asr.verify.struct.parent_in_scope",
+                    "Struct::m_parent of '" + std::string(x.m_name) +
+                    "' cannot point outside of its symbol table");
+            }
+        }
         visit_UserDefinedType(x);
         if( !x.m_alignment ) {
             return ;
@@ -1028,6 +1161,51 @@ public:
             require(x.m_type_declaration != nullptr,
                 "Variable " + std::string(x.m_name) + " of type StructType must have a type declaration.");
         }
+        // The declared type of a variable is what the backend asks for its
+        // layout, and a procedure pointer names the procedure it points at.
+        // Anything else is a symbol the backend cannot make a type from.
+        if (x.m_type_declaration != nullptr) {
+            ASR::symbol_t *decl = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_type_declaration)
+                : x.m_type_declaration;
+            require_id(decl != nullptr &&
+                    (ASR::is_a<ASR::Struct_t>(*decl) ||
+                     ASR::is_a<ASR::Enum_t>(*decl) ||
+                     ASR::is_a<ASR::Union_t>(*decl) ||
+                     ASR::is_a<ASR::Function_t>(*decl) ||
+                     ASR::is_a<ASR::Variable_t>(*decl) ||
+                     ASR::is_a<ASR::ExternalSymbol_t>(*decl)),
+                "asr.verify.variable.type_declaration_is_type",
+                "Variable '" + std::string(x.m_name) +
+                "' declares its type with " +
+                ASRUtils::symbol_type_name(*x.m_type_declaration) +
+                ", which does not name a type or a procedure");
+            // An unresolved ExternalSymbol says nothing about what it names,
+            // so what it declares can only be checked once it resolves.
+            bool declares_a_type = decl == nullptr ||
+                ASR::is_a<ASR::ExternalSymbol_t>(*decl) ||
+                ASR::is_a<ASR::Struct_t>(*decl) ||
+                ASR::is_a<ASR::Enum_t>(*decl) ||
+                ASR::is_a<ASR::Union_t>(*decl);
+            bool needs_a_type = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(x.m_type)) ||
+                ASRUtils::is_class_type(ASRUtils::extract_type(x.m_type));
+            require_id(!needs_a_type || declares_a_type,
+                "asr.verify.variable.type_declaration_is_type",
+                "Variable '" + std::string(x.m_name) +
+                "' has a derived type but declares it with " +
+                ASRUtils::symbol_type_name(*x.m_type_declaration));
+            // Only for a complete graph: pass_array_by_data rebuilds a
+            // procedure in a fresh scope while its variables still name the
+            // interface in the scope they came from.
+            if (check_standalone_rules) {
+                require_id(
+                    symtab_in_scope(current_symtab, x.m_type_declaration),
+                    "asr.verify.variable.type_declaration_in_scope",
+                    "Variable '" + std::string(x.m_name) +
+                    "' declares its type with a symbol that is not in scope");
+            }
+        }
 
         // Verify pass_attr and self_argument consistency
         bool is_proc_pointer = ASRUtils::is_symbol_procedure_variable(
@@ -1080,6 +1258,14 @@ public:
             std::string asr_owner_name = "";
             if( !is_valid_owner ) {
                 ASR::symbol_t* asr_owner_sym = ASRUtils::get_asr_owner(x.m_external);
+                // A symbol owned by the global scope, such as a program, has
+                // no owning symbol at all. Nothing can import it, so reject it
+                // here rather than dereferencing the null owner below.
+                require_id(asr_owner_sym != nullptr,
+                    "asr.verify.external_symbol.owner_is_importable",
+                    "ExternalSymbol::m_external '" + std::string(x.m_name) +
+                    "' is owned by the global scope, which cannot be imported "
+                    "from");
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
@@ -1737,6 +1923,10 @@ public:
         require(symtab_in_scope(current_symtab, x.m_m),
             "AssociateBlockCall::m_name '" + std::string(symbol_name(x.m_m)) +
                 "' cannot point outside of its symbol table");
+        require_id(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m),
+            "asr.verify.associate_block_call.target_is_associate_block",
+            "AssociateBlockCall::m_m '" + std::string(symbol_name(x.m_m)) +
+            "' must be an associate block");
     }
 
     ASR::symbol_t *get_parent_type_dt(ASR::symbol_t *dt) {

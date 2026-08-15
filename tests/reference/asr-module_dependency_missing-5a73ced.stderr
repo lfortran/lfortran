@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.module.dependency_is_present]: Module 'm' depends on 'nosuchmodule', which is not in this translation unit
+ --> tests/asr/verify/module_dependency_missing.asr:5:12
+  |
+5 |       "m" (Module
+  |            ^^^^^^ failed here
