@@ -5,6 +5,15 @@
 # bin ... run the CodeGen and output bin, compare against reference bin
 
 [[test]]
+filename = "asr/compile/asr_text_compile_01.asr"
+asr_clojure = true
+llvm = true
+
+[[test]]
+filename = "asr/verify/assignment_realloc_nonallocatable.asr"
+asr = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true
@@ -5338,5 +5347,49 @@ filename = "errors/initializer_noncompile_time_12120.f90"
 asr = true
 
 [[test]]
+
 filename = "../integration_tests/initializer_intrinsic_const_12120.f90"
+asr = true
+[[test]]
+filename = "asr/verify/call_actual_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_value_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_signature_argument_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/unsupported_real_kind.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binary_op_operand_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_initializer_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_initializer_family_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_constructor_argument_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_constructor_cyclic_parent.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_dimension_out_of_range.asr"
 asr = true

@@ -14,6 +14,7 @@ set(SRC
     semantics/ast_to_asr.cpp
 
     fortran_evaluator.cpp
+    pipeline.cpp
 
     ast_serialization.cpp
 

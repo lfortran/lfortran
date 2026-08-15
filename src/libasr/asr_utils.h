@@ -7299,14 +7299,20 @@ static inline void visit_expr_list(Allocator &al, Vec<ASR::expr_t *> exprs,
 
 class VerifyAbort {};
 
-static inline void require_impl(bool cond, const std::string &error_msg,
-    const Location &loc, diag::Diagnostics &diagnostics) {
+static inline void require_impl(bool cond, const std::string &error_code,
+    const std::string &error_msg, const Location &loc,
+    diag::Diagnostics &diagnostics) {
     if (!cond) {
         diagnostics.message_label(error_msg,
             {loc}, "failed here",
-            diag::Level::Error, diag::Stage::ASRVerify);
+            diag::Level::Error, diag::Stage::ASRVerify, error_code);
         throw VerifyAbort();
     }
+}
+
+static inline void require_impl(bool cond, const std::string &error_msg,
+    const Location &loc, diag::Diagnostics &diagnostics) {
+    require_impl(cond, "", error_msg, loc, diagnostics);
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims) {

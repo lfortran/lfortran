@@ -174,6 +174,8 @@ intrinsics/misc
 ```{toctree}
 :caption: LFortran ASR Nodes
 :hidden:
+asr/asr.md
+asr/asr_text.md
 asr/asr_nodes/cast_kind_nodes/cast_kind.md
 asr/asr_nodes/expression_nodes/expression_nodes.md
 asr/asr_nodes/kinds_nodes/kinds.md

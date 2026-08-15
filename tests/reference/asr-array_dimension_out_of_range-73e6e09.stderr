@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.array_dimension.dim_within_rank]: ArrayBound dimension 0 is out of range for an array of rank 1
+  --> tests/asr/verify/array_dimension_out_of_range.asr:89:14
+   |
+89 |             (ArrayBound
+   |              ^^^^^^^^^^ failed here
