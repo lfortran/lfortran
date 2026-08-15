@@ -163,7 +163,9 @@ time_section "🧪 Testing caffeine" '
   ./install.sh --yes --prefix=$PWD/inst --verbose
   export CAF_IMAGES=4
   # Print a symbolized backtrace if an image dies with a fatal signal
+  # (gdb resolves function names from the ELF symtab; execinfo cannot)
   export GASNET_BACKTRACE=1
+  export GASNET_BACKTRACE_TYPE=GDB,EXECINFO
   ./run-fpm.sh test --verbose
 
   print_success "Done with caffeine"
