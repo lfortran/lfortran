@@ -1537,8 +1537,11 @@ public:
                     // An allocatable or pointer dummy requires an actual
                     // of the same wrapper; the other direction is valid
                     // Fortran (an allocatable actual may be passed to a
-                    // nonallocatable dummy). Rank must agree unless the
-                    // dummy is assumed-rank.
+                    // nonallocatable dummy). A scalar actual for an array
+                    // dummy (or the converse) is invalid, except for
+                    // assumed-rank and elemental. Sequence association can
+                    // pass a 2-D actual to a 1-D dummy, so ranks of two
+                    // arrays need not match.
                     if (ASRUtils::is_allocatable(formal_type)) {
                         require_with_loc_id(
                             ASRUtils::is_allocatable(actual_type),
@@ -1565,10 +1568,12 @@ public:
                     bool elemental = ASRUtils::get_FunctionType(func)
                         ->m_elemental;
                     if (!formal_assumed_rank && !elemental) {
+                        bool actual_is_array =
+                            ASRUtils::is_array(actual_type);
+                        bool formal_is_array =
+                            ASRUtils::is_array(formal_type);
                         require_with_loc_id(
-                            ASRUtils::extract_n_dims_from_ttype(actual_type)
-                                == ASRUtils::extract_n_dims_from_ttype(
-                                    formal_type),
+                            actual_is_array == formal_is_array,
                             "asr.verify.call.actual_rank_matches_formal",
                             "Actual argument type " +
                                 ASRUtils::get_type_code(actual_type) +
