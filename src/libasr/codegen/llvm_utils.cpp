@@ -1221,7 +1221,12 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
-                if( !arg->m_value_attr && (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout) &&
+                // Keep in sync with ASRToLLVMVisitor::is_cptr_dummy_passed_by_value:
+                // a CPtr dummy is passed by reference (void**) unless it is
+                // VALUE or intent(in).
+                if( (arg->m_intent == ASRUtils::intent_out ||
+                     arg->m_intent == ASRUtils::intent_inout ||
+                     (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
                     ASR::is_a<ASR::CPtr_t>(*arg->m_type) ) {
                     type = type->getPointerTo();
                 }
