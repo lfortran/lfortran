@@ -1533,54 +1533,61 @@ public:
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                         !is_method && !struct_argument &&
                         !procedure_argument) {
-                    // check_equal_type strips Allocatable and Pointer.
-                    // An allocatable or pointer dummy requires an actual
-                    // of the same wrapper; the other direction is valid
-                    // Fortran (an allocatable actual may be passed to a
-                    // nonallocatable dummy). A scalar actual for an array
-                    // dummy (or the converse) is invalid, except for
-                    // assumed-rank and elemental. Sequence association can
-                    // pass a 2-D actual to a 1-D dummy, so ranks of two
-                    // arrays need not match.
-                    if (ASRUtils::is_allocatable(formal_type)) {
-                        require_with_loc_id(
-                            ASRUtils::is_allocatable(actual_type),
-                            "asr.verify.call.actual_allocatable_matches_formal",
-                            "Actual argument type " +
-                                ASRUtils::get_type_code(actual_type) +
-                                " is not allocatable, but the dummy is " +
-                                ASRUtils::get_type_code(formal_type),
-                            passed_arg_expr->base.loc);
-                    }
-                    if (ASRUtils::is_pointer(formal_type)) {
-                        require_with_loc_id(
-                            ASRUtils::is_pointer(actual_type),
-                            "asr.verify.call.actual_pointer_matches_formal",
-                            "Actual argument type " +
-                                ASRUtils::get_type_code(actual_type) +
-                                " is not a pointer, but the dummy is " +
-                                ASRUtils::get_type_code(formal_type),
-                            passed_arg_expr->base.loc);
-                    }
-                    bool formal_assumed_rank = ASRUtils::is_array(formal_type)
-                        && ASRUtils::extract_physical_type(formal_type)
-                            == ASR::array_physical_typeType::AssumedRankArray;
-                    bool elemental = ASRUtils::get_FunctionType(func)
-                        ->m_elemental;
-                    if (!formal_assumed_rank && !elemental) {
-                        bool actual_is_array =
-                            ASRUtils::is_array(actual_type);
-                        bool formal_is_array =
-                            ASRUtils::is_array(formal_type);
-                        require_with_loc_id(
-                            actual_is_array == formal_is_array,
-                            "asr.verify.call.actual_rank_matches_formal",
-                            "Actual argument type " +
-                                ASRUtils::get_type_code(actual_type) +
-                                " does not match formal argument rank of "
-                                "type " +
-                                ASRUtils::get_type_code(formal_type),
-                            passed_arg_expr->base.loc);
+                    // These wrapper and rank rules hold for a complete
+                    // standalone graph. After a pass the dummy may have been
+                    // rewritten (openmp turns allocatable into pointer;
+                    // pass_array_by_data changes ranks), so they are not
+                    // applied to intermediate ASR.
+                    if (check_standalone_rules) {
+                        // check_equal_type strips Allocatable and Pointer.
+                        // An allocatable or pointer dummy requires an actual
+                        // of the same wrapper; the other direction is valid
+                        // Fortran (an allocatable actual may be passed to a
+                        // nonallocatable dummy). A scalar actual for an array
+                        // dummy (or the converse) is invalid, except for
+                        // assumed-rank and elemental. Sequence association can
+                        // pass a 2-D actual to a 1-D dummy, so ranks of two
+                        // arrays need not match.
+                        if (ASRUtils::is_allocatable(formal_type)) {
+                            require_with_loc_id(
+                                ASRUtils::is_allocatable(actual_type),
+                                "asr.verify.call.actual_allocatable_matches_formal",
+                                "Actual argument type " +
+                                    ASRUtils::get_type_code(actual_type) +
+                                    " is not allocatable, but the dummy is " +
+                                    ASRUtils::get_type_code(formal_type),
+                                passed_arg_expr->base.loc);
+                        }
+                        if (ASRUtils::is_pointer(formal_type)) {
+                            require_with_loc_id(
+                                ASRUtils::is_pointer(actual_type),
+                                "asr.verify.call.actual_pointer_matches_formal",
+                                "Actual argument type " +
+                                    ASRUtils::get_type_code(actual_type) +
+                                    " is not a pointer, but the dummy is " +
+                                    ASRUtils::get_type_code(formal_type),
+                                passed_arg_expr->base.loc);
+                        }
+                        bool formal_assumed_rank = ASRUtils::is_array(formal_type)
+                            && ASRUtils::extract_physical_type(formal_type)
+                                == ASR::array_physical_typeType::AssumedRankArray;
+                        bool elemental = ASRUtils::get_FunctionType(func)
+                            ->m_elemental;
+                        if (!formal_assumed_rank && !elemental) {
+                            bool actual_is_array =
+                                ASRUtils::is_array(actual_type);
+                            bool formal_is_array =
+                                ASRUtils::is_array(formal_type);
+                            require_with_loc_id(
+                                actual_is_array == formal_is_array,
+                                "asr.verify.call.actual_rank_matches_formal",
+                                "Actual argument type " +
+                                    ASRUtils::get_type_code(actual_type) +
+                                    " does not match formal argument rank of "
+                                    "type " +
+                                    ASRUtils::get_type_code(formal_type),
+                                passed_arg_expr->base.loc);
+                        }
                     }
                     require_with_loc_id(
                         ASRUtils::check_equal_type(
