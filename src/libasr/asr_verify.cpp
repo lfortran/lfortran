@@ -1880,6 +1880,117 @@ public:
                 " is not supported");
     }
 
+    // An operation combines two operands of one type into a result of that
+    // type, and a comparison combines two operands of one type into a
+    // logical. The frontend guarantees this by inserting explicit Cast
+    // nodes, so a disagreement means the graph came from somewhere that did
+    // not, and the backend must not paper over it: LLVM rejects the module
+    // it produces from such a node. Array shape is not compared, since an
+    // elemental operation legitimately mixes ranks.
+    void verify_binary_operands(const char *name, ASR::expr_t *left,
+            ASR::expr_t *right, ASR::ttype_t *result, bool is_compare,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        ASR::ttype_t *left_type = typed_expr_type(left);
+        ASR::ttype_t *right_type = typed_expr_type(right);
+        if (left_type == nullptr || right_type == nullptr) return;
+        if (is_procedure_type(left_type) || is_procedure_type(right_type)
+                || is_struct_like_type(left_type)
+                || is_struct_like_type(right_type)) {
+            return;
+        }
+        ASR::ttype_t *left_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(left_type));
+        ASR::ttype_t *right_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(right_type));
+        // Only a kind disagreement inside one type family is checked. The
+        // frontend still emits a few operations whose operands differ in
+        // family, such as a real minus an integer, and the backend converts
+        // those; a kind disagreement is what it cannot lower.
+        if (left_scalar->type != right_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, right_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.operand_types_match",
+            std::string(name) + " operand types " +
+                ASRUtils::get_type_code(left_scalar) + " and " +
+                ASRUtils::get_type_code(right_scalar) + " do not match",
+            loc);
+        if (is_compare || result == nullptr) return;
+        ASR::ttype_t *result_scalar = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(result));
+        if (left_scalar->type != result_scalar->type) return;
+        require_with_loc_id(
+            ASRUtils::check_equal_type(
+                left_scalar, result_scalar, nullptr, nullptr),
+            "asr.verify.binary_op.result_type_matches_operands",
+            std::string(name) + " result type " +
+                ASRUtils::get_type_code(result_scalar) +
+                " does not match operand type " +
+                ASRUtils::get_type_code(left_scalar),
+            loc);
+    }
+
+    void visit_IntegerBinOp(const IntegerBinOp_t &x) {
+        verify_binary_operands("IntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerBinOp(x);
+    }
+
+    void visit_UnsignedIntegerBinOp(const UnsignedIntegerBinOp_t &x) {
+        verify_binary_operands("UnsignedIntegerBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerBinOp(x);
+    }
+
+    void visit_RealBinOp(const RealBinOp_t &x) {
+        verify_binary_operands("RealBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealBinOp(x);
+    }
+
+    void visit_ComplexBinOp(const ComplexBinOp_t &x) {
+        verify_binary_operands("ComplexBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexBinOp(x);
+    }
+
+    void visit_LogicalBinOp(const LogicalBinOp_t &x) {
+        verify_binary_operands("LogicalBinOp", x.m_left, x.m_right, x.m_type,
+            false, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalBinOp(x);
+    }
+
+    void visit_IntegerCompare(const IntegerCompare_t &x) {
+        verify_binary_operands("IntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerCompare(x);
+    }
+
+    void visit_UnsignedIntegerCompare(const UnsignedIntegerCompare_t &x) {
+        verify_binary_operands("UnsignedIntegerCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerCompare(x);
+    }
+
+    void visit_RealCompare(const RealCompare_t &x) {
+        verify_binary_operands("RealCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealCompare(x);
+    }
+
+    void visit_ComplexCompare(const ComplexCompare_t &x) {
+        verify_binary_operands("ComplexCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexCompare(x);
+    }
+
+    void visit_LogicalCompare(const LogicalCompare_t &x) {
+        verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
