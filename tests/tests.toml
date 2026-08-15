@@ -10,6 +10,11 @@ asr_clojure = true
 llvm = true
 
 [[test]]
+filename = "asr/compile/procedure_declaration_interface.asr"
+asr_clojure = true
+llvm = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 

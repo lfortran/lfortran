@@ -111,11 +111,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         # Windows CI job does not provide: it builds and unit tests the
         # compiler but never runs the integration suite. Object emission is
         # still covered there by the test below.
+        # `--verify-all-passes` so a pass that corrupts a graph the initial
+        # verifier accepted is reported against that pass here too, and not
+        # only in a build with assertions enabled.
         if (NOT WIN32)
             add_test(
                 NAME test_asr_compile_${fixture_name}
                 COMMAND $<TARGET_FILE:lfortran>
                     ${fixture}
+                    --verify-all-passes
                     --no-color
                     -o ${PROJECT_BINARY_DIR}/${fixture_name}
             )
@@ -124,6 +128,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             NAME test_asr_object_${fixture_name}
             COMMAND $<TARGET_FILE:lfortran>
                 ${fixture}
+                --verify-all-passes
                 --no-color
                 -c
                 -o ${PROJECT_BINARY_DIR}/${fixture_name}.o

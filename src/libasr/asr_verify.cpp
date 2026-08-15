@@ -1369,6 +1369,20 @@ public:
                 "Variable '" + std::string(x.m_name) +
                 "' has a derived type but declares it with " +
                 ASRUtils::symbol_type_name(*x.m_type_declaration));
+            // Whatever scope the named symbol belongs to must still hold it.
+            // A pass that drops a procedure, or the import of one, that it
+            // thought unused leaves the variable naming a symbol no lookup
+            // can reach any more.
+            SymbolTable *owner =
+                ASRUtils::symbol_parent_symtab(x.m_type_declaration);
+            require_id(owner != nullptr &&
+                    owner->get_symbol(std::string(ASRUtils::symbol_name(
+                        x.m_type_declaration))) == x.m_type_declaration,
+                "asr.verify.variable.type_declaration_resolves",
+                "Variable '" + std::string(x.m_name) +
+                "' declares its type with '" +
+                std::string(ASRUtils::symbol_name(x.m_type_declaration)) +
+                "', which its own scope no longer holds");
             // Only for a complete graph: pass_array_by_data rebuilds a
             // procedure in a fresh scope while its variables still name the
             // interface in the scope they came from.
