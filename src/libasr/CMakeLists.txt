@@ -12,7 +12,13 @@ if (NOT LFORTRAN_VERSION)
         CACHE STRING "LFortran version" FORCE)
 endif ()
 
-configure_file(config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+# Generated into the binary directory, not the source tree: several build
+# directories (native, build-wasm, the bootstrap in wasm-build0.sh) configure
+# the same source tree, and writing here would leave whichever configured last
+# in charge -- a wasm configure enabling HAVE_LFORTRAN_XEUS then breaks the
+# native link with an undefined run_kernel. ${libasr_BINARY_DIR}/.. is already
+# a public include directory below.
+configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 set(SRC
     codegen/asr_to_cpp.cpp
@@ -82,6 +88,8 @@ set(SRC
     asr_utils.cpp
     casting_utils.cpp
     asr_scopes.cpp
+    asr_text.cpp
+    asr_text_parser.cpp
     modfile.cpp
     pickle.cpp
     serialization.cpp

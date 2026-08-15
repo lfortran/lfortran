@@ -627,6 +627,30 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
                                      + "_" + std::to_string(eval_count);
     if (llvm::Function *fn = mod->getFunction(logical_stem))
         fn->setName(unique_stem);
+    // Same for the program unit of this evaluation, if the cell defined one:
+    // get_symbol_address() rewrites every "__lfortran_evaluate_" name, so this
+    // one has to carry the instance id too.
+    if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
+        fn->setName(unique_stem + "_program");
+
+    // Symbols qualified by their cell (__cell<N>_...) are named per session,
+    // so two executors in one process emit the same names. The wasm dynamic
+    // linker has one global namespace, so the second definition collides with
+    // the first -- and if their signatures differ, a module importing the name
+    // fails to link. Give each instance its own, the same way the run function
+    // above is made unique. Renaming here covers definitions and the
+    // declarations other modules of this instance import them through, so they
+    // still resolve to each other.
+    {
+        const std::string cell_prefix = "__cell";
+        const std::string instance = "__e" + std::to_string(m_id) + "_";
+        auto qualify = [&](llvm::GlobalValue &g) {
+            std::string n = g.getName().str();
+            if (n.rfind(cell_prefix, 0) == 0) g.setName(instance + n);
+        };
+        for (llvm::Function &f : mod->functions()) qualify(f);
+        for (llvm::GlobalVariable &g : mod->globals()) qualify(g);
+    }
 
     const std::string triple = "wasm32-unknown-emscripten";
     std::string err;

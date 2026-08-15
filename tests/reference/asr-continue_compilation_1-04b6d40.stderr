@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:980:7
+   --> tests/errors/continue_compilation_1.f90:987:7
     |
-980 |       foo    end type t_recovery
+987 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:983:7
+   --> tests/errors/continue_compilation_1.f90:990:7
     |
-983 |       class(t_recovery), intent(in) :: self
+990 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1872,20 +1872,8 @@ semantic error: `array` and `value` arguments of `findloc` must have the same ty
 959 |         print *, findloc(names, key)
     |                  ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: 'I' and 'J' arguments of 'merge_bits' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:963:29
+semantic error: The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+   --> tests/errors/continue_compilation_1.f90:975:19
     |
-963 |         print *, merge_bits(o'12345', z'1234', 32767)
-    |                             ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
-
-semantic error: 'I' and 'J' arguments of 'dshiftl' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:966:26
-    |
-966 |         print *, dshiftl(o'12345', z'1234', 5)
-    |                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
-
-semantic error: 'I' and 'J' arguments of 'dshiftr' cannot both be BOZ literal constants
-   --> tests/errors/continue_compilation_1.f90:969:26
-    |
-969 |         print *, dshiftr(o'12345', z'1234', 5)
-    |                          ^^^^^^^^  ^^^^^^^ both arguments are BOZ literal constants
+975 |         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -22,6 +22,7 @@ class IRKernelTests(jkt.KernelTests):
         {'code': "1+2+3", 'result': "6"},
         {'code': "1+2", 'result': "3"},
         {'code': "integer :: x; x = 5; x*2", 'result': "10"},
+        {'code': "'hello'", 'result': "hello"},
     ]
 
     code_display_data = [

@@ -166,13 +166,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showast")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                     res = e.get_ast(code0, lm, diagnostics);
@@ -196,13 +190,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showasr")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_asr(code0, lm, diagnostics);
@@ -226,13 +214,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showllvm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 diag::Diagnostics diagnostics;
@@ -258,13 +240,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showasm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 diag::Diagnostics diagnostics;
@@ -290,13 +266,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showcpp")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_cpp(code0, lm, diagnostics, 1);
@@ -320,13 +290,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showfmt")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_fmt(code0, lm, diagnostics);
@@ -351,13 +315,7 @@ namespace LCompilers::LFortran {
             RedirectStdout s(std_out);
             code0 = code;
             LocationManager lm;
-            {
-                LocationManager::FileLocations fl;
-                fl.in_filename = "input";
-                std::ofstream out("input");
-                out << code0;
-                lm.files.push_back(fl);
-            }
+            // The evaluator names this cell and keeps its text.
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
             diag::Diagnostics diagnostics;
@@ -425,6 +383,12 @@ namespace LCompilers::LFortran {
             case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
                 nl::json pub_data;
                 pub_data["text/plain"] = "(" + std::to_string(r.c64.re) + ", " + std::to_string(r.c64.im) + ")";
+                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
+                break;
+            }
+            case (LCompilers::FortranEvaluator::EvalResult::character) : {
+                nl::json pub_data;
+                pub_data["text/plain"] = r.str;
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
