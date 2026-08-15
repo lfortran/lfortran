@@ -882,12 +882,8 @@ public:
             // parameter rather than a storage size, and a parameterized type
             // carries it on the declaration or on the initializer depending
             // on where it has been substituted, so it is not comparable.
-            // Equivalence can attach another object's initializer across
-            // type families (integer storage viewed as real); that is not
-            // a Cast, and the backend reinterprets the bits.
             if (is_struct_like_type(declared) || is_procedure_type(declared)
                     || is_struct_like_type(actual) || is_procedure_type(actual)
-                    || declared->type != actual->type
                     || ASR::is_a<ASR::String_t>(*declared)
                     || ASRUtils::extract_kind_from_ttype_t(declared) >= 1000
                     || ASRUtils::extract_kind_from_ttype_t(actual) >= 1000) {
@@ -1292,8 +1288,7 @@ public:
                 ASRUtils::type_get_past_allocatable_pointer(x.m_type));
             if (!is_struct_like_type(element) && !is_procedure_type(element)
                     && !is_struct_like_type(declared)
-                    && !is_procedure_type(declared)
-                    && element->type == declared->type) {
+                    && !is_procedure_type(declared)) {
                 require_id(
                     ASRUtils::check_equal_type(
                         element, declared, nullptr, nullptr),
@@ -2128,8 +2123,7 @@ public:
                     if (is_struct_like_type(member_scalar)
                             || is_procedure_type(member_scalar)
                             || is_struct_like_type(actual_scalar)
-                            || is_procedure_type(actual_scalar)
-                            || member_scalar->type != actual_scalar->type) {
+                            || is_procedure_type(actual_scalar)) {
                         continue;
                     }
                     require_with_loc_id(

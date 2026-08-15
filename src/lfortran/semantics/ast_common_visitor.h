@@ -6241,6 +6241,34 @@ public:
                             ASR::make_Pointer_t(al, loc, at));
                     };
 
+                    // EQUIVALENCE associates storage. When the alias has a
+                    // different type family than the source, wrap the
+                    // GetPointer in BitCast so the initializer type agrees
+                    // with the declaration. A numeric Cast would convert the
+                    // bits; this reinterprets them.
+                    auto alias_initializer = [&](ASR::expr_t* init,
+                            ASR::expr_t* target_ref,
+                            ASR::Variable_t* target_var) -> ASR::expr_t* {
+                        if (init == nullptr || target_var == nullptr
+                                || target_var->m_type == nullptr) {
+                            return init;
+                        }
+                        ASR::ttype_t* init_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(init)));
+                        ASR::ttype_t* decl_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                target_var->m_type));
+                        if (init_t == nullptr || decl_t == nullptr
+                                || ASRUtils::check_equal_type(
+                                    init_t, decl_t, nullptr, nullptr)) {
+                            return init;
+                        }
+                        return ASRUtils::EXPR(ASR::make_BitCast_t(
+                            al, init->base.loc, init, target_ref, nullptr,
+                            ASRUtils::duplicate_type(al, decl_t), nullptr));
+                    };
+
                     auto emit_cptr_to_pointer = [&](const Location& loc,
                             ASR::asr_t* cptr_expr, ASR::expr_t* target_ref,
                             ASR::asr_t* shape_const) {
@@ -6258,7 +6286,8 @@ public:
                                 target_var = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::ArrayItem_t>(target_ref)->m_v);
                             }
                             if (get_ptr_expr && target_var) {
-                                target_var->m_symbolic_value = get_ptr_expr;
+                                target_var->m_symbolic_value = alias_initializer(
+                                    get_ptr_expr, target_ref, target_var);
                                 return;
                             }
                         }
@@ -6504,7 +6533,8 @@ public:
 
                                         bool is_module = in_module && !in_Subroutine;
                                         if (is_module) {
-                                            var__->m_symbolic_value = ASRUtils::EXPR(get_pointer);
+                                            var__->m_symbolic_value = alias_initializer(
+                                                ASRUtils::EXPR(get_pointer), asr_eq2, var__);
                                         } else {
                                             emit_cptr_to_pointer(asr_eq1->base.loc, pointer_to_cptr, asr_eq2, nullptr);
                                         }
