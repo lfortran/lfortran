@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.initializer_type_matches]: Variable 'k' initializer type i16 does not match declared type i32
+ --> tests/asr/verify/variable_initializer_kind_mismatch.asr:9:18
+  |
+9 |             "k" (Variable
+  |                  ^^^^^^^^ failed here

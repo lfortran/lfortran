@@ -5366,3 +5366,7 @@ asr = true
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/variable_initializer_kind_mismatch.asr"
+asr = true

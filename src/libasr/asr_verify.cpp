@@ -859,6 +859,42 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        // A compile time value is stored into the variable's own storage,
+        // so a value whose type disagrees with the declaration produces a
+        // store LLVM rejects. The frontend casts such initializers; a graph
+        // from another producer may not have.
+        for (ASR::expr_t *initial : {x.m_symbolic_value, x.m_value}) {
+            ASR::ttype_t *initial_type = typed_expr_type(initial);
+            if (diagnostics.has_error() || initial_type == nullptr
+                    || x.m_type == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            ASR::ttype_t *actual = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(initial_type));
+            // A character initializer is padded or truncated to the
+            // declared length, so the two legitimately differ. A kind at or
+            // above the parameterized derived type sentinel is a type
+            // parameter rather than a storage size, and a parameterized type
+            // carries it on the declaration or on the initializer depending
+            // on where it has been substituted, so it is not comparable.
+            if (is_struct_like_type(declared) || is_procedure_type(declared)
+                    || declared->type != actual->type
+                    || ASR::is_a<ASR::String_t>(*declared)
+                    || ASRUtils::extract_kind_from_ttype_t(declared) >= 1000
+                    || ASRUtils::extract_kind_from_ttype_t(actual) >= 1000) {
+                continue;
+            }
+            require_id(
+                ASRUtils::check_equal_type(
+                    declared, actual, nullptr, nullptr),
+                "asr.verify.variable.initializer_type_matches",
+                "Variable '" + std::string(x.m_name) + "' initializer type " +
+                    ASRUtils::get_type_code(actual) +
+                    " does not match declared type " +
+                    ASRUtils::get_type_code(declared));
+        }
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
             "Variable::m_parent_symtab cannot be nullptr");
