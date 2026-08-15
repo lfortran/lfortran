@@ -1236,6 +1236,28 @@ public:
                     "ArrayItem::m_type cannot be array.")
             }
         }
+        // An ArrayItem carries the type of the element it selects, and the
+        // backend stores through a pointer derived from that type. If it
+        // disagrees with the array's own element type the store is malformed
+        // and LLVM rejects the module it produces.
+        ASR::ttype_t *array_type = typed_expr_type(x.m_v);
+        if (!diagnostics.has_error() && array_type != nullptr
+                && x.m_type != nullptr) {
+            ASR::ttype_t *element = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(array_type));
+            ASR::ttype_t *declared = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+            if (!is_struct_like_type(element) && !is_procedure_type(element)
+                    && element->type == declared->type) {
+                require_id(
+                    ASRUtils::check_equal_type(
+                        element, declared, nullptr, nullptr),
+                    "asr.verify.array_item.type_matches_element",
+                    "ArrayItem type " + ASRUtils::get_type_code(declared) +
+                        " does not match array element type " +
+                        ASRUtils::get_type_code(element));
+            }
+        }
         handle_ArrayItemSection(x);
     }
 
