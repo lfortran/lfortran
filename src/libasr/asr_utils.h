@@ -1958,12 +1958,19 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             return true;
         } case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-            if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
+            ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(func_call_t->m_name);
+            // Issue #12120 follow-up: after the intrinsic_function lowering pass, calls like
+            // minloc()/minval()/etc. become plain FunctionCall nodes to a generated
+            // "_lcompilers_*" implementation, which is_intrinsic_symbol() does not recognize
+            // as intrinsic. Treat those the same as a real intrinsic symbol here, since they
+            // are still deterministic functions of their (already-checked-constant) arguments.
+            std::string call_name = ASRUtils::symbol_name(call_sym);
+            bool is_lowered_intrinsic = call_name.rfind("_lcompilers_", 0) == 0;
+            if( !ASRUtils::is_intrinsic_symbol(call_sym) && !is_lowered_intrinsic ) {
                 return false;
             }
 
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(func_call_t->m_name));
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(call_sym);
             for( size_t i = 0; i < func_call_t->n_args; i++ ) {
                 if (func_call_t->m_args[i].m_value == nullptr &&
                     ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
