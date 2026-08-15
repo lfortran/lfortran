@@ -13,6 +13,7 @@ import json
 import random
 
 
+GLOBAL_SYMTAB = 0
 PROGRAM_SYMTAB = 1
 PROCEDURE_SYMTAB = 2
 
@@ -182,7 +183,7 @@ def wrap_type(rendered, allocatable=False, pointer=False):
 
 
 def variable(table, name, declaration, intent="Local", presence="Required",
-             allocatable=False, pointer=False):
+             allocatable=False, pointer=False, type_declaration=None):
     rendered = declaration if isinstance(declaration, str) \
         else type_of(declaration)
     rendered = wrap_type(rendered, allocatable=allocatable, pointer=pointer)
@@ -190,7 +191,8 @@ def variable(table, name, declaration, intent="Local", presence="Required",
         f"(Variable :parent_symtab {table} :name {string(name)} "
         f":dependencies [] :intent :{intent} :symbolic_value nil :value nil "
         f":storage :Default :type {rendered} "
-        f":type_declaration nil :abi :Source :access :Public "
+        f":type_declaration {type_declaration or 'nil'} "
+        f":abi :Source :access :Public "
         f":presence :{presence} :value_attr false :target_attr false "
         f":contiguous_attr false :bindc_name nil :is_volatile false "
         f":is_protected false :pass_attr :NotMethod :self_argument nil "
@@ -237,7 +239,7 @@ def subroutine(name, parameter, body):
 
 
 def dummy(name, declaration, intent="In", presence="Required",
-          allocatable=False, pointer=False):
+          allocatable=False, pointer=False, type_declaration=None):
     return {
         "name": name,
         "declaration": declaration,
@@ -245,6 +247,7 @@ def dummy(name, declaration, intent="In", presence="Required",
         "presence": presence,
         "allocatable": allocatable,
         "pointer": pointer,
+        "type_declaration": type_declaration,
         "type": wrap_type(
             declaration if isinstance(declaration, str)
             else type_of(declaration),
@@ -252,44 +255,50 @@ def dummy(name, declaration, intent="In", presence="Required",
     }
 
 
-def procedure(name, returns, dummies, body, extra_locals=None):
-    """A contained subroutine or function with an explicit dummy list."""
+def procedure(name, returns, dummies, body, extra_locals=None,
+              symtab=PROCEDURE_SYMTAB, deftype="Implementation"):
+    """A subroutine or function with an explicit dummy list."""
     symbols = {}
     for dummy_arg in dummies:
         symbols[dummy_arg["name"]] = variable(
-            PROCEDURE_SYMTAB, dummy_arg["name"], dummy_arg["declaration"],
+            symtab, dummy_arg["name"], dummy_arg["declaration"],
             dummy_arg["intent"], dummy_arg["presence"],
-            dummy_arg["allocatable"], dummy_arg["pointer"])
+            dummy_arg["allocatable"], dummy_arg["pointer"],
+            dummy_arg.get("type_declaration"))
     for local_name, declaration in extra_locals or []:
-        symbols[local_name] = variable(
-            PROCEDURE_SYMTAB, local_name, declaration)
+        symbols[local_name] = variable(symtab, local_name, declaration)
     return_type = "nil"
     return_var = "nil"
     if returns:
-        ret_decl = dummies[0]["declaration"] if dummies else ("integer", 4)
-        symbols[name] = variable(
-            PROCEDURE_SYMTAB, name, ret_decl, "ReturnVar")
+        # `returns` is either True, meaning "return what the first dummy
+        # declares", or a declaration of its own.
+        explicit = returns is not True
+        ret_decl = returns if explicit else (
+            dummies[0]["declaration"] if dummies else ("integer", 4))
+        symbols[name] = variable(symtab, name, ret_decl, "ReturnVar")
         return_type = type_of(ret_decl) if isinstance(ret_decl, tuple) \
             else ret_decl
-        return_var = var(PROCEDURE_SYMTAB, name)
+        return_var = var(symtab, name)
         if not body:
-            if dummies:
+            if explicit:
                 body = [assignment(
-                    PROCEDURE_SYMTAB, name,
-                    var(PROCEDURE_SYMTAB, dummies[0]["name"]))]
+                    symtab, name, integer_constant(0, ret_decl[1]))]
+            elif dummies:
+                body = [assignment(
+                    symtab, name, var(symtab, dummies[0]["name"]))]
             else:
                 body = []
     arg_types = " ".join(dummy_arg["type"] for dummy_arg in dummies)
-    args = " ".join(var(PROCEDURE_SYMTAB, dummy_arg["name"])
+    args = " ".join(var(symtab, dummy_arg["name"])
                     for dummy_arg in dummies)
     entries = " ".join(
         f"{string(key)} {value}" for key, value in symbols.items())
     return (
-        f"(Function :symtab (SymbolTable :id {PROCEDURE_SYMTAB} "
+        f"(Function :symtab (SymbolTable :id {symtab} "
         f":symbols {{{entries}}}) :name {string(name)} "
         f":function_signature (FunctionType "
         f":arg_types [{arg_types}] :return_var_type {return_type} "
-        f":abi :Source :deftype :Implementation :bindc_name nil "
+        f":abi :Source :deftype :{deftype} :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
         f":static false :restrictions [] :is_restriction false) "
         f":dependencies [] "
@@ -364,17 +373,157 @@ def function_call_args(name, arguments, result_type):
     )
 
 
-def translation_unit(symbols, body):
+def scope(symtab_id, symbols):
     entries = " ".join(
         f"{string(key)} {value}" for key, value in symbols.items())
+    return f"(SymbolTable :id {symtab_id} :symbols {{{entries}}})"
+
+
+def program(symtab_id, name, symbols, body):
     return (
-        "(TranslationUnit :symtab "
-        "(SymbolTable :id 0 :symbols {"
-        f"\"generated\" (Program :symtab "
-        f"(SymbolTable :id {PROGRAM_SYMTAB} :symbols {{{entries}}}) "
-        f":name \"generated\" :dependencies [] :body [{' '.join(body)}])"
-        "}) :items [])\n"
+        f"(Program :symtab {scope(symtab_id, symbols)} :name {string(name)} "
+        f":dependencies [] :body [{' '.join(body)}])"
     )
+
+
+def global_unit(symbols, items=()):
+    """A TranslationUnit whose global scope holds `symbols` verbatim."""
+    return (
+        f"(TranslationUnit :symtab {scope(GLOBAL_SYMTAB, symbols)} "
+        f":items [{' '.join(items)}])\n"
+    )
+
+
+def translation_unit(symbols, body):
+    return global_unit({
+        "generated": program(PROGRAM_SYMTAB, "generated", symbols, body),
+    })
+
+
+def module(symtab_id, name, symbols, dependencies=()):
+    names = " ".join(string(item) for item in dependencies)
+    return (
+        f"(Module :symtab {scope(symtab_id, symbols)} :name {string(name)} "
+        f":parent_module nil :dependencies [{names}] :loaded_from_mod false "
+        f":intrinsic false :has_submodules false)"
+    )
+
+
+def external_symbol(table, name, target_table, target_name, module_name,
+                    original_name=None):
+    return (
+        f"(ExternalSymbol :parent_symtab {table} :name {string(name)} "
+        f":external {symbol_ref(target_table, target_name)} "
+        f":module_name {string(module_name)} :scope_names [] "
+        f":original_name {string(original_name or target_name)} "
+        f":access :Public)"
+    )
+
+
+def function_type(arg_types, return_type=None, deftype="Interface"):
+    return (
+        f"(FunctionType :arg_types [{' '.join(arg_types)}] "
+        f":return_var_type {return_type or 'nil'} :abi :Source "
+        f":deftype :{deftype} :bindc_name nil :elemental false :pure false "
+        f":module false :inline false :static false :restrictions [] "
+        f":is_restriction false)"
+    )
+
+
+def class_type():
+    """The type of a `class(...)` entity; the symbol lives in the variable."""
+    return (
+        "(StructType :data_member_types [] :member_function_types [] "
+        ":is_cstruct false :is_unlimited_polymorphic false)"
+    )
+
+
+def struct_signature():
+    return (
+        "(StructType :data_member_types [] :member_function_types [] "
+        ":is_cstruct true :is_unlimited_polymorphic false)"
+    )
+
+
+def struct_method(table, name, proc, proc_name=None, deferred=False,
+                  nopass=False):
+    return (
+        f"(StructMethodDeclaration :parent_symtab {table} "
+        f":name {string(name)} :self_argument nil "
+        f":proc_name {string(proc_name or name)} :proc {proc} "
+        f":abi :Source :is_deferred {'true' if deferred else 'false'} "
+        f":is_nopass {'true' if nopass else 'false'})"
+    )
+
+
+def struct(symtab_id, name, methods, parent=None, abstract=False):
+    return (
+        f"(Struct :symtab {scope(symtab_id, methods)} :name {string(name)} "
+        f":struct_signature {struct_signature()} :dependencies [] "
+        f":members [] :member_functions [] :abi :Source :access :Public "
+        f":is_packed false :is_abstract {'true' if abstract else 'false'} "
+        f":is_sequence false :initializers [] :alignment nil "
+        f":parent {parent or 'nil'} :kind_params [])"
+    )
+
+
+MODULE_SYMTAB = 1
+BASE_STRUCT_SYMTAB = 2
+BASE_PROC_SYMTAB = 3
+DERIVED_STRUCT_SYMTAB = 4
+DERIVED_PROC_SYMTAB = 5
+OO_PROGRAM_SYMTAB = 6
+
+
+def self_dummy(struct_table, struct_name, intent="InOut"):
+    return dummy(
+        "self", class_type(), intent,
+        type_declaration=symbol_ref(struct_table, struct_name))
+
+
+def type_bound_unit(base_dummies, derived_dummies, deferred=True,
+                    base_returns=False, derived_returns=False,
+                    base_nopass=False, derived_nopass=False,
+                    override_name="meth"):
+    """One module with an abstract base type and an extending type.
+
+    Both types declare a type-bound procedure named `meth`; the extending
+    type's declaration overrides the base one, so their two procedures must
+    have conforming interfaces.
+    """
+    base_args = ([] if base_nopass
+                 else [self_dummy(MODULE_SYMTAB, "base")]) + list(base_dummies)
+    derived_args = ([] if derived_nopass
+                    else [self_dummy(MODULE_SYMTAB, "derived")]) \
+        + list(derived_dummies)
+    symbols = {
+        "base": struct(
+            BASE_STRUCT_SYMTAB, "base",
+            {"meth": struct_method(
+                BASE_STRUCT_SYMTAB, "meth",
+                symbol_ref(MODULE_SYMTAB, "base_meth"),
+                proc_name="base_meth", deferred=deferred,
+                nopass=base_nopass)},
+            abstract=deferred),
+        "base_meth": procedure(
+            "base_meth", base_returns, base_args, [],
+            symtab=BASE_PROC_SYMTAB,
+            deftype="Interface" if deferred else "Implementation"),
+        "derived": struct(
+            DERIVED_STRUCT_SYMTAB, "derived",
+            {override_name: struct_method(
+                DERIVED_STRUCT_SYMTAB, override_name,
+                symbol_ref(MODULE_SYMTAB, "derived_meth"),
+                proc_name="derived_meth", nopass=derived_nopass)},
+            parent=symbol_ref(MODULE_SYMTAB, "base")),
+        "derived_meth": procedure(
+            "derived_meth", derived_returns, derived_args, [],
+            symtab=DERIVED_PROC_SYMTAB),
+    }
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", symbols),
+        "generated": program(OO_PROGRAM_SYMTAB, "generated", {}, []),
+    })
 
 
 def generate_valid(seed):
@@ -614,7 +763,7 @@ def generate_invalid(seed):
         invalid_function_call_kind,
         invalid_call_plain_array_to_allocatable_array,
         invalid_call_allocatable_array_to_plain_array,
-    ]
+    ] + OVERRIDE_BUILDERS + REFERENCE_BUILDERS + CALL_SITE_BUILDERS
     return rng.choice(builders)(rng)
 
 
@@ -776,6 +925,574 @@ def invalid_function_call_kind(_rng):
         {"x": integer_variable(PROGRAM_SYMTAB, "x", 2)},
         "schema-invalid function-call kind mismatch",
         returns=True)
+
+
+# --- non-conforming type-bound procedure overrides -----------------------
+#
+# An extending type may only override a binding with a procedure whose
+# interface matches the one it overrides. A call dispatched through the parent
+# type is compiled against the parent's interface, so a mismatch is a call to a
+# procedure with a signature the call site never agreed to.
+
+INTEGER = ("integer", 4)
+
+
+def override_case(derived_dummies, description, **kwargs):
+    return type_bound_unit(
+        [dummy("a", INTEGER, "InOut")], derived_dummies, **kwargs), description
+
+
+def invalid_override_extra_argument(_rng):
+    return override_case(
+        [dummy("i1", INTEGER, "InOut"), dummy("a", INTEGER, "InOut")],
+        "schema-invalid override with an extra argument")
+
+
+def invalid_override_missing_argument(_rng):
+    return type_bound_unit(
+        [dummy("a", INTEGER, "InOut"), dummy("b", INTEGER, "InOut")],
+        [dummy("a", INTEGER, "InOut")],
+    ), "schema-invalid override with a missing argument"
+
+
+def invalid_override_argument_family(_rng):
+    return override_case(
+        [dummy("a", ("real", 8), "InOut")],
+        "schema-invalid override argument family mismatch")
+
+
+def invalid_override_argument_kind(_rng):
+    return override_case(
+        [dummy("a", ("integer", 8), "InOut")],
+        "schema-invalid override argument kind mismatch")
+
+
+def invalid_override_argument_intent(_rng):
+    return override_case(
+        [dummy("a", INTEGER, "In")],
+        "schema-invalid override argument intent mismatch")
+
+
+def invalid_override_argument_allocatable(_rng):
+    return type_bound_unit(
+        [dummy("a", INTEGER, "InOut", allocatable=True)],
+        [dummy("a", INTEGER, "InOut")],
+    ), "schema-invalid override argument allocatable mismatch"
+
+
+def invalid_override_argument_optional(_rng):
+    return override_case(
+        [dummy("a", INTEGER, "InOut", presence="Optional")],
+        "schema-invalid override argument optional mismatch")
+
+
+def invalid_override_argument_rank(_rng):
+    return override_case(
+        [dummy("a", array_type(INTEGER, [3]), "InOut")],
+        "schema-invalid override argument rank mismatch")
+
+
+def invalid_override_returns_a_value(_rng):
+    return override_case(
+        [dummy("a", INTEGER, "InOut")],
+        "schema-invalid subroutine overridden by a function",
+        derived_returns=INTEGER)
+
+
+def invalid_override_returns_nothing(_rng):
+    return override_case(
+        [dummy("a", INTEGER, "InOut")],
+        "schema-invalid function overridden by a subroutine",
+        base_returns=INTEGER)
+
+
+def invalid_override_nopass(_rng):
+    return override_case(
+        [dummy("a", INTEGER, "InOut")],
+        "schema-invalid override nopass mismatch",
+        derived_nopass=True)
+
+
+OVERRIDE_BUILDERS = [
+    invalid_override_extra_argument,
+    invalid_override_missing_argument,
+    invalid_override_argument_family,
+    invalid_override_argument_kind,
+    invalid_override_argument_intent,
+    invalid_override_argument_allocatable,
+    invalid_override_argument_optional,
+    invalid_override_argument_rank,
+    invalid_override_returns_a_value,
+    invalid_override_returns_nothing,
+    invalid_override_nopass,
+]
+
+
+# --- references to symbols that are missing, out of scope, or wrong ------
+#
+# A frontend that loses track of a symbol -- a name never imported, a name
+# resolved in the wrong scope, a name that turned out to be something other
+# than a procedure -- hands the rest of the compiler a graph like one of
+# these. Every one of them must be a diagnostic, never a crash.
+
+MODULE_PROC_SYMTAB = 7
+SECOND_MODULE_SYMTAB = 8
+
+
+def module_unit(module_symbols, program_symbols, body, dependencies=()):
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols, dependencies),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    })
+
+
+def module_procedure(name="helper"):
+    return procedure(name, False, [dummy("arg", INTEGER, "In")], [],
+                     [("local", INTEGER)], symtab=MODULE_PROC_SYMTAB)
+
+
+def invalid_reference_callee_local(_rng):
+    """Read a variable that lives in the callee's scope, not the caller's."""
+    return module_unit(
+        {"helper": module_procedure()},
+        {"x": integer_variable(OO_PROGRAM_SYMTAB, "x", 4)},
+        [assignment(OO_PROGRAM_SYMTAB, "x",
+                    var(MODULE_PROC_SYMTAB, "local"))],
+    ), "schema-invalid read of a callee local"
+
+
+def invalid_reference_module_not_used(_rng):
+    """Calling a module procedure that the program never imported."""
+    return module_unit(
+        {"helper": module_procedure()},
+        {"x": integer_variable(OO_PROGRAM_SYMTAB, "x", 4)},
+        [f"(SubroutineCall :name {symbol_ref(MODULE_SYMTAB, 'helper')} "
+         f":original_name nil "
+         f":args [(call_arg :value {var(OO_PROGRAM_SYMTAB, 'x')})] "
+         f":dt nil :strict_bounds_checking false)"],
+    ), "schema-invalid call to an unimported module procedure"
+
+
+def invalid_reference_sibling_module(_rng):
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m",
+                    {"y": integer_variable(MODULE_SYMTAB, "y", 4)}),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated",
+            {"x": integer_variable(OO_PROGRAM_SYMTAB, "x", 4)},
+            [assignment(OO_PROGRAM_SYMTAB, "x", var(MODULE_SYMTAB, "y"))]),
+    }), "schema-invalid read of a sibling module variable"
+
+
+def invalid_reference_call_a_variable(_rng):
+    return translation_unit(
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        [f"(SubroutineCall :name {symbol_ref(PROGRAM_SYMTAB, 'x')} "
+         f":original_name nil :args [] :dt nil "
+         f":strict_bounds_checking false)"],
+    ), "schema-invalid call to a variable"
+
+
+def invalid_reference_var_is_a_program(_rng):
+    return translation_unit(
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4)},
+        [assignment(PROGRAM_SYMTAB, "x",
+                    var(GLOBAL_SYMTAB, "generated"))],
+    ), "schema-invalid read of a program symbol"
+
+
+def invalid_reference_binding_is_a_variable(_rng):
+    return module_unit(
+        {"base": struct(BASE_STRUCT_SYMTAB, "base",
+                        {"meth": struct_method(
+                            BASE_STRUCT_SYMTAB, "meth",
+                            symbol_ref(MODULE_SYMTAB, "notaproc"))}),
+         "notaproc": integer_variable(MODULE_SYMTAB, "notaproc", 4)},
+        {}, [],
+    ), "schema-invalid type-bound procedure naming a variable"
+
+
+def invalid_reference_binding_is_a_type(_rng):
+    return module_unit(
+        {"base": struct(BASE_STRUCT_SYMTAB, "base",
+                        {"meth": struct_method(
+                            BASE_STRUCT_SYMTAB, "meth",
+                            symbol_ref(MODULE_SYMTAB, "other"))}),
+         "other": struct(DERIVED_STRUCT_SYMTAB, "other", {})},
+        {}, [],
+    ), "schema-invalid type-bound procedure naming a derived type"
+
+
+def invalid_reference_external_unknown_module(_rng):
+    return module_unit(
+        {"helper": module_procedure()},
+        {"helper": external_symbol(
+            OO_PROGRAM_SYMTAB, "helper", MODULE_SYMTAB, "helper",
+            "nosuchmodule")},
+        [],
+    ), "schema-invalid import from an unknown module"
+
+
+def invalid_reference_external_wrong_module(_rng):
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", {"helper": module_procedure()}),
+        "m2": module(SECOND_MODULE_SYMTAB, "m2", {}),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated",
+            {"helper": external_symbol(
+                OO_PROGRAM_SYMTAB, "helper", MODULE_SYMTAB, "helper", "m2")},
+            []),
+    }), "schema-invalid import naming the wrong module"
+
+
+def invalid_reference_external_original_name(_rng):
+    return module_unit(
+        {"helper": module_procedure()},
+        {"helper": external_symbol(
+            OO_PROGRAM_SYMTAB, "helper", MODULE_SYMTAB, "helper", "m",
+            original_name="missing")},
+        [],
+    ), "schema-invalid import with a mismatched original name"
+
+
+def invalid_reference_external_is_a_program(_rng):
+    return module_unit(
+        {"helper": module_procedure()},
+        {"p": external_symbol(
+            OO_PROGRAM_SYMTAB, "p", GLOBAL_SYMTAB, "generated", "m")},
+        [],
+    ), "schema-invalid import of a program"
+
+
+def invalid_reference_block_call_is_a_function(_rng):
+    return translation_unit(
+        {"helper": procedure("helper", False, [], [], [])},
+        [f"(BlockCall :label -1 "
+         f":m {symbol_ref(PROGRAM_SYMTAB, 'helper')})"],
+    ), "schema-invalid block call naming a procedure"
+
+
+def invalid_reference_associate_call_is_a_function(_rng):
+    return translation_unit(
+        {"helper": procedure("helper", False, [], [], [])},
+        [f"(AssociateBlockCall :m {symbol_ref(PROGRAM_SYMTAB, 'helper')})"],
+    ), "schema-invalid associate block call naming a procedure"
+
+
+def invalid_reference_generic_specific(_rng):
+    return module_unit(
+        {"helper": module_procedure(),
+         "notaproc": integer_variable(MODULE_SYMTAB, "notaproc", 4),
+         "gen": f"(GenericProcedure :parent_symtab {MODULE_SYMTAB} "
+                f":name \"gen\" "
+                f":procs [{symbol_ref(MODULE_SYMTAB, 'notaproc')}] "
+                f":access :Public)"},
+        {}, [],
+    ), "schema-invalid generic procedure naming a variable"
+
+
+def invalid_reference_operator_specific(_rng):
+    return module_unit(
+        {"notaproc": integer_variable(MODULE_SYMTAB, "notaproc", 4),
+         "op": f"(CustomOperator :parent_symtab {MODULE_SYMTAB} :name \"op\" "
+               f":procs [{symbol_ref(MODULE_SYMTAB, 'notaproc')}] "
+               f":access :Public)"},
+        {}, [],
+    ), "schema-invalid custom operator naming a variable"
+
+
+def invalid_reference_struct_parent(_rng):
+    return module_unit(
+        {"helper": module_procedure(),
+         "base": struct(BASE_STRUCT_SYMTAB, "base", {},
+                        parent=symbol_ref(MODULE_SYMTAB, "helper"))},
+        {}, [],
+    ), "schema-invalid derived type extending a procedure"
+
+
+def invalid_reference_type_declaration(_rng):
+    return module_unit(
+        {"helper": module_procedure()},
+        {"x": variable(OO_PROGRAM_SYMTAB, "x", class_type(),
+                       type_declaration=symbol_ref(MODULE_SYMTAB, "helper"))},
+        [],
+    ), "schema-invalid derived type declared by a procedure"
+
+
+def invalid_reference_namelist_member(_rng):
+    return module_unit(
+        {"helper": module_procedure()},
+        {"nml": f"(Namelist :parent_symtab {OO_PROGRAM_SYMTAB} "
+                f":group_name \"nml\" "
+                f":var_list [{symbol_ref(MODULE_SYMTAB, 'helper')}])"},
+        [],
+    ), "schema-invalid namelist naming a procedure"
+
+
+def invalid_reference_dummy_not_local(_rng):
+    """A procedure whose dummy argument is the caller's variable."""
+    helper = procedure("helper", False, [dummy("arg", INTEGER, "In")], [], [])
+    helper = helper.replace(
+        f":args [{var(PROCEDURE_SYMTAB, 'arg')}]",
+        f":args [{var(PROGRAM_SYMTAB, 'x')}]", 1)
+    return translation_unit(
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4), "helper": helper},
+        [],
+    ), "schema-invalid dummy argument declared by the caller"
+
+
+def invalid_reference_result_not_local(_rng):
+    helper = procedure("helper", True, [dummy("arg", INTEGER, "In")], [], [])
+    helper = helper.replace(
+        f":return_var {var(PROCEDURE_SYMTAB, 'helper')}",
+        f":return_var {var(PROGRAM_SYMTAB, 'x')}", 1)
+    return translation_unit(
+        {"x": integer_variable(PROGRAM_SYMTAB, "x", 4), "helper": helper},
+        [],
+    ), "schema-invalid result variable declared by the caller"
+
+
+def invalid_reference_struct_member(_rng):
+    return module_unit(
+        {"base": struct(BASE_STRUCT_SYMTAB, "base", {}).replace(
+            ":members []", ":members [\"missing\"]", 1)},
+        {}, [],
+    ), "schema-invalid derived type listing an undeclared member"
+
+
+def invalid_reference_type_declaration_scope(_rng):
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m",
+                    {"base": struct(BASE_STRUCT_SYMTAB, "base", {})}),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated",
+            {"x": variable(
+                OO_PROGRAM_SYMTAB, "x", class_type(),
+                type_declaration=symbol_ref(MODULE_SYMTAB, "base"))},
+            []),
+    }), "schema-invalid derived type declared from an unimported module"
+
+
+def invalid_reference_module_dependency(_rng):
+    return module_unit(
+        {"helper": module_procedure()}, {}, [],
+        dependencies=["nosuchmodule"],
+    ), "schema-invalid dependency on a missing module"
+
+
+REFERENCE_BUILDERS = [
+    invalid_reference_struct_member,
+    invalid_reference_type_declaration_scope,
+    invalid_reference_module_dependency,
+    invalid_reference_generic_specific,
+    invalid_reference_operator_specific,
+    invalid_reference_struct_parent,
+    invalid_reference_type_declaration,
+    invalid_reference_namelist_member,
+    invalid_reference_dummy_not_local,
+    invalid_reference_result_not_local,
+    invalid_reference_callee_local,
+    invalid_reference_module_not_used,
+    invalid_reference_sibling_module,
+    invalid_reference_call_a_variable,
+    invalid_reference_var_is_a_program,
+    invalid_reference_binding_is_a_variable,
+    invalid_reference_binding_is_a_type,
+    invalid_reference_external_unknown_module,
+    invalid_reference_external_wrong_module,
+    invalid_reference_external_original_name,
+    invalid_reference_external_is_a_program,
+    invalid_reference_block_call_is_a_function,
+    invalid_reference_associate_call_is_a_function,
+]
+
+
+# --- call sites that disagree with the procedure they call ---------------
+#
+# Separate compilation is only worth anything if a call is checked against
+# the interface it claims to call. These are the shapes that get past a
+# frontend that never compares the two.
+
+def method_call_unit(formal, actual, actual_args=None):
+    """A program calling `base%meth` with an actual the binding never took."""
+    module_symbols = {
+        "base": struct(
+            BASE_STRUCT_SYMTAB, "base",
+            {"meth": struct_method(
+                BASE_STRUCT_SYMTAB, "meth",
+                symbol_ref(MODULE_SYMTAB, "base_meth"),
+                proc_name="base_meth")},
+            parent=None),
+        "base_meth": procedure(
+            "base_meth", False,
+            [self_dummy(MODULE_SYMTAB, "base"), dummy("a", formal, "In")],
+            [], symtab=BASE_PROC_SYMTAB),
+    }
+    program_symbols = {
+        "base": external_symbol(
+            OO_PROGRAM_SYMTAB, "base", MODULE_SYMTAB, "base", "m"),
+        "meth": external_symbol(
+            OO_PROGRAM_SYMTAB, "meth", BASE_STRUCT_SYMTAB, "meth", "m"),
+        "obj": variable(
+            OO_PROGRAM_SYMTAB, "obj", class_type(),
+            type_declaration=symbol_ref(OO_PROGRAM_SYMTAB, "base")),
+        "x": variable(OO_PROGRAM_SYMTAB, "x", actual),
+    }
+    if actual_args is None:
+        actual_args = [var(OO_PROGRAM_SYMTAB, "obj"),
+                       var(OO_PROGRAM_SYMTAB, "x")]
+    body = [
+        f"(SubroutineCall :name {symbol_ref(OO_PROGRAM_SYMTAB, 'meth')} "
+        f":original_name nil :args [{call_args(actual_args)}] "
+        f":dt {var(OO_PROGRAM_SYMTAB, 'obj')} "
+        f":strict_bounds_checking false)"
+    ]
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    })
+
+
+def invalid_method_call_kind(_rng):
+    return method_call_unit(INTEGER, ("integer", 8)), \
+        "schema-invalid method call argument kind mismatch"
+
+
+def invalid_method_call_family(_rng):
+    return method_call_unit(INTEGER, ("real", 8)), \
+        "schema-invalid method call argument family mismatch"
+
+
+def invalid_method_call_rank(_rng):
+    return method_call_unit(array_type(INTEGER, [3]), INTEGER), \
+        "schema-invalid method call argument rank mismatch"
+
+
+def invalid_call_function_as_subroutine(_rng):
+    return module_unit(
+        {"helper": procedure(
+            "helper", True, [dummy("arg", INTEGER, "In")], [],
+            symtab=MODULE_PROC_SYMTAB)},
+        {"helper": external_symbol(
+            OO_PROGRAM_SYMTAB, "helper", MODULE_SYMTAB, "helper", "m"),
+         "x": integer_variable(OO_PROGRAM_SYMTAB, "x", 4)},
+        [f"(SubroutineCall "
+         f":name {symbol_ref(OO_PROGRAM_SYMTAB, 'helper')} "
+         f":original_name nil "
+         f":args [(call_arg :value {var(OO_PROGRAM_SYMTAB, 'x')})] "
+         f":dt nil :strict_bounds_checking false)"],
+    ), "schema-invalid call statement naming a function"
+
+
+def invalid_call_result_type(_rng):
+    return module_unit(
+        {"helper": procedure(
+            "helper", True, [dummy("arg", INTEGER, "In")], [],
+            symtab=MODULE_PROC_SYMTAB)},
+        {"helper": external_symbol(
+            OO_PROGRAM_SYMTAB, "helper", MODULE_SYMTAB, "helper", "m"),
+         "x": real_variable(OO_PROGRAM_SYMTAB, "x", 8),
+         "y": integer_variable(OO_PROGRAM_SYMTAB, "y", 4)},
+        [assignment(
+            OO_PROGRAM_SYMTAB, "x",
+            f"(FunctionCall "
+            f":name {symbol_ref(OO_PROGRAM_SYMTAB, 'helper')} "
+            f":original_name nil "
+            f":args [(call_arg :value {var(OO_PROGRAM_SYMTAB, 'y')})] "
+            f":type {real_type(8)} :value nil :dt nil)")],
+    ), "schema-invalid function call result type mismatch"
+
+
+TAKER_SYMTAB = 9
+
+
+def procedure_argument_unit(formal_signature, actual_returns):
+    """Pass a module procedure to a dummy declared `procedure(iface)`."""
+    module_symbols = {
+        "impl": procedure(
+            "impl", actual_returns, [dummy("a", INTEGER, "In")], [],
+            symtab=MODULE_PROC_SYMTAB),
+        "taker": procedure(
+            "taker", False,
+            [dummy("fp", formal_signature, "In")], [], symtab=TAKER_SYMTAB),
+    }
+    program_symbols = {
+        "taker": external_symbol(
+            OO_PROGRAM_SYMTAB, "taker", MODULE_SYMTAB, "taker", "m"),
+        "impl": external_symbol(
+            OO_PROGRAM_SYMTAB, "impl", MODULE_SYMTAB, "impl", "m"),
+    }
+    body = [
+        f"(SubroutineCall :name {symbol_ref(OO_PROGRAM_SYMTAB, 'taker')} "
+        f":original_name nil "
+        f":args [(call_arg :value {var(OO_PROGRAM_SYMTAB, 'impl')})] "
+        f":dt nil :strict_bounds_checking false)"
+    ]
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    })
+
+
+def invalid_procedure_argument_result(_rng):
+    return procedure_argument_unit(
+        function_type([integer_type(4)]), INTEGER,
+    ), "schema-invalid function passed to a subroutine dummy"
+
+
+def invalid_procedure_argument_type(_rng):
+    return procedure_argument_unit(
+        function_type([real_type(8)]), False,
+    ), "schema-invalid procedure argument interface type mismatch"
+
+
+def invalid_struct_member_of_other_type(_rng):
+    struct_type = ("(StructType :data_member_types [(Integer :kind 4)] "
+                   ":member_function_types [] :is_cstruct true "
+                   ":is_unlimited_polymorphic false)")
+    module_symbols = {
+        "base": struct(
+            BASE_STRUCT_SYMTAB, "base",
+            {"i": integer_variable(BASE_STRUCT_SYMTAB, "i", 4)}).replace(
+                ":members []", ":members [\"i\"]", 1),
+        "other": struct(
+            DERIVED_STRUCT_SYMTAB, "other",
+            {"j": integer_variable(DERIVED_STRUCT_SYMTAB, "j", 4)}).replace(
+                ":members []", ":members [\"j\"]", 1),
+    }
+    program_symbols = {
+        "base": external_symbol(
+            OO_PROGRAM_SYMTAB, "base", MODULE_SYMTAB, "base", "m"),
+        "obj": variable(
+            OO_PROGRAM_SYMTAB, "obj", struct_type,
+            type_declaration=symbol_ref(OO_PROGRAM_SYMTAB, "base")),
+        "x": integer_variable(OO_PROGRAM_SYMTAB, "x", 4),
+    }
+    body = [assignment(
+        OO_PROGRAM_SYMTAB, "x",
+        f"(StructInstanceMember :v {var(OO_PROGRAM_SYMTAB, 'obj')} "
+        f":m {symbol_ref(DERIVED_STRUCT_SYMTAB, 'j')} "
+        f":type {integer_type(4)} :value nil)")]
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    }), "schema-invalid component of an unrelated derived type"
+
+
+CALL_SITE_BUILDERS = [
+    invalid_procedure_argument_result,
+    invalid_procedure_argument_type,
+    invalid_struct_member_of_other_type,
+    invalid_method_call_kind,
+    invalid_method_call_family,
+    invalid_method_call_rank,
+    invalid_call_function_as_subroutine,
+    invalid_call_result_type,
+]
 
 
 def generate(mode, seed):

@@ -453,6 +453,15 @@ def main():
         choices=["mutation", "schema-valid", "schema-invalid", "all"],
         default="mutation",
     )
+    # The oracle accepts both of its two outcomes, which is right for a
+    # campaign but hides a regression when every input is meant to be
+    # rejected: a rule that stops firing turns a rejection into a clean
+    # compile, and the run still passes. `--expect verify` closes that.
+    parser.add_argument(
+        "--expect",
+        choices=["any", "verify"],
+        default="any",
+    )
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument(
         "--artifacts",
@@ -530,6 +539,9 @@ def main():
                 "generator_seed": generator_seed,
             }
         result = run_oracle(lfortran, candidate, args.timeout)
+        if args.expect == "verify" and result.outcome == "compile":
+            result = dataclasses.replace(
+                result, accepted=False, phase="expected-verify-rejection")
         counts[result.outcome] += 1
         update_coverage(
             coverage, source_name, mutation_description, candidate, result)

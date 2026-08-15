@@ -77,6 +77,12 @@ def apply_reduction(root, reduction):
 def failure_signature(result):
     stderr = "\n".join(
         command.stderr for command in result.commands if command.stderr)
+    # A verifier rejection is a successful outcome for the fuzzer, but it is
+    # still worth reducing: a rejection is what a committed `tests/asr/verify`
+    # fixture pins, and the rule it exercises is named by its diagnostic code.
+    if result.outcome == "verify":
+        codes = fuzz.VERIFY_CODE.findall(stderr)
+        return f"verify:{codes[0] if codes else ''}"
     if "LCOMPILERS_ASSERT failed:" in stderr:
         first = stderr.split("LCOMPILERS_ASSERT failed:", 1)[1].splitlines()[0]
         return f"{result.phase}:assert:{first.strip()}"
@@ -88,17 +94,14 @@ def failure_signature(result):
 
 def interesting(lfortran, text, timeout, expected_signature):
     result = fuzz.run_oracle(lfortran, text, timeout)
-    return (
-        not result.accepted and
-        failure_signature(result) == expected_signature
-    ), result
+    return failure_signature(result) == expected_signature, result
 
 
 def reduce_failure(lfortran, text, timeout, max_attempts):
     initial = fuzz.run_oracle(lfortran, text, timeout)
-    if initial.accepted:
+    if initial.outcome == "compile":
         raise RuntimeError(
-            "input no longer reproduces an unexpected compiler failure")
+            "input is accepted and compiled, so there is nothing to reduce")
     expected_signature = failure_signature(initial)
     root = edn.parse(text)
     attempts = 0
@@ -143,15 +146,22 @@ def reduce_failure(lfortran, text, timeout, max_attempts):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True, type=pathlib.Path)
-    parser.add_argument("--metadata", required=True, type=pathlib.Path)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--metadata", type=pathlib.Path)
+    # A hand-written or generated document is reduced the same way a fuzzer
+    # artifact is, which is what turns one into a committed fixture.
+    group.add_argument("--input", type=pathlib.Path)
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument("--max-attempts", type=int, default=1000)
     parser.add_argument("--output", type=pathlib.Path)
     args = parser.parse_args()
 
-    metadata_path = args.metadata.resolve()
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    input_path = metadata_path.parent / metadata["artifact"]
+    if args.metadata:
+        metadata_path = args.metadata.resolve()
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        input_path = metadata_path.parent / metadata["artifact"]
+    else:
+        input_path = args.input.resolve()
     text = input_path.read_text(encoding="utf-8")
     try:
         reduced, reduction = reduce_failure(

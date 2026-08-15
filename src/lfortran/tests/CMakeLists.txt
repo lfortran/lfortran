@@ -173,6 +173,19 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
             )
         endif()
+        # The invalid generators build graphs no verifier rule may accept.
+        # Only initial verification runs here, so this needs no linker.
+        add_test(
+            NAME test_asr_schema_invalid_rejected
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --seed 3
+                --cases 12
+                --generator schema-invalid
+                --expect verify
+                --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
+        )
         add_test(
             NAME test_asr_reducer_unit
             COMMAND ${LFORTRAN_TEST_PYTHON}
