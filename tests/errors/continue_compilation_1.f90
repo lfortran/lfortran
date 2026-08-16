@@ -968,6 +968,18 @@ program continue_compilation_1
     end subroutine
 end program
 
+
+    subroutine stop_code_wrong_type_01()
+        implicit none
+        real :: x
+        x = 5.0
+        stop x
+    end subroutine stop_code_wrong_type_01
+    subroutine exit_nonstandard_call_01()
+        implicit none
+        call exit(1)
+    end subroutine exit_nonstandard_call_01
+
 ! A syntax error inside a module makes the parser skip the erroneous
 ! declaration and keep the rest of the module. The symbol table visitor then
 ! skips the program units that depend on the discarded declaration, so the body
