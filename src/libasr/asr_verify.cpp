@@ -825,6 +825,32 @@ public:
             "asr.verify.binding_override", x.base.base.loc);
     }
 
+    // `check_equal_type` does not look at a character length, but a caller
+    // compiled against `character(len=5)` reserves five bytes for a result
+    // the implementation writes ten into.
+    void require_equal_string_length(const std::string &what,
+            ASR::ttype_t *impl, ASR::ttype_t *decl, const std::string &code,
+            const Location &loc) {
+        if (impl == nullptr || decl == nullptr) return;
+        if (!ASRUtils::is_character(*impl) ||
+                !ASRUtils::is_character(*decl)) {
+            return;
+        }
+        ASR::String_t *a = ASRUtils::get_string_type(impl);
+        ASR::String_t *b = ASRUtils::get_string_type(decl);
+        if (a == nullptr || b == nullptr) return;
+        int64_t a_len = -1, b_len = -1;
+        if (a->m_len == nullptr || b->m_len == nullptr) return;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(a->m_len), a_len) ||
+                !ASRUtils::extract_value(
+                    ASRUtils::expr_value(b->m_len), b_len)) {
+            return;
+        }
+        require_with_loc_id(a_len == b_len, code,
+            what + " must have character length " + std::to_string(b_len) +
+            ", not " + std::to_string(a_len), loc);
+    }
+
     // Two procedures that must present the same interface. `skip` is the
     // position of the one dummy argument they may declare differently, or
     // `n_args` when there is none.
@@ -850,6 +876,8 @@ public:
                     what + " must return " +
                     ASRUtils::get_type_code(decl_type) + ", not " +
                     ASRUtils::get_type_code(type), loc);
+                require_equal_string_length(what + " result", type, decl_type,
+                    prefix + ".result_type_matches", loc);
             }
         }
         require_with_loc_id(impl->n_args == decl->n_args,
