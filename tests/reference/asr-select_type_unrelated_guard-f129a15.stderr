@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.select_type.guard_extends_selector]: The type guard 'other' does not extend the declared type of the selector
+   --> tests/asr/verify/select_type_unrelated_guard.asr:125:12
+    |
+125 |           (SelectType
+    |            ^^^^^^^^^^ failed here

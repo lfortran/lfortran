@@ -1,0 +1,79 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "generated" (Program
+        (SymbolTable
+          1
+          {
+            "p1" (Variable
+              1
+              "p1"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Pointer
+                (Integer
+                  4
+                )
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+            )
+            "plain" (Variable
+              1
+              "plain"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer
+                4
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+            )
+          }
+        )
+        "generated"
+        []
+        [
+          (Associate
+            (Var
+              (SymbolRef 1 "p1")
+            )
+            (Var
+              (SymbolRef 1 "plain")
+            )
+          )
+        ]
+      )
+    }
+  )
+  []
+)
