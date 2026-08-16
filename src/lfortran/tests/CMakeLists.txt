@@ -111,11 +111,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         # Windows CI job does not provide: it builds and unit tests the
         # compiler but never runs the integration suite. Object emission is
         # still covered there by the test below.
+        # `--verify-all-passes` so a pass that corrupts a graph the initial
+        # verifier accepted is reported against that pass here too, and not
+        # only in a build with assertions enabled.
         if (NOT WIN32)
             add_test(
                 NAME test_asr_compile_${fixture_name}
                 COMMAND $<TARGET_FILE:lfortran>
                     ${fixture}
+                    --verify-all-passes
                     --no-color
                     -o ${PROJECT_BINARY_DIR}/${fixture_name}
             )
@@ -124,6 +128,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             NAME test_asr_object_${fixture_name}
             COMMAND $<TARGET_FILE:lfortran>
                 ${fixture}
+                --verify-all-passes
                 --no-color
                 -c
                 -o ${PROJECT_BINARY_DIR}/${fixture_name}.o
@@ -168,6 +173,19 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
             )
         endif()
+        # The invalid generators build graphs no verifier rule may accept.
+        # Only initial verification runs here, so this needs no linker.
+        add_test(
+            NAME test_asr_schema_invalid_rejected
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/tests/asr/fuzz.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --seed 3
+                --cases 12
+                --generator schema-invalid
+                --expect verify
+                --artifacts ${PROJECT_BINARY_DIR}/asr-fuzz-artifacts
+        )
         add_test(
             NAME test_asr_reducer_unit
             COMMAND ${LFORTRAN_TEST_PYTHON}

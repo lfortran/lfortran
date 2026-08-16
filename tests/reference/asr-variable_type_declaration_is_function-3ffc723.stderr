@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.type_declaration_is_type]: Variable 'x' has a derived type but declares it with Function
+   --> tests/asr/verify/variable_type_declaration_is_function.asr:110:18
+    |
+110 |             "x" (Variable
+    |                  ^^^^^^^^ failed here

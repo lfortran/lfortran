@@ -251,6 +251,21 @@ It also has deterministic schema-generated modes that construct small
 verifier-valid integer programs or intentionally invalid ASR directly, without
 using the Fortran frontend.
 
+The invalid generators cover three families, chosen because they are the two
+things a frontend most often gets wrong and the one thing that makes separate
+compilation worth having:
+
+- **references that do not resolve**: a name read from a scope that does not
+  contain it, a call to something that is not a procedure, a type-bound
+  procedure that names a variable, an import from a module that is not there.
+  This is the ASR a frontend produces when a symbol was never imported;
+- **calls that disagree with the procedure they call**: actual arguments whose
+  type, kind, rank or count the callee never declared, including through a
+  type-bound call, and a call statement naming a function;
+- **type-bound procedure overrides that do not conform**: an extending type
+  whose binding takes different arguments, or returns differently, from the
+  binding it overrides.
+
 ```console
 python tests/asr/fuzz.py \
   --lfortran src/bin/lfortran \
@@ -286,6 +301,17 @@ requiring the same initial-verification status and normalized failure phase:
 python tests/asr/reduce.py \
   --lfortran src/bin/lfortran \
   --metadata asr-fuzz-artifacts/failure-000000-....json
+```
+
+A verifier rejection is an accepted outcome for the fuzzer, but it is worth
+reducing too, since that is what a `tests/asr/verify/` fixture pins. Pass
+`--input` a `.asr` document instead of a fuzzer artifact and the reducer keeps
+the rejection's diagnostic code fixed rather than a failure phase:
+
+```console
+python tests/asr/reduce.py \
+  --lfortran src/bin/lfortran \
+  --input rejected.asr
 ```
 
 It writes a canonical `.min.asr` file and reduction journal without modifying

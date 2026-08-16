@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.binding_override.argument_count_matches]: Type bound procedure 'meth' overriding 'base_meth' must take 2 arguments, not 3
+   --> tests/asr/verify/binding_override_argument_count.asr:149:27
+    |
+149 |                   "meth" (StructMethodDeclaration
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here

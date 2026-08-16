@@ -10,6 +10,11 @@ asr_clojure = true
 llvm = true
 
 [[test]]
+filename = "asr/compile/procedure_declaration_interface.asr"
+asr_clojure = true
+llvm = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
@@ -5397,4 +5402,104 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_dimension_out_of_range.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_method_proc_is_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/external_symbol_owner_is_program.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/block_call_target_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_block_call_target_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_parent_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/generic_procedure_specific_is_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_type_declaration_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_type_declaration_out_of_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/namelist_member_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_dummy_not_declared_locally.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_result_not_declared_locally.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/user_defined_type_member_missing.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/module_dependency_missing.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_intent.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_allocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_rank.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_result_kind.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_nopass.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/method_call_actual_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_statement_names_a_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_call_result_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_argument_interface_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_member_of_unrelated_type.asr"
 asr = true

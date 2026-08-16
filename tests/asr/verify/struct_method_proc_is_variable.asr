@@ -1,0 +1,91 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "m" (Module
+        (SymbolTable
+          1
+          {
+            "base" (Struct
+              (SymbolTable
+                2
+                {
+                  "meth" (StructMethodDeclaration
+                    2
+                    "meth"
+                    nil
+                    "meth"
+                    (SymbolRef 1 "notaproc")
+                    :Source
+                    false
+                    false
+                  )
+                }
+              )
+              "base"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+            "notaproc" (Variable
+              1
+              "notaproc"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer
+                4
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+            )
+          }
+        )
+        "m"
+        nil
+        []
+        false
+        false
+        false
+      )
+      "generated" (Program
+        (SymbolTable
+          6
+          {}
+        )
+        "generated"
+        []
+        []
+      )
+    }
+  )
+  []
+)
