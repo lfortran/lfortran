@@ -5503,3 +5503,27 @@ asr = true
 [[test]]
 filename = "asr/verify/struct_member_of_unrelated_type.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/deferred_binding_not_overridden.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/abstract_type_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/final_procedure_signature.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_pointer_association.asr"
+asr = true
