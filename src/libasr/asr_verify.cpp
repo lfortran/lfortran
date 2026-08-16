@@ -1132,6 +1132,74 @@ public:
         current_symtab = parent_symtab;
     }
 
+    // `class(*)`, and the assumed-type temporaries the array passes build
+    // from it, resolve to a type that is polymorphic by construction.
+    static bool declares_unlimited_polymorphic(ASR::Struct_t *s) {
+        if (s->m_struct_signature == nullptr) return false;
+        if (!ASR::is_a<ASR::StructType_t>(*s->m_struct_signature)) return false;
+        return ASR::down_cast<ASR::StructType_t>(
+            s->m_struct_signature)->m_is_unlimited_polymorphic;
+    }
+
+    // A final subroutine is called by the compiler, never by the program, so
+    // there is no call site to check it against. It takes exactly one
+    // argument, the entity being finalized, and returns nothing.
+    void verify_final_procedures(const Struct_t &x) {
+        if (!check_external || x.m_symtab->parent == nullptr) return;
+        for (size_t i = 0; i < x.n_member_functions; i++) {
+            ASR::symbol_t *sym =
+                x.m_symtab->parent->resolve_symbol(x.m_member_functions[i]);
+            if (sym == nullptr) continue;
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) continue;
+            ASR::Function_t *final_proc = ASR::down_cast<ASR::Function_t>(sym);
+            std::string which = "Final procedure '" +
+                std::string(x.m_member_functions[i]) + "' of '" +
+                std::string(x.m_name) + "'";
+            require_id(final_proc->m_return_var == nullptr,
+                "asr.verify.struct.final_procedure_signature",
+                which + " must be a subroutine");
+            require_id(final_proc->n_args == 1,
+                "asr.verify.struct.final_procedure_signature",
+                which + " must take exactly one argument, not " +
+                std::to_string(final_proc->n_args));
+        }
+    }
+
+    // A deferred binding promises that every concrete type in the hierarchy
+    // supplies a body for it. A type that is not abstract and never overrides
+    // one leaves the dispatch table with a hole nothing fills, which is a
+    // call through a null slot rather than a diagnostic.
+    void verify_deferred_bindings(const Struct_t &x) {
+        if (!check_external || x.m_is_abstract) return;
+        std::set<std::string> nearest;
+        std::set<const ASR::Struct_t*> seen;
+        const ASR::Struct_t *s = &x;
+        while (s != nullptr) {
+            if (!seen.insert(s).second) return;
+            for (auto &item : s->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
+                    continue;
+                }
+                // The nearest declaration of a name is the one in effect;
+                // anything it hides has already been overridden.
+                if (!nearest.insert(item.first).second) continue;
+                ASR::StructMethodDeclaration_t *binding =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                        item.second);
+                require_id(!binding->m_is_deferred,
+                    "asr.verify.struct.deferred_binding_overridden",
+                    "'" + std::string(x.m_name) + "' is not abstract but "
+                    "does not override the deferred type bound procedure '" +
+                    item.first + "'");
+            }
+            ASR::symbol_t *parent = s->m_parent == nullptr ? nullptr
+                : ASRUtils::symbol_get_past_external(s->m_parent);
+            s = (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent))
+                ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+        }
+    }
+
     // A derived type extends another derived type and nothing else. Every
     // member lookup, every dispatch and every layout decision walks this
     // chain, so a parent that is not a type is followed straight into the
@@ -1157,6 +1225,8 @@ public:
                     "' cannot point outside of its symbol table");
             }
         }
+        verify_deferred_bindings(x);
+        verify_final_procedures(x);
         visit_UserDefinedType(x);
         if( !x.m_alignment ) {
             return ;
@@ -1446,6 +1516,21 @@ public:
                 "' declares its type with '" +
                 std::string(ASRUtils::symbol_name(x.m_type_declaration)) +
                 "', which its own scope no longer holds");
+            // An abstract type exists to be extended, never to be an entity
+            // of its own: it may have deferred bindings with no body, so a
+            // non-polymorphic entity of that type has no dispatch target.
+            if (decl != nullptr && ASR::is_a<ASR::Struct_t>(*decl) &&
+                    ASR::down_cast<ASR::Struct_t>(decl)->m_is_abstract &&
+                    !declares_unlimited_polymorphic(
+                        ASR::down_cast<ASR::Struct_t>(decl))) {
+                require_id(ASRUtils::is_class_type(
+                        ASRUtils::extract_type(x.m_type)),
+                    "asr.verify.variable.abstract_type_not_instantiated",
+                    "Variable '" + std::string(x.m_name) +
+                    "' has the abstract type '" +
+                    std::string(ASR::down_cast<ASR::Struct_t>(decl)->m_name) +
+                    "', which only a polymorphic entity may have");
+            }
             // Only for a complete graph: pass_array_by_data rebuilds a
             // procedure in a fresh scope while its variables still name the
             // interface in the scope they came from.

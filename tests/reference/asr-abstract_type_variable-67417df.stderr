@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.abstract_type_not_instantiated]: Variable 'x' has the abstract type 'base', which only a polymorphic entity may have
+  --> tests/asr/verify/abstract_type_variable.asr:56:18
+   |
+56 |             "x" (Variable
+   |                  ^^^^^^^^ failed here
