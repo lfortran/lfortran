@@ -475,6 +475,7 @@ public:
                     "', which is not in this translation unit");
             }
         }
+        verify_separate_module_procedures(x, parent_symtab);
         for( auto& dep: module_dependencies ) {
             if( dep != x.m_name ) {
                 require(present(x.m_dependencies, x.n_dependencies, dep),
@@ -485,6 +486,59 @@ public:
             }
         }
         current_symtab = parent_symtab;
+    }
+
+    // The interface a separate module procedure was declared with, searched
+    // up the chain of ancestor modules a submodule extends, or nullptr.
+    ASR::Function_t* declared_module_interface(SymbolTable *tu_scope,
+            const char *parent_module, const std::string &name) {
+        std::set<std::string> seen;
+        while (parent_module != nullptr && tu_scope != nullptr) {
+            std::string ancestor = parent_module;
+            if (!seen.insert(ancestor).second) return nullptr;
+            ASR::symbol_t *sym = tu_scope->get_symbol(ancestor);
+            if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
+            ASR::symbol_t *declared = m->m_symtab->get_symbol(name);
+            if (declared != nullptr && ASR::is_a<ASR::Function_t>(*declared)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(declared);
+                if (ASRUtils::get_FunctionType(f)->m_deftype ==
+                        ASR::deftypeType::Interface) {
+                    return f;
+                }
+            }
+            parent_module = m->m_parent_module;
+        }
+        return nullptr;
+    }
+
+    // A submodule supplies the body of a procedure whose interface its
+    // ancestor module published. Every caller compiled against that module
+    // was checked against the published interface and against nothing else,
+    // so the body has to match it.
+    void verify_separate_module_procedures(const Module_t &x,
+            SymbolTable *tu_scope) {
+        if (!check_external || x.m_parent_module == nullptr) return;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *impl =
+                ASR::down_cast<ASR::Function_t>(item.second);
+            if (ASRUtils::get_FunctionType(impl)->m_deftype !=
+                    ASR::deftypeType::Implementation) {
+                continue;
+            }
+            ASR::Function_t *declared = declared_module_interface(
+                tu_scope, x.m_parent_module, item.first);
+            if (declared == nullptr || declared == impl) continue;
+            verify_conforming_signatures(
+                "Module procedure '" + std::string(impl->m_name) +
+                "' implementing the interface in module '" +
+                std::string(x.m_parent_module) + "'",
+                impl, declared, declared->n_args + 1,
+                "asr.verify.module_procedure", x.base.base.loc);
+        }
     }
 
     void visit_Assignment(const Assignment_t& x) {
@@ -700,49 +754,58 @@ public:
         require_id(x.m_is_nopass == base_decl->m_is_nopass,
             "asr.verify.binding_override.nopass_matches",
             what + " must agree on the NOPASS attribute");
-        bool base_is_function = base->m_return_var != nullptr;
-        bool is_function = proc->m_return_var != nullptr;
-        require_id(base_is_function == is_function,
-            "asr.verify.binding_override.result_kind_matches",
-            what + " must be a " +
-            std::string(base_is_function ? "function" : "subroutine"));
-        if (base_is_function && is_function) {
-            ASR::ttype_t *base_type = typed_expr_type(base->m_return_var);
-            ASR::ttype_t *type = typed_expr_type(proc->m_return_var);
-            if (base_type != nullptr && type != nullptr &&
-                    !is_struct_like_type(base_type) &&
-                    !is_struct_like_type(type)) {
-                require_id(ASRUtils::check_equal_type(type, base_type,
-                        type_context(proc->m_return_var),
-                        type_context(base->m_return_var)),
-                    "asr.verify.binding_override.result_type_matches",
-                    what + " must return " +
-                    ASRUtils::get_type_code(base_type) + ", not " +
-                    ASRUtils::get_type_code(type));
-            }
-        }
-        require_id(proc->n_args == base->n_args,
-            "asr.verify.binding_override.argument_count_matches",
-            what + " must take " + std::to_string(base->n_args) +
-            " arguments, not " + std::to_string(proc->n_args));
-
         size_t self_index = passed_object_index(x, proc);
         size_t base_self_index = passed_object_index(*base_decl, base);
         require_id(self_index == base_self_index,
             "asr.verify.binding_override.passed_object_matches",
             what + " must take its passed-object dummy argument in the same "
             "position");
-        for (size_t i = 0; i < proc->n_args; i++) {
-            // The passed-object dummy argument is declared with the type it
-            // is bound to, so the two deliberately differ there.
-            if (i == self_index) continue;
-            verify_override_argument(what, i, proc, base, x.base.base.loc);
+        // The passed-object dummy argument is declared with the type it is
+        // bound to, so the two deliberately differ there.
+        verify_conforming_signatures(what, proc, base, self_index,
+            "asr.verify.binding_override", x.base.base.loc);
+    }
+
+    // Two procedures that must present the same interface. `skip` is the
+    // position of the one dummy argument they may declare differently, or
+    // `n_args` when there is none.
+    void verify_conforming_signatures(const std::string &what,
+            ASR::Function_t *impl, ASR::Function_t *decl, size_t skip,
+            const std::string &prefix, const Location &loc) {
+        bool decl_is_function = decl->m_return_var != nullptr;
+        bool is_function = impl->m_return_var != nullptr;
+        require_with_loc_id(decl_is_function == is_function,
+            prefix + ".result_kind_matches",
+            what + " must be a " +
+            std::string(decl_is_function ? "function" : "subroutine"), loc);
+        if (decl_is_function && is_function) {
+            ASR::ttype_t *decl_type = typed_expr_type(decl->m_return_var);
+            ASR::ttype_t *type = typed_expr_type(impl->m_return_var);
+            if (decl_type != nullptr && type != nullptr &&
+                    !is_struct_like_type(decl_type) &&
+                    !is_struct_like_type(type)) {
+                require_with_loc_id(ASRUtils::check_equal_type(type, decl_type,
+                        type_context(impl->m_return_var),
+                        type_context(decl->m_return_var)),
+                    prefix + ".result_type_matches",
+                    what + " must return " +
+                    ASRUtils::get_type_code(decl_type) + ", not " +
+                    ASRUtils::get_type_code(type), loc);
+            }
+        }
+        require_with_loc_id(impl->n_args == decl->n_args,
+            prefix + ".argument_count_matches",
+            what + " must take " + std::to_string(decl->n_args) +
+            " arguments, not " + std::to_string(impl->n_args), loc);
+        for (size_t i = 0; i < impl->n_args; i++) {
+            if (i == skip) continue;
+            verify_conforming_argument(what, i, impl, decl, prefix, loc);
         }
     }
 
-    void verify_override_argument(const std::string &what, size_t i,
+    void verify_conforming_argument(const std::string &what, size_t i,
             ASR::Function_t *proc, ASR::Function_t *base,
-            const Location &loc) {
+            const std::string &prefix, const Location &loc) {
         if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i]) ||
                 !ASR::is_a<ASR::Var_t>(*base->m_args[i])) {
             return;
@@ -759,11 +822,11 @@ public:
         std::string which = what + ", argument " + std::to_string(i + 1) +
             " '" + std::string(arg->m_name) + "',";
         require_with_loc_id(arg->m_intent == base_arg->m_intent,
-            "asr.verify.binding_override.argument_intent_matches",
+            prefix + ".argument_intent_matches",
             which + " must have the same intent as '" +
             std::string(base_arg->m_name) + "'", loc);
         require_with_loc_id(arg->m_presence == base_arg->m_presence,
-            "asr.verify.binding_override.argument_presence_matches",
+            prefix + ".argument_presence_matches",
             which + " must agree with '" + std::string(base_arg->m_name) +
             "' on the OPTIONAL attribute", loc);
         ASR::ttype_t *type = arg->m_type;
@@ -771,17 +834,17 @@ public:
         if (type == nullptr || base_type == nullptr) return;
         require_with_loc_id(ASRUtils::is_allocatable(type) ==
                 ASRUtils::is_allocatable(base_type),
-            "asr.verify.binding_override.argument_allocatable_matches",
+            prefix + ".argument_allocatable_matches",
             which + " must agree with '" + std::string(base_arg->m_name) +
             "' on the ALLOCATABLE attribute", loc);
         require_with_loc_id(ASRUtils::is_pointer(type) ==
                 ASRUtils::is_pointer(base_type),
-            "asr.verify.binding_override.argument_pointer_matches",
+            prefix + ".argument_pointer_matches",
             which + " must agree with '" + std::string(base_arg->m_name) +
             "' on the POINTER attribute", loc);
         require_with_loc_id(ASRUtils::extract_n_dims_from_ttype(type) ==
                 ASRUtils::extract_n_dims_from_ttype(base_type),
-            "asr.verify.binding_override.argument_rank_matches",
+            prefix + ".argument_rank_matches",
             which + " must have rank " + std::to_string(
                 ASRUtils::extract_n_dims_from_ttype(base_type)), loc);
         // A derived type argument spells its members out inline, so two
@@ -794,7 +857,7 @@ public:
         require_with_loc_id(ASRUtils::check_equal_type(type, base_type,
                 type_context(proc->m_args[i]),
                 type_context(base->m_args[i])),
-            "asr.verify.binding_override.argument_type_matches",
+            prefix + ".argument_type_matches",
             which + " must have type " +
             ASRUtils::get_type_code(base_type) + ", not " +
             ASRUtils::get_type_code(type), loc);
@@ -1866,13 +1929,12 @@ public:
     // actual procedure is called through that interface, so a disagreement
     // is an indirect call with the wrong signature -- the one thing a
     // dummy procedure exists to rule out.
-    void verify_procedure_argument(ASR::ttype_t *actual_type,
-            ASR::ttype_t *formal_type, const char *name,
+    void verify_procedure_interface(ASR::ttype_t *actual_type,
+            ASR::ttype_t *formal_type, const std::string &which,
             const Location &loc) {
         ASR::FunctionType_t *actual = as_procedure_type(actual_type);
         ASR::FunctionType_t *formal = as_procedure_type(formal_type);
         if (actual == nullptr || formal == nullptr) return;
-        std::string which = "Procedure argument '" + std::string(name) + "'";
         require_with_loc_id(
             (actual->m_return_var_type == nullptr) ==
                 (formal->m_return_var_type == nullptr),
@@ -2005,8 +2067,10 @@ public:
                 bool procedure_argument = is_procedure_type(actual_type)
                     || is_procedure_type(formal_type);
                 if (procedure_argument && check_standalone_rules) {
-                    verify_procedure_argument(
-                        actual_type, formal_type, callee_param->m_name,
+                    verify_procedure_interface(
+                        actual_type, formal_type,
+                        "Procedure argument '" +
+                        std::string(callee_param->m_name) + "'",
                         passed_arg_expr->base.loc);
                 }
                 // A type-bound call is checked like any other: only its

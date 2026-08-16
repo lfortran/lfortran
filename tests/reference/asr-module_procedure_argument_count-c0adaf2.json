@@ -1,0 +1,13 @@
+{
+    "basename": "asr-module_procedure_argument_count-c0adaf2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/module_procedure_argument_count.asr",
+    "infile_hash": "5fde9c6dd6f83ba4fee3675d5775b3bd0529ac44b2d9d4e77f136c8f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-module_procedure_argument_count-c0adaf2.stderr",
+    "stderr_hash": "62fe7a5ef64ccd7eec162a8340981f8ba44513f1b6081fb153f7acaa",
+    "returncode": 2
+}

@@ -5503,3 +5503,11 @@ asr = true
 [[test]]
 filename = "asr/verify/struct_member_of_unrelated_type.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_type.asr"
+asr = true
