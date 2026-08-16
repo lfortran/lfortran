@@ -400,12 +400,15 @@ def translation_unit(symbols, body):
     })
 
 
-def module(symtab_id, name, symbols, dependencies=()):
+def module(symtab_id, name, symbols, dependencies=(), parent_module=None,
+           has_submodules=False):
     names = " ".join(string(item) for item in dependencies)
     return (
         f"(Module :symtab {scope(symtab_id, symbols)} :name {string(name)} "
-        f":parent_module nil :dependencies [{names}] :loaded_from_mod false "
-        f":intrinsic false :has_submodules false)"
+        f":parent_module {string(parent_module) if parent_module else 'nil'} "
+        f":dependencies [{names}] :loaded_from_mod false "
+        f":intrinsic false "
+        f":has_submodules {'true' if has_submodules else 'false'})"
     )
 
 
@@ -763,7 +766,8 @@ def generate_invalid(seed):
         invalid_function_call_kind,
         invalid_call_plain_array_to_allocatable_array,
         invalid_call_allocatable_array_to_plain_array,
-    ] + OVERRIDE_BUILDERS + REFERENCE_BUILDERS + CALL_SITE_BUILDERS
+    ] + OVERRIDE_BUILDERS + REFERENCE_BUILDERS + CALL_SITE_BUILDERS \
+        + PROGRAM_UNIT_BUILDERS
     return rng.choice(builders)(rng)
 
 
@@ -1481,6 +1485,116 @@ def invalid_struct_member_of_other_type(_rng):
         "generated": program(
             OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
     }), "schema-invalid component of an unrelated derived type"
+
+
+# --- interfaces a whole program unit has to honour -----------------------
+#
+# These are the promises a caller in another file is compiled against: the
+# interface a submodule implements, the bindings a concrete type must supply,
+# and the shapes the compiler itself calls.
+
+SUBMODULE_SYMTAB = 10
+SUBMODULE_PROC_SYMTAB = 11
+
+
+def submodule_unit(declared_dummies, implemented_dummies):
+    """A module publishing an interface and a submodule implementing it."""
+    interface = procedure(
+        "impl", False, declared_dummies, [], symtab=MODULE_PROC_SYMTAB,
+        deftype="Interface")
+    body = procedure(
+        "impl", False, implemented_dummies, [], symtab=SUBMODULE_PROC_SYMTAB)
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", {"impl": interface},
+                    has_submodules=True),
+        "s": module(SUBMODULE_SYMTAB, "s", {"impl": body}, parent_module="m"),
+        "generated": program(OO_PROGRAM_SYMTAB, "generated", {}, []),
+    })
+
+
+def invalid_module_procedure_argument_count(_rng):
+    return submodule_unit(
+        [dummy("a", INTEGER, "In")],
+        [dummy("a", INTEGER, "In"), dummy("b", INTEGER, "In")],
+    ), "schema-invalid separate module procedure argument count"
+
+
+def invalid_module_procedure_argument_type(_rng):
+    return submodule_unit(
+        [dummy("a", INTEGER, "In")], [dummy("a", ("real", 8), "In")],
+    ), "schema-invalid separate module procedure argument type"
+
+
+def invalid_deferred_binding_not_overridden(_rng):
+    """A concrete type inheriting a binding with no body."""
+    symbols = {
+        "base": struct(
+            BASE_STRUCT_SYMTAB, "base",
+            {"meth": struct_method(
+                BASE_STRUCT_SYMTAB, "meth",
+                symbol_ref(MODULE_SYMTAB, "base_meth"),
+                proc_name="base_meth", deferred=True, nopass=True)},
+            abstract=True),
+        "base_meth": procedure(
+            "base_meth", False, [dummy("a", INTEGER, "In")], [],
+            symtab=BASE_PROC_SYMTAB, deftype="Interface"),
+        "derived": struct(
+            DERIVED_STRUCT_SYMTAB, "derived", {},
+            parent=symbol_ref(MODULE_SYMTAB, "base")),
+    }
+    return module_unit(symbols, {}, []), \
+        "schema-invalid unoverridden deferred binding"
+
+
+def invalid_abstract_type_variable(_rng):
+    struct_type = ("(StructType :data_member_types [] "
+                   ":member_function_types [] :is_cstruct true "
+                   ":is_unlimited_polymorphic false)")
+    return module_unit(
+        {"base": struct(BASE_STRUCT_SYMTAB, "base", {}, abstract=True)},
+        {"base": external_symbol(
+            OO_PROGRAM_SYMTAB, "base", MODULE_SYMTAB, "base", "m"),
+         "x": variable(
+             OO_PROGRAM_SYMTAB, "x", struct_type,
+             type_declaration=symbol_ref(OO_PROGRAM_SYMTAB, "base"))},
+        [],
+    ), "schema-invalid entity of an abstract type"
+
+
+def invalid_final_procedure(_rng):
+    return module_unit(
+        {"base": struct(BASE_STRUCT_SYMTAB, "base", {}).replace(
+            ":member_functions []", ":member_functions [\"cleanup\"]", 1),
+         "cleanup": procedure(
+             "cleanup", False,
+             [dummy("self", INTEGER, "InOut"), dummy("extra", INTEGER, "In")],
+             [], symtab=MODULE_PROC_SYMTAB)},
+        {}, [],
+    ), "schema-invalid final procedure signature"
+
+
+def invalid_procedure_pointer_association(_rng):
+    pointer_type = f"(Pointer :type {function_type([integer_type(4)])})"
+    return module_unit(
+        {"impl": procedure(
+            "impl", False, [dummy("a", ("real", 8), "In")], [],
+            symtab=MODULE_PROC_SYMTAB)},
+        {"impl": external_symbol(
+            OO_PROGRAM_SYMTAB, "impl", MODULE_SYMTAB, "impl", "m"),
+         "p1": variable(OO_PROGRAM_SYMTAB, "p1", pointer_type)},
+        [f"(Associate :target {var(OO_PROGRAM_SYMTAB, 'p1')} "
+         f":value {var(OO_PROGRAM_SYMTAB, 'impl')})"],
+    ), "schema-invalid procedure pointer association"
+
+
+PROGRAM_UNIT_BUILDERS = [
+    invalid_module_procedure_argument_count,
+    invalid_module_procedure_argument_type,
+    invalid_deferred_binding_not_overridden,
+    invalid_abstract_type_variable,
+    invalid_final_procedure,
+    invalid_procedure_pointer_association,
+]
 
 
 CALL_SITE_BUILDERS = [
