@@ -531,6 +531,8 @@ def type_bound_unit(base_dummies, derived_dummies, deferred=True,
 
 def generate_valid(seed):
     rng = random.Random(seed)
+    if rng.random() < 0.15:
+        return rng.choice(VALID_WRAPPER_BUILDERS)(rng)
     symbols = {}
     integers = []
     reals = []
@@ -753,9 +755,7 @@ def generate_invalid(seed):
         invalid_real_kind,
         invalid_call_kind,
         invalid_call_family,
-        invalid_call_allocatable_to_plain,
         invalid_call_plain_to_allocatable,
-        invalid_call_pointer_to_plain,
         invalid_call_plain_to_pointer,
         invalid_call_omit_required,
         invalid_call_extra_arg,
@@ -765,7 +765,6 @@ def generate_invalid(seed):
         invalid_call_optional_wrong_kind,
         invalid_function_call_kind,
         invalid_call_plain_array_to_allocatable_array,
-        invalid_call_allocatable_array_to_plain_array,
     ] + OVERRIDE_BUILDERS + REFERENCE_BUILDERS + CALL_SITE_BUILDERS \
         + PROGRAM_UNIT_BUILDERS
     return rng.choice(builders)(rng)
@@ -817,13 +816,13 @@ def invalid_call_family(_rng):
         "schema-invalid call family mismatch")
 
 
-def invalid_call_allocatable_to_plain(_rng):
+def valid_call_allocatable_to_plain(_rng):
     return _mismatch_program(
         [dummy("arg", ("integer", 4), "In")],
         [var(PROGRAM_SYMTAB, "x")],
         {"x": variable(
             PROGRAM_SYMTAB, "x", ("integer", 4), allocatable=True)},
-        "schema-invalid allocatable actual to nonallocatable dummy")
+        "schema-valid allocatable actual to nonallocatable dummy")
 
 
 def invalid_call_plain_to_allocatable(_rng):
@@ -834,13 +833,13 @@ def invalid_call_plain_to_allocatable(_rng):
         "schema-invalid nonallocatable actual to allocatable dummy")
 
 
-def invalid_call_pointer_to_plain(_rng):
+def valid_call_pointer_to_plain(_rng):
     return _mismatch_program(
         [dummy("arg", ("integer", 4), "In")],
         [var(PROGRAM_SYMTAB, "x")],
         {"x": variable(
             PROGRAM_SYMTAB, "x", ("integer", 4), pointer=True)},
-        "schema-invalid pointer actual to nonpointer dummy")
+        "schema-valid pointer actual to nonpointer dummy")
 
 
 def invalid_call_plain_to_pointer(_rng):
@@ -911,7 +910,7 @@ def invalid_call_plain_array_to_allocatable_array(_rng):
         "schema-invalid plain array to allocatable array dummy")
 
 
-def invalid_call_allocatable_array_to_plain_array(_rng):
+def valid_call_allocatable_array_to_plain_array(_rng):
     dummy_type = array_type(("integer", 4), [3])
     actual_type = deferred_array_type(("integer", 4), 1)
     return _mismatch_program(
@@ -919,7 +918,17 @@ def invalid_call_allocatable_array_to_plain_array(_rng):
         [var(PROGRAM_SYMTAB, "x")],
         {"x": variable(
             PROGRAM_SYMTAB, "x", actual_type, allocatable=True)},
-        "schema-invalid allocatable array to plain array dummy")
+        "schema-valid allocatable array to plain array dummy")
+
+
+# Passing an allocatable or a pointer actual to a plain dummy is valid
+# Fortran -- only the dummy's own wrapper constrains the actual -- so these
+# exercise the argument lowering paths rather than a verifier rule.
+VALID_WRAPPER_BUILDERS = [
+    valid_call_allocatable_to_plain,
+    valid_call_pointer_to_plain,
+    valid_call_allocatable_array_to_plain_array,
+]
 
 
 def invalid_function_call_kind(_rng):
