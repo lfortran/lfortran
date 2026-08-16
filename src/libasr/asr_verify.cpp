@@ -2745,6 +2745,30 @@ public:
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
                 "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
         }
+        // Every element ends up in one array, so they all have to be the
+        // element type the constructor claims. A pass that lowers the
+        // constructor builds an assignment per element and asserts on the
+        // first one whose type does not match, rather than diagnosing it.
+        ASR::ttype_t *element = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+        if (element != nullptr && !diagnostics.has_error() &&
+                !is_struct_like_type(element) && !is_procedure_type(element)) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::ttype_t *arg = typed_expr_type(x.m_args[i]);
+                if (arg == nullptr || ASRUtils::is_array(arg)) continue;
+                if (is_struct_like_type(arg) || is_procedure_type(arg)) {
+                    continue;
+                }
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(arg, element, nullptr, nullptr),
+                    "asr.verify.array_constructor.element_type_matches",
+                    "ArrayConstructor element " + std::to_string(i + 1) +
+                    " has type " + ASRUtils::get_type_code(arg) +
+                    ", but the constructor builds an array of " +
+                    ASRUtils::get_type_code(element),
+                    x.m_args[i]->base.loc);
+            }
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 

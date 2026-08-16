@@ -5543,3 +5543,7 @@ asr = true
 [[test]]
 filename = "asr/verify/pointer_to_nontarget.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/array_constructor_element_type.asr"
+asr = true
