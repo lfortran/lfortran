@@ -5523,3 +5523,7 @@ asr = true
 [[test]]
 filename = "asr/verify/final_procedure_signature.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/procedure_pointer_association.asr"
+asr = true

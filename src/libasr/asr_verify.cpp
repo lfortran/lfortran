@@ -541,6 +541,26 @@ public:
         }
     }
 
+    // Associating a procedure pointer fixes what every later call through it
+    // is compiled against, so the procedure has to have the interface the
+    // pointer was declared with.
+    void visit_Associate(const Associate_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_Associate(x);
+        if (!check_external || x.m_target == nullptr || x.m_value == nullptr) {
+            return;
+        }
+        // Only for a complete graph: `procedure(), pointer` declares no
+        // interface at all and accepts any procedure, and the frontend gives
+        // it the same empty FunctionType an explicit no-argument interface
+        // gets, so the two cannot be told apart here.
+        if (!check_standalone_rules) return;
+        ASR::ttype_t *target = typed_expr_type(x.m_target);
+        ASR::ttype_t *value = typed_expr_type(x.m_value);
+        if (target == nullptr || value == nullptr) return;
+        verify_procedure_interface(value, target,
+            "Procedure pointer association", x.base.base.loc);
+    }
+
     void visit_Assignment(const Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
         if( ASR::is_a<ASR::Var_t>(*target) ) {
@@ -885,6 +905,23 @@ public:
             e->base.loc);
     }
 
+    // An elemental procedure is defined on scalars and applied elementwise,
+    // which is what lets a caller pass arrays of any shape to it. A dummy
+    // argument that is itself an array leaves that rewrite with no shape to
+    // agree on.
+    void verify_elemental_arguments(const Function_t &x) {
+        if (!ASRUtils::get_FunctionType(x)->m_elemental) return;
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::ttype_t *type = typed_expr_type(x.m_args[i]);
+            if (type == nullptr) continue;
+            require_id(!ASRUtils::is_array(type),
+                "asr.verify.function.elemental_arguments_scalar",
+                "Elemental procedure '" + std::string(x.m_name) +
+                "' declares argument " + std::to_string(i + 1) +
+                " as an array");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -928,6 +965,7 @@ public:
 
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
+        verify_elemental_arguments(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
