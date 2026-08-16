@@ -9120,6 +9120,65 @@ static inline int64_t get_fixed_string_len(const ASR::ttype_t* type_t) {
     return -1;
 }
 
+// Returns the type of `e`, or nullptr if the expression is malformed in a way
+// that makes its type unobtainable (a Var referencing a symbol that carries no
+// type, such as a Program). Such expressions have their own dedicated checks,
+// so type comparisons must simply be skipped for them instead of asking for a
+// type that does not exist.
+ASR::ttype_t* typed_expr_type(const ASR::expr_t *e);
+
+// Procedure types are compared by their own dedicated checks, and they have no
+// type code, so they cannot take part in the generic type comparisons.
+bool is_procedure_type(ASR::ttype_t *t);
+
+// A StructType spells out its member types inline, so two StructType nodes for
+// the same derived type can differ structurally, for example when a pass
+// rewrites the signature of a procedure pointer component in one of them.
+// Derived type identity is established from the struct symbol, which a bare
+// signature type does not carry, so such types are left to the dedicated
+// struct checks.
+bool is_struct_like_type(ASR::ttype_t *t);
+
+// The one way in which two procedures that must present the same interface
+// fail to do so. `code` names the check that failed, so a caller can label the
+// diagnostic it raises; both fields are empty when the interfaces conform.
+struct InterfaceMismatch {
+    bool mismatch = false;
+    std::string code;
+    std::string message;
+};
+
+// Compares two procedures that must present the same interface. `skip` is the
+// position of the one dummy argument they may declare differently (the
+// passed-object dummy argument), or `impl->n_args` when there is none. `what`
+// names the procedure at the start of the message. Type equality uses the
+// argument expressions to resolve the struct symbols they refer to, which
+// requires dereferencing ExternalSymbol; pass `use_expr_context = false`
+// before externals are resolved to fall back to a structural comparison.
+InterfaceMismatch interface_mismatch(const std::string &what,
+    ASR::Function_t *impl, ASR::Function_t *decl, size_t skip,
+    bool use_expr_context);
+
+// The position of the passed-object dummy argument of a binding, or `n_args`
+// when the binding has none.
+size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
+    ASR::Function_t *proc);
+
+// The binding of the same name that `x` overrides, searched up the parent
+// chain of the derived type `x` belongs to, or nullptr.
+ASR::StructMethodDeclaration_t* overridden_binding(
+    const ASR::StructMethodDeclaration_t &x);
+
+// Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
+// overrides must have the same interface apart from the passed-object dummy
+// argument. Nothing downstream re-derives this, so a mismatch means a dispatch
+// through the parent type calls a procedure whose signature does not match the
+// call site the parent's interface promised. Returns no mismatch when `x`
+// overrides nothing.
+InterfaceMismatch binding_override_mismatch(
+    const ASR::StructMethodDeclaration_t &x, ASR::Function_t *proc,
+    const std::string &what, bool use_expr_context);
+
 } // namespace ASRUtils
 
 } // namespace LCompilers

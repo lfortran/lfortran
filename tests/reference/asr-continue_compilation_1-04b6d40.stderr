@@ -128,6 +128,12 @@ semantic error: Procedure 'op_clash_f' is already defined as an interface body
  38 |            end function
     | ...~~~~~~~~~~~~~~~~~~~~ is already defined here
 
+semantic error: Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
+  --> tests/errors/continue_compilation_1.f90:68:58
+   |
+68 |     type, extends(MyClass) :: derived_binding; contains; procedure :: display => display_override; end type  ! {Error} Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
+   |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Defined assignment procedure must not return a value
    --> tests/errors/continue_compilation_1.f90:141:5 - 145:32
     |
