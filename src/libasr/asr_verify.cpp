@@ -549,16 +549,55 @@ public:
         if (!check_external || x.m_target == nullptr || x.m_value == nullptr) {
             return;
         }
-        // Only for a complete graph: `procedure(), pointer` declares no
-        // interface at all and accepts any procedure, and the frontend gives
-        // it the same empty FunctionType an explicit no-argument interface
-        // gets, so the two cannot be told apart here.
-        if (!check_standalone_rules) return;
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        // Only for a complete graph, on both counts below: the array passes
+        // introduce pointer aliasing of their own onto plain variables whose
+        // lifetime they control, and `procedure(), pointer` declares no
+        // interface at all yet gets the same empty FunctionType that an
+        // explicit no-argument interface does.
+        if (!check_standalone_rules) return;
+        // A data pointer may only be associated with something the compiler
+        // knows may be aliased and that outlives it. A plain local has
+        // neither guarantee, so the pointer is left able to dangle.
+        if (ASRUtils::is_pointer(target) && !is_procedure_type(target) &&
+                ASR::is_a<ASR::Var_t>(*x.m_value)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                require_id(v->m_target_attr || ASRUtils::is_pointer(v->m_type),
+                    "asr.verify.associate.value_is_target",
+                    "Pointer assignment names '" + std::string(v->m_name) +
+                    "', which is neither a pointer nor a target");
+            }
+        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
+    }
+
+    // A type guard names a type the selector could actually be at run time.
+    // One that names an unrelated type selects a branch nothing can enter,
+    // and the branch then reads the selector as a type it never holds.
+    void visit_SelectType(const SelectType_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_SelectType(x);
+        if (!check_external || x.m_selector == nullptr) return;
+        for (size_t i = 0; i < x.n_body; i++) {
+            ASR::symbol_t *guard = nullptr;
+            if (ASR::is_a<ASR::TypeStmtName_t>(*x.m_body[i])) {
+                guard = ASR::down_cast<ASR::TypeStmtName_t>(x.m_body[i])->m_sym;
+            } else if (ASR::is_a<ASR::ClassStmt_t>(*x.m_body[i])) {
+                guard = ASR::down_cast<ASR::ClassStmt_t>(x.m_body[i])->m_sym;
+            }
+            if (guard == nullptr) continue;
+            require_id(
+                dynamic_type_is_compatible(guard, x.m_selector),
+                "asr.verify.select_type.guard_extends_selector",
+                "The type guard '" +
+                std::string(ASRUtils::symbol_name(guard)) +
+                "' does not extend the declared type of the selector");
+        }
     }
 
     void visit_Assignment(const Assignment_t& x) {
@@ -786,6 +825,32 @@ public:
             "asr.verify.binding_override", x.base.base.loc);
     }
 
+    // `check_equal_type` does not look at a character length, but a caller
+    // compiled against `character(len=5)` reserves five bytes for a result
+    // the implementation writes ten into.
+    void require_equal_string_length(const std::string &what,
+            ASR::ttype_t *impl, ASR::ttype_t *decl, const std::string &code,
+            const Location &loc) {
+        if (impl == nullptr || decl == nullptr) return;
+        if (!ASRUtils::is_character(*impl) ||
+                !ASRUtils::is_character(*decl)) {
+            return;
+        }
+        ASR::String_t *a = ASRUtils::get_string_type(impl);
+        ASR::String_t *b = ASRUtils::get_string_type(decl);
+        if (a == nullptr || b == nullptr) return;
+        int64_t a_len = -1, b_len = -1;
+        if (a->m_len == nullptr || b->m_len == nullptr) return;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(a->m_len), a_len) ||
+                !ASRUtils::extract_value(
+                    ASRUtils::expr_value(b->m_len), b_len)) {
+            return;
+        }
+        require_with_loc_id(a_len == b_len, code,
+            what + " must have character length " + std::to_string(b_len) +
+            ", not " + std::to_string(a_len), loc);
+    }
+
     // Two procedures that must present the same interface. `skip` is the
     // position of the one dummy argument they may declare differently, or
     // `n_args` when there is none.
@@ -811,6 +876,8 @@ public:
                     what + " must return " +
                     ASRUtils::get_type_code(decl_type) + ", not " +
                     ASRUtils::get_type_code(type), loc);
+                require_equal_string_length(what + " result", type, decl_type,
+                    prefix + ".result_type_matches", loc);
             }
         }
         require_with_loc_id(impl->n_args == decl->n_args,
@@ -1246,6 +1313,22 @@ public:
         if (x.m_parent != nullptr) {
             ASR::symbol_t *parent = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_parent) : x.m_parent;
+            // A sequence type fixes its storage layout, which is what makes
+            // it usable across a COMMON block or a BIND(C) boundary; adding
+            // an extension's components to it would move what the other side
+            // of that boundary already agreed on.
+            require_id(!x.m_is_sequence,
+                "asr.verify.struct.sequence_type_not_extended",
+                "'" + std::string(x.m_name) +
+                "' is a sequence type, so it cannot extend another type");
+            if (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                require_id(
+                    !ASR::down_cast<ASR::Struct_t>(parent)->m_is_sequence,
+                    "asr.verify.struct.sequence_type_not_extended",
+                    "'" + std::string(x.m_name) + "' extends '" +
+                    std::string(ASR::down_cast<ASR::Struct_t>(parent)->m_name)
+                    + "', which is a sequence type");
+            }
             require_id(parent != nullptr &&
                     (ASR::is_a<ASR::Struct_t>(*parent) ||
                      ASR::is_a<ASR::ExternalSymbol_t>(*parent)),
@@ -1969,6 +2052,58 @@ public:
         return false;
     }
 
+    // True when `candidate` is `ancestor` or extends it.
+    static bool struct_is_or_extends(ASR::Struct_t *candidate,
+            ASR::Struct_t *ancestor) {
+        std::set<ASR::Struct_t*> seen;
+        while (candidate != nullptr) {
+            if (candidate == ancestor) return true;
+            if (!seen.insert(candidate).second) return false;
+            ASR::symbol_t *parent = candidate->m_parent == nullptr ? nullptr
+                : ASRUtils::symbol_get_past_external(candidate->m_parent);
+            candidate = (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent))
+                ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+        }
+        return false;
+    }
+
+    // The derived type an expression was declared with, or nullptr when it
+    // was not declared with one.
+    static ASR::Struct_t* declared_struct(ASR::expr_t *e) {
+        if (e == nullptr) return nullptr;
+        ASR::symbol_t *sym = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            sym = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
+        }
+        if (sym == nullptr) return nullptr;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+        ASR::symbol_t *decl =
+            ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+        if (decl == nullptr) return nullptr;
+        decl = ASRUtils::symbol_get_past_external(decl);
+        if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) return nullptr;
+        return ASR::down_cast<ASR::Struct_t>(decl);
+    }
+
+    // A dynamic type is reachable through a declared one only if it is that
+    // type or extends it. Unknown on either side means no opinion.
+    bool dynamic_type_is_compatible(ASR::symbol_t *dynamic,
+            ASR::expr_t *declared_by) {
+        if (!check_external || dynamic == nullptr) return true;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(dynamic);
+        if (sym == nullptr || !ASR::is_a<ASR::Struct_t>(*sym)) return true;
+        ASR::Struct_t *declared = declared_struct(declared_by);
+        if (declared == nullptr) return true;
+        // An unlimited polymorphic entity may hold any type at all, so no
+        // guard or dynamic type is out of reach through it.
+        if (declares_unlimited_polymorphic(declared)) return true;
+        return struct_is_or_extends(
+            ASR::down_cast<ASR::Struct_t>(sym), declared);
+    }
+
     // True when `name` is a type in the parent chain of `struct_type`, which
     // is what an implicit parent component is named after.
     bool struct_extends(ASR::Struct_t *struct_type, const std::string &name) {
@@ -2610,6 +2745,30 @@ public:
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
                 "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
         }
+        // Every element ends up in one array, so they all have to be the
+        // element type the constructor claims. A pass that lowers the
+        // constructor builds an assignment per element and asserts on the
+        // first one whose type does not match, rather than diagnosing it.
+        ASR::ttype_t *element = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(x.m_type));
+        if (element != nullptr && !diagnostics.has_error() &&
+                !is_struct_like_type(element) && !is_procedure_type(element)) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::ttype_t *arg = typed_expr_type(x.m_args[i]);
+                if (arg == nullptr || ASRUtils::is_array(arg)) continue;
+                if (is_struct_like_type(arg) || is_procedure_type(arg)) {
+                    continue;
+                }
+                require_with_loc_id(
+                    ASRUtils::check_equal_type(arg, element, nullptr, nullptr),
+                    "asr.verify.array_constructor.element_type_matches",
+                    "ArrayConstructor element " + std::to_string(i + 1) +
+                    " has type " + ASRUtils::get_type_code(arg) +
+                    ", but the constructor builds an array of " +
+                    ASRUtils::get_type_code(element),
+                    x.m_args[i]->base.loc);
+            }
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
@@ -3080,6 +3239,18 @@ public:
                 if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
                     require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
                         "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
+                    // A polymorphic entity may only take a dynamic type its
+                    // declared type is an ancestor of; anything else could
+                    // not be reached through the declared type at all.
+                    require_with_loc_id(
+                        dynamic_type_is_compatible(
+                            x.m_args[i].m_sym_subclass, x.m_args[i].m_a),
+                        "asr.verify.allocate.dynamic_type_extends_declared",
+                        "Allocate names the dynamic type '" +
+                        std::string(ASRUtils::symbol_name(
+                            x.m_args[i].m_sym_subclass)) +
+                        "', which does not extend the declared type",
+                        x.m_args[i].m_a->base.loc);
                 }
                 // Check Allocating a string OR an array of string with deferred length
                 // Not providing length in Allocate statement with non-deferredLength is permissible

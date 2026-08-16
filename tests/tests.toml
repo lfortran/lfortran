@@ -5527,3 +5527,23 @@ asr = true
 [[test]]
 filename = "asr/verify/procedure_pointer_association.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/select_type_unrelated_guard.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/allocate_unrelated_dynamic_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/sequence_type_extended.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/pointer_to_nontarget.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_constructor_element_type.asr"
+asr = true

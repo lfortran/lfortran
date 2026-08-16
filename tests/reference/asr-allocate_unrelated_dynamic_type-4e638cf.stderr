@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.allocate.dynamic_type_extends_declared]: Allocate names the dynamic type 'other', which does not extend the declared type
+   --> tests/asr/verify/allocate_unrelated_dynamic_type.asr:128:18
+    |
+128 |                 (Var
+    |                  ^^^ failed here

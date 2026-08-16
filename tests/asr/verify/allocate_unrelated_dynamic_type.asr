@@ -1,0 +1,152 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "m" (Module
+        (SymbolTable
+          1
+          {
+            "base" (Struct
+              (SymbolTable
+                2
+                {}
+              )
+              "base"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+            "other" (Struct
+              (SymbolTable
+                4
+                {}
+              )
+              "other"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+          }
+        )
+        "m"
+        nil
+        []
+        false
+        false
+        false
+      )
+      "generated" (Program
+        (SymbolTable
+          6
+          {
+            "base" (ExternalSymbol
+              6
+              "base"
+              (SymbolRef 1 "base")
+              "m"
+              []
+              "base"
+              :Public
+            )
+            "other" (ExternalSymbol
+              6
+              "other"
+              (SymbolRef 1 "other")
+              "m"
+              []
+              "other"
+              :Public
+            )
+            "b" (Variable
+              6
+              "b"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Allocatable
+                (StructType
+                  []
+                  []
+                  false
+                  false
+                )
+              )
+              (SymbolRef 6 "base")
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+            )
+          }
+        )
+        "generated"
+        []
+        [
+          (Allocate
+            [
+              (alloc_arg
+                (Var
+                  (SymbolRef 6 "b")
+                )
+                []
+                []
+                nil
+                (SymbolRef 6 "other")
+                (StructType
+                  []
+                  []
+                  true
+                  false
+                )
+              )
+            ]
+            nil
+            nil
+            nil
+          )
+        ]
+      )
+    }
+  )
+  []
+)

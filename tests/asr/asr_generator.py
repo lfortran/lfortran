@@ -766,7 +766,7 @@ def generate_invalid(seed):
         invalid_function_call_kind,
         invalid_call_plain_array_to_allocatable_array,
     ] + OVERRIDE_BUILDERS + REFERENCE_BUILDERS + CALL_SITE_BUILDERS \
-        + PROGRAM_UNIT_BUILDERS
+        + PROGRAM_UNIT_BUILDERS + TYPE_REACH_BUILDERS
     return rng.choice(builders)(rng)
 
 
@@ -1615,6 +1615,124 @@ CALL_SITE_BUILDERS = [
     invalid_method_call_rank,
     invalid_call_function_as_subroutine,
     invalid_call_result_type,
+]
+
+
+# --- types and pointers that cannot hold what they are given -------------
+#
+# A polymorphic entity reaches a type only through its declared type, a
+# sequence type fixes a layout nothing may extend, a pointer needs something
+# it may legally alias, and every element of one array constructor lands in
+# one array.
+
+def invalid_select_type_unrelated_guard(_rng):
+    struct_type = ("(StructType :data_member_types [] "
+                   ":member_function_types [] :is_cstruct false "
+                   ":is_unlimited_polymorphic false)")
+    module_symbols = {
+        "base": struct(BASE_STRUCT_SYMTAB, "base", {}),
+        "other": struct(DERIVED_STRUCT_SYMTAB, "other", {}),
+    }
+    program_symbols = {
+        "base": external_symbol(
+            OO_PROGRAM_SYMTAB, "base", MODULE_SYMTAB, "base", "m"),
+        "other": external_symbol(
+            OO_PROGRAM_SYMTAB, "other", MODULE_SYMTAB, "other", "m"),
+        "b": variable(
+            OO_PROGRAM_SYMTAB, "b", struct_type, allocatable=True,
+            type_declaration=symbol_ref(OO_PROGRAM_SYMTAB, "base")),
+    }
+    body = [
+        f"(SelectType :selector {var(OO_PROGRAM_SYMTAB, 'b')} "
+        f":assoc_name nil "
+        f":body [(TypeStmtName "
+        f":sym {symbol_ref(OO_PROGRAM_SYMTAB, 'other')} :body [])] "
+        f":default [])"
+    ]
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    }), "schema-invalid type guard on an unrelated type"
+
+
+def invalid_allocate_unrelated_type(_rng):
+    struct_type = ("(StructType :data_member_types [] "
+                   ":member_function_types [] :is_cstruct false "
+                   ":is_unlimited_polymorphic false)")
+    concrete_type = ("(StructType :data_member_types [] "
+                     ":member_function_types [] :is_cstruct true "
+                     ":is_unlimited_polymorphic false)")
+    module_symbols = {
+        "base": struct(BASE_STRUCT_SYMTAB, "base", {}),
+        "other": struct(DERIVED_STRUCT_SYMTAB, "other", {}),
+    }
+    program_symbols = {
+        "base": external_symbol(
+            OO_PROGRAM_SYMTAB, "base", MODULE_SYMTAB, "base", "m"),
+        "other": external_symbol(
+            OO_PROGRAM_SYMTAB, "other", MODULE_SYMTAB, "other", "m"),
+        "b": variable(
+            OO_PROGRAM_SYMTAB, "b", struct_type, allocatable=True,
+            type_declaration=symbol_ref(OO_PROGRAM_SYMTAB, "base")),
+    }
+    body = [
+        f"(Allocate :args [(alloc_arg :a {var(OO_PROGRAM_SYMTAB, 'b')} "
+        f":dims [] :codims [] :len_expr nil "
+        f":sym_subclass {symbol_ref(OO_PROGRAM_SYMTAB, 'other')} "
+        f":type {concrete_type})] "
+        f":stat nil :errmsg nil :source nil)"
+    ]
+    return global_unit({
+        "m": module(MODULE_SYMTAB, "m", module_symbols),
+        "generated": program(
+            OO_PROGRAM_SYMTAB, "generated", program_symbols, body),
+    }), "schema-invalid allocation of an unrelated type"
+
+
+def invalid_sequence_type_extended(_rng):
+    base = struct(BASE_STRUCT_SYMTAB, "base", {}).replace(
+        ":is_sequence false", ":is_sequence true", 1)
+    return module_unit(
+        {"base": base,
+         "derived": struct(DERIVED_STRUCT_SYMTAB, "derived", {},
+                           parent=symbol_ref(MODULE_SYMTAB, "base"))},
+        {}, [],
+    ), "schema-invalid extension of a sequence type"
+
+
+def invalid_pointer_to_nontarget(_rng):
+    return translation_unit(
+        {"p1": variable(PROGRAM_SYMTAB, "p1", INTEGER, pointer=True),
+         "plain": integer_variable(PROGRAM_SYMTAB, "plain", 4)},
+        [f"(Associate :target {var(PROGRAM_SYMTAB, 'p1')} "
+         f":value {var(PROGRAM_SYMTAB, 'plain')})"],
+    ), "schema-invalid pointer to a nontarget"
+
+
+def invalid_array_constructor_element(_rng):
+    element = f"(Array :type {integer_type(4)} " \
+              f":dims [(dimension :start {integer_constant(1, 4)} " \
+              f":length {integer_constant(2, 4)})] " \
+              f":physical_type :FixedSizeArray)"
+    constructor = (
+        f"(ArrayConstructor :args [{integer_constant(1, 4)} "
+        f"{integer_constant(2, 8)}] :type {element} :value nil "
+        f":storage_format :ColMajor :struct_var nil)")
+    return translation_unit(
+        {"a": variable(PROGRAM_SYMTAB, "a", element)},
+        [f"(Assignment :target {var(PROGRAM_SYMTAB, 'a')} "
+         f":value {constructor} :overloaded nil :realloc_lhs false "
+         f":move_allocation false)"],
+    ), "schema-invalid array constructor element type"
+
+
+TYPE_REACH_BUILDERS = [
+    invalid_select_type_unrelated_guard,
+    invalid_allocate_unrelated_type,
+    invalid_sequence_type_extended,
+    invalid_pointer_to_nontarget,
+    invalid_array_constructor_element,
 ]
 
 
