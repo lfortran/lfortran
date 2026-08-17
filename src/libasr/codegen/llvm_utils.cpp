@@ -1191,24 +1191,37 @@ namespace LCompilers {
                     function_type->m_bindc_name != nullptr) {
                 return false;
             }
+            auto variable_name = [](ASR::expr_t* arg) -> const char* {
+                if (!arg || !ASR::is_a<ASR::Var_t>(*arg)) {
+                    return nullptr;
+                }
+                ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol)) {
+                    return nullptr;
+                }
+                return ASR::down_cast<ASR::Variable_t>(symbol)->m_name;
+            };
             const std::string function_name = x.m_name;
             const std::string result_name =
                 function_name + "_return_var_name";
-            if (x.m_return_var &&
-                    ASRUtils::EXPR2VAR(x.m_return_var)->m_name == result_name) {
+            const char* return_name = variable_name(x.m_return_var);
+            if (return_name && result_name == return_name) {
                 return true;
             }
             size_t ordinary_args = x.n_args;
             bool has_generated_result_arg = false;
-            if (ordinary_args > 0 &&
-                    ASRUtils::EXPR2VAR(x.m_args[ordinary_args - 1])->m_name ==
-                        result_name) {
+            const char* last_argument_name = ordinary_args > 0
+                ? variable_name(x.m_args[ordinary_args - 1])
+                : nullptr;
+            if (last_argument_name && result_name == last_argument_name) {
                 ordinary_args--;
                 has_generated_result_arg = true;
             }
             const std::string argument_prefix = function_name + "_arg_";
             for (size_t i = 0; i < ordinary_args; i++) {
-                if (ASRUtils::EXPR2VAR(x.m_args[i])->m_name !=
+                const char* argument_name = variable_name(x.m_args[i]);
+                if (!argument_name || argument_name !=
                         argument_prefix + std::to_string(i)) {
                     return false;
                 }
