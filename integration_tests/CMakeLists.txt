@@ -2784,6 +2784,7 @@ RUN(NAME kinds_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME kinds_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME const_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME const_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME const_array_03 LABELS gfortran llvm)
 
 RUN(NAME concat_char_arrays_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME huge_string_read LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

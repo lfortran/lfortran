@@ -7687,6 +7687,16 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
                                 s2c(al, str), type));
             return value;
         }
+        case ASR::ttypeType::StructType: {
+            // set_ArrayConstant_data stores an ASR::expr_t* array for struct types
+            ASR::expr_t** expr_data = (ASR::expr_t**)data;
+            return expr_data[i];
+        }
+        case ASR::ttypeType::CPtr: {
+            // set_ArrayConstant_data stores an ASR::expr_t* array for CPtr types
+            ASR::expr_t** expr_data = (ASR::expr_t**)data;
+            return expr_data[i];
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
