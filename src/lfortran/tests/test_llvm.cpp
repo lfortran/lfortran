@@ -2235,6 +2235,35 @@ end program
 )").ok);
 }
 
+TEST_CASE("FortranEvaluator a type re-exported by a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // `c_ptr` reaches this module as an import, so the module's own entry for
+    // the name is an ExternalSymbol rather than the derived type. Pointing a
+    // later cell's import at that entry would name an ExternalSymbol from an
+    // ExternalSymbol, a chain nothing that reads the symbol can follow.
+    CHECK(e.evaluate2(R"(module mptr
+use iso_c_binding, only: c_ptr
+implicit none
+contains
+subroutine takes_ptr(p)
+type(c_ptr), intent(in) :: p
+end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mptr
+use iso_c_binding, only: c_ptr, c_null_ptr
+implicit none
+type(c_ptr) :: q
+q = c_null_ptr
+call takes_ptr(q)
+end program
+)").ok);
+}
+
 TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
     CompilerOptions cu;
     cu.interactive = true;
