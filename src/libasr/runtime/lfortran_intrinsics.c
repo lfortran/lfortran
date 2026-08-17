@@ -14299,9 +14299,9 @@ static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, in
         case LFORTRAN_NML_LOGICAL2:
         case LFORTRAN_NML_LOGICAL4:
         case LFORTRAN_NML_LOGICAL8: {
-            char upper[256];
-            strncpy(upper, value_str, sizeof(upper) - 1);
-            upper[sizeof(upper) - 1] = '\0';
+            char upper[32];
+            strncpy(upper, value_str, 31);
+            upper[31] = '\0';
             to_uppercase(upper);
             bool val = (strstr(upper, "T") != NULL || strstr(upper, "1") != NULL);
             if (item->type == LFORTRAN_NML_LOGICAL1) *(int8_t*)ptr = val ? 1 : 0;

@@ -17160,9 +17160,10 @@ public:
         }
     }
 
-    std::string get_namelist_var_name(ASR::symbol_t *var_sym, ASR::Variable_t * /*var*/) {
-        std::string var_name = std::string(ASRUtils::symbol_name(var_sym));
-        return LCompilers::to_upper(var_name);
+    // Namelist group object names are the *local* names (respecting USE
+    // renaming) and are emitted in upper case (F2018 13.11.4.1).
+    std::string get_namelist_var_name(ASR::symbol_t *var_sym) {
+        return LCompilers::to_upper(ASRUtils::symbol_name(var_sym));
     }
 
     // Helper to build namelist descriptor and call runtime function
@@ -17171,9 +17172,8 @@ public:
         nml_sym = ASRUtils::symbol_get_past_external(nml_sym);
         ASR::Namelist_t* nml = ASR::down_cast<ASR::Namelist_t>(nml_sym);
 
-        // Get group name (uppercase)
-        std::string group_name = std::string(nml->m_group_name);
-        std::transform(group_name.begin(), group_name.end(), group_name.begin(), ::toupper);
+        // Get group name (uppercase, F2018 13.11.4.1)
+        std::string group_name = LCompilers::to_upper(nml->m_group_name);
 
         // Create global constant for group name
         llvm::Value* group_name_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, group_name);
@@ -17564,8 +17564,8 @@ public:
             ASR::symbol_t* var_sym_past = ASRUtils::symbol_get_past_external(var_sym);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym_past);
 
-            // Get variable name (lowercase)
-            std::string var_name = get_namelist_var_name(var_sym, var);
+            // Get variable name (local name, uppercase)
+            std::string var_name = get_namelist_var_name(var_sym);
 
             uint32_t var_hash = get_hash((ASR::asr_t*)var);
             llvm::Value* data_ptr = llvm_symtab[var_hash];

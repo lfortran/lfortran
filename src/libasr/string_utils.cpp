@@ -39,7 +39,6 @@ std::string to_upper(const std::string &s) {
     return res;
 }
 
-
 char *s2c(Allocator &al, const std::string &s) {
     Str x; x.from_str_view(s);
     return x.c_str(al);
