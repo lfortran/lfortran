@@ -273,3 +273,11 @@ doc/man/lfortran.1
 _lfortran_generated_file*
 /test_gfortran
 /test_flang
+# x86 backend unit tests write their executables into the working directory.
+/cmp32
+/print32
+/print_integer
+/subroutines32
+/subroutines_args32
+/write32
+/write32.asm
