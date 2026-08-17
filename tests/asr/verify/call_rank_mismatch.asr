@@ -14,29 +14,8 @@
               nil
               nil
               :Default
-              (Array
-                (Integer
-                  4
-                )
-                [
-                  (dimension
-                    (IntegerConstant
-                      1
-                      (Integer
-                        4
-                      )
-                      :Decimal
-                    )
-                    (IntegerConstant
-                      3
-                      (Integer
-                        4
-                      )
-                      :Decimal
-                    )
-                  )
-                ]
-                :FixedSizeArray
+              (Integer
+                4
               )
               nil
               :Source
@@ -57,29 +36,8 @@
         "f"
         (FunctionType
           [
-            (Array
-              (Integer
-                4
-              )
-              [
-                (dimension
-                  (IntegerConstant
-                    1
-                    (Integer
-                      4
-                    )
-                    :Decimal
-                  )
-                  (IntegerConstant
-                    3
-                    (Integer
-                      4
-                    )
-                    :Decimal
-                  )
-                )
-              ]
-              :FixedSizeArray
+            (Integer
+              4
             )
           ]
           nil
@@ -119,8 +77,29 @@
               nil
               nil
               :Default
+              (Array
               (Integer
-                4
+              4
+              )
+              [
+              (dimension
+              (IntegerConstant
+              1
+              (Integer
+              4
+              )
+              :Decimal
+              )
+              (IntegerConstant
+              3
+              (Integer
+              4
+              )
+              :Decimal
+              )
+              )
+              ]
+              :FixedSizeArray
               )
               nil
               :Source

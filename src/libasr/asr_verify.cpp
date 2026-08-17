@@ -2343,8 +2343,34 @@ public:
                             ASRUtils::is_array(actual_type);
                         bool formal_is_array =
                             ASRUtils::is_array(formal_type);
+                        // Sequence association: an explicit-shape or
+                        // assumed-size dummy may be given an array element,
+                        // which is a scalar. Only an assumed-shape dummy,
+                        // whose extents come from the actual, needs an array:
+                        // that one is described by a descriptor and states no
+                        // extents of its own.
+                        bool formal_assumed_shape = false;
+                        if (formal_is_array && !actual_is_array) {
+                            ASR::Array_t *formal_array =
+                                ASR::down_cast<ASR::Array_t>(
+                                    ASRUtils::type_get_past_allocatable_pointer(
+                                        formal_type));
+                            formal_assumed_shape =
+                                formal_array->m_physical_type ==
+                                    ASR::array_physical_typeType::DescriptorArray ||
+                                formal_array->m_physical_type ==
+                                    ASR::array_physical_typeType::ISODescriptorArray;
+                            for (size_t d = 0; d < formal_array->n_dims; d++) {
+                                if (formal_array->m_dims[d].m_length
+                                        != nullptr) {
+                                    formal_assumed_shape = false;
+                                    break;
+                                }
+                            }
+                        }
                         require_with_loc_id(
-                            actual_is_array == formal_is_array,
+                            actual_is_array == formal_is_array ||
+                                (!actual_is_array && !formal_assumed_shape),
                             "asr.verify.call.actual_rank_matches_formal",
                             "Actual argument type " +
                                 ASRUtils::get_type_code(actual_type) +
