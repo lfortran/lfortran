@@ -5633,10 +5633,59 @@ public:
                 ASRUtils::symbol_name(owner), "file_common_block_");
     }
 
+    bool struct_has_allocatable_or_pointer_array(ASR::Struct_t* struct_type) {
+        while (struct_type != nullptr) {
+            for (size_t i = 0; i < struct_type->n_members; i++) {
+                ASR::symbol_t* member_symbol = struct_type->m_symtab->get_symbol(
+                    struct_type->m_members[i]);
+                if (member_symbol == nullptr) {
+                    continue;
+                }
+                member_symbol = ASRUtils::symbol_get_past_external(member_symbol);
+                if (!ASR::is_a<ASR::Variable_t>(*member_symbol)) {
+                    continue;
+                }
+                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(
+                    member_symbol);
+                if (ASRUtils::is_array(member->m_type)
+                        && (ASRUtils::is_allocatable(member->m_type)
+                            || ASRUtils::is_pointer(member->m_type))) {
+                    return true;
+                }
+                if (ASRUtils::is_allocatable(member->m_type)
+                        || ASRUtils::is_pointer(member->m_type)) {
+                    continue;
+                }
+                ASR::ttype_t* member_type = ASRUtils::type_get_past_array(
+                    member->m_type);
+                if (ASR::is_a<ASR::StructType_t>(*member_type)
+                        && member->m_type_declaration != nullptr) {
+                    ASR::symbol_t* nested_symbol =
+                        ASRUtils::symbol_get_past_external(
+                            member->m_type_declaration);
+                    if (ASR::is_a<ASR::Struct_t>(*nested_symbol)
+                            && struct_has_allocatable_or_pointer_array(
+                                ASR::down_cast<ASR::Struct_t>(nested_symbol))) {
+                        return true;
+                    }
+                }
+            }
+            if (struct_type->m_parent == nullptr) {
+                break;
+            }
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            if (!ASR::is_a<ASR::Struct_t>(*parent)) {
+                break;
+            }
+            struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+        }
+        return false;
+    }
+
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
-        // bind(C) variables without initializers should use CommonLinkage
-        // to allow merging with C definitions of the same symbol
-        if (x.m_abi == ASR::abiType::BindC && x.m_symbolic_value == nullptr) {
+        // A bind(C) variable without a value can merge with C storage.
+        if (x.m_abi == ASR::abiType::BindC && x.m_value == nullptr) {
             return true;
         }
         if (!compiler_options.separate_compilation
@@ -5721,10 +5770,9 @@ public:
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
         bool external = (x.m_abi != ASR::abiType::Source);
-        // BindC variables defined in this module (intent local) are
-        // definitions, not external declarations
+        // A local bind(C) variable provides storage in this unit.
         if (x.m_abi == ASR::abiType::BindC &&
-                (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
+                (x.m_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
         llvm::Constant* init_value = nullptr;
@@ -6016,8 +6064,15 @@ public:
                         type);
                     if (!external) {
                         if (init_value) {
+                            if (x.m_abi == ASR::abiType::BindC
+                                    && x.m_value == nullptr) {
+                                init_value = llvm::Constant::getNullValue(type);
+                            }
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     init_value);
+                            if (init_value->isNullValue()) {
+                                set_global_variable_linkage_as_common(ptr, x);
+                            }
                             set_common_block_struct_linkage(
                                 ptr, x, init_value);
                         } else {
@@ -6039,6 +6094,9 @@ public:
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
+                        if (init_value->isNullValue()) {
+                            set_global_variable_linkage_as_common(ptr, x);
+                        }
                         set_common_block_struct_linkage(
                             ptr, x, init_value);
                     } else {
@@ -6049,25 +6107,14 @@ public:
                 }
                 llvm_symtab[h] = ptr;
             }
-            // Skip queueing runtime initialization for module-scope struct
-            // globals that already have a static initializer from a
-            // StructConstant (e.g. COMMON block struct instances populated by
-            // BLOCK DATA).  Their string members already point at constant
-            // string globals; running the runtime init path would issue a
-            // malloc+strcpy that overwrites the static pointer and leaks under
-            // --detect-leaks (the corresponding finalize is also skipped for
-            // such variables; see not_finalizable_variable).
-            bool skip_runtime_struct_init = is_common_block_variable(x);
-            if (x.m_symbolic_value != nullptr
-                    && x.m_parent_symtab != nullptr
-                    && x.m_parent_symtab->asr_owner != nullptr
-                    && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
-                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                    x.m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Module_t>(*owner)) {
-                    skip_runtime_struct_init = true;
-                }
-            }
+            ASR::symbol_t* declared_struct = ASRUtils::symbol_get_past_external(
+                x.m_type_declaration);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*declared_struct));
+            bool has_runtime_array_descriptor =
+                struct_has_allocatable_or_pointer_array(
+                    ASR::down_cast<ASR::Struct_t>(declared_struct));
+            bool skip_runtime_struct_init = compiler_options.separate_compilation
+                && is_common_block_variable(x) && !has_runtime_array_descriptor;
             if (!external && !skip_runtime_struct_init) {
                 allocatable_struct_array_members_details.push_back(std::make_pair(
                     ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));

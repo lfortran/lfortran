@@ -3921,6 +3921,9 @@ RUN(NAME common_38 LABELS gfortran llvm)
 RUN(NAME common_39 LABELS gfortran llvm)
 RUN(NAME common_40 LABELS gfortran llvm)
 RUN(NAME common_41 LABELS gfortran llvm)
+RUN(NAME common_block_linkage_02 LABELS gfortran llvm
+    EXTRAFILES common_block_linkage_02_data.f90 common_block_linkage_02_reader.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
