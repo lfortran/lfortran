@@ -121,7 +121,7 @@
                                                                     Default
                                                                     (Integer 4)
                                                                     ()
-                                                                    Source
+                                                                    ExternalUndefined
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -139,7 +139,7 @@
                                                     (FunctionType
                                                         []
                                                         (Integer 4)
-                                                        Source
+                                                        ExternalUndefined
                                                         Interface
                                                         ()
                                                         .false.
@@ -237,7 +237,7 @@
                                         [(FunctionType
                                             []
                                             (Integer 4)
-                                            Source
+                                            ExternalUndefined
                                             Interface
                                             ()
                                             .false.
@@ -370,7 +370,7 @@
                                                                     Default
                                                                     (Integer 4)
                                                                     ()
-                                                                    Source
+                                                                    ExternalUndefined
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -388,7 +388,7 @@
                                                     (FunctionType
                                                         []
                                                         (Integer 4)
-                                                        Source
+                                                        ExternalUndefined
                                                         Interface
                                                         ()
                                                         .false.
@@ -462,7 +462,7 @@
                                         [(FunctionType
                                             []
                                             (Integer 4)
-                                            Source
+                                            ExternalUndefined
                                             Interface
                                             ()
                                             .false.

@@ -65,7 +65,7 @@
                                                     Default
                                                     (String 1 () AssumedLength DescriptorString)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Optional
                                                     .false.
@@ -90,7 +90,7 @@
                                             .true.
                                             .false.
                                         )
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .true.
@@ -157,7 +157,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -182,7 +182,7 @@
                                             .true.
                                             .false.
                                         )
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .true.
@@ -249,7 +249,7 @@
                                                     Default
                                                     (Integer 8)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -274,7 +274,7 @@
                                             .true.
                                             .false.
                                         )
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .true.
@@ -341,7 +341,7 @@
                                                     Default
                                                     (Logical 4)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -366,7 +366,7 @@
                                             .true.
                                             .false.
                                         )
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .true.

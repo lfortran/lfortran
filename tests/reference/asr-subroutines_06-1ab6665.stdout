@@ -83,7 +83,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -107,7 +107,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -126,7 +126,7 @@
                                         [(Integer 4)
                                         (Integer 4)]
                                         ()
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .false.
@@ -168,7 +168,7 @@
                                                         DescriptorArray
                                                     )
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -192,7 +192,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -216,7 +216,7 @@
                                             DescriptorArray
                                         )]
                                         ()
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .false.

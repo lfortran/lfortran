@@ -23,7 +23,7 @@
                                                     Default
                                                     (Real 8)
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -52,7 +52,7 @@
                                                         UnboundedPointerArray
                                                     )
                                                     ()
-                                                    Source
+                                                    ExternalUndefined
                                                     Public
                                                     Required
                                                     .false.
@@ -75,7 +75,7 @@
                                             UnboundedPointerArray
                                         )]
                                         (Real 8)
-                                        Source
+                                        ExternalUndefined
                                         Interface
                                         ()
                                         .false.

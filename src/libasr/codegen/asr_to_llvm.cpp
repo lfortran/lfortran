@@ -438,6 +438,14 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
+
+    struct saved_allocatable_array {
+        ASR::expr_t* expr;
+        llvm::Value* pointer;
+        llvm::Type* descriptor_type;
+        ASR::ttype_t* var_type;
+    };
+    std::vector<saved_allocatable_array> saved_allocatable_array_details;
     std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
@@ -1813,6 +1821,80 @@ public:
         }
     }
 
+    void emit_saved_allocatable_array_cleanup() {
+        if (saved_allocatable_array_details.empty()) {
+            return;
+        }
+
+        llvm::IRBuilderBase::InsertPointGuard insert_point_guard(*builder);
+        llvm::Value* previous_tmp = tmp;
+        llvm::FunctionType* cleanup_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), false);
+        llvm::Function* cleanup_function = llvm::Function::Create(
+            cleanup_type, llvm::GlobalValue::InternalLinkage,
+            "__lfortran_finalize_saved_allocatables", module.get());
+        llvm::BasicBlock* entry = llvm::BasicBlock::Create(
+            context, ".entry", cleanup_function);
+        builder->SetInsertPoint(entry);
+        llvm::Function* free_function = _Deallocate();
+
+        for (const saved_allocatable_array &detail:
+                saved_allocatable_array_details) {
+            tmp = llvm_utils->CreateLoad2(
+                detail.descriptor_type->getPointerTo(), detail.pointer);
+            llvm::Value* is_allocated =
+                arr_descr->get_is_allocated_flag(tmp, detail.expr);
+            llvm_utils->create_if_else(is_allocated, [&]() {
+                if (ASRUtils::is_character(*detail.var_type)) {
+                    llvm_utils->free_strings(detail.expr, tmp);
+                } else {
+                    llvm::Type* descriptor_type =
+                        llvm_utils->get_type_from_ttype_t_util(
+                            detail.expr,
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(
+                                    detail.var_type)),
+                            module.get());
+                    ASR::ttype_t* element_type =
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(
+                                    detail.var_type)));
+                    llvm::Type* data_type = llvm_utils->get_el_type(
+                        detail.expr, element_type, module.get());
+                    call_lfortran_free(
+                        free_function, descriptor_type, data_type);
+                }
+            }, [](){});
+        }
+        builder->CreateRetVoid();
+        tmp = previous_tmp;
+
+        llvm::appendToGlobalDtors(*module, cleanup_function, 65535);
+        std::vector<llvm::CallBase*> finalize_calls;
+        for (llvm::Function &function: *module) {
+            if (&function == cleanup_function) {
+                continue;
+            }
+            for (llvm::BasicBlock &block: function) {
+                for (llvm::Instruction &instruction: block) {
+                    llvm::CallBase* call =
+                        llvm::dyn_cast<llvm::CallBase>(&instruction);
+                    llvm::Function* callee =
+                        call ? call->getCalledFunction() : nullptr;
+                    if (callee && callee->getName() ==
+                            "_lfortran_internal_alloc_finalize") {
+                        finalize_calls.push_back(call);
+                    }
+                }
+            }
+        }
+        for (llvm::CallBase* call: finalize_calls) {
+            llvm::IRBuilder<> call_builder(call);
+            call_builder.CreateCall(cleanup_function);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
@@ -1998,6 +2080,7 @@ public:
             }
         }
 
+        emit_saved_allocatable_array_cleanup();
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
@@ -5542,6 +5625,14 @@ public:
             [](llvm::Constant* elem) { return elem->isNullValue(); });
     }
 
+    bool is_common_block_variable(const ASR::Variable_t &x) {
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(
+            const_cast<ASR::symbol_t*>(&x.base));
+        return owner && ASR::is_a<ASR::Module_t>(*owner)
+            && startswith(
+                ASRUtils::symbol_name(owner), "file_common_block_");
+    }
+
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
         // bind(C) variables without initializers should use CommonLinkage
         // to allow merging with C definitions of the same symbol
@@ -5552,12 +5643,7 @@ public:
                 || x.m_abi == ASR::abiType::ExternalUndefined) {
             return false;
         }
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(
-            const_cast<ASR::symbol_t*>(&x.base));
-        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
-            return startswith(ASRUtils::symbol_name(owner), "file_common_block_");
-        }
-        return false;
+        return is_common_block_variable(x);
     }
 
     void set_global_variable_linkage_as_common(llvm::Value* ptr,
@@ -5603,6 +5689,23 @@ public:
             );
             gv->setLinkage(llvm::GlobalValue::CommonLinkage);
         }
+    }
+
+    void set_common_block_struct_linkage(llvm::Value* ptr,
+            const ASR::Variable_t &x, llvm::Constant* initializer) {
+        if (!compiler_options.separate_compilation
+                || x.m_abi == ASR::abiType::ExternalUndefined
+                || x.m_symbolic_value != nullptr) {
+            return;
+        }
+        if (!is_common_block_variable(x)) {
+            return;
+        }
+        llvm::GlobalVariable *global =
+            llvm::cast<llvm::GlobalVariable>(ptr);
+        global->setLinkage(initializer->isNullValue()
+            ? llvm::GlobalValue::CommonLinkage
+            : llvm::GlobalValue::WeakAnyLinkage);
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -5915,11 +6018,8 @@ public:
                         if (init_value) {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     init_value);
-                            // For common blocks (structs with zeroinitializer), use CommonLinkage
-                            // to allow multiple definitions across compilation units to be merged.
-                            if (init_value->isNullValue()) {
-                                set_global_variable_linkage_as_common(ptr, x);
-                            }
+                            set_common_block_struct_linkage(
+                                ptr, x, init_value);
                         } else {
                             module->getNamedGlobal(llvm_var_name)->setInitializer(
                                     llvm::Constant::getNullValue(type)
@@ -5939,11 +6039,8 @@ public:
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
-                        // For common blocks (structs with zeroinitializer), use CommonLinkage
-                        // to allow multiple definitions across compilation units to be merged.
-                        if (init_value->isNullValue()) {
-                            set_global_variable_linkage_as_common(ptr, x);
-                        }
+                        set_common_block_struct_linkage(
+                            ptr, x, init_value);
                     } else {
                         module->getNamedGlobal(llvm_var_name)
                             ->setInitializer(llvm::Constant::getNullValue(type));
@@ -5960,7 +6057,7 @@ public:
             // malloc+strcpy that overwrites the static pointer and leaks under
             // --detect-leaks (the corresponding finalize is also skipped for
             // such variables; see not_finalizable_variable).
-            bool skip_runtime_struct_init = false;
+            bool skip_runtime_struct_init = is_common_block_variable(x);
             if (x.m_symbolic_value != nullptr
                     && x.m_parent_symtab != nullptr
                     && x.m_parent_symtab->asr_owner != nullptr
@@ -7785,6 +7882,12 @@ public:
                         init_value = llvm::Constant::getNullValue(type);
                     }
                     gptr->setInitializer(init_value);
+                    if (is_saved_allocatable_descriptor_array) {
+                        saved_allocatable_array_details.push_back({
+                            ASRUtils::EXPR(ASR::make_Var_t(
+                                al, v->base.base.loc, &v->base)),
+                            ptr, type_, v->m_type});
+                    }
                 } else {
                     // Large fixed-size arrays (> 4KB-1) use heap allocation to prevent stack overflow.
                     // This is recursion-safe unlike static storage, as each call gets its own copy.
@@ -7884,7 +7987,8 @@ public:
             if( ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))
                 && !ASRUtils::is_class_type(
-                    ASRUtils::type_get_past_array(v->m_type))) {
+                    ASRUtils::type_get_past_array(v->m_type))
+                && !is_common_block_variable(*v)) {
                 // For save variables of struct type, member initialization
                 // (default values, string descriptors, array descriptors) must
                 // run exactly once rather than on every call, otherwise saved
