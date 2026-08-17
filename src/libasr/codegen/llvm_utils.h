@@ -979,6 +979,7 @@ class ASRToLLVMVisitor;
         ASRToLLVMVisitor                                            &asr_to_llvm_visitor_;
         std::map<uint64_t, llvm::Function*>                         &llvm_symtab_fn_;
         std::unordered_map<std::string, llvm::Function*>            type_finalizer_cache_;
+        std::vector<llvm::DebugLoc>                                 debug_loc_stack_;
 
     public:
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
@@ -2070,10 +2071,12 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT(saved_BB)
             // We don't jump between insert points, No need to save insertpoint.
 
+            debug_loc_stack_.push_back(builder_->getCurrentDebugLocation());
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(
                 builder_->getContext(), "entry", finalizer_fn);
             builder_->SetInsertPoint(entry);
-            
+            builder_->SetCurrentDebugLocation(nullptr);
+
             {// Direct passed arg to function's args
             int i = 0;
             for(auto &fn_arg : finalizer_fn->args()) {
@@ -2095,6 +2098,10 @@ class ASRToLLVMVisitor;
                 "`END CACHE` adds the terminator, not expected to be added by other utility")
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(revert_bb);
+            if (!debug_loc_stack_.empty()) {
+                builder_->SetCurrentDebugLocation(debug_loc_stack_.back());
+                debug_loc_stack_.pop_back();
+            }
         }
 
         llvm::Value* call_cached_finalizer(const std::string& cache_key,
@@ -2640,6 +2647,8 @@ class ASRToLLVMVisitor;
                 
             llvm::BasicBlock *const saved_BB = builder_->GetInsertBlock();
             LCOMPILERS_ASSERT(saved_BB)
+            llvm::DebugLoc saved_loc = builder_->getCurrentDebugLocation();
+            builder_->SetCurrentDebugLocation(nullptr);
             llvm::BasicBlock *const entry = llvm::BasicBlock::Create(builder_->getContext(), "entry", fn);
             builder_->SetInsertPoint(entry);
 
@@ -2653,6 +2662,7 @@ class ASRToLLVMVisitor;
             // Set terminal block + Revert
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(saved_BB);
+            builder_->SetCurrentDebugLocation(saved_loc);
             return fn;
         }
     };

@@ -63,6 +63,29 @@ assert_git_commit() {
   fi
 }
 
+# GASNet's EXECINFO backtrace prints frames as "binary(+0xOFFSET)" for a PIE
+# executable built without debug info. Resolve those offsets to function
+# names using the ELF symbol table so a crash in a third-party test is
+# actionable from the CI log alone.
+#
+# Usage: symbolize_gasnet_backtrace <log-file> <executable>
+symbolize_gasnet_backtrace() {
+  local log="$1"
+  local bin="$2"
+  [ -f "$log" ] && [ -x "$bin" ] || return 0
+  echo "=== Symbolized backtrace frames for $bin ==="
+  grep -o "$(basename "$bin")(+0x[0-9a-f]*)" "$log" | grep -o '0x[0-9a-f]*' | awk '!seen[$0]++' | \
+  while read -r off; do
+    printf '%s: ' "$off"
+    if command -v gdb >/dev/null 2>&1; then
+      gdb -batch -ex "info symbol $off" "$bin" 2>/dev/null | tail -1
+    else
+      nm -n --defined-only "$bin" | \
+        awk -v a="$off" 'BEGIN{t=strtonum(a)} {v=strtonum("0x"$1); if (v<=t) b=$3; else {print b; exit}}'
+    fi
+  done
+}
+
 time_section() {
   local LABEL="$1"
   local BLOCK="$2"
@@ -162,7 +185,17 @@ time_section "🧪 Testing caffeine" '
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
   export CAF_IMAGES=4
-  ./run-fpm.sh test --verbose 
+  # Print a backtrace if an image dies with a fatal signal, and resolve its
+  # raw offsets to function names (see symbolize_gasnet_backtrace).
+  export GASNET_BACKTRACE=1
+  set +e
+  ./run-fpm.sh test --verbose 2>&1 | tee caffeine_test.log
+  rc=${PIPESTATUS[0]}
+  set -e
+  if [ "$rc" -ne 0 ]; then
+    symbolize_gasnet_backtrace caffeine_test.log "$(ls build/*/test/julienne-driver 2>/dev/null | head -1)"
+    exit "$rc"
+  fi
 
   print_success "Done with caffeine"
   cd ..
