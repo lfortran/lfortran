@@ -1187,9 +1187,33 @@ namespace LCompilers {
             return false;
         }
         if (function_type->m_abi == ASR::abiType::BindC) {
-            return function_type->m_deftype == ASR::deftypeType::Interface &&
-                function_type->m_bindc_name == nullptr &&
-                x.m_start_name == nullptr && x.m_end_name == nullptr;
+            if (function_type->m_deftype != ASR::deftypeType::Interface ||
+                    function_type->m_bindc_name != nullptr) {
+                return false;
+            }
+            const std::string function_name = x.m_name;
+            const std::string result_name =
+                function_name + "_return_var_name";
+            if (x.m_return_var &&
+                    ASRUtils::EXPR2VAR(x.m_return_var)->m_name == result_name) {
+                return true;
+            }
+            size_t ordinary_args = x.n_args;
+            bool has_generated_result_arg = false;
+            if (ordinary_args > 0 &&
+                    ASRUtils::EXPR2VAR(x.m_args[ordinary_args - 1])->m_name ==
+                        result_name) {
+                ordinary_args--;
+                has_generated_result_arg = true;
+            }
+            const std::string argument_prefix = function_name + "_arg_";
+            for (size_t i = 0; i < ordinary_args; i++) {
+                if (ASRUtils::EXPR2VAR(x.m_args[i])->m_name !=
+                        argument_prefix + std::to_string(i)) {
+                    return false;
+                }
+            }
+            return ordinary_args > 0 || has_generated_result_arg;
         }
         ASR::symbol_t* symbol_owner = ASRUtils::get_asr_owner(
             (ASR::symbol_t*)&x);
@@ -1201,7 +1225,7 @@ namespace LCompilers {
             return true;
         }
         if (function_type->m_deftype == ASR::deftypeType::Interface) {
-            return true;
+            return false;
         }
         ASR::asr_t* owner = x.m_symtab->parent
             ? x.m_symtab->parent->asr_owner : nullptr;
