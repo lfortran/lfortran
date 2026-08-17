@@ -1961,13 +1961,21 @@ namespace LCompilers {
         }, [](){});
     }
 
-
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
         return builder->CreateLoad(t, x, is_volatile);
 #else
         return builder->CreateLoad(x, is_volatile);
 #endif
+    }
+
+    llvm::Value* LLVMUtils::load_pointer_element(llvm::Value* target_ptr, llvm::Type* struct_arr_type) {
+        // Extract the base element type from the LLVM struct representation
+        llvm::StructType* casted_struct = llvm::cast<llvm::StructType>(struct_arr_type);
+        llvm::Type* underlying_type = casted_struct->getElementType(0);
+        
+        // Execute load instruction on the extracted underlying type
+        return CreateLoad2(underlying_type, target_ptr);
     }
 
     llvm::Value* LLVMUtils::CreateBitCastForStore(llvm::Value* value, [[maybe_unused]] llvm::Value* target_ptr) {
