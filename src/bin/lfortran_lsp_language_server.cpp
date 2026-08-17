@@ -736,6 +736,11 @@ namespace LCompilers::LanguageServerProtocol {
             std::vector<const lc::document_symbols *> roots;
             roots.reserve(symbols.size());
             for (const auto &symbol : symbols) {
+                // Skip synthetic ExternalSymbol artifacts (compiler-generated
+                // member-access shims). See lfortran-vscode-client#39.
+                if (symbol.is_synthetic_member) {
+                    continue;
+                }
                 // Filter on the current document
                 if (document->path() == resolve(symbol.filename, *compilerOptions)) {
                     if (symbol.parent_index >= 0) {
@@ -780,6 +785,11 @@ namespace LCompilers::LanguageServerProtocol {
             std::unique_ptr<std::vector<SymbolInformation>> infos =
                 std::make_unique<std::vector<SymbolInformation>>();
             for (const auto &symbol : symbols) {
+                // Skip synthetic ExternalSymbol artifacts (compiler-generated
+                // member-access shims). See lfortran-vscode-client#39.
+                if (symbol.is_synthetic_member) {
+                    continue;
+                }
                 SymbolInformation &info = infos->emplace_back();
                 Location &location = info.location;
                 location.uri = "file://" + resolve(

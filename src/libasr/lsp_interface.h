@@ -26,6 +26,10 @@ namespace LCompilers {
     std::string filename;
     ASR::symbolType symbol_type;
     int parent_index;  //<- position instead of pointer to avoid std::vector reallocation issues
+    // True for ExternalSymbol entries that are compiler artifacts created for
+    // member-access resolution (target owner is a Struct/Enum/Union). Outline
+    // consumers skip these; completion and other consumers ignore the flag.
+    bool is_synthetic_member = false;
   };
 
 } // namespace LCompilers
