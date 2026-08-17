@@ -642,7 +642,29 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 }
                 if ( resolved_type_dec ) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(resolved_type_dec);
-                    var->m_type_declaration = resolved_type_dec;
+                    // The rewritten procedure lives in whichever scope this
+                    // pass rebuilt it into, so import it the same way the
+                    // shared Variable constructor would.
+                    ASR::symbol_t* new_type_dec = ASRUtils::import_type_declaration(
+                        v.al, resolved_type_dec, var->m_parent_symtab);
+                    if ( !ASRUtils::is_visible_from(new_type_dec, var->m_parent_symtab) &&
+                            ASR::is_a<ASR::ExternalSymbol_t>(*var->m_type_declaration) ) {
+                        // The old declaration reached the procedure through an
+                        // ExternalSymbol; the specialisation lives beside the
+                        // original, so it is reachable the very same way.
+                        ASR::ExternalSymbol_t* old_ext = ASR::down_cast<ASR::ExternalSymbol_t>(
+                            var->m_type_declaration);
+                        std::string ext_name = var->m_parent_symtab->get_unique_name(
+                            ASRUtils::symbol_name(resolved_type_dec));
+                        new_type_dec = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(v.al, old_ext->base.base.loc,
+                                var->m_parent_symtab, s2c(v.al, ext_name), resolved_type_dec,
+                                old_ext->m_module_name, old_ext->m_scope_names,
+                                old_ext->n_scope_names,
+                                ASRUtils::symbol_name(resolved_type_dec), old_ext->m_access));
+                        var->m_parent_symtab->add_symbol(ext_name, new_type_dec);
+                    }
+                    var->m_type_declaration = new_type_dec;
                     ASR::ttype_t* new_type = fn->m_function_signature;
                     if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
                         new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, var->base.base.loc, new_type));
