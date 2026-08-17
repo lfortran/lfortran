@@ -189,7 +189,11 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             bool is_external_interface = (f_type->m_deftype == ASR::deftypeType::Interface &&
                                           f_type->m_abi != ASR::abiType::Intrinsic &&
                                           !f_type->m_module);
-            if (is_external_interface) {
+            bool is_top_level_implementation =
+                (f_type->m_deftype == ASR::deftypeType::Implementation &&
+                 current_scope->parent &&
+                 current_scope->parent->parent == nullptr);
+            if (is_external_interface || is_top_level_implementation) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||
