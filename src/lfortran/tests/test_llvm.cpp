@@ -2238,7 +2238,9 @@ end program
 TEST_CASE("FortranEvaluator a type re-exported by a module across cells") {
     CompilerOptions cu;
     cu.interactive = true;
-    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator e(cu);
     // A module the frontend maps an intrinsic name onto holds its own entry
     // for `c_ptr` as an import rather than as the derived type. A later cell
