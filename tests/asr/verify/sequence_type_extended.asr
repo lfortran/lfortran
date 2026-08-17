@@ -1,0 +1,80 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "m" (Module
+        (SymbolTable
+          1
+          {
+            "base" (Struct
+              (SymbolTable
+                2
+                {}
+              )
+              "base"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              true
+              []
+              nil
+              nil
+              []
+            )
+            "derived" (Struct
+              (SymbolTable
+                4
+                {}
+              )
+              "derived"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              (SymbolRef 1 "base")
+              []
+            )
+          }
+        )
+        "m"
+        nil
+        []
+        false
+        false
+        false
+      )
+      "generated" (Program
+        (SymbolTable
+          6
+          {}
+        )
+        "generated"
+        []
+        []
+      )
+    }
+  )
+  []
+)

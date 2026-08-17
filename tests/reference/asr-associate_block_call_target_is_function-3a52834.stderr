@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.associate_block_call.target_is_associate_block]: AssociateBlockCall::m_m 'helper' must be an associate block
+  --> tests/asr/verify/associate_block_call_target_is_function.asr:43:12
+   |
+43 |           (AssociateBlockCall
+   |            ^^^^^^^^^^^^^^^^^^ failed here

@@ -1,0 +1,11 @@
+ASR verify pass error: The symbol table was not found in the scope of `symtab`.
+ --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:9:21
+  |
+9 |             "base" (Struct
+  |                     ^^^^^^ failed here
+
+ASR verify pass error [asr.verify.variable.type_declaration_in_scope]: Variable 'x' declares its type with a symbol that is not in scope
+  --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:47:18
+   |
+47 |             "x" (Variable
+   |                  ^^^^^^^^ failed here

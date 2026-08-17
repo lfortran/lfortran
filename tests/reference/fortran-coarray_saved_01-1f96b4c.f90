@@ -45,16 +45,16 @@ call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), w
 call c_f_pointer(w__coarray_data, w)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), x__coarray_handle,&
          x__coarray_data)
-call c_f_pointer(x__coarray_data, x, [10])
+call c_f_pointer(x__coarray_data, x, [10], [1])
 call c_f_pointer(y__coarray_data, y)
-call c_f_pointer(z__coarray_data, z, [10])
+call c_f_pointer(z__coarray_data, z, [10], [1])
 call c_f_pointer(a__coarray_data, a)
-call c_f_pointer(b__coarray_data, b, [10])
+call c_f_pointer(b__coarray_data, b, [10], [1])
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), c__coarray_handle, c__coarray_data)
 call c_f_pointer(c__coarray_data, c)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), d__coarray_handle,&
          d__coarray_data)
-call c_f_pointer(d__coarray_data, d, [10])
+call c_f_pointer(d__coarray_data, d, [10], [1])
 call __module_prif_prif_sync_all()
 call mod_sub()
 call coarray_saved_sub()
@@ -118,7 +118,7 @@ subroutine coarray_saved_sub()
     integer(4), pointer, save :: w
     integer(4), dimension(:), pointer, save :: x
     call c_f_pointer(w__coarray_data, w)
-    call c_f_pointer(x__coarray_data, x, [10])
+    call c_f_pointer(x__coarray_data, x, [10], [1])
 end subroutine coarray_saved_sub
 
 interface

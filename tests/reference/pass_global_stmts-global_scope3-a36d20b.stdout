@@ -5,7 +5,7 @@
             f:
                 (Function
                     (SymbolTable
-                        2
+                        3
                         {
                             
                         })

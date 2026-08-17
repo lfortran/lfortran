@@ -237,6 +237,7 @@
                                         [((Var 3 strings_a)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
+                                        []
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                         (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString))]
@@ -312,6 +313,7 @@
                                                 [((Var 3 __libasr__created__var__0__array_constructor_)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 0 (Integer 4) Decimal))]
+                                                []
                                                 (StringLen
                                                     (ArrayItem
                                                         (Var 3 strings)
@@ -376,6 +378,7 @@
                                             [((Var 3 __libasr__created__var__1__array_constructor_)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 0 (Integer 4) Decimal))]
+                                            []
                                             (StringLen
                                                 (ArrayItem
                                                     (Var 3 strings)
@@ -490,6 +493,7 @@
                         [((Var 4 string)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal))]
+                        []
                         ()
                         ()
                         ())]

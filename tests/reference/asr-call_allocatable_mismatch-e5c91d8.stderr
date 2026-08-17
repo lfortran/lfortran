@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.call.actual_allocatable_matches_formal]: Actual argument type i32 is not allocatable, but the dummy is Allocatable[i32]
+   --> tests/asr/verify/call_allocatable_mismatch.asr:111:18
+    |
+111 |                 (Var
+    |                  ^^^ failed here

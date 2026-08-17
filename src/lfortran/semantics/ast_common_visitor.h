@@ -1861,6 +1861,7 @@ public:
         {"atan2d", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"atan2pi", IntrinsicSignature({"y", "x"}, 2, 2)},
         {"shape", IntrinsicSignature({"source", "kind"}, 1, 2)},
+        {"coshape", IntrinsicSignature({"coarray", "kind"}, 1, 2)},
         {"mod", IntrinsicSignature({"a", "p"}, 2, 2)},
         {"repeat", IntrinsicSignature({"string", "ncopies"}, 2, 2)},
         {"verify", IntrinsicSignature({"string", "set", "back", "kind"}, 2, 4)},
@@ -6240,6 +6241,34 @@ public:
                             ASR::make_Pointer_t(al, loc, at));
                     };
 
+                    // EQUIVALENCE associates storage. When the alias has a
+                    // different type family than the source, wrap the
+                    // GetPointer in BitCast so the initializer type agrees
+                    // with the declaration. A numeric Cast would convert the
+                    // bits; this reinterprets them.
+                    auto alias_initializer = [&](ASR::expr_t* init,
+                            ASR::expr_t* target_ref,
+                            ASR::Variable_t* target_var) -> ASR::expr_t* {
+                        if (init == nullptr || target_var == nullptr
+                                || target_var->m_type == nullptr) {
+                            return init;
+                        }
+                        ASR::ttype_t* init_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(init)));
+                        ASR::ttype_t* decl_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                target_var->m_type));
+                        if (init_t == nullptr || decl_t == nullptr
+                                || ASRUtils::check_equal_type(
+                                    init_t, decl_t, nullptr, nullptr)) {
+                            return init;
+                        }
+                        return ASRUtils::EXPR(ASR::make_BitCast_t(
+                            al, init->base.loc, init, target_ref, nullptr,
+                            ASRUtils::duplicate_type(al, decl_t), nullptr));
+                    };
+
                     auto emit_cptr_to_pointer = [&](const Location& loc,
                             ASR::asr_t* cptr_expr, ASR::expr_t* target_ref,
                             ASR::asr_t* shape_const) {
@@ -6257,7 +6286,8 @@ public:
                                 target_var = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::ArrayItem_t>(target_ref)->m_v);
                             }
                             if (get_ptr_expr && target_var) {
-                                target_var->m_symbolic_value = get_ptr_expr;
+                                target_var->m_symbolic_value = alias_initializer(
+                                    get_ptr_expr, target_ref, target_var);
                                 return;
                             }
                         }
@@ -6503,7 +6533,8 @@ public:
 
                                         bool is_module = in_module && !in_Subroutine;
                                         if (is_module) {
-                                            var__->m_symbolic_value = ASRUtils::EXPR(get_pointer);
+                                            var__->m_symbolic_value = alias_initializer(
+                                                ASRUtils::EXPR(get_pointer), asr_eq2, var__);
                                         } else {
                                             emit_cptr_to_pointer(asr_eq1->base.loc, pointer_to_cptr, asr_eq2, nullptr);
                                         }
@@ -7415,8 +7446,13 @@ public:
                                     ASR::down_cast<ASR::Function_t>(external)->m_access == ASR::accessType::Private) {
                                     current_scope->erase_symbol(sym);
                                 } else {
+                                    // The name is in scope because of a `use`,
+                                    // which is the one thing to say about it:
+                                    // nothing in this scope declared it.
                                     diag.add(Diagnostic(
-                                        "Symbol is already declared in the same scope",
+                                        "Symbol '" + std::string(sym) + "' is use-associated"
+                                        " from module '" + std::string(ext->m_module_name)
+                                        + "' and cannot be redeclared",
                                         Level::Error, Stage::Semantic, {
                                             Label("redeclaration",{s.loc}),
                                             Label("original declaration",{orig_decl->base.loc}, false)
@@ -7771,6 +7807,70 @@ public:
                         codims.push_back(al, asr_codim);
                     }
                 }
+                if (corank > 0) {
+                    // C827: A coarray with the ALLOCATABLE attribute shall have
+                    // a coarray-spec that is a deferred-coshape-spec-list (i.e.
+                    // every codimension is a bare ':', no explicit bounds or '*').
+                    // C828: A nonallocatable coarray shall have a coarray-spec
+                    // that is an explicit-coshape-spec (every codimension but the
+                    // last has an explicit upper cobound, and the last is '*').
+                    for (size_t c = 0; c < codims.size(); c++) {
+                        const ASR::codimension_t &codim = codims[c];
+                        bool is_deferred = (codim.m_end == nullptr &&
+                            codim.m_start == nullptr &&
+                            codim.m_end_star != ASR::codimension_typeType::CodimensionStar);
+                        if (is_allocatable) {
+                            if (!is_deferred) {
+                                diag.add(Diagnostic(
+                                    "A coarray with the `allocatable` attribute "
+                                    "must have a deferred coshape (every "
+                                    "codimension written as `:`)",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        } else {
+                            if (is_deferred) {
+                                diag.add(Diagnostic(
+                                    "A nonallocatable coarray must have an "
+                                    "explicit coshape; a deferred codimension "
+                                    "(`:`) is only permitted for allocatable "
+                                    "coarrays",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            } else if (c == codims.size() - 1) {
+                                if (codim.m_end_star != ASR::codimension_typeType::CodimensionStar) {
+                                    diag.add(Diagnostic(
+                                        "The last upper cobound of a coarray "
+                                        "must be `*`",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {codim.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
+                            } else if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
+                                diag.add(Diagnostic(
+                                    "The upper cobound `*` must appear only "
+                                    "in the last codimension",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            } else if (codim.m_end == nullptr) {
+                                diag.add(Diagnostic(
+                                    "A nonallocatable coarray's codimension "
+                                    "must have an explicit upper cobound",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("", {codim.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
                 if (!is_argument && !is_allocatable && !is_pointer
                         && !is_dimension_star && dims.size() > 0) {
                     for (size_t j = 0; j < dims.size(); j++) {
@@ -7876,7 +7976,9 @@ public:
                     char_length = ASRUtils::EXPR(tmp);
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
                     if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
-                        int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
+                        // a negative length specifier declares a zero length string
+                        int64_t lhs_len = std::max<int64_t>(
+                            ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n, 0);
                         lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
                     } else {
@@ -9863,6 +9965,13 @@ public:
                 }
             } else {
                 determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+            }
+
+            // a negative length specifier declares a zero length string
+            int64_t char_len;
+            if (str->m_len && ASRUtils::extract_value(str->m_len, char_len) && char_len < 0) {
+                str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             }
 
             if (is_assumed_rank) {
@@ -15642,7 +15751,7 @@ public:
             {"logical", 1}, {"storage_size", 1}, {"anint", 1}, {"nint", 1}, {"aint", 1},
             {"floor", 1}, {"ceiling", 1}, {"aimag", 1}, {"maskl", 1}, {"maskr", 1},
             {"ichar", 1}, {"char", 1}, {"achar", 1}, {"iachar", 1}, {"real", 1},
-            {"int", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1},
+            {"int", 1}, {"len_trim", 1}, {"len", 1}, {"shape", 1}, {"coshape", 1},
             {"ieee_real", 1}, {"ieee_int", 2}, {"lbound", 2}, {"ubound", 2}, {"size", 2},
             {"verify", 3}, {"index", 3}, {"scan", 3}, {"cmplx", 2}
         };
@@ -16674,6 +16783,24 @@ public:
         implicit_interface_parent_scope = nullptr;
     }
 
+    // The loop variable of an implied-do has to be a scalar integer. Left to
+    // reach the pass that expands the loop, anything else fails there with an
+    // internal error, having passed semantic analysis.
+    void check_implied_do_loop_variable(ASR::expr_t* a_var, const std::string &name,
+        const Location &loc)
+    {
+        ASR::ttype_t* var_type = ASRUtils::expr_type(a_var);
+        if (ASRUtils::is_integer(*ASRUtils::type_get_past_allocatable_pointer(var_type))
+                && !ASRUtils::is_array(var_type)) {
+            return;
+        }
+        diag.add(Diagnostic("The implied do loop variable '" + name
+            + "' must be a scalar integer, not "
+            + ASRUtils::type_to_str_with_kind(var_type, a_var),
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_DataImpliedDo(const AST::DataImpliedDo_t& x) {
         Vec<ASR::expr_t*> a_values_vec;
         ASR::expr_t *a_start, *a_end, *a_increment;
@@ -16735,6 +16862,7 @@ public:
             }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
@@ -17005,6 +17133,7 @@ public:
             }
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
+        check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
@@ -17923,7 +18052,7 @@ public:
             if (codim.m_end_star == ASR::codimension_typeType::CodimensionStar) {
                 continue;
             }
-            ASR::expr_t* idx = coindices[i].m_left;
+            ASR::expr_t* idx = coindices[i].m_index;
             if (!idx) {
                 continue;
             }
@@ -17969,32 +18098,37 @@ public:
         Vec<ASR::coarray_index_t> coindices;
         coindices.reserve(al, x.n_coargs);
         for (size_t i = 0; i < x.n_coargs; i++) {
-            ASR::expr_t* left = nullptr;
-            ASR::expr_t* right = nullptr;
-            
+            ASR::expr_t* index = nullptr;
             if (x.m_coargs[i].m_start) {
-                this->visit_expr(*x.m_coargs[i].m_start);
-                left = ASRUtils::EXPR(tmp);
-            } 
-            
-            if (x.m_coargs[i].m_end) {
+                diag.add(diag::Diagnostic(
+                    "Cosubscript must be a scalar integer expression",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("Cosubscript cannot be a range or section", {x.m_coargs[i].loc})}
+                ));
+                throw SemanticAbort();
+            } else if (x.m_coargs[i].m_end) {
                 this->visit_expr(*x.m_coargs[i].m_end);
-                if (!left) {
-                    left = ASRUtils::EXPR(tmp); // Scalar index is stored in m_end by AST
-                } else {
-                    right = ASRUtils::EXPR(tmp);
+                index = ASRUtils::EXPR(tmp);
+            } else if (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) {
+                if (i != x.n_coargs - 1) {
+                    diag.add(diag::Diagnostic(
+                        "Assumed-size '*' is only permitted in the last dimension",
+                        diag::Level::Error, diag::Stage::Semantic,
+                        {diag::Label("", {x.m_coargs[i].loc})}
+                    ));
                 }
+            } else {
+                LCOMPILERS_ASSERT(false);
             }
 
             ASR::codimension_typeType star = (x.m_coargs[i].m_star == AST::codimension_typeType::CodimensionStar) 
                                                 ? ASR::codimension_typeType::CodimensionStar 
                                                 : ASR::codimension_typeType::CodimensionExpr;
 
-            if (left || right || star == ASR::codimension_typeType::CodimensionStar) {
+            if (index || star == ASR::codimension_typeType::CodimensionStar) {
                 ASR::coarray_index_t ci;
                 ci.loc = x.m_coargs[i].loc;
-                ci.m_left = left;
-                ci.m_right = right;
+                ci.m_index = index;
                 ci.m_star = star;
                 coindices.push_back(al, ci);
             }
@@ -21075,7 +21209,7 @@ public:
                 // Only do this for top-level modules (whose parent is the
                 // TranslationUnit), not for nested modules like enums.
                 if (std::string(es0->m_module_name) != std::string(m->m_name)) {
-                    ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(es0->m_module_name);
+                    ASR::symbol_t* origin_mod_sym = current_scope->get_tu_scope()->get_symbol(es0->m_module_name);
                     if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
                         current_module_dependencies.push_back(al, es0->m_module_name);
                     }
@@ -21528,7 +21662,7 @@ public:
             // Only do this for top-level modules (whose parent is the
             // TranslationUnit), not for nested modules like enums.
             if (std::string(ext_sym->m_module_name) != std::string(m->m_name)) {
-                ASR::symbol_t* origin_mod_sym = current_scope->get_global_scope()->get_symbol(ext_sym->m_module_name);
+                ASR::symbol_t* origin_mod_sym = current_scope->get_tu_scope()->get_symbol(ext_sym->m_module_name);
                 if (origin_mod_sym && ASR::is_a<ASR::Module_t>(*origin_mod_sym)) {
                     current_module_dependencies.push_back(al, ext_sym->m_module_name);
                 }

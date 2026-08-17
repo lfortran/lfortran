@@ -7,7 +7,7 @@ description: >
   Flang). Produces standalone .f90 file(s) and a run.sh script that
   reproduces the bug. Triggers: MRE, minimal reproducible example, reduce,
   reproduce, reproducer, third-party failure, compilation error, runtime
-  failure, bug reduction.
+  failure, bug reduction, jupyterlite, browser lab, notebook cell.
 ---
 
 # Create MRE — Minimal Reproducible Example
@@ -41,6 +41,20 @@ Ask the user for (if not already provided):
 
 If the input is a GitHub issue rather than a third-party project, run the
 `repro-issue` skill first — it produces an RE that this skill then reduces.
+
+If the failure was seen in the browser (the JupyterLite lab at
+<https://lfortran.github.io/lfortran/lab/index.html>) or in a Jupyter notebook
+cell, read `doc/src/jupyterlite.md` first. It explains how to build and serve
+the lab locally, how to tell a genuine compiler bug from a stale
+service-worker/IndexedDB cache, and the three ways to reproduce a lab bug
+(C++ evaluator test, native xeus kernel, full WASM build). Its "Writing a test
+for a lab bug" section tells you whether the bug is interactive-mode specific:
+if the notebook cells rewritten as one ordinary program still fail, reduce it
+as a normal `.f90` MRE with the procedure below; if it only fails when split
+across cells, the reproducer is a `FortranEvaluator::evaluate2()` `TEST_CASE`
+in `src/lfortran/tests/test_llvm.cpp` instead of a `.f90` + `run.sh` pair —
+the reduction procedure below applies unchanged, with cells in place of the
+Fortran file.
 
 ## Procedure
 
@@ -251,3 +265,8 @@ Next step: run the `fix-mre` skill to fix the bug and add an integration test.
   the MRE can use fixed-form too. Adjust file extensions accordingly.
 - **Large codebases**: For very large projects, start by identifying which
   translation unit fails, then reduce that single unit first.
+- **JupyterLite / notebook bugs**: See `doc/src/jupyterlite.md`. Before
+  reducing, confirm the bug is real and not stale browser cache (retry in a
+  private window). The command-line REPL is not a substitute for a notebook —
+  it evaluates line by line, so a multi-line cell behaves differently. Keep the
+  original cell split when reducing: that split is often the reproducer.

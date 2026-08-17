@@ -1552,10 +1552,40 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
+// True if this scope belongs to a TranslationUnit.
+//
+// Interactive evaluation chains one TranslationUnit per cell, each scope
+// parented to the previous cell's, so a scope chain no longer ends at the only
+// TranslationUnit -- it passes through one per cell. Walks that look for "the"
+// translation unit therefore have to stop at the nearest one, which is the cell
+// currently being compiled. With a single TranslationUnit (ordinary
+// compilation) the nearest one is also the root, so nothing changes.
+static inline bool is_tu_scope(const SymbolTable *s) {
+    return s->asr_owner != nullptr && ASR::is_a<ASR::unit_t>(*s->asr_owner);
+}
+
+// Interactive evaluation compiles one TranslationUnit per cell, chained by
+// scope, and a cell may redeclare a name an earlier cell already used. Both
+// declarations stay live -- code compiled earlier keeps using the old one -- so
+// they need distinct symbols. Qualify by the cell a symbol belongs to, the way
+// symbols in a module are qualified by the module. The first cell is
+// unqualified, so that it and ordinary compilation produce identical symbols.
+static inline std::string cell_prefix(const SymbolTable *s) {
+    const SymbolTable *tu = s;
+    while (tu != nullptr && !is_tu_scope(tu)) tu = tu->parent;
+    if (tu == nullptr) return "";
+    int depth = 1;
+    for (const SymbolTable *p = tu->parent; p != nullptr; p = p->parent) {
+        if (is_tu_scope(p)) depth++;
+    }
+    if (depth == 1) return "";
+    return "__cell" + std::to_string(depth) + "_";
+}
+
 // Returns the Module_t the symbol is in, or nullptr if not in a module
 static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         ASR::symbol_t *asr_owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
         if (ASR::is_a<ASR::Module_t>(*asr_owner)) {
             return ASR::down_cast<ASR::Module_t>(asr_owner);
@@ -1591,7 +1621,7 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
 // or no asr_owner yet
 static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
     const SymbolTable *s = symbol_parent_symtab(sym);
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         if (s->asr_owner != nullptr) {
             ASR::symbol_t *asr_owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
             if (ASR::is_a<ASR::Module_t>(*asr_owner)) {
@@ -2693,7 +2723,7 @@ static inline Vec<ASR::expr_t*> call_arg2expr(Allocator &al, const Vec<ASR::call
 // Returns the TranslationUnit_t's symbol table by going via parents
 static inline SymbolTable *get_tu_symtab(SymbolTable *symtab) {
     SymbolTable *s = symtab;
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         s = s->parent;
     }
     LCOMPILERS_ASSERT(ASR::is_a<ASR::unit_t>(*s->asr_owner))
@@ -2705,7 +2735,7 @@ static inline Vec<char*> get_scope_names(Allocator &al, const SymbolTable *symta
     Vec<char*> scope_names;
     scope_names.reserve(al, 4);
     const SymbolTable *s = symtab;
-    while (s->parent != nullptr) {
+    while (s->parent != nullptr && !is_tu_scope(s)) {
         char *owner_name = symbol_name(ASR::down_cast<ASR::symbol_t>(s->asr_owner));
         scope_names.push_back(al, owner_name);
         s = s->parent;
@@ -3537,7 +3567,8 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     private:
     Allocator& al;
     ASR::call_arg_t* m_args;
-    size_t n_args;
+    // Only read by an assert, which is compiled out of a release build.
+    [[maybe_unused]] size_t n_args;
     std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
 
     public:
@@ -7170,14 +7201,20 @@ static inline void visit_expr_list(Allocator &al, Vec<ASR::expr_t *> exprs,
 
 class VerifyAbort {};
 
-static inline void require_impl(bool cond, const std::string &error_msg,
-    const Location &loc, diag::Diagnostics &diagnostics) {
+static inline void require_impl(bool cond, const std::string &error_code,
+    const std::string &error_msg, const Location &loc,
+    diag::Diagnostics &diagnostics) {
     if (!cond) {
         diagnostics.message_label(error_msg,
             {loc}, "failed here",
-            diag::Level::Error, diag::Stage::ASRVerify);
+            diag::Level::Error, diag::Stage::ASRVerify, error_code);
         throw VerifyAbort();
     }
+}
+
+static inline void require_impl(bool cond, const std::string &error_msg,
+    const Location &loc, diag::Diagnostics &diagnostics) {
+    require_impl(cond, "", error_msg, loc, diagnostics);
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims) {
@@ -7227,6 +7264,35 @@ static inline int64_t symbol_corank(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {
         return ASR::down_cast<ASR::Variable_t>(s)->n_codims;
+    }
+    return 0;
+}
+
+static inline int64_t expr_corank(const ASR::expr_t* expr) {
+    if (!expr) return 0;
+    while (expr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return symbol_corank(sym);
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            return symbol_corank(sym);
+        } else if (ASR::is_a<ASR::CoarrayRef_t>(*expr)) {
+            const ASR::CoarrayRef_t* ref = ASR::down_cast<ASR::CoarrayRef_t>(expr);
+            int64_t r = expr_corank(ref->m_var);
+            if (r > 0) return r;
+            return ref->n_coindices;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+        } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            expr = ASR::down_cast<ASR::Cast_t>(expr)->m_arg;
+        } else {
+            break;
+        }
     }
     return 0;
 }

@@ -283,9 +283,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 }
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co)
+        diag::Diagnostics &diagnostics, const CompilerOptions &co,
+        uint32_t loc_offset)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
+    p.m_tokenizer.loc_offset = loc_offset;
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {

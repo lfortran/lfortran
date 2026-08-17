@@ -3413,29 +3413,37 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         break;
                 }
                 if (tolower(value[0]) == 'a') {
-                    // For integer values with A editing, print corresponding byte value as a character.
+                    // For integer values with A editing, transfer the bytes of the
+                    // internal representation as a character string of length equal
+                    // to the kind width (leftmost bytes if the field is narrower,
+                    // right-justified with blanks if wider).
                     if (s_info.current_element_type == INTEGER_8_TYPE ||
                         s_info.current_element_type == INTEGER_16_TYPE ||
                         s_info.current_element_type == INTEGER_32_TYPE ||
                         s_info.current_element_type == INTEGER_64_TYPE ) {
-                        char achar_val = (char)((unsigned char)integer_val);
-                        if (strlen(value) == 1) {
-                            result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
-                            result_len += 1;
-                        } else {
-                            int64_t width = atoi(value + 1);
-                            if (width <= 1) {
-                                result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
-                                result_len += 1;
-                            } else {
-                                char *field = (char*)internal_malloc((size_t)width);
-                                memset(field, ' ', (size_t)width);
-                                field[width - 1] = achar_val;
-                                result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
-                                result_len += width;
-                                internal_free(field);
-                            }
+                        int64_t len = 1;
+                        switch (s_info.current_element_type) {
+                            case INTEGER_16_TYPE: len = 2; break;
+                            case INTEGER_32_TYPE: len = 4; break;
+                            case INTEGER_64_TYPE: len = 8; break;
+                            default: break;
                         }
+                        const char* bytes = (const char*)s_info.current_arg_info.current_arg;
+                        int64_t width = len;
+                        if (strlen(value) > 1) {
+                            width = atoi(value + 1);
+                            if (width <= 0) width = len;
+                        }
+                        if (width <= len) {
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, bytes, width);
+                        } else {
+                            char *field = (char*)internal_malloc((size_t)width);
+                            memset(field, ' ', (size_t)(width - len));
+                            memcpy(field + (width - len), bytes, (size_t)len);
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
+                            internal_free(field);
+                        }
+                        result_len += width;
                         if (result_len > content_end) content_end = result_len;
                         continue;
                     }
