@@ -25553,7 +25553,10 @@ public:
             // function parameter type. This handles cases like passing a
             // CFI descriptor (%array*) to a function declared with i8**
             // parameter type.
-            if (x_abi == ASR::abiType::BindC && callee_fn_type) {
+            if (x_abi == ASR::abiType::BindC && callee_fn_type &&
+                    !(func_subrout->type == ASR::symbolType::Function &&
+                        LLVMUtils::uses_gfortran_character_abi(
+                            *ASR::down_cast<ASR::Function_t>(func_subrout)))) {
                 const char* fn_name = callee_fn_type->m_bindc_name;
                 if (!fn_name) {
                     fn_name = ASRUtils::symbol_name(func_subrout);

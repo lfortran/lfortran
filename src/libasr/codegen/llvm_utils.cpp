@@ -1187,7 +1187,9 @@ namespace LCompilers {
             return false;
         }
         if (function_type->m_abi == ASR::abiType::BindC) {
-            return false;
+            return function_type->m_deftype == ASR::deftypeType::Interface &&
+                function_type->m_bindc_name == nullptr &&
+                x.m_start_name == nullptr && x.m_end_name == nullptr;
         }
         ASR::symbol_t* symbol_owner = ASRUtils::get_asr_owner(
             (ASR::symbol_t*)&x);
