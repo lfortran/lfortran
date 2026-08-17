@@ -40,7 +40,6 @@ public:
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
-    bool is_abstract_interface = false;
     bool in_program = false;
     int program_count = 0; // To track number of program units in a single file
     Location first_program_loc; // Location of the first program unit
@@ -1375,10 +1374,6 @@ public:
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
-        if (is_interface && !is_abstract_interface &&
-                current_procedure_abi_type == ASR::abiType::Source) {
-            current_procedure_abi_type = ASR::abiType::ExternalUndefined;
-        }
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
@@ -1916,10 +1911,6 @@ public:
         current_procedure_abi_type = ASR::abiType::Source;
         char *bindc_name=nullptr;
         extract_bind(x, current_procedure_abi_type, bindc_name, diag);
-        if (is_interface && !is_abstract_interface &&
-                current_procedure_abi_type == ASR::abiType::Source) {
-            current_procedure_abi_type = ASR::abiType::ExternalUndefined;
-        }
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
@@ -3327,14 +3318,10 @@ public:
             interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
-            bool old_is_abstract_interface = is_abstract_interface;
-            is_abstract_interface =
-                AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header);
             std::vector<std::string> proc_names;
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
             }
-            is_abstract_interface = old_is_abstract_interface;
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::string> proc_names;

@@ -100,7 +100,7 @@
                                                                     Default
                                                                     (Real 4)
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -124,7 +124,7 @@
                                                                     Default
                                                                     (Real 4)
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -142,7 +142,7 @@
                                                     (FunctionType
                                                         [(Real 4)]
                                                         (Real 4)
-                                                        ExternalUndefined
+                                                        Source
                                                         Interface
                                                         ()
                                                         .false.
@@ -168,7 +168,7 @@
                                         [(FunctionType
                                             [(Real 4)]
                                             (Real 4)
-                                            ExternalUndefined
+                                            Source
                                             Interface
                                             ()
                                             .false.

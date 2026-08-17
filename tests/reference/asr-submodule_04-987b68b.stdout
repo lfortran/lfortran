@@ -23,7 +23,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    ExternalUndefined
+                                                    Source
                                                     Private
                                                     Required
                                                     .false.
@@ -52,7 +52,7 @@
                                                         .false.
                                                     )
                                                     2 open_hashmap_type
-                                                    ExternalUndefined
+                                                    Source
                                                     Private
                                                     Required
                                                     .false.
@@ -76,7 +76,7 @@
                                         )
                                         (Integer 4)]
                                         ()
-                                        ExternalUndefined
+                                        Source
                                         Interface
                                         ()
                                         .false.

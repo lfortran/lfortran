@@ -1182,9 +1182,11 @@ namespace LCompilers {
             return false;
         }
         ASR::FunctionType_t* function_type = ASRUtils::get_FunctionType(x);
-        if (function_type->m_abi == ASR::abiType::BindC ||
-                function_type->m_abi == ASR::abiType::Intrinsic ||
+        if (function_type->m_abi == ASR::abiType::Intrinsic ||
                 function_type->m_module) {
+            return false;
+        }
+        if (function_type->m_abi == ASR::abiType::BindC) {
             return false;
         }
         ASR::symbol_t* symbol_owner = ASRUtils::get_asr_owner(
@@ -1197,7 +1199,7 @@ namespace LCompilers {
             return true;
         }
         if (function_type->m_deftype == ASR::deftypeType::Interface) {
-            return false;
+            return true;
         }
         ASR::asr_t* owner = x.m_symtab->parent
             ? x.m_symtab->parent->asr_owner : nullptr;

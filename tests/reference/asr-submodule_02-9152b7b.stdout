@@ -107,7 +107,7 @@
                                                         .false.
                                                     )
                                                     9 point
-                                                    ExternalUndefined
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -137,7 +137,7 @@
                                                         .false.
                                                     )
                                                     9 point
-                                                    ExternalUndefined
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -192,7 +192,7 @@
                                             .false.
                                         )]
                                         (Real 4)
-                                        ExternalUndefined
+                                        Source
                                         Interface
                                         ()
                                         .false.
@@ -235,7 +235,7 @@
                                                         .false.
                                                     )
                                                     9 point
-                                                    ExternalUndefined
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -265,7 +265,7 @@
                                                         .false.
                                                     )
                                                     9 point
-                                                    ExternalUndefined
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -289,7 +289,7 @@
                                                     Default
                                                     (Real 4)
                                                     ()
-                                                    ExternalUndefined
+                                                    Source
                                                     Public
                                                     Required
                                                     .false.
@@ -321,7 +321,7 @@
                                         )
                                         (Real 4)]
                                         ()
-                                        ExternalUndefined
+                                        Source
                                         Interface
                                         ()
                                         .false.

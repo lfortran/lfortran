@@ -321,7 +321,7 @@
                                                                         v
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -347,7 +347,7 @@
                                                                         w
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -373,7 +373,7 @@
                                                                         v
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -398,7 +398,7 @@
                                                         (TypeParameter
                                                             v
                                                         )
-                                                        ExternalUndefined
+                                                        Source
                                                         Interface
                                                         ()
                                                         .true.
@@ -463,7 +463,7 @@
                                                                         t
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -489,7 +489,7 @@
                                                                         u
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -515,7 +515,7 @@
                                                                         w
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -540,7 +540,7 @@
                                                         (TypeParameter
                                                             w
                                                         )
-                                                        ExternalUndefined
+                                                        Source
                                                         Interface
                                                         ()
                                                         .true.
@@ -1489,7 +1489,7 @@
                                                                         t
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -1515,7 +1515,7 @@
                                                                         u
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -1541,7 +1541,7 @@
                                                                         v
                                                                     )
                                                                     ()
-                                                                    ExternalUndefined
+                                                                    Source
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -1566,7 +1566,7 @@
                                                         (TypeParameter
                                                             v
                                                         )
-                                                        ExternalUndefined
+                                                        Source
                                                         Interface
                                                         ()
                                                         .true.
