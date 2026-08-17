@@ -780,6 +780,11 @@ namespace LCompilers::LanguageServerProtocol {
             std::unique_ptr<std::vector<SymbolInformation>> infos =
                 std::make_unique<std::vector<SymbolInformation>>();
             for (const auto &symbol : symbols) {
+                // Filter on the current document
+                // (see lfortran/lfortran-vscode-client#60).
+                if (document->path() != resolve(symbol.filename, *compilerOptions)) {
+                    continue;
+                }
                 SymbolInformation &info = infos->emplace_back();
                 Location &location = info.location;
                 location.uri = "file://" + resolve(
