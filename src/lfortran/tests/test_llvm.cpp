@@ -492,6 +492,43 @@ TEST_CASE("FortranEvaluator character result") {
     CHECK(r.result.str == "hello");
 }
 
+TEST_CASE("FortranEvaluator character function across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module display_result\n"
+        "contains\n"
+        "function wrap(data) result(result)\n"
+        "character(len=*), intent(in) :: data\n"
+        "character(len=:), allocatable :: result\n"
+        "result = \"[\" // data // \"]\"\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"hello\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "[hello]");
+
+    // A later cell must still see the clean function signature, not the
+    // subroutine produced by the character-return lowering pass.
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"second cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[second cell]");
+
+    // The imported name remains available without another USE statement.
+    r = e.evaluate2("wrap(\"third cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[third cell]");
+}
+
 TEST_CASE("FortranEvaluator 3") {
     CompilerOptions cu;
     cu.interactive = true;
