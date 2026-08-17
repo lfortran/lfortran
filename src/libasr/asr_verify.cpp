@@ -2300,6 +2300,15 @@ public:
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                         !struct_argument &&
                         !procedure_argument) {
+                    // These three describe how the implementation receives
+                    // its arguments. With --implicit-interface the frontend
+                    // infers an interface from one call site rather than
+                    // reading a declared one, and ASR cannot yet tell the two
+                    // apart, so they are only applied where the procedure
+                    // itself is in hand.
+                    bool callee_is_defined =
+                        ASRUtils::get_FunctionType(func)->m_deftype ==
+                            ASR::deftypeType::Implementation;
                     // check_equal_type strips Allocatable and Pointer.
                     // An allocatable or pointer dummy requires an actual
                     // of the same wrapper; the other direction is valid
@@ -2309,7 +2318,8 @@ public:
                     // assumed-rank and elemental. Sequence association can
                     // pass a 2-D actual to a 1-D dummy, so ranks of two
                     // arrays need not match.
-                    if (ASRUtils::is_allocatable(formal_type)) {
+                    if (callee_is_defined &&
+                            ASRUtils::is_allocatable(formal_type)) {
                         require_with_loc_id(
                             ASRUtils::is_allocatable(actual_type),
                             "asr.verify.call.actual_allocatable_matches_formal",
@@ -2322,7 +2332,8 @@ public:
                     // A pointer dummy takes a pointer actual, except when it
                     // is INTENT(IN): that one may also take any valid target
                     // for it, and becomes associated with the actual.
-                    if (ASRUtils::is_pointer(formal_type) &&
+                    if (callee_is_defined &&
+                            ASRUtils::is_pointer(formal_type) &&
                             callee_param->m_intent != ASR::intentType::In) {
                         require_with_loc_id(
                             ASRUtils::is_pointer(actual_type),
@@ -2338,7 +2349,8 @@ public:
                             == ASR::array_physical_typeType::AssumedRankArray;
                     bool elemental = ASRUtils::get_FunctionType(func)
                         ->m_elemental;
-                    if (!formal_assumed_rank && !elemental) {
+                    if (callee_is_defined && !formal_assumed_rank &&
+                            !elemental) {
                         bool actual_is_array =
                             ASRUtils::is_array(actual_type);
                         bool formal_is_array =
