@@ -28,9 +28,6 @@ Result<ASR::TranslationUnit_t*> load_input_asr(
     ASRVerifyOptions verify_options;
     verify_options.check_external = true;
     verify_options.require_main_program = require_main_program;
-    // Standalone ASR has no pass in flight, so the rules that only
-    // hold for a complete program apply.
-    verify_options.check_standalone_rules = from_asr;
     if (!asr_verify(*result.result, verify_options, diagnostics)) {
         return Error();
     }

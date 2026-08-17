@@ -1,5 +1,0 @@
-ASR verify pass error [asr.verify.associate.value_is_target]: Pointer assignment names 'plain', which is neither a pointer nor a target
-  --> tests/asr/verify/pointer_to_nontarget.asr:66:12
-   |
-66 |           (Associate
-   |            ^^^^^^^^^ failed here

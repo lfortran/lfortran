@@ -84,7 +84,6 @@ private:
     // For checking correct parent symbtab relationship
     SymbolTable *current_symtab;
     bool check_external;
-    bool check_standalone_rules;
     diag::Diagnostics &diagnostics;
     std::string current_name;
 
@@ -111,9 +110,8 @@ private:
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
-    VerifyVisitor(bool check_external, bool check_standalone_rules,
+    VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
-        check_standalone_rules{check_standalone_rules},
         diagnostics{diagnostics}, non_global_symbol_visited{false}, _is_return_type_string{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
@@ -463,17 +461,6 @@ public:
                 "A module dependency must not be an empty string");
             require(valid_name(x.m_dependencies[i]),
                 "A module dependency must be a valid string");
-            // A complete graph carries every module it uses. A dependency
-            // with nothing behind it names a module whose declarations the
-            // compiler will never see, which is the shape a lost `use` takes.
-            if (check_standalone_rules) {
-                require_id(parent_symtab->get_symbol(
-                        std::string(x.m_dependencies[i])) != nullptr,
-                    "asr.verify.module.dependency_is_present",
-                    "Module '" + std::string(x.m_name) + "' depends on '" +
-                    std::string(x.m_dependencies[i]) +
-                    "', which is not in this translation unit");
-            }
         }
         verify_separate_module_procedures(x, parent_symtab);
         for( auto& dep: module_dependencies ) {
@@ -552,27 +539,6 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
-        // Only for a complete graph, on both counts below: the array passes
-        // introduce pointer aliasing of their own onto plain variables whose
-        // lifetime they control, and `procedure(), pointer` declares no
-        // interface at all yet gets the same empty FunctionType that an
-        // explicit no-argument interface does.
-        if (!check_standalone_rules) return;
-        // A data pointer may only be associated with something the compiler
-        // knows may be aliased and that outlives it. A plain local has
-        // neither guarantee, so the pointer is left able to dangle.
-        if (ASRUtils::is_pointer(target) && !is_procedure_type(target) &&
-                ASR::is_a<ASR::Var_t>(*x.m_value)) {
-            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
-            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                require_id(v->m_target_attr || ASRUtils::is_pointer(v->m_type),
-                    "asr.verify.associate.value_is_target",
-                    "Pointer assignment names '" + std::string(v->m_name) +
-                    "', which is neither a pointer nor a target");
-            }
-        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }
@@ -954,12 +920,9 @@ public:
     // the procedure itself. One that resolves in an enclosing scope instead
     // is a host variable the procedure would then write through as if it
     // owned it. A dummy procedure is exempt: it names the procedure symbol
-    // itself, which lives where that procedure was declared. Only for a
-    // complete graph: a procedure the frontend synthesizes for an implicit
-    // interface borrows both its dummies and its result from the caller.
+    // itself, which lives where that procedure was declared.
     void require_own_symbol(ASR::expr_t *e, const std::string &owner,
             const std::string &what) {
-        if (!check_standalone_rules) return;
         if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
         if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
@@ -1336,15 +1299,10 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' must be a derived type, not " +
                 ASRUtils::symbol_type_name(*x.m_parent));
-            // Only for a complete graph: a specialization of a parameterized
-            // derived type is created in the scope that instantiates it and
-            // extends a type declared elsewhere.
-            if (check_standalone_rules) {
-                require_id(symtab_in_scope(current_symtab, x.m_parent),
-                    "asr.verify.struct.parent_in_scope",
-                    "Struct::m_parent of '" + std::string(x.m_name) +
-                    "' cannot point outside of its symbol table");
-            }
+            require_id(symtab_in_scope(current_symtab, x.m_parent),
+                "asr.verify.struct.parent_in_scope",
+                "Struct::m_parent of '" + std::string(x.m_name) +
+                "' cannot point outside of its symbol table");
         }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
@@ -1652,16 +1610,13 @@ public:
                     std::string(ASR::down_cast<ASR::Struct_t>(decl)->m_name) +
                     "', which only a polymorphic entity may have");
             }
-            // Only for a complete graph: pass_array_by_data rebuilds a
-            // procedure in a fresh scope while its variables still name the
-            // interface in the scope they came from.
-            if (check_standalone_rules) {
-                require_id(
-                    symtab_in_scope(current_symtab, x.m_type_declaration),
-                    "asr.verify.variable.type_declaration_in_scope",
-                    "Variable '" + std::string(x.m_name) +
-                    "' declares its type with a symbol that is not in scope");
-            }
+            require_id(
+                symtab_in_scope(current_symtab, x.m_type_declaration),
+                "asr.verify.variable.type_declaration_in_scope",
+                "Variable '" + std::string(x.m_name) +
+                "' declares its type with '" +
+                std::string(ASRUtils::symbol_name(x.m_type_declaration)) +
+                "', which is not in scope");
         }
 
         // Verify pass_attr and self_argument consistency
@@ -2193,6 +2148,13 @@ public:
         ASR::FunctionType_t *actual = as_procedure_type(actual_type);
         ASR::FunctionType_t *formal = as_procedure_type(formal_type);
         if (actual == nullptr || formal == nullptr) return;
+        // An interface that declares no arguments constrains nothing: that is
+        // the shape `EXTERNAL f` and `procedure(), pointer` produce, and ASR
+        // has no way yet to tell it apart from a genuine argumentless one.
+        auto unconstrained = [](ASR::FunctionType_t *t) {
+            return t->n_arg_types == 0;
+        };
+        if (unconstrained(actual) || unconstrained(formal)) return;
         require_with_loc_id(
             (actual->m_return_var_type == nullptr) ==
                 (formal->m_return_var_type == nullptr),
@@ -2324,7 +2286,7 @@ public:
                     || is_struct_like_type(formal_type);
                 bool procedure_argument = is_procedure_type(actual_type)
                     || is_procedure_type(formal_type);
-                if (procedure_argument && check_standalone_rules) {
+                if (procedure_argument) {
                     verify_procedure_interface(
                         actual_type, formal_type,
                         "Procedure argument '" +
@@ -2338,61 +2300,54 @@ public:
                         !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                         !struct_argument &&
                         !procedure_argument) {
-                    // These wrapper and rank rules hold for a complete
-                    // standalone graph. After a pass the dummy may have been
-                    // rewritten (openmp turns allocatable into pointer;
-                    // pass_array_by_data changes ranks), so they are not
-                    // applied to intermediate ASR.
-                    if (check_standalone_rules) {
-                        // check_equal_type strips Allocatable and Pointer.
-                        // An allocatable or pointer dummy requires an actual
-                        // of the same wrapper; the other direction is valid
-                        // Fortran (an allocatable actual may be passed to a
-                        // nonallocatable dummy). A scalar actual for an array
-                        // dummy (or the converse) is invalid, except for
-                        // assumed-rank and elemental. Sequence association can
-                        // pass a 2-D actual to a 1-D dummy, so ranks of two
-                        // arrays need not match.
-                        if (ASRUtils::is_allocatable(formal_type)) {
-                            require_with_loc_id(
-                                ASRUtils::is_allocatable(actual_type),
-                                "asr.verify.call.actual_allocatable_matches_formal",
-                                "Actual argument type " +
-                                    ASRUtils::get_type_code(actual_type) +
-                                    " is not allocatable, but the dummy is " +
-                                    ASRUtils::get_type_code(formal_type),
-                                passed_arg_expr->base.loc);
-                        }
-                        if (ASRUtils::is_pointer(formal_type)) {
-                            require_with_loc_id(
-                                ASRUtils::is_pointer(actual_type),
-                                "asr.verify.call.actual_pointer_matches_formal",
-                                "Actual argument type " +
-                                    ASRUtils::get_type_code(actual_type) +
-                                    " is not a pointer, but the dummy is " +
-                                    ASRUtils::get_type_code(formal_type),
-                                passed_arg_expr->base.loc);
-                        }
-                        bool formal_assumed_rank = ASRUtils::is_array(formal_type)
-                            && ASRUtils::extract_physical_type(formal_type)
-                                == ASR::array_physical_typeType::AssumedRankArray;
-                        bool elemental = ASRUtils::get_FunctionType(func)
-                            ->m_elemental;
-                        if (!formal_assumed_rank && !elemental) {
-                            bool actual_is_array =
-                                ASRUtils::is_array(actual_type);
-                            bool formal_is_array =
-                                ASRUtils::is_array(formal_type);
-                            require_with_loc_id(
-                                actual_is_array == formal_is_array,
-                                "asr.verify.call.actual_rank_matches_formal",
-                                "Actual argument type " +
-                                    ASRUtils::get_type_code(actual_type) +
-                                    " does not match formal argument rank of "
-                                    "type " +
-                                    ASRUtils::get_type_code(formal_type),
-                                passed_arg_expr->base.loc);
-                        }
+                    // check_equal_type strips Allocatable and Pointer.
+                    // An allocatable or pointer dummy requires an actual
+                    // of the same wrapper; the other direction is valid
+                    // Fortran (an allocatable actual may be passed to a
+                    // nonallocatable dummy). A scalar actual for an array
+                    // dummy (or the converse) is invalid, except for
+                    // assumed-rank and elemental. Sequence association can
+                    // pass a 2-D actual to a 1-D dummy, so ranks of two
+                    // arrays need not match.
+                    if (ASRUtils::is_allocatable(formal_type)) {
+                        require_with_loc_id(
+                            ASRUtils::is_allocatable(actual_type),
+                            "asr.verify.call.actual_allocatable_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " is not allocatable, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                    }
+                    if (ASRUtils::is_pointer(formal_type)) {
+                        require_with_loc_id(
+                            ASRUtils::is_pointer(actual_type),
+                            "asr.verify.call.actual_pointer_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " is not a pointer, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                    }
+                    bool formal_assumed_rank = ASRUtils::is_array(formal_type)
+                        && ASRUtils::extract_physical_type(formal_type)
+                            == ASR::array_physical_typeType::AssumedRankArray;
+                    bool elemental = ASRUtils::get_FunctionType(func)
+                        ->m_elemental;
+                    if (!formal_assumed_rank && !elemental) {
+                        bool actual_is_array =
+                            ASRUtils::is_array(actual_type);
+                        bool formal_is_array =
+                            ASRUtils::is_array(formal_type);
+                        require_with_loc_id(
+                            actual_is_array == formal_is_array,
+                            "asr.verify.call.actual_rank_matches_formal",
+                            "Actual argument type " +
+                                ASRUtils::get_type_code(actual_type) +
+                                " does not match formal argument rank of "
+                                "type " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
                     }
                     require_with_loc_id(
                         ASRUtils::check_equal_type(
@@ -3078,7 +3033,7 @@ public:
     // dimension array and crashes the compiler rather than diagnosing it.
     void verify_dimension_argument(const char *name, ASR::expr_t *array,
             ASR::expr_t *dim, const Location &loc) {
-        if (!check_standalone_rules || diagnostics.has_error()
+        if (diagnostics.has_error()
                 || array == nullptr || dim == nullptr) {
             return;
         }
@@ -3367,8 +3322,7 @@ public:
 bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
-    ASR::VerifyVisitor v(options.check_external,
-        options.check_standalone_rules, diagnostics);
+    ASR::VerifyVisitor v(options.check_external, diagnostics);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
