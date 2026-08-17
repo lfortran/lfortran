@@ -830,12 +830,81 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
         }
 };
 
+// A `procedure(iface)` entity holds a copy of the interface's FunctionType
+// rather than sharing it, so transforming the interface leaves the entity
+// declaring the argument list the procedure no longer has. A call through it
+// is then checked against a signature nothing has.
+class UpdateProcedureEntityTypes:
+    public ASR::BaseWalkVisitor<UpdateProcedureEntityTypes> {
+
+    public:
+
+        Allocator& al;
+        std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed;
+        std::set<ASR::symbol_t*> retyped;
+
+        UpdateProcedureEntityTypes(Allocator& al_,
+            std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed_) :
+            al{al_}, transformed{transformed_} {}
+
+        void visit_Variable(const ASR::Variable_t& x) {
+            ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+            if( xx.m_type_declaration == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                xx.m_type_declaration);
+            if( decl == nullptr || !ASR::is_a<ASR::Function_t>(*decl) ||
+                transformed.find(decl) == transformed.end() ) {
+                return;
+            }
+            if( !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(xx.m_type)) ) {
+                return;
+            }
+            ASR::ttype_t* signature = ASR::down_cast<ASR::Function_t>(
+                decl)->m_function_signature;
+            if( ASRUtils::is_pointer(xx.m_type) ) {
+                xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, xx.base.base.loc, signature));
+            } else {
+                xx.m_type = signature;
+            }
+            retyped.insert((ASR::symbol_t*) &xx);
+        }
+
+        void visit_Function(const ASR::Function_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_Function(x);
+            // The signature repeats each dummy's type, so a dummy whose type
+            // just changed leaves the two disagreeing. Only those dummies:
+            // every other argument type belongs to the signature as it is.
+            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(x);
+            if( ft->n_arg_types != x.n_args ) {
+                return;
+            }
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( !ASR::is_a<ASR::Var_t>(*x.m_args[i]) ) {
+                    continue;
+                }
+                ASR::symbol_t* arg = ASR::down_cast<ASR::Var_t>(
+                    x.m_args[i])->m_v;
+                if( arg == nullptr || retyped.find(arg) == retyped.end() ) {
+                    continue;
+                }
+                ft->m_arg_types[i] = ASR::down_cast<ASR::Variable_t>(
+                    arg)->m_type;
+            }
+        }
+};
+
 void pass_transform_optional_argument_functions(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
     std::map<ASR::symbol_t*, std::vector<int32_t>> sym2optionalargidx;
     TransformFunctionsWithOptionalArguments v(al, sym2optionalargidx);
     v.visit_TranslationUnit(unit);
+    UpdateProcedureEntityTypes u(al, sym2optionalargidx);
+    u.visit_TranslationUnit(unit);
     ReplaceFunctionCallsWithOptionalArgumentsVisitor w(al, sym2optionalargidx);
     w.visit_TranslationUnit(unit);
     ReplaceSubroutineCallsWithOptionalArgumentsVisitor y(al, sym2optionalargidx);
