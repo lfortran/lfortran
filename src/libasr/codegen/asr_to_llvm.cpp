@@ -17160,10 +17160,10 @@ public:
         }
     }
 
-    // Namelist group object names are the *local* names (respecting USE
-    // renaming) and are emitted in upper case (F2018 13.11.4.1).
+    // A namelist group object is the *local* entity, so use the local name
+    // (which respects USE renaming), not the original module name.
     std::string get_namelist_var_name(ASR::symbol_t *var_sym) {
-        return LCompilers::to_upper(ASRUtils::symbol_name(var_sym));
+        return LCompilers::to_lower(ASRUtils::symbol_name(var_sym));
     }
 
     // Helper to build namelist descriptor and call runtime function
@@ -17172,8 +17172,9 @@ public:
         nml_sym = ASRUtils::symbol_get_past_external(nml_sym);
         ASR::Namelist_t* nml = ASR::down_cast<ASR::Namelist_t>(nml_sym);
 
-        // Get group name (uppercase, F2018 13.11.4.1)
-        std::string group_name = LCompilers::to_upper(nml->m_group_name);
+        // Get group name (lowercase)
+        std::string group_name = std::string(nml->m_group_name);
+        std::transform(group_name.begin(), group_name.end(), group_name.begin(), ::tolower);
 
         // Create global constant for group name
         llvm::Value* group_name_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, group_name);
@@ -17224,7 +17225,7 @@ public:
                         continue;
                     }
                     ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(sym);
-                    std::string member_name = LCompilers::to_upper(member_var->m_name);
+                    std::string member_name = LCompilers::to_lower(member_var->m_name);
                     int member_idx = name2memidx[struct_name][member_var->m_name];
                     llvm::Value* member_ptr = llvm_utils->create_gep2(llvm_struct_type, current_ptr, member_idx);
                     ASR::ttype_t *member_type = member_var->m_type;
@@ -17341,7 +17342,7 @@ public:
                     }
                     struct_ptr = llvm_utils->create_gep2(arr_type, data_ptr, 0);
                 }
-                add_struct_members(LCompilers::to_upper(item_name), struct_sym, struct_ptr,
+                add_struct_members(LCompilers::to_lower(item_name), struct_sym, struct_ptr,
                                    rank, shape_ptr, stride_val);
                 return;
             }
@@ -17543,7 +17544,7 @@ public:
             // Create lfortran_nml_item_t struct
             llvm::Value* item = llvm_utils->CreateAlloca(*builder, item_type);
             llvm::Value* item_name_ptr = LCompilers::create_global_string_ptr(
-                context, *module, *builder, LCompilers::to_upper(item_name));
+                context, *module, *builder, LCompilers::to_lower(item_name));
             builder->CreateStore(item_name_ptr, builder->CreateStructGEP(item_type, item, 0));
             builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), type_code),
                                  builder->CreateStructGEP(item_type, item, 1));
@@ -17564,7 +17565,7 @@ public:
             ASR::symbol_t* var_sym_past = ASRUtils::symbol_get_past_external(var_sym);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym_past);
 
-            // Get variable name (local name, uppercase)
+            // Get variable name (lowercase)
             std::string var_name = get_namelist_var_name(var_sym);
 
             uint32_t var_hash = get_hash((ASR::asr_t*)var);

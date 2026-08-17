@@ -13779,6 +13779,14 @@ static void write_str(nml_writer_t *w, const char *s) {
     }
 }
 
+// Group and object names in namelist output shall be in upper case
+// (F2018 13.11.4.1); the descriptor keeps them lowercase for matching.
+static void write_str_upper(nml_writer_t *w, const char *s) {
+    while (*s) {
+        write_char(w, (char)toupper((unsigned char)*s++));
+    }
+}
+
 // Helper function to write a single namelist item value
 static int64_t get_element_size(const lfortran_nml_item_t *item);
 
@@ -13922,20 +13930,15 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
 void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
-    // Names in namelist output are in upper case
     write_str(w, " &");
-    for (const char *p = group->group_name; *p; p++) {
-        write_char(w, (char)toupper((unsigned char)*p));
-    }
+    write_str_upper(w, group->group_name);
     write_char(w, '\n');
 
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
         write_str(w, "  ");
-        for (const char *p = item->name; *p; p++) {
-            write_char(w, (char)toupper((unsigned char)*p));
-        }
+        write_str_upper(w, item->name);
         write_char(w, '=');
 
         if (item->rank == 0) {
@@ -14266,10 +14269,10 @@ static bool peek_next_is_assignment(char *line_ptr) {
     return (*ptr == '=');
 }
 
-// Helper to convert string to uppercase
-static void to_uppercase(char *str) {
+// Helper to convert string to lowercase
+static void to_lowercase(char *str) {
     for (int i = 0; str[i]; i++) {
-        str[i] = toupper(str[i]);
+        str[i] = tolower(str[i]);
     }
 }
 
@@ -14299,11 +14302,11 @@ static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, in
         case LFORTRAN_NML_LOGICAL2:
         case LFORTRAN_NML_LOGICAL4:
         case LFORTRAN_NML_LOGICAL8: {
-            char upper[32];
-            strncpy(upper, value_str, 31);
-            upper[31] = '\0';
-            to_uppercase(upper);
-            bool val = (strstr(upper, "T") != NULL || strstr(upper, "1") != NULL);
+            char lower[32];
+            strncpy(lower, value_str, 31);
+            lower[31] = '\0';
+            to_lowercase(lower);
+            bool val = (strstr(lower, "t") != NULL || strstr(lower, "1") != NULL);
             if (item->type == LFORTRAN_NML_LOGICAL1) *(int8_t*)ptr = val ? 1 : 0;
             else if (item->type == LFORTRAN_NML_LOGICAL2) *(int16_t*)ptr = val ? 1 : 0;
             else if (item->type == LFORTRAN_NML_LOGICAL4) *(int32_t*)ptr = val ? 1 : 0;
@@ -14582,7 +14585,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             internal_free(token);
             token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
             if (token) {
-                to_uppercase(token);
+                to_lowercase(token);
                 if (strcmp(token, group->group_name) == 0) {
                     found_group = true;
                     internal_free(token);
@@ -14634,7 +14637,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         }
 
         // Parse name=value (may include array subscript like "arr(2,3)")
-        to_uppercase(token);
+        to_lowercase(token);
         char *name = token;
 
         // Parse array subscript if present
