@@ -2319,7 +2319,11 @@ public:
                                 ASRUtils::get_type_code(formal_type),
                             passed_arg_expr->base.loc);
                     }
-                    if (ASRUtils::is_pointer(formal_type)) {
+                    // A pointer dummy takes a pointer actual, except when it
+                    // is INTENT(IN): that one may also take any valid target
+                    // for it, and becomes associated with the actual.
+                    if (ASRUtils::is_pointer(formal_type) &&
+                            callee_param->m_intent != ASR::intentType::In) {
                         require_with_loc_id(
                             ASRUtils::is_pointer(actual_type),
                             "asr.verify.call.actual_pointer_matches_formal",
