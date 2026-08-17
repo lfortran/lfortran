@@ -12,6 +12,119 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+    // True when `sym` is a derived type or procedure that only a scope
+    // inside a program or a procedure can name.
+    static inline bool only_locally_visible(ASR::symbol_t* sym) {
+        if( sym == nullptr ) return false;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if( sym == nullptr ) return false;
+        if( !ASR::is_a<ASR::Struct_t>(*sym) &&
+            !ASR::is_a<ASR::Function_t>(*sym) ) {
+            return false;
+        }
+        if( ASR::is_a<ASR::Struct_t>(*sym) ) {
+            ASR::ttype_t* signature = ASR::down_cast<ASR::Struct_t>(
+                sym)->m_struct_signature;
+            if( signature != nullptr &&
+                ASR::is_a<ASR::StructType_t>(*signature) &&
+                ASR::down_cast<ASR::StructType_t>(
+                    signature)->m_is_unlimited_polymorphic ) {
+                return false;
+            }
+        }
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+        return owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner);
+    }
+
+    // The same decision for a hoisted expression: if anything it names is
+    // only visible locally, the helper cannot live in the global scope.
+    class LocalSymbolFinder: public ASR::BaseWalkVisitor<LocalSymbolFinder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t& x) {
+                if( only_locally_visible(x.m_v) ) found = true;
+                ASR::symbol_t* v = ASRUtils::symbol_get_past_external(x.m_v);
+                if( v != nullptr && ASR::is_a<ASR::Variable_t>(*v) &&
+                    only_locally_visible(ASR::down_cast<ASR::Variable_t>(
+                        v)->m_type_declaration) ) {
+                    found = true;
+                }
+            }
+    };
+
+    static inline SymbolTable* instantiation_scope_for_expr(
+            SymbolTable* global_scope, SymbolTable* caller_scope,
+            ASR::expr_t* expr) {
+        if( caller_scope == nullptr || expr == nullptr ) return global_scope;
+        LocalSymbolFinder finder;
+        finder.visit_expr(*expr);
+        return finder.found ? caller_scope : global_scope;
+    }
+
+    // An instantiated intrinsic helper is shared, so it belongs in the global
+    // scope -- but only if everything it will name is visible from there. An
+    // argument whose derived type or procedure is contained in a program or a
+    // procedure is not, and no ExternalSymbol can reach it either, so the
+    // helper has to be built where the caller stands instead.
+    static inline SymbolTable* instantiation_scope(SymbolTable* global_scope,
+            SymbolTable* caller_scope, Vec<ASR::call_arg_t>& args) {
+        if( caller_scope == nullptr ) return global_scope;
+        for( size_t i = 0; i < args.size(); i++ ) {
+            if( args[i].m_value == nullptr ) continue;
+            std::vector<ASR::symbol_t*> named;
+            // `get_struct_sym_from_struct_expr` only answers for an expression
+            // of derived type, and raises otherwise, so ask it nothing else.
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(args[i].m_value);
+            if( arg_type != nullptr &&
+                (ASRUtils::is_struct(*arg_type) || ASRUtils::is_class_type(
+                    ASRUtils::extract_type(arg_type))) ) {
+                named.push_back(ASRUtils::get_struct_sym_from_struct_expr(
+                    args[i].m_value));
+            }
+            if( ASR::is_a<ASR::Var_t>(*args[i].m_value) ) {
+                ASR::symbol_t* v = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
+                if( v != nullptr && ASR::is_a<ASR::Function_t>(*v) ) {
+                    named.push_back(v);
+                } else if( v != nullptr && ASR::is_a<ASR::Variable_t>(*v) ) {
+                    named.push_back(ASR::down_cast<ASR::Variable_t>(
+                        v)->m_type_declaration);
+                }
+            }
+            for( ASR::symbol_t* sym: named ) {
+                if( sym == nullptr ) continue;
+                sym = ASRUtils::symbol_get_past_external(sym);
+                if( sym == nullptr ) continue;
+                // Only a derived type or a procedure is named by the helper
+                // it builds. `get_struct_sym_from_struct_expr` answers for
+                // any expression, so anything else it hands back says
+                // nothing about where the helper can live.
+                if( !ASR::is_a<ASR::Struct_t>(*sym) &&
+                    !ASR::is_a<ASR::Function_t>(*sym) ) {
+                    continue;
+                }
+                // An unlimited polymorphic type is synthesised per scope, so
+                // wherever the helper goes it can have its own.
+                if( ASR::is_a<ASR::Struct_t>(*sym) ) {
+                    ASR::ttype_t* signature = ASR::down_cast<ASR::Struct_t>(
+                        sym)->m_struct_signature;
+                    if( signature != nullptr &&
+                        ASR::is_a<ASR::StructType_t>(*signature) &&
+                        ASR::down_cast<ASR::StructType_t>(
+                            signature)->m_is_unlimited_polymorphic ) {
+                        continue;
+                    }
+                }
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+                if( owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner) ) {
+                    return caller_scope;
+                }
+            }
+        }
+        return global_scope;
+    }
+
+
         ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
             ASR::expr_t* a_target, ASR::expr_t* a_value,
             ASR::stmt_t* a_overloaded, bool a_realloc_lhs);

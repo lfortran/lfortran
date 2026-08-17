@@ -62,7 +62,9 @@ class ReplaceIntrinsicSubroutines : public ASR::CallReplacerOnExpressionsVisitor
                 arg_types.push_back(al, ASRUtils::expr_type(x.m_args[i]));
             }
             ASR::stmt_t* subroutine_call = instantiate_subroutine(al, x.base.base.loc,
-                global_scope, arg_types, new_args, x.m_overload_id);
+                PassUtils::instantiation_scope(global_scope, current_scope,
+                    new_args),
+                arg_types, new_args, x.m_overload_id);
             remove_original_statement = true;
             pass_result.push_back(al, subroutine_call);
         }
