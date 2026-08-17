@@ -21666,8 +21666,12 @@ public:
             }
             ptr_loads -= reduce_loads;
             ASR::ttype_t* array_type = ASRUtils::expr_type(value);
-            this->visit_expr_load_wrapper(value,
-                ASRUtils::is_character(*array_type) ? 0 : ptr_loads, true);
+            int64_t expression_loads = ptr_loads;
+            if (ASRUtils::is_character(*array_type)) {
+                expression_loads = LLVM::is_llvm_pointer(*array_type)
+                    ? ptr_loads : 0;
+            }
+            this->visit_expr_load_wrapper(value, expression_loads, true);
             ptr_loads = ptr_loads_save;
             load_non_array_non_character_pointers(value, array_type, tmp);
 
