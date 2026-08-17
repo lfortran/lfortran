@@ -92,6 +92,11 @@ if (XEUS_LFORTRAN_WASM_BUILD)
     endif()
 endif()
 add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
+# The test binary never calls set_exec_path_and_mode(), so it cannot work out
+# where the runtime modfiles are. Without this a test that uses an intrinsic
+# module fails with "modfile was not found".
+set_tests_properties(test_lfortran PROPERTIES ENVIRONMENT
+    "LFORTRAN_RUNTIME_LIBRARY_DIR=${CMAKE_BINARY_DIR}/src/runtime")
 
 # These tests drive the lfortran executable. This directory is configured
 # before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
