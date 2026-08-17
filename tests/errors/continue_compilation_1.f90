@@ -959,6 +959,15 @@ program continue_compilation_1
         print *, findloc(names, key)
     end subroutine
 
+    subroutine merge_bits_boz_both_args()
+        print *, merge_bits(o'12345', z'1234', 32767)
+    end subroutine
+    subroutine dshiftl_boz_both_args()
+        print *, dshiftl(o'12345', z'1234', 5)
+    end subroutine
+    subroutine dshiftr_boz_both_args()
+        print *, dshiftr(o'12345', z'1234', 5)
+    end subroutine
     subroutine implied_do_loop_variable_not_integer()
         implicit none
         real :: r_idx

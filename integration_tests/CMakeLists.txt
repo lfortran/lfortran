@@ -1606,6 +1606,7 @@ RUN(NAME intrinsics_237 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl, idl
 RUN(NAME intrinsics_239 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # erfc_scaled
 RUN(NAME intrinsics_240 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshiftr
+RUN(NAME merge_bits_boz LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_241 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # logical
 RUN(NAME intrinsics_242 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nint
 RUN(NAME intrinsics_243 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sqrt, abs, log (all kind of real)
