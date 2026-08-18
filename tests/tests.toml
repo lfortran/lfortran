@@ -5357,6 +5357,10 @@ filename = "asr/verify/call_rank_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/call_scalar_to_assumed_shape.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/call_allocatable_mismatch.asr"
 asr = true
 

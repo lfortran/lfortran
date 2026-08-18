@@ -4510,16 +4510,8 @@ namespace Merge {
                 if_body.p, if_body.n, else_body.p, else_body.n)));
         }
 
-        // `merge` is elemental and its helper takes the scalar element
-        // types, so a call may still carry the array arguments it was
-        // written with. Say so, rather than leave a scalar procedure being
-        // handed arrays.
-        ASR::symbol_t *new_symbol = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, fn_name),
-                dep.p, dep.n, args.p, args.n, body.p, body.n, result,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Implementation, nullptr, true, false, false,
-                false, false, nullptr, 0, false, false, false));
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
         return b.Call(new_symbol, new_args, return_type, nullptr);
     }

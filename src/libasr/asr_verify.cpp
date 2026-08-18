@@ -2357,32 +2357,35 @@ public:
                             ASRUtils::is_array(formal_type);
                         // Sequence association: an explicit-shape or
                         // assumed-size dummy may be given an array element,
-                        // which is a scalar. Only an assumed-shape dummy,
-                        // whose extents come from the actual, needs an array:
-                        // that one is described by a descriptor and states no
-                        // extents of its own.
-                        bool formal_assumed_shape = false;
-                        if (formal_is_array && !actual_is_array) {
+                        // which is a scalar, and then covers the actual's
+                        // array from that element on. No other dummy may:
+                        // an assumed-shape one takes its extents from the
+                        // actual, and an allocatable or pointer one carries
+                        // the actual's own storage.
+                        bool formal_takes_element = false;
+                        if (formal_is_array && !actual_is_array &&
+                                !ASRUtils::is_allocatable(formal_type) &&
+                                !ASRUtils::is_pointer(formal_type)) {
                             ASR::Array_t *formal_array =
-                                ASR::down_cast<ASR::Array_t>(
-                                    ASRUtils::type_get_past_allocatable_pointer(
-                                        formal_type));
-                            formal_assumed_shape =
+                                ASR::down_cast<ASR::Array_t>(formal_type);
+                            // Assumed size: the last extent is the caller's.
+                            formal_takes_element =
                                 formal_array->m_physical_type ==
-                                    ASR::array_physical_typeType::DescriptorArray ||
+                                    ASR::array_physical_typeType::PointerArray ||
                                 formal_array->m_physical_type ==
-                                    ASR::array_physical_typeType::ISODescriptorArray;
+                                    ASR::array_physical_typeType::UnboundedPointerArray;
                             for (size_t d = 0; d < formal_array->n_dims; d++) {
+                                // Explicit shape: the dummy states its own.
                                 if (formal_array->m_dims[d].m_length
                                         != nullptr) {
-                                    formal_assumed_shape = false;
+                                    formal_takes_element = true;
                                     break;
                                 }
                             }
                         }
                         require_with_loc_id(
                             actual_is_array == formal_is_array ||
-                                (!actual_is_array && !formal_assumed_shape),
+                                formal_takes_element,
                             "asr.verify.call.actual_rank_matches_formal",
                             "Actual argument type " +
                                 ASRUtils::get_type_code(actual_type) +

@@ -33,6 +33,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid;
     bool& in_debugcheck;
     bool& in_ttype;
+    bool& in_gpu_kernel;
     int index_kind;
 
     public:
@@ -42,9 +43,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool& in_debugcheck_, bool &in_ttype_,
-    int index_kind_) :
+    bool& in_gpu_kernel_, int index_kind_) :
         al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_), in_debugcheck(in_debugcheck_), in_ttype(in_ttype_),
-        index_kind(index_kind_) {}
+        in_gpu_kernel(in_gpu_kernel_), index_kind(index_kind_) {}
 
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
@@ -55,6 +56,14 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         // If inside DebugCheckArrayBounds and not inside a type
         // Then keep the IntrinsicElementalFunction because its arguments are used to find ArraySize
         if (in_debugcheck && !in_ttype) return;
+        if (in_gpu_kernel) {
+            for( size_t i = 0; i < x->n_args; i++ ) {
+                if( x->m_args[i] != nullptr && ASRUtils::is_array(
+                        ASRUtils::expr_type(x->m_args[i])) ) {
+                    return;
+                }
+            }
+        }
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:
@@ -153,11 +162,13 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
     public:
         bool in_debugcheck = false;
         bool in_ttype = false;
+        bool in_gpu_kernel = false;
 
         ReplaceIntrinsicFunctionsVisitor(Allocator& al_, SymbolTable* global_scope_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_,
             int index_kind_) :
-            replacer(al_, global_scope_, func2intrinsicid_, in_debugcheck, in_ttype, index_kind_) {}
+            replacer(al_, global_scope_, func2intrinsicid_, in_debugcheck, in_ttype,
+                in_gpu_kernel, index_kind_) {}
 
         // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
         void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
@@ -172,6 +183,19 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             in_ttype = true;
             ASR::CallReplacerOnExpressionsVisitor<ReplaceIntrinsicFunctionsVisitor>::visit_ttype(x);
             in_ttype = in_ttype_copy;
+        }
+
+        // The array_op pass leaves a GPU kernel's array operations alone,
+        // because the Metal and CUDA backends lower them directly. An
+        // elemental intrinsic there therefore still has its array
+        // arguments, and a helper instantiated from the element types
+        // would be handed the arrays it was written with.
+        void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& x) {
+            bool in_gpu_kernel_copy = in_gpu_kernel;
+            in_gpu_kernel = true;
+            ASR::CallReplacerOnExpressionsVisitor<
+                ReplaceIntrinsicFunctionsVisitor>::visit_GpuKernelFunction(x);
+            in_gpu_kernel = in_gpu_kernel_copy;
         }
 
         void call_replacer() {
