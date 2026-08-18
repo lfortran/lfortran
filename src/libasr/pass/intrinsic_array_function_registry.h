@@ -2696,7 +2696,15 @@ namespace Spread {
         args_merge1.push_back(al, b.Eq(b.i32(i), b.i32(1)));
         ASR::expr_t* merge_for_i = EXPR(Merge::create_Merge(al, loc, args_merge1, diag));
 
-        args_merge2.push_back(al, b.ArraySize(array, b.i32(i), int32));
+        // `i` runs over the result's dimensions, one more than the array
+        // has. This branch is only selected when `i < dim`, so it is never
+        // the appended dimension, but the index still has to name a
+        // dimension the array actually has for the expression to be
+        // well formed.
+        int64_t array_rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(array));
+        args_merge2.push_back(al, b.ArraySize(
+            array, b.i32(std::min(i, array_rank)), int32));
         args_merge2.push_back(al, b.ArraySize(array, merge_for_i, int32));
         args_merge2.push_back(al, b.Lt(b.i32(i), dim));
         ASR::expr_t* merge_for_i_ne_dim = EXPR(Merge::create_Merge(al, loc, args_merge2, diag));
