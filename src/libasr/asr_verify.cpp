@@ -3042,7 +3042,7 @@ public:
     // dimension array and crashes the compiler rather than diagnosing it.
     void verify_dimension_argument(const char *name, ASR::expr_t *array,
             ASR::expr_t *dim, const Location &loc) {
-        if (!check_standalone_rules || diagnostics.has_error()
+        if (diagnostics.has_error()
                 || array == nullptr || dim == nullptr) {
             return;
         }
