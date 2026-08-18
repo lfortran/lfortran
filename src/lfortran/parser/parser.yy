@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    213 // shift/reduce conflicts
+%expect    193 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -414,17 +414,22 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> instantiate_symbol
 %type <ast> enum_decl
 %type <ast> program
-%type <ast> end_program
+%type <end_stmt> end_program
 %type <ast> id_opt
 %type <ast> subroutine
-%type <ast> end_subroutine
+%type <end_stmt> end_subroutine
 %type <ast> procedure
+%type <end_stmt> end_procedure
 %type <ast> sub_or_func
 %type <vec_ast> sub_args
 %type <vec_ast> id_or_star_list
 %type <ast> id_or_star
 %type <ast> function
-%type <ast> end_function
+%type <end_stmt> end_function
+%type <contains_end> program_contains_end
+%type <contains_end> subroutine_contains_end
+%type <contains_end> procedure_contains_end
+%type <contains_end> function_contains_end
 %type <ast> use_statement
 %type <ast> use_statement1
 %type <ast> use_symbol
@@ -537,6 +542,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> decl_statement
 %type <vec_ast> statements
 %type <vec_ast> decl_statements
+%type <vec_ast> contains_block
 %type <vec_ast> contains_block_opt
 %type <vec_ast> sub_or_func_plus
 %type <vec_ast> sub_or_func_star
@@ -642,6 +648,9 @@ script_unit
     | statement          %dprec 7
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
+    | TK_LABEL KW_END sep { $$ = LABELED_END($1, $2, @$); }
+    | TK_LABEL KW_END_PROGRAM sep { $$ = LABELED_END($1, $2, @$); }
+    | TK_LABEL KW_ENDPROGRAM sep { $$ = LABELED_END($1, $2, @$); }
     ;
 
 // ----------------------------------------------------------------------------
@@ -906,15 +915,22 @@ proc_modifier
 
 
 program
-    : KW_PROGRAM id sep decl_statements
-        contains_block_opt end_program sep {
-      LLOC(@$, @6); $$ = PROGRAM($2, TRIVIA($3, $7, @$), $4, $5, $6, @$); }
+    : KW_PROGRAM id sep decl_statements program_contains_end sep {
+      LLOC(@$, @5); $$ = PROGRAM($2, TRIVIA($3, $6, @$), $4, $5, @$); }
+    ;
+
+program_contains_end
+    : end_program { $$ = CONTAINS_END1(p.m_a, $1); }
+    | contains_block end_program { $$ = CONTAINS_END2(p.m_a, $1, $2); }
     ;
 
 end_program
-    : KW_END_PROGRAM id_opt { $$ = $2; }
-    | KW_ENDPROGRAM id_opt { $$ = $2; }
-    | KW_END { $$ = nullptr; }
+    : KW_END_PROGRAM id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_ENDPROGRAM id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_END { $$ = END_STMT(nullptr, 0, @$); }
+    | TK_LABEL KW_END_PROGRAM id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_ENDPROGRAM id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_END { $$ = END_STMT(nullptr, $1, @$); }
     ;
 
 end_module
@@ -936,21 +952,30 @@ end_blockdata
     ;
 
 end_subroutine
-    : KW_END_SUBROUTINE id_opt { $$ = $2; }
-    | KW_ENDSUBROUTINE id_opt { $$ = $2; }
-    | KW_END { $$ = nullptr; }
+    : KW_END_SUBROUTINE id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_ENDSUBROUTINE id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_END { $$ = END_STMT(nullptr, 0, @$); }
+    | TK_LABEL KW_END_SUBROUTINE id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_ENDSUBROUTINE id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_END { $$ = END_STMT(nullptr, $1, @$); }
     ;
 
 end_procedure
-    : KW_END_PROCEDURE id_opt
-    | KW_ENDPROCEDURE id_opt
-    | KW_END
+    : KW_END_PROCEDURE id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_ENDPROCEDURE id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_END { $$ = END_STMT(nullptr, 0, @$); }
+    | TK_LABEL KW_END_PROCEDURE id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_ENDPROCEDURE id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_END { $$ = END_STMT(nullptr, $1, @$); }
     ;
 
 end_function
-    : KW_END_FUNCTION id_opt { $$ = $2; }
-    | KW_ENDFUNCTION id_opt { $$ = $2; }
-    | KW_END { $$ = nullptr; }
+    : KW_END_FUNCTION id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_ENDFUNCTION id_opt { $$ = END_STMT($2, 0, @$); }
+    | KW_END { $$ = END_STMT(nullptr, 0, @$); }
+    | TK_LABEL KW_END_FUNCTION id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_ENDFUNCTION id_opt { $$ = END_STMT($3, $1, @$); }
+    | TK_LABEL KW_END { $$ = END_STMT(nullptr, $1, @$); }
     ;
 
 end_associate
@@ -980,56 +1005,59 @@ end_team
 
 subroutine
     : KW_SUBROUTINE id sub_args bind_opt sep decl_statements
-        contains_block_opt
-        end_subroutine sep {
-            LLOC(@$, @8); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $9, @$),
-                $6, $7, $8, @$); }
+        subroutine_contains_end sep {
+            LLOC(@$, @7); $$ = SUBROUTINE($2, $3, $4, TRIVIA($5, $8, @$),
+                $6, $7, @$); }
     | KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
             LLOC(@$, @10); $$ = TEMPLATED_SUBROUTINE($2, $4, $6, $7,
-                TRIVIA($8, $11, @$), $9, @$); }
+                TRIVIA($8, $11, @$), $9, $10, @$); }
     | fn_mod_plus KW_SUBROUTINE id sub_args bind_opt sep decl_statements
-        contains_block_opt
-        end_subroutine sep {
-            LLOC(@$, @9); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $10, @$),
-                $7, $8, $9, @$); }
+        subroutine_contains_end sep {
+            LLOC(@$, @8); $$ = SUBROUTINE1($1, $3, $4, $5, TRIVIA($6, $9, @$),
+                $7, $8, @$); }
     | fn_mod_plus KW_SUBROUTINE id "{" id_list "}" sub_args bind_opt
     sep decl_statements end_subroutine sep {
             LLOC(@$, @11); $$ = TEMPLATED_SUBROUTINE1($1, $3, $5, $7, $8,
-                TRIVIA($9, $12, @$), $10, @$); }
+                TRIVIA($9, $12, @$), $10, $11, @$); }
+    ;
+
+subroutine_contains_end
+    : end_subroutine { $$ = CONTAINS_END1(p.m_a, $1); }
+    | contains_block end_subroutine {
+            $$ = CONTAINS_END2(p.m_a, $1, $2); }
     ;
 
 procedure
     : fn_mod_plus KW_PROCEDURE id sub_args sep decl_statements
-        contains_block_opt
-        end_procedure sep {
-            LLOC(@$, @9); $$ = PROCEDURE($1, $3, $4, TRIVIA($5, $9, @$),
+        procedure_contains_end sep {
+            LLOC(@$, @8); $$ = PROCEDURE($1, $3, $4, TRIVIA($5, $8, @$),
                 $6, $7, @$); }
+    ;
+
+procedure_contains_end
+    : end_procedure { $$ = CONTAINS_END1(p.m_a, $1); }
+    | contains_block end_procedure {
+            $$ = CONTAINS_END2(p.m_a, $1, $2); }
     ;
 
 function
     : KW_FUNCTION id "(" id_list_opt ")"
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @9); $$ = FUNCTION0($2, $4, nullptr, nullptr,
-                TRIVIA($6, $10, @$), $7, $8, $9, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @8); $$ = FUNCTION0($2, $4, nullptr, nullptr,
+                TRIVIA($6, $9, @$), $7, $8, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @11); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $12, @$),
-                $9, $10, $11, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @10); $$ = FUNCTION0($2, $4, $7, $6, TRIVIA($8, $11, @$),
+                $9, $10, @$); }
     | KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @11); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $12, @$),
-                $9, $10, $11, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @10); $$ = FUNCTION0($2, $4, $6, $7, TRIVIA($8, $11, @$),
+                $9, $10, @$); }
     | KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
@@ -1038,27 +1066,21 @@ function
             LLOC(@$, @13); $$ = TEMPLATED_FUNCTION0($2, $4, $7, $9, $10,
                 TRIVIA($11, $14, @$), $12, $13, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @10); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
-                TRIVIA($7, $11, @$), $8, $9, $10, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @9); $$ = FUNCTION($1, $3, $5, nullptr, nullptr,
+                TRIVIA($7, $10, @$), $8, $9, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         bind
         result_opt
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @12); $$ = FUNCTION($1, $3, $5, $8, $7, TRIVIA($9, $13, @$),
-                $10, $11, $12, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $8, $7,
+                TRIVIA($9, $12, @$), $10, $11, @$); }
     | fn_mod_plus KW_FUNCTION id "(" id_list_opt ")"
         result
         bind_opt
-        sep decl_statements
-        contains_block_opt
-        end_function sep {
-            LLOC(@$, @12); $$ = FUNCTION($1, $3, $5, $7, $8, TRIVIA($9, $13, @$),
-                $10, $11, $12, @$); }
+        sep decl_statements function_contains_end sep {
+            LLOC(@$, @11); $$ = FUNCTION($1, $3, $5, $7, $8,
+                TRIVIA($9, $12, @$), $10, $11, @$); }
     | fn_mod_plus KW_FUNCTION id "{" id_list "}" "(" id_list_opt ")"
         result_opt
         bind_opt
@@ -1066,6 +1088,12 @@ function
         end_function sep {
             LLOC(@$, @14); $$ = TEMPLATED_FUNCTION($1, $3, $5, $8, $10, $11,
                 TRIVIA($12, $15, @$), $13, $14, @$); }
+    ;
+
+function_contains_end
+    : end_function { $$ = CONTAINS_END1(p.m_a, $1); }
+    | contains_block end_function {
+            $$ = CONTAINS_END2(p.m_a, $1, $2); }
     ;
 
 fn_mod_plus
@@ -1084,9 +1112,13 @@ fn_mod
     ;
 
 contains_block_opt
+    : contains_block
+    | %empty { LIST_NEW($$); }
+    ;
+
+contains_block
     : KW_CONTAINS sep sub_or_func_plus { $$ = $3; }
     | KW_CONTAINS sep { LIST_NEW($$); }
-    | %empty { LIST_NEW($$); }
     ;
 
 sub_or_func_star
