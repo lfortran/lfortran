@@ -7924,13 +7924,15 @@ public:
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+                        // The result belongs to the interface's own scope, not
+                        // to the scope that declares `external :: x`.
                         ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
-                            current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                            f->m_symtab, s2c(al, return_var_name), variable_dependencies_vec.p,
                             variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                             ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                             false);
-                        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                        f->m_symtab->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
                         f->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                             ASR::down_cast<ASR::symbol_t>(return_var)));
                         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);

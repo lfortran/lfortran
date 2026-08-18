@@ -926,12 +926,9 @@ public:
     // the procedure itself. One that resolves in an enclosing scope instead
     // is a host variable the procedure would then write through as if it
     // owned it. A dummy procedure is exempt: it names the procedure symbol
-    // itself, which lives where that procedure was declared. Only for a
-    // complete graph: a procedure the frontend synthesizes for an implicit
-    // interface borrows both its dummies and its result from the caller.
+    // itself, which lives where that procedure was declared.
     void require_own_symbol(ASR::expr_t *e, const std::string &owner,
             const std::string &what) {
-        if (!check_standalone_rules) return;
         if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
         if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
