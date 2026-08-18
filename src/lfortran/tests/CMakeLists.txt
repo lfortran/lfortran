@@ -59,6 +59,17 @@ endif()
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+# The test binary never calls set_exec_path_and_mode(), so it cannot work out
+# where the runtime modfiles are; a test that uses an intrinsic module would
+# fail with "modfile was not found". Under Emscripten they are preloaded into
+# the virtual filesystem at /lib, the same place xlfortran reads them from.
+if (EMSCRIPTEN)
+    set(LFORTRAN_TEST_RUNTIME_DIR "/lib")
+else()
+    set(LFORTRAN_TEST_RUNTIME_DIR "${CMAKE_BINARY_DIR}/src/runtime")
+endif()
+target_compile_definitions(test_lfortran PRIVATE
+    LFORTRAN_BUILD_RUNTIME_DIR="${LFORTRAN_TEST_RUNTIME_DIR}")
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
     # The default Emscripten stack is 64kb, which is far too small for the
