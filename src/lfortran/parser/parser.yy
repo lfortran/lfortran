@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    195 // shift/reduce conflicts
+%expect    199 // shift/reduce conflicts
 %expect-rr 185 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -384,6 +384,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
 %type <n> enddo
+%type <n> endif
 
 // Nonterminal tokens
 
@@ -1972,7 +1973,7 @@ end_file
 
 // sr-conflict (2x): KW_ENDIF can be an "id" or end of "if_statement"
 if_statement
-    : if_block endif {}
+    : if_block endif { $$ = $1; IF_END_LABEL($$, $2); }
     ;
 
 if_statement_single
@@ -2251,8 +2252,10 @@ endforall
     ;
 
 endif
-    : KW_END_IF
-    | KW_ENDIF { WARN_ENDIF(@$); }
+    : KW_END_IF             { $$ = 0; }
+    | TK_LABEL KW_END_IF    { $$ = $1; }
+    | KW_ENDIF              { $$ = 0; WARN_ENDIF(@$); }
+    | TK_LABEL KW_ENDIF     { $$ = $1; WARN_ENDIF(@$); }
     ;
 
 endwhere
