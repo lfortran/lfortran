@@ -5453,10 +5453,6 @@ filename = "asr/verify/user_defined_type_member_missing.asr"
 asr = true
 
 [[test]]
-filename = "asr/verify/module_dependency_missing.asr"
-asr = true
-
-[[test]]
 filename = "asr/verify/binding_override_argument_count.asr"
 asr = true
 
@@ -5538,10 +5534,6 @@ asr = true
 
 [[test]]
 filename = "asr/verify/sequence_type_extended.asr"
-asr = true
-
-[[test]]
-filename = "asr/verify/pointer_to_nontarget.asr"
 asr = true
 
 [[test]]

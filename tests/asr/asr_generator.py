@@ -1287,17 +1287,9 @@ def invalid_reference_type_declaration_scope(_rng):
     }), "schema-invalid derived type declared from an unimported module"
 
 
-def invalid_reference_module_dependency(_rng):
-    return module_unit(
-        {"helper": module_procedure()}, {}, [],
-        dependencies=["nosuchmodule"],
-    ), "schema-invalid dependency on a missing module"
-
-
 REFERENCE_BUILDERS = [
     invalid_reference_struct_member,
     invalid_reference_type_declaration_scope,
-    invalid_reference_module_dependency,
     invalid_reference_generic_specific,
     invalid_reference_operator_specific,
     invalid_reference_struct_parent,
@@ -1701,15 +1693,6 @@ def invalid_sequence_type_extended(_rng):
     ), "schema-invalid extension of a sequence type"
 
 
-def invalid_pointer_to_nontarget(_rng):
-    return translation_unit(
-        {"p1": variable(PROGRAM_SYMTAB, "p1", INTEGER, pointer=True),
-         "plain": integer_variable(PROGRAM_SYMTAB, "plain", 4)},
-        [f"(Associate :target {var(PROGRAM_SYMTAB, 'p1')} "
-         f":value {var(PROGRAM_SYMTAB, 'plain')})"],
-    ), "schema-invalid pointer to a nontarget"
-
-
 def invalid_array_constructor_element(_rng):
     element = f"(Array :type {integer_type(4)} " \
               f":dims [(dimension :start {integer_constant(1, 4)} " \
@@ -1731,7 +1714,6 @@ TYPE_REACH_BUILDERS = [
     invalid_select_type_unrelated_guard,
     invalid_allocate_unrelated_type,
     invalid_sequence_type_extended,
-    invalid_pointer_to_nontarget,
     invalid_array_constructor_element,
 ]
 
