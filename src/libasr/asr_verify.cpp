@@ -1308,15 +1308,10 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' must be a derived type, not " +
                 ASRUtils::symbol_type_name(*x.m_parent));
-            // Only for a complete graph: a specialization of a parameterized
-            // derived type is created in the scope that instantiates it and
-            // extends a type declared elsewhere.
-            if (check_standalone_rules) {
-                require_id(symtab_in_scope(current_symtab, x.m_parent),
-                    "asr.verify.struct.parent_in_scope",
-                    "Struct::m_parent of '" + std::string(x.m_name) +
-                    "' cannot point outside of its symbol table");
-            }
+            require_id(symtab_in_scope(current_symtab, x.m_parent),
+                "asr.verify.struct.parent_in_scope",
+                "Struct::m_parent of '" + std::string(x.m_name) +
+                "' cannot point outside of its symbol table");
         }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
@@ -1624,16 +1619,13 @@ public:
                     std::string(ASR::down_cast<ASR::Struct_t>(decl)->m_name) +
                     "', which only a polymorphic entity may have");
             }
-            // Only for a complete graph: pass_array_by_data rebuilds a
-            // procedure in a fresh scope while its variables still name the
-            // interface in the scope they came from.
-            if (check_standalone_rules) {
-                require_id(
-                    symtab_in_scope(current_symtab, x.m_type_declaration),
-                    "asr.verify.variable.type_declaration_in_scope",
-                    "Variable '" + std::string(x.m_name) +
-                    "' declares its type with a symbol that is not in scope");
-            }
+            require_id(
+                symtab_in_scope(current_symtab, x.m_type_declaration),
+                "asr.verify.variable.type_declaration_in_scope",
+                "Variable '" + std::string(x.m_name) +
+                "' declares its type with '" +
+                std::string(ASRUtils::symbol_name(x.m_type_declaration)) +
+                "', which is not in scope");
         }
 
         // Verify pass_attr and self_argument consistency

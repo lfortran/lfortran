@@ -2235,6 +2235,39 @@ end program
 )").ok);
 }
 
+TEST_CASE("FortranEvaluator a type re-exported by a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // A module the frontend maps an intrinsic name onto holds its own entry
+    // for `c_ptr` as an import rather than as the derived type. A later cell
+    // relinks its copy of the module against that entry, which would name an
+    // ExternalSymbol from an ExternalSymbol -- a chain nothing that reads the
+    // symbol can follow.
+    const char *cell = R"(module mcptr
+use iso_c_binding, only: c_ptr
+implicit none
+contains
+subroutine takes_ptr(p)
+type(c_ptr), intent(in) :: p
+end subroutine
+end module
+program p
+use mcptr
+use iso_c_binding, only: c_ptr, c_null_ptr
+implicit none
+type(c_ptr) :: q
+q = c_null_ptr
+call takes_ptr(q)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
 TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
     CompilerOptions cu;
     cu.interactive = true;
