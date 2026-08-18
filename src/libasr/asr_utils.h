@@ -1849,14 +1849,50 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::StructConstant: {
             return true;
         }
-        case ASR::exprType::RealBinOp:
-        case ASR::exprType::IntegerUnaryMinus:
-        case ASR::exprType::RealUnaryMinus:
-        case ASR::exprType::IntegerBinOp:
         case ASR::exprType::StructInstanceMember:
         case ASR::exprType::StringLen:
         case ASR::exprType::ArrayItem: {
             return is_value_constant(expr_value(a_value));
+        }
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp: {
+            // Issue #12120 follow-up: a BinOp whose overall value hasn't been
+            // constant-folded (e.g. because one operand is a non-foldable
+            // intrinsic array function like count()) can still be constant if
+            // both operands are. Recurse instead of relying on expr_value() alone.
+            if (is_value_constant(expr_value(a_value))) {
+                return true;
+            }
+            ASR::expr_t *bin_left = nullptr, *bin_right = nullptr;
+            switch (a_value->type) {
+                case ASR::exprType::IntegerBinOp: {
+                    ASR::IntegerBinOp_t* b = ASR::down_cast<ASR::IntegerBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+                case ASR::exprType::RealBinOp: {
+                    ASR::RealBinOp_t* b = ASR::down_cast<ASR::RealBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+                default: {
+                    ASR::ComplexBinOp_t* b = ASR::down_cast<ASR::ComplexBinOp_t>(a_value);
+                    bin_left = b->m_left; bin_right = b->m_right;
+                    break;
+                }
+            }
+            return is_value_constant(bin_left) && is_value_constant(bin_right);
+        }
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::RealUnaryMinus: {
+            if (is_value_constant(expr_value(a_value))) {
+                return true;
+            }
+            ASR::expr_t *unary_arg = (a_value->type == ASR::exprType::IntegerUnaryMinus) ?
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(a_value)->m_arg :
+                ASR::down_cast<ASR::RealUnaryMinus_t>(a_value)->m_arg;
+            return is_value_constant(unary_arg);
         }
         case ASR::exprType::ArrayConstructor: {
             if (is_value_constant(expr_value(a_value))) {
@@ -1893,6 +1929,13 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 return true;
             }
 
+            // A zero-argument intrinsic reaching here (not constant-folded via
+            // m_value) is inherently non-constant, e.g. this_image(), num_images().
+            // Without this check the loop below is vacuously true for zero args.
+            if (intrinsic_elemental_function->n_args == 0) {
+                return false;
+            }
+
             for( size_t i = 0; i < intrinsic_elemental_function->n_args; i++ ) {
                 if( !ASRUtils::is_value_constant(intrinsic_elemental_function->m_args[i]) ) {
                     return false;
@@ -1915,12 +1958,19 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             return true;
         } case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call_t = ASR::down_cast<ASR::FunctionCall_t>(a_value);
-            if( !ASRUtils::is_intrinsic_symbol(ASRUtils::symbol_get_past_external(func_call_t->m_name)) ) {
+            ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(func_call_t->m_name);
+            // Issue #12120 follow-up: after the intrinsic_function lowering pass, calls like
+            // minloc()/minval()/etc. become plain FunctionCall nodes to a generated
+            // "_lcompilers_*" implementation, which is_intrinsic_symbol() does not recognize
+            // as intrinsic. Treat those the same as a real intrinsic symbol here, since they
+            // are still deterministic functions of their (already-checked-constant) arguments.
+            std::string call_name = ASRUtils::symbol_name(call_sym);
+            bool is_lowered_intrinsic = call_name.rfind("_lcompilers_", 0) == 0;
+            if( !ASRUtils::is_intrinsic_symbol(call_sym) && !is_lowered_intrinsic ) {
                 return false;
             }
 
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(func_call_t->m_name));
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(call_sym);
             for( size_t i = 0; i < func_call_t->n_args; i++ ) {
                 if (func_call_t->m_args[i].m_value == nullptr &&
                     ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional) {
@@ -1975,6 +2025,61 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
                 }
             }
             return is_constant;
+        } case ASR::exprType::IntegerCompare:
+          case ASR::exprType::UnsignedIntegerCompare:
+          case ASR::exprType::RealCompare:
+          case ASR::exprType::ComplexCompare:
+          case ASR::exprType::LogicalCompare: {
+            // All *Compare_t ASR nodes share the same (left, op, right, type, value) layout,
+            // so a single reinterpret via the base fields is not available in the generated
+            // ASR API; downcast per-type instead.
+            ASR::expr_t *cmp_left = nullptr, *cmp_right = nullptr;
+            switch (a_value->type) {
+                case ASR::exprType::IntegerCompare: {
+                    ASR::IntegerCompare_t* c = ASR::down_cast<ASR::IntegerCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::UnsignedIntegerCompare: {
+                    ASR::UnsignedIntegerCompare_t* c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::RealCompare: {
+                    ASR::RealCompare_t* c = ASR::down_cast<ASR::RealCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                case ASR::exprType::ComplexCompare: {
+                    ASR::ComplexCompare_t* c = ASR::down_cast<ASR::ComplexCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+                default: {
+                    ASR::LogicalCompare_t* c = ASR::down_cast<ASR::LogicalCompare_t>(a_value);
+                    cmp_left = c->m_left; cmp_right = c->m_right;
+                    break;
+                }
+            }
+            return is_value_constant(cmp_left) && is_value_constant(cmp_right);
+        } case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(a_value);
+            if (!is_value_constant(array_section->m_v)) {
+                return false;
+            }
+            for (size_t i = 0; i < array_section->n_args; i++) {
+                ASR::array_index_t idx = array_section->m_args[i];
+                if (idx.m_left && !is_value_constant(idx.m_left)) {
+                    return false;
+                }
+                if (idx.m_right && !is_value_constant(idx.m_right)) {
+                    return false;
+                }
+                if (idx.m_step && !is_value_constant(idx.m_step)) {
+                    return false;
+                }
+            }
+            return true;
         } default: {
             return false;
         }

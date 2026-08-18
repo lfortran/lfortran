@@ -5347,7 +5347,14 @@ filename = "coshape_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+[[test]]
+filename = "errors/initializer_noncompile_time_12120.f90"
+asr = true
 
+[[test]]
+
+filename = "../integration_tests/initializer_intrinsic_const_12120.f90"
+asr = true
 [[test]]
 filename = "asr/verify/call_actual_type_mismatch.asr"
 asr = true

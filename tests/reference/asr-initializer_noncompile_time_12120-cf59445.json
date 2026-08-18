@@ -1,0 +1,13 @@
+{
+    "basename": "asr-initializer_noncompile_time_12120-cf59445",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/initializer_noncompile_time_12120.f90",
+    "infile_hash": "59946d4b6ad5e888c2dbbe09fb1c73494c84ec30f2936ad1df11fbcc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-initializer_noncompile_time_12120-cf59445.stderr",
+    "stderr_hash": "b3886fb1f32a1c1790a2acd70a58cc5b99fd7ecb41a2df1b96ae672d",
+    "returncode": 2
+}

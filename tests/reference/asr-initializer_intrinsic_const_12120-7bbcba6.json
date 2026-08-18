@@ -1,0 +1,13 @@
+{
+    "basename": "asr-initializer_intrinsic_const_12120-7bbcba6",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/initializer_intrinsic_const_12120.f90",
+    "infile_hash": "549fba85b3427af0df53e755126e389303b15ef3fcde49566954085b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-initializer_intrinsic_const_12120-7bbcba6.stdout",
+    "stdout_hash": "47af9961006fd7663c8506a88f6e99cd6fb8bf0ee2603294644790c0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

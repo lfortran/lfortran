@@ -958,6 +958,11 @@ program continue_compilation_1
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
     end subroutine
+    subroutine non_constant_binop_initializer()
+        implicit none
+        integer :: expected = mod(this_image() + num_images() - 2, num_images()) + 1  ! {Error} Initialization of `expected` must reduce to a compile time constant.
+    end subroutine non_constant_binop_initializer
+
 
     subroutine implied_do_loop_variable_not_integer()
         implicit none

@@ -1,0 +1,124 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            initializer_intrinsic_const_12120:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            c:
+                                (Variable
+                                    2
+                                    c
+                                    [a
+                                    b]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Mod
+                                        [(Var 2 a)
+                                        (Var 2 b)]
+                                        0
+                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                    )
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    initializer_intrinsic_const_12120
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 c)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 c)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)
