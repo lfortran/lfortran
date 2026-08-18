@@ -48,6 +48,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set LFortran version
+        shell: bash -e -l {0}
+        run: |
+          lfortran_version="$(git describe --tags --dirty)"
+          lfortran_version="${lfortran_version#v}"
+          if [[ -z "$lfortran_version" ]]; then
+            echo "::error::git describe returned an empty LFortran version"
+            exit 1
+          fi
+          echo "LFORTRAN_VERSION=$lfortran_version" >> "$GITHUB_ENV"
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           micromamba-version: '2.0.4-0'
@@ -350,6 +361,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set LFortran version
+        shell: bash -e -l {0}
+        run: |
+          lfortran_version="$(git describe --tags --dirty)"
+          lfortran_version="${lfortran_version#v}"
+          if [[ -z "$lfortran_version" ]]; then
+            echo "::error::git describe returned an empty LFortran version"
+            exit 1
+          fi
+          echo "LFORTRAN_VERSION=$lfortran_version" >> "$GITHUB_ENV"
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           micromamba-version: '2.0.4-0'
@@ -385,6 +407,7 @@ jobs:
             set -ex
             cmake \
                 -DCMAKE_BUILD_TYPE=Release \
+                -DLFORTRAN_VERSION="$LFORTRAN_VERSION" \
                 -DWITH_LLVM=yes \
                 -DLFORTRAN_BUILD_ALL=yes \
                 -DWITH_STACKTRACE=no \
@@ -405,6 +428,7 @@ jobs:
             micromamba run -n xeus-lfortran-wasm-build bash -c '
               emcmake cmake \
                   -DCMAKE_BUILD_TYPE=Release \
+                  -DLFORTRAN_VERSION="$LFORTRAN_VERSION" \
                   -DCMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" \
                   -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -fexceptions" \
                   -DWITH_LLVM=no \
@@ -431,4 +455,3 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
-

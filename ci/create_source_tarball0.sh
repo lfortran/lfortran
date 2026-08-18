@@ -3,6 +3,7 @@
 set -ex
 
 dest="$1"
+lfortran_version="$2"
 cmake -E make_directory $dest
 
 # Copy Directories:
@@ -14,7 +15,8 @@ cmake -E copy_directory doc/man $dest/doc/man
 cmake -E copy_directory tests/asr $dest/tests/asr
 
 # Copy Files:
-cmake -E copy CMakeLists.txt README.md LICENSE version $dest
+cmake -E copy CMakeLists.txt README.md LICENSE $dest
+printf '%s\n' "$lfortran_version" > "$dest/version"
 
 # Create the tarball
 cmake -E make_directory dist
