@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:978:7
+   --> tests/errors/continue_compilation_1.f90:992:7
     |
-978 |       foo    end type t_recovery
+992 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,9 +545,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:981:7
+   --> tests/errors/continue_compilation_1.f90:995:7
     |
-981 |       class(t_recovery), intent(in) :: self
+995 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1877,3 +1877,15 @@ semantic error: The implied do loop variable 'r_idx' must be a scalar integer, n
     |
 966 |         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Pointer assignment target 'plain' is neither a pointer nor a target
+   --> tests/errors/continue_compilation_1.f90:974:9
+    |
+974 |         p => plain  ! {Error} Pointer assignment target 'plain' is neither a pointer nor a target
+    |         ^^^^^^^^^^ 
+
+semantic error: Pointer assignment target 'arr' is neither a pointer nor a target
+   --> tests/errors/continue_compilation_1.f90:981:9
+    |
+981 |         p => arr(2)  ! {Error} Pointer assignment target 'arr' is neither a pointer nor a target
+    |         ^^^^^^^^^^^ 
