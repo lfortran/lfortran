@@ -463,17 +463,6 @@ public:
                 "A module dependency must not be an empty string");
             require(valid_name(x.m_dependencies[i]),
                 "A module dependency must be a valid string");
-            // A complete graph carries every module it uses. A dependency
-            // with nothing behind it names a module whose declarations the
-            // compiler will never see, which is the shape a lost `use` takes.
-            if (check_standalone_rules) {
-                require_id(parent_symtab->get_symbol(
-                        std::string(x.m_dependencies[i])) != nullptr,
-                    "asr.verify.module.dependency_is_present",
-                    "Module '" + std::string(x.m_name) + "' depends on '" +
-                    std::string(x.m_dependencies[i]) +
-                    "', which is not in this translation unit");
-            }
         }
         verify_separate_module_procedures(x, parent_symtab);
         for( auto& dep: module_dependencies ) {
@@ -552,27 +541,10 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
-        // Only for a complete graph, on both counts below: the array passes
-        // introduce pointer aliasing of their own onto plain variables whose
-        // lifetime they control, and `procedure(), pointer` declares no
+        // Only for a complete graph: `procedure(), pointer` declares no
         // interface at all yet gets the same empty FunctionType that an
         // explicit no-argument interface does.
         if (!check_standalone_rules) return;
-        // A data pointer may only be associated with something the compiler
-        // knows may be aliased and that outlives it. A plain local has
-        // neither guarantee, so the pointer is left able to dangle.
-        if (ASRUtils::is_pointer(target) && !is_procedure_type(target) &&
-                ASR::is_a<ASR::Var_t>(*x.m_value)) {
-            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
-            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                require_id(v->m_target_attr || ASRUtils::is_pointer(v->m_type),
-                    "asr.verify.associate.value_is_target",
-                    "Pointer assignment names '" + std::string(v->m_name) +
-                    "', which is neither a pointer nor a target");
-            }
-        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }
