@@ -40,6 +40,7 @@ public:
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
+    bool is_abstract_interface = false;
     bool in_program = false;
     int program_count = 0; // To track number of program units in a single file
     Location first_program_loc; // Location of the first program unit
@@ -47,6 +48,28 @@ public:
     ASR::symbol_t *current_module_sym;
 
     ASR::ttype_t *tmp_type;
+    bool has_scalar_character_argument_or_result(
+            ASR::expr_t* const* args, size_t n_args,
+            ASR::expr_t* return_var = nullptr) {
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::ttype_t* type = ASRUtils::expr_type(args[i]);
+            if (ASRUtils::is_character(*type) &&
+                    !ASRUtils::is_array(type) &&
+                    !ASRUtils::is_allocatable(type) &&
+                    !ASRUtils::is_pointer(type)) {
+                return true;
+            }
+        }
+        if (return_var) {
+            ASR::ttype_t* type = ASRUtils::expr_type(return_var);
+            return ASRUtils::is_character(*type) &&
+                !ASRUtils::is_array(type) &&
+                !ASRUtils::is_allocatable(type) &&
+                !ASRUtils::is_pointer(type);
+        }
+        return false;
+    }
+
 
     static bool is_equivalence_declaration(AST::decl_stmt_t* decl) {
         if (AST::is_a<AST::Declaration_t>(*decl)) {
@@ -1677,6 +1700,12 @@ public:
         for( auto& itr: current_function_dependencies ) {
             func_deps.push_back(al, s2c(al, itr));
         }
+        if (is_interface && !is_abstract_interface &&
+                current_procedure_abi_type == ASR::abiType::Source &&
+                has_scalar_character_argument_or_result(
+                    args.p, args.size())) {
+            current_procedure_abi_type = ASR::abiType::ExternalUndefined;
+        }
         bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
         bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
                                      || is_pure || is_elemental;
@@ -2367,6 +2396,12 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
 
+        if (is_interface && !is_abstract_interface &&
+                current_procedure_abi_type == ASR::abiType::Source &&
+                has_scalar_character_argument_or_result(
+                    args.p, args.size(), ASRUtils::EXPR(return_var_ref))) {
+            current_procedure_abi_type = ASR::abiType::ExternalUndefined;
+        }
         bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
         bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
                                      || is_pure || is_elemental;
@@ -3318,10 +3353,14 @@ public:
             interface_name.clear();
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
+            bool old_is_abstract_interface = is_abstract_interface;
+            is_abstract_interface =
+                AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header);
             std::vector<std::string> proc_names;
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
             }
+            is_abstract_interface = old_is_abstract_interface;
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::string> proc_names;

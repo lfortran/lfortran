@@ -8853,6 +8853,13 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         }
     }
 
+    // A fixed-length character component in a separately compiled module can
+    // have a null descriptor until its first definition. Create its backing
+    // storage before the input operation writes to it.
+    if (*p == NULL && p_len > 0) {
+        *p = (char*)ALLOCATOR_ALLOC(_lfortran_get_default_allocator(), p_len);
+    }
+
     if (unit_file_bin) {
         if (access_id == 2 || access_id == 1) {
             int32_t data_length = (int32_t)p_len;
@@ -9930,11 +9937,17 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            if (fscanf(filep, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read float from file.\n");
-                exit(1);
+            int delim = 0;
+            list_directed_token_status status = read_list_directed_token(
+                filep, unit_num, iostat, buffer, sizeof(buffer),
+                "Error: Failed to read float from file.",
+                "Error: Float input token is too long.", &delim, true);
+            if (status == LD_TOKEN_EARLY) {
+                if (iostat && *iostat != 0) return;
+                if (delim == '/') break;
+                continue;
             }
+            if (status == LD_TOKEN_REPEAT) continue;
             float val;
             if (!parse_fortran_float(buffer, &val)) {
                 if (iostat) { *iostat = 1; return; }
@@ -9942,6 +9955,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
                 exit(1);
             }
             p[(int64_t)i * (int64_t)stride] = val;
+            if (delim != ',') skip_trailing_comma(filep);
         }
     }
 }
@@ -10048,11 +10062,17 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            if (fscanf(filep, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double from file.\n");
-                exit(1);
+            int delim = 0;
+            list_directed_token_status status = read_list_directed_token(
+                filep, unit_num, iostat, buffer, sizeof(buffer),
+                "Error: Failed to read double from file.",
+                "Error: Double input token is too long.", &delim, true);
+            if (status == LD_TOKEN_EARLY) {
+                if (iostat && *iostat != 0) return;
+                if (delim == '/') break;
+                continue;
             }
+            if (status == LD_TOKEN_REPEAT) continue;
             double val;
             if (!parse_fortran_double(buffer, &val)) {
                 if (iostat) { *iostat = 1; return; }
@@ -10060,6 +10080,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
                 exit(1);
             }
             p[(int64_t)i * (int64_t)stride] = val;
+            if (delim != ',') skip_trailing_comma(filep);
         }
     }
 }

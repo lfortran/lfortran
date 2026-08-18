@@ -2196,6 +2196,10 @@ RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
 RUN(NAME implicit_interface_42 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_43 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_44 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface GFORTRAN_ARGS -ffixed-form)
+RUN(NAME implicit_interface_character_abi_01 LABELS gfortran llvm
+    EXTRAFILES implicit_interface_character_abi_01.c
+    EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fno-underscoring)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -3492,6 +3496,8 @@ RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mang
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME external_17 LABELS gfortran llvm EXTRAFILES external_17_subroutine.f90
+    EXTRA_ARGS --implicit-interface --mangle-underscore-external --separate-compilation)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c
     GFORTRAN_ARGS -fno-underscoring)
@@ -3692,6 +3698,11 @@ RUN(NAME read_94 LABELS gfortran llvm EXTRAFILES read_94.c)
 RUN(NAME read_95 LABELS gfortran llvm)
 RUN(NAME read_96 LABELS gfortran llvm)
 RUN(NAME read_98 LABELS gfortran llvm)
+RUN(NAME read_99 LABELS gfortran llvm)
+RUN(NAME read_real_iostat_01 LABELS gfortran llvm)
+RUN(NAME read_double_iostat_01 LABELS gfortran llvm)
+RUN(NAME read_character_component_01 LABELS gfortran llvm
+    EXTRAFILES read_character_component_01_module.f90)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3730,6 +3741,7 @@ RUN(NAME write_41 LABELS gfortran llvm)
 RUN(NAME write_42 LABELS gfortran llvm)
 RUN(NAME write_43 LABELS gfortran llvm)
 RUN(NAME write_44 LABELS gfortran llvm)
+RUN(NAME write_45 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -3911,6 +3923,9 @@ RUN(NAME common_38 LABELS gfortran llvm)
 RUN(NAME common_39 LABELS gfortran llvm)
 RUN(NAME common_40 LABELS gfortran llvm)
 RUN(NAME common_41 LABELS gfortran llvm)
+RUN(NAME common_block_linkage_02 LABELS gfortran llvm
+    EXTRAFILES common_block_linkage_02_data.f90 common_block_linkage_02_reader.f90
+    EXTRA_ARGS --implicit-interface --separate-compilation)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
@@ -4372,6 +4387,7 @@ RUN(NAME allocatable_polymorphic_assign_01 LABELS gfortran llvm)
 RUN(NAME allocatable_polymorphic_assign_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_assign_03 LABELS gfortran llvm)
 RUN(NAME allocatable_dummy_descriptor_01 LABELS gfortran llvm)
+RUN(NAME allocatable_save_array_01 LABELS gfortran llvm)
 
 RUN(NAME polymorphic_class_compare LABELS gfortran)
 
@@ -4506,6 +4522,12 @@ RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)
 RUN(NAME allocatable_component_scalar_use_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
+RUN(NAME derived_component_section_03 LABELS gfortran llvm NO_FAST)
+RUN(NAME derived_component_fixed_array_01 LABELS gfortran llvm NO_FAST)
+RUN(NAME derived_component_elemental_01 LABELS gfortran llvm NO_FAST)
+RUN(NAME derived_component_argument_01 LABELS gfortran llvm NO_FAST)
+RUN(NAME derived_component_read_01 LABELS gfortran llvm)
+RUN(NAME derived_component_inherited_section_01 LABELS gfortran llvm NO_FAST)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
     llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4587,6 +4609,7 @@ RUN(NAME separate_compilation_47 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_48 LABELS gfortran llvm EXTRAFILES separate_compilation_48a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_49 LABELS gfortran llvm EXTRAFILES separate_compilation_49a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_50 LABELS gfortran llvm EXTRAFILES separate_compilation_50a.f90 separate_compilation_50b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_51 LABELS gfortran llvm EXTRAFILES separate_compilation_51a.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

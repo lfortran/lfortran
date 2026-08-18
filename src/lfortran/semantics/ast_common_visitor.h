@@ -10913,6 +10913,13 @@ public:
                 }
             }
         }
+        if (v_expr && ASRUtils::is_array(ASRUtils::expr_type(v_expr)) &&
+                (!is_item || is_arg_array)) {
+            diag.add(Diagnostic(
+                "The expression with derived types contains two or more arrays.",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
 
         if( is_item ) {
             Vec<ASR::dimension_t> empty_dims;
@@ -11009,6 +11016,20 @@ public:
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
                 }
+                bool preserve_dt_array_dims = false;
+                if (v_expr && ASRUtils::is_array(ASRUtils::expr_type(v_expr)) &&
+                        !is_arg_array) {
+                    ASR::dimension_t* base_dims = nullptr;
+                    int base_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(v_expr), base_dims);
+                    Vec<ASR::dimension_t> base_dims_vec;
+                    base_dims_vec.from_pointer_n_copy(al, base_dims, base_n_dims);
+                    final_type = ASRUtils::duplicate_type(al,
+                        ASRUtils::extract_type(final_type),
+                        &base_dims_vec, ASRUtils::extract_physical_type(
+                            ASRUtils::expr_type(v_expr)), true);
+                    preserve_dt_array_dims = true;
+                }
                 if ( current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
                     !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) &&
                     !ASRUtils::is_array(ASRUtils::expr_type(v_Var))) {
@@ -11060,9 +11081,18 @@ public:
                         }
                     }
                 }
-                return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                    v_Var, args.p, args.size(), final_type,
-                    ASR::arraystorageType::ColMajor, arr_ref_val)));
+                ASR::asr_t* array_item_node = nullptr;
+                if (preserve_dt_array_dims) {
+                    array_item_node = ASR::make_ArraySection_t(al, loc, v_Var,
+                        args.p, args.size(), ASRUtils::duplicate_type(al, final_type),
+                        arr_ref_val);
+                } else {
+                    array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc,
+                        v_Var, args.p, args.size(), final_type,
+                        ASR::arraystorageType::ColMajor, arr_ref_val);
+                }
+                return (ASR::asr_t*) replace_with_common_block_variables(
+                    ASRUtils::EXPR(array_item_node));
             }
         } else {
             ASR::ttype_t *v_type = ASRUtils::symbol_type(v);
@@ -11915,6 +11945,13 @@ public:
             if( !is_function ) {
                 return tmp;
             }
+            if (!v) {
+                diag.add(Diagnostic(
+                    "Arguments do not match for any generic procedure, " +
+                        std::string(g->m_name),
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
             return create_FunctionCall(loc, v, args);
         } else {
             return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
@@ -12097,6 +12134,13 @@ public:
                 v = intrinsic_as_node(x, is_function);
                 if( !is_function ) {
                     return tmp;
+                }
+                if (!v) {
+                    diag.add(Diagnostic(
+                        "Arguments do not match for any generic procedure, " +
+                            std::string(p->m_name),
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
                 }
                 return create_FunctionCall(loc, v, args);
             }
@@ -20707,7 +20751,10 @@ public:
                 array_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, array_section->base.base.loc,
                     tmp2->m_type, dims.p, dims.size(),
-                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
+                    ASRUtils::is_character(*tmp2->m_type)
+                        ? ASR::array_physical_typeType::PointerArray
+                        : ASRUtils::extract_physical_type(
+                            array_section->m_type)));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }

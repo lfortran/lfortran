@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <cstring>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
@@ -1176,13 +1177,144 @@ namespace LCompilers {
         set_api = set_api_lp;
     }
 
+    bool LLVMUtils::uses_gfortran_character_abi(const ASR::Function_t &x) {
+        if (std::strncmp(x.m_name, "_lcompilers_", 12) == 0) {
+            return false;
+        }
+        ASR::FunctionType_t* function_type = ASRUtils::get_FunctionType(x);
+        if (function_type->m_abi == ASR::abiType::Intrinsic ||
+                function_type->m_module) {
+            return false;
+        }
+        if (function_type->m_abi == ASR::abiType::BindC) {
+            if (function_type->m_deftype != ASR::deftypeType::Interface ||
+                    function_type->m_bindc_name != nullptr) {
+                return false;
+            }
+            auto variable_name = [](ASR::expr_t* arg) -> const char* {
+                if (!arg || !ASR::is_a<ASR::Var_t>(*arg)) {
+                    return nullptr;
+                }
+                ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol)) {
+                    return nullptr;
+                }
+                return ASR::down_cast<ASR::Variable_t>(symbol)->m_name;
+            };
+            const std::string function_name = x.m_name;
+            const std::string result_name =
+                function_name + "_return_var_name";
+            const char* return_name = variable_name(x.m_return_var);
+            if (return_name && result_name == return_name) {
+                return true;
+            }
+            size_t ordinary_args = x.n_args;
+            bool has_generated_result_arg = false;
+            const char* last_argument_name = ordinary_args > 0
+                ? variable_name(x.m_args[ordinary_args - 1])
+                : nullptr;
+            if (last_argument_name && result_name == last_argument_name) {
+                ordinary_args--;
+                has_generated_result_arg = true;
+            }
+            const std::string argument_prefix = function_name + "_arg_";
+            for (size_t i = 0; i < ordinary_args; i++) {
+                const char* argument_name = variable_name(x.m_args[i]);
+                if (!argument_name || argument_name !=
+                        argument_prefix + std::to_string(i)) {
+                    return false;
+                }
+            }
+            return ordinary_args > 0 || has_generated_result_arg;
+        }
+        ASR::symbol_t* symbol_owner = ASRUtils::get_asr_owner(
+            (ASR::symbol_t*)&x);
+        if (symbol_owner && ASR::is_a<ASR::Module_t>(*symbol_owner) &&
+                function_type->m_deftype == ASR::deftypeType::Implementation) {
+            return false;
+        }
+        if (function_type->m_abi == ASR::abiType::ExternalUndefined) {
+            return true;
+        }
+        if (function_type->m_deftype == ASR::deftypeType::Interface) {
+            return false;
+        }
+        ASR::asr_t* owner = x.m_symtab->parent
+            ? x.m_symtab->parent->asr_owner : nullptr;
+        return owner && ASR::is_a<ASR::unit_t>(*owner) &&
+            ASR::is_a<ASR::TranslationUnit_t>(
+                *ASR::down_cast<ASR::unit_t>(owner));
+    }
+    int64_t LLVMUtils::gfortran_character_result_arg(
+            const ASR::Function_t &x) {
+        if (!uses_gfortran_character_abi(x)) {
+            return -1;
+        }
+        if (x.m_return_var) {
+            ASR::ttype_t* return_type =
+                ASRUtils::expr_type(x.m_return_var);
+            if (ASRUtils::is_character(*return_type) &&
+                    !ASRUtils::is_allocatable(return_type) &&
+                    !ASRUtils::is_pointer(return_type)) {
+                return -2;
+            }
+        }
+        if (x.n_args == 0 || !ASR::is_a<ASR::Var_t>(
+                *x.m_args[x.n_args - 1])) {
+            return -1;
+        }
+        ASR::symbol_t* candidate_symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_args[x.n_args - 1])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*candidate_symbol)) {
+            return -1;
+        }
+        ASR::Variable_t* candidate =
+            ASR::down_cast<ASR::Variable_t>(candidate_symbol);
+        if (candidate->m_intent != ASR::intentType::Out ||
+                !ASRUtils::is_character(*candidate->m_type) ||
+                ASRUtils::is_allocatable(candidate->m_type) ||
+                ASRUtils::is_pointer(candidate->m_type)) {
+            return -1;
+        }
+        std::string candidate_name = candidate->m_name;
+        std::string function_name = x.m_name;
+        const std::string generated_suffix = "_return_var_name";
+        bool generated_interface_result =
+            candidate_name.size() >= generated_suffix.size() &&
+            candidate_name.compare(
+                candidate_name.size() - generated_suffix.size(),
+                generated_suffix.size(), generated_suffix) == 0;
+        if (candidate_name == function_name ||
+                generated_interface_result) {
+            return x.n_args - 1;
+        }
+        return -1;
+    }
+
+
     std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
         std::vector<llvm::Type*> args;
+        size_t hidden_character_lengths = 0;
+        int64_t character_result_arg =
+            gfortran_character_result_arg(x);
         for (size_t i=0; i<x.n_args; i++) {
+            if ((int64_t)i == character_result_arg) {
+                continue;
+            }
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
+                if (uses_gfortran_character_abi(x) &&
+                        ASRUtils::is_character(*arg->m_type) &&
+                        !ASRUtils::is_array(arg->m_type) &&
+                        !ASRUtils::is_allocatable(arg->m_type) &&
+                        !ASRUtils::is_pointer(arg->m_type)) {
+                    args.push_back(llvm::Type::getInt8Ty(context)->getPointerTo());
+                    hidden_character_lengths++;
+                    continue;
+                }
                 // We pass all arguments as pointers for now,
                 // except bind(C) value arguments that are passed by value
                 llvm::Type *type = nullptr, *type_original = nullptr;
@@ -1264,6 +1396,8 @@ namespace LCompilers {
                 throw CodeGenError("Argument type not implemented");
             }
         }
+        args.insert(args.end(), hidden_character_lengths,
+            getIntPtrType(module));
         return args;
     }
 
@@ -1441,6 +1575,12 @@ namespace LCompilers {
             return_type = llvm::Type::getVoidTy(context);
         }
         std::vector<llvm::Type*> args = convert_args(x, module);
+        if (gfortran_character_result_arg(x) != -1) {
+            args.insert(args.begin(), getIntPtrType(module));
+            args.insert(args.begin(),
+                llvm::Type::getInt8Ty(context)->getPointerTo());
+            return_type = llvm::Type::getVoidTy(context);
+        }
         llvm::FunctionType *function_type = llvm::FunctionType::get(
                 return_type, args, false);
         return function_type;
@@ -1970,6 +2110,11 @@ namespace LCompilers {
 #endif
     }
 
+    llvm::Value* LLVMUtils::load_pointer_element(llvm::Value* tmp, llvm::Type* array_type) {
+        llvm::Type* loaded_type = llvm::cast<llvm::StructType>(array_type)->getElementType(0);
+        return CreateLoad2(loaded_type, tmp);
+    }
+
     llvm::Value* LLVMUtils::CreateBitCastForStore(llvm::Value* value, [[maybe_unused]] llvm::Value* target_ptr) {
 #if LLVM_VERSION_MAJOR < 15
         if (value->getType()->isPointerTy() && target_ptr->getType()->isPointerTy()) {
@@ -2129,6 +2274,10 @@ namespace LCompilers {
             }
         }
         return type_ptr;
+    }
+
+    llvm::IntegerType* LLVMUtils::getIntPtrType(llvm::Module* module) {
+        return module->getDataLayout().getIntPtrType(context);
     }
 
     void LLVMUtils::start_new_block(llvm::BasicBlock *bb) {
@@ -2721,6 +2870,7 @@ namespace LCompilers {
             std::tie(rhs_data, rhs_len) = get_string_length_data(
                 src_str_type, src);
         }
+
 
         // For struct members (like common blocks) with fixed-length CHARACTER,
         // the descriptor may be initialized with zeroinitializer (length=0).
