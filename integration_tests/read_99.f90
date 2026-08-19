@@ -1,29 +1,34 @@
-! Issue 12521: formatted '(a)' read of an empty record into a
-! zero-length character variable must not raise EOF (glibc fgets(buf, 1)).
+! Issue 12521: formatted '(a)' read into a zero-length character variable
+! must not raise EOF.  The internal-file case hits the same read_width==0
+! path without depending on libc fgets(buf, 1) behaviour.
 program read_99
     implicit none
     integer :: u
     character(len=:), allocatable :: line
-    character(len=3) :: next
+    character(len=1) :: src
 
-    open(newunit=u, status="scratch", form="formatted")
-    write(u, '(a)') "foo"
-    write(u, '(a)') ""
-    write(u, '(a)') "bar"
-    rewind(u)
+    src = "x"
+    allocate(character(len=0) :: line)
+    read(src, '(a)') line
+    if (len(line) /= 0) error stop 1
+    deallocate(line)
 
-    allocate(character(len=3) :: line)
+    open(newunit=u, file="read_99_data.txt", form="formatted", status="old")
+
+    allocate(character(len=len("foo")) :: line)
     read(u, '(a)') line
-    if (line /= "foo") error stop 1
+    if (line /= "foo") error stop 2
     deallocate(line)
 
     allocate(character(len=0) :: line)
     read(u, '(a)') line
-    if (len(line) /= 0) error stop 2
+    if (len(line) /= 0) error stop 3
     deallocate(line)
 
-    read(u, '(a)') next
-    if (next /= "bar") error stop 3
+    allocate(character(len=len("bar")) :: line)
+    read(u, '(a)') line
+    if (line /= "bar") error stop 4
+    deallocate(line)
 
     close(u)
 end program read_99
