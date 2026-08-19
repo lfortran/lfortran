@@ -292,6 +292,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asr", opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--from-asr", opts.from_asr,
             "Parse the input file as ASR text")->group(group_output_debugging_options);
+        app.add_flag("--verify-asr", opts.verify_asr,
+            "Parse and verify standalone ASR text without running passes")->group(group_output_debugging_options);
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
@@ -321,6 +323,8 @@ namespace LCompilers::CommandLineInterface {
         // Pass and transformation-related flags
         app.add_option("--pass", opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
         app.add_option("--skip-pass", opts.skip_pass, "Skip an ASR pass in default pipeline")->group(group_pass_transformation_options);
+        app.add_flag("--verify-all-passes", compiler_options.po.verify_all_passes,
+            "Verify ASR after every pass")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);

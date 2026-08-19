@@ -1,0 +1,13 @@
+{
+    "basename": "asr-call_statement_names_a_function-0110532",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/call_statement_names_a_function.asr",
+    "infile_hash": "0dcbfb6608d24fab49bceeb271d84679718b2756df36f6a4ab7ee004",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-call_statement_names_a_function-0110532.stderr",
+    "stderr_hash": "a0fbd322e8f74413744f9b5c9f9d0931569132b2e73c27c2ef01ed15",
+    "returncode": 2
+}

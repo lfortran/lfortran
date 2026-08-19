@@ -1,0 +1,13 @@
+{
+    "basename": "asr-call_pointer_mismatch-fbb8baf",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/call_pointer_mismatch.asr",
+    "infile_hash": "4baf5557b95ccd7c9d013f019f18509c02b99712bb540e273c76c956",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-call_pointer_mismatch-fbb8baf.stderr",
+    "stderr_hash": "c431e9e8f3922798f88bf82e912ac2ca3ad2f546ac49857576bf773a",
+    "returncode": 2
+}

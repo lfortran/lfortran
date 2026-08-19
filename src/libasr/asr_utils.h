@@ -3763,6 +3763,94 @@ ASR::asr_t* make_ArraySize_t_util(
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
     bool for_type=true);
 
+static inline ASR::symbol_t* import_struct_type(Allocator& al,
+    ASR::symbol_t* struct_sym, SymbolTable* scope);
+
+// Whether `sym` can be named from `scope` without importing it first.
+static inline bool is_visible_from(ASR::symbol_t* sym, SymbolTable* scope) {
+    if (sym == nullptr) return true;
+    SymbolTable* owner = symbol_parent_symtab(sym);
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (s == owner) return true;
+    }
+    return false;
+}
+
+// A variable's type declaration has to be visible from the variable's own
+// scope, the same way its name is. A producer that carries a type over from
+// somewhere else -- the frontend declaring an entity of a type it imported,
+// or a pass building a temporary from an existing expression -- would
+// otherwise leave the variable naming a type nothing in its scope can reach.
+// Import it here, once, rather than at every one of those producers.
+static inline ASR::symbol_t* import_type_declaration(Allocator &al,
+        ASR::symbol_t* type_declaration, SymbolTable* scope) {
+    if (type_declaration == nullptr || scope == nullptr) {
+        return type_declaration;
+    }
+    ASR::symbol_t* definition = symbol_get_past_external(type_declaration);
+    if (definition == nullptr) return type_declaration;
+    // An unlimited polymorphic type is synthesised per scope rather than
+    // declared anywhere, so there is no module to import it from; every
+    // scope that needs one already has its own.
+    if (ASR::is_a<ASR::Struct_t>(*definition)) {
+        ASR::ttype_t* signature =
+            ASR::down_cast<ASR::Struct_t>(definition)->m_struct_signature;
+        if (signature != nullptr && ASR::is_a<ASR::StructType_t>(*signature) &&
+                ASR::down_cast<ASR::StructType_t>(
+                    signature)->m_is_unlimited_polymorphic) {
+            return import_struct_type(al, definition, scope);
+        }
+    }
+    // A type declaration names either a type or, for `procedure(iface) ::`,
+    // the procedure whose interface it takes. Both are imported the same way.
+    if (!ASR::is_a<ASR::Struct_t>(*definition) &&
+            !ASR::is_a<ASR::Enum_t>(*definition) &&
+            !ASR::is_a<ASR::Union_t>(*definition) &&
+            !ASR::is_a<ASR::Function_t>(*definition)) {
+        return type_declaration;
+    }
+
+    // Already visible as given: prefer the symbol the caller passed, which
+    // may be an import that keeps a module boundary intact.
+    SymbolTable* given_owner = symbol_parent_symtab(type_declaration);
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (s == given_owner) return type_declaration;
+    }
+    // Otherwise the definition itself may be visible, which happens when the
+    // caller handed over an import made for some other scope.
+    SymbolTable* owner = symbol_parent_symtab(definition);
+    if (owner == nullptr) return type_declaration;
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (s == owner) return definition;
+    }
+    std::string name = symbol_name(definition);
+    // Reuse a name already standing for this type in the scope chain.
+    ASR::symbol_t* existing = scope->resolve_symbol(name);
+    if (existing != nullptr &&
+            symbol_get_past_external(existing) == definition) {
+        return existing;
+    }
+    // An ExternalSymbol names its target through the module or derived type
+    // that owns it. A symbol owned by a program or a procedure cannot be
+    // named that way, so it cannot be imported at all.
+    ASR::symbol_t* module_sym = get_asr_owner(definition);
+    if (module_sym == nullptr) return type_declaration;
+    if (!ASR::is_a<ASR::Module_t>(*module_sym) &&
+            !ASR::is_a<ASR::Struct_t>(*module_sym)) {
+        return type_declaration;
+    }
+    std::string local_name = name;
+    if (scope->get_symbol(local_name) != nullptr) {
+        local_name = scope->get_unique_name(name);
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+        ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
+            s2c(al, local_name), definition, symbol_name(module_sym),
+            nullptr, 0, s2c(al, name), ASR::accessType::Public));
+    scope->add_symbol(local_name, imported);
+    return imported;
+}
+
 inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
@@ -3772,6 +3860,8 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
     ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0
 ) {
+    a_type_declaration = import_type_declaration(
+        al, a_type_declaration, a_parent_symtab);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
@@ -7201,14 +7291,20 @@ static inline void visit_expr_list(Allocator &al, Vec<ASR::expr_t *> exprs,
 
 class VerifyAbort {};
 
-static inline void require_impl(bool cond, const std::string &error_msg,
-    const Location &loc, diag::Diagnostics &diagnostics) {
+static inline void require_impl(bool cond, const std::string &error_code,
+    const std::string &error_msg, const Location &loc,
+    diag::Diagnostics &diagnostics) {
     if (!cond) {
         diagnostics.message_label(error_msg,
             {loc}, "failed here",
-            diag::Level::Error, diag::Stage::ASRVerify);
+            diag::Level::Error, diag::Stage::ASRVerify, error_code);
         throw VerifyAbort();
     }
+}
+
+static inline void require_impl(bool cond, const std::string &error_msg,
+    const Location &loc, diag::Diagnostics &diagnostics) {
+    require_impl(cond, "", error_msg, loc, diagnostics);
 }
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims) {

@@ -5608,8 +5608,12 @@ public:
         llvm::Constant* alias_target = nullptr;
         if (x.m_symbolic_value != nullptr &&
             !ASRUtils::is_string_only(x.m_type)){
-            if (ASR::is_a<ASR::GetPointer_t>(*x.m_symbolic_value)) {
-                ASR::GetPointer_t* get_ptr = ASR::down_cast<ASR::GetPointer_t>(x.m_symbolic_value);
+            ASR::expr_t* alias_init = x.m_symbolic_value;
+            if (ASR::is_a<ASR::BitCast_t>(*alias_init)) {
+                alias_init = ASR::down_cast<ASR::BitCast_t>(alias_init)->m_source;
+            }
+            if (ASR::is_a<ASR::GetPointer_t>(*alias_init)) {
+                ASR::GetPointer_t* get_ptr = ASR::down_cast<ASR::GetPointer_t>(alias_init);
                 if (ASR::is_a<ASR::Var_t>(*get_ptr->m_arg) || ASR::is_a<ASR::ArrayItem_t>(*get_ptr->m_arg)) {
                     ASR::Variable_t* target_var = nullptr;
                     if (ASR::is_a<ASR::Var_t>(*get_ptr->m_arg)) {

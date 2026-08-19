@@ -1,0 +1,13 @@
+{
+    "basename": "asr-struct_method_proc_is_variable-f14ea24",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/struct_method_proc_is_variable.asr",
+    "infile_hash": "a9da6f1eedf7ed5d97eb83ced51fe763b62e4c7c1df07e2599d8302e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-struct_method_proc_is_variable-f14ea24.stderr",
+    "stderr_hash": "c1d4c58a46308396766c2340db582d970ad10e06e75d9a90cb94c6b5",
+    "returncode": 2
+}

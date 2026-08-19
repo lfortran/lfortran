@@ -66,8 +66,16 @@ object files and libraries provide dependencies rather than the entry point.
 
 The parser accepts named and positional constructors. The two forms can appear
 in one file, but a single constructor cannot mix positional members with
-keyword/member pairs. Hand-written `.asr` fixtures may use named form for
-readability. `asr_clojure` reference output is positional.
+keyword/member pairs. Committed `.asr` fixtures use the positional form,
+the same form as `asr_clojure` reference output: a corpus is expected to
+grow large, and a fixture written positionally is a fraction of the size.
+A valid fixture can therefore be regenerated with
+`--show-asr --clojure --no-member-names`.
+
+`--verify-asr` parses a standalone ASR file and runs only its initial verifier.
+It does not execute ASR passes or code generation, so corpus runners can
+distinguish an accepted initial verifier rejection from any later compiler
+failure.
 
 ## Grammar
 
@@ -202,3 +210,142 @@ requirements. Consequently:
 - structurally decoded but invalid ASR produces an ASR verifier diagnostic;
 - verifier-valid standalone ASR proceeds through the normal pass and LLVM
   pipeline.
+
+## Regression corpus
+
+A minimized ASR graph is checked in under `tests/asr/` and registered in
+`tests/tests.toml` like any other reference test, so the ordinary reference
+suite runs it:
+
+- `tests/asr/compile/` holds graphs the verifier accepts, registered with
+  `llvm = true` so they must lower to LLVM IR. A registered CTest also
+  links every one of them into an executable, which is the property the
+  fuzzer's contract turns on. They are not run: a generated program may
+  fault at runtime for reasons no ASR verifier could predict;
+- `tests/asr/verify/` holds graphs the verifier rejects, registered with
+  `asr = true` so the stored reference captures the exact diagnostic, its
+  stable code, and the span it points at.
+
+Because the diagnostic code is part of the rendered message, a fixture pins
+the specific verifier rule it exercises rather than the wording alone.
+
+Fixtures are stored in the printer's indented form, so a diagnostic points at
+a single short line rather than at one long one, and the caret identifies the
+offending constructor. Regenerate a valid fixture with
+`--show-asr --clojure --no-member-names`.
+
+`--verify-all-passes` runs the verifier after every ASR pass regardless of
+the build type, so a pass that corrupts a previously valid graph is reported
+against that pass instead of surfacing later as an unrelated failure.
+
+The reusable APIs in `src/lfortran/pipeline.h` own Fortran-or-ASR loading and
+the phase-aware ASR-to-default-passes-to-LLVM-to-object path, so the CLI and
+the direct-ASR tools share one implementation.
+
+## Deterministic mutation fuzzing
+
+`tests/asr/fuzz.py` dynamically prints the verified pre-pass ASR produced from
+registered integration-test seeds, applies one field-aware mutation, and runs
+the two-outcome oracle in isolated compiler subprocesses.
+It also has deterministic schema-generated modes that construct small
+verifier-valid integer programs or intentionally invalid ASR directly, without
+using the Fortran frontend.
+
+The invalid generators cover three families, chosen because they are the two
+things a frontend most often gets wrong and the one thing that makes separate
+compilation worth having:
+
+- **references that do not resolve**: a name read from a scope that does not
+  contain it, a call to something that is not a procedure, a type-bound
+  procedure that names a variable, an import from a module that is not there.
+  This is the ASR a frontend produces when a symbol was never imported;
+- **calls that disagree with the procedure they call**: actual arguments whose
+  type, kind, rank or count the callee never declared, including through a
+  type-bound call, and a call statement naming a function;
+- **type-bound procedure overrides that do not conform**: an extending type
+  whose binding takes different arguments, or returns differently, from the
+  binding it overrides.
+
+```console
+python tests/asr/fuzz.py \
+  --lfortran src/bin/lfortran \
+  --seed 1234 \
+  --cases 1000 \
+  --generator all
+```
+
+Each case first runs initial verification. A verifier rejection is accepted;
+verifier-valid ASR must then emit both an object and an executable with
+post-pass verification enabled. Timeouts, signals, parser failures, pass
+verification failures, LLVM failures, object failures, and link failures are
+persisted under `asr-fuzz-artifacts/` as the exact ASR input plus JSON metadata.
+The metadata records the source integration test, random seed, case index,
+mutation, input hashes, failing phase, commands, and output.
+Each campaign also writes `coverage.json` containing the ASR constructors,
+enum values, verifier rules, passes, mutation classes, seed sources, outcomes,
+and failure phases observed during the run.
+
+Persisted failures can be replayed without regenerating or mutating the seed:
+
+```console
+python tests/asr/fuzz.py \
+  --lfortran src/bin/lfortran \
+  --replay asr-fuzz-artifacts/failure-000000-....json
+```
+
+The structural reducer greedily removes vector elements and symbol-table
+entries, replaces optional fields with `nil`, and shrinks numeric values while
+requiring the same initial-verification status and normalized failure phase:
+
+```console
+python tests/asr/reduce.py \
+  --lfortran src/bin/lfortran \
+  --metadata asr-fuzz-artifacts/failure-000000-....json
+```
+
+A verifier rejection is an accepted outcome for the fuzzer, but it is worth
+reducing too, since that is what a `tests/asr/verify/` fixture pins. Pass
+`--input` a `.asr` document instead of a fuzzer artifact and the reducer keeps
+the rejection's diagnostic code fixed rather than a failure phase:
+
+```console
+python tests/asr/reduce.py \
+  --lfortran src/bin/lfortran \
+  --input rejected.asr
+```
+
+It writes a canonical `.min.asr` file and reduction journal without modifying
+the original failure artifact. The reduced file is written in the indented
+positional form the committed fixtures use, so it can be added to
+`tests/asr/verify/` directly.
+
+### Running a campaign locally
+
+The registered CTest cases are smoke tests: a handful of cases, so the harness
+cannot rot as the passes change. A real campaign is run by hand, and is worth
+running against a sanitizer build, where a mutation that corrupts memory is
+reported at the point of corruption rather than as a later crash:
+
+```console
+cmake -S . -B build-asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON \
+    -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
+cmake --build build-asan -j
+python tests/asr/fuzz.py \
+  --lfortran build-asan/src/bin/lfortran \
+  --seed 0 \
+  --cases 1000 \
+  --generator all \
+  --strategy mixed
+```
+
+Campaigns are deliberately not scheduled in CI: a finding needs a person to
+triage it, and a scheduled job with no owner turns red and stops meaning
+anything. Run one when the ASR, the passes or the verifier change in a way
+worth stress testing.
+
+`tests/asr/check_llvm_coverage.py` compares every constructor generated from
+`ASR.asdl` with the LLVM visitor and
+`tests/asr/llvm_constructor_coverage.toml`. A constructor must either have a
+direct LLVM visitor or an explicit classification naming its lowering pass,
+helper path, metadata role, or non-executable status. New unclassified
+constructors fail the registered CTest.

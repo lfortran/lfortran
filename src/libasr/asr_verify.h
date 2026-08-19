@@ -6,6 +6,8 @@
 namespace LCompilers {
 
     struct ASRVerifyOptions {
+        // Whether ExternalSymbol targets may be followed. Off while a
+        // modfile is being deserialized, where they are not yet resolved.
         bool check_external = true;
         bool require_main_program = false;
     };

@@ -528,7 +528,14 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);
             ASR::symbol_t *target = m->m_symtab->find_scoped_symbol(
                 es->m_original_name, es->n_scope_names, es->m_scope_names);
-            if (target != nullptr) es->m_external = target;
+            // An ExternalSymbol has to name a definition. The module's own
+            // entry for the name may be an import of its own -- an intrinsic
+            // module re-exporting a derived type -- and naming that would
+            // build a chain no consumer of the symbol can follow.
+            if (target != nullptr &&
+                    !ASR::is_a<ASR::ExternalSymbol_t>(*target)) {
+                es->m_external = target;
+            }
         } else if (ASR::is_a<ASR::GenericProcedure_t>(*s)) {
             ASR::GenericProcedure_t *gp
                 = ASR::down_cast<ASR::GenericProcedure_t>(s);

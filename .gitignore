@@ -17,8 +17,6 @@ src/lfortran/tests/test_serialization*
 src/lfortran/tests/test_cwrapper
 src/lfortran/tests/test_serialization
 src/lfortran/tests/test_lfortran
-src/lfortran/tests/asr_text_compile_01
-src/lfortran/tests/asr_text_compile_01.o
 src/lfortran/tests/write32
 src/lfortran/tests/write32.asm
 src/lfortran/tests/subroutines32
@@ -270,5 +268,16 @@ doc/man/lfortran.1
 /re_*.f90
 /test_ref
 /test_lfortran
+/asr-fuzz-artifacts/
+# Runtime OPEN(status="scratch") files; they land in cwd.
+_lfortran_generated_file*
 /test_gfortran
 /test_flang
+# x86 backend unit tests write their executables into the working directory.
+/cmp32
+/print32
+/print_integer
+/subroutines32
+/subroutines_args32
+/write32
+/write32.asm

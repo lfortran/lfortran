@@ -6241,6 +6241,34 @@ public:
                             ASR::make_Pointer_t(al, loc, at));
                     };
 
+                    // EQUIVALENCE associates storage. When the alias has a
+                    // different type family than the source, wrap the
+                    // GetPointer in BitCast so the initializer type agrees
+                    // with the declaration. A numeric Cast would convert the
+                    // bits; this reinterprets them.
+                    auto alias_initializer = [&](ASR::expr_t* init,
+                            ASR::expr_t* target_ref,
+                            ASR::Variable_t* target_var) -> ASR::expr_t* {
+                        if (init == nullptr || target_var == nullptr
+                                || target_var->m_type == nullptr) {
+                            return init;
+                        }
+                        ASR::ttype_t* init_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(init)));
+                        ASR::ttype_t* decl_t = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                target_var->m_type));
+                        if (init_t == nullptr || decl_t == nullptr
+                                || ASRUtils::check_equal_type(
+                                    init_t, decl_t, nullptr, nullptr)) {
+                            return init;
+                        }
+                        return ASRUtils::EXPR(ASR::make_BitCast_t(
+                            al, init->base.loc, init, target_ref, nullptr,
+                            ASRUtils::duplicate_type(al, decl_t), nullptr));
+                    };
+
                     auto emit_cptr_to_pointer = [&](const Location& loc,
                             ASR::asr_t* cptr_expr, ASR::expr_t* target_ref,
                             ASR::asr_t* shape_const) {
@@ -6258,7 +6286,8 @@ public:
                                 target_var = ASRUtils::EXPR2VAR(ASR::down_cast<ASR::ArrayItem_t>(target_ref)->m_v);
                             }
                             if (get_ptr_expr && target_var) {
-                                target_var->m_symbolic_value = get_ptr_expr;
+                                target_var->m_symbolic_value = alias_initializer(
+                                    get_ptr_expr, target_ref, target_var);
                                 return;
                             }
                         }
@@ -6504,7 +6533,8 @@ public:
 
                                         bool is_module = in_module && !in_Subroutine;
                                         if (is_module) {
-                                            var__->m_symbolic_value = ASRUtils::EXPR(get_pointer);
+                                            var__->m_symbolic_value = alias_initializer(
+                                                ASRUtils::EXPR(get_pointer), asr_eq2, var__);
                                         } else {
                                             emit_cptr_to_pointer(asr_eq1->base.loc, pointer_to_cptr, asr_eq2, nullptr);
                                         }
@@ -7894,13 +7924,15 @@ public:
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+                        // The result belongs to the interface's own scope, not
+                        // to the scope that declares `external :: x`.
                         ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
-                            current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                            f->m_symtab, s2c(al, return_var_name), variable_dependencies_vec.p,
                             variable_dependencies_vec.size(), ASRUtils::intent_return_var,
                             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                             ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                             false);
-                        current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+                        f->m_symtab->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
                         f->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
                             ASR::down_cast<ASR::symbol_t>(return_var)));
                         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
@@ -9462,6 +9494,11 @@ public:
 
         Vec<char*> pdt_final_proc_names;
         pdt_final_proc_names.reserve(al, 0);
+        // The specialization is registered in the scope that declares the
+        // PDT, so its parent has to be reachable from there; the recursive
+        // instantiation above returns whatever the instantiation site saw.
+        new_parent = ASRUtils::import_type_declaration(al, new_parent,
+            pdt_scope);
         tmp = ASR::make_Struct_t(al, loc, new_scope,
             s2c(al, monomorphized_name), nullptr,
             struct_dependencies.p, struct_dependencies.size(),
@@ -20094,8 +20131,18 @@ public:
         arg_types_vec.reserve(al, n_arg_types);
         for (size_t i = 0; i < n_arg_types; i++) {
             std::string arg_name = iface_name + "_arg_" + std::to_string(i);
-            // Use the type_declaration passed by the caller (nullptr when not available)
-            ASR::symbol_t* arg_type_decl = arg_type_decls[i];
+            // Use the type_declaration passed by the caller (nullptr when not
+            // available); it was resolved in the passed procedure's scope, so
+            // make it reachable from the interface's own scope.
+            ASR::symbol_t* arg_type_decl = ASRUtils::import_type_declaration(
+                al, arg_type_decls[i], fn_scope);
+            // A synthesised interface can sit in a module while the procedure
+            // it was inferred from is local to a program. Such a symbol cannot
+            // be named from here; the FunctionType still carries the argument
+            // type, so drop the link rather than dangle it.
+            if (!ASRUtils::is_visible_from(arg_type_decl, fn_scope)) {
+                arg_type_decl = nullptr;
+            }
             ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Variable_t(al, loc, fn_scope, s2c(al, arg_name),
                     nullptr, 0, ASR::intentType::Unspecified, nullptr, nullptr,
@@ -20185,6 +20232,25 @@ public:
                         }
                     }
                 }
+            }
+        }
+        // A procedure with ENTRY points becomes several sibling functions that
+        // each hold a copy of the same dummy. An interface built in one of
+        // them cannot be named from the others, so give this variable's own
+        // scope a copy to declare itself with.
+        if (proc_var->m_type_declaration && !ASRUtils::is_visible_from(
+                proc_var->m_type_declaration, proc_var->m_parent_symtab)) {
+            std::string iface_sym_name =
+                ASRUtils::symbol_name(proc_var->m_type_declaration);
+            if (!proc_var->m_parent_symtab->get_symbol(iface_sym_name)) {
+                ASRUtils::SymbolDuplicator sd(al);
+                sd.duplicate_symbol(proc_var->m_type_declaration,
+                    proc_var->m_parent_symtab);
+            }
+            ASR::symbol_t* local_iface =
+                proc_var->m_parent_symtab->get_symbol(iface_sym_name);
+            if (local_iface) {
+                proc_var->m_type_declaration = local_iface;
             }
         }
         return iface_type;

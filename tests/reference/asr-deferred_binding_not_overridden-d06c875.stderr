@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct.deferred_binding_overridden]: 'derived' is not abstract but does not override the deferred type bound procedure 'meth'
+   --> tests/asr/verify/deferred_binding_not_overridden.asr:108:24
+    |
+108 |             "derived" (Struct
+    |                        ^^^^^^ failed here

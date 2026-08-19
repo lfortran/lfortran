@@ -1,0 +1,13 @@
+{
+    "basename": "asr-associate_block_call_target_is_function-3a52834",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/associate_block_call_target_is_function.asr",
+    "infile_hash": "5b85b1ce917e9cbaf68e69be100752db4ed462ec17fc61b8b6569f54",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-associate_block_call_target_is_function-3a52834.stderr",
+    "stderr_hash": "1f9df8a2a3a65c1e7e1a102e71b625fdc93f09190c32d07b50120734",
+    "returncode": 2
+}

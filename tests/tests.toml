@@ -5,9 +5,18 @@
 # bin ... run the CodeGen and output bin, compare against reference bin
 
 [[test]]
-filename = "asr/asr_text_compile_01.asr"
+filename = "asr/compile/asr_text_compile_01.asr"
 asr_clojure = true
 llvm = true
+
+[[test]]
+filename = "asr/compile/procedure_declaration_interface.asr"
+asr_clojure = true
+llvm = true
+
+[[test]]
+filename = "asr/verify/assignment_realloc_nonallocatable.asr"
+asr = true
 
 [[test]]
 filename = "subroutine1.f90"
@@ -5338,3 +5347,199 @@ filename = "coshape_01.f90"
 fortran = true
 pass = "coarray"
 options = "--coarray=true"
+
+[[test]]
+filename = "asr/verify/call_actual_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_rank_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_scalar_to_assumed_shape.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_allocatable_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_pointer_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_value_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_signature_argument_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/unsupported_real_kind.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binary_op_operand_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_initializer_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_initializer_family_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_constructor_argument_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_constructor_cyclic_parent.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_dimension_out_of_range.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_method_proc_is_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/external_symbol_owner_is_program.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/block_call_target_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_block_call_target_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_parent_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/generic_procedure_specific_is_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_type_declaration_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_type_declaration_out_of_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/namelist_member_is_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_dummy_not_declared_locally.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_result_not_declared_locally.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/user_defined_type_member_missing.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_intent.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_allocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_argument_rank.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_result_kind.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/binding_override_nopass.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/method_call_actual_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_statement_names_a_function.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/function_call_result_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_argument_interface_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/struct_member_of_unrelated_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/module_procedure_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/deferred_binding_not_overridden.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/abstract_type_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/final_procedure_signature.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_pointer_association.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/select_type_unrelated_guard.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/allocate_unrelated_dynamic_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/sequence_type_extended.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_constructor_element_type.asr"
+asr = true

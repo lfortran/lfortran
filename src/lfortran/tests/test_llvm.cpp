@@ -492,6 +492,43 @@ TEST_CASE("FortranEvaluator character result") {
     CHECK(r.result.str == "hello");
 }
 
+TEST_CASE("FortranEvaluator character function across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module display_result\n"
+        "contains\n"
+        "function wrap(data) result(result)\n"
+        "character(len=*), intent(in) :: data\n"
+        "character(len=:), allocatable :: result\n"
+        "result = \"[\" // data // \"]\"\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"hello\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "[hello]");
+
+    // A later cell must still see the clean function signature, not the
+    // subroutine produced by the character-return lowering pass.
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"second cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[second cell]");
+
+    // The imported name remains available without another USE statement.
+    r = e.evaluate2("wrap(\"third cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[third cell]");
+}
+
 TEST_CASE("FortranEvaluator 3") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -2233,6 +2270,39 @@ c = addv(a, b)
 if (c%x /= 3.0) error stop
 end program
 )").ok);
+}
+
+TEST_CASE("FortranEvaluator a type re-exported by a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // A module the frontend maps an intrinsic name onto holds its own entry
+    // for `c_ptr` as an import rather than as the derived type. A later cell
+    // relinks its copy of the module against that entry, which would name an
+    // ExternalSymbol from an ExternalSymbol -- a chain nothing that reads the
+    // symbol can follow.
+    const char *cell = R"(module mcptr
+use iso_c_binding, only: c_ptr
+implicit none
+contains
+subroutine takes_ptr(p)
+type(c_ptr), intent(in) :: p
+end subroutine
+end module
+program p
+use mcptr
+use iso_c_binding, only: c_ptr, c_null_ptr
+implicit none
+type(c_ptr) :: q
+q = c_null_ptr
+call takes_ptr(q)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
 }
 
 TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
