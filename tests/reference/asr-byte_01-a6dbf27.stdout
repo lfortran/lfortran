@@ -1,0 +1,41 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            byte_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            value:
+                                (Variable
+                                    2
+                                    value
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 1)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    byte_01
+                    []
+                    []
+                )
+        })
+    []
+)

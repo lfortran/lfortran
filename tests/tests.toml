@@ -562,6 +562,10 @@ filename = "warnings/character_03.f90"
 asr = true
 
 [[test]]
+filename = "warnings/byte_01.f90"
+asr = true
+
+[[test]]
 filename = "warnings/preprocess_01.f90"
 asr = true
 
