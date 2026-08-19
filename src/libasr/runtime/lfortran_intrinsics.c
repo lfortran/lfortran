@@ -10517,6 +10517,33 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
         return NULL;
     }
 
+    // A zero-width formatted field calls this with size==1.  fgets(buf, 1)
+    // stores only a NUL and reads no characters.  glibc treats that
+    // zero-character result as EOF and returns NULL; other libcs return buf.
+    // Peek instead so an empty record is not reported as end-of-file.
+    if (size == 1) {
+        buf[0] = '\0';
+        switch (inputSource->inputMethod) {
+        case INPUT_FILE: {
+            if (!inputSource->file) {
+                return NULL;
+            }
+            int c = fgetc(inputSource->file);
+            if (c == EOF) {
+                return NULL;
+            }
+            ungetc(c, inputSource->file);
+            return buf;
+        }
+        case INPUT_STRING:
+            if (inputSource->str.pos >= inputSource->str.len) {
+                return NULL;
+            }
+            return buf;
+        }
+        return NULL;
+    }
+
     int i = 0;
 
     switch (inputSource->inputMethod) {
