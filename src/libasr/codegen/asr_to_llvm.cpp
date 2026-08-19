@@ -335,6 +335,14 @@ public:
 
     std::map<std::string, std::pair<llvm::Type*, llvm::Type*>> fname2arg_type;
 
+    // ASR Function symbols used as a procedure interface (procedure pointers,
+    // dummy procedures, procedure components and deferred type-bound
+    // procedures) anywhere in the translation unit. Populated once in
+    // visit_TranslationUnit and consulted (via LLVMUtils::proc_iface_syms and
+    // ASRUtils::is_external_implicit_interface_proc) to keep module-owned
+    // abstract interfaces on the descriptor character ABI.
+    std::set<ASR::symbol_t*> proc_iface_syms;
+
     // Maps for containing information regarding derived types
     std::map<std::string, llvm::StructType*> name2dertype, name2dercontext;
     std::map<std::string, std::string> dertype2parent;
@@ -1809,6 +1817,62 @@ public:
         }
     }
 
+    // Collect every ASR Function symbol that is used as a procedure interface
+    // (procedure pointer, dummy procedure, procedure component or deferred
+    // type-bound procedure) reachable from `symtab`. These are exactly the
+    // functions whose FunctionType is used to build an indirect-call signature,
+    // so a module-owned interface body that appears here is an abstract
+    // interface and must keep the descriptor character ABI.
+    void collect_proc_iface_syms(SymbolTable* symtab) {
+        if (symtab == nullptr) return;
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t* sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_type_declaration) {
+                    ASR::symbol_t* d = ASRUtils::symbol_get_past_external(
+                        v->m_type_declaration);
+                    if (d && ASR::is_a<ASR::Function_t>(*d)) {
+                        proc_iface_syms.insert(d);
+                    }
+                }
+            } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+                ASR::StructMethodDeclaration_t* m =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                if (m->m_proc) {
+                    ASR::symbol_t* d = ASRUtils::symbol_get_past_external(
+                        m->m_proc);
+                    if (d && ASR::is_a<ASR::Function_t>(*d)) {
+                        proc_iface_syms.insert(d);
+                    }
+                }
+            }
+            // Recurse only into symbols that own a child symbol table. Other
+            // symbol types (Variable, ExternalSymbol, StructMethodDeclaration,
+            // GenericProcedure, CustomOperator, Namelist, ...) have no nested
+            // scope; symbol_symtab would throw on some of them.
+            SymbolTable* child = nullptr;
+            switch (sym->type) {
+                case ASR::symbolType::Program:
+                case ASR::symbolType::Module:
+                case ASR::symbolType::Function:
+                case ASR::symbolType::Struct:
+                case ASR::symbolType::Enum:
+                case ASR::symbolType::Union:
+                case ASR::symbolType::AssociateBlock:
+                case ASR::symbolType::Block:
+                case ASR::symbolType::GpuKernelFunction:
+                    child = ASRUtils::symbol_symtab(sym);
+                    break;
+                default:
+                    break;
+            }
+            if (child != nullptr && child != symtab) {
+                collect_proc_iface_syms(child);
+            }
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
@@ -1843,6 +1907,14 @@ public:
             }
         }
         llvm_utils->set_module(module.get());
+
+        // Determine which functions are used as a procedure interface so that
+        // module-owned abstract interfaces keep the descriptor character ABI
+        // while plain external interface blocks use the classic hidden-length
+        // ABI (see ASRUtils::is_external_implicit_interface_proc).
+        proc_iface_syms.clear();
+        collect_proc_iface_syms(x.m_symtab);
+        llvm_utils->proc_iface_syms = &proc_iface_syms;
 
         if (compiler_options.emit_debug_info) {
             DBuilder = std::make_unique<llvm::DIBuilder>(*module);
@@ -5426,25 +5498,37 @@ public:
                     initializer = get_const_array(value, type->getArrayElementType());
                 } else if (ASRUtils::is_character(
                                *ASRUtils::type_get_past_array(ASRUtils::expr_type(value)))) {
+                    // Build the character array's backing data buffer as
+                    // writable. This constant initializes a writable
+                    // struct/common-block global, so a later assignment to an
+                    // element of the CHARACTER array must not write into
+                    // read-only memory (which would fault at runtime).
                     llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
-                        llvm_utils->declare_constant_stringArray(al, arr_expr));
+                        llvm_utils->declare_constant_stringArray(al, arr_expr, false));
                     if (gv && gv->hasInitializer()) {
                         initializer = gv->getInitializer();
                     }
                 } else {
                     throw CodeGenError("Unsupported non-array type in struct ArrayConstant initializer");
                 }
+            } else if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+                // Build the string's backing data buffer as writable. This
+                // constant initializes a writable struct/common-block global,
+                // so a later assignment to the CHARACTER member must not write
+                // into read-only memory (which would fault at runtime).
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(value);
+                llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+                    llvm_utils->declare_string_constant(sc, false));
+                if (gv && gv->hasInitializer()) {
+                    initializer = gv->getInitializer();
+                } else {
+                    throw CodeGenError("Non-constant value found in struct initialization");
+                }
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
                 if (!initializer) {
                     throw CodeGenError("Non-constant value found in struct initialization");
-                }
-                if (ASR::is_a<ASR::StringConstant_t>(*value)) {
-                    llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(initializer);
-                    if (gv && gv->hasInitializer()) {
-                        initializer = gv->getInitializer();
-                    }
                 }
             }
             elements.push_back(initializer);
@@ -7259,7 +7343,12 @@ public:
             }
             case ASR::exprType::StringConstant: {
                 ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(expr);
-                llvm::Value* v = llvm_utils->declare_string_constant(sc);
+                // This constant is embedded into the static initializer of a
+                // struct/common-block global, which is itself writable. Create
+                // the backing data buffer as writable (is_const = false) so a
+                // later assignment to the string member does not fault by
+                // writing into read-only memory.
+                llvm::Value* v = llvm_utils->declare_string_constant(sc, false);
                 if (!v) break;
                 llvm::GlobalVariable* gv = llvm::cast<llvm::GlobalVariable>(v);
                 if (gv->hasInitializer()) {
@@ -7970,6 +8059,13 @@ public:
     void declare_args(const ASR::Function_t &x, llvm::Function &F) {
         size_t asr_arg_idx = 0;
         auto arg_it = F.arg_begin();
+        // External procedures (implicit interface) receive scalar CHARACTER
+        // dummies as a bare data pointer plus a hidden trailing length. We
+        // record the data pointers here and rebuild the string descriptors
+        // after the positional arguments, once the trailing lengths are known.
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x,
+            &proc_iface_syms);
+        std::vector<std::pair<ASR::Variable_t*, llvm::Value*>> charlen_dummies;
 
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
         // the LLVM function has an extra hidden first argument to store the
@@ -7986,7 +8082,7 @@ public:
             ++arg_it;
         }
 
-        for (; arg_it != F.arg_end(); ++arg_it) {
+        for (; arg_it != F.arg_end() && asr_arg_idx < x.n_args; ++arg_it) {
             LCOMPILERS_ASSERT(asr_arg_idx < x.n_args);
             llvm::Argument &llvm_arg = *arg_it;
             ASR::symbol_t *s = symbol_get_past_external(
@@ -8059,6 +8155,15 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
+                    if (charlen_abi &&
+                            ASRUtils::is_hidden_charlen_string_dummy(arg->m_type)) {
+                        // The hidden trailing length always accompanies a
+                        // hidden-length CHARACTER dummy (see
+                        // is_hidden_charlen_string_dummy); rebuild the
+                        // string descriptor from the (data pointer, length) pair.
+                        charlen_dummies.push_back(std::make_pair(
+                            arg, static_cast<llvm::Value*>(&llvm_arg)));
+                    }
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
@@ -8079,6 +8184,22 @@ public:
                 }
             }
             asr_arg_idx++;
+        }
+
+        // Rebuild string descriptors for external-procedure CHARACTER dummies
+        // from the (data pointer, hidden trailing length) argument pairs. The
+        // trailing length arguments follow all positional arguments, in the
+        // same order the character dummies appear.
+        for (auto& cd : charlen_dummies) {
+            LCOMPILERS_ASSERT(arg_it != F.arg_end());
+            llvm::Argument& len_arg = *arg_it;
+            ++arg_it;
+            ASR::Variable_t* arg = cd.first;
+            len_arg.setName(std::string(arg->m_name) + "_len");
+            llvm::Value* desc = llvm_utils->create_string_descriptor(
+                cd.second, &len_arg, arg->m_name);
+            uint32_t h = get_hash((ASR::asr_t*)arg);
+            llvm_symtab[h] = desc;
         }
 
         // Second pass: handle array dummy arguments with VALUE attribute.
@@ -8950,7 +9071,21 @@ public:
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
         } else if(ASRUtils::is_character(*expr_type(x.m_arg))){ // Targetted physicalType is `char*`
-            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+            ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(x.m_arg));
+            bool bare_data_ptr =
+                ASRUtils::is_array(arg_type) &&
+                ASRUtils::extract_physical_type(arg_type) ==
+                    ASR::array_physical_typeType::UnboundedPointerArray &&
+                tmp->getType() != llvm_utils->string_descriptor->getPointerTo();
+            if (bare_data_ptr) {
+                // An assumed-size character array dummy is passed as a bare
+                // data pointer (storage association, like a numeric array).
+                // The pointer already points at the raw data, so it is the
+                // C address directly; do not extract a string descriptor.
+            } else {
+                tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+            }
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());
@@ -13418,13 +13553,46 @@ public:
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(m_type), arr_data_loaded); //StringArraySinglePointer = `char*`
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
-            m_old == ASR::array_physical_typeType::PointerArray) {
+            (m_old == ASR::array_physical_typeType::PointerArray ||
+             m_old == ASR::array_physical_typeType::UnboundedPointerArray)) {
             if (ASRUtils::is_character(*ASRUtils::extract_type(ASRUtils::expr_type(m_arg)))) {
-                // For character arrays in bind(c) context
-                ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
-                llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
-                tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
-                tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
+                // An assumed-size character array dummy of a top-level external
+                // procedure is received as a bare data pointer via storage
+                // association: its implicit-interface callers pass the raw
+                // address of the actual argument (like a numeric assumed-size
+                // array), not a string descriptor. A module or contained
+                // procedure instead has an explicit interface, so the same
+                // dummy is passed as a pointer to a string descriptor.
+                bool enclosing_is_external_proc = parent_function != nullptr &&
+                    ASRUtils::get_asr_owner(
+                        (ASR::symbol_t*)parent_function) == nullptr;
+                if (m_old == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        enclosing_is_external_proc) {
+                    if (tmp->getType() ==
+                            llvm_utils->string_descriptor->getPointerTo()) {
+                        // The assumed-size character dummy of a top-level
+                        // external procedure is rebuilt as a string descriptor
+                        // by the hidden-length character ABI. Extract its data
+                        // pointer (field 0) to forward as the C `char*`.
+                        tmp = llvm_utils->create_gep2(
+                            llvm_utils->string_descriptor, tmp, 0);
+                        tmp = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt8Ty(context)->getPointerTo(), tmp);
+                    } else {
+                        // The pointer already points at the raw character data, so
+                        // forward it directly as the C `char*`; extracting a string
+                        // descriptor would dereference the raw data as a descriptor
+                        // and crash at runtime.
+                        tmp = builder->CreateBitCast(tmp,
+                            llvm::Type::getInt8Ty(context)->getPointerTo());
+                    }
+                } else {
+                    // For character arrays in bind(c) context
+                    ASR::ttype_t* old_ttype = ASRUtils::extract_type(ASRUtils::expr_type(m_arg));
+                    llvm::Type* str_desc = llvm_utils->get_type_from_ttype_t_util(m_arg, old_ttype, module.get());
+                    tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
+                    tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
+                }
             }
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
@@ -23493,9 +23661,46 @@ public:
         }        
     }
 
+    // Find a top-level external procedure DEFINITION in the global scope by
+    // name. A call reaching an implicitly-interfaced external procedure is
+    // typed by a per-call synthesized interface (built from the actual
+    // arguments), whose argument types can disagree with the real definition
+    // (e.g. a numeric actual passed by storage association to a CHARACTER
+    // dummy, or a fixed-length actual passed to an assumed-length dummy). The
+    // hidden-length character ABI decisions are taken from the real
+    // definition's dummies (when visible in this translation unit) so the
+    // emitted call matches the definition and the LLVM module verifies.
+    ASR::Function_t* find_external_proc_definition(const std::string& name) {
+        SymbolTable* s = current_scope;
+        if (s == nullptr) {
+            return nullptr;
+        }
+        while (s->parent != nullptr) {
+            s = s->parent;
+        }
+        ASR::symbol_t* sym = s->get_symbol(name);
+        if (sym == nullptr) {
+            return nullptr;
+        }
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+            return nullptr;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+        if (ASRUtils::get_FunctionType(fn)->m_deftype
+                != ASR::deftypeType::Implementation) {
+            return nullptr;
+        }
+        return fn;
+    }
+
     template <typename T>
     std::vector<llvm::Value*> convert_call_args(const T &x, bool skip_self = false, size_t skip_self_idx = 0) {
         std::vector<llvm::Value *> args;
+        // Trailing hidden character lengths for external procedures that use
+        // the classic Fortran hidden-length ABI. Appended after all positional
+        // arguments, in the order the character actuals appear.
+        std::vector<llvm::Value*> hidden_char_length_args;
         convert_call_args_depth++;
         // Only reset alloca pool indices at outermost call to avoid
         // nested calls (in argument expressions) clobbering allocas
@@ -24491,7 +24696,19 @@ public:
             // For bind(c) character array arguments passed as Var, extract the raw data pointer
             // from the string descriptor. For other expression types, the conversion may have
             // already occurred via ArrayPhysicalCast or other mechanisms.
+            //
+            // Skip this when the callee uses the classic hidden-length character
+            // ABI: for such calls the hidden-length path below extracts the data
+            // pointer and appends the per-element length as a trailing argument,
+            // so pre-extracting the data pointer here would drop the length and
+            // leave the descriptor and the callee's expectations out of sync.
+            bool callee_uses_hidden_charlen_abi =
+                func_subrout->type == ASR::symbolType::Function &&
+                ASRUtils::function_uses_hidden_char_len_abi(
+                    *ASR::down_cast<ASR::Function_t>(func_subrout),
+                    &proc_iface_syms);
             if (orig_arg && x_abi == ASR::abiType::BindC &&
+                !callee_uses_hidden_charlen_abi &&
                 ASRUtils::is_character(*orig_arg->m_type) &&
                 ASRUtils::is_array(orig_arg->m_type) &&
                 ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
@@ -24928,28 +25145,82 @@ public:
                     symbol_get_past_external(x.m_name);
                 bool is_proc_ptr_call =
                     called_sym && ASR::is_a<ASR::Variable_t>(*called_sym);
-                if (orig_arg && callee_fn_type &&
+                // Effective dummy type for the classic hidden-length CHARACTER
+                // ABI: prefer the real callee definition's dummy (visible in
+                // this translation unit) over the per-call synthesized
+                // interface, whose argument types come from the actual
+                // arguments. A numeric actual passed by storage association to
+                // a CHARACTER dummy (a legal F77 idiom) otherwise synthesizes a
+                // numeric dummy, hiding the CHARACTER dummy and dropping its
+                // hidden length, so the call would disagree with the
+                // definition's argument count.
+                ASR::ttype_t* abi_dummy_type =
+                    (orig_arg != nullptr) ? orig_arg->m_type : nullptr;
+                if (func_subrout->type == ASR::symbolType::Function) {
+                    ASR::Function_t* real_def =
+                        find_external_proc_definition(
+                            ASRUtils::symbol_name(x.m_name));
+                    if (real_def != nullptr && i < real_def->n_args &&
+                            ASR::is_a<ASR::Var_t>(*real_def->m_args[i])) {
+                        abi_dummy_type =
+                            ASRUtils::expr_type(real_def->m_args[i]);
+                    }
+                }
+                if (orig_arg && x.m_args[i].m_value &&
                         !is_proc_ptr_call &&
                         x.m_dt == nullptr &&
-                        !callee_fn_type->m_module &&
                         func_subrout->type == ASR::symbolType::Function &&
-                        callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                        callee_fn_type->m_abi == ASR::abiType::Source &&
-                        !ASRUtils::is_array(orig_arg->m_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
-                        tmp->getType() ==
+                        ASRUtils::function_uses_hidden_char_len_abi(
+                            *ASR::down_cast<ASR::Function_t>(func_subrout),
+                            &proc_iface_syms) &&
+                        abi_dummy_type != nullptr &&
+                        ASRUtils::is_hidden_charlen_string_dummy(abi_dummy_type)) {
+                    // Classic Fortran hidden-length ABI: pass the character
+                    // data pointer directly at the argument position and append
+                    // the per-element length as a hidden trailing argument. The
+                    // length is passed uniformly for every hidden-length
+                    // CHARACTER dummy (see is_hidden_charlen_string_dummy),
+                    // so the call and the separately compiled definition always
+                    // agree on the argument count regardless of whether the
+                    // dummy is a scalar, an assumed-length array or a
+                    // fixed-length array.
+                    if (tmp->getType() ==
                             llvm_utils->string_descriptor->getPointerTo()) {
-                    ASR::Function_t* called_fn =
-                        ASR::down_cast<ASR::Function_t>(func_subrout);
-                    if (called_fn->n_body == 0) {
-                        llvm::Value* data_gep = llvm_utils->create_gep2(
-                            llvm_utils->string_descriptor, tmp, 0);
-                        llvm::Value* data_ptr = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            data_gep);
-                        tmp = builder->CreateBitCast(
-                            data_ptr,
-                            llvm_utils->string_descriptor->getPointerTo());
+                        // Character actual: take the (data pointer, length)
+                        // pair from the actual's own string descriptor.
+                        llvm::Value* data_ptr;
+                        llvm::Value* len_val;
+                        std::tie(data_ptr, len_val) =
+                            llvm_utils->get_string_length_data(
+                                ASRUtils::get_string_type(
+                                    x.m_args[i].m_value), tmp);
+                        len_val = builder->CreateSExtOrTrunc(
+                            len_val, llvm::Type::getInt64Ty(context));
+                        hidden_char_length_args.push_back(len_val);
+                        tmp = data_ptr;
+                    } else {
+                        // Non-character (numeric) actual passed by storage
+                        // association through an implicit interface: pass its
+                        // address as the data pointer and supply the CHARACTER
+                        // dummy's declared per-element length as the trailing
+                        // length (taken from the real definition's dummy).
+                        int64_t fixed_len = ASRUtils::get_fixed_string_len(
+                            ASRUtils::extract_type(abi_dummy_type));
+                        llvm::Value* len_val = llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context),
+                            fixed_len >= 0 ? fixed_len : 1);
+                        hidden_char_length_args.push_back(len_val);
+                        llvm::Type* i8ptr =
+                            llvm::Type::getInt8Ty(context)->getPointerTo();
+                        if (!tmp->getType()->isPointerTy()) {
+                            llvm::Value* slot =
+                                builder->CreateAlloca(tmp->getType());
+                            builder->CreateStore(tmp, slot);
+                            tmp = slot;
+                        }
+                        if (tmp->getType() != i8ptr) {
+                            tmp = builder->CreateBitCast(tmp, i8ptr);
+                        }
                     }
                 }
             }
@@ -24989,6 +25260,8 @@ public:
 
             args.push_back(tmp);
         }
+        args.insert(args.end(), hidden_char_length_args.begin(),
+            hidden_char_length_args.end());
         convert_call_args_depth--;
         return args;
     }
