@@ -886,7 +886,7 @@ struct FixedFormRecursiveDescent {
                     continue;
                 }
                 if (!try_expr(end, true)) {
-                    return false;  // Parsing failed, it’s not an assignment
+                    return false;  // Parsing failed, it's not an assignment
                 }
                 if (*end != ')') {
                     return false;  // Expected closing ')', not an assignment
