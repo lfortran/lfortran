@@ -4321,6 +4321,8 @@ RUN(NAME arrayprint_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_to_cptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME pointer_intent_in_01 LABELS gfortran llvm)
+RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
 
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4587,6 +4589,7 @@ RUN(NAME separate_compilation_47 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_48 LABELS gfortran llvm EXTRAFILES separate_compilation_48a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_49 LABELS gfortran llvm EXTRAFILES separate_compilation_49a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_50 LABELS gfortran llvm EXTRAFILES separate_compilation_50a.f90 separate_compilation_50b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_51 LABELS gfortran llvm EXTRAFILES separate_compilation_51a.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

@@ -1371,7 +1371,9 @@ def invalid_method_call_family(_rng):
 
 
 def invalid_method_call_rank(_rng):
-    return method_call_unit(array_type(INTEGER, [3]), INTEGER), \
+    # An array actual for a scalar dummy. The other direction is sequence
+    # association, which an explicit-shape dummy allows.
+    return method_call_unit(INTEGER, array_type(INTEGER, [3])), \
         "schema-invalid method call argument rank mismatch"
 
 
