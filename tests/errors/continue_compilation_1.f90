@@ -966,6 +966,12 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
+
+    subroutine equivalence_common_1()
+        real :: a, b
+        common /c1/ a, b
+        equivalence (a, b)
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

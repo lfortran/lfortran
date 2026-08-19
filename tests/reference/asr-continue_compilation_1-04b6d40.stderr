@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:978:7
+   --> tests/errors/continue_compilation_1.f90:984:7
     |
-978 |       foo    end type t_recovery
+984 |       foo    end type t_recovery
     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -538,6 +538,12 @@ semantic error: equivalence between a common block variable and this array eleme
 949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: equivalence for 'b' conflicts with the ordering of COMMON block 'c1'
+   --> tests/errors/continue_compilation_1.f90:973:22
+    |
+973 |         equivalence (a, b)
+    |                      ^  ^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -545,9 +551,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:981:7
+   --> tests/errors/continue_compilation_1.f90:987:7
     |
-981 |       class(t_recovery), intent(in) :: self
+987 |       class(t_recovery), intent(in) :: self
     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared

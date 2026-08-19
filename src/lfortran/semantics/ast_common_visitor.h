@@ -7098,6 +7098,20 @@ public:
                                         bool eq1_is_common = ASR::is_a<ASR::StructInstanceMember_t>(*asr_eq1);
                                         bool eq2_is_common = ASR::is_a<ASR::StructInstanceMember_t>(*asr_eq2);
 
+                                        if (eq1_is_common && eq2_is_common) {
+                                            ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+                                                ASR::down_cast<ASR::StructInstanceMember_t>(asr_eq2)->m_m);
+                                            ASR::symbol_t* common_block = ASR::down_cast<ASR::symbol_t>(
+                                                ASRUtils::symbol_parent_symtab(member)->asr_owner);
+                                            diag.add(diag::Diagnostic(
+                                                "equivalence for '" + std::string(ASRUtils::symbol_name(member))
+                                                + "' conflicts with the ordering of COMMON block '"
+                                                + ASRUtils::symbol_name(common_block) + "'",
+                                                diag::Level::Error, diag::Stage::Semantic, {
+                                                    diag::Label("", {asr_eq1->base.loc, asr_eq2->base.loc})}));
+                                            throw SemanticAbort();
+                                        }
+
                                         ASR::expr_t* source_expr;
                                         ASR::expr_t* pointer_expr;
                                         ASR::Variable_t* pointer_var;
