@@ -12432,6 +12432,61 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     if (iostat) *iostat = 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_f128(char *str, int64_t len, char *format, lf_float128 *f, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int rc;
+    /* The token is located and validated in double precision, then re-parsed
+       with lf_float128_from_str so no quad precision is lost. */
+    if (offset) {
+        int skip = 0;
+
+        /* Handle empty fields like: 1.5, , 2.5 */
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
+
+        int consumed = 0;
+        double tmp_f;
+        parse_fortran_double_token(buf + skip, &tmp_f, &consumed);
+        rc = 0;
+        if (consumed > 0) {
+            char next = buf[skip + consumed];
+            /*
+             * Fortran 2018 (13.10.2): valid separators
+             * comma, slash, or blanks
+             */
+            if (next == '\0' || next == ' ' || next == '\t' || next == '\n'
+                             || next == ',' || next == '/') {
+                char *tok = (char*)internal_malloc((size_t)consumed + 2);
+                memcpy(tok, buf + skip, (size_t)consumed);
+                tok[consumed] = '\0';
+                normalize_fortran_real_token(tok, (size_t)consumed + 2);
+                *f = lf_float128_from_str(tok);
+                internal_free(tok);
+                *offset = off + skip + consumed;
+                rc = 1;
+            }
+        }
+    } else {
+        double tmp_f;
+        rc = parse_fortran_double_token(buf, &tmp_f, NULL);
+        if (rc == 1) {
+            normalize_fortran_real_token(buf, strlen(buf) + 1);
+            *f = lf_float128_from_str(buf);
+        }
+    }
+    internal_free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
 char* remove_whitespace(char* str, int64_t* len) {
     if (!str || *len <= 0) return str;
     char* start = str;
