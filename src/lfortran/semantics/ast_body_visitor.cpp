@@ -9105,9 +9105,10 @@ public:
         }
         if (x.m_end_label != 0) {
             // A label on the closing `end if` (`86 endif`) is a valid
-            // `GO TO 86` target (R1104). Append a GoToTarget at the end of
-            // the if-body so such branches resolve, mirroring `do_label`
-            // on DoLoop (see the comment there).
+            // `GO TO 86` target: end-if-stmt (R1138) is listed as a branch
+            // target statement in F2018 11.2.1. Append a GoToTarget at the
+            // end of the if-body so such branches resolve, mirroring
+            // `do_label` on DoLoop (see the comment there).
             bool already_targeted = false;
             for (size_t i=0; i<x.n_body; i++) {
                 if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Statement)) continue;
