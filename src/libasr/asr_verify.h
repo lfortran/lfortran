@@ -6,12 +6,10 @@
 namespace LCompilers {
 
     struct ASRVerifyOptions {
+        // Whether ExternalSymbol targets may be followed. Off while a
+        // modfile is being deserialized, where they are not yet resolved.
         bool check_external = true;
         bool require_main_program = false;
-        // Rules that hold for a complete program as the frontend produces it,
-        // but not for the intermediate states an ASR pass moves through.
-        // Enabled for standalone ASR, which has no pass in flight.
-        bool check_standalone_rules = false;
     };
 
     // Verifies that ASR is correctly constructed and contains valid Fortran
