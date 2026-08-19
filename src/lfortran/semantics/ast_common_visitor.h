@@ -3420,7 +3420,11 @@ public:
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
             is_real = 1;
         }
-        if (check_equal_value(a->m_value, a->n_value)) {
+        // An array section must go through the general path below, which
+        // merges its values into the variable's full-size initializer;
+        // the equal-value broadcast here would initialize the whole array.
+        if (!ASR::is_a<ASR::ArraySection_t>(*object) &&
+                check_equal_value(a->m_value, a->n_value)) {
             /*
                 Case:
                 integer :: x(5)
@@ -3521,10 +3525,12 @@ public:
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
             int size_of_array = 0;
-            
+            ASR::ArraySection_t* array_section = nullptr;
+
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
-                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
-                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+                array_section = ASR::down_cast<ASR::ArraySection_t>(object);
+                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(array_section);
+                object = array_section->m_v;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                 ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(object);
                 size_of_array = a->n_value - curr_value; 
@@ -3702,8 +3708,115 @@ public:
                 LCOMPILERS_ASSERT(current_body != nullptr)
                 current_body->push_back(al, assign_stmt);
             } else {
-                v2->m_value = ASRUtils::EXPR(tmp);
-                v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                // A DATA statement may initialize an array in sections, e.g.
+                //   data x(1:2) /100, 200/, x(3:4) /300, 400/
+                // Merge each section's values into a full-size initializer at
+                // the correct column-major offsets; overwriting m_value with a
+                // section-sized constant would drop earlier sections and leave
+                // an initializer smaller than the array.
+                bool merged = false;
+                if (array_section != nullptr) {
+                    ASR::ttype_t* var_ttype = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(v2->m_type));
+                    ASR::Array_t* full_arr = ASR::is_a<ASR::Array_t>(*var_ttype) ?
+                        ASR::down_cast<ASR::Array_t>(var_ttype) : nullptr;
+                    int64_t full_size = full_arr ? ASRUtils::get_fixed_size_of_array(
+                        full_arr->m_dims, full_arr->n_dims) : -1;
+                    size_t ndims = full_arr ? full_arr->n_dims : 0;
+                    bool bounds_ok = full_size > 0 && array_section->n_args == ndims;
+                    std::vector<int64_t> lb(ndims), extent(ndims),
+                        sec_start(ndims), sec_end(ndims), sec_step(ndims);
+                    for (size_t d = 0; bounds_ok && d < ndims; d++) {
+                        lb[d] = 1;
+                        if (full_arr->m_dims[d].m_start &&
+                                !ASRUtils::extract_value(full_arr->m_dims[d].m_start, lb[d])) {
+                            bounds_ok = false;
+                        }
+                        if (!full_arr->m_dims[d].m_length ||
+                                !ASRUtils::extract_value(full_arr->m_dims[d].m_length, extent[d])) {
+                            bounds_ok = false;
+                        }
+                        ASR::array_index_t &arg = array_section->m_args[d];
+                        if (!bounds_ok || !arg.m_left || !arg.m_right ||
+                                !ASRUtils::extract_value(arg.m_left, sec_start[d]) ||
+                                !ASRUtils::extract_value(arg.m_right, sec_end[d])) {
+                            bounds_ok = false;
+                            break;
+                        }
+                        sec_step[d] = 1;
+                        if (arg.m_step && !ASRUtils::extract_value(arg.m_step, sec_step[d])) {
+                            bounds_ok = false;
+                        }
+                        if (sec_step[d] == 0) bounds_ok = false;
+                    }
+                    if (bounds_ok) {
+                        std::vector<int64_t> stride(ndims);
+                        for (size_t d = 0; d < ndims; d++) {
+                            stride[d] = d == 0 ? 1 : stride[d-1] * extent[d-1];
+                        }
+                        std::vector<ASR::expr_t*> init(full_size, nullptr);
+                        if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
+                            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
+                            if (ASRUtils::get_fixed_size_of_array(ac->m_type) == full_size) {
+                                for (int64_t k = 0; k < full_size; k++) {
+                                    init[k] = ASRUtils::fetch_ArrayConstant_value(al, ac, k);
+                                }
+                            }
+                        } else if (v2->m_value && ASR::is_a<ASR::ArrayConstructor_t>(*v2->m_value)) {
+                            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(v2->m_value);
+                            if (ac->n_args == (size_t) full_size) {
+                                for (int64_t k = 0; k < full_size; k++) {
+                                    init[k] = ac->m_args[k];
+                                }
+                            }
+                        }
+                        for (int64_t k = 0; k < full_size; k++) {
+                            if (init[k] == nullptr) {
+                                init[k] = ASRUtils::get_constant_zero_with_given_type(
+                                    al, full_arr->m_type);
+                            }
+                        }
+                        // Walk the section in column-major element order and
+                        // drop each DATA value at its linear position.
+                        std::vector<int64_t> idx = sec_start;
+                        for (size_t k = 0; bounds_ok && k < body.size(); k++) {
+                            int64_t linear = 0;
+                            for (size_t d = 0; d < ndims; d++) {
+                                linear += (idx[d] - lb[d]) * stride[d];
+                            }
+                            if (linear < 0 || linear >= full_size) {
+                                bounds_ok = false;
+                                break;
+                            }
+                            init[linear] = body[k];
+                            for (size_t d = 0; d < ndims; d++) {
+                                idx[d] += sec_step[d];
+                                if ((sec_step[d] > 0 && idx[d] <= sec_end[d]) ||
+                                    (sec_step[d] < 0 && idx[d] >= sec_end[d])) break;
+                                idx[d] = sec_start[d];
+                            }
+                        }
+                        if (bounds_ok) {
+                            Vec<ASR::expr_t*> full_body;
+                            full_body.reserve(al, full_size);
+                            for (int64_t k = 0; k < full_size; k++) {
+                                full_body.push_back(al, init[k]);
+                            }
+                            ASR::expr_t* full_const = ASRUtils::EXPR(
+                                ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc,
+                                    full_body.p, full_body.size(),
+                                    ASRUtils::duplicate_type(al, var_ttype),
+                                    ASR::arraystorageType::ColMajor));
+                            v2->m_value = full_const;
+                            v2->m_symbolic_value = full_const;
+                            merged = true;
+                        }
+                    }
+                }
+                if (!merged) {
+                    v2->m_value = ASRUtils::EXPR(tmp);
+                    v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                }
                 SetChar var_deps_vec;
                 var_deps_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
