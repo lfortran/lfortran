@@ -68,6 +68,24 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
 
+// A specific procedure that shares its generic interface's name is stored in
+// the symbol table under "<name>~genericprocedure" to avoid clashing with the
+// GenericProcedure symbol. This is the disambiguating suffix; the real
+// external (link) name is "<name>". Semantics appends it; codegen strips it.
+inline const std::string genericprocedure_suffix = "~genericprocedure";
+
+// Recover the original name from a possibly-disambiguated symbol name by
+// removing the genericprocedure_suffix if present.
+inline std::string strip_genericprocedure_suffix(const std::string &sym_name) {
+    if (sym_name.size() > genericprocedure_suffix.size() &&
+        sym_name.compare(sym_name.size() - genericprocedure_suffix.size(),
+                         genericprocedure_suffix.size(),
+                         genericprocedure_suffix) == 0) {
+        return sym_name.substr(0, sym_name.size() - genericprocedure_suffix.size());
+    }
+    return sym_name;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
 
