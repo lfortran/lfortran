@@ -1157,6 +1157,25 @@ struct FixedFormRecursiveDescent {
             lex_derived_type(cur);
             return true;
         }
+        // handle the bare `TYPE name` derived-type-def opener (no `::`),
+        // e.g. `TYPE GT`. This must be disambiguated from:
+        //  - `TYPE(...)`, a declaration-type-spec using a derived type,
+        //    e.g. `TYPE(GT), SAVE :: DAT(10)` (must NOT be routed here)
+        //  - a plain identifier that merely starts with "type", e.g.
+        //    `TYPEX = 5` (must NOT be routed here)
+        // `TYPE, EXTENDS(parent) :: name` (attr-list form) is not handled
+        // by this check either, matching the pre-existing `type::` check's
+        // scope.
+        // A bare derived-type-def statement is exactly `TYPE type-name`
+        // with nothing else on the line, so require a NAME immediately
+        // after `type` followed immediately by end-of-line.
+        if (next_is(cur, "type") && !next_is(cur, "type(")) {
+            unsigned char *name_end = cur + 4;
+            if (try_name(name_end) && next_is_eol(name_end)) {
+                lex_derived_type(cur);
+                return true;
+            }
+        }
 
         if (lex_declaration(cur)) {
             return true;
