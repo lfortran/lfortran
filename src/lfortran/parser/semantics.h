@@ -2014,10 +2014,10 @@ return make_Program_t(al, a_loc,
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
 
-// A label on the closing `end if`/`endif` of an if_statement (R1104), e.g.
-// `86 endif`, is captured by the `endif` production and attached here to
-// the already-built If_t node returned by if_block; see `do_label` on
-// DoLoop_t for the analogous mechanism on `end do`.
+// A label on the closing `end if`/`endif` (end-if-stmt, R1138) of an
+// if_statement, e.g. `86 endif`, is captured by the `endif` production and
+// attached here to the already-built If_t node returned by if_block; see
+// `do_label` on DoLoop_t for the analogous mechanism on `end do`.
 #define IF_END_LABEL(stmt, label) ((If_t*)stmt)->m_end_label = label
 
 ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
