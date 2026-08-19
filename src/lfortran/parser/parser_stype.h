@@ -50,12 +50,25 @@ struct StrPrefix {
     Str* str_kind;  // Pointer to kind string allocated in Arena, or nullptr
 };
 
+struct EndStmt {
+    AST::ast_t *name;
+    int64_t label;
+    Location loc;
+};
+
+struct ContainsEnd {
+    Vec<AST::ast_t*> contains;
+    EndStmt end;
+};
+
 union YYSTYPE {
     int64_t n;
     Str string;
 
     IntSuffix int_suffix;
     StrPrefix str_prefix;
+    EndStmt end_stmt;
+    ContainsEnd *contains_end;
 
     AST::ast_t* ast;
     Vec<AST::ast_t*> vec_ast;
