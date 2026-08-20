@@ -873,24 +873,43 @@ struct FixedFormRecursiveDescent {
         unsigned char *end = start;
         if (!try_name(end)) return false;
 
-        // Try parsing array indices, if any
-        while (*end == '(') {
-            end++;  // Move past '('
-            if (*end == ')') {
-                // Empty parentheses, e.g. zero-argument statement function
+        // Try parsing array indices and/or derived-type component accesses,
+        // if any, e.g. `D(1)%X(2)%Y`. These can be interleaved arbitrarily,
+        // so keep consuming `(...)` groups and `%name` segments until
+        // neither matches.
+        while (true) {
+            if (*end == '(') {
+                end++;  // Move past '('
+                if (*end == ')') {
+                    // Empty parentheses, e.g. zero-argument statement function
+                    end++;  // Move past ')'
+                    continue;
+                }
+                if (!try_expr(end, true)) {
+                    return false;  // Parsing failed, it's not an assignment
+                }
+                if (*end != ')') {
+                    return false;  // Expected closing ')', not an assignment
+                }
                 end++;  // Move past ')'
                 continue;
             }
-            if (!try_expr(end, true)) {
-                return false;  // Parsing failed, it’s not an assignment
+            if (*end == '%') {
+                end++;  // Move past '%'
+                if (!try_name(end)) {
+                    return false;  // Expected a component name after '%'
+                }
+                continue;
             }
-            if (*end != ')') {
-                return false;  // Expected closing ')', not an assignment
-            }
-            end++;  // Move past ')'
+            break;
         }
 
-        // After parsing identifier and indices, check if the next character is `=`
+        // After parsing identifier, indices and component accesses, check
+        // if the next character is `=`. This also matches the start of
+        // `=>` (pointer assignment) - that is intentional: as far as this
+        // statement classifier is concerned it's still "an assignment", and
+        // the `=` vs `=>` distinction is made later, at the token level, by
+        // tokenize_line()'s shared lexer (the same one free form uses).
         if (*end == '=') {
             cur = start;  // Reset to the start to re-tokenize as an assignment
             return true;
