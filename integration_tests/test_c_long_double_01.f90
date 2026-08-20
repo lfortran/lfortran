@@ -15,5 +15,6 @@ program test_c_long_double_01
       print *, "c_long_double: PASS"
    else
       print *, "c_long_double: FAIL"
+      error stop
    end if
 end program test_c_long_double_01

@@ -33,6 +33,6 @@ program test_c_long_double
       print *, "PASS: c_long_double C interop"
    else
       print *, "FAIL: c_long_double C interop"
-      stop 1
+      error stop
    end if
 end program test_c_long_double
