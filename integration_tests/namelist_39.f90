@@ -10,31 +10,21 @@ program namelist_39
 
     character(len=80) :: page(4)
     integer :: i
-    integer :: iexit
+    logical :: found
 
     namelist /nl/ name_in_program
 
     page = ''
-    iexit = 0
+    found = .false.
     write(page, nl)
 
     do i = 1, size(page)
         if (index(page(i), 'NAME_IN_MODULE') /= 0) then
-            print *, '<FAILED> NAMELIST does not respect USE RENAMING'
-            iexit = 1
-            exit
+            error stop 'NAMELIST does not respect USE renaming'
         else if (index(page(i), 'NAME_IN_PROGRAM') /= 0) then
-            print *, '<PASSED> NAMELIST respects USE RENAMING'
-            exit
+            found = .true.
         end if
     end do
 
-    if (i == size(page) + 1) then
-        print *, '<ERROR> NAMELIST USE RENAMING test internal error'
-        iexit = 2
-    end if
-
-    if (iexit /= 0) then
-        error stop
-    end if
+    if (.not. found) error stop 'NAMELIST output did not contain NAME_IN_PROGRAM'
 end program namelist_39
