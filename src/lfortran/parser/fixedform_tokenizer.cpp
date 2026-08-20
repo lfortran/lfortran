@@ -1708,7 +1708,7 @@ struct FixedFormRecursiveDescent {
                     "Expected an executable statement inside a do while loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
                 throw parser_local::TokenizerAbort();
-            };
+            }
         }
         // Consumes "enddo", an optional trailing construct name (e.g. the
         // `UPLAY` in `END DO UPLAY`), and the rest of the line -- same
