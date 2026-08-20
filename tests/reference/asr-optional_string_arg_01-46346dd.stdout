@@ -2,15 +2,15 @@
     (SymbolTable
         1
         {
-            string_54:
+            optional_string_arg_01:
                 (Program
                     (SymbolTable
-                        5
+                        2
                         {
-                            char:
+                            a:
                                 (Variable
-                                    5
-                                    char
+                                    2
+                                    a
                                     []
                                     Local
                                     ()
@@ -31,145 +31,15 @@
                                     ()
                                     []
                                 ),
-                            double:
-                                (ExternalSymbol
-                                    5
-                                    double
-                                    2 double
-                                    string_54_mod
-                                    []
-                                    double
-                                    Public
-                                ),
-                            double_:
-                                (ExternalSymbol
-                                    5
-                                    double_
-                                    2 double_
-                                    string_54_mod
-                                    []
-                                    double_
-                                    Public
-                                ),
-                            foo_sub:
-                                (ExternalSymbol
-                                    5
-                                    foo_sub
-                                    2 foo_sub
-                                    string_54_mod
-                                    []
-                                    foo_sub
-                                    Public
-                                ),
-                            x:
-                                (Variable
-                                    5
-                                    x
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                )
-                        })
-                    string_54
-                    [string_54_mod]
-                    [(Assignment
-                        (Var 5 x)
-                        (IntegerConstant 10 (Integer 4) Decimal)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (SubroutineCall
-                        5 foo_sub
-                        ()
-                        [((Var 5 x))
-                        ((Var 5 char))]
-                        ()
-                        .false.
-                    )
-                    (If
-                        ()
-                        (IntegerCompare
-                            (StringLen
-                                (Var 5 char)
-                                (Integer 4)
-                                (IntegerConstant 10 (Integer 4) Decimal)
-                            )
-                            NotEq
-                            (IntegerConstant 10 (Integer 4) Decimal)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                        )
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )]
-                ),
-            string_54_mod:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            double:
-                                (GenericProcedure
-                                    2
-                                    double
-                                    [2 double_]
-                                    Public
-                                ),
-                            double_:
+                            check:
                                 (Function
                                     (SymbolTable
                                         3
                                         {
-                                            ret:
+                                            n:
                                                 (Variable
                                                     3
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    3
-                                                    x
+                                                    n
                                                     []
                                                     In
                                                     ()
@@ -189,95 +59,21 @@
                                                     NotMethod
                                                     ()
                                                     []
-                                                )
-                                        })
-                                    double_
-                                    (FunctionType
-                                        [(Integer 4)]
-                                        (Integer 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 3 x)]
-                                    [(Assignment
-                                        (Var 3 ret)
-                                        (IntegerBinOp
-                                            (Var 3 x)
-                                            Mul
-                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )]
-                                    (Var 3 ret)
-                                    Public
-                                    .true.
-                                    .true.
-                                    ()
-                                ),
-                            foo_sub:
-                                (Function
-                                    (SymbolTable
-                                        4
-                                        {
-                                            char:
-                                                (Variable
-                                                    4
-                                                    char
-                                                    [double_
-                                                    x]
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (FunctionCall
-                                                        2 double_
-                                                        2 double
-                                                        [((Var 4 x))]
-                                                        (Integer 4)
-                                                        ()
-                                                        ()
-                                                    ) ExpressionLength DescriptorString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
                                                 ),
-                                            x:
+                                            s:
                                                 (Variable
-                                                    4
-                                                    x
-                                                    []
+                                                    3
+                                                    s
+                                                    [n]
                                                     In
                                                     ()
                                                     ()
                                                     Default
-                                                    (Integer 4)
+                                                    (String 1 (Var 3 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
-                                                    Required
+                                                    Optional
                                                     .false.
                                                     .false.
                                                     .false.
@@ -289,19 +85,12 @@
                                                     []
                                                 )
                                         })
-                                    foo_sub
+                                    check
                                     (FunctionType
                                         [(Integer 4)
-                                        (String 1 (FunctionCall
-                                            2 double_
-                                            2 double
-                                            [((FunctionParam
-                                                0
-                                                (Integer 4)
-                                                ()
-                                            ))]
+                                        (String 1 (FunctionParam
+                                            0
                                             (Integer 4)
-                                            ()
                                             ()
                                         ) ExpressionLength DescriptorString)]
                                         ()
@@ -316,19 +105,148 @@
                                         []
                                         .false.
                                     )
-                                    [double_]
-                                    [(Var 4 x)
-                                    (Var 4 char)]
+                                    []
+                                    [(Var 3 n)
+                                    (Var 3 s)]
                                     [(If
                                         ()
                                         (IntegerCompare
                                             (StringLen
-                                                (Var 4 char)
+                                                (Var 3 s)
                                                 (Integer 4)
                                                 ()
                                             )
                                             NotEq
-                                            (IntegerConstant 20 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 s)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(If
+                                            ()
+                                            (StringCompare
+                                                (Var 3 s)
+                                                NotEq
+                                                (StringConstant
+                                                    "a"
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            sub:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            n:
+                                                (Variable
+                                                    4
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            s:
+                                                (Variable
+                                                    4
+                                                    s
+                                                    [n]
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (Var 4 n) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (String 1 (FunctionParam
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        ) ExpressionLength DescriptorString)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 n)
+                                    (Var 4 s)]
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StringLen
+                                                (Var 4 s)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 3 (Integer 4) Decimal)
                                             (Logical 4)
                                             ()
                                         )
@@ -344,12 +262,83 @@
                                     ()
                                 )
                         })
-                    string_54_mod
-                    ()
+                    optional_string_arg_01
                     []
-                    .false.
-                    .false.
-                    .false.
+                    [(SubroutineCall
+                        2 check
+                        ()
+                        [((IntegerConstant 1 (Integer 4) Decimal))
+                        (())]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 check
+                        ()
+                        [((IntegerConstant 1 (Integer 4) Decimal))
+                        ((StringConstant
+                            "a"
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (StringConstant
+                            "1234567890"
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 sub
+                        ()
+                        [((IntegerConstant 3 (Integer 4) Decimal))
+                        ((Var 2 a))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StringLen
+                                (Var 2 a)
+                                (Integer 4)
+                                (IntegerConstant 10 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (Var 2 a)
+                            NotEq
+                            (StringConstant
+                                "1234567890"
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
                 )
         })
     []
