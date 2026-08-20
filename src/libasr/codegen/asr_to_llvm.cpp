@@ -1013,6 +1013,35 @@ public:
         return data_and_length;
     }
 
+    /*
+        A character member stored inline in a struct (bind(C)/SEQUENCE/COMMON)
+        is a flat [count*len x i8] blob, but any callee taking a
+        DescriptorString expects a %string_descriptor*. Materialize a temporary
+        descriptor over the blob so the call matches the callee's signature and
+        the callee sees the right data pointer and length. Returns `value`
+        unchanged when it is not such a member.
+
+        Only scalar members are wrapped: a whole inline character *array*
+        member is passed as an array, not as one string descriptor.
+    */
+    llvm::Value* inline_char_member_as_string_descriptor(ASR::expr_t* arg,
+            llvm::Value* value, std::string name) {
+        if (!ASRUtils::is_string_only(expr_type(arg))
+                || ASRUtils::get_string_type(expr_type(arg))->m_physical_type
+                    != ASR::DescriptorString
+                || !ASRUtils::is_inline_character_struct_member(arg)) {
+            return value;
+        }
+        int64_t len = 1;
+        ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(arg));
+        if (str_type->m_len) {
+            ASRUtils::extract_value(str_type->m_len, len);
+        }
+        if (len < 1) len = 1;
+        return llvm_utils->create_string_descriptor(
+            builder->CreateBitCast(value, character_type),
+            llvm::ConstantInt::get(context, llvm::APInt(64, len)), name);
+    }
 
 
 
@@ -5386,6 +5415,18 @@ public:
             ASR::expr_t *value = x.m_args[i].m_value;
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
+            ASR::symbol_t* member_sym = i < struct_->n_members
+                ? struct_->m_symtab->get_symbol(struct_->m_members[i]) : nullptr;
+            if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                ASR::ttype_t* member_type =
+                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+                if (ASRUtils::is_inline_character_struct_member(
+                        struct_, member_type)) {
+                    // Inline character member: flat [count*len x i8] byte blob.
+                    elements.push_back(get_inline_char_member_constant(member_type, value));
+                    continue;
+                }
+            }
             if (value == nullptr) {
                 auto member2sym = struct_->m_symtab->get_scope();
                 LCOMPILERS_ASSERT(member2sym[struct_->m_members[i]]->type == ASR::symbolType::Variable);
@@ -6510,6 +6551,7 @@ public:
             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
                 st.second, ASRUtils::symbol_type(st.first), false, false);
         }
+        allocatable_struct_array_members_details.clear();
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
@@ -7142,6 +7184,40 @@ public:
         class2vtab[struct_type_][symtab].push_back(vtab_obj);
     }
 
+    // Build the [count*len*kind x i8] byte constant for a character member that
+    // is stored inline (bind(C)/SEQUENCE/COMMON struct). The bytes come from the
+    // member's DATA value (StringConstant for a scalar, ArrayConstant's flat data
+    // buffer for an array); any remainder is space-padded (Fortran blank fill).
+    llvm::Constant* get_inline_char_member_constant(ASR::ttype_t* member_type,
+            ASR::expr_t* value_expr) {
+        int64_t total = ASRUtils::inline_character_storage_size(member_type);
+        llvm::ArrayType* blob_type = llvm::ArrayType::get(
+            llvm::Type::getInt8Ty(context), (uint64_t)total);
+        std::string bytes;
+        ASR::expr_t* value = value_expr ? ASRUtils::expr_value(value_expr) : nullptr;
+        if (value && ASR::is_a<ASR::StringConstant_t>(*value)) {
+            ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(value);
+            int64_t sc_len = 1;
+            ASRUtils::extract_value(ASRUtils::get_string_type(sc->m_type)->m_len, sc_len);
+            bytes.assign(sc->m_s, (size_t)sc_len);
+        } else if (value && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            bytes.assign((char*)ac->m_data, (size_t)ac->m_n_data);
+        } else {
+            // No initializer: emit an all-zero aggregate so the enclosing global
+            // stays an all-zero tentative definition and keeps CommonLinkage
+            // (which merges the member's storage across separate TUs).
+            return llvm::ConstantAggregateZero::get(blob_type);
+        }
+        // Blank-pad a DATA-initialized member (Fortran blank fill).
+        if ((int64_t)bytes.size() < total) {
+            bytes.append((size_t)(total - bytes.size()), ' ');
+        } else if ((int64_t)bytes.size() > total) {
+            bytes.resize((size_t)total);
+        }
+        return llvm::ConstantDataArray::getString(context, bytes, false);
+    }
+
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
             std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -7161,7 +7237,12 @@ public:
             if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
                 continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (var->m_value != nullptr) {
+            if (ASRUtils::is_inline_character_struct_member(
+                    struct_t, var->m_type)) {
+                // Inline character member is a flat [count*len x i8] byte blob;
+                // build a matching byte constant (space-padded) from its DATA value.
+                field_values.push_back(get_inline_char_member_constant(var->m_type, var->m_value));
+            } else if (var->m_value != nullptr) {
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(var->m_value, var->m_type,
                     orig_struct_sym);
                 field_values.push_back(c);
@@ -24089,6 +24170,10 @@ public:
                     al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, module.get());
                     tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
                 }
+                // An inline character member is a raw byte blob; a callee taking
+                // a string descriptor needs one materialized over it.
+                tmp = inline_char_member_as_string_descriptor(
+                    x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
                 if (orig_arg_intent == ASR::intentType::In ||
                     orig_arg_intent == ASR::intentType::InOut ||
@@ -27714,26 +27799,8 @@ public:
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
-                // bind(C)/SEQUENCE inline char member: tmp is [len x i8]* but
-                // format expects string_descriptor*. Materialize a temp descriptor.
-                if (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
-                    ASRUtils::get_string_type(expr_type(x.m_args[i]))->m_physical_type
-                        == ASR::DescriptorString &&
-                    ASRUtils::is_inline_character_struct_member(x.m_args[i])) {
-                    ASR::StructInstanceMember_t* sim = ASR::down_cast<
-                        ASR::StructInstanceMember_t>(x.m_args[i]);
-                    ASR::String_t* str_ty = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::extract_type(sim->m_type));
-                    int64_t slen = 1;
-                    if (str_ty->m_len) {
-                        ASRUtils::extract_value(str_ty->m_len, slen);
-                    }
-                    if (slen < 1) slen = 1;
-                    tmp = llvm_utils->create_string_descriptor(
-                        builder->CreateBitCast(tmp, character_type),
-                        llvm::ConstantInt::get(context, llvm::APInt(64, slen)),
-                        "inline_fmt_arg");
-                }
+                tmp = inline_char_member_as_string_descriptor(
+                    x.m_args[i], tmp, "inline_fmt_arg");
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
