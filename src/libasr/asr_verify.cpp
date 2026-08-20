@@ -2624,8 +2624,8 @@ public:
     void visit_Real(const Real_t &x) {
         if (diagnostics.has_error()) return;
         require_id(
-            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
-                x.m_kind >= 1000,
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 10 ||
+                x.m_kind == 16 || x.m_kind >= 1000,
             "asr.verify.type.real_kind_supported",
             "Real kind " + std::to_string(x.m_kind) +
                 " is not supported");
