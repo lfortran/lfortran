@@ -8,6 +8,7 @@
         [(If
             0
             ()
+            0
             (Logical .true. ())
             [(ErrorStop
                 0
