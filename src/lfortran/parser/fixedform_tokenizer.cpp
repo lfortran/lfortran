@@ -1550,13 +1550,22 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
+    // Advances cur past a `name:` construct-name prefix (e.g. the
+    // `uplay:` in `uplay:dowhile(...)`); cur is left unchanged if no
+    // such prefix is here.
+    bool try_construct_name_prefix(unsigned char *&cur) {
         unsigned char *tmp = cur;
         if (!try_name(tmp)) return false;
         if (!try_next(tmp, ":")) return false;
-        unsigned char *tmp2 = tmp;
-        if (!is_do_loop(tmp2)) return false;
-        do_pos = tmp;
+        cur = tmp;
+        return true;
+    }
+
+    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
+        if (!try_construct_name_prefix(cur)) return false;
+        unsigned char *tmp = cur;
+        if (!is_do_loop(tmp)) return false;
+        do_pos = cur;
         return true;
     }
 
@@ -1564,11 +1573,9 @@ struct FixedFormRecursiveDescent {
     // it would misparse `while` as the do-variable name, since "while" is a
     // syntactically valid identifier.
     bool is_named_do_while_loop(unsigned char *cur, unsigned char *&do_pos) {
-        unsigned char *tmp = cur;
-        if (!try_name(tmp)) return false;
-        if (!try_next(tmp, ":")) return false;
-        if (!next_is(tmp, "dowhile(")) return false;
-        do_pos = tmp;
+        if (!try_construct_name_prefix(cur)) return false;
+        if (!next_is(cur, "dowhile(")) return false;
+        do_pos = cur;
         return true;
     }
 
