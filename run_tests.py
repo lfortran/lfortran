@@ -85,6 +85,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     c = is_included("c")
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
+    gpu_cuda_kernel = is_included("gpu_cuda_kernel")
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
@@ -719,6 +720,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
 
     if julia:
         run_test(filename, "julia", "lfortran --no-color --show-julia {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
+    if gpu_cuda_kernel:
+        run_test(filename, "gpu_cuda_kernel",
+                "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
                 filename,
                 update_reference,
                 verify_hash,

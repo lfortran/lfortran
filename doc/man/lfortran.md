@@ -56,6 +56,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-asm`: Show assembly for the given file and exit
 - `--show-wat`: Show WAT (WebAssembly Text Format) and exit
 - `--show-julia`: Show Julia translation source for the given file and exit
+- `--show-gpu-kernel-source`: Show the GPU kernel source for the backend selected by `--gpu` and exit
 - `--show-fortran`: Show Fortran translation source for the given file and exit
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)

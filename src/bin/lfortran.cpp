@@ -958,6 +958,42 @@ int emit_c(const std::string &infile,
     }
 }
 
+int emit_gpu_kernel_source(const std::string &infile,
+    LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
+{
+    std::string input = read_file_ok(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    diagnostics.diagnostics.clear();
+    LCompilers::ASR::TranslationUnit_t* asr = r.result;
+
+    LCompilers::Result<std::string> gpu_result
+        = fe.get_gpu_kernel_source(*asr, diagnostics, pass_manager);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (gpu_result.ok) {
+        std::cout << gpu_result.result;
+        return 0;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+}
+
 int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
     std::string input = read_file_ok(infile);
@@ -2893,6 +2929,10 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_julia) {
         return emit_julia(opts.arg_file, compiler_options);
+    }
+    if (opts.show_gpu_kernel_source) {
+        return emit_gpu_kernel_source(opts.arg_file, lfortran_pass_manager,
+            compiler_options);
     }
     if (opts.show_fortran) {
         return emit_fortran(opts.arg_file, lfortran_pass_manager, compiler_options);
