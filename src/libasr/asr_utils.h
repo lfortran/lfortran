@@ -4341,6 +4341,46 @@ static inline ASR::String_t* get_string_type(ASR::expr_t* s){
 }
 
 /*
+    A character member of a bind(C) or SEQUENCE struct is laid out inline in
+    the struct (a flat byte blob at a fixed offset) instead of behind a string
+    descriptor, so that the struct matches the C/Fortran storage layout.
+    Pointer and allocatable members keep their descriptor.
+*/
+static inline bool is_inline_character_struct_member(
+        ASR::Struct_t* struct_type, ASR::ttype_t* member_type) {
+    return (struct_type->m_abi == ASR::abiType::BindC
+            || struct_type->m_is_sequence)
+        && !ASR::is_a<ASR::Pointer_t>(*member_type)
+        && !ASR::is_a<ASR::Allocatable_t>(*member_type)
+        && ASR::is_a<ASR::String_t>(*type_get_past_array(member_type));
+}
+
+// Same as above, for an expression that may be a struct member access.
+static inline bool is_inline_character_struct_member(ASR::expr_t* expr) {
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        return false;
+    }
+    ASR::StructInstanceMember_t* sim =
+        ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+    ASR::symbol_t* member_sym = symbol_get_past_external(sim->m_m);
+    if (!ASR::is_a<ASR::Variable_t>(*member_sym)) {
+        return false;
+    }
+    ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+    if (!member_var->m_parent_symtab
+            || !member_var->m_parent_symtab->asr_owner) {
+        return false;
+    }
+    ASR::symbol_t* struct_sym = symbol_get_past_external(
+        ASR::down_cast<ASR::symbol_t>(member_var->m_parent_symtab->asr_owner));
+    if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        return false;
+    }
+    return is_inline_character_struct_member(
+        ASR::down_cast<ASR::Struct_t>(struct_sym), sim->m_type);
+}
+
+/*
     Checks if type is a string.
     If array of strings, Returns false.
 */
