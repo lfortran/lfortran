@@ -1,0 +1,13 @@
+{
+    "basename": "asr-duplicate_end_if_label1-6a3cad6",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/duplicate_end_if_label1.f90",
+    "infile_hash": "84eccc84558566a3fcd0d8381994e5c3b65a05b40a5aa089f0bd8bb0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-duplicate_end_if_label1-6a3cad6.stderr",
+    "stderr_hash": "fba2dd57b09758371d0d2e1c589f3e8d9cdd8445988ad02dbdcdec11",
+    "returncode": 2
+}

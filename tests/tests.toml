@@ -3602,6 +3602,10 @@ filename = "errors/arithmetic_if1.f90"
 asr = true
 
 [[test]]
+filename = "errors/duplicate_end_if_label1.f90"
+asr = true
+
+[[test]]
 filename = "errors/assign_01.f90"
 asr = true
 semantics_only_cc = true
