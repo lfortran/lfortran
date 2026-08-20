@@ -633,7 +633,7 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
             // don't copy the tab itself. Pad back out to the fixed 5-char
             // width so eat_label() (fixedform_tokenizer.cpp), which reads
             // a raw 5-byte window, still parses this as digits-and-spaces.
-            out.append(5 - (col - 1), ' ');
+            out.append(6 - col, ' ');
             pos++;
             return;
         }
