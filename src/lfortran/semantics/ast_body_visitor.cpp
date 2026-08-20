@@ -1497,7 +1497,17 @@ public:
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
                     if (s->m_end_label != 0) {
-                        labels.insert(std::to_string(s->m_end_label));
+                        std::string end_label_name = std::to_string(s->m_end_label);
+                        if (!labels.insert(end_label_name).second) {
+                            diag.add(Diagnostic(
+                                "duplicate statement label " + end_label_name,
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {stmt->base.loc})
+                                }));
+                            if (!compiler_options.continue_compilation) {
+                                throw SemanticAbort();
+                            }
+                        }
                     }
                     break;
                 }
