@@ -4788,6 +4788,7 @@ RUN(NAME coarrays_24 EXTRA_ARGS --coarray=true)
 
 RUN(NAME coarrays_26 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_27 EXTRA_ARGS --coarray=true NUM_IMAGES=4)
+RUN(NAME coarrays_28 EXTRA_ARGS --coarray=true)
 
 RUN(NAME coarrays_29 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_30 EXTRA_ARGS --coarray=true)
