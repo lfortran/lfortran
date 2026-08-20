@@ -6760,6 +6760,15 @@ public:
                     continue ;
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
+                // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
+                // as a flat [count*len x i8] blob in place: there is no string
+                // descriptor to allocate or initialize at runtime (scalars and
+                // arrays alike), so skip all per-member setup for them.
+                if (ASR::is_a<ASR::Variable_t>(*sym)
+                        && ASRUtils::is_inline_character_struct_member(
+                            struct_type_t, symbol_type)) {
+                    continue;
+                }
                 int idx = 0;
                 idx = name2memidx[struct_type_name][item.first];
                 llvm::Type* type = name2dertype[struct_type_name];
@@ -12393,12 +12402,9 @@ public:
                 tmp = nullptr;
                 return;
             }
-            // For struct members (especially common blocks), treat as allocatable
-            // so _lfortran_strcpy allocates memory if the pointer is NULL.
-            // Common block structs are initialized with zeroinitializer, so
-            // their string descriptor pointers start as NULL.
-            bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type) ||
-                                       ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target);
+            bool is_dest_allocatable = ASRUtils::is_allocatable(asr_target_type)
+                || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)
+                    && !ASRUtils::is_inline_character_struct_member(x.m_target));
             // bind(C) allocatable string dummies have an extra pointer
             // level (string_descriptor** rather than string_descriptor*)
             // due to the BindC ABI. Dereference to string_descriptor*.
@@ -14895,16 +14901,16 @@ public:
 
         /* Visit String + Visit Index */
         llvm::Value *idx {};
-        llvm::Value *str {};
         this->visit_expr_load_wrapper(x.m_idx, LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1, true);
         idx = tmp;
-        this->visit_expr_load_wrapper(x.m_arg, 0, true);
-        str = tmp;
+        // Use the inline-aware accessor so a character member stored inline
+        // (bind(C)/SEQUENCE/COMMON struct member) yields a direct data pointer
+        // instead of being (mis)read as a string descriptor.
+        llvm::Value* str_data /* i8* */ = get_string_data_and_length(x.m_arg).first;
 
         /* Get StringItem */
         llvm::Value *str_item {};
         {
-            llvm::Value* str_data /*  i8*  */ = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
             llvm::Value* idx_INT64 = llvm_utils->convert_kind(idx, llvm::Type::getInt64Ty(context));
             llvm::Value* idx_zero_based /* 0-based */ = builder->CreateSub(
                                                 idx_INT64,
@@ -14976,11 +14982,6 @@ public:
         LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*x.m_step))
         LCOMPILERS_ASSERT(ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1 /*Fortran only has step of 1*/)
 
-        /* Evaluate String */
-        llvm::Value *str {};
-        this->visit_expr_load_wrapper(x.m_arg, 0);
-        str = tmp;
-        
         /* Evaluate Start + End */
         llvm::Value *start {};
         llvm::Value *end   {};
@@ -15011,7 +15012,9 @@ public:
         llvm::Value* str_data {}; // Shifted from Original by value = start
         {
             int kind = ASRUtils::get_string_type(x.m_arg)->m_kind;
-            llvm::Value* str_data_orig = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), str);
+            // Inline-aware: yields a direct data pointer for characters stored
+            // inline in a bind(C)/SEQUENCE/COMMON struct member.
+            llvm::Value* str_data_orig = get_string_data_and_length(x.m_arg).first;
             llvm::Value* start_INT64 = llvm_utils->convert_kind(start, llvm::Type::getInt64Ty(context));
             llvm::Value* start = builder->CreateSub(start_INT64, llvm::ConstantInt::get(context, llvm::APInt(64, 1)));
             
@@ -19529,6 +19532,11 @@ public:
                         elem_ptr = builder->CreateGEP(llvm_arr_type, var_ptr,
                             {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                              llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx)});
+                    } else if (ASRUtils::is_inline_character_struct_member(val_expr)) {
+                        elem_ptr = llvm_utils->get_inline_string_element(
+                            ASRUtils::get_string_type(val_type), var_ptr,
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_idx),
+                            "inline_read_elem");
                     } else if (ASR::is_a<ASR::String_t>(*val_type)) {
                         ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
                         elem_ptr = llvm_utils->get_string_element_in_array(

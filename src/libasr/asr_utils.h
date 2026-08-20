@@ -4355,6 +4355,25 @@ static inline bool is_inline_character_struct_member(
         && ASR::is_a<ASR::String_t>(*type_get_past_array(member_type));
 }
 
+/*
+    Total number of bytes a character member stored inline occupies in the
+    struct: the element length times the kind times the number of elements
+    (1 for a scalar member).
+*/
+static inline int64_t inline_character_storage_size(ASR::ttype_t* member_type) {
+    ASR::String_t* string_type = get_string_type(member_type);
+    int64_t length = 1;
+    if (string_type->m_len) {
+        extract_value(string_type->m_len, length);
+    }
+    if (length < 1) {
+        length = 1;
+    }
+    int64_t count = is_array(member_type)
+        ? get_fixed_size_of_array(member_type) : 1;
+    return length * string_type->m_kind * count;
+}
+
 // Same as above, for an expression that may be a struct member access.
 static inline bool is_inline_character_struct_member(ASR::expr_t* expr) {
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {

@@ -997,6 +997,9 @@ namespace LCompilers {
                     ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type));
                     if (string_type->m_physical_type == ASR::string_physical_typeType::CChar) {
                         tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), array, idx);
+                    } else if (ASRUtils::is_inline_character_struct_member(expr)) {
+                        tmp = llvm_utils->get_inline_string_element(
+                            string_type, array, idx, "inline_arr_element");
                     } else {
                         tmp = llvm_utils->get_string_element_in_array(string_type, array, idx);
                     }
