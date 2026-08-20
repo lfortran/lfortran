@@ -2226,13 +2226,14 @@ int link_executable(const std::vector<std::string> &infiles,
                     cu_out << cuda_source;
                     cu_out.close();
                 }
-                // Compile kernel .cu with nvcc
-                std::string nvcc_cmd = "nvcc -c -O2 -o " + cuda_kernel_obj
-                    + " " + cuda_kernel_src;
-                int cuda_err = system(nvcc_cmd.c_str());
+                // Compile the kernel .cu with the device compiler
+                std::string device_cc = compiler_options.device_compiler;
+                std::string cuda_kernel_cmd = device_cc + " -c -O2 -o "
+                    + cuda_kernel_obj + " " + cuda_kernel_src;
+                int cuda_err = system(cuda_kernel_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA kernel: "
-                        << nvcc_cmd << std::endl;
+                        << cuda_kernel_cmd << std::endl;
                     return 10;
                 }
 
@@ -2241,7 +2242,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_cuda.cu";
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string cuda_rt_cmd = "nvcc -c -O2"
+                std::string cuda_rt_cmd = device_cc + " -c -O2"
                     " -I" + runtime_library_dir + "/../libasr/runtime"
                     " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
@@ -2252,8 +2253,9 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // Replace the linker with nvcc for CUDA linking
-                compile_cmd = "nvcc -o " + outfile + " ";
+                // The device compiler also drives the link, since it knows
+                // where its own device runtime lives.
+                compile_cmd = device_cc + " -o " + outfile + " ";
                 for (auto &s : infiles) {
                     compile_cmd += s + " ";
                 }
