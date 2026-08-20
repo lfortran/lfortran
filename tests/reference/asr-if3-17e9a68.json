@@ -1,0 +1,13 @@
+{
+    "basename": "asr-if3-17e9a68",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/if3.f90",
+    "infile_hash": "0be16de39c7f8d323e1851694dac5caa3938b72f4ecd5117440dd180",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-if3-17e9a68.stdout",
+    "stdout_hash": "4fe2bf6f6751434767f7fe96f9b6dab39bef8528d8c34c1d6accef2a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

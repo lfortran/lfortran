@@ -2738,6 +2738,12 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "if3.f90"
+ast = true
+ast_f90 = true
+asr = true
+
+[[test]]
 filename = "where1.f90"
 ast = true
 ast_f90 = true
@@ -3584,6 +3590,10 @@ ast = true
 
 [[test]]
 filename = "errors/arithmetic_if1.f90"
+asr = true
+
+[[test]]
+filename = "errors/duplicate_end_if_label1.f90"
 asr = true
 
 [[test]]
