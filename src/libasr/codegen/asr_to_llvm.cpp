@@ -15619,6 +15619,32 @@ public:
                 tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
                 break;
             }
+            case 10 : {
+                // kind=10 = C long double; byte layout is platform-native
+                // (produced by strtold + memcpy(sizeof(long double)) at parse time).
+                const uint8_t* bytes = ASRUtils::real_constant_get_r10_bytes(&x);
+#if defined(__APPLE__) && defined(__aarch64__)
+                // Apple Silicon: long double = 128-bit IEEE quad (fp128)
+                uint64_t words[2] = {0, 0};
+                std::memcpy(words, bytes, 16);
+                llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
+                tmp = llvm::ConstantFP::get(context, apf);
+#elif defined(__APPLE__)
+                // macOS x86-64: Apple maps long double to 64-bit double
+                double val;
+                std::memcpy(&val, bytes, 8);
+                tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
+#else
+                // Linux/Windows x86: 80-bit extended precision (x86_fp80)
+                uint64_t words[2] = {0, 0};
+                std::memcpy(words, bytes, 10);
+                llvm::APInt bits(80, llvm::ArrayRef<uint64_t>(words, 2));
+                llvm::APFloat apf(llvm::APFloat::x87DoubleExtended(), bits);
+                tmp = llvm::ConstantFP::get(context, apf);
+#endif
+                break;
+            }
             case 16 : {
                 const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
                 uint64_t lo, hi;
@@ -15656,6 +15682,15 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (10) :
+#if defined(__APPLE__) && defined(__aarch64__)
+                    el_type = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+                    el_type = llvm::Type::getDoubleTy(context);
+#else
+                    el_type = llvm::Type::getX86_FP80Ty(context);
+#endif
+                    break;
                 case (16) :
                     el_type = llvm::Type::getFP128Ty(context); break;
                 default :
@@ -15716,6 +15751,15 @@ public:
                     el_type = llvm::Type::getFloatTy(context); break;
                 case (8) :
                     el_type = llvm::Type::getDoubleTy(context); break;
+                case (10) :
+#if defined(__APPLE__) && defined(__aarch64__)
+                    el_type = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+                    el_type = llvm::Type::getDoubleTy(context);
+#else
+                    el_type = llvm::Type::getX86_FP80Ty(context);
+#endif
+                    break;
                 case (16) :
                     el_type = llvm::Type::getFP128Ty(context); break;
                 default :

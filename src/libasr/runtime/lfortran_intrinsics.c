@@ -2010,6 +2010,7 @@ typedef enum primitive_types{
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
     FLOAT_128_TYPE = 18,
+    FLOAT_80_TYPE = 19,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -2519,7 +2520,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
-        16/*FLOAT_128: 16 bytes = 128 bits*/ };
+        16/*FLOAT_128: 16 bytes = 128 bits*/,
+        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2592,10 +2594,13 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
         switch (s_info->serialization_string[s_info->current_stop++])
         {
         case '1':
-            /* Must be R16 -- consume the '6' */
+            /* Must be R16 or R10 -- consume the second digit ('6' or '0') */
             if (s_info->serialization_string[s_info->current_stop] == '6') {
                 s_info->current_stop++;
                 *PrimitiveType = FLOAT_128_TYPE;
+            } else if (s_info->serialization_string[s_info->current_stop] == '0') {
+                s_info->current_stop++;
+                *PrimitiveType = FLOAT_80_TYPE;
             } else {
                 fprintf(stderr, "RunTime - compiler internal error"
                     " : Unidentified Print Types Serialization --> %s\n",
@@ -2610,7 +2615,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             *PrimitiveType = FLOAT_32_TYPE;
             break;
         default:
-            fprintf(stderr, "RunTime - compiler" 
+            fprintf(stderr, "RunTime - compiler"
             "internal error : Unidentified Print Types Serialization --> %s\n",
                     s_info->serialization_string);
             exit(1);
@@ -2805,6 +2810,42 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+static void format_long_double_fortran(char* result, long double val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
+    long double abs_val = fabsl(val);
+    
+    if (abs_val == 0.0L) {
+        sprintf(result, "0.000000000000000000000");
+        return;
+    }
+
+    if (abs_val < 0.1L || abs_val >= 1.0e20L) {
+        sprintf(result, "%.20LE", val);
+        char* e_pos = strchr(result, 'E');
+        if (e_pos != NULL) {
+            char sign = e_pos[1];
+            int exp_val = atoi(e_pos + 2);
+            sprintf(e_pos, "E%c%03d", sign, (exp_val < 0 ? -exp_val : exp_val));
+        }
+        return;
+    }
+    
+    int magnitude = (int)floorl(log10l(abs_val)) + 1;
+    int decimal_places = 21 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%dLf", decimal_places);
+    sprintf(result, format_str, val);
+}
+
 // Pad a formatted real number to a fixed-width field matching Fortran
 // list-directed G descriptor output (e.g., G16.8E2 for real*4).
 // For F-format (no exponent): right-justify in (total_width - e_trail),
@@ -2939,6 +2980,16 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             } else {
                 format_float128_fortran(result, val128);
             }
+            break;
+        }
+        case FLOAT_80_TYPE: {
+            /* Load the native platform long double from memory.
+             * sizeof(long double) = 16 on Linux x86-64 (x86_fp80 padded),
+             *                    = 16 on Apple Silicon (fp128),
+             *                    =  8 on macOS x86-64 (mapped to double). */
+            long double val = 0.0L;
+            memcpy(&val, arg, sizeof(val));
+            format_long_double_fortran(result, val);
             break;
         }
         default :

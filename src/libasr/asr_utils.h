@@ -174,6 +174,33 @@ static inline ASR::expr_t* make_RealConstant_r16(Allocator& al,
         al, loc, real_constant_pack_r16(bytes), type));
 }
 
+// --- real(10) value access ---------------------------------------------------
+static inline const uint8_t* real_constant_unpack_r10(double m_r) {
+    uintptr_t addr;
+    std::memcpy(&addr, &m_r, sizeof(addr));
+    return reinterpret_cast<const uint8_t*>(addr);
+}
+
+static inline const uint8_t* real_constant_get_r10_bytes(
+        const ASR::RealConstant_t* c) {
+    return real_constant_unpack_r10(c->m_r);
+}
+
+static inline double real_constant_pack_r10(const uint8_t* bytes) {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
+    double m_r;
+    std::memcpy(&m_r, &addr, sizeof(addr));
+    return m_r;
+}
+
+static inline ASR::expr_t* make_RealConstant_r10(Allocator& al,
+        const Location& loc, long double v, ASR::ttype_t* type) {
+    uint8_t* bytes = static_cast<uint8_t*>(al.alloc(sizeof(long double)));
+    std::memcpy(bytes, &v, sizeof(long double));
+    return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
+        al, loc, real_constant_pack_r10(bytes), type));
+}
+
 // ----------------------------------------------------------------------------
 
 static inline double extract_real_4(const char *s) {
@@ -445,8 +472,11 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
 // kind may be 16 (e.g. intrinsic-generated literals such as 0.0, 1.0, pi).
 static inline ASR::expr_t* make_RealConstant_util(Allocator& al,
         const Location& loc, double value, ASR::ttype_t* type) {
-    if (extract_kind_from_ttype_t(type) == 16) {
+    int k = extract_kind_from_ttype_t(type);
+    if (k == 16) {
         return make_RealConstant_r16(al, loc, lf_f128_from_double(value), type);
+    } else if (k == 10) {
+        return make_RealConstant_r10(al, loc, (long double)value, type);
     }
     return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, value, type));
 }
@@ -2233,11 +2263,10 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
-            // kind=16 (real128) cannot be represented in `double m_r` — m_r
-            // is a pointer-encoded payload (see real_constant_get_r16_bytes).
-            // Refuse extraction so that constant-folding passes leave the
-            // value alone instead of dereferencing the pointer as a double.
-            if (ASRUtils::extract_kind_from_ttype_t(const_real->m_type) == 16) {
+            // kind=16 (real128) and kind=10 (x86_fp80) cannot be represented in
+            // double m_r — m_r is a pointer-encoded payload.
+            int r_k = ASRUtils::extract_kind_from_ttype_t(const_real->m_type);
+            if (r_k == 16 || r_k == 10) {
                 return false;
             }
             if constexpr (std::is_same<T, double>::value){
@@ -3339,11 +3368,21 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
         ASR::is_a<ASR::Real_t>(*type) ||
         ASR::is_a<ASR::Logical_t>(*type)) {
         int64_t kind = extract_kind_from_ttype_t(type);
+        if (kind == 10 && ASR::is_a<ASR::Real_t>(*type)) {
+#if defined(__APPLE__) && !defined(__aarch64__)
+            // macOS x86-64: long double mapped to 64-bit double by Apple
+            return {8, 8};
+#else
+            // Linux x86-64 (x86_fp80, padded to 16) or Apple Silicon (fp128)
+            return {16, 16};
+#endif
+        }
         if (kind > 0) return {kind, kind};
         return {-1, -1};
     } else if (ASR::is_a<ASR::Complex_t>(*type)) {
         int64_t kind = extract_kind_from_ttype_t(type);
         if (kind <= 0) return {-1, -1};
+        if (kind == 10) return {32, 16};
         // LFortran maps complex to a packed LLVM struct {float,float}
         // or {double,double}, so alignment is 1 (packed).
         return {2 * kind, 1};

@@ -9784,7 +9784,7 @@ public:
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind !=16) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 10 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Real",
                     Level::Error, Stage::Semantic, {
@@ -18367,6 +18367,22 @@ public:
                     default: LCOMPILERS_ASSERT(false); res = lv;
                 }
                 return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+                const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+                const uint8_t* r_bytes = ASRUtils::real_constant_get_r10_bytes(rc);
+                long double lv{}, rv{};
+                std::memcpy(&lv, l_bytes, sizeof(long double));
+                std::memcpy(&rv, r_bytes, sizeof(long double));
+                long double res;
+                switch (op) {
+                    case ASR::Add: res = lv + rv; break;
+                    case ASR::Sub: res = lv - rv; break;
+                    case ASR::Mul: res = lv * rv; break;
+                    case ASR::Div: res = lv / rv; break;
+                    case ASR::Pow: res = std::pow(lv, rv); break;
+                    default: LCOMPILERS_ASSERT(false); res = lv;
+                }
+                return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
             }
             double left_value = lc->m_r;
             double right_value = rc->m_r;
@@ -18380,6 +18396,12 @@ public:
                 lf_float128 lv = ASRUtils::real_constant_get_r16(lc);
                 lf_float128 res = lf_f128_pow(lv, lf_f128_from_double((double)right_value));
                 return ASRUtils::make_RealConstant_r16(al, left->base.loc, res, dest_type);
+            } else if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 10) {
+                const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
+                long double lv{};
+                std::memcpy(&lv, l_bytes, sizeof(long double));
+                long double res = std::pow(lv, (long double)right_value);
+                return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
             }
             double left_value = lc->m_r;
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
@@ -19976,6 +19998,14 @@ public:
             r = ASRUtils::extract_real_4(x.m_n);
         } else if ( r_kind == 8 ) {
             r = ASRUtils::extract_real_8(x.m_n);
+        } else if ( r_kind == 10 ) {
+            // kind=10 is x86 80-bit extended precision (x86_fp80).
+            // Parse with strtold for full 80-bit mantissa precision into arena bytes.
+            uint8_t* bytes = (uint8_t*)al.alloc(sizeof(long double));
+            std::string r_str = ASRUtils::extract_real_16_str(x.m_n);
+            long double v = std::strtold(r_str.c_str(), nullptr);
+            std::memcpy(bytes, &v, sizeof(long double));
+            r = ASRUtils::real_constant_pack_r10(bytes);
         } else if ( r_kind == 16 ) {
             // kind=16 (real128) cannot fit in `double m_r`. Allocate 16 bytes
             // on the ASR arena, parse the literal into them via the runtime
@@ -19993,7 +20023,7 @@ public:
             throw SemanticAbort();
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, r_kind));
-        if (r_kind != 16 && std::isinf(r)) {
+        if (r_kind != 16 && r_kind != 10 && std::isinf(r)) {
             diag.add(Diagnostic(
                 "Real constant overflows its kind (" + std::to_string(r_kind) + ")",
                 Level::Warning, Stage::Semantic, {Label("", {x.base.base.loc})}));
