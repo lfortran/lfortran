@@ -4392,6 +4392,83 @@ public:
                 sync_pdt_specialization_symbols(clss, proc_scope);
             }
         }
+        check_class_procedure_overrides();
+    }
+
+    // The name of the derived type that declares the binding `x` overrides.
+    std::string overridden_binding_owner(
+            const ASR::StructMethodDeclaration_t &x) {
+        ASR::StructMethodDeclaration_t *base = ASRUtils::overridden_binding(x);
+        if (base == nullptr || base->m_parent_symtab == nullptr) return "";
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            base->m_parent_symtab->asr_owner);
+        return std::string(ASRUtils::symbol_name(owner));
+    }
+
+    // Points a rejected override back at the binding it failed to override,
+    // which is what the type would have had if the override were absent.
+    void adopt_overridden_binding(ASR::StructMethodDeclaration_t *x) {
+        ASR::StructMethodDeclaration_t *base = ASRUtils::overridden_binding(*x);
+        if (base == nullptr) return;
+        x->m_proc = base->m_proc;
+        x->m_proc_name = base->m_proc_name;
+        x->m_self_argument = base->m_self_argument;
+        x->m_is_nopass = base->m_is_nopass;
+    }
+
+    // Fortran 2018 7.5.7.3: an overriding type-bound procedure must have the
+    // same interface as the one it overrides, apart from the passed-object
+    // dummy argument. A dispatch through the parent type is compiled against
+    // the parent's interface, so a mismatch calls the overriding procedure
+    // with arguments it was not declared to take. This runs once every binding
+    // has been added, because a parent declared in the same scoping unit is
+    // not necessarily processed before the type extending it.
+    void check_class_procedure_overrides() {
+        for (auto &proc : class_procedures) {
+            ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
+                current_scope->resolve_symbol(proc.first));
+            if (clss_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*clss_sym)) {
+                continue;
+            }
+            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(clss_sym);
+            for (auto &pname : proc.second) {
+                ASR::symbol_t *sym = clss->m_symtab->get_symbol(pname.first);
+                if (sym == nullptr ||
+                        !ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+                    continue;
+                }
+                ASR::StructMethodDeclaration_t *binding =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                ASR::symbol_t *proc_sym = ASRUtils::symbol_get_past_external(
+                    binding->m_proc);
+                if (proc_sym == nullptr ||
+                        !ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                    continue;
+                }
+                std::string what = "Type bound procedure '" +
+                    std::string(binding->m_name) + "' of '" +
+                    std::string(clss->m_name) + "' overriding the binding of "
+                    "the same name in '" + overridden_binding_owner(*binding) +
+                    "'";
+                ASRUtils::InterfaceMismatch m =
+                    ASRUtils::binding_override_mismatch(*binding,
+                        ASR::down_cast<ASR::Function_t>(proc_sym), what, true);
+                if (m.mismatch) {
+                    diag.add(diag::Diagnostic(m.message,
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {pname.second["procedure"].loc})}));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    // Continuing means the rest of the file still has to be
+                    // walked, and every later stage assumes a binding it can
+                    // dispatch through. Leaving this one in place hands them a
+                    // procedure the parent's interface does not describe, so
+                    // the type keeps the binding it inherited instead.
+                    adopt_overridden_binding(binding);
+                }
+            }
+        }
     }
 
     void visit_Use(const AST::Use_t &x) {

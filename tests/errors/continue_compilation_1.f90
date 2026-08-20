@@ -65,7 +65,7 @@ module continue_compilation_1_mod
     end type type_t
 
 
-
+    type, extends(MyClass) :: derived_binding; contains; procedure :: display => display_override; end type  ! {Error} Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
 contains
 
     integer function statement_function_name_conflict()
@@ -182,7 +182,7 @@ contains
         procedure(sub_test), pointer :: pf2
         pf2 => dummy_func
     end subroutine proc_ptr_error_tests
-
+    subroutine display_override(self, a, b); class(derived_binding), intent(in) :: self; integer, intent(in) :: a, b; end subroutine
     function op_clash_f(x) result(y)
         integer, intent(in) :: x
         integer :: y
