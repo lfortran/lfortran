@@ -2125,6 +2125,13 @@ public:
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
     std::set<std::string> assgnd_target;
+    // Tracks (scope, module name) pairs for which the module's symbols were
+    // brought into `scope` via a wildcard/all import (`use mod` or
+    // `use mod, x => y`), as opposed to an explicit `use mod, only: name`.
+    // Used to decide whether a bare name left over from such a wildcard
+    // import may be safely erased when a later `use ..., only: new => name`
+    // renames it (see import_use_symbols).
+    std::set<std::pair<SymbolTable*, std::string>> modules_imported_all;
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
@@ -21726,6 +21733,7 @@ public:
             msym = "lfortran_intrinsic_" + msym;
         }
         if (x.n_symbols == 0) {
+            modules_imported_all.insert({current_scope, msym});
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
@@ -21734,6 +21742,7 @@ public:
             // Import all symbols, but there exists some
             // symbols which need to be imported with renaming e.g.:
             // use a, x => y
+            modules_imported_all.insert({current_scope, msym});
             std::vector<std::string> symbols_already_imported_with_renaming;
             std::queue<std::pair<std::string, std::string>> to_be_imported_with_renaming;
             for (size_t i = 0; i < x.n_symbols; i++) {
@@ -21895,7 +21904,15 @@ public:
                         ASR::symbol_t* existing = current_scope->resolve_symbol(remote_sym);
                         if (existing && ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
                             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(existing);
-                            if (std::string(ext_sym->m_module_name) == msym) {
+                            // Only erase the bare name if it was brought into
+                            // scope by an earlier *wildcard* `use` of this
+                            // module (e.g. a plain `use mod`). If it was
+                            // instead explicitly imported by name via a
+                            // previous `use mod, only: <name>`, it was
+                            // requested on purpose and must stay accessible.
+                            if (std::string(ext_sym->m_module_name) == msym &&
+                                modules_imported_all.find({current_scope, msym}) !=
+                                    modules_imported_all.end()) {
                                 current_scope->erase_symbol(remote_sym);
                             }
                         }
