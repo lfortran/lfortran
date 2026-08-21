@@ -500,19 +500,15 @@ namespace LCompilers {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
+                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps
+                // to an inline [count*len*kind x i8] byte blob
                 ASR::ttype_t* mem_type = member->m_type;
                 if (ASRUtils::is_inline_character_struct_member(
                         der_type, mem_type)) {
-                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::type_get_past_array(mem_type));
-                    int64_t slen = 1;
-                    if (s->m_len) {
-                        ASRUtils::extract_value(s->m_len, slen);
-                    }
-                    if (slen < 1) slen = 1;
+                    int64_t inline_bytes =
+                        ASRUtils::inline_character_storage_size(mem_type);
                     llvm_mem_type = llvm::ArrayType::get(
-                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
+                        llvm::Type::getInt8Ty(context), (uint64_t)inline_bytes);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -2470,6 +2466,25 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::get_string_element_in_array(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
         llvm::Value* desired_ptr = get_string_element_in_array_(str_type, data, arr_idx);
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
+    }
+
+    llvm::Value* LLVMUtils::get_inline_string_element(ASR::String_t* str_type,
+            llvm::Value* blob_ptr, llvm::Value* idx, std::string name){
+        int64_t len = 1;
+        if (str_type->m_len) {
+            ASRUtils::extract_value(str_type->m_len, len);
+        }
+        llvm::Value* elem_bytes = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), len * str_type->m_kind);
+        llvm::Value* off = builder->CreateMul(
+            convert_kind(idx, llvm::Type::getInt64Ty(context)), elem_bytes);
+        // blob_ptr points at the inline [count*len x i8] blob; view it as a
+        // flat i8 buffer before indexing to the element.
+        llvm::Value* bytes = builder->CreateBitCast(blob_ptr, character_type);
+        llvm::Value* elem_ptr = create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), bytes, off);
+        return create_string_descriptor(elem_ptr,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len), name);
     }
 
 
