@@ -4221,6 +4221,7 @@ RUN(NAME ip_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME shifta_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME shifta_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME shifta_03 LABELS gfortran llvm)
 
 RUN(NAME equivalence_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
