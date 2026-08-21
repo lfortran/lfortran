@@ -17121,15 +17121,10 @@ public:
         }
     }
 
-    std::string get_namelist_var_name(ASR::symbol_t *var_sym, ASR::Variable_t *var) {
-        std::string var_name = std::string(var->m_name);
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*var_sym)) {
-            ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(var_sym);
-            if (ext->m_original_name) {
-                var_name = ext->m_original_name;
-            }
-        }
-        return LCompilers::to_lower(var_name);
+    // A namelist group object is the *local* entity, so use the local name
+    // (which respects USE renaming), not the original module name.
+    std::string get_namelist_var_name(ASR::symbol_t *var_sym) {
+        return LCompilers::to_lower(ASRUtils::symbol_name(var_sym));
     }
 
     // Helper to build namelist descriptor and call runtime function
@@ -17532,7 +17527,7 @@ public:
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym_past);
 
             // Get variable name (lowercase)
-            std::string var_name = get_namelist_var_name(var_sym, var);
+            std::string var_name = get_namelist_var_name(var_sym);
 
             uint32_t var_hash = get_hash((ASR::asr_t*)var);
             llvm::Value* data_ptr = llvm_symtab[var_hash];

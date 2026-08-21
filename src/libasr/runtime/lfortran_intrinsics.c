@@ -13779,6 +13779,14 @@ static void write_str(nml_writer_t *w, const char *s) {
     }
 }
 
+// Group and object names in namelist output shall be in upper case
+// (F2018 13.11.4.1); the descriptor keeps them lowercase for matching.
+static void write_str_upper(nml_writer_t *w, const char *s) {
+    while (*s) {
+        write_char(w, (char)toupper((unsigned char)*s++));
+    }
+}
+
 // Helper function to write a single namelist item value
 static int64_t get_element_size(const lfortran_nml_item_t *item);
 
@@ -13922,20 +13930,15 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
 void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
-    // Names in namelist output are in upper case
     write_str(w, " &");
-    for (const char *p = group->group_name; *p; p++) {
-        write_char(w, (char)toupper((unsigned char)*p));
-    }
+    write_str_upper(w, group->group_name);
     write_char(w, '\n');
 
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
         write_str(w, "  ");
-        for (const char *p = item->name; *p; p++) {
-            write_char(w, (char)toupper((unsigned char)*p));
-        }
+        write_str_upper(w, item->name);
         write_char(w, '=');
 
         if (item->rank == 0) {
