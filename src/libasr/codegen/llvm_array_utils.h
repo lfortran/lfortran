@@ -305,7 +305,7 @@ namespace LCompilers {
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
-                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "") = 0;
+                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, bool assumed_size_last_dim = false, std::string array_name = "", std::string infile = "") = 0;
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp) = 0;
@@ -436,7 +436,7 @@ namespace LCompilers {
 
                 llvm::Value* cmo_convertor_single_element_data_only(
                     llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-                    int n_args, bool check_for_bounds, LocationManager& lm, bool is_unbounded_pointer_to_data = false, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
+                    int n_args, bool check_for_bounds, LocationManager& lm, bool is_unbounded_pointer_to_data = false, bool assumed_size_last_dim = false, std::string array_name = "", std::string infile = "", Location loc = {0, 0});
 
             public:
 
@@ -586,7 +586,7 @@ namespace LCompilers {
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr,
-                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, std::string array_name = "", std::string infile = "");
+                    bool is_unbounded_pointer_to_data = false, bool check_for_bounds = false, bool assumed_size_last_dim = false, std::string array_name = "", std::string infile = "");
 
                 virtual
                 llvm::Value* get_is_allocated_flag(llvm::Value* array, ASR::expr_t* array_exp);
