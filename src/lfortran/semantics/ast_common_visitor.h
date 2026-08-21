@@ -7099,16 +7099,27 @@ public:
                                         bool eq2_is_common = ASR::is_a<ASR::StructInstanceMember_t>(*asr_eq2);
 
                                         if (eq1_is_common && eq2_is_common) {
-                                            ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+                                            ASR::symbol_t* member1 = ASRUtils::symbol_get_past_external(
+                                                ASR::down_cast<ASR::StructInstanceMember_t>(asr_eq1)->m_m);
+                                            ASR::symbol_t* member2 = ASRUtils::symbol_get_past_external(
                                                 ASR::down_cast<ASR::StructInstanceMember_t>(asr_eq2)->m_m);
                                             ASR::symbol_t* common_block = ASR::down_cast<ASR::symbol_t>(
-                                                ASRUtils::symbol_parent_symtab(member)->asr_owner);
+                                                ASRUtils::symbol_parent_symtab(member2)->asr_owner);
+                                            std::string explanation =
+                                                "\n\n'" + std::string(ASRUtils::symbol_name(member1))
+                                                + "' and '" + ASRUtils::symbol_name(member2)
+                                                + "' are both declared in COMMON block '"
+                                                + ASRUtils::symbol_name(common_block) + "'. "
+                                                + "The COMMON statement already places them at fixed positions "
+                                                + "in memory. EQUIVALENCE is not allowed to override that layout."
+                                                + "\n\nHint: you may EQUIVALENCE a non-COMMON variable to a COMMON "
+                                                + "variable (this extends the common block), but never two "
+                                                + "variables that are already in a COMMON block.";
                                             diag.add(diag::Diagnostic(
-                                                "equivalence for '" + std::string(ASRUtils::symbol_name(member))
-                                                + "' conflicts with the ordering of COMMON block '"
-                                                + ASRUtils::symbol_name(common_block) + "'",
+                                                "cannot make two COMMON variables share the same storage",
                                                 diag::Level::Error, diag::Stage::Semantic, {
-                                                    diag::Label("", {asr_eq1->base.loc, asr_eq2->base.loc})}));
+                                                    diag::Label(explanation,
+                                                        {asr_eq1->base.loc, asr_eq2->base.loc})}));
                                             throw SemanticAbort();
                                         }
 
