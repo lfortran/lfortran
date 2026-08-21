@@ -966,6 +966,20 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
+
+    subroutine pointer_target_not_target()
+        implicit none
+        integer, pointer :: p
+        integer :: plain
+        p => plain  ! {Error} Pointer assignment target 'plain' is neither a pointer nor a target
+    end subroutine
+
+    subroutine pointer_target_array_item_not_target()
+        implicit none
+        integer, pointer :: p
+        integer :: arr(5)
+        p => arr(2)  ! {Error} Pointer assignment target 'arr' is neither a pointer nor a target
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous

@@ -69,6 +69,43 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     }
 }
 
+static ASR::Variable_t* pointer_target_without_attr(ASR::expr_t* e) {
+    switch (e->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_target_attr || ASRUtils::is_pointer(v->m_type)) {
+                    return nullptr;
+                }
+                return v;
+            }
+            return nullptr;
+        }
+        case ASR::exprType::ArrayItem:
+            return pointer_target_without_attr(
+                ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        case ASR::exprType::ArraySection:
+            return pointer_target_without_attr(
+                ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* m =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(m->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_target_attr || ASRUtils::is_pointer(v->m_type)) {
+                    return nullptr;
+                }
+            }
+            return pointer_target_without_attr(m->m_v);
+        }
+        default:
+            return nullptr;
+    }
+}
+
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
@@ -2988,6 +3025,22 @@ public:
 
         ASR::ttype_t* target_type_underlying = ASRUtils::type_get_past_pointer(target_type);
         ASR::ttype_t* value_type_underlying = ASRUtils::type_get_past_pointer(value_type);
+
+        if ( is_target_pointer
+                && !ASR::is_a<ASR::PointerNullConstant_t>(*value)
+                && !ASR::is_a<ASR::FunctionType_t>(*value_type_underlying) ) {
+            ASR::Variable_t* invalid_target = pointer_target_without_attr(value);
+            if (invalid_target != nullptr) {
+                diag.add(Diagnostic(
+                    "Pointer assignment target '" +
+                    std::string(invalid_target->m_name) +
+                    "' is neither a pointer nor a target",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
