@@ -933,7 +933,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds,LocationManager& lm, bool is_unbounded_pointer_to_data, std::string array_name, std::string infile, Location loc) {
+            int n_args, bool check_for_bounds,LocationManager& lm, bool is_unbounded_pointer_to_data, bool assumed_size_last_dim, std::string array_name, std::string infile, Location loc) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0));
@@ -958,7 +958,21 @@ namespace LCompilers {
                     }
                     dim_size = builder->CreateSExtOrTrunc(dim_size, index_type);
                     r1 += 2;
-                    if( check_for_bounds ) {
+                    if( check_for_bounds && assumed_size_last_dim && r == n_args - 1 ) {
+                        // Only the lower bound of an assumed-size dimension
+                        // is known; its upper bound cannot be checked.
+                        llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
+                        llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
+                        llvm_utils->generate_runtime_error(lbound_check,
+                                                "Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but it is below the lower bound %d.",
+                                                        {LLVMUtils::RuntimeLabel("", {loc})},
+                                                        infile,
+                                                        lm,
+                                                        LCompilers::create_global_string_ptr(context, *builder->GetInsertBlock()->getParent()->getParent(), *builder, array_name),
+                                                        req_idx,
+                                                        dimension,
+                                                        lval);
+                    } else if( check_for_bounds ) {
                         llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
                         llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, dim_size),
                                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
@@ -987,12 +1001,12 @@ namespace LCompilers {
             std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, ASR::expr_t* expr, LocationManager& lm,
             ASR::symbol_t* const variable_type_decl, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name, std::string infile) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, bool assumed_size_last_dim, std::string array_name, std::string infile) {
             llvm::Value* tmp = nullptr;
             llvm::Value* idx = nullptr;
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
-                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, array_name, infile, expr->base.loc);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, lm, is_unbounded_pointer_to_data, assumed_size_last_dim, array_name, infile, expr->base.loc);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type));
                     if (string_type->m_physical_type == ASR::string_physical_typeType::CChar) {
