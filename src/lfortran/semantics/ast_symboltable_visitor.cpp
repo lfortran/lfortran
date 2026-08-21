@@ -2470,9 +2470,6 @@ public:
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
                     if (!is_placeholder) {
-                        // Update the placeholder's FunctionType in-place so that
-                        // struct member variables still referencing it get the
-                        // correct function signature (e.g., return type).
                        if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
                                 ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
                             diag.add(diag::Diagnostic(
@@ -2483,6 +2480,9 @@ public:
                         }
                     }
                     if (is_placeholder) {
+                        // Update the placeholder's FunctionType in-place so that
+                        // struct member variables still referencing it get the
+                        // correct function signature (e.g., return type).
                         ASR::FunctionType_t* placeholder_sig = ASR::down_cast<ASR::FunctionType_t>(
                             f2->m_function_signature);
                         ASR::FunctionType_t* real_sig = ASR::down_cast<ASR::FunctionType_t>(
