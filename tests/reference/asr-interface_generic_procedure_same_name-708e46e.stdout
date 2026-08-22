@@ -11,7 +11,7 @@
                                 (GenericProcedure
                                     2
                                     frexp
-                                    [2 frexp~genericprocedure]
+                                    [2 frexp]
                                     Public
                                 ),
                             frexp~genericprocedure:
@@ -92,7 +92,7 @@
                                                     []
                                                 )
                                         })
-                                    frexp~genericprocedure
+                                    frexp
                                     (FunctionType
                                         [(Real 4)
                                         (Integer 4)]

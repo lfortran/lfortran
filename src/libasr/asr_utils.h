@@ -42,7 +42,7 @@
             temp_scope = temp_scope->parent; \
         } \
         if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+            current_function_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(final_sym))); \
         } \
     } \
 
@@ -1514,6 +1514,29 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
+}
+
+// Returns the key `f` is stored under in its defining symbol table.
+//
+// For nearly every symbol this is just `symbol_name(f)`, but a frontend may
+// legitimately key a symbol under something else when two symbols would
+// otherwise claim the same name (Fortran allows a generic interface and one
+// of its specific procedures to share a name). Use this - not `symbol_name` -
+// for `ExternalSymbol::m_original_name`, because that field is looked up as a
+// key when a modfile is loaded.
+static inline std::string symbol_table_key(const ASR::symbol_t *f)
+{
+    std::string name = symbol_name(f);
+    SymbolTable *parent = symbol_parent_symtab(f);
+    if (parent == nullptr || parent->get_symbol(name) == f) {
+        return name;
+    }
+    for (auto &item : parent->get_scope()) {
+        if (item.second == f) {
+            return item.first;
+        }
+    }
+    return name;
 }
 
 // Returns the `symbol`'s symtab, or nullptr if the symbol has no symtab
