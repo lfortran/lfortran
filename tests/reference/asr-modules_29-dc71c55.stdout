@@ -177,6 +177,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             git_target_t:
                                 (Struct
@@ -702,6 +703,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             new_dependency:
                                 (Function
@@ -964,6 +966,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_table:
@@ -1570,6 +1573,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_table:

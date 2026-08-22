@@ -103,6 +103,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             toml_ordered:
                                 (Struct
@@ -394,6 +395,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             new:
                                 (GenericProcedure
@@ -478,6 +480,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_array:
@@ -656,6 +659,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             toml_value:

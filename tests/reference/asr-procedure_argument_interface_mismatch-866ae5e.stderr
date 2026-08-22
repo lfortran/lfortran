@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.call.procedure_argument_matches_formal]: Procedure argument 'fp' argument 1 must have type r64, not i32
-   --> tests/asr/verify/procedure_argument_interface_mismatch.asr:206:18
+   --> tests/asr/verify/procedure_argument_interface_mismatch.asr:208:18
     |
-206 |                 (Var
+208 |                 (Var
     |                  ^^^ failed here

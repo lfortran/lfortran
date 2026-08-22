@@ -226,6 +226,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             foo_sub:
                                 (Function
@@ -341,6 +342,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

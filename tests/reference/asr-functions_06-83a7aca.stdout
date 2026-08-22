@@ -293,6 +293,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             real_return:
                                 (Function
@@ -446,6 +447,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             trim_wrapper:
                                 (Function
@@ -549,6 +551,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

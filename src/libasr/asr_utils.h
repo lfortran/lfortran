@@ -6306,6 +6306,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
         ft->n_restrictions, ft->m_is_restriction, current_scope);
 }
 
+// m_link_name: optional external linkage name when it differs from m_name
+// (see doc/src/asr/asr_nodes/symbol_nodes/Function.md). Defaults to null.
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
@@ -6313,7 +6315,8 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
-    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
+    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr,
+    char* m_link_name = nullptr, Location* m_start_name = nullptr,
     Location* m_end_name = nullptr) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
@@ -6322,7 +6325,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header, m_start_name, m_end_name);
+        m_side_effect_free, m_c_header, m_link_name, m_start_name, m_end_name);
 }
 
 
@@ -6596,7 +6599,8 @@ class SymbolDuplicator {
             function_type->m_module, function_type->m_inline, function_type->m_static,
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
-            function->m_side_effect_free));
+            function->m_side_effect_free, function->m_module_file,
+            function->m_link_name, function->m_start_name, function->m_end_name));
     }
 
     ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,

@@ -104,6 +104,7 @@
               true
               true
               nil
+              nil
             )
             "derived" (Struct
               (SymbolTable
@@ -247,6 +248,7 @@
               :Public
               true
               true
+              nil
               nil
             )
           }

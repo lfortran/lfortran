@@ -189,6 +189,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 )
                         })
                     _lcompilers_mlir_gpu_offloading
@@ -317,6 +318,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             i:
