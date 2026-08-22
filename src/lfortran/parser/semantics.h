@@ -2015,10 +2015,18 @@ return make_Program_t(al, a_loc,
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
 
 // A label on the closing `end if`/`endif` (end-if-stmt, R1138) of an
-// if_statement, e.g. `86 endif`, is captured by the `endif` production and
-// attached here to the already-built If_t node returned by if_block; see
-// `do_label` on DoLoop_t for the analogous mechanism on `end do`.
+// if construct, e.g. `86 endif`, is captured by the `endif` production and
+// attached here to the already-built If_t node; see `do_label` on DoLoop_t
+// for the analogous mechanism on `end do`.
 #define IF_END_LABEL(stmt, label) ((If_t*)stmt)->m_end_label = label
+
+// In an else/else-if chain the shared `endif` is consumed by the innermost
+// if_block/elseif_block production, but the label belongs to the whole
+// construct: hoist it from the inner If_t onto the outer one.
+#define IF_END_LABEL_HOIST(outer, inner) do { \
+        ((If_t*)outer)->m_end_label = ((If_t*)inner)->m_end_label; \
+        ((If_t*)inner)->m_end_label = 0; \
+    } while (0)
 
 ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         Vec<ast_t*> decl_stmts, LCompilers::diag::Diagnostics &diag) {

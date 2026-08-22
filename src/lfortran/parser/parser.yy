@@ -14,7 +14,7 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    197 // shift/reduce conflicts
+%expect    189 // shift/reduce conflicts
 %expect-rr 180 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1969,9 +1969,9 @@ end_file
     | KW_ENDFILE
     ;
 
-// sr-conflict (2x): KW_ENDIF can be an "id" or end of "if_statement"
+// sr-conflict (2x): KW_ENDIF can be an "id" or end of "if_block"
 if_statement
-    : if_block endif { $$ = $1; IF_END_LABEL($$, $2); }
+    : if_block { $$ = $1; }
     ;
 
 if_statement_single
@@ -1981,28 +1981,38 @@ if_statement_single
             $$ = IFARITHMETIC($3, INTEGER3($5), INTEGER3($7), INTEGER3($9), @$); }
     ;
 
+// `endif` is consumed inside if_block/elseif_block (rather than once in
+// if_statement) so that its optional statement label (`86 end if`) is
+// shifted in the same production as `statements`: the parser can then
+// postpone the statement-vs-endif decision past TK_LABEL, exactly like
+// `enddo` in do_statement. A trailing `endif` after `if_block` would need
+// the block reduced before the label is seen, an essential s/r conflict.
 if_block
-    : KW_IF "(" expr ")" KW_THEN id_opt sep statements {
-            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
+    : KW_IF "(" expr ")" KW_THEN id_opt sep statements endif {
+            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); IF_END_LABEL($$, $9); }
     | KW_IF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
-            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
+        KW_ELSE id_opt sep statements endif {
+            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); IF_END_LABEL($$, $13); }
     | KW_IF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$);
+            IF_END_LABEL_HOIST($$, $10); }
     | KW_IF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$);
+            IF_END_LABEL_HOIST($$, $9); }
     ;
 
 elseif_block
-    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements {
-            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
+    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements endif {
+            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); IF_END_LABEL($$, $9); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
-            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
+        KW_ELSE id_opt sep statements endif {
+            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); IF_END_LABEL($$, $13); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$);
+            IF_END_LABEL_HOIST($$, $10); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$);
+            IF_END_LABEL_HOIST($$, $9); }
     ;
 
 where_statement
