@@ -1,0 +1,30 @@
+(TranslationUnit
+    [(Subroutine
+        h
+        [(n)]
+        []
+        ()
+        ()
+        [(Assignment
+            0
+            k
+            1
+            ()
+        )
+        (WhileLoop
+            0
+            uplay
+            (<= k n)
+            [(Assignment
+                0
+                k
+                (+ k 1)
+                ()
+            )]
+            ()
+            ()
+        )]
+        []
+        []
+    )]
+)

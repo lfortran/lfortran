@@ -1151,6 +1151,13 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
+        if (is_named_do_while_loop(cur, do_pos)) {
+            t.cur = cur;
+            tokenize_until(do_pos);
+            cur = do_pos;
+            lex_dowhile(cur);
+            return true;
+        }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
         if (next_is(cur, "type::")) {
@@ -1543,13 +1550,32 @@ struct FixedFormRecursiveDescent {
         return false;
     }
 
-    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
+    // Advances cur past a `name:` construct-name prefix (e.g. the
+    // `uplay:` in `uplay:dowhile(...)`); cur is left unchanged if no
+    // such prefix is here.
+    bool try_construct_name_prefix(unsigned char *&cur) {
         unsigned char *tmp = cur;
         if (!try_name(tmp)) return false;
         if (!try_next(tmp, ":")) return false;
-        unsigned char *tmp2 = tmp;
-        if (!is_do_loop(tmp2)) return false;
-        do_pos = tmp;
+        cur = tmp;
+        return true;
+    }
+
+    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
+        if (!try_construct_name_prefix(cur)) return false;
+        unsigned char *tmp = cur;
+        if (!is_do_loop(tmp)) return false;
+        do_pos = cur;
+        return true;
+    }
+
+    // Recognizes `name: DO WHILE (...)`. is_do_loop() can't be reused here:
+    // it would misparse `while` as the do-variable name, since "while" is a
+    // syntactically valid identifier.
+    bool is_named_do_while_loop(unsigned char *cur, unsigned char *&do_pos) {
+        if (!try_construct_name_prefix(cur)) return false;
+        if (!next_is(cur, "dowhile(")) return false;
+        do_pos = cur;
         return true;
     }
 
@@ -1680,11 +1706,21 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "do");
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
-        while (!next_is(cur, "enddo\n")) {
-            lex_body_statement(cur);
+        while (!next_is(cur, "enddo")) {
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a do while loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
         }
-        push_token_advance(cur, "enddo");
-        tokenize_line(cur);
+        // Consumes "enddo", an optional trailing construct name (e.g. the
+        // `UPLAY` in `END DO UPLAY`), and the rest of the line -- same
+        // terminator handling `try_enddo_regular` uses for a plain DO.
+        lex_enddo_line(cur);
     }
 
     void lex_selectrank(unsigned char *&cur) {
