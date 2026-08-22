@@ -92,7 +92,11 @@ public:
     // does not actually contain it.
     bool symtab_in_scope(const SymbolTable *symtab, const ASR::symbol_t *sym) {
         unsigned int symtab_ID = symbol_parent_symtab(sym)->counter;
-        char *sym_name = symbol_name(sym);
+        // Look the symbol up by the key it is stored under, not by its name:
+        // the two differ for a specific procedure that shares its generic
+        // interface's name, where looking up by name finds the
+        // GenericProcedure instead and this check would wrongly fail.
+        std::string sym_name = ASRUtils::symbol_table_key(sym);
         const SymbolTable *s = symtab;
         while (s != nullptr) {
             if (s->counter == symtab_ID) {
@@ -2328,7 +2332,7 @@ public:
                 temp_scope = temp_scope->parent;
             }
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+                function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
             }
         }
 
@@ -2455,13 +2459,13 @@ public:
                 temp_scope = temp_scope->parent;
             }
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+                function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
             }
         }
         if (_return_var_or_intent_out  && _processing_dims &&
             temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
             !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
-            function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+            function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
         }
 
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {

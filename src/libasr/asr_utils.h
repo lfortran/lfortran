@@ -42,7 +42,7 @@
             temp_scope = temp_scope->parent; \
         } \
         if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
-            current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
+            current_function_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(final_sym))); \
         } \
     } \
 
