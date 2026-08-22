@@ -1286,9 +1286,30 @@ public:
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         std::string r = indent;
-
+        ASR::Block_t *scope_block = nullptr;
+        // Typed concurrent controls are represented internally using a
+        // compiler-generated Block whose symbol table owns the index variables.
+        if (x.n_body == 1 && ASR::is_a<ASR::BlockCall_t>(*x.m_body[0])) {
+            ASR::BlockCall_t *block_call =
+            ASR::down_cast<ASR::BlockCall_t>(x.m_body[0]);
+            if (ASR::is_a<ASR::Block_t>(*block_call->m_m)) {
+                ASR::Block_t *block =
+                ASR::down_cast<ASR::Block_t>(block_call->m_m);
+                if (block->m_name && std::string(block->m_name).find("~do_concurrent_block_") == 0) {
+                    scope_block = block;
+                }
+            }
+        }
         r += "do concurrent";
         r += " ( ";
+        // Reconstruct the type declaration from the generated Block scope.
+        if (scope_block && x.n_head > 0 && ASR::is_a<ASR::Var_t>(*x.m_head[0].m_v)) {
+            ASR::symbol_t *loop_var = ASR::down_cast<ASR::Var_t>(x.m_head[0].m_v)->m_v;
+            if (ASRUtils::symbol_parent_symtab(loop_var) == scope_block->m_symtab) {
+                r += get_type(ASRUtils::symbol_type(loop_var));
+                r += " :: ";
+            }
+        }
         for (size_t i = 0; i < x.n_head; i++) {
             visit_expr(*x.m_head[i].m_v);
             r += src;
@@ -1310,7 +1331,13 @@ public:
         r+=" )";
         handle_line_truncation(r, 2);
         r += "\n";
-        visit_body(x, r);
+        if (scope_block) {
+            // The Block is an internal scoping mechanism. Emit its body directly
+            // instead of printing the generated Block construct.
+            visit_body(*scope_block, r);
+        } else {
+            visit_body(x, r);
+        }
         r += indent;
         r += "end do";
         r += "\n";
