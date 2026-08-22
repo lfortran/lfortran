@@ -10672,9 +10672,17 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         // MODULE or a BLOCK DATA lives in that unit's own symbol table.
         std::function<void(SymbolTable*)> reconcile = [&](SymbolTable* scope) {
             for (auto& item : scope->get_scope()) {
-                SymbolTable* inner = ASRUtils::symbol_symtab(item.second);
-                if (inner != nullptr && inner != scope) {
-                    reconcile(inner);
+                // Enumerate the program-unit kinds rather than asking
+                // ASRUtils::symbol_symtab(): that throws "Not implemented" for
+                // symbol kinds it does not list, and the scope is walked over
+                // every symbol in the unit.
+                if (ASR::is_a<ASR::Program_t>(*item.second) ||
+                        ASR::is_a<ASR::Module_t>(*item.second) ||
+                        ASR::is_a<ASR::Function_t>(*item.second)) {
+                    SymbolTable* inner = ASRUtils::symbol_symtab(item.second);
+                    if (inner != nullptr && inner != scope) {
+                        reconcile(inner);
+                    }
                 }
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t* iface = ASR::down_cast<ASR::Function_t>(item.second);
