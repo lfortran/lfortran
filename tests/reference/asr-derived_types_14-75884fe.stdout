@@ -358,6 +358,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             enum_type:
                                 (ExternalSymbol
@@ -641,6 +642,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_type:

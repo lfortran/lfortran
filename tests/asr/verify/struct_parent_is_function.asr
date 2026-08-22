@@ -93,6 +93,7 @@
               true
               true
               nil
+              nil
             )
             "base" (Struct
               (SymbolTable

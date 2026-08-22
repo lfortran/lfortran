@@ -152,6 +152,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             log_io_error:
                                 (Function
@@ -293,6 +294,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             logger_type:

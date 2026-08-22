@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.call.actual_rank_matches_formal]: Actual argument type i32[:] does not match formal argument rank of type i32
-   --> tests/asr/verify/call_rank_mismatch.asr:128:18
+   --> tests/asr/verify/call_rank_mismatch.asr:129:18
     |
-128 |                 (Var
+129 |                 (Var
     |                  ^^^ failed here

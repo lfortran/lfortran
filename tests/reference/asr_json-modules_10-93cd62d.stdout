@@ -118,7 +118,8 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "module_file": []
+                                        "module_file": [],
+                                        "link_name": []
                                     },
                                     "loc": {
                                         "first": 220,
@@ -402,7 +403,8 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
-                                        "module_file": []
+                                        "module_file": [],
+                                        "link_name": []
                                     },
                                     "loc": {
                                         "first": 65,

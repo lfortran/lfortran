@@ -96,6 +96,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             open_hashmap_type:
                                 (Struct
@@ -265,6 +266,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             open_hashmap_type:

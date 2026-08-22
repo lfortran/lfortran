@@ -82,6 +82,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             my_super_type:
                                 (Struct
@@ -389,6 +390,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             print_something:
                                 (Function
@@ -493,6 +495,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             say_something:
                                 (Function
@@ -596,6 +599,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             unary:
@@ -766,6 +770,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

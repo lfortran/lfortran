@@ -125,6 +125,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             toml_character_tokenizer:
                                 (Struct
@@ -337,6 +338,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 ),
                             parse_select:
                                 (Function
@@ -473,6 +475,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_table:

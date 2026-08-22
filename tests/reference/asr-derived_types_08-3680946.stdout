@@ -580,6 +580,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             rectangle:
                                 (Struct

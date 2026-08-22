@@ -141,6 +141,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 )
                         })
                     test_scan_module
@@ -401,6 +402,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })
