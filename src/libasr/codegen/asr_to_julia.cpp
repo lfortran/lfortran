@@ -1685,6 +1685,15 @@ public:
         }
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x)
+    {
+        throw CodeGenError("Calling an interface-less external procedure with "
+            "more than one signature is not supported by the Julia backend; use "
+            "the LLVM backend, or give '" +
+            std::string(ASRUtils::symbol_name(x.m_to)) +
+            "' an explicit interface", x.base.base.loc);
+    }
+
     void visit_ComplexRe(const ASR::ComplexRe_t& x)
     {
         visit_expr(*x.m_arg);

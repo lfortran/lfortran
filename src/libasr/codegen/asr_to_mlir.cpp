@@ -167,6 +167,9 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
         if (fnType->m_deftype == ASR::deftypeType::Interface) {
@@ -507,6 +510,14 @@ public:
             this->visit_expr2(*x.m_arg);
             tmp = builder->create<mlir::LLVM::FSubOp>(loc, zero, tmp);
         }
+    }
+
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        throw CodeGenError("Calling an interface-less external procedure with "
+            "more than one signature is not supported by the MLIR backend; use "
+            "the LLVM backend, or give '" +
+            std::string(ASRUtils::symbol_name(x.m_to)) +
+            "' an explicit interface", x.base.base.loc);
     }
 
     void visit_Cast(const ASR::Cast_t &x) {

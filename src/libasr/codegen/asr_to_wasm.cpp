@@ -1182,6 +1182,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         declare_all_functions(*x.m_symtab);
         if (is_unsupported_function(x)) {
             return;
@@ -3273,6 +3276,14 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             default:
                 throw CodeGenError("Cast kind not implemented");
         }
+    }
+
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        throw CodeGenError("Calling an interface-less external procedure with "
+            "more than one signature is not supported by the WASM backend; use "
+            "the LLVM backend, or give '" +
+            std::string(ASRUtils::symbol_name(x.m_to)) +
+            "' an explicit interface", x.base.base.loc);
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
