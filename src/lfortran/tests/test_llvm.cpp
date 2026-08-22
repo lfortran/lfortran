@@ -20,6 +20,18 @@
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
 
+#include <llvm/Config/llvm-config.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#if LLVM_VERSION_MAJOR >= 17
+#include <llvm/TargetParser/Triple.h>
+#else
+#include <llvm/ADT/Triple.h>
+#endif
+
 using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
@@ -27,6 +39,125 @@ using LCompilers::CompilerOptions;
 // Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
 // FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
 #ifndef __EMSCRIPTEN__
+
+TEST_CASE("LLVM target configuration") {
+    CompilerOptions default_options;
+    LCompilers::LLVMTargetConfig default_config
+        = LCompilers::resolve_llvm_target_config(default_options);
+    CHECK(default_config.cpu == "generic");
+    CHECK(!default_config.emit_cpu_attribute);
+    CHECK(default_config.features.empty());
+
+    CompilerOptions fast_options;
+    fast_options.po.fast = true;
+    LCompilers::LLVMTargetConfig fast_config
+        = LCompilers::resolve_llvm_target_config(fast_options);
+    CHECK(fast_config.host_target);
+    CHECK(fast_config.emit_cpu_attribute);
+    CHECK(!fast_config.cpu.empty());
+
+    CompilerOptions generic_options;
+    generic_options.po.fast = true;
+    generic_options.mcpu = "generic";
+    LCompilers::LLVMTargetConfig generic_config
+        = LCompilers::resolve_llvm_target_config(generic_options);
+    CHECK(generic_config.cpu == "generic");
+    CHECK(generic_config.emit_cpu_attribute);
+    CHECK(generic_config.features.empty());
+
+    CompilerOptions tune_options;
+    tune_options.mtune = "generic";
+    LCompilers::LLVMTargetConfig tune_config
+        = LCompilers::resolve_llvm_target_config(tune_options);
+    CHECK(tune_config.cpu == "generic");
+    CHECK(tune_config.tune_cpu == "generic");
+    CHECK(!tune_config.emit_cpu_attribute);
+
+    llvm::LLVMContext context;
+    llvm::Module module("target_options", context);
+    llvm::FunctionType *function_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), false);
+    llvm::Function *function = llvm::Function::Create(function_type,
+        llvm::Function::ExternalLinkage, "f", module);
+    llvm::BasicBlock *entry = llvm::BasicBlock::Create(
+        context, "entry", function);
+    llvm::ReturnInst::Create(context, entry);
+    generic_config.apply_target_attributes(module);
+    CHECK(function->getFnAttribute("target-cpu").getValueAsString()
+        == "generic");
+
+    llvm::Triple triple(default_config.triple);
+    CompilerOptions march_options;
+    CompilerOptions cpu_and_march_options;
+    if (triple.isAArch64()) {
+        // `armv8.7-a` is only known to LLVM 12 and later, and `apple-m1`
+        // only to LLVM 13 and later, so pick names that every supported
+        // LLVM version can parse. `armv8-a` is deliberately avoided here:
+        // it is the AArch64 baseline, and LLVM releases before 12 report no
+        // feature at all for it, so it cannot be used to check that `--march`
+        // contributes features.
+#if LLVM_VERSION_MAJOR >= 12
+        march_options.march = "armv8.7-a";
+#else
+        march_options.march = "armv8.2-a";
+#endif
+        cpu_and_march_options.march = "armv8.1-a";
+        cpu_and_march_options.mcpu = "cortex-a57";
+    } else if (triple.getArch() == llvm::Triple::x86_64) {
+        // `llvm/Support/X86TargetParser.h` only exists from LLVM 11 on, so
+        // `--march` cannot be resolved for x86 against older LLVM releases
+        // and there is nothing to check here.
+#if LLVM_VERSION_MAJOR >= 11
+        // The `x86-64-vN` micro-architecture levels were added in LLVM 12.
+#if LLVM_VERSION_MAJOR >= 12
+        march_options.march = "x86-64-v3";
+#else
+        march_options.march = "x86-64";
+#endif
+        cpu_and_march_options.march = "x86-64";
+        cpu_and_march_options.mcpu = "generic";
+#endif
+    }
+    if (!march_options.march.empty()) {
+        LCompilers::LLVMTargetConfig march_config
+            = LCompilers::resolve_llvm_target_config(march_options);
+        CHECK(march_config.cpu == "generic");
+        CHECK(!march_config.features.empty());
+
+        LCompilers::LLVMTargetConfig cpu_and_march_config
+            = LCompilers::resolve_llvm_target_config(
+                cpu_and_march_options);
+        CHECK(cpu_and_march_config.cpu == "generic");
+        CHECK(cpu_and_march_config.tune_cpu
+            == cpu_and_march_options.mcpu);
+        CHECK(!cpu_and_march_config.features.empty());
+    }
+
+    // `native` must resolve on every host. LLVM reports the CPU as "generic"
+    // when it cannot identify it (any CPU newer than the LLVM release in use,
+    // e.g. Zen 3 under LLVM 11), and "generic" is not a name its architecture
+    // tables accept, so this used to abort the compilation.
+    CompilerOptions native_march_options;
+    native_march_options.march = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_march_options));
+
+    CompilerOptions native_mcpu_options;
+    native_mcpu_options.mcpu = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_mcpu_options));
+
+    CompilerOptions native_mtune_options;
+    native_mtune_options.mtune = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_mtune_options));
+
+    CompilerOptions invalid_cpu_options;
+    invalid_cpu_options.mcpu = "not-a-real-cpu";
+    CHECK_THROWS_AS(
+        LCompilers::resolve_llvm_target_config(invalid_cpu_options),
+        LCompilers::LCompilersException);
+}
 
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
@@ -396,8 +527,8 @@ end function)";
     co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     co.platform = LCompilers::get_platform();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, co, "f", "", "", lm);
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "f", "", "", lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -434,8 +565,9 @@ end function)";
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, compiler_options, "f", "", "", lm);
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, compiler_options, "f", "", "",
+            lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
