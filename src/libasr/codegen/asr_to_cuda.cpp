@@ -9,6 +9,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 
 #include <sstream>
+#include <iomanip>
 #include <map>
 #include <set>
 #include <vector>
@@ -86,6 +87,40 @@ public:
             case ASR::cmpopType::GtE: return ">=";
         }
         return "?";
+    }
+
+    std::string math_fn(const std::string &dbl_name, ASR::ttype_t *type) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(type));
+        if (ASR::is_a<ASR::Real_t>(*t) &&
+                ASR::down_cast<ASR::Real_t>(t)->m_kind == 8) {
+            return dbl_name;
+        }
+        return dbl_name + "f";
+    }
+
+    bool is_real_expr(ASR::ttype_t *type) {
+        return ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(type)));
+    }
+
+    std::string real_literal(double v, int kind) {
+        std::ostringstream o;
+        o << std::setprecision(kind == 8 ? 17 : 9) << v;
+        std::string lit = o.str();
+        if (lit.find_first_of(".eE") == std::string::npos) lit += ".0";
+        return (kind == 8) ? lit : lit + "f";
+    }
+
+    void emit_call(const std::string &fn, ASR::expr_t *a,
+            ASR::expr_t *b = nullptr) {
+        src << fn << "(";
+        visit_expr(a);
+        if (b) {
+            src << ", ";
+            visit_expr(b);
+        }
+        src << ")";
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
@@ -200,6 +235,11 @@ public:
 
     void emit_local_var_decl(ASR::Variable_t *var) {
         ASR::ttype_t *type = var->m_type;
+        // A named constant carries its value in the ASR rather than being
+        // passed in, so it has to be initialised here or the kernel reads
+        // uninitialised memory.
+        bool is_const = var->m_storage == ASR::storage_typeType::Parameter
+            && var->m_value;
         if (is_array_type(type)) {
             // Local arrays in kernels - determine size
             ASR::ttype_t *past_alloc = ASRUtils::type_get_past_allocatable(type);
@@ -213,9 +253,26 @@ public:
                             arr->m_dims[d].m_length)->m_n;
                     }
                 }
+                if (is_const && ASR::is_a<ASR::ArrayConstant_t>(*var->m_value)) {
+                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(
+                        var->m_value);
+                    src << get_indent() << "const " << cuda_type(arr->m_type) << " "
+                        << var->m_name << "[" << total << "] = {";
+                    for (int64_t i = 0; i < total; i++) {
+                        if (i > 0) src << ", ";
+                        src << ASRUtils::fetch_ArrayConstant_value(ac, i);
+                    }
+                    src << "};\n";
+                    return;
+                }
                 src << get_indent() << cuda_type(arr->m_type) << " "
                     << var->m_name << "[" << total << "];\n";
             }
+        } else if (is_const) {
+            src << get_indent() << "const " << cuda_type(type) << " "
+                << var->m_name << " = ";
+            visit_expr(var->m_value);
+            src << ";\n";
         } else {
             src << get_indent() << cuda_type(type) << " " << var->m_name << ";\n";
         }
@@ -263,43 +320,124 @@ public:
                 src << get_indent() << "return;\n";
                 break;
             }
-            default:
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+                src << get_indent() << "while (";
+                visit_expr(wl->m_test);
+                src << ") {\n";
+                indent_level++;
+                for (size_t i = 0; i < wl->n_body; i++) {
+                    visit_stmt(wl->m_body[i]);
+                }
+                indent_level--;
+                src << get_indent() << "}\n";
                 break;
+            }
+            case ASR::stmtType::DoLoop: {
+                emit_do_loop(ASR::down_cast<ASR::DoLoop_t>(stmt));
+                break;
+            }
+            case ASR::stmtType::Exit: {
+                if (ASR::down_cast<ASR::Exit_t>(stmt)->m_stmt_name) {
+                    throw CodeGenError("CUDA codegen: a named EXIT in a GPU "
+                        "kernel is not supported");
+                }
+                src << get_indent() << "break;\n";
+                break;
+            }
+            case ASR::stmtType::Cycle: {
+                if (ASR::down_cast<ASR::Cycle_t>(stmt)->m_stmt_name) {
+                    throw CodeGenError("CUDA codegen: a named CYCLE in a GPU "
+                        "kernel is not supported");
+                }
+                src << get_indent() << "continue;\n";
+                break;
+            }
+            default:
+                throw CodeGenError("CUDA codegen: unsupported statement type "
+                    + std::to_string(stmt->type) + " in a GPU kernel");
         }
+    }
+
+    void emit_do_loop(ASR::DoLoop_t *dl) {
+        ASR::do_loop_head_t &h = dl->m_head;
+        if (!h.m_v || !h.m_start || !h.m_end) {
+            throw CodeGenError("CUDA codegen: do loop with an incomplete head");
+        }
+        const char *cmp = "<=";
+        if (h.m_increment) {
+            ASR::expr_t *step = ASRUtils::expr_value(h.m_increment);
+            int64_t n = 0;
+            if (!step || !ASRUtils::extract_value(step, n)) {
+                throw CodeGenError("CUDA codegen: do loop with a non-constant "
+                    "stride is not supported");
+            }
+            if (n == 0) {
+                throw CodeGenError("CUDA codegen: do loop with a zero stride");
+            }
+            if (n < 0) cmp = ">=";
+        }
+        std::string v(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(h.m_v)->m_v));
+        src << get_indent() << "for (" << v << " = ";
+        visit_expr(h.m_start);
+        src << "; " << v << " " << cmp << " ";
+        visit_expr(h.m_end);
+        src << "; " << v << " += ";
+        if (h.m_increment) {
+            visit_expr(h.m_increment);
+        } else {
+            src << "1";
+        }
+        src << ") {\n";
+        indent_level++;
+        for (size_t i = 0; i < dl->n_body; i++) {
+            visit_stmt(dl->m_body[i]);
+        }
+        indent_level--;
+        src << get_indent() << "}\n";
     }
 
     void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {
         using IEF = ASRUtils::IntrinsicElementalFunctions;
         int64_t id = f->m_intrinsic_id;
+        if (f->n_args == 0) {
+            throw CodeGenError("CUDA codegen: intrinsic "
+                + ASRUtils::get_intrinsic_name(id) + " has no arguments");
+        }
+        ASR::ttype_t *at = ASRUtils::expr_type(f->m_args[0]);
+        bool real_arg = is_real_expr(at);
 
-        if (id == static_cast<int64_t>(IEF::Sqrt)) {
-            src << "sqrt(";
-            visit_expr(f->m_args[0]);
-            src << ")";
-        } else if (id == static_cast<int64_t>(IEF::Abs)) {
-            src << "abs(";
-            visit_expr(f->m_args[0]);
-            src << ")";
-        } else if (id == static_cast<int64_t>(IEF::Sin)) {
-            src << "sin(";
-            visit_expr(f->m_args[0]);
-            src << ")";
-        } else if (id == static_cast<int64_t>(IEF::Cos)) {
-            src << "cos(";
-            visit_expr(f->m_args[0]);
-            src << ")";
-        } else if (id == static_cast<int64_t>(IEF::Exp)) {
-            src << "exp(";
-            visit_expr(f->m_args[0]);
-            src << ")";
-        } else if (id == static_cast<int64_t>(IEF::Mod)) {
-            ASR::ttype_t *type = ASRUtils::expr_type(f->m_args[0]);
-            if (type->type == ASR::ttypeType::Real) {
-                src << "fmod(";
-                visit_expr(f->m_args[0]);
-                src << ", ";
-                visit_expr(f->m_args[1]);
+        static const struct { IEF id; const char *fn; } unary[] = {
+            {IEF::Sqrt, "sqrt"},  {IEF::Sin, "sin"},   {IEF::Cos, "cos"},
+            {IEF::Tan, "tan"},    {IEF::Exp, "exp"},   {IEF::Log, "log"},
+            {IEF::Log10, "log10"},{IEF::Tanh, "tanh"}, {IEF::Aint, "trunc"},
+            {IEF::Anint, "round"},
+        };
+        for (auto &u : unary) {
+            if (id == static_cast<int64_t>(u.id)) {
+                emit_call(math_fn(u.fn, at), f->m_args[0]);
+                return;
+            }
+        }
+
+        static const struct { IEF id; const char *fn; } to_int[] = {
+            {IEF::Floor, "floor"}, {IEF::Ceiling, "ceil"}, {IEF::Nint, "round"},
+        };
+        for (auto &t : to_int) {
+            if (id == static_cast<int64_t>(t.id)) {
+                src << "((" << cuda_type(f->m_type) << ")";
+                emit_call(math_fn(t.fn, at), f->m_args[0]);
                 src << ")";
+                return;
+            }
+        }
+
+        if (id == static_cast<int64_t>(IEF::Abs)) {
+            emit_call(real_arg ? math_fn("fabs", at) : "abs", f->m_args[0]);
+        } else if (id == static_cast<int64_t>(IEF::Mod)) {
+            if (real_arg) {
+                emit_call(math_fn("fmod", at), f->m_args[0], f->m_args[1]);
             } else {
                 src << "(";
                 visit_expr(f->m_args[0]);
@@ -308,25 +446,72 @@ public:
                 src << ")";
             }
         } else if (id == static_cast<int64_t>(IEF::Min)) {
-            src << "min(";
-            visit_expr(f->m_args[0]);
-            src << ", ";
-            visit_expr(f->m_args[1]);
-            src << ")";
+            emit_call(real_arg ? math_fn("fmin", at) : "min",
+                f->m_args[0], f->m_args[1]);
         } else if (id == static_cast<int64_t>(IEF::Max)) {
-            src << "max(";
-            visit_expr(f->m_args[0]);
-            src << ", ";
-            visit_expr(f->m_args[1]);
-            src << ")";
+            emit_call(real_arg ? math_fn("fmax", at) : "max",
+                f->m_args[0], f->m_args[1]);
+        } else if (id == static_cast<int64_t>(IEF::Sign)) {
+            if (!real_arg) {
+                throw CodeGenError("CUDA codegen: integer SIGN in a GPU kernel "
+                    "is not supported");
+            }
+            emit_call(math_fn("copysign", at), f->m_args[0], f->m_args[1]);
         } else if (id == static_cast<int64_t>(IEF::Real)) {
-            src << "((float)(";
+            src << "((" << cuda_type(f->m_type) << ")";
             visit_expr(f->m_args[0]);
-            src << "))";
-        } else {
-            src << "/* unsupported intrinsic " << id << " */(";
-            if (f->n_args > 0) visit_expr(f->m_args[0]);
             src << ")";
+        } else {
+            throw CodeGenError("CUDA codegen: intrinsic "
+                + ASRUtils::get_intrinsic_name(id)
+                + " is not supported in a GPU kernel");
+        }
+    }
+
+    void emit_array_offset(ASR::ArrayItem_t *ai) {
+        if (ai->n_args == 0) {
+            throw CodeGenError("CUDA codegen: array reference with no "
+                "subscripts");
+        }
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(ai->m_v));
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = 0;
+        if (ASR::is_a<ASR::Array_t>(*t)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+            dims = arr->m_dims;
+            n_dims = arr->n_dims;
+        }
+        if (ai->n_args > 1 && n_dims < ai->n_args) {
+            throw CodeGenError("CUDA codegen: cannot flatten a rank-"
+                + std::to_string(ai->n_args) + " array reference whose "
+                "extents are not in the ASR");
+        }
+        for (size_t d = 0; d < ai->n_args; d++) {
+            if (!ai->m_args[d].m_right) {
+                throw CodeGenError("CUDA codegen: array section in a GPU "
+                    "kernel is not supported");
+            }
+            if (d > 0) src << " + ";
+            src << "(";
+            visit_expr(ai->m_args[d].m_right);
+            src << " - ";
+            if (d < n_dims && dims[d].m_start) {
+                visit_expr(dims[d].m_start);
+            } else {
+                src << "1";
+            }
+            src << ")";
+            for (size_t e = 0; e < d; e++) {
+                if (!dims[e].m_length) {
+                    throw CodeGenError("CUDA codegen: dimension "
+                        + std::to_string(e + 1) + " of an array in a GPU "
+                        "kernel has no known extent");
+                }
+                src << " * (";
+                visit_expr(dims[e].m_length);
+                src << ")";
+            }
         }
     }
 
@@ -346,7 +531,8 @@ public:
             case ASR::exprType::RealConstant: {
                 ASR::RealConstant_t *c =
                     ASR::down_cast<ASR::RealConstant_t>(expr);
-                src << c->m_r;
+                src << real_literal(c->m_r,
+                    ASRUtils::extract_kind_from_ttype_t(c->m_type));
                 break;
             }
             case ASR::exprType::LogicalConstant: {
@@ -358,6 +544,10 @@ public:
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t *op =
                     ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                if (op->m_op == ASR::binopType::Pow) {
+                    throw CodeGenError("CUDA codegen: integer ** in a GPU "
+                        "kernel is not supported");
+                }
                 src << "(";
                 visit_expr(op->m_left);
                 src << " " << binop_str(op->m_op) << " ";
@@ -368,6 +558,20 @@ public:
             case ASR::exprType::RealBinOp: {
                 ASR::RealBinOp_t *op =
                     ASR::down_cast<ASR::RealBinOp_t>(expr);
+                if (op->m_op == ASR::binopType::Pow) {
+                    src << math_fn("pow", op->m_type) << "(";
+                    visit_expr(op->m_left);
+                    src << ", ";
+                    if (is_real_expr(ASRUtils::expr_type(op->m_right))) {
+                        visit_expr(op->m_right);
+                    } else {
+                        src << "((" << cuda_type(op->m_type) << ")";
+                        visit_expr(op->m_right);
+                        src << ")";
+                    }
+                    src << ")";
+                    break;
+                }
                 src << "(";
                 visit_expr(op->m_left);
                 src << " " << binop_str(op->m_op) << " ";
@@ -422,12 +626,7 @@ public:
                 ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
                 visit_expr(ai->m_v);
                 src << "[";
-                if (ai->n_args == 1 && ai->m_args[0].m_right) {
-                    // Fortran 1-based → C 0-based
-                    src << "(";
-                    visit_expr(ai->m_args[0].m_right);
-                    src << " - 1)";
-                }
+                emit_array_offset(ai);
                 src << "]";
                 break;
             }
@@ -445,9 +644,7 @@ public:
             }
             case ASR::exprType::RealSqrt: {
                 ASR::RealSqrt_t *rs = ASR::down_cast<ASR::RealSqrt_t>(expr);
-                src << "sqrt(";
-                visit_expr(rs->m_arg);
-                src << ")";
+                emit_call(math_fn("sqrt", rs->m_type), rs->m_arg);
                 break;
             }
             case ASR::exprType::IntrinsicElementalFunction: {
@@ -475,27 +672,28 @@ public:
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
                 } else if (fn_name.find("_lcompilers_sqrt_") == 0) {
-                    src << "sqrt(";
+                    src << math_fn("sqrt", fc->m_type) << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
                 } else if (fn_name.find("_lcompilers_abs_") == 0) {
-                    src << "abs(";
+                    src << (is_real_expr(fc->m_type)
+                        ? math_fn("fabs", fc->m_type) : "abs") << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
                 } else if (fn_name.find("_lcompilers_sin_") == 0) {
-                    src << "sin(";
+                    src << math_fn("sin", fc->m_type) << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
                 } else if (fn_name.find("_lcompilers_cos_") == 0) {
-                    src << "cos(";
+                    src << math_fn("cos", fc->m_type) << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
                 } else if (fn_name.find("_lcompilers_exp_") == 0) {
-                    src << "exp(";
+                    src << math_fn("exp", fc->m_type) << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ")";
@@ -503,7 +701,7 @@ public:
                            fn_name.find("_lcompilers_optimization_mod_") == 0) {
                     ASR::ttype_t *type = fc->m_type;
                     if (type && type->type == ASR::ttypeType::Real) {
-                        src << "fmod(";
+                        src << math_fn("fmod", type) << "(";
                         if (fc->n_args > 0 && fc->m_args[0].m_value)
                             visit_expr(fc->m_args[0].m_value);
                         src << ", ";
@@ -521,7 +719,8 @@ public:
                     }
                 } else if (fn_name.find("_lcompilers_min_") == 0 ||
                            fn_name.find("_lcompilers_min0_") == 0) {
-                    src << "min(";
+                    src << (is_real_expr(fc->m_type)
+                        ? math_fn("fmin", fc->m_type) : "min") << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ", ";
@@ -530,7 +729,8 @@ public:
                     src << ")";
                 } else if (fn_name.find("_lcompilers_max_") == 0 ||
                            fn_name.find("_lcompilers_max0_") == 0) {
-                    src << "max(";
+                    src << (is_real_expr(fc->m_type)
+                        ? math_fn("fmax", fc->m_type) : "max") << "(";
                     if (fc->n_args > 0 && fc->m_args[0].m_value)
                         visit_expr(fc->m_args[0].m_value);
                     src << ", ";
