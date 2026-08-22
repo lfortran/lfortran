@@ -2453,7 +2453,7 @@ public:
                 }
                 bool is_global_procedure =
                     ASRUtils::symbol_parent_symtab(v) ==
-                        scope->get_global_scope();
+                        scope->get_tu_scope();
                 // Only let an implicit-typed local shadow a global procedure
                 // when the current scope can actually give the name a type
                 // implicitly (i.e. it is not IMPLICIT NONE for this name's
