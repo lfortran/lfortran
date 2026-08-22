@@ -2091,9 +2091,9 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(-1) :: FUNC8)
+    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
 end subroutine allocate_func_target_01
 
-function func8() result(res) bind(c)
+function func_alloc_target_01() result(res) bind(c)
     character(:), pointer :: res
-end function func8
+end function func_alloc_target_01
