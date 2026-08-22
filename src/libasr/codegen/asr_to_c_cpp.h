@@ -2427,6 +2427,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        throw CodeGenError("Calling an interface-less external procedure with "
+            "more than one signature is not supported by the C backend; use "
+            "the LLVM backend, or give '" +
+            std::string(ASRUtils::symbol_name(x.m_to)) +
+            "' an explicit interface", x.base.base.loc);
+    }
+
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
         headers.insert("complex.h");
         CHECK_FAST_C_CPP(compiler_options, x)

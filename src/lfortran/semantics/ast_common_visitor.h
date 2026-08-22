@@ -16594,10 +16594,10 @@ public:
     // in type (and rank), which is what a later reference is allowed to differ
     // in under an implicit interface.
     bool call_args_match_function(ASR::Function_t* fn, Vec<ASR::call_arg_t>& args) {
-        size_t offset = 0;
-        if (fn->n_args != args.size() + offset) {
-            // Allow mismatch in count only if we'll re-infer; treat as no match.
-            if (fn->n_args != args.size()) return false;
+        if (fn->n_args != args.size()) {
+            // A different argument count is a different interface; the caller
+            // re-infers one rather than reusing this procedure.
+            return false;
         }
         for (size_t i = 0; i < args.size() && i < fn->n_args; i++) {
             if (!args[i].m_value) continue;
@@ -16905,6 +16905,12 @@ public:
             }
             if (same) {
                 // Drop the duplicate; callers resolve sym_name to existing.
+                // Clear the cast pair too: these members are read by the
+                // caller as out-parameters of this function, so leaving the
+                // previous call's values in place would make this reference
+                // go through a cast that belongs to another one.
+                implicit_interface_fpcast_canonical = nullptr;
+                implicit_interface_fpcast_target = nullptr;
                 current_scope = parent_scope;
                 is_implicit_interface = false;
                 implicit_interface_parent_scope = nullptr;

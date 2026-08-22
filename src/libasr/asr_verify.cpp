@@ -2230,6 +2230,45 @@ public:
         _inside_call = _inside_call_copy;
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_FunctionPointerCast(x);
+        // The node exists to give one procedure a second, differently typed
+        // view of itself. Both ends have to be procedures, and the node's own
+        // type has to be the view it claims, otherwise a backend lowering it
+        // to a bitcast would produce a call through the wrong signature.
+        require(x.m_arg != nullptr && x.m_to != nullptr,
+            "FunctionPointerCast::m_arg and ::m_to cannot be nullptr");
+        ASR::ttype_t *arg_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_arg)));
+        // get_type_code() has no encoding for FunctionType, so these messages
+        // stay type-free: they are built eagerly, before the requirement is
+        // tested.
+        require(ASR::is_a<ASR::FunctionType_t>(*arg_type),
+            "FunctionPointerCast::m_arg must have a FunctionType");
+        ASR::symbol_t *to = ASRUtils::symbol_get_past_external(x.m_to);
+        require(ASR::is_a<ASR::Function_t>(*to),
+            "FunctionPointerCast::m_to must be a Function");
+        ASR::ttype_t *cast_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        require(ASR::is_a<ASR::FunctionType_t>(*cast_type),
+            "FunctionPointerCast::m_type must be a FunctionType");
+        if (check_external) {
+            ASR::FunctionType_t *view = ASR::down_cast<ASR::FunctionType_t>(cast_type);
+            ASR::FunctionType_t *target = ASRUtils::get_FunctionType(
+                *ASR::down_cast<ASR::Function_t>(to));
+            require(view->n_arg_types == target->n_arg_types,
+                "FunctionPointerCast::m_type must have the same number of "
+                "arguments as m_to '" + std::string(ASRUtils::symbol_name(to)) +
+                "': " + std::to_string(view->n_arg_types) + " vs " +
+                std::to_string(target->n_arg_types));
+            require((view->m_return_var_type == nullptr) ==
+                    (target->m_return_var_type == nullptr),
+                "FunctionPointerCast::m_type and m_to '" +
+                std::string(ASRUtils::symbol_name(to)) +
+                "' must agree on whether the procedure returns a value");
+        }
+    }
+
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
         if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {

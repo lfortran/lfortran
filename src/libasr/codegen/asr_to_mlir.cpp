@@ -512,6 +512,14 @@ public:
         }
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        throw CodeGenError("Calling an interface-less external procedure with "
+            "more than one signature is not supported by the MLIR backend; use "
+            "the LLVM backend, or give '" +
+            std::string(ASRUtils::symbol_name(x.m_to)) +
+            "' an explicit interface", x.base.base.loc);
+    }
+
     void visit_Cast(const ASR::Cast_t &x) {
         this->visit_expr2(*x.m_arg);
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
