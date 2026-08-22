@@ -1,9 +1,9 @@
 semantic error: duplicate statement label 86
- --> tests/errors/duplicate_end_if_label1.f90:7:1 - 8:12
+ --> tests/errors/duplicate_end_if_label1.f90:7:1 - 9:9
   |
 7 |    if (i < 3) then
   |    ^^^^^^^^^^^^^^^...
 ...
   |
-8 |       go to 86
-  | ...^^^^^^^^^^^^ 
+9 |    86 end if
+  | ...^^^^^^^^^ 
