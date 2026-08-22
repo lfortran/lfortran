@@ -690,6 +690,7 @@ RUN(NAME functions_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME functions_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME functions_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME assumed_length_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_char_array_01 LABELS gfortran llvm EXTRAFILES implicit_interface_char_array_01_mod.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME functions_41 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_42 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_43 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -2198,6 +2199,7 @@ RUN(NAME implicit_interface_35 LABELS gfortran llvm EXTRA_ARGS --implicit-typing
 RUN(NAME implicit_interface_36 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --legacy-array-sections)
 RUN(NAME implicit_interface_38 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_38b.f90)
+RUN(NAME implicit_interface_39 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 
 RUN(NAME implicit_interface_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_interface_41 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
@@ -2217,6 +2219,8 @@ RUN(NAME implicit_typing_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 RUN(NAME implicit_typing_10 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_11 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_12 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_13 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_14 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --fixed-form GFORTRAN_ARGS -ffixed-form)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3504,6 +3508,7 @@ RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mang
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
+RUN(NAME external_17 LABELS gfortran llvm EXTRAFILES external_17.c EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c
     GFORTRAN_ARGS -fno-underscoring)
@@ -4197,7 +4202,7 @@ RUN(NAME legacy_array_sections_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc 
 RUN(NAME legacy_array_sections_10 LABELS gfortran llvm llvm2 EXTRAFILES legacy_array_sections_10_foo.f90 EXTRA_ARGS --legacy-array-sections --implicit-interface --separate-compilation)
 RUN(NAME legacy_array_sections_11 LABELS gfortran llvm
     EXTRAFILES legacy_array_sections_11_stubs.c
-    EXTRA_ARGS --fixed-form --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation
+    EXTRA_ARGS --fixed-form --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --no-mangle-underscore-external
     GFORTRAN_ARGS -ffixed-form -fno-underscoring)
 RUN(NAME legacy_array_sections_12 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --legacy-array-sections)

@@ -539,7 +539,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_interface(ASRUtils::get_FunctionType(f))) {
                     interface_func_name.push_back(item.first);
                 } else {
                     func_name.push_back(item.first);
@@ -586,7 +586,7 @@ public:
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
         bool wrap_in_interface = false;
-        if (type->m_deftype == ASR::deftypeType::Interface && !is_interface) {
+        if (ASRUtils::is_interface(type) && !is_interface) {
             wrap_in_interface = true;
             r += "interface\n";
             inc_indent();
@@ -714,7 +714,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_interface(ASRUtils::get_FunctionType(f))) {
                     is_interface = true;
                     r += indent;
                     r += "interface\n";

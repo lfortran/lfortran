@@ -94,7 +94,7 @@ namespace {
  * - Not in a module
  */
 static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
-    return ftype->m_deftype == ASR::deftypeType::Interface &&
+    return ASRUtils::is_interface(ftype) &&
            ftype->m_abi != ASR::abiType::Intrinsic &&
            !ftype->m_module;
 }
@@ -8257,7 +8257,7 @@ public:
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
         instantiate_function(x);
-        if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
+        if (ASRUtils::is_interface(ASRUtils::get_FunctionType(x))) {
             // Interface does not have an implementation and it is already
             // declared, so there is nothing to do here
             if (compiler_options.emit_debug_info) debug_current_scope = debug_current_scope_copy;
@@ -8304,7 +8304,8 @@ public:
             F = llvm_symtab_fn[h];
         } else {
             llvm::FunctionType* function_type = llvm_utils->get_function_type(x, module.get());
-            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface && !ASRUtils::get_FunctionType(x)->m_module ) {
+            if (ASRUtils::is_interface(ASRUtils::get_FunctionType(x))
+                    && !ASRUtils::get_FunctionType(x)->m_module) {
                 // Skip pre-declaration only for submodule interfaces with class(*) args,
                 // not for program-scoped interfaces (where m_module is also false).
                 bool parent_is_program = false;
@@ -8406,7 +8407,7 @@ public:
                         } else {
                             fn_name = mangle_prefix + sym_name;
                         }
-                    } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
+                    } else if (ASRUtils::is_interface(ASRUtils::get_FunctionType(*var)) &&
                         ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
                         fn_name = sym_name;
                     } else {
@@ -24011,7 +24012,7 @@ public:
                         tmp = llvm_symtab_fn[h];
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
-                                ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
+                                ASRUtils::is_interface(ASRUtils::get_FunctionType(fn))) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)
@@ -24793,10 +24794,8 @@ public:
             // Implementation function with the same name in the
             // global scope.
             bool is_implicit_interface = false;
-            if (callee_fn_type &&
-                callee_fn_type->m_abi == ASR::abiType::BindC &&
-                callee_fn_type->m_deftype == ASR::deftypeType::Interface &&
-                !callee_fn_type->m_bindc_name) {
+            if (callee_fn_type
+                    && ASRUtils::is_implicit_interface(callee_fn_type)) {
                 ASR::Function_t* called_fn =
                     ASR::down_cast<ASR::Function_t>(func_subrout);
                 SymbolTable* scope = called_fn->m_symtab->parent;

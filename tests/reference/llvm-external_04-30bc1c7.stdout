@@ -2,20 +2,20 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define void @a() {
+define void @a_() {
 .entry:
-  call void @b(float ()* @f, float ()* @g)
+  call void @b_(float ()* @f_, float ()* @g_)
   br label %return
 
 return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_a
+  br label %FINALIZE_SYMTABLE_a_
 
-FINALIZE_SYMTABLE_a:                              ; preds = %return
+FINALIZE_SYMTABLE_a_:                             ; preds = %return
   ret void
 }
 
-declare void @b(float ()*, float ()*)
+declare void @b_(float ()*, float ()*)
 
-declare float @f()
+declare float @f_()
 
-declare float @g()
+declare float @g_()

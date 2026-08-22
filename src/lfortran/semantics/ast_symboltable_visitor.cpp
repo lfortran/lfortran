@@ -83,6 +83,7 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        EntryMasterWrappers &entry_master_wrappers,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
@@ -90,7 +91,8 @@ public:
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+            entry_function_arguments_mapping, entry_master_wrappers,
+            data_structure, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -1010,7 +1012,26 @@ public:
             is_requirement,
             /* m_deterministic */ (deftype == ASR::deftypeType::Implementation),
             /* m_side_effect_free */ (deftype == ASR::deftypeType::Implementation));
-        parent_scope->add_symbol(function_name, ASR::down_cast<ASR::symbol_t>(tmp_));
+        ASR::symbol_t *function_sym =
+            ASR::down_cast<ASR::symbol_t>(tmp_);
+        parent_scope->add_symbol(function_name, function_sym);
+        if (is_master) {
+            auto &wrappers = entry_master_wrappers[function_sym];
+            ASR::symbol_t *wrapper =
+                parent_scope->get_symbol(parent_function_name);
+            if (wrapper && ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(wrapper))) {
+                wrappers.insert(ASRUtils::symbol_get_past_external(wrapper));
+            }
+            for (auto &entry: entry_functions[parent_function_name]) {
+                wrapper = parent_scope->get_symbol(entry.first);
+                if (wrapper && ASR::is_a<ASR::Function_t>(
+                        *ASRUtils::symbol_get_past_external(wrapper))) {
+                    wrappers.insert(
+                        ASRUtils::symbol_get_past_external(wrapper));
+                }
+            }
+        }
 
         for (auto &item: current_scope->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -1581,7 +1602,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
-                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    ASRUtils::is_interface(ASRUtils::get_FunctionType(f2))) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
 
@@ -2419,7 +2440,7 @@ public:
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                   // TODO: Throw error when interface definition and implementation signatures are different
-                    ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    ASRUtils::is_interface(ASRUtils::get_FunctionType(f2))) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
                     if (!is_placeholder) {
@@ -5563,6 +5584,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        EntryMasterWrappers &entry_master_wrappers,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
@@ -5570,7 +5592,8 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
                          common_variables_byte_offset, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
+                         entry_function_arguments_mapping, entry_master_wrappers,
+                         data_structure, lm);
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {

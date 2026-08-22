@@ -785,7 +785,7 @@ R"(#include <stdio.h>
         }
         ASR::FunctionType_t *f_type = ASRUtils::get_FunctionType(x);
         bool generate_body = true;
-        if (f_type->m_deftype == ASR::deftypeType::Interface) {
+        if (ASRUtils::is_interface(f_type)) {
             generate_body = false;
             if (f_type->m_abi == ASR::abiType::BindC) {
                 if (x.m_module_file) {

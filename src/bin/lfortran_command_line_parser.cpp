@@ -229,6 +229,7 @@ namespace LCompilers::CommandLineInterface {
         bool disable_implicit_argument_casting = false;
         bool disable_error_banner = false;
         bool disable_realloc_lhs = false;
+        bool disable_mangle_underscore_external = false;
         std::string fpe_traps_str;
 
         // Standard options compatible with gfortran, gcc or clang
@@ -269,7 +270,9 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
-        app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
+        CLI::Option *implicit_interface = app.add_flag(
+            "--implicit-interface", compiler_options.implicit_interface,
+            "Allow implicit interface")->group(group_language_options);
         app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting")->group(group_language_options);
         app.add_flag("--infer", opts.arg_infer, "Enable infer mode")->group(group_language_options);
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
@@ -370,6 +373,9 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax")->group(group_mangling_options);
         app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore")->group(group_mangling_options);
         app.add_flag("--mangle-underscore-external", compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
+        app.add_flag("--no-mangle-underscore-external",
+            disable_mangle_underscore_external,
+            "Do not mangle external symbols with underscore")->group(group_mangling_options);
 
         // Miscellaneous flags
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
@@ -481,6 +487,14 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException(
                 "The option `--std=" + opts.arg_standard + "` is not supported"
             );
+        }
+
+        if ((implicit_interface->count() > 0 || opts.arg_standard == "legacy")
+                && !disable_mangle_underscore_external) {
+            compiler_options.po.mangle_underscore_external = true;
+        }
+        if (disable_mangle_underscore_external) {
+            compiler_options.po.mangle_underscore_external = false;
         }
 
         if (disable_bounds_checking || compiler_options.po.fast) {
