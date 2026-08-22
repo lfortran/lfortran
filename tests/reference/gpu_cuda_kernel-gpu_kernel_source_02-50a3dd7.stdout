@@ -2,7 +2,7 @@
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, int __loop_end_0) {
     int __flat_idx;
-    const float a = 2.5;
+    const float a = 2.5f;
     int i;
     const int n = 12;
     const int tbl[3] = {7, 8, 9};
