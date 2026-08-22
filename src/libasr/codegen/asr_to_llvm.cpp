@@ -8234,6 +8234,11 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            // deftype ImplicitInterface: no signature to emit. Call sites
+            // lower their own inferred interface (or a FunctionPointerCast).
+            return;
+        }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         loop_head.clear();
         loop_head_names.clear();
@@ -8296,6 +8301,32 @@ public:
         if (sym_name == "main") {
             sym_name = "_xx_lcompilers_changed_main_xx";
         }
+        // ImplicitInterface means "no signature" in ASR. It is never a call
+        // target. It may still be used as a procedure *value* (passed as an
+        // actual). Resolve it to whatever LLVM function already owns the link
+        // name (typically the Implementation in this TU), or emit a minimal
+        // external declare under that name for address-taking. Never invent a
+        // competing signature when a richer one already exists.
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
+                return;
+            }
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+            std::string fn_name = compute_llvm_function_name(
+                sym_name, ftype, compiler_options, mangle_prefix, parent_function
+            );
+            if (llvm_symtab_fn_names.find(fn_name) != llvm_symtab_fn_names.end()) {
+                llvm_symtab_fn[h] = llvm_symtab_fn[llvm_symtab_fn_names[fn_name]];
+            } else {
+                llvm::FunctionType* function_type =
+                    llvm_utils->get_function_type(x, module.get());
+                F = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, fn_name, module.get());
+                llvm_symtab_fn_names[fn_name] = h;
+                llvm_symtab_fn[h] = F;
+            }
+            return;
+        }
         if (llvm_symtab_fn.find(h) != llvm_symtab_fn.end()) {
             /*
             throw CodeGenError("Function code already generated for '"
@@ -8346,6 +8377,26 @@ public:
             } else {
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
+                // A bare ImplicitInterface may have claimed this link name with
+                // a placeholder 0-arg declare. If this symbol has a real
+                // signature (or a body), replace the placeholder so calls and
+                // the definition use the correct type.
+                if (F->isDeclaration()
+                        && F->getFunctionType() != function_type) {
+                    llvm::Function* new_F = llvm::Function::Create(
+                        function_type, llvm::Function::ExternalLinkage,
+                        "", module.get());
+                    new_F->takeName(F);
+                    if (!F->use_empty()) {
+                        llvm::Value* cast = llvm::ConstantExpr::getBitCast(
+                            new_F, F->getType());
+                        F->replaceAllUsesWith(cast);
+                    }
+                    F->eraseFromParent();
+                    F = new_F;
+                    llvm_symtab_fn[old_h] = F;
+                    llvm_symtab_fn_names[fn_name] = h;
+                }
             }
             llvm_symtab_fn[h] = F;
 
@@ -8406,7 +8457,8 @@ public:
                         } else {
                             fn_name = mangle_prefix + sym_name;
                         }
-                    } else if (ASRUtils::get_FunctionType(*var)->m_deftype == ASR::deftypeType::Interface &&
+                    } else if (ASRUtils::is_declaration_deftype(
+                            ASRUtils::get_FunctionType(*var)->m_deftype) &&
                         ASRUtils::get_FunctionType(*var)->m_abi != ASR::abiType::Intrinsic) {
                         fn_name = sym_name;
                     } else {
@@ -16581,6 +16633,48 @@ public:
         return alloc;
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
+        // Cast a procedure to the function-pointer type of `m_to`. The two
+        // interfaces describe the same link-time procedure under an implicit
+        // interface; only the signature used at this call changes.
+        if (x.m_value) {
+            this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        LCOMPILERS_ASSERT(x.m_to);
+        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
+        llvm::FunctionType* target_ft = llvm_utils->get_function_type(
+            *to_fn, module.get());
+
+        llvm::Value* src = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+            ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v);
+            if (ASR::is_a<ASR::Function_t>(*arg_sym)) {
+                uint32_t h = get_hash((ASR::asr_t*)arg_sym);
+                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                    // Ensure the source procedure has been declared.
+                    instantiate_function(*ASR::down_cast<ASR::Function_t>(arg_sym));
+                }
+                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                src = llvm_symtab_fn[h];
+            }
+        }
+        if (!src) {
+            this->visit_expr(*x.m_arg);
+            src = tmp;
+            if (src && src->getType()->isPointerTy()) {
+                // May be a pointer-to-function-pointer (procedure pointer var).
+                // Leave as-is; bitcast handles pointer types.
+            }
+        }
+        LCOMPILERS_ASSERT(src);
+        tmp = builder->CreateBitCast(src, target_ft->getPointerTo());
+    }
+
+
     void visit_Cast(const ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -24011,7 +24105,8 @@ public:
                         tmp = llvm_symtab_fn[h];
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
-                                ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Interface ) {
+                                ASRUtils::is_declaration_deftype(
+                                    ASRUtils::get_FunctionType(fn)->m_deftype) ) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                         tmp = llvm_symtab_fn[h];
                         LCOMPILERS_ASSERT(tmp != nullptr)

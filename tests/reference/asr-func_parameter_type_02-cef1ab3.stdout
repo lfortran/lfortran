@@ -324,7 +324,7 @@
                                         []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -394,7 +394,7 @@
                                         []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -444,7 +444,7 @@
                             []
                             (Real 4)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
