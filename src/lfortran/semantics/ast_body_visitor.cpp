@@ -10652,27 +10652,32 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     // `ret void` in a function declared to return i32. Here we make the
     // implicit interface agree with the actual definition.
     if (compiler_options.implicit_interface) {
-        // Collect actual definitions (deftype Implementation) by name.
+        // An `EXTERNAL` name denotes a *global* procedure, so only a procedure
+        // defined at file scope can be the definition that a guessed interface
+        // refers to. Collecting nested procedures too would let an internal or
+        // module procedure that merely shares the name reconcile - and strip
+        // the return value from - an unrelated interface in another scope.
         std::map<std::string, ASR::Function_t*> definitions;
-        std::function<void(SymbolTable*)> collect_defs = [&](SymbolTable* scope) {
-            for (auto& item : scope->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(item.second);
-                    if (ASRUtils::get_FunctionType(f)->m_deftype
-                            == ASR::deftypeType::Implementation) {
-                        definitions[std::string(f->m_name)] = f;
-                    }
-                    collect_defs(f->m_symtab);
-                }
+        for (auto& item : tu->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(item.second);
+            if (ASRUtils::get_FunctionType(f)->m_deftype
+                    == ASR::deftypeType::Implementation) {
+                definitions[std::string(f->m_name)] = f;
             }
-        };
-        collect_defs(tu->m_symtab);
+        }
 
+        // Every scope that can declare `EXTERNAL` has to be walked, not just
+        // functions: an implicit interface declared directly in a PROGRAM, a
+        // MODULE or a BLOCK DATA lives in that unit's own symbol table.
         std::function<void(SymbolTable*)> reconcile = [&](SymbolTable* scope) {
             for (auto& item : scope->get_scope()) {
+                SymbolTable* inner = ASRUtils::symbol_symtab(item.second);
+                if (inner != nullptr && inner != scope) {
+                    reconcile(inner);
+                }
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t* iface = ASR::down_cast<ASR::Function_t>(item.second);
-                reconcile(iface->m_symtab);
                 ASR::FunctionType_t* iface_ft = ASRUtils::get_FunctionType(iface);
                 // Only consider implicit external interfaces (no body).
                 if (!ASRUtils::is_implicit_interface(iface_ft)
