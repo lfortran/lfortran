@@ -2967,6 +2967,26 @@ public:
         current_struct_type_var_expr = target;
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        // Inside a `select rank (arr)` block the selector keeps its assumed-rank
+        // type, but the rank is fixed by the enclosing `rank (N)` case. Cast it
+        // to a rank N descriptor, otherwise the pointer would be associated with
+        // an assumed-rank array of unknown rank and the bounds would be lost.
+        if (ASR::is_a<ASR::Var_t>(*value) &&
+                ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value))) {
+            std::string value_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(value)->m_v);
+            auto it = assumed_rank_arrays.find(value_name);
+            if (it != assumed_rank_arrays.end() && it->second > 0) {
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(value));
+                ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, it->second, elem_type);
+                value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+                    value->base.loc, value,
+                    ASR::array_physical_typeType::AssumedRankArray,
+                    ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+            }
+        }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
