@@ -1682,6 +1682,10 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 last_was_descriptor = false;
                 comma_seen = false;
                 break;
+            case '$' :
+                last_was_descriptor = false;
+                comma_seen = false;
+                break;
             case '*' :
                 format_values_2[format_values_count++] = substring(cformat, index, index+1);
                 break;
@@ -2006,6 +2010,7 @@ typedef enum primitive_types{
     LOGICAL_16_TYPE = 16,
     LOGICAL_64_TYPE = 17,
     FLOAT_128_TYPE = 18,
+    FLOAT_80_TYPE = 19,
 } Primitive_Types;
 
 static inline bool is_logical_type(Primitive_Types t) {
@@ -2515,7 +2520,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(uint64_t), sizeof(uint32_t), sizeof(uint16_t), sizeof(uint8_t),
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
-        16/*FLOAT_128: 16 bytes = 128 bits*/ };
+        16/*FLOAT_128: 16 bytes = 128 bits*/,
+        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -2588,10 +2594,13 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
         switch (s_info->serialization_string[s_info->current_stop++])
         {
         case '1':
-            /* Must be R16 -- consume the '6' */
+            /* Must be R16 or R10 -- consume the second digit ('6' or '0') */
             if (s_info->serialization_string[s_info->current_stop] == '6') {
                 s_info->current_stop++;
                 *PrimitiveType = FLOAT_128_TYPE;
+            } else if (s_info->serialization_string[s_info->current_stop] == '0') {
+                s_info->current_stop++;
+                *PrimitiveType = FLOAT_80_TYPE;
             } else {
                 fprintf(stderr, "RunTime - compiler internal error"
                     " : Unidentified Print Types Serialization --> %s\n",
@@ -2606,7 +2615,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             *PrimitiveType = FLOAT_32_TYPE;
             break;
         default:
-            fprintf(stderr, "RunTime - compiler" 
+            fprintf(stderr, "RunTime - compiler"
             "internal error : Unidentified Print Types Serialization --> %s\n",
                     s_info->serialization_string);
             exit(1);
@@ -2801,6 +2810,42 @@ static void format_double_fortran(char* result, double val) {
     sprintf(result, format_str, val);
 }
 
+static void format_long_double_fortran(char* result, long double val) {
+    if (isnan(val)) {
+        sprintf(result, "NaN");
+        return;
+    }
+    if (isinf(val)) {
+        sprintf(result, "%sInfinity", (val < 0) ? "-" : "");
+        return;
+    }
+    long double abs_val = fabsl(val);
+    
+    if (abs_val == 0.0L) {
+        sprintf(result, "0.000000000000000000000");
+        return;
+    }
+
+    if (abs_val < 0.1L || abs_val >= 1.0e20L) {
+        sprintf(result, "%.20LE", val);
+        char* e_pos = strchr(result, 'E');
+        if (e_pos != NULL) {
+            char sign = e_pos[1];
+            int exp_val = atoi(e_pos + 2);
+            sprintf(e_pos, "E%c%03d", sign, (exp_val < 0 ? -exp_val : exp_val));
+        }
+        return;
+    }
+    
+    int magnitude = (int)floorl(log10l(abs_val)) + 1;
+    int decimal_places = 21 - magnitude;
+    if (decimal_places < 0) decimal_places = 0;
+    
+    char format_str[32];
+    sprintf(format_str, "%%.%dLf", decimal_places);
+    sprintf(result, format_str, val);
+}
+
 // Pad a formatted real number to a fixed-width field matching Fortran
 // list-directed G descriptor output (e.g., G16.8E2 for real*4).
 // For F-format (no exponent): right-justify in (total_width - e_trail),
@@ -2935,6 +2980,16 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             } else {
                 format_float128_fortran(result, val128);
             }
+            break;
+        }
+        case FLOAT_80_TYPE: {
+            /* Load the native platform long double from memory.
+             * sizeof(long double) = 16 on Linux x86-64 (x86_fp80 padded),
+             *                    = 16 on Apple Silicon (fp128),
+             *                    =  8 on macOS x86-64 (mapped to double). */
+            long double val = 0.0L;
+            memcpy(&val, arg, sizeof(val));
+            format_long_double_fortran(result, val);
             break;
         }
         default :
@@ -3409,29 +3464,37 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         break;
                 }
                 if (tolower(value[0]) == 'a') {
-                    // For integer values with A editing, print corresponding byte value as a character.
+                    // For integer values with A editing, transfer the bytes of the
+                    // internal representation as a character string of length equal
+                    // to the kind width (leftmost bytes if the field is narrower,
+                    // right-justified with blanks if wider).
                     if (s_info.current_element_type == INTEGER_8_TYPE ||
                         s_info.current_element_type == INTEGER_16_TYPE ||
                         s_info.current_element_type == INTEGER_32_TYPE ||
                         s_info.current_element_type == INTEGER_64_TYPE ) {
-                        char achar_val = (char)((unsigned char)integer_val);
-                        if (strlen(value) == 1) {
-                            result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
-                            result_len += 1;
-                        } else {
-                            int64_t width = atoi(value + 1);
-                            if (width <= 1) {
-                                result = write_to_result_at_pos(al, result, &result_extent, result_len, &achar_val, 1);
-                                result_len += 1;
-                            } else {
-                                char *field = (char*)internal_malloc((size_t)width);
-                                memset(field, ' ', (size_t)width);
-                                field[width - 1] = achar_val;
-                                result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
-                                result_len += width;
-                                internal_free(field);
-                            }
+                        int64_t len = 1;
+                        switch (s_info.current_element_type) {
+                            case INTEGER_16_TYPE: len = 2; break;
+                            case INTEGER_32_TYPE: len = 4; break;
+                            case INTEGER_64_TYPE: len = 8; break;
+                            default: break;
                         }
+                        const char* bytes = (const char*)s_info.current_arg_info.current_arg;
+                        int64_t width = len;
+                        if (strlen(value) > 1) {
+                            width = atoi(value + 1);
+                            if (width <= 0) width = len;
+                        }
+                        if (width <= len) {
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, bytes, width);
+                        } else {
+                            char *field = (char*)internal_malloc((size_t)width);
+                            memset(field, ' ', (size_t)(width - len));
+                            memcpy(field + (width - len), bytes, (size_t)len);
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
+                            internal_free(field);
+                        }
+                        result_len += width;
                         if (result_len > content_end) content_end = result_len;
                         continue;
                     }
@@ -3543,6 +3606,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     int bin_len = strlen(binary_str);
 
                     if (width == 0) {
+                        // Zero width: minimal field, but still at least
+                        // min_digit_cnt digits, zero-padded on the left
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)internal_malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, zeros, zero_padding);
+                            result_len += zero_padding;
+                            internal_free(zeros);
+                        }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, binary_str, bin_len);
                         result_len += bin_len;
                     } else if (bin_len > width) {
@@ -6611,6 +6685,12 @@ LFORTRAN_API void _lfortran_abort()
     abort();
 }
 
+LFORTRAN_API void _lfortran_exit(int32_t status)
+{
+    _lfortran_internal_alloc_finalize();
+    exit(status);
+}
+
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
 #if defined(_WIN32)
@@ -7376,8 +7456,15 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
     list_dir_state_reset(find_unit(unit_num));
 }
 
-LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
+LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     bool unit_file_bin;
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if( filep == NULL ) {
@@ -7386,6 +7473,14 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
         snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
         filep = fopen(fort_filename, "w+");
         if (!filep) {
+            if (iostat != NULL) {
+                *iostat = 5001;
+                if (iomsg != NULL && iomsg_len > 0) {
+                    char *msg = "Cannot open implicit file for ENDFILE.";
+                    _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+                }
+                return;
+            }
             fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
                 fort_filename, unit_num);
             exit(1);
@@ -7401,11 +7496,26 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
+LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
 {
+    if (iostat != NULL) {
+        *iostat = 0;
+    }
+    if (iomsg != NULL && iomsg_len > 0) {
+        iomsg[0] = '\0';
+        pad_with_spaces(iomsg, 0, iomsg_len);
+    }
     bool unit_file_bin;
     FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
+        if (iostat != NULL) {
+            *iostat = 5001;
+            if (iomsg != NULL && iomsg_len > 0) {
+                char *msg = "Specified UNIT is not created or connected.";
+                _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+            }
+            return;
+        }
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
@@ -10458,6 +10568,33 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
         return NULL;
     }
 
+    // A zero-width formatted field calls this with size==1.  fgets(buf, 1)
+    // stores only a NUL and reads no characters.  glibc treats that
+    // zero-character result as EOF and returns NULL; other libcs return buf.
+    // Peek instead so an empty record is not reported as end-of-file.
+    if (size == 1) {
+        buf[0] = '\0';
+        switch (inputSource->inputMethod) {
+        case INPUT_FILE: {
+            if (!inputSource->file) {
+                return NULL;
+            }
+            int c = fgetc(inputSource->file);
+            if (c == EOF) {
+                return NULL;
+            }
+            ungetc(c, inputSource->file);
+            return buf;
+        }
+        case INPUT_STRING:
+            if (inputSource->str.pos >= inputSource->str.len) {
+                return NULL;
+            }
+            return buf;
+        }
+        return NULL;
+    }
+
     int i = 0;
 
     switch (inputSource->inputMethod) {
@@ -13337,38 +13474,54 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
         _lpython_close(fd);
         return;
     }
-    char *file_contents = (char *) internal_calloc(size, sizeof(char));
+    // +1 so we can always NUL-terminate after fread without writing past
+    // the allocated buffer when the read fills the whole file.
+    char *file_contents = (char *) internal_calloc((size_t)size + 1, sizeof(char));
     if (file_contents == NULL) {
         _lpython_close(fd);
         return;
     }
-    int x = fread(file_contents, 1, size, (FILE*)fd);
-    file_contents[x] = '\0';
+    size_t nread = fread(file_contents, 1, size, (FILE*)fd);
+    file_contents[nread] = '\0';
     _lpython_close(fd);
 
-    char s[LCOMPILERS_MAX_STACKTRACE_LENGTH];
-    bool address = true;
+    // Token scratch for decimal uint64 fields (max 20 digits + NUL).
+    // Sized independently of LCOMPILERS_MAX_STACKTRACE_LENGTH; always
+    // bounds-checked so a corrupt/malformed lines file cannot overflow.
+    char s[32];
+    // Field within the current line: 0 = address, 1 = line number, >=2 ignored
+    // (dat_convert.py writes three uint64s per line: addr, line, unused).
+    int field = 0;
     uint32_t j = 0;
-    for (uint32_t i = 0; i < size; i++) {
-        if (file_contents[i] == '\n') {
-            memset(s, '\0', sizeof(s));
+    for (size_t i = 0; i < nread; i++) {
+        if (d->stack_size >= LCOMPILERS_MAX_STACKTRACE_LENGTH) {
+            // Prevent writing past the fixed-size addresses/line_numbers
+            // arrays when the debug line table has more entries than
+            // LCOMPILERS_MAX_STACKTRACE_LENGTH (e.g. when linking against
+            // large external libraries built with a different compiler).
+            break;
+        }
+        char c = file_contents[i];
+        if (c == '\n') {
             j = 0;
+            field = 0;
             d->stack_size++;
             continue;
-        } else if (file_contents[i] == ' ') {
+        } else if (c == ' ') {
             s[j] = '\0';
             j = 0;
-            if (address) {
-                d->addresses[d->stack_size] = strtol(s, NULL, 10);
-                address = false;
-            } else {
-                d->line_numbers[d->stack_size] = strtol(s, NULL, 10);
-                address = true;
+            if (field == 0) {
+                d->addresses[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
+            } else if (field == 1) {
+                d->line_numbers[d->stack_size] = (uint64_t)strtoull(s, NULL, 10);
             }
-            memset(s, '\0', sizeof(s));
+            field++;
             continue;
         }
-        s[j++] = file_contents[i];
+        // Bound s[]: drop excess characters rather than overflowing.
+        if (j + 1 < sizeof(s)) {
+            s[j++] = c;
+        }
     }
     internal_free(file_contents);
 }
@@ -13402,10 +13555,13 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
     return line;         // caller knows length; can ignore '\0'
 }
 
+// Return the largest index idx with vec[idx] <= i (assuming vec sorted
+// ascending). Always returns a value in [0, size-1] so callers can index
+// addresses/line_numbers without a further clamp. size must be > 0.
 static inline uint64_t bisection(const uint64_t vec[],
         uint64_t size, uint64_t i) {
     if (i < vec[0]) return 0;
-    if (i >= vec[size-1]) return size;
+    if (i >= vec[size-1]) return size - 1;
     uint64_t i1 = 0, i2 = size-1;
     while (i1 < i2-1) {
         uint64_t imid = (i1+i2)/2;
@@ -13497,13 +13653,11 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 LFORTRAN_API void _lfortran_get_environment_variable(fchar *name, int32_t name_len, char* receiver) {
     char* C_name = to_c_string(name , name_len);
     if (C_name == NULL || ! getenv(C_name)) {
-        receiver[0] = '\0';
         internal_free(C_name);
         return;
     }
     int32_t len = strlen(getenv(C_name));
     memcpy(receiver, getenv(C_name), len);
-    receiver[len] = '\0';
     internal_free(C_name);
 }
 
@@ -13516,6 +13670,23 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status(fchar *name, int3
     internal_free(C_name);
     if (value == NULL) {
         return 1;
+    }
+    return 0;
+}
+
+LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(
+        fchar *name, int32_t name_len, int32_t value_len) {
+    char* C_name = to_c_string(name, name_len);
+    if (C_name == NULL) {
+        return 2;
+    }
+    char *value = getenv(C_name);
+    internal_free(C_name);
+    if (value == NULL) {
+        return 1;
+    }
+    if (value_len < (int32_t) strlen(value)) {
+        return -1;
     }
     return 0;
 }
@@ -13567,7 +13738,6 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
 // ============================================================================
 // Namelist I/O Support
 // ============================================================================
-
 typedef struct {
     FILE *fp;
     char *data;
@@ -13576,6 +13746,7 @@ typedef struct {
     int64_t elem_idx;
     int64_t pos;
     bool is_file;
+    int delim;  
 } nml_writer_t;
 
 static void write_char(nml_writer_t *w, char c) {
@@ -13605,6 +13776,14 @@ static void write_char(nml_writer_t *w, char c) {
 static void write_str(nml_writer_t *w, const char *s) {
     while (*s) {
         write_char(w, *s++);
+    }
+}
+
+// Group and object names in namelist output shall be in upper case
+// (F2018 13.11.4.1); the descriptor keeps them lowercase for matching.
+static void write_str_upper(nml_writer_t *w, const char *s) {
+    while (*s) {
+        write_char(w, (char)toupper((unsigned char)*s++));
     }
 }
 
@@ -13660,7 +13839,8 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
             else if (item->type == LFORTRAN_NML_LOGICAL4) val = *(int32_t*)ptr != 0;
             else val = *(int64_t*)ptr != 0;
 
-            write_str(w, val ? ".true." : ".false.");
+            // As for list-directed output, logicals are T or F 
+            write_str(w, val ? "T" : "F");
             break;
         }
 
@@ -13680,18 +13860,30 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
 
         case LFORTRAN_NML_CHAR: {
             char *str = (char*)ptr;
+            char delim_char = '\0';
 
-            write_char(w, '\'');
+            if (w->delim == 1) {
+                delim_char = '\'';
+            } else if (w->delim == 2) {
+                delim_char = '"';
+            }
+
+            if (delim_char != '\0') {
+                write_char(w, delim_char);
+            }
 
             for (int64_t i = 0; i < item->elem_len; i++) {
-                if (str[i] == '\'') {
-                    write_str(w, "''");
+                if (delim_char != '\0' && str[i] == delim_char) {
+                    write_char(w, delim_char);
+                    write_char(w, delim_char);
                 } else {
                     write_char(w, str[i]);
                 }
             }
 
-            write_char(w, '\'');
+            if (delim_char != '\0') {
+                write_char(w, delim_char);
+            }
             break;
         }
     }
@@ -13739,14 +13931,14 @@ void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
     write_str(w, " &");
-    write_str(w, group->group_name);
+    write_str_upper(w, group->group_name);
     write_char(w, '\n');
 
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
         write_str(w, "  ");
-        write_str(w, item->name);
+        write_str_upper(w, item->name);
         write_char(w, '=');
 
         if (item->rank == 0) {
@@ -13806,6 +13998,7 @@ LFORTRAN_API void _lfortran_namelist_write(
 
     w.fp = filep;
     w.is_file = true;
+    w.delim = delim; 
 
     namelist_write_impl(&w, group);
 
@@ -13829,6 +14022,7 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
     w.pos = 0;
 
     w.is_file = false;
+    w.delim = 0; 
 
     namelist_write_impl(&w, group);
 
@@ -13952,7 +14146,6 @@ static void skip_whitespace_nml(nml_reader_t *reader, char **line_buf, char **li
         break;
     }
 }
-
 // Helper to read a token (word or operator)
 static char* read_token_nml(nml_reader_t *reader, char **line_buf, char **line_ptr,
                             size_t *line_len, int64_t *read_len) {

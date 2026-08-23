@@ -915,7 +915,8 @@ intrinsic_funcs_args = {
             "args": [("int",), ("real",), ("complex",)],
             "return": "real32",
             "kind_arg": True,
-            "real_32_except_complex": True
+            "real_32_except_complex": True,
+            "valid_kinds": [4, 8, 16]
         },
     ],
     "Int": [
@@ -1172,6 +1173,14 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         f'append_error(diag, "`kind` argument of the `{func_name}` function must be a scalar Integer constant", args[1]->base.loc);\n'
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
+        valid_kinds = arg_infos[0].get("valid_kinds", None)
+        if valid_kinds:
+            cond = " && ".join(f"kind != {k}" for k in valid_kinds)
+            kinds_str = ", ".join(str(k) for k in valid_kinds)
+            src += indent * 3 +     f"if (ASR::is_a<ASR::IntegerConstant_t>(*args[1]) && ({cond})) {{\n"
+            src += indent * 4 +         f'append_error(diag, "Unsupported {func_name} kind \'" + std::to_string(kind) + "\' in `{func_name.lower()}()`, must be one of: {kinds_str}", args[1]->base.loc);\n'
+            src += indent * 4 +         "return nullptr;\n"
+            src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
         src += indent * 2 + "}\n"
     real_32_except_complex = arg_infos[0].get("real_32_except_complex", False)

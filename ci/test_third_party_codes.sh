@@ -154,15 +154,19 @@ time_section "🧪 Testing caffeine" '
   # inject ISO_Fortran_binding.h into the C include path
   export CPPFLAGS="-I$(lfortran --print-c-include-dir)"
 
-  # Release 0.8.0
-  git checkout 0.8.0
-  assert_git_commit 9a4a818d9617bc88890a9fdc9fd6e66959c7fad0
+  # checkout a snapshot more recent than the current release
+  git checkout 341a507bfd61c464fe6db4b8185520e6461e5a9b
 
   # Now build and test caffeine with LFortran
   export GASNET_CONFIGURE_ARGS="--enable-rpath --enable-debug" 
   ./install.sh --yes --prefix=$PWD/inst --verbose
+
+  # Execute Caffeine unit tests
   export CAF_IMAGES=4
   ./run-fpm.sh test --verbose 
+
+  # Execute Caffeine end-to-end test (exercises LFortran+PRIF integration)
+  ./run-fpm.sh run --verbose
 
   print_success "Done with caffeine"
   cd ..
@@ -176,9 +180,9 @@ time_section "🧪 Testing assert" '
 
   micromamba install -c conda-forge fpm=0.12.0
 
-  # Release 3.1.0
-  git checkout 3.1.0
-  assert_git_commit 584fc171514172ff701df9b37f3229826a17e35d
+  # Release 3.1.2
+  git checkout 3.1.2
+  assert_git_commit 1eb0cb9ce1421c76b6ab977370b6339918f20918
 
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose

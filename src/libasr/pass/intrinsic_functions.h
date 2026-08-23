@@ -155,6 +155,8 @@ enum class IntrinsicElementalFunctions : int64_t {
     CommandArgumentCount,
     ThisImage,
     NumImages,
+    LCoBound,
+    UCoBound,
     SignFromValue,
     Logical,
     Nint,
@@ -1315,7 +1317,9 @@ namespace Scale {
         */
 
        //TODO: Radix for most of the device is 2, so we can use the b.i2r_t(2, real32) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
-        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.i2r_t(b.Pow(b.i_t(2, arg_types[1]), args[1]), return_type))));
+        // The exponentiation must be done in floating point: `i` may be negative,
+        // and integer 2**i truncates to 0 for any i < 0.
+        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.Pow(b.f_t(2.0, return_type), b.i2r_t(args[1], return_type)))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -1369,10 +1373,20 @@ namespace SameTypeAs {
         }
         // Both types are known at compile time, compare them
         ASRUtils::ASRBuilder b(al, loc);
-        bool same = ASRUtils::types_equal(
-            ASRUtils::type_get_past_allocatable_pointer(arg_type0),
-            ASRUtils::type_get_past_allocatable_pointer(arg_type1),
-            nullptr, nullptr);
+        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+
+        if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
+            ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[0]));
+            ASR::symbol_t *sym1 = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(args[1]));
+            if (sym0 && sym1 && ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
+                return b.bool_t(sym0 == sym1, return_type);
+            }
+        }
+
+        bool same = ASRUtils::types_equal(t0, t1, nullptr, nullptr);
         return b.bool_t(same, return_type);
     }
 
@@ -1394,11 +1408,7 @@ namespace ExtendsTypeOf {
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
         ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
-        // Same type => extends_type_of is true
-        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
-            return b.bool_t(true, return_type);
-        }
-        // Check if A's type extends MOLD's type via parent chain
+
         if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
             ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(args[0]));
@@ -1406,14 +1416,18 @@ namespace ExtendsTypeOf {
                 ASRUtils::get_struct_sym_from_struct_expr(args[1]));
             if (sym0 && sym1 &&
                 ASR::is_a<ASR::Struct_t>(*sym0) && ASR::is_a<ASR::Struct_t>(*sym1)) {
-                // is_parent(a, b) checks if a is in b's parent chain
-                // extends_type_of(A, MOLD) means A extends MOLD,
-                // so MOLD must be in A's parent chain
+                if (sym0 == sym1) {
+                    return b.bool_t(true, return_type);
+                }
                 bool extends = ASRUtils::is_parent(
                     ASR::down_cast<ASR::Struct_t>(sym1),
                     ASR::down_cast<ASR::Struct_t>(sym0));
                 return b.bool_t(extends, return_type);
             }
+        }
+
+        if (ASRUtils::types_equal(t0, t1, nullptr, nullptr)) {
+            return b.bool_t(true, return_type);
         }
         return b.bool_t(false, return_type);
     }
@@ -1510,7 +1524,9 @@ namespace OutOfRange
         } else if (is_real(*arg_type_1)) {
             double value = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (is_integer(*arg_type_2)) {
-                if (value > (double) max_val_int || value < (double) min_val_int) {
+                bool round = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+                double int_value = round ? std::round(value) : std::trunc(value);
+                if (int_value > (double) max_val_int || int_value < (double) min_val_int) {
                     return b.bool_t(1, return_type);
                 }
             } else if (is_real(*arg_type_2)) {
@@ -1537,34 +1553,66 @@ namespace OutOfRange
 
         ASR::expr_t* max_val = nullptr;
         ASR::expr_t* min_val = nullptr;
+        ASR::expr_t* max_val_real = nullptr;
+        ASR::expr_t* min_val_real = nullptr;
+        ASR::expr_t* max_trunc_real = nullptr;
+        ASR::expr_t* min_trunc_real = nullptr;
+        ASR::expr_t* max_round_real = nullptr;
+        ASR::expr_t* min_round_real = nullptr;
         int kind1 = extract_kind_from_ttype_t(arg_types[0]);
         int kind2 = extract_kind_from_ttype_t(arg_types[1]);
+        ASR::ttype_t* real_bound_type = is_real(*arg_types[0]) ? arg_types[0] : real64;
 
         if (is_integer(*arg_types[1])) {
-        if (kind2 == 4) {
-            if (kind1 == 4) {
-                max_val = b.i32(2147483647);
-                min_val = b.i32(-2147483648);
-                body.push_back(al,
-                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
-                        { b.Assignment(result, b.bool_t(true, return_type)) },
-                        { b.Assignment(result, b.bool_t(false, return_type)) }));
-            } else {
+            if (kind2 == 1) {
+                max_val = b.i64(127);
+                min_val = b.i64(-128);
+                max_trunc_real = b.f_t(128.0, real_bound_type);
+                min_trunc_real = b.f_t(-129.0, real_bound_type);
+                max_round_real = b.f_t(127.5, real_bound_type);
+                min_round_real = b.f_t(-128.5, real_bound_type);
+            } else if (kind2 == 2) {
+                max_val = b.i64(32767);
+                min_val = b.i64(-32768);
+                max_trunc_real = b.f_t(32768.0, real_bound_type);
+                min_trunc_real = b.f_t(-32769.0, real_bound_type);
+                max_round_real = b.f_t(32767.5, real_bound_type);
+                min_round_real = b.f_t(-32768.5, real_bound_type);
+            } else if (kind2 == 4) {
                 max_val = b.i64(2147483647);
                 min_val = b.i64(-2147483648);
-                body.push_back(al,
-                    b.If(b.Or(b.Gt(args[0], max_val), b.Lt(args[0], min_val)),
-                        { b.Assignment(result, b.bool_t(true, return_type)) },
-                        { b.Assignment(result, b.bool_t(false, return_type)) }));
+                max_val_real = b.f_t(2147483647.0, real_bound_type);
+                min_val_real = b.f_t(-2147483648.0, real_bound_type);
+            } else if (kind2 == 8) {
+                max_val = b.i64(9223372036854775807);
+                min_val = b.i64(-9223372036854775807);
+                max_val_real = b.f_t(9223372036854775807.0, real_bound_type);
+                min_val_real = b.f_t(-9223372036854775807.0, real_bound_type);
             }
-        } else if (kind2 == 8) {
-            max_val = b.i64(9223372036854775807);
-            min_val = b.i64(-9223372036854775807);
-            body.push_back(al,
-                b.If(b.Or(b.Gt(b.i2i_t(args[0], arg_types[1]), max_val), b.Lt(b.i2i_t(args[0], arg_types[1]), min_val)),
+
+            if (is_integer(*arg_types[0])) {
+                ASR::expr_t* value = kind1 == 8 ? args[0] : b.i2i_t(args[0], int64);
+                body.push_back(al,
+                    b.If(b.Or(b.Gt(value, max_val), b.Lt(value, min_val)),
                     { b.Assignment(result, b.bool_t(true, return_type)) },
                     { b.Assignment(result, b.bool_t(false, return_type)) }));
-        }
+            } else {
+                if (max_trunc_real && min_trunc_real && max_round_real && min_round_real) {
+                    body.push_back(al,
+                        b.If(args[2],
+                        { b.If(b.Or(b.GtE(args[0], max_round_real), b.LtE(args[0], min_round_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }) },
+                        { b.If(b.Or(b.GtE(args[0], max_trunc_real), b.LtE(args[0], min_trunc_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }) }));
+                } else {
+                    body.push_back(al,
+                        b.If(b.Or(b.Gt(args[0], max_val_real), b.Lt(args[0], min_val_real)),
+                            { b.Assignment(result, b.bool_t(true, return_type)) },
+                            { b.Assignment(result, b.bool_t(false, return_type)) }));
+                }
+            }
         } else if (is_real(*arg_types[1])) {
             if (kind2 == 4) {
                 if (kind1 == 4) {
@@ -1806,6 +1854,123 @@ namespace ThisImage {
 
 } // namespace ThisImage
 
+namespace LCoBound {
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "lcobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
+    }
+    static ASR::expr_t *eval_LCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+    static inline ASR::asr_t* create_LCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *dim = nullptr;
+        ASR::expr_t *kind = nullptr;
+        if (args.size() >= 2) dim = args[1];
+        if (args.size() == 3) kind = args[2];
+        int64_t kind_const = 4; // Default integer kind
+        if (kind) {
+            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+            if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
+                if (!ASRUtils::extract_value(kind_value, kind_const)) {
+                    LCOMPILERS_ASSERT(false);
+                }
+            }
+        }
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
+        if (!dim) {
+            int n_dims = 0;
+            if (ASR::is_a<ASR::Var_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
+                n_dims = ASRUtils::symbol_corank(sym);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
+                n_dims = ASRUtils::symbol_corank(sym);
+            }
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, n_dims);
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i, int_type));
+                Vec<ASR::expr_t*> elem_args;
+                elem_args.reserve(al, 2);
+                elem_args.push_back(al, args[0]);
+                elem_args.push_back(al, dim_);
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                    al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound),
+                    elem_args.p, elem_args.n, 0, return_type, nullptr)));
+            }
+            return ASRUtils::make_ArrayConstructor_t_util(al, loc, arr_args.p,
+                arr_args.size(), return_type, ASR::arraystorageType::ColMajor);
+        }
+
+        Vec<ASR::expr_t*> final_args;
+        final_args.reserve(al, 2);
+        final_args.push_back(al, args[0]);
+        if (dim) {
+            final_args.push_back(al, dim);
+        }
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound), final_args.p, final_args.n, 0, return_type, nullptr);
+    }
+}
+
+namespace UCoBound {
+    static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "ucobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
+    }
+    static ASR::expr_t *eval_UCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+    static inline ASR::asr_t* create_UCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t *dim = nullptr;
+        ASR::expr_t *kind = nullptr;
+        if (args.size() >= 2) dim = args[1];
+        if (args.size() == 3) kind = args[2];
+        int64_t kind_const = 4; // Default integer kind
+        if (kind) {
+            ASR::expr_t* kind_value = ASRUtils::expr_value(kind);
+            if( kind_value && ASRUtils::is_value_constant(kind_value) ) {
+                if (!ASRUtils::extract_value(kind_value, kind_const)) {
+                    LCOMPILERS_ASSERT(false);
+                }
+            }
+        }
+        ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind_const));
+        if (!dim) {
+            int n_dims = 0;
+            if (ASR::is_a<ASR::Var_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(args[0])->m_v);
+                n_dims = ASRUtils::symbol_corank(sym);
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*args[0])) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructInstanceMember_t>(args[0])->m_m);
+                n_dims = ASRUtils::symbol_corank(sym);
+            }
+            Vec<ASR::expr_t*> arr_args;
+            arr_args.reserve(al, n_dims);
+            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i, int_type));
+                Vec<ASR::expr_t*> elem_args;
+                elem_args.reserve(al, 2);
+                elem_args.push_back(al, args[0]);
+                elem_args.push_back(al, dim_);
+                arr_args.push_back(al, ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                    al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound),
+                    elem_args.p, elem_args.n, 0, return_type, nullptr)));
+            }
+            return ASRUtils::make_ArrayConstructor_t_util(al, loc, arr_args.p,
+                arr_args.size(), return_type, ASR::arraystorageType::ColMajor);
+        }
+
+        Vec<ASR::expr_t*> final_args;
+        final_args.reserve(al, 2);
+        final_args.push_back(al, args[0]);
+        if (dim) {
+            final_args.push_back(al, dim);
+        }
+
+        return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound), final_args.p, final_args.n, 0, return_type, nullptr);
+    }
+}
 namespace NumImages {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -6085,11 +6250,11 @@ namespace StringLenTrim {
             end function
         */
 
-        body.push_back(al, b.Assignment(result, b.StringLen(args[0])));
-        body.push_back(al, b.If(b.NotEq(result, b.i32(0)), {
+        body.push_back(al, b.Assignment(result, b.i2i_t(b.StringLen(args[0]), return_type)));
+        body.push_back(al, b.If(b.NotEq(result, b.i_t(0, return_type)), {
             b.While(b.Eq(b.StringItem(args[0], result), b.StringConstant(" ", character(1))), {
-                b.Assignment(result, b.Sub(result, b.i32(1))),
-                b.If(b.Eq(result, b.i32(0)), {
+                b.Assignment(result, b.Sub(result, b.i_t(1, return_type))),
+                b.If(b.Eq(result, b.i_t(0, return_type)), {
                     b.Exit()
                 }, {})
             })
@@ -6109,7 +6274,7 @@ namespace StringLenTrim {
 namespace StringTrim {
 
     static ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
         // Trim trailing spaces (in place)
         size_t len = strlen(str);
@@ -6121,9 +6286,10 @@ namespace StringTrim {
             }
         }
 
-        ASR::ttype_t* str_type = ASRBuilder(al, loc).String(
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind,
             make_ConstantWithType(make_IntegerConstant_t, strlen(str), int32, loc), 
-            ASR::ExpressionLength);
+            ASR::ExpressionLength, ASR::string_physical_typeType::DescriptorString));
         return make_ConstantWithType(make_StringConstant_t, str, str_type, loc);
     }
 
@@ -6131,9 +6297,10 @@ namespace StringTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
         declare_basic_variables("_lcompilers_trim_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
+        return_type = TYPE(ASR::make_String_t(al, loc, char_kind, func_call_lentrim,
             ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::DescriptorString));
         auto result = declare("result", return_type, ReturnVar);
@@ -7982,6 +8149,10 @@ namespace Epsilon {
                 epsilon_val = std::numeric_limits<float>::epsilon(); break;
             } case 8: {
                 epsilon_val = std::numeric_limits<double>::epsilon(); break;
+            } case 10: {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    std::numeric_limits<long double>::epsilon(),
+                    arg_type);
             } case 16: {
                 return ASRUtils::make_RealConstant_r16(al, loc,
                     lf_float128_from_str("1.92592994438723585305597794258492732e-34"),
@@ -8008,6 +8179,8 @@ namespace Precision {
                 precision_val = 6; break;
             } case 8: {
                 precision_val = 15; break;
+            } case 10: {
+                precision_val = 18; break;
             } case 16: {
                 precision_val = 33; break;
             } default: {
@@ -8032,6 +8205,10 @@ namespace Tiny {
                 tiny_value = std::numeric_limits<float>::min(); break;
             } case 8: {
                 tiny_value = std::numeric_limits<double>::min(); break;
+            } case 10: {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    std::numeric_limits<long double>::min(),
+                    arg_type);
             } case 16: {
                 return ASRUtils::make_RealConstant_r16(al, loc,
                     lf_float128_from_str("3.36210314311209350626267781732175260e-4932"),
@@ -8121,6 +8298,10 @@ namespace Huge {
                     huge_value = std::numeric_limits<float>::max(); break;
                 } case 8: {
                     huge_value = std::numeric_limits<double>::max(); break;
+                } case 10: {
+                    return ASRUtils::make_RealConstant_r10(al, loc,
+                        std::numeric_limits<long double>::max(),
+                        arg_type);
                 } case 16: {
                     return ASRUtils::make_RealConstant_r16(al, loc,
                         lf_float128_from_str("1.18973149535723176508575932662800702e4932"),

@@ -2,7 +2,6 @@
     [(Program
         functions_41
         ()
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -10,9 +9,8 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             notrecursive_sub
             []
@@ -50,10 +48,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Print
                 0
                 ()
@@ -79,10 +73,6 @@
             ()
             ()
             ()
-            []
-            []
-            []
-            []
             [(Print
                 0
                 ()

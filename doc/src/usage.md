@@ -159,7 +159,7 @@ compilation options, output options, link options and so on.
 
 ### Compiler feature selections
 
-* `--fast`, Best performance (disable strict standard compliance)
+* `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified.
 * `--implicit-argument-casting`, Allow implicit argument casting
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
@@ -168,6 +168,9 @@ compilation options, output options, link options and so on.
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
 * `--target <value>`, Generate code for the given target
+* `--march <value>`, Select the instruction-set architecture. Use `native` for the host ISA.
+* `--mcpu <value>`, Select both the CPU instruction set and scheduling model. Use `native` for the host CPU.
+* `--mtune <value>`, Select the CPU scheduling model without changing the instruction set. Use `native` for the host CPU.
 * `--backend` flag is used to specify the target backend for code generation in LFortran. The supported backends are:
   
   - `llvm`: The most advanced and default backend, used for generating LLVM IR or machine code through LLVM.
@@ -307,10 +310,8 @@ single-space, a zero "0" means double-space and one "1" means form-feed
 before printing.  This is obsolete and LFortran omits this unless
 `--print-leading-space` is selected at compile-time.
 
-There is currently no way to specify detailed compiler options to
-Clang such as `-O3` or `-flto` (optimization and link-time optimization).
+LFortran does not currently expose arbitrary Clang options such as `-flto`.
+Use `--fast` and the target-selection options above for native optimization.
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.
-
-

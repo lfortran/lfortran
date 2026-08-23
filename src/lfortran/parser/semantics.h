@@ -13,6 +13,7 @@
 #include <cstring>
 
 #include <lfortran/ast.h>
+#include <lfortran/ast_kind.h>
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 
@@ -27,6 +28,8 @@ using LCompilers::LFortran::FnArg;
 using LCompilers::LFortran::CoarrayArg;
 using LCompilers::LFortran::VarType;
 using LCompilers::LFortran::ArgStarKw;
+using LCompilers::LFortran::EndStmt;
+using LCompilers::LFortran::ContainsEnd;
 
 
 static inline expr_t* EXPR(const ast_t *f)
@@ -65,21 +68,21 @@ static inline char* name2char(const ast_t *n)
     return down_cast2<Name_t>(n)->m_id;
 }
 
-static inline void set_stmt_name(stmt_t &stmt, char *name) {
+static inline void set_stmt_name(decl_stmt_t &stmt, char *name) {
     switch (stmt.type) {
-        case stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
-        case stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
-        case stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
-        case stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
-        case stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
-        case stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
-        case stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
-        case stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
-        case stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
-        case stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::If:                ((If_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::DoLoop:            ((DoLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Block:             ((Block_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::AssociateBlock:    ((AssociateBlock_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Critical:          ((Critical_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::WhileLoop:         ((WhileLoop_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::ChangeTeam:        ((ChangeTeam_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::ForAll:            ((ForAll_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Select:            ((Select_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::SelectRank:        ((SelectRank_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::SelectType:        ((SelectType_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::Where:             ((Where_t&)stmt).m_stmt_name = name; break;
+        case decl_stmtType::DoConcurrentLoop:  ((DoConcurrentLoop_t&)stmt).m_stmt_name = name; break;
         default: LCOMPILERS_ASSERT_MSG(false, "Unknown statement type in set_stmt_name"); break;
     }
 }
@@ -117,9 +120,8 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 }
 
 #define VEC_CAST(x, type) vec_cast<type##_t, astType::type>(x)
-#define DECLS(x) VEC_CAST(x, unit_decl2)
-#define USES(x) VEC_CAST(x, unit_decl1)
-#define STMTS(x) VEC_CAST(x, stmt)
+#define DECLS(x) VEC_CAST(x, decl_stmt)
+#define STMTS(x) VEC_CAST(x, decl_stmt)
 #define CONTAINS(x) VEC_CAST(x, program_unit)
 #define ATTRS(x) VEC_CAST(x, attribute)
 #define EXPRS(x) VEC_CAST(x, expr)
@@ -138,10 +140,151 @@ Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     return v;
 }
 
-static inline stmt_t** IFSTMTS(Allocator &al, ast_t* x)
+// The parser collects all `use`, `import`, `implicit`, declaration and
+// executable statements of a program unit into a single list, in the order
+// they appear in the source code, and the AST stores that list as it is.
+// `check_decl_order()` below only validates it, reporting any violation of the
+// statement ordering rules (F2018 R508) as an error.
+
+// Which of the five kinds of statements a given scope accepts.
+enum class DeclContext {
+    Program,     // main program
+    Subprogram,  // subroutine, function, procedure
+    Module,      // module, submodule
+    BlockData,   // block data
+    Block,       // block construct
+    Template,    // template, requirement
+};
+
+// The five ordered sections of a program unit (F2018 R508). `Flexible` marks
+// the statements that F2018 R506 allows to appear anywhere in the
+// specification part, they never trigger an ordering error.
+enum class DeclPhase {
+    Use, Import, Implicit, Decl, Exec, Flexible
+};
+
+static inline const char* decl_context_name(DeclContext ctx) {
+    switch (ctx) {
+        case DeclContext::Program: return "main program";
+        case DeclContext::Subprogram: return "subprogram";
+        case DeclContext::Module: return "module";
+        case DeclContext::BlockData: return "block data";
+        case DeclContext::Block: return "block construct";
+        case DeclContext::Template: return "template";
+    }
+    return "program unit";
+}
+
+// True for the `parameter (a = 1)` form, which F2018 R506 allows to appear
+// before the `implicit` statement (unlike `integer, parameter :: a = 1`).
+static inline bool is_parameter_stmt(const ast_t &x) {
+    if (!is_a<decl_stmt_t>(x)) return false;
+    const decl_stmt_t &d = *(const decl_stmt_t*)&x;
+    if (!is_a<Declaration_t>(d)) return false;
+    const Declaration_t &decl = *(const Declaration_t*)&x;
+    return decl.m_vartype == nullptr && decl.n_attributes == 1
+        && is_a<SimpleAttribute_t>(*decl.m_attributes[0])
+        && ((const SimpleAttribute_t*)decl.m_attributes[0])->m_attr
+            == simple_attributeType::AttrParameter;
+}
+
+static inline DeclPhase decl_phase(const ast_t &x) {
+    if (!is_a<decl_stmt_t>(x)) return DeclPhase::Exec;
+    const decl_stmt_t &s = *(const decl_stmt_t*)&x;
+    switch (decl_stmt_kind(s)) {
+        case DeclStmtKind::Use: return DeclPhase::Use;
+        case DeclStmtKind::Import: return DeclPhase::Import;
+        case DeclStmtKind::Implicit: return DeclPhase::Implicit;
+        case DeclStmtKind::Declaration:
+            return is_parameter_stmt(x) ? DeclPhase::Flexible : DeclPhase::Decl;
+        case DeclStmtKind::Statement:
+            // `format` and `entry` may appear anywhere (F2018 R506, R514)
+            if (is_a<Format_t>(s) || is_a<Entry_t>(s)) return DeclPhase::Flexible;
+            // `data` is a declaration construct but is stored in the body
+            if (is_a<DataStmt_t>(s)) return DeclPhase::Decl;
+            return DeclPhase::Exec;
+    }
+    return DeclPhase::Exec;
+}
+
+static inline void decl_order_error(const std::string &msg, const Location &loc,
+        LCompilers::diag::Diagnostics &diag) {
+    diag.add(LCompilers::diag::Diagnostic(msg, LCompilers::diag::Level::Error,
+        LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
+}
+
+// Validates the statement order of a program unit and drops the null entries
+// that a failed declaration leaves behind under `--continue-compilation`. The
+// list is compacted in place, the AST then stores it as it is.
+static inline void check_decl_order(Vec<ast_t*> &items,
+        DeclContext ctx, LCompilers::diag::Diagnostics &diag) {
+    bool use_allowed = (ctx != DeclContext::Template);
+    bool import_allowed = (ctx == DeclContext::Subprogram
+        || ctx == DeclContext::Block);
+    bool implicit_allowed = (ctx != DeclContext::Block
+        && ctx != DeclContext::Template);
+    bool exec_allowed = (ctx != DeclContext::Module
+        && ctx != DeclContext::Template);
+    DeclPhase seen = DeclPhase::Use;
+    size_t n = 0;
+    for (size_t i=0; i < items.size(); i++) {
+        if (!items[i]) continue;
+        ast_t *x = items[i];
+        items.p[n++] = x;
+        LCOMPILERS_ASSERT(is_a<decl_stmt_t>(*x))
+        DeclPhase phase = decl_phase(*x);
+        if (phase != DeclPhase::Flexible && phase > seen) seen = phase;
+        switch (decl_stmt_kind(*(const decl_stmt_t*)x)) {
+            case DeclStmtKind::Use: {
+                if (!use_allowed) {
+                    decl_order_error(std::string("use statement is not allowed "
+                        "in a ") + decl_context_name(ctx), x->loc, diag);
+                } else if (seen > DeclPhase::Use) {
+                    decl_order_error("use statement must appear before all "
+                        "other declarations and statements", x->loc, diag);
+                }
+                break;
+            }
+            case DeclStmtKind::Import: {
+                if (!import_allowed) {
+                    decl_order_error(std::string("import statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                } else if (seen > DeclPhase::Import) {
+                    decl_order_error("import statement must appear before "
+                        "implicit and declaration statements", x->loc, diag);
+                }
+                break;
+            }
+            case DeclStmtKind::Implicit: {
+                if (!implicit_allowed) {
+                    decl_order_error(std::string("implicit statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                } else if (seen > DeclPhase::Implicit) {
+                    decl_order_error("implicit statement must appear before "
+                        "declaration and executable statements", x->loc, diag);
+                }
+                break;
+            }
+            case DeclStmtKind::Declaration: {
+                break;
+            }
+            case DeclStmtKind::Statement: {
+                if (!exec_allowed && phase != DeclPhase::Decl) {
+                    decl_order_error(std::string("executable statement is not "
+                        "allowed in a ") + decl_context_name(ctx), x->loc, diag);
+                }
+                break;
+            }
+        }
+    }
+    items.n = n;
+}
+
+
+static inline decl_stmt_t** IFSTMTS(Allocator &al, ast_t* x)
 {
-    stmt_t **s = al.allocate<stmt_t*>();
-    *s = down_cast<stmt_t>(x);
+    decl_stmt_t **s = al.allocate<decl_stmt_t*>();
+    *s = down_cast<decl_stmt_t>(x);
     return s;
 }
 
@@ -866,26 +1009,35 @@ static inline FnArg* DIM1k(Allocator &al, Location &l,
 }
 
 static inline CoarrayArg* CODIM1(Allocator &al, Location &l,
-    expr_t *a, expr_t *b, expr_t *c)
+    expr_t *a, expr_t *b)
 {
     CoarrayArg *s = al.allocate<CoarrayArg>();
     s->keyword = false;
     s->arg.loc = l;
     s->arg.m_start = a;
     s->arg.m_end = b;
-    s->arg.m_step = c;
     s->arg.m_star = codimension_typeType::CodimensionExpr;
     return s;
 }
 
-static inline CoarrayArg* CODIM1star(Allocator &al, Location &l, expr_t *c)
+static inline CoarrayArg* CODIM1star(Allocator &al, Location &l)
 {
     CoarrayArg *s = al.allocate<CoarrayArg>();
     s->keyword = false;
     s->arg.loc = l;
     s->arg.m_start = nullptr;
     s->arg.m_end = nullptr;
-    s->arg.m_step = c;
+    s->arg.m_star = codimension_typeType::CodimensionStar;
+    return s;
+}
+
+static inline CoarrayArg* CODIM1astar(Allocator &al, Location &l, expr_t *a)
+{
+    CoarrayArg *s = al.allocate<CoarrayArg>();
+    s->keyword = false;
+    s->arg.loc = l;
+    s->arg.m_start = a;
+    s->arg.m_end = nullptr;
     s->arg.m_star = codimension_typeType::CodimensionStar;
     return s;
 }
@@ -942,15 +1094,15 @@ static inline codimension_t* CODIM1d_star(Allocator &al, Location &l, expr_t *a)
 }
 
 
-static inline arg_t* ARGS(Allocator &al, Location &l,
-    const Vec<ast_t*> args)
+static inline arg_t* ARGS(Allocator &al, const Vec<ast_t*> args)
 {
     arg_t *a = al.allocate<arg_t>(args.size());
     for (size_t i=0; i < args.size(); i++) {
-        a[i].loc = l;
         if (args.p[i]) {
+            a[i].loc = args.p[i]->loc;
             a[i].m_arg = name2char(args.p[i]);
         } else {
+            a[i].loc = Location();
             a[i].m_arg = nullptr;
         }
     }
@@ -965,6 +1117,7 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
     }
     return a;
 }
+
 
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
@@ -1551,76 +1704,128 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
-#define SUBROUTINE(name, args, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) \
-    make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+void append_labeled_end(Allocator &al, Vec<ast_t*> &decl_stmts,
+        int64_t end_label, const Location &end_loc) {
+    if (end_label == 0) return;
+    // A labeled END is a branch target immediately before implicit termination.
+    decl_stmts.push_back(al, make_Continue_t(
+        al, end_loc, end_label, nullptr));
+}
+
+// The END statement of a program unit: the name it optionally repeats, and
+// the label it optionally carries.
+EndStmt END_STMT(ast_t *name, int64_t label, const Location &loc) {
+    return {name, label, loc};
+}
+
+// A program unit's contains block together with its END statement. The two
+// are parsed as one symbol so that a label on the END does not have to be
+// distinguished from a label starting a statement in the contains block.
+// CONTAINS_END1 is the unit with no contains block, CONTAINS_END2 the one
+// that has it.
+ContainsEnd* CONTAINS_END1(Allocator &al, EndStmt end) {
+    ContainsEnd *result = al.make_new<ContainsEnd>();
+    result->contains.reserve(al, 0);
+    result->end = end;
+    return result;
+}
+
+ContainsEnd* CONTAINS_END2(Allocator &al, Vec<ast_t*> contains, EndStmt end) {
+    ContainsEnd *result = al.make_new<ContainsEnd>();
+    result->contains = contains;
+    result->end = end;
+    return result;
+}
+
+// A program unit's contains block and END statement reach these macros as one
+// value. Reading them here keeps their layout out of the grammar actions. The
+// field names live in these accessors rather than in the program-unit macros,
+// where a parameter of the same name would capture them.
+#define CE_CONTAINS(ce) ((ce)->contains)
+#define CE_END(ce) ((ce)->end)
+#define END_NAME(e) ((e).name)
+#define END_LABEL(e) ((e).label)
+#define END_LOC(e) ((e).loc)
+#define END_NAME_LOC(e) (END_NAME(e) ? &(END_NAME(e)->loc) : nullptr)
+
+ast_t* SUBROUTINE2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, bind_t* a_bind, trivia_t* a_trivia,
+        Vec<ast_t*> decl_stmts, program_unit_t** a_contains, size_t n_contains,
+        char** a_temp_args, size_t n_temp_args, Location* a_start_name,
+        Location* a_end_name, int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
+    return make_Subroutine_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_bind, a_trivia,
+        DECLS(decl_stmts), decl_stmts.size(),
+        a_contains, n_contains, a_temp_args, n_temp_args,
+        a_start_name, a_end_name);
+}
+
+ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
+    return make_Procedure_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_trivia,
+        DECLS(decl_stmts), decl_stmts.size(),
+        a_contains, n_contains);
+}
+
+#define SUBROUTINE(name, args, bind, trivia, decl_stmts, ce, l) \
+    SUBROUTINE2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "subroutine", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        decl_stmts, \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define SUBROUTINE1(fn_mod, name, args, bind, trivia, use, import, implicit, \
-        decl, stmts, contains, name_opt, l) make_Subroutine_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define SUBROUTINE1(fn_mod, name, args, bind, trivia, decl_stmts, ce, l) \
+    SUBROUTINE2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "subroutine", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
         /*n_attributes*/ fn_mod.size(), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        decl_stmts, \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define PROCEDURE(fn_mod, name, args, trivia, use, import, implicit, decl, stmts, contains, l) \
-    make_Procedure_t(p.m_a, l, \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define PROCEDURE(fn_mod, name, args, trivia, decl_stmts, ce, l) \
+    PROCEDURE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
         /*n_attributes*/ fn_mod.size(), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size())
+        decl_stmts, \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
 char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     if (s.size() == 0) {
@@ -1630,214 +1835,149 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     }
 }
 
-#define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
+        size_t n_attributes, expr_t* a_return_var, bind_t* a_bind,
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        char** a_temp_args, size_t n_temp_args, Location* a_start_name,
+        Location* a_end_name, int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
+    check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
+    return make_Function_t(al, l, a_name, a_args, n_args,
+        a_attributes, n_attributes, a_return_var, a_bind, a_trivia,
+        DECLS(decl_stmts), decl_stmts.size(),
+        a_contains, n_contains, a_temp_args, n_temp_args,
+        a_start_name, a_end_name);
+}
+
+#define FUNCTION(fn_type, name, args, return_var, bind, trivia, decl_stmts, \
+        ce, l) FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "function", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        decl_stmts, \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define FUNCTION0(name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, args), \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define FUNCTION0(name, args, return_var, bind, trivia, decl_stmts, ce, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "function", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
-        /*return_type*/ nullptr, \
-        /*return_type*/ 0, \
+        /*m_attributes*/ nullptr, \
+        /*n_attributes*/ 0, \
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        decl_stmts, \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
-#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
-        make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+#define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, \
+        bind, trivia, decl_stmts, end, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, trivia, decl, stmts, name_opt, l) \
-        make_Function_t(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*end_name*/ END_NAME_LOC(end), \
+        END_LABEL(end), END_LOC(end), p.diag)
+#define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
+        trivia, decl_stmts, end, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
+            p.diag), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
         /*return_var*/ EXPR_OPT(return_var), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc))
-#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
-        make_Subroutine_t(p.m_a, l, \
+        /*end_name*/ END_NAME_LOC(end), \
+        END_LABEL(end), END_LOC(end), p.diag)
+#define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
+        decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
         /*n_attributes*/ 0, \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc))
-#define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, trivia, decl, stmts, l) \
-        make_Subroutine_t(p.m_a, l, \
+        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
+#define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
+        trivia, decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
-        /*args*/ ARGS(p.m_a, l, fn_args), \
+        /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
         /*n_attributes*/ fn_type.size(), \
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
-        /*use*/ nullptr, \
-        /*n_use*/ 0, \
-        /*m_import*/ nullptr, \
-        /*n_import*/ 0, \
-        /*m_implicit*/ nullptr, \
-        /*n_implicit*/ 0, \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(stmts), \
-        /*n_body*/ stmts.size(), \
+        decl_stmts, \
         /*contains*/ nullptr, \
         /*n_contains*/ 0, \
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc))
-
-Vec<ast_t*> SPLIT_DECL(Allocator &al, Vec<ast_t*> ast)
-{
-    Vec<ast_t*> v;
-    v.reserve(al, ast.size());
-    for (size_t i=0; i<ast.size(); i++) {
-        if (is_a<unit_decl2_t>(*ast[i])) {
-            v.push_back(al, ast[i]);
-        }
-    }
-    return v;
-}
-
-Vec<ast_t*> SPLIT_STMT(Allocator &al, Vec<ast_t*> ast)
-{
-    Vec<ast_t*> v;
-    v.reserve(al, ast.size());
-    for (size_t i=0; i<ast.size(); i++) {
-        if (is_a<stmt_t>(*ast[i])) {
-            v.push_back(al, ast[i]);
-        }
-    }
-    return v;
-}
+        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
 
 ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
-        trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
-        Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location *start_name, Location *end_name) {
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
+        size_t n_contains, Location *start_name, Location *end_name,
+        int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (decl_stmts[i] && is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else if (decl_stmts[i]) {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+append_labeled_end(al, decl_stmts, end_label, end_loc);
+check_decl_order(decl_stmts, DeclContext::Program, diag);
 
 return make_Program_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ start_name,
@@ -1846,24 +1986,26 @@ return make_Program_t(al, a_loc,
 }
 
 
-#define PROGRAM(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define PROGRAM(name, trivia, decl_stmts, ce, l) \
     PROGRAM2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "program", p.diag), \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "program", \
+            p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ (name_opt) ? &((name_opt)->loc) : nullptr)
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 #define RESULT(x) p.result.push_back(p.m_a, x)
+// A labeled END terminating an implicit main program. The label is a branch
+// target immediately before termination, and the END still ends the unit.
+#define LABELED_END(label, end_kw, l) \
+    (RESULT(make_Continue_t(p.m_a, l, label, nullptr)), SYMBOL(end_kw, l))
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
-        set_stmt_name(*(stmt_t*)(stmt), name2char(id_first)); \
+        set_stmt_name(*(decl_stmt_t*)(stmt), name2char(id_first)); \
         std::string first = name2char(id_first), \
                     last  = name2char(id_last); \
         if (LCompilers::to_lower(first) != LCompilers::to_lower(last)) { \
@@ -1872,15 +2014,16 @@ return make_Program_t(al, a_loc,
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
 
-#define BLOCK(trivia, use, import, decl, body, l) make_Block_t(p.m_a, l, 0, nullptr, \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_import*/ VEC_CAST(import, import_statement), \
-        /*n_import*/ import.size(), \
-        /*decl*/ DECLS(decl), \
-        /*n_decl*/ decl.size(), \
-        /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
+ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
+        Vec<ast_t*> decl_stmts, LCompilers::diag::Diagnostics &diag) {
+    check_decl_order(decl_stmts, DeclContext::Block, diag);
+    return make_Block_t(al, l, 0, nullptr,
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(), a_trivia, nullptr);
+}
+
+#define BLOCK(trivia, decl_stmts, l) BLOCK2(p.m_a, l, trivia_cast(trivia), \
+        decl_stmts, p.diag)
 
 #define ASSOCIATE_BLOCK(syms, trivia, body, l) make_AssociateBlock_t(p.m_a, l, 0, \
         nullptr, \
@@ -2093,6 +2236,11 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'logical(8)'");
             }
+        } else if (end_token == yytokentype::KW_BYTE) {
+            diagnostics.parser_style_label(
+                "The 'byte' type is non-standard, use integer(1) instead",
+                {loc},
+                "help: write this as 'integer(1)'");
         }
 
     }
@@ -2104,6 +2252,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_BYTE(l) add_ws_warning(l, p.diag, p.fixed_form, KW_BYTE)
 #define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 
@@ -2122,9 +2271,9 @@ static inline void drop_trailing_matching_continue(
         const LCompilers::Vec<LCompilers::LFortran::AST::ast_t*> &body, int64_t label) {
     if (label == 0 || body.size() == 0) return;
     LCompilers::LFortran::AST::ast_t *last = body.p[body.size() - 1];
-    if (last->type != LCompilers::LFortran::AST::astType::stmt) return;
-    LCompilers::LFortran::AST::stmt_t *st = (LCompilers::LFortran::AST::stmt_t*)last;
-    if (st->type != LCompilers::LFortran::AST::stmtType::Continue) return;
+    if (last->type != LCompilers::LFortran::AST::astType::decl_stmt) return;
+    LCompilers::LFortran::AST::decl_stmt_t *st = (LCompilers::LFortran::AST::decl_stmt_t*)last;
+    if (st->type != LCompilers::LFortran::AST::decl_stmtType::Continue) return;
     LCompilers::LFortran::AST::Continue_t *c =
         (LCompilers::LFortran::AST::Continue_t*)last;
     if (c->m_label == label) {
@@ -2210,10 +2359,10 @@ static inline void drop_trailing_matching_continue(
 
 #define FORALLSINGLE1(conlist, assign, l) make_ForAllSingle_t(p.m_a, l, \
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
-        nullptr, down_cast<stmt_t>(assign), nullptr)
+        nullptr, down_cast<decl_stmt_t>(assign), nullptr)
 #define FORALLSINGLE2(conlist, mask, assign, l) make_ForAllSingle_t(p.m_a, l, \
         0, nullptr, CONCURRENT_CONTROLS(conlist), conlist.size(), \
-        EXPR(mask), down_cast<stmt_t>(assign), nullptr)
+        EXPR(mask), down_cast<decl_stmt_t>(assign), nullptr)
 
 #define CONCURRENT_CONTROL1(t, i, a, b, l) \
     make_ConcurrentControl_t(p.m_a, l, \
@@ -2290,23 +2439,20 @@ static inline void drop_trailing_matching_continue(
 #define COARRAY_COMP_DECL6d(l)          CODIM1d_star(p.m_a, l, nullptr)
 #define COARRAY_COMP_DECL7d(a, l)       CODIM1d_star(p.m_a, l, EXPR(a))
 
-#define COARRAY_COMP_DECL_0i0(a,l)     CODIM1(p.m_a, l, nullptr, EXPR(a), nullptr)
+#define COARRAY_COMP_DECL_0i0(a,l)     CODIM1(p.m_a, l, nullptr, EXPR(a))
 #define COARRAY_COMP_DECL_001(l)       CODIM1(p.m_a, l, \
-        nullptr, nullptr, EXPR(INT1(l)))
+        nullptr, nullptr)
 #define COARRAY_COMP_DECL_a01(a,l)     CODIM1(p.m_a, l, \
-        EXPR(a), nullptr, EXPR(INT1(l)))
+        EXPR(a), nullptr)
 #define COARRAY_COMP_DECL_0b1(b,l)     CODIM1(p.m_a, l, \
-        nullptr, EXPR(b), EXPR(INT1(l)))
+        nullptr, EXPR(b))
 #define COARRAY_COMP_DECL_ab1(a,b,l)   CODIM1(p.m_a, l, \
-        EXPR(a), EXPR(b), EXPR(INT1(l)))
-#define COARRAY_COMP_DECL_00c(c,l)     CODIM1(p.m_a, l, nullptr, nullptr, EXPR(c))
-#define COARRAY_COMP_DECL_a0c(a,c,l)   CODIM1(p.m_a, l, EXPR(a), nullptr, EXPR(c))
-#define COARRAY_COMP_DECL_0bc(b,c,l)   CODIM1(p.m_a, l, nullptr, EXPR(b), EXPR(c))
-#define COARRAY_COMP_DECL_abc(a,b,c,l) CODIM1(p.m_a, l, EXPR(a), EXPR(b), EXPR(c))
+        EXPR(a), EXPR(b))
 
 #define COARRAY_COMP_DECL1k(id, a, l)   CODIM1k(p.m_a, l, \
         id, EXPR(INT1(l)), EXPR(a))
-#define COARRAY_COMP_DECL_star(l)       CODIM1star(p.m_a, l, EXPR(INT1(l)))
+#define COARRAY_COMP_DECL_star(l)       CODIM1star(p.m_a, l)
+#define COARRAY_COMP_DECL_astar(a, l)   CODIM1astar(p.m_a, l, EXPR(a))
 
 #define VARMOD(a, l) make_Attribute_t(p.m_a, l, \
         a.c_str(p.m_a), \
@@ -2559,36 +2705,17 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
 #define USE_READ(x, l) make_UseRead_t(p.m_a, l, name2char(x))
 
 ast_t* MODULE2(Allocator &al, const Location &a_loc, char* a_name,
-        trivia_t* a_trivia, unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
-        Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location* a_start_name = nullptr,
-        Location* a_end_name = nullptr) {
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
+        size_t n_contains, LCompilers::diag::Diagnostics &diag,
+        Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+check_decl_order(decl_stmts, DeclContext::Module, diag);
 
 return make_Module_t(al, a_loc,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2596,54 +2723,31 @@ return make_Module_t(al, a_loc,
 
 }
 
-#define MODULE(name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define MODULE(name, trivia, decl_stmts, contains, name_opt, l) \
     MODULE2(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "module", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
 ast_t* SUBMODULE2(Allocator &al, const Location &a_loc, char* a_id,
         char* a_parent_name, char* a_name, trivia_t* a_trivia,
-        unit_decl1_t** a_use, size_t n_use,
-        implicit_statement_t** a_implicit, size_t n_implicit,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
-        size_t n_contains, Location* a_start_name = nullptr,
-        Location* a_end_name = nullptr) {
+        size_t n_contains, LCompilers::diag::Diagnostics &diag,
+        Location* a_start_name = nullptr, Location* a_end_name = nullptr) {
 
-Vec<ast_t*> decl;
-Vec<ast_t*> stmt;
-decl.reserve(al, decl_stmts.size());
-stmt.reserve(al, decl_stmts.size());
-for (size_t i=0; i<decl_stmts.size(); i++) {
-    if (is_a<unit_decl2_t>(*decl_stmts[i])) {
-        decl.push_back(al, decl_stmts[i]);
-    } else {
-        LCOMPILERS_ASSERT(is_a<stmt_t>(*decl_stmts[i]))
-        stmt.push_back(al, decl_stmts[i]);
-    }
-}
+check_decl_order(decl_stmts, DeclContext::Module, diag);
 
 return make_Submodule_t(al, a_loc,
         /*id*/ a_id,
         /*a_parent_name*/ a_parent_name,
         /*name*/ a_name,
         a_trivia,
-        /*use*/ a_use,
-        /*n_use*/ n_use,
-        /*m_implicit*/ a_implicit,
-        /*n_implicit*/ n_implicit,
-        /*decl*/ DECLS(decl),
-        /*n_decl*/ decl.size(),
-        /*body*/ STMTS(stmt),
-        /*n_body*/ stmt.size(),
+        /*items*/ DECLS(decl_stmts),
+        /*n_items*/ decl_stmts.size(),
         /*contains*/ a_contains,
         /*n_contains*/ n_contains,
         /*m_start_name*/ a_start_name,
@@ -2651,48 +2755,42 @@ return make_Submodule_t(al, a_loc,
 }
 
 
-#define SUBMODULE(id, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
+#define SUBMODULE(id, name, trivia, decl_stmts, contains, name_opt, l) \
     SUBMODULE2(p.m_a, l, \
         name2char(id), \
         nullptr, \
         /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
-#define SUBMODULE1(id, parent_name, name, trivia, use, implicit, decl_stmts, contains, name_opt, l) \
-    SUBMODULE2(p.m_a, l, \
+#define SUBMODULE1(id, parent_name, name, trivia, decl_stmts, contains, \
+        name_opt, l) SUBMODULE2(p.m_a, l, \
         name2char(id), \
         name2char(parent_name), \
         /*name*/ name2char_with_check(name, name_opt, l, "submodule", p.diag), \
         trivia_cast(trivia), \
-        /*use*/ USES(use), \
-        /*n_use*/ use.size(), \
-        /*m_implicit*/ VEC_CAST(implicit, implicit_statement), \
-        /*n_implicit*/ implicit.size(), \
         decl_stmts, \
         /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*n_contains*/ contains.size(), p.diag, \
         /*start_name*/ &(name->loc), \
         /*end_name*/ &(name_opt->loc))
 
-#define BLOCKDATA(trivia, use, implicit, decl, stmt, l) make_BlockData_t(p.m_a, l, \
-        nullptr, trivia_cast(trivia), \
-        USES(use), use.size(), \
-        VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
-#define BLOCKDATA1(name, trivia, use, implicit, decl, stmt, l) make_BlockData_t( \
-        p.m_a, l, name2char(name), trivia_cast(trivia), \
-        USES(use), use.size(), \
-        VEC_CAST(implicit, implicit_statement), implicit.size(), \
-        DECLS(decl), decl.size(), STMTS(stmt), stmt.size())
+ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
+        trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
+        LCompilers::diag::Diagnostics &diag) {
+    check_decl_order(decl_stmts, DeclContext::BlockData, diag);
+    return make_BlockData_t(al, l, a_name, a_trivia,
+        DECLS(decl_stmts), decl_stmts.size());
+}
+
+#define BLOCKDATA(trivia, decl_stmts, l) BLOCKDATA2(p.m_a, l, nullptr, \
+        trivia_cast(trivia), decl_stmts, p.diag)
+#define BLOCKDATA1(name, trivia, decl_stmts, l) BLOCKDATA2(p.m_a, l, \
+        name2char(name), trivia_cast(trivia), decl_stmts, p.diag)
 
 #define INTERFACE_HEADER(l) make_InterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_NAME(id, l) make_InterfaceHeaderName_t(p.m_a, l, \
@@ -2761,15 +2859,34 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         nullptr, 0, nullptr, 0);
 }
 
-#define TEMPLATE(name, namelist, decl, contains, l) \
-        make_Template_t(p.m_a, l, name2char(name), \
+ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
+        char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_contains, size_t n_contains,
+        LCompilers::diag::Diagnostics &diag) {
+    check_decl_order(decl_stmts, DeclContext::Template, diag);
+    return make_Template_t(al, l, a_name, a_namelist, n_namelist,
+        /*items*/ DECLS(decl_stmts), /*n_items*/ decl_stmts.size(),
+        /*contains*/ a_contains, /*n_contains*/ n_contains);
+}
+
+ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
+        arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
+        program_unit_t** a_funcs, size_t n_funcs,
+        LCompilers::diag::Diagnostics &diag) {
+    check_decl_order(decl_stmts, DeclContext::Template, diag);
+    return make_Requirement_t(al, l, a_name, a_namelist, n_namelist,
+        DECLS(decl_stmts), decl_stmts.size(), a_funcs, n_funcs);
+}
+
+#define TEMPLATE(name, namelist, decl_stmts, contains, l) \
+        TEMPLATE2(p.m_a, l, name2char(name), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
-        /*unit_decl2_t** a_decl*/ DECLS(decl), /*size_t n_decl*/ decl.size(), \
-        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size())
-#define REQUIREMENT(name, namelist, decl, funcs, l) \
-        make_Requirement_t(p.m_a, l, name2char(name), \
-        REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
-        DECLS(decl), decl.size(), CONTAINS(funcs), funcs.size())
+        decl_stmts, \
+        /*contains*/ CONTAINS(contains), /*n_contains*/ contains.size(), p.diag)
+#define REQUIREMENT(name, namelist, decl_stmts, funcs, l) \
+        REQUIREMENT2(p.m_a, l, name2char(name), \
+        ARGS(p.m_a, namelist), namelist.size(), \
+        decl_stmts, CONTAINS(funcs), funcs.size(), p.diag)
 #define REQUIRE(require_list, l) \
         make_Require_t(p.m_a, l, \
         VEC_CAST(require_list, unit_require), require_list.size())
@@ -2870,18 +2987,18 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         VEC_CAST(x, event_attribute), x.size(), nullptr)
 
 #define ENTRY1(id, args, l) make_Entry_t(p.m_a, l, 0, name2char(id), \
-        ARGS(p.m_a, l, args), args.size(), nullptr, nullptr, nullptr)
+        ARGS(p.m_a, args), args.size(), nullptr, nullptr, nullptr)
 #define ENTRY2(id, args, bind, return, l) make_Entry_t(p.m_a, l, 0, \
-        name2char(id), ARGS(p.m_a, l, args), args.size(), \
+        name2char(id), ARGS(p.m_a, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 #define ENTRY3(id, args, return, bind, l) make_Entry_t(p.m_a, l, 0, \
-        name2char(id), ARGS(p.m_a, l, args), args.size(), \
+        name2char(id), ARGS(p.m_a, args), args.size(), \
         EXPR_OPT(return), bind_opt(bind), nullptr)
 
-#define TRIVIA_SET(x) case LCompilers::LFortran::AST::stmtType::x: { \
+#define TRIVIA_SET(x) case LCompilers::LFortran::AST::decl_stmtType::x: { \
             down_cast<x##_t>(s)->m_trivia = trivia; break; }
 
-void set_m_trivia(stmt_t *s, trivia_t *trivia) {
+void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
     switch (s->type) {
         TRIVIA_SET(Allocate)
         TRIVIA_SET(Assign)
@@ -2962,7 +3079,7 @@ ast_t* set_trivia(Allocator &al, Location &l,
 #define EOLCOMMENT(cmt, l) make_EOLComment_t(p.m_a, l, cmt.c_str(p.m_a))
 
 #define TRIVIA_(stmt, trivia) if(trivia != nullptr) \
-        set_m_trivia(down_cast<stmt_t>(stmt), down_cast<trivia_t>(trivia));
+        set_m_trivia(down_cast<decl_stmt_t>(stmt), down_cast<trivia_t>(trivia));
 #define TRIVIA2_(stmt, trivia) if(trivia != nullptr) \
         down_cast2<Use_t>(stmt)->m_trivia = down_cast<trivia_t>(trivia);
 #define TRIVIA(x, y, l) set_trivia(p.m_a, l, \

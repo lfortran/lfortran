@@ -45,16 +45,16 @@ call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), w
 call c_f_pointer(w__coarray_data, w)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), x__coarray_handle,&
          x__coarray_data)
-call c_f_pointer(x__coarray_data, x, [10])
+call c_f_pointer(x__coarray_data, x, [10], [1])
 call c_f_pointer(y__coarray_data, y)
-call c_f_pointer(z__coarray_data, z, [10])
+call c_f_pointer(z__coarray_data, z, [10], [1])
 call c_f_pointer(a__coarray_data, a)
-call c_f_pointer(b__coarray_data, b, [10])
+call c_f_pointer(b__coarray_data, b, [10], [1])
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), c__coarray_handle, c__coarray_data)
 call c_f_pointer(c__coarray_data, c)
 call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), d__coarray_handle,&
          d__coarray_data)
-call c_f_pointer(d__coarray_data, d, [10])
+call c_f_pointer(d__coarray_data, d, [10], [1])
 call __module_prif_prif_sync_all()
 call mod_sub()
 call coarray_saved_sub()
@@ -85,24 +85,24 @@ interface
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         procedure(prif_coarray_cleanup_interface), pointer, intent(in) :: final_proc
-        integer(8), dimension(:), intent(in), value :: lcobounds
-        integer(8), intent(in), value :: size_in_bytes
+        integer(8), dimension(:), intent(in) :: lcobounds
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: ucobounds
+        integer(8), dimension(:), intent(in) :: ucobounds
     end subroutine __module_prif_prif_allocate_coarray
 end interface
 
 interface
-    subroutine __module_prif_prif_init(exit_code)
-        integer(4), intent(out) :: exit_code
+    subroutine __module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
 end interface
 
 interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
-        logical(1), intent(in), value :: quiet
-        character(len=*, kind=1), intent(in), optional, value :: stop_code_char
-        integer(4), intent(in), optional, value :: stop_code_int
+        logical(1), intent(in) :: quiet
+        character(len=*, kind=1), intent(in), optional :: stop_code_char
+        integer(4), intent(in), optional :: stop_code_int
     end subroutine __module_prif_prif_stop
 end interface
 
@@ -118,7 +118,7 @@ subroutine coarray_saved_sub()
     integer(4), pointer, save :: w
     integer(4), dimension(:), pointer, save :: x
     call c_f_pointer(w__coarray_data, w)
-    call c_f_pointer(x__coarray_data, x, [10])
+    call c_f_pointer(x__coarray_data, x, [10], [1])
 end subroutine coarray_saved_sub
 
 interface

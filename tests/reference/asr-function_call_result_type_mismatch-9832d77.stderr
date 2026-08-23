@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.call.result_type_matches_callee]: FunctionCall to 'helper' has type r64, but the function returns i32
+   --> tests/asr/verify/function_call_result_type_mismatch.asr:194:14
+    |
+194 |             (FunctionCall
+    |              ^^^^^^^^^^^^ failed here

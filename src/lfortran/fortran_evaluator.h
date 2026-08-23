@@ -2,6 +2,7 @@
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
 #include <memory>
+#include <set>
 
 #include <libasr/alloc.h>
 #include <lfortran/parser/parser.h>
@@ -44,7 +45,8 @@ public:
 
     struct EvalResult {
         enum {
-            integer4, integer8, real4, real8, complex4, complex8, boolean, statement, none
+            integer4, integer8, real4, real8, complex4, complex8, boolean,
+            character, statement, none
         } type;
         union {
             bool b;
@@ -55,6 +57,7 @@ public:
             struct {float re, im;} c32;
             struct {double re, im;} c64;
         };
+        std::string str;
         std::string ast;
         std::string asr;
         std::string llvm_ir;
@@ -80,6 +83,16 @@ public:
     Result<ASR::TranslationUnit_t*> get_asr3(
         LCompilers::LFortran::AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm);
+    // Copy of a cell's symbols, taken before the ASR passes rewrite them, to
+    // serve as the parent scope of the next cell.
+    SymbolTable* snapshot_cell_scope(ASR::TranslationUnit_t &asr);
+    SymbolTable* copy_cell_scope(SymbolTable *scope, SymbolTable *parent,
+        const Location &loc);
+    SymbolTable* copy_cell_chain(SymbolTable *chain, const Location &loc);
+#ifdef HAVE_LFORTRAN_LLVM
+    // Turn definitions the JIT already holds into declarations.
+    void drop_redefinitions(LLVMModule &m);
+#endif
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
@@ -109,6 +122,10 @@ public:
     Result<std::string> get_c3(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager,
         int64_t default_lower_bound);
+    // GPU kernel source for the backend selected by --gpu, with no host-side
+    // kernel-registration shim, so that external toolchains can consume it.
+    Result<std::string> get_gpu_kernel_source(ASR::TranslationUnit_t &asr,
+        diag::Diagnostics &diagnostics, LCompilers::PassManager& pass_manager);
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::unique_ptr<MLIRModule>> get_mlir(
@@ -131,12 +148,30 @@ private:
 #ifdef HAVE_LFORTRAN_LLVM
     std::unique_ptr<LLVMEvaluator> e;
     int eval_count;
+    // Functions already defined by an earlier evaluation. Compiler-generated
+    // helpers (intrinsic lowerings, procedure specialisations) are recreated
+    // by the passes on every evaluation; redefining them would be rejected by
+    // the JIT, so later modules only declare them. See drop_redefinitions().
+    std::set<std::string> defined_symbols;
 #endif
 #ifdef __EMSCRIPTEN__
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;
 #endif
     SymbolTable *symbol_table;
     std::string run_fn;
+    // One entry per cell evaluated so far, each covering a range of its own,
+    // so that a location taken from an earlier cell still points at that
+    // cell's text. Only used in interactive mode.
+    std::vector<LocationManager::FileLocations> cell_files;
+    std::vector<uint32_t> cell_ends;
+    // Where the cell being compiled starts.
+    uint32_t cell_start = 0;
+
+    // Puts the chain of cells, this one last, into `lm` and returns the
+    // position this cell starts at.
+    uint32_t open_cell(const std::string &code, LocationManager &lm);
+    // Moves this cell's intervals to where the cell starts and records it.
+    void close_cell(const std::string &code, LocationManager &lm);
 };
 
 } // namespace LCompilers

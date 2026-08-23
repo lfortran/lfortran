@@ -173,6 +173,27 @@ public:
         }
     }
 
+    // A procedure declaration such as `procedure(iface) :: p` names its
+    // interface through the variable's type declaration, and nothing calls
+    // that interface. Removing it would leave the variable pointing at a
+    // symbol that is no longer in its scope. The dummy arguments of a
+    // function are covered above; this covers every other variable, such as
+    // the ones the nested-variable pass moves into a synthetic module.
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_Variable(x);
+        if (x.m_type_declaration == nullptr) return;
+        ASR::symbol_t *decl = x.m_type_declaration;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*decl)) {
+            fn_used[get_hash((ASR::asr_t*)decl)] =
+                ASR::down_cast<ASR::ExternalSymbol_t>(decl)->m_name;
+            decl = ASR::down_cast<ASR::ExternalSymbol_t>(decl)->m_external;
+        }
+        if (decl != nullptr && ASR::is_a<ASR::Function_t>(*decl)) {
+            fn_used[get_hash((ASR::asr_t*)decl)] =
+                ASR::down_cast<ASR::Function_t>(decl)->m_name;
+        }
+    }
+
     void visit_Struct(const ASR::Struct_t &x) {
         // Mark final procedures (stored in member_functions) as used
         for (size_t i = 0; i < x.n_member_functions; i++) {

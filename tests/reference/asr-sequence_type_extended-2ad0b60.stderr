@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct.sequence_type_not_extended]: 'derived' extends 'base', which is a sequence type
+  --> tests/asr/verify/sequence_type_extended.asr:34:24
+   |
+34 |             "derived" (Struct
+   |                        ^^^^^^ failed here

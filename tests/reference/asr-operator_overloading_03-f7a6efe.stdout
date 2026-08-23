@@ -132,10 +132,7 @@
                                 Gt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -165,10 +162,7 @@
                                 Gt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -198,10 +192,7 @@
                                 Gt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -231,10 +222,7 @@
                                 Gt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 greater_than_inverse
                                     6 ~gt
@@ -264,10 +252,7 @@
                                 Lt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -297,10 +282,7 @@
                                 Lt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -330,10 +312,7 @@
                                 Lt
                                 (Var 6 t)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .true.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt
@@ -363,10 +342,7 @@
                                 Lt
                                 (Var 6 f)
                                 (Logical 4)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
+                                ()
                                 (FunctionCall
                                     6 less_than_inverse
                                     6 ~lt

@@ -2,8 +2,6 @@
     [(Program
         program4
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeReal
@@ -35,8 +33,8 @@
             None
             ())]
             ()
-        )]
-        [(Assignment
+        )
+        (Assignment
             0
             x
             (Real "1.0")
@@ -184,9 +182,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -251,8 +246,8 @@
                 Equal
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 saved
                 (+ saved (Real "1.0"))
@@ -275,9 +270,6 @@
             c
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeReal
@@ -378,8 +370,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(Assignment
+            )
+            (Assignment
                 0
                 saved1
                 (+ saved1 (Real "1.0"))

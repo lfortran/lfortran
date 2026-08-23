@@ -20,11 +20,13 @@ public:
     std::stringstream src;
     CompilerOptions &co;
     int indent_level = 0;
+    bool emit_registrar = true;
 
     // Maps for tracking array size parameters
     std::map<std::string, std::string> func_array_size_params;
 
-    ASRToCudaVisitor(CompilerOptions &co) : co(co) {}
+    ASRToCudaVisitor(CompilerOptions &co, bool emit_registrar)
+        : co(co), emit_registrar(emit_registrar) {}
 
     std::string get_indent() {
         return std::string(indent_level * 4, ' ');
@@ -100,6 +102,8 @@ public:
                 visit_GpuKernelFunction(kf);
             }
         }
+
+        if (!emit_registrar) return;
 
         // Emit kernel registration
         src << "\n// Auto-generated kernel registration\n";
@@ -563,9 +567,9 @@ public:
 };
 
 Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
-    diag::Diagnostics &diagnostics, CompilerOptions &co)
+    diag::Diagnostics &diagnostics, CompilerOptions &co, bool emit_registrar)
 {
-    ASRToCudaVisitor v(co);
+    ASRToCudaVisitor v(co, emit_registrar);
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

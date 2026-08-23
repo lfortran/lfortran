@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -15,8 +14,6 @@
                 (EndOfLine)]
             )
         )]
-        []
-        []
         [(Subroutine
             b
             []
@@ -27,10 +24,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Print
                 0
                 ()
@@ -52,17 +45,16 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             (TriviaNode
                 []
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             f
             []
@@ -94,11 +86,8 @@
                 )]
                 .true.
                 ()
-            )]
-            []
-            []
-            []
-            [(SubroutineCall
+            )
+            (SubroutineCall
                 0
                 b
                 []
@@ -136,11 +125,8 @@
                 )]
                 .true.
                 ()
-            )]
-            []
-            []
-            []
-            [(SubroutineCall
+            )
+            (SubroutineCall
                 0
                 b
                 []

@@ -496,27 +496,19 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
+                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps
+                // to an inline [count*len*kind x i8] byte blob
                 ASR::ttype_t* mem_type = member->m_type;
-                bool is_direct_char = is_bindc &&
-                    !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
-                    !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
-                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
-                if (is_direct_char) {
-                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::type_get_past_array(mem_type));
-                    int64_t slen = 1;
-                    if (s->m_len) {
-                        ASRUtils::extract_value(s->m_len, slen);
-                    }
-                    if (slen < 1) slen = 1;
+                if (ASRUtils::is_inline_character_struct_member(
+                        der_type, mem_type)) {
+                    int64_t inline_bytes =
+                        ASRUtils::inline_character_storage_size(mem_type);
                     llvm_mem_type = llvm::ArrayType::get(
-                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
+                        llvm::Type::getInt8Ty(context), (uint64_t)inline_bytes);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -608,11 +600,23 @@ namespace LCompilers {
                 case 8:
                     type_ptr =  llvm::Type::getDoubleTy(context)->getPointerTo();
                     break;
+                case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context)->getPointerTo();
+#else
+                    // Linux/Windows x86: 80-bit extended precision
+                    type_ptr = llvm::Type::getX86_FP80Ty(context)->getPointerTo();
+#endif
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128 bits real kinds are supported.");
             }
         } else {
             switch(a_kind)
@@ -623,11 +627,23 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getDoubleTy(context);
                     break;
+                case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context);
+#else
+                    // Linux/Windows x86: 80-bit extended precision
+                    type_ptr = llvm::Type::getX86_FP80Ty(context);
+#endif
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context);
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128bits real kinds are supported.");
             }
         }
         return type_ptr;
@@ -2267,6 +2283,7 @@ namespace LCompilers {
                 --> Handle RunTime Length <--
                 * Call `_lfortran_string_malloc`. It handles proper length at runtime.
             */
+            len = convert_kind(len, llvm::Type::getInt64Ty(context));
             if (char_kind > 1) {
                 len = builder->CreateMul(len, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), char_kind));
             }
@@ -2449,6 +2466,25 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::get_string_element_in_array(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx){
         llvm::Value* desired_ptr = get_string_element_in_array_(str_type, data, arr_idx);
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
+    }
+
+    llvm::Value* LLVMUtils::get_inline_string_element(ASR::String_t* str_type,
+            llvm::Value* blob_ptr, llvm::Value* idx, std::string name){
+        int64_t len = 1;
+        if (str_type->m_len) {
+            ASRUtils::extract_value(str_type->m_len, len);
+        }
+        llvm::Value* elem_bytes = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), len * str_type->m_kind);
+        llvm::Value* off = builder->CreateMul(
+            convert_kind(idx, llvm::Type::getInt64Ty(context)), elem_bytes);
+        // blob_ptr points at the inline [count*len x i8] blob; view it as a
+        // flat i8 buffer before indexing to the element.
+        llvm::Value* bytes = builder->CreateBitCast(blob_ptr, character_type);
+        llvm::Value* elem_ptr = create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), bytes, off);
+        return create_string_descriptor(elem_ptr,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len), name);
     }
 
 
@@ -3913,10 +3949,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             case ASR::ttypeType::Pointer: {
                 ASR::Pointer_t* pointer_type = ASR::down_cast<ASR::Pointer_t>(asr_src_type);
                 if(ASRUtils::is_string_only(ASRUtils::type_get_past_array(asr_src_type))){
-                    lfortran_str_copy(dest, src,
-                        ASRUtils::get_string_type(asr_dest_type),
-                        ASRUtils::get_string_type(asr_src_type),
-                        ASRUtils::is_allocatable(asr_dest_type));
+                    ASR::String_t* src_str_type = ASRUtils::get_string_type(asr_src_type);
+                    if (!ASRUtils::is_allocatable(asr_dest_type) &&
+                        src_str_type->m_physical_type == ASR::DescriptorString) {
+                        // A character *pointer* propagates by association, not by value:
+                        // copy the {i8*, i64} descriptor so dest aliases src's target,
+                        // exactly as the pointer descriptor-array case below does. A
+                        // value copy here would both lose the aliasing and trip the
+                        // NULL assert in `_lfortran_strcpy_alloc` (deferred length +
+                        // non-allocatable dest), whether src is associated or not.
+                        builder->CreateStore(
+                            CreateLoad2(string_descriptor, src), dest);
+                    } else {
+                        lfortran_str_copy(dest, src,
+                            ASRUtils::get_string_type(asr_dest_type), src_str_type,
+                            ASRUtils::is_allocatable(asr_dest_type));
+                    }
                 } else if (ASR::is_a<ASR::FunctionType_t>(*pointer_type->m_type)) {
                     // Pointer(FunctionType) has the same LLVM layout as FunctionType (fntype*),
                     // so use fntype* as load type (no extra getPointerTo()).
@@ -9971,8 +10019,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         // Create the function in the module
         std::string func_name = "_allocate_struct_";
-        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
-                            + "_" + ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
@@ -10049,8 +10100,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         // Create the function in the module
         std::string func_name = "_copy_";
-        func_name = func_name + ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_sym))
-                            + "_" + ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
             llvm::Function::LinkOnceODRLinkage,
@@ -10751,12 +10805,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Type *mem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                         ASRUtils::symbol_type(mem_sym), module);
                     ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
-                    bool is_inline_char = (struct_sym->m_abi == ASR::abiType::BindC ||
-                            struct_sym->m_is_sequence) &&
-                        !ASR::is_a<ASR::Pointer_t>(*member_type) &&
-                        !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type));
-                    if (is_inline_char) {
+                    if (ASRUtils::is_inline_character_struct_member(
+                            struct_sym, member_type)) {
                         llvm::Type* inline_type = llvm_utils->name2dertype[
                             der_type_name]->getElementType(mem_idx);
                         if (src_member->getType()->isPointerTy()) {

@@ -9,6 +9,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_serialization_visitor.h>
 #include <libasr/asr_deserialization_visitor.h>
+#include <libasr/asr_symbol_visitor.h>
 
 using LCompilers::ASRUtils::symbol_parent_symtab;
 using LCompilers::ASRUtils::symbol_name;
@@ -37,6 +38,23 @@ public:
         write_int64(symbol_parent_symtab(&x)->counter);
         write_int8(x.type);
         write_string(symbol_name(&x));
+    }
+
+    // A kind=16 RealConstant does not keep its value in m_r: a double cannot
+    // hold a binary128, so m_r packs a pointer to 16 separately allocated bytes
+    // (see real_constant_pack_r16() in asr_utils.h). That pointer is worthless
+    // once the module file is read back, so write the payload itself. The kind
+    // is known here because RealConstant serializes `type` before `r` (see
+    // serialization_overrides in asdl_cpp.py).
+    void write_real(double r, ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            const uint8_t *bytes = ASRUtils::real_constant_unpack_r16(r);
+            for (int i = 0; i < 16; i++) {
+                write_int8(bytes[i]);
+            }
+        } else {
+            write_float64(r);
+        }
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -108,20 +126,19 @@ public:
         return p;
     }
 
-#define READ_SYMBOL_CASE(x)                                \
-    case (ASR::symbolType::x) : {                          \
-        s = (ASR::symbol_t*)al.make_new<ASR::x##_t>();     \
-        s->type = ASR::symbolType::x;                      \
-        s->base.type = ASR::asrType::symbol;               \
-        s->base.loc.first = 0;                             \
-        s->base.loc.last = 0;                              \
-        break;                                             \
-    }
-
-#define INSERT_SYMBOL_CASE(x)                              \
-    case (ASR::symbolType::x) : {                          \
-        memcpy(sym2, sym, sizeof(ASR::x##_t));             \
-        break;                                             \
+    // Counterpart of ASRSerializationVisitor::write_real(): rebuild the m_r
+    // payload of a RealConstant. For kind=16 the 16 binary128 bytes are copied
+    // into the current allocator and their address is packed back into m_r.
+    double read_real(ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            uint8_t *bytes = static_cast<uint8_t*>(al.alloc(16));
+            for (int i = 0; i < 16; i++) {
+                bytes[i] = read_int8();
+            }
+            return ASRUtils::real_constant_pack_r16(bytes);
+        } else {
+            return read_float64();
+        }
     }
 
     ASR::symbol_t *read_symbol() {
@@ -143,19 +160,8 @@ public:
             // Later when constructing the symbol table, we will check for this
             // and fill it in correctly.
             ASR::symbolType ty = static_cast<ASR::symbolType>(symbol_type);
-            ASR::symbol_t *s;
-            switch (ty) {
-                READ_SYMBOL_CASE(Program)
-                READ_SYMBOL_CASE(Module)
-                READ_SYMBOL_CASE(Function)
-                READ_SYMBOL_CASE(GenericProcedure)
-                READ_SYMBOL_CASE(CustomOperator)
-                READ_SYMBOL_CASE(ExternalSymbol)
-                READ_SYMBOL_CASE(Struct)
-                READ_SYMBOL_CASE(Variable)
-                READ_SYMBOL_CASE(StructMethodDeclaration)
-                default : throw LCompilersException("Symbol type not supported");
-            }
+            Location loc{0, 0};
+            ASR::symbol_t *s = ASR::make_symbol_stub(al, ty, loc);
             symtab->add_symbol(symbol_name, s);
         }
         ASR::symbol_t *sym = symtab->get_symbol(symbol_name);
@@ -170,137 +176,12 @@ public:
             // We have to copy the contents of `sym` into `sym2` without
             // changing the `sym2` pointer already in the table
             ASR::symbol_t *sym2 = symtab.get_symbol(name);
-            switch (sym->type) {
-                INSERT_SYMBOL_CASE(Program)
-                INSERT_SYMBOL_CASE(Module)
-                INSERT_SYMBOL_CASE(Function)
-                INSERT_SYMBOL_CASE(GenericProcedure)
-                INSERT_SYMBOL_CASE(CustomOperator)
-                INSERT_SYMBOL_CASE(ExternalSymbol)
-                INSERT_SYMBOL_CASE(Struct)
-                INSERT_SYMBOL_CASE(Variable)
-                INSERT_SYMBOL_CASE(StructMethodDeclaration)
-                default : throw LCompilersException("Symbol type not supported");
-            }
+            ASR::fill_symbol_stub(sym2, sym);
         }
     }
 };
 
 namespace ASR {
-
-class FixParentSymtabVisitor : public BaseWalkVisitor<FixParentSymtabVisitor>
-{
-private:
-    SymbolTable *current_symtab;
-public:
-    void visit_TranslationUnit(const TranslationUnit_t &x) {
-        current_symtab = x.m_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-    }
-
-    void visit_Program(const Program_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Module(const Module_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_AssociateBlock(const AssociateBlock_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Block(const Block_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Function(const Function_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Struct(const Struct_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Enum(const Enum_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Requirement(const Requirement_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-    void visit_Template(const Template_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        x.m_symtab->parent = parent_symtab;
-        x.m_symtab->asr_owner = (asr_t*)&x;
-        for (auto &a : x.m_symtab->get_scope()) {
-            this->visit_symbol(*a.second);
-        }
-        current_symtab = parent_symtab;
-    }
-
-};
 
 class FixExternalSymbolsVisitor : public BaseWalkVisitor<FixExternalSymbolsVisitor>
 {
@@ -515,8 +396,7 @@ ASR::asr_t* deserialize_asr(Allocator &al, const std::string &s,
 
     // Connect the `parent` member of symbol tables
     // Also set the `asr_owner` member correctly for all symbol tables
-    ASR::FixParentSymtabVisitor p;
-    p.visit_TranslationUnit(*tu);
+    ASR::fix_symbol_table_parents(*tu);
 
 #if defined(WITH_LFORTRAN_ASSERT)
     diag::Diagnostics diagnostics;

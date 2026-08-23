@@ -39,6 +39,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(CoMax)
         INTRINSIC_SUBROUTINE_NAME_CASE(CoMin)
         INTRINSIC_SUBROUTINE_NAME_CASE(CoBroadcast)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Exit)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -95,6 +96,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&CoMin::instantiate_CoMin, &CoMin::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::CoBroadcast),
             {&CoBroadcast::instantiate_CoBroadcast, &CoBroadcast::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Exit),
+            {&Exit::instantiate_Exit, &Exit::verify_args}},
         };
         return intrinsic_subroutine_by_id_db;
     }
@@ -109,6 +112,8 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"srand", &Srand::create_Srand},
                 {"get_command", &GetCommand::create_GetCommand},
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                // Legacy F77 alias for get_command_argument.
+                {"getarg", &GetCommandArgument::create_GetCommandArgument},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
@@ -123,6 +128,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"co_max", &CoMax::create_CoMax},
                 {"co_min", &CoMin::create_CoMin},
                 {"co_broadcast", &CoBroadcast::create_CoBroadcast},
+                {"exit", &Exit::create_Exit},
         };
         return intrinsic_subroutine_by_name_db;
     }

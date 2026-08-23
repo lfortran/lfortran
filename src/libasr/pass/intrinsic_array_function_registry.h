@@ -32,6 +32,7 @@ enum class IntrinsicArrayFunctions : int64_t {
     FindLoc,
     Product,
     Shape,
+    Coshape,
     Sum,
     Iparity,
     Transpose,
@@ -67,6 +68,7 @@ inline std::string get_array_intrinsic_name(int64_t x) {
         ARRAY_INTRINSIC_NAME_CASE(FindLoc)
         ARRAY_INTRINSIC_NAME_CASE(Product)
         ARRAY_INTRINSIC_NAME_CASE(Shape)
+        ARRAY_INTRINSIC_NAME_CASE(Coshape)
         ARRAY_INTRINSIC_NAME_CASE(Sum)
         ARRAY_INTRINSIC_NAME_CASE(Iparity)
         ARRAY_INTRINSIC_NAME_CASE(Transpose)
@@ -735,7 +737,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
             }
             if (args[2] && is_logical(*ASRUtils::expr_type(args[2]))) {
                 mask = args[2];
-                if (!ASRUtils::is_value_constant(mask)) {
+                if (!ASRUtils::is_value_constant(mask) && ASRUtils::is_array(ASRUtils::expr_type(mask))) {
                     if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[2]->base.loc})) {
                         return nullptr;
                     }
@@ -752,7 +754,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
                 return nullptr;
             }
             mask = args[1];
-            if (!ASRUtils::is_value_constant(mask)) {
+            if (!ASRUtils::is_value_constant(mask) && ASRUtils::is_array(ASRUtils::expr_type(mask))) {
                 if (!is_same_shape(array, mask, intrinsic_func_name, diag, {args[0]->base.loc, args[1]->base.loc})) {
                     return nullptr;
                 }
@@ -938,7 +940,8 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
         },
         [=, &al, &idx_vars, &doloop_body, &builder] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
+            ASR::expr_t* mask_ref = ASRUtils::is_array(ASRUtils::expr_type(mask)) ?
+                PassUtils::create_array_ref(mask, idx_vars, al) : mask;
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(return_var, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(return_var, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
@@ -1000,7 +1003,8 @@ static inline void generate_body_for_array_dim_mask_input(
         [=, &al, &idx_vars, &target_idx_vars, &doloop_body, &builder, &result] () {
             ASR::expr_t* result_ref = PassUtils::create_array_ref(result, target_idx_vars, al);
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
-            ASR::expr_t* mask_ref = PassUtils::create_array_ref(mask, idx_vars, al);
+            ASR::expr_t* mask_ref = ASRUtils::is_array(ASRUtils::expr_type(mask)) ?
+                PassUtils::create_array_ref(mask, idx_vars, al) : mask;
             ASR::expr_t* elemental_operation_val = (builder.*elemental_operation)(result_ref, array_ref);
             ASR::stmt_t* loop_invariant = builder.Assignment(result_ref, elemental_operation_val);
             Vec<ASR::stmt_t*> if_mask;
@@ -1229,7 +1233,12 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
                                     ASRUtils::expr_type(f->m_args[0]));
             bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                     ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
-            if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
+            int mask_arg_idx = overload_id == id_array_mask ? 1 :
+                (overload_id == id_array_dim_mask ? 2 : -1);
+            bool same_mask_rank = mask_arg_idx == -1 ||
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(f->m_args[mask_arg_idx])) ==
+                ASRUtils::extract_n_dims_from_ttype(arg_types[mask_arg_idx]);
+            if (same_allocatable_type && same_mask_rank && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
                     arg_type, f->m_args[0], new_args[0].m_value) && orig_array_rank == rank) {
                 return builder.Call(s, new_args, return_type, nullptr);
             } else {
@@ -1253,9 +1262,12 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         fill_func_arg("dim", dim_type)
     }
     if( overload_id == id_array_mask || overload_id == id_array_dim_mask ) {
+        // `mask` may also be a scalar (conformable with any array)
+        int mask_rank = ASRUtils::extract_n_dims_from_ttype(
+            arg_types[overload_id == id_array_dim_mask ? 2 : 1]);
         Vec<ASR::dimension_t> mask_dims;
         mask_dims.reserve(al, rank);
-        for( int i = 0; i < rank; i++ ) {
+        for( int i = 0; i < mask_rank; i++ ) {
             ASR::dimension_t mask_dim;
             mask_dim.loc = arg_type->base.loc;
             mask_dim.m_start = nullptr;
@@ -1934,6 +1946,55 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
 }
 
 } // namespace ArrIntrinsic
+
+namespace Coshape {
+    static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
+            diag::Diagnostics &diagnostics) {
+        ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 2,
+            "`coshape` intrinsic accepts 1 or 2 arguments",
+            x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_args[0], "`coarray` argument of `coshape` "
+            "cannot be nullptr", x.base.base.loc, diagnostics);
+    }
+
+    static ASR::expr_t *eval_Coshape(Allocator &/*al*/, const Location &/*loc*/,
+            ASR::ttype_t */*type*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+        return nullptr;
+    }
+
+    static inline ASR::asr_t* create_Coshape(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        ASRBuilder b(al, loc);
+        Vec<ASR::expr_t *>m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]);
+        int kind = 4; // default kind
+        if (args.n > 1 && args[1]) {
+            if (!ASR::is_a<ASR::Integer_t>(*expr_type(args[1]))) {
+                append_error(diag, "`kind` argument of `coshape` must be a scalar integer", loc);
+                return nullptr;
+            }
+            if (!extract_value(args[1], kind)) {
+                append_error(diag, "The `kind` argument must be a scalar integer constant expression", loc);
+                return nullptr;
+            }
+            m_args.push_back(al, args[1]);
+        }
+        
+        int corank = ASRUtils::expr_corank(args[0]);
+        ASR::ttype_t *return_type = b.Array({corank}, TYPE(ASR::make_Integer_t(al, loc, kind)));
+        ASR::expr_t *m_value = eval_Coshape(al, loc, return_type, args, diag);
+        return ASRUtils::make_IntrinsicArrayFunction_t_util(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Coshape),
+            m_args.p, m_args.n, 0, return_type, m_value);
+    }
+
+    static inline ASR::expr_t* instantiate_Coshape(Allocator &/*al*/,
+            const Location &/*loc*/, SymbolTable */*scope*/, Vec<ASR::ttype_t*>& /*arg_types*/,
+            ASR::ttype_t */*return_type*/, Vec<ASR::call_arg_t>& /*new_args*/, int64_t,
+            int /*index_kind*/) {
+        throw LCompilersException("Coshape instantiation without coarrays is not supported yet");
+    }
+} // namespace Coshape
 
 namespace Shape {
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
@@ -2635,7 +2696,15 @@ namespace Spread {
         args_merge1.push_back(al, b.Eq(b.i32(i), b.i32(1)));
         ASR::expr_t* merge_for_i = EXPR(Merge::create_Merge(al, loc, args_merge1, diag));
 
-        args_merge2.push_back(al, b.ArraySize(array, b.i32(i), int32));
+        // `i` runs over the result's dimensions, one more than the array
+        // has. This branch is only selected when `i < dim`, so it is never
+        // the appended dimension, but the index still has to name a
+        // dimension the array actually has for the expression to be
+        // well formed.
+        int64_t array_rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(array));
+        args_merge2.push_back(al, b.ArraySize(
+            array, b.i32(std::min(i, array_rank)), int32));
         args_merge2.push_back(al, b.ArraySize(array, merge_for_i, int32));
         args_merge2.push_back(al, b.Lt(b.i32(i), dim));
         ASR::expr_t* merge_for_i_ne_dim = EXPR(Merge::create_Merge(al, loc, args_merge2, diag));
@@ -4289,6 +4358,83 @@ namespace Reduce {
             arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, nullptr);
     }
 
+    // An interface for the procedure `reduce` is given, built from the
+    // dummy's own FunctionType so that it stands for any procedure with that
+    // interface rather than for one particular procedure.
+    static inline ASR::symbol_t* create_operation_interface(Allocator& al,
+            const Location& loc, SymbolTable* scope,
+            ASR::ttype_t* operation_type, ASR::Function_t* shape) {
+        ASR::ttype_t* stripped = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(operation_type));
+        if (!ASR::is_a<ASR::FunctionType_t>(*stripped)) return nullptr;
+        ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(stripped);
+        std::string iface_name = scope->get_unique_name(
+            "~reduce_operation_interface");
+        SymbolTable* iface_symtab = al.make_new<SymbolTable>(scope);
+        Vec<ASR::expr_t*> iface_args;
+        iface_args.reserve(al, ft->n_arg_types);
+        for (size_t i = 0; i < ft->n_arg_types; i++) {
+            std::string arg_name = "arg_" + std::to_string(i);
+            // A derived type argument still has to say which type it is;
+            // take that from the procedure whose interface this describes.
+            ASR::symbol_t* arg_type_decl = nullptr;
+            if (shape != nullptr && i < shape->n_args &&
+                    ASR::is_a<ASR::Var_t>(*shape->m_args[i])) {
+                ASR::symbol_t* shape_arg = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(shape->m_args[i])->m_v);
+                if (shape_arg != nullptr &&
+                        ASR::is_a<ASR::Variable_t>(*shape_arg)) {
+                    arg_type_decl = ASR::down_cast<ASR::Variable_t>(
+                        shape_arg)->m_type_declaration;
+                }
+            }
+            ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, iface_symtab,
+                    s2c(al, arg_name), nullptr, 0, ASRUtils::intent_in,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    ft->m_arg_types[i], arg_type_decl, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required,
+                    false));
+            iface_symtab->add_symbol(arg_name, arg);
+            iface_args.push_back(al, ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, arg)));
+        }
+        ASR::expr_t* iface_return = nullptr;
+        if (ft->m_return_var_type != nullptr) {
+            std::string ret_name = "result";
+            ASR::symbol_t* ret_type_decl = nullptr;
+            if (shape != nullptr && shape->m_return_var != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*shape->m_return_var)) {
+                ASR::symbol_t* shape_ret = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(shape->m_return_var)->m_v);
+                if (shape_ret != nullptr &&
+                        ASR::is_a<ASR::Variable_t>(*shape_ret)) {
+                    ret_type_decl = ASR::down_cast<ASR::Variable_t>(
+                        shape_ret)->m_type_declaration;
+                }
+            }
+            ASR::symbol_t* ret = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, iface_symtab,
+                    s2c(al, ret_name), nullptr, 0,
+                    ASRUtils::intent_return_var, nullptr, nullptr,
+                    ASR::storage_typeType::Default, ft->m_return_var_type,
+                    ret_type_decl, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            iface_symtab->add_symbol(ret_name, ret);
+            iface_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret));
+        }
+        ASR::asr_t* iface = ASRUtils::make_Function_t_util(al, loc,
+            iface_symtab, s2c(al, iface_name), nullptr, 0,
+            iface_args.p, iface_args.size(), nullptr, 0, iface_return,
+            ASR::abiType::Source, ASR::accessType::Public,
+            ASR::deftypeType::Interface, nullptr, false, false, false, false,
+            false, nullptr, 0, false, false, false);
+        ASR::symbol_t* iface_sym = ASR::down_cast<ASR::symbol_t>(iface);
+        scope->add_symbol(iface_name, iface_sym);
+        return iface_sym;
+    }
+
     static inline ASR::expr_t* instantiate_Reduce(Allocator &al,
             const Location &loc, SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             ASR::ttype_t *return_type, Vec<ASR::call_arg_t>& new_args,
@@ -4364,16 +4510,23 @@ namespace Reduce {
             args.push_back(al, arr_arg);
         }
         ASR::ttype_t* operation_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
-        // Procedure dummy must carry m_type_declaration so get_function() and Call_t_body
-        // can align arguments; otherwise func is null and Call_t_body segfaults.
-        ASR::symbol_t* operation_type_decl = nullptr;
-        if (new_args[1].m_value != nullptr && ASR::is_a<ASR::Var_t>(*new_args[1].m_value)) {
+        // The dummy needs a type declaration so that get_function() and
+        // Call_t_body can align arguments. It describes the interface the
+        // dummy accepts, not the one procedure a call site happens to pass:
+        // this helper is shared between call sites, and the caller's
+        // procedure may be contained in a program, where nothing in the
+        // scope holding the helper could name it.
+        ASR::Function_t* operation_shape = nullptr;
+        if (new_args[1].m_value != nullptr &&
+                ASR::is_a<ASR::Var_t>(*new_args[1].m_value)) {
             ASR::symbol_t* op_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(new_args[1].m_value)->m_v);
-            if (ASR::is_a<ASR::Function_t>(*op_sym)) {
-                operation_type_decl = op_sym;
+            if (op_sym != nullptr && ASR::is_a<ASR::Function_t>(*op_sym)) {
+                operation_shape = ASR::down_cast<ASR::Function_t>(op_sym);
             }
         }
+        ASR::symbol_t* operation_type_decl = create_operation_interface(
+            al, loc, scope, operation_type, operation_shape);
         {
             ASR::expr_t* op_arg = b.Variable(fn_symtab, "operation", operation_type,
                 ASR::intentType::In, operation_type_decl);
@@ -4776,6 +4929,33 @@ namespace FindLoc {
         ASR::expr_t* array = nullptr;
         ASR::expr_t* value = nullptr;
         if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
+            ASR::ttype_t *array_elt_type = ASRUtils::extract_type(expr_type(args[0]));
+            ASR::ttype_t *value_elt_type = ASRUtils::extract_type(expr_type(args[1]));
+            // Character kinds cannot be promoted like integer/real kinds:
+            // characters of different kinds (or a character vs a non-character
+            // argument) are genuinely incompatible and must be reported as a
+            // type-conformance error (matching gfortran) instead of proceeding
+            // with mismatched kinds (which ICEs later).
+            bool array_is_char = ASR::is_a<ASR::String_t>(*array_elt_type);
+            bool value_is_char = ASR::is_a<ASR::String_t>(*value_elt_type);
+            if (array_is_char || value_is_char) {
+                std::string array_str = type_to_str_fortran_symbol(array_elt_type, nullptr, true);
+                std::string value_str = type_to_str_fortran_symbol(value_elt_type, nullptr, true);
+                if (array_is_char) {
+                    int array_kind = extract_kind_from_ttype_t(expr_type(args[0]));
+                    array_str = "character(len=" + std::to_string(ASRUtils::get_fixed_string_len(array_elt_type)) +
+                        ", kind=" + std::to_string(array_kind) + ")";
+                }
+                if (value_is_char) {
+                    int value_kind = extract_kind_from_ttype_t(expr_type(args[1]));
+                    value_str = "character(len=" + std::to_string(ASRUtils::get_fixed_string_len(value_elt_type)) +
+                        ", kind=" + std::to_string(value_kind) + ")";
+                }
+                append_error(diag, "`array` and `value` arguments of `findloc` "
+                    "must have the same type and kind, but got " +
+                    array_str + " and " + value_str, loc);
+                return nullptr;
+            }
             Vec<ASR::expr_t*> args_;
             args_.reserve(al, 2);
             args_.push_back(al, args[0]);
@@ -7392,6 +7572,8 @@ namespace IntrinsicArrayFunctionRegistry {
             {&Product::instantiate_Product, &Product::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Shape),
             {&Shape::instantiate_Shape, &Shape::verify_args}},
+        {static_cast<int64_t>(IntrinsicArrayFunctions::Coshape),
+            {&Coshape::instantiate_Coshape, &Coshape::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Sum),
             {&Sum::instantiate_Sum, &Sum::verify_args}},
         {static_cast<int64_t>(IntrinsicArrayFunctions::Iparity),
@@ -7437,6 +7619,7 @@ namespace IntrinsicArrayFunctionRegistry {
         {"minval", {&MinVal::create_MinVal, &MinVal::eval_MinVal}},
         {"product", {&Product::create_Product, &Product::eval_Product}},
         {"shape", {&Shape::create_Shape, &Shape::eval_Shape}},
+        {"coshape", {&Coshape::create_Coshape, &Coshape::eval_Coshape}},
         {"sum", {&Sum::create_Sum, &Sum::eval_Sum}},
         {"iparity", {&Iparity::create_Iparity, &Iparity::eval_Iparity}},
         {"cshift", {&Cshift::create_Cshift, &Cshift::eval_Cshift}},
@@ -7522,6 +7705,7 @@ namespace IntrinsicArrayFunctionRegistry {
     static inline bool handle_dim(IntrinsicArrayFunctions id) {
         // Dim argument is already handled for the following
         if( id == IntrinsicArrayFunctions::Shape  ||
+            id == IntrinsicArrayFunctions::Coshape ||
             id == IntrinsicArrayFunctions::MaxLoc ||
             id == IntrinsicArrayFunctions::MinLoc ||
             id == IntrinsicArrayFunctions::FindLoc ) {

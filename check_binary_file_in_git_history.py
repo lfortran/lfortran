@@ -1,9 +1,17 @@
+import os
 import subprocess
 
 # Open file_path, Read it with mode 'r' which expects a utf-8 encode.
 # If the file is binary it'd conflict with
 # text mode 'r', leading to raised error `UnicodeDecodeError`.
 def is_file_binary(file_path: str) -> bool:
+    # A symbolic link stores a path, not content, so it is never binary.
+    # Skip it: opening a link that points to a directory raises
+    # `IsADirectoryError`, which is not caught below and aborts the check.
+    # A link pointing to a binary is still caught through the target itself,
+    # which git tracks and scans as its own entry.
+    if os.path.islink(file_path):
+        return False
     try:
         with open(file_path, 'r') as fp:
             fp.read(16)

@@ -235,6 +235,9 @@ if (WITH_LLVM)
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    if (LLVM_VERSION_MAJOR GREATER_EQUAL 16)
+        list(APPEND LFORTRAN_LLVM_COMPONENTS targetparser)
+    endif()
 
     # LLVM 8 needs the ipo library for PassManagerBuilder
     if (LLVM_VERSION_MAJOR LESS 9)
@@ -414,9 +417,28 @@ if (XEUS_LFORTRAN_WASM_BUILD)
     xeus_wasm_compile_options(xlfortran)
     xeus_wasm_link_options(xlfortran "web,worker")
 
+    # Preload runtime .mod files into the WASM VFS at /lib/
+    file(GLOB LFORTRAN_MOD_FILES CONFIGURE_DEPENDS "${CMAKE_INSTALL_PREFIX}/lib/*.mod")
+    if(NOT LFORTRAN_MOD_FILES)
+        message(FATAL_ERROR
+            "XEUS_LFORTRAN_WASM_BUILD: no runtime .mod files found in "
+            "${CMAKE_INSTALL_PREFIX}/lib. Run wasm-build0.sh first."
+        )
+    endif()
+    foreach(MOD_FILE ${LFORTRAN_MOD_FILES})
+        get_filename_component(MOD_NAME ${MOD_FILE} NAME)
+        target_link_options(xlfortran PRIVATE
+            "SHELL:--preload-file \"${MOD_FILE}@/lib/${MOD_NAME}\""
+        )
+    endforeach()
+    # Track .mod file contents as link dependencies so relinking is
+    # triggered when any preloaded module changes.
+    set_property(TARGET xlfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_MOD_FILES})
+
     install(FILES
         "$<TARGET_FILE_DIR:xlfortran>/xlfortran.js"
         "$<TARGET_FILE_DIR:xlfortran>/xlfortran.wasm"
+        "$<TARGET_FILE_DIR:xlfortran>/xlfortran.data"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endif()
@@ -539,6 +561,7 @@ if (WITH_RUNTIME_LIBRARY)
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
     "-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+    "-DWITH_XEUS=${WITH_XEUS}"
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"

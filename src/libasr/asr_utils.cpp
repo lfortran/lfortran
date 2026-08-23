@@ -1052,15 +1052,19 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool generate_object_code,
                             bool load_submodules) {
     LCOMPILERS_ASSERT(symtab);
-    if (symtab->get_symbol(module_name) != nullptr) {
-        ASR::symbol_t *m = symtab->get_symbol(module_name);
+    // In interactive mode each cell is a TranslationUnit chained to the
+    // previous one, so a module declared in an earlier cell lives in a parent
+    // scope. Resolve through the chain: without this the module is not found
+    // here and a modfile is looked for on disk, which there is none of.
+    if (ASR::symbol_t *m = symtab->resolve_symbol(module_name)) {
         if (ASR::is_a<ASR::Module_t>(*m)) {
             return ASR::down_cast<ASR::Module_t>(m);
         } else {
             err("The symbol '" + module_name + "' is not a module", loc);
         }
     }
-    LCOMPILERS_ASSERT(symtab->parent == nullptr);
+    LCOMPILERS_ASSERT(symtab->parent == nullptr ||
+        ASRUtils::is_tu_scope(symtab->parent));
     ASR::TranslationUnit_t* mod1 = nullptr;
     Result<ASR::TranslationUnit_t*, ErrorMessage> res
         = find_and_load_module(al, module_name, *symtab, intrinsic, pass_options, lm);
@@ -1261,7 +1265,11 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         std::vector<std::string> modules_list
             = determine_module_dependencies(*tu);
         for (auto &item : modules_list) {
-            if (symtab->get_symbol(item)
+            // In interactive mode a module a dependency names may have been
+            // declared by an earlier cell, so it lives in a parent scope.
+            // Resolve through the chain, or a modfile is looked for on disk,
+            // of which a notebook has none.
+            if (symtab->resolve_symbol(item)
                     == nullptr) {
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
                 ASR::TranslationUnit_t *mod1 = nullptr;
@@ -3919,6 +3927,8 @@ ASR::asr_t* make_ArraySize_t_util(
             if( (size_t) dim >= 1 && (size_t) dim <= af_n_dims &&
                 af_dims[dim - 1].m_length != nullptr ) {
                 return (ASR::asr_t*) af_dims[dim - 1].m_length;
+            } else if ((size_t) dim >= 1 && (size_t) dim <= af_n_dims) {
+                return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
             }
         }
     } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
@@ -4395,6 +4405,247 @@ ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop /* = false*/) 
     }
 }
 
+
+ASR::ttype_t* typed_expr_type(const ASR::expr_t *e)
+{
+    if (e == nullptr) return nullptr;
+    if (!ASR::is_a<ASR::Var_t>(*e)) return ASRUtils::expr_type(e);
+    ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(e)->m_v;
+    if (s == nullptr) return nullptr;
+    if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+        s = ASR::down_cast<ASR::ExternalSymbol_t>(s)->m_external;
+        if (s == nullptr || ASR::is_a<ASR::ExternalSymbol_t>(*s)) return nullptr;
+    }
+    if (!ASR::is_a<ASR::Function_t>(*s) && !ASR::is_a<ASR::Variable_t>(*s)
+            && !ASR::is_a<ASR::Struct_t>(*s)) {
+        return nullptr;
+    }
+    return ASRUtils::expr_type(e);
+}
+
+bool is_procedure_type(ASR::ttype_t *t)
+{
+    return t != nullptr
+        && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t)));
+}
+
+bool is_struct_like_type(ASR::ttype_t *t)
+{
+    if (t == nullptr) return false;
+    ASR::ttype_t *t2 = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    return ASR::is_a<ASR::StructType_t>(*t2) || ASRUtils::is_class_type(t2);
+}
+
+// `check_equal_type` does not look at a character length, but a caller
+// compiled against `character(len=5)` reserves five bytes for a result the
+// implementation writes ten into.
+static InterfaceMismatch string_length_mismatch(const std::string &what,
+    ASR::ttype_t *impl, ASR::ttype_t *decl, const std::string &code)
+{
+    if (impl == nullptr || decl == nullptr) return {};
+    if (!ASRUtils::is_character(*impl) || !ASRUtils::is_character(*decl)) {
+        return {};
+    }
+    ASR::String_t *a = ASRUtils::get_string_type(impl);
+    ASR::String_t *b = ASRUtils::get_string_type(decl);
+    if (a == nullptr || b == nullptr) return {};
+    int64_t a_len = -1, b_len = -1;
+    if (a->m_len == nullptr || b->m_len == nullptr) return {};
+    if (!ASRUtils::extract_value(ASRUtils::expr_value(a->m_len), a_len) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(b->m_len), b_len)) {
+        return {};
+    }
+    if (a_len == b_len) return {};
+    return {true, code, what + " must have character length " +
+        std::to_string(b_len) + ", not " + std::to_string(a_len)};
+}
+
+// The dummy argument `impl` declares at position `i`, compared against the one
+// `decl` declares in the same position.
+static InterfaceMismatch argument_mismatch(const std::string &what, size_t i,
+    ASR::Function_t *impl, ASR::Function_t *decl, bool use_expr_context)
+{
+    if (!ASR::is_a<ASR::Var_t>(*impl->m_args[i]) ||
+            !ASR::is_a<ASR::Var_t>(*decl->m_args[i])) {
+        return {};
+    }
+    ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(impl->m_args[i])->m_v;
+    ASR::symbol_t *decl_sym = ASR::down_cast<ASR::Var_t>(decl->m_args[i])->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+            !ASR::is_a<ASR::Variable_t>(*decl_sym)) {
+        return {};
+    }
+    ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::Variable_t *decl_arg = ASR::down_cast<ASR::Variable_t>(decl_sym);
+    std::string which = what + ", argument " + std::to_string(i + 1) +
+        " '" + std::string(arg->m_name) + "',";
+    if (arg->m_intent != decl_arg->m_intent) {
+        return {true, "argument_intent_matches",
+            which + " must have the same intent as '" +
+            std::string(decl_arg->m_name) + "'"};
+    }
+    if (arg->m_presence != decl_arg->m_presence) {
+        return {true, "argument_presence_matches",
+            which + " must agree with '" + std::string(decl_arg->m_name) +
+            "' on the OPTIONAL attribute"};
+    }
+    ASR::ttype_t *type = arg->m_type;
+    ASR::ttype_t *decl_type = decl_arg->m_type;
+    if (type == nullptr || decl_type == nullptr) return {};
+    if (ASRUtils::is_allocatable(type) != ASRUtils::is_allocatable(decl_type)) {
+        return {true, "argument_allocatable_matches",
+            which + " must agree with '" + std::string(decl_arg->m_name) +
+            "' on the ALLOCATABLE attribute"};
+    }
+    if (ASRUtils::is_pointer(type) != ASRUtils::is_pointer(decl_type)) {
+        return {true, "argument_pointer_matches",
+            which + " must agree with '" + std::string(decl_arg->m_name) +
+            "' on the POINTER attribute"};
+    }
+    if (ASRUtils::extract_n_dims_from_ttype(type) !=
+            ASRUtils::extract_n_dims_from_ttype(decl_type)) {
+        return {true, "argument_rank_matches",
+            which + " must have rank " + std::to_string(
+                ASRUtils::extract_n_dims_from_ttype(decl_type))};
+    }
+    // A derived type argument spells its members out inline, so two
+    // structurally different types can name the same type; those are compared
+    // by the dedicated struct checks instead.
+    if (is_struct_like_type(type) || is_struct_like_type(decl_type) ||
+            is_procedure_type(type) || is_procedure_type(decl_type)) {
+        return {};
+    }
+    if (!ASRUtils::check_equal_type(type, decl_type,
+            use_expr_context ? impl->m_args[i] : nullptr,
+            use_expr_context ? decl->m_args[i] : nullptr)) {
+        return {true, "argument_type_matches",
+            which + " must have type " +
+            ASRUtils::get_type_code(decl_type) + ", not " +
+            ASRUtils::get_type_code(type)};
+    }
+    return {};
+}
+
+InterfaceMismatch interface_mismatch(const std::string &what,
+    ASR::Function_t *impl, ASR::Function_t *decl, size_t skip,
+    bool use_expr_context)
+{
+    bool decl_is_function = decl->m_return_var != nullptr;
+    bool is_function = impl->m_return_var != nullptr;
+    if (decl_is_function != is_function) {
+        return {true, "result_kind_matches", what + " must be a " +
+            std::string(decl_is_function ? "function" : "subroutine")};
+    }
+    if (decl_is_function && is_function) {
+        ASR::ttype_t *decl_type = typed_expr_type(decl->m_return_var);
+        ASR::ttype_t *type = typed_expr_type(impl->m_return_var);
+        if (decl_type != nullptr && type != nullptr &&
+                !is_struct_like_type(decl_type) && !is_struct_like_type(type)) {
+            if (!ASRUtils::check_equal_type(type, decl_type,
+                    use_expr_context ? impl->m_return_var : nullptr,
+                    use_expr_context ? decl->m_return_var : nullptr)) {
+                return {true, "result_type_matches", what + " must return " +
+                    ASRUtils::get_type_code(decl_type) + ", not " +
+                    ASRUtils::get_type_code(type)};
+            }
+            InterfaceMismatch m = string_length_mismatch(what + " result",
+                type, decl_type, "result_type_matches");
+            if (m.mismatch) return m;
+        }
+    }
+    if (impl->n_args != decl->n_args) {
+        return {true, "argument_count_matches", what + " must take " +
+            std::to_string(decl->n_args) + " arguments, not " +
+            std::to_string(impl->n_args)};
+    }
+    for (size_t i = 0; i < impl->n_args; i++) {
+        if (i == skip) continue;
+        InterfaceMismatch m = argument_mismatch(what, i, impl, decl,
+            use_expr_context);
+        if (m.mismatch) return m;
+    }
+    return {};
+}
+
+size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
+    ASR::Function_t *proc)
+{
+    if (x.m_is_nopass) return proc->n_args;
+    if (x.m_self_argument == nullptr) return 0;
+    std::string self_name = x.m_self_argument;
+    for (size_t i = 0; i < proc->n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i])) continue;
+        if (self_name == std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(proc->m_args[i])->m_v))) {
+            return i;
+        }
+    }
+    return proc->n_args;
+}
+
+ASR::StructMethodDeclaration_t* overridden_binding(
+    const ASR::StructMethodDeclaration_t &x)
+{
+    SymbolTable *symtab = x.m_parent_symtab;
+    if (symtab == nullptr || symtab->asr_owner == nullptr ||
+            !ASR::is_a<ASR::symbol_t>(*symtab->asr_owner)) {
+        return nullptr;
+    }
+    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(symtab->asr_owner);
+    if (!ASR::is_a<ASR::Struct_t>(*owner)) return nullptr;
+    ASR::symbol_t *parent = ASR::down_cast<ASR::Struct_t>(owner)->m_parent;
+    // A parent cycle is diagnosed on its own; here it must only not loop.
+    std::set<const ASR::Struct_t*> seen;
+    while (parent != nullptr) {
+        parent = ASRUtils::symbol_get_past_external(parent);
+        if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+            return nullptr;
+        }
+        ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(parent);
+        if (!seen.insert(s).second) return nullptr;
+        ASR::symbol_t *sym = s->m_symtab->get_symbol(std::string(x.m_name));
+        if (sym != nullptr &&
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+        }
+        parent = s->m_parent;
+    }
+    return nullptr;
+}
+
+InterfaceMismatch binding_override_mismatch(
+    const ASR::StructMethodDeclaration_t &x, ASR::Function_t *proc,
+    const std::string &what, bool use_expr_context)
+{
+    ASR::StructMethodDeclaration_t *base_decl = overridden_binding(x);
+    if (base_decl == nullptr) return {};
+    ASR::symbol_t *base_sym =
+        ASRUtils::symbol_get_past_external(base_decl->m_proc);
+    if (base_sym == nullptr || !ASR::is_a<ASR::Function_t>(*base_sym)) {
+        return {};
+    }
+    ASR::Function_t *base = ASR::down_cast<ASR::Function_t>(base_sym);
+    // An inherited binding names the very same procedure; only a binding that
+    // names a different one overrides anything.
+    if (base == proc) return {};
+
+    if (x.m_is_nopass != base_decl->m_is_nopass) {
+        return {true, "nopass_matches",
+            what + " must agree on the NOPASS attribute"};
+    }
+    size_t self_index = passed_object_index(x, proc);
+    size_t base_self_index = passed_object_index(*base_decl, base);
+    if (self_index != base_self_index) {
+        return {true, "passed_object_matches",
+            what + " must take its passed-object dummy argument in the same "
+            "position"};
+    }
+    // The passed-object dummy argument is declared with the type it is bound
+    // to, so the two deliberately differ there.
+    return interface_mismatch(what, proc, base, self_index, use_expr_context);
+}
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;

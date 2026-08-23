@@ -641,6 +641,10 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(value);
+            return set_allocation_size(al, coarray_ref->m_var, temporary_var, allocate_dims, target_n_dims, add_allocated_check, len_allocte_expr);
+        }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
@@ -1102,6 +1106,8 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     alloc_arg.m_len_expr = len_allocate_expr;
     alloc_arg.m_type = nullptr;
     alloc_arg.m_sym_subclass = nullptr;
+    alloc_arg.m_codims = nullptr;
+    alloc_arg.n_codims = 0;
     alloc_args.push_back(al, alloc_arg);
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
@@ -1226,6 +1232,8 @@ ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
     alloc_arg.m_sym_subclass = ASRUtils::symbol_get_past_external(
         ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
     alloc_arg.m_len_expr = nullptr;
+    alloc_arg.m_codims = nullptr;
+    alloc_arg.n_codims = 0;
     alloc_args.push_back(al, alloc_arg);
 
     return ASRUtils::STMT(ASR::make_Allocate_t(

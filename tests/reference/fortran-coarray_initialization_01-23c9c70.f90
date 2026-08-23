@@ -34,11 +34,11 @@ integer(4) :: me
 integer(4) :: stat
 call __module_prif_prif_init(stat)
 call c_f_pointer(x__coarray_data, x)
-call c_f_pointer(y__coarray_data, y, [10])
+call c_f_pointer(y__coarray_data, y, [10], [1])
 call c_f_pointer(a__coarray_data, a)
-call c_f_pointer(b__coarray_data, b, [10])
+call c_f_pointer(b__coarray_data, b, [10], [1])
 call c_f_pointer(c__coarray_data, c)
-call c_f_pointer(d__coarray_data, d, [10])
+call c_f_pointer(d__coarray_data, d, [10], [1])
 call __module_prif_prif_sync_all()
 me = lcompilers_prif_this_image()
 call mod_sub()
@@ -68,28 +68,28 @@ subroutine __lfortran_coarray_init_coarray_initialization_01_coarray_saved_mod_c
     a__init_ptr = 5
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), b__coarray_handle,&
          b__coarray_data)
-    call c_f_pointer(b__coarray_data, b__init_ptr, [10])
+    call c_f_pointer(b__coarray_data, b__init_ptr, [10], [1])
     b__init_ptr = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), c__coarray_handle, c__coarray_data)
     call c_f_pointer(c__coarray_data, c__init_ptr)
     c__init_ptr = 7
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), d__coarray_handle,&
          d__coarray_data)
-    call c_f_pointer(d__coarray_data, d__init_ptr, [10])
+    call c_f_pointer(d__coarray_data, d__init_ptr, [10], [1])
     d__init_ptr = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
     call c_f_pointer(x__coarray_data, x__init_ptr)
     x__init_ptr = 666
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle,&
          y__coarray_data)
-    call c_f_pointer(y__coarray_data, y__init_ptr, [10])
+    call c_f_pointer(y__coarray_data, y__init_ptr, [10], [1])
     y__init_ptr = [1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001]
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle1, x__coarray_data1)
     call c_f_pointer(x__coarray_data1, x__init_ptr1)
     x__init_ptr1 = 42
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle1,&
          y__coarray_data1)
-    call c_f_pointer(y__coarray_data1, y__init_ptr1, [10])
+    call c_f_pointer(y__coarray_data1, y__init_ptr1, [10], [1])
     y__init_ptr1 = [43, 43, 43, 43, 43, 43, 43, 43, 43, 43]
 end subroutine __lfortran_coarray_init_coarray_initialization_01_coarray_saved_mod_coarray_saved_sub
 
@@ -102,10 +102,10 @@ interface
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
         procedure(prif_coarray_cleanup_interface), pointer, intent(in) :: final_proc
-        integer(8), dimension(:), intent(in), value :: lcobounds
-        integer(8), intent(in), value :: size_in_bytes
+        integer(8), dimension(:), intent(in) :: lcobounds
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: ucobounds
+        integer(8), dimension(:), intent(in) :: ucobounds
     end subroutine __module_prif_prif_allocate_coarray
 end interface
 
@@ -114,19 +114,19 @@ interface
         &
          stat, errmsg, errmsg_alloc)
         type(prif_coarray_handle), intent(in) :: coarray_handle
-        type(c_ptr), intent(in), value :: current_image_buffer
+        type(c_ptr), intent(in) :: current_image_buffer
         character(len=*, kind=1), intent(inout), optional :: errmsg
         character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
-        integer(4), intent(in), value :: image_num
-        integer(8), intent(in), value :: offset
-        integer(8), intent(in), value :: size_in_bytes
+        integer(4), intent(in) :: image_num
+        integer(8), intent(in) :: offset
+        integer(8), intent(in) :: size_in_bytes
         integer(4), intent(out), optional :: stat
     end subroutine __module_prif_prif_get
 end interface
 
 interface
-    subroutine __module_prif_prif_init(exit_code)
-        integer(4), intent(out) :: exit_code
+    subroutine __module_prif_prif_init(stat)
+        integer(4), intent(out) :: stat
     end subroutine __module_prif_prif_init
 end interface
 
@@ -135,15 +135,15 @@ interface
         type(prif_coarray_handle), intent(in) :: coarray_handle
         integer(4), intent(out) :: initial_team_index
         integer(4), intent(out), optional :: stat
-        integer(8), dimension(:), intent(in), value :: sub
+        integer(8), dimension(:), intent(in) :: sub
     end subroutine __module_prif_prif_initial_team_index
 end interface
 
 interface
     subroutine __module_prif_prif_stop(quiet, stop_code_int, stop_code_char)
-        logical(1), intent(in), value :: quiet
-        character(len=*, kind=1), intent(in), optional, value :: stop_code_char
-        integer(4), intent(in), optional, value :: stop_code_int
+        logical(1), intent(in) :: quiet
+        character(len=*, kind=1), intent(in), optional :: stop_code_char
+        integer(4), intent(in), optional :: stop_code_int
     end subroutine __module_prif_prif_stop
 end interface
 
@@ -166,7 +166,7 @@ subroutine coarray_saved_sub()
     integer(4), pointer, save :: x
     integer(4), dimension(:), pointer, save :: y
     call c_f_pointer(x__coarray_data1, x)
-    call c_f_pointer(y__coarray_data1, y, [10])
+    call c_f_pointer(y__coarray_data1, y, [10], [1])
 end subroutine coarray_saved_sub
 
 integer(4) function lcompilers_prif_get_integer(4)(coarray_handle, sub, offset) result(result)

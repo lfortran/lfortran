@@ -1,3 +1,21 @@
+syntax error: use statement must appear before all other declarations and statements
+   --> tests/errors/continue_compilation_1.f90:927:9
+    |
+927 |         use iso_fortran_env, only: int32
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+syntax error: implicit statement must appear before declaration and executable statements
+   --> tests/errors/continue_compilation_1.f90:928:9
+    |
+928 |         implicit none
+    |         ^^^^^^^^^^^^^^ 
+
+syntax error: Token 'foo' (of type 'identifier') is unexpected here
+   --> tests/errors/continue_compilation_1.f90:978:7
+    |
+978 |       foo    end type t_recovery
+    |       ^^^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
@@ -109,6 +127,12 @@ semantic error: Procedure 'op_clash_f' is already defined as an interface body
     |
  38 |            end function
     | ...~~~~~~~~~~~~~~~~~~~~ is already defined here
+
+semantic error: Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
+  --> tests/errors/continue_compilation_1.f90:68:58
+   |
+68 |     type, extends(MyClass) :: derived_binding; contains; procedure :: display => display_override; end type  ! {Error} Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
+   |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Defined assignment procedure must not return a value
    --> tests/errors/continue_compilation_1.f90:141:5 - 145:32
@@ -479,14 +503,10 @@ semantic error: COMMON block array bounds must be constant expressions
     |                    ^^^^^^^^ 
 
 semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute because procedure `bindc_optional_value` is BIND(C)
-   --> tests/errors/continue_compilation_1.f90:748:5 - 751:18
+   --> tests/errors/continue_compilation_1.f90:748:37
     |
-748 |        subroutine bindc_optional_value(a) bind(c)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-751 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
+748 |     subroutine bindc_optional_value(a) bind(c)
+    |                                     ^ 
 
 semantic error: Function `c_loc` is not permitted in an initialization expression
    --> tests/errors/continue_compilation_1.f90:810:13
@@ -500,11 +520,47 @@ semantic error: length specifier is only valid for character type
 869 |         integer :: i*2
     |                    ^^^ 
 
+semantic error: Derived type `t_pair_local` is not defined
+   --> tests/errors/continue_compilation_1.f90:910:9
+    |
+910 |         type(t_pair_local) :: x
+    |         ^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: equivalence array bounds and subscripts must be constant
+   --> tests/errors/continue_compilation_1.f90:935:22
+    |
+935 |         equivalence (a(i), b(1))  ! {Error} equivalence array bounds and subscripts must be constant
+    |                      ^^^^ unsupported equivalence
+
+semantic error: equivalence between a common block variable and this array element is not implemented
+   --> tests/errors/continue_compilation_1.f90:942:9
+    |
+942 |         equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+
+semantic error: equivalence between a common block variable and this array element is not implemented
+   --> tests/errors/continue_compilation_1.f90:949:9
+    |
+949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type 't_recovery' not declared
+   --> tests/errors/continue_compilation_1.f90:981:7
+    |
+981 |       class(t_recovery), intent(in) :: self
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol 'bad_op' not declared
+ --> tests/errors/continue_compilation_1.f90:1:2
+  |
+1 | ! If you need a function, put it into the module below and remove the same
+  |  ^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -1510,6 +1566,12 @@ semantic error: Type mismatch in assignment, the types must be compatible
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
 
+semantic error: Type mismatch in argument `this`: expected `derived_type` but got `integer(4)`
+   --> tests/errors/continue_compilation_1.f90:628:21
+    |
+628 |     call set_caller(1)
+    |                     ^ 
+
 semantic error: Implied DO loop must be enclosed within array constructor brackets [...]; expected '[( ... )]' in assignment
    --> tests/errors/continue_compilation_1.f90:629:15
     |
@@ -1803,3 +1865,21 @@ semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension ind
     |
 905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
+
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+   --> tests/errors/continue_compilation_1.f90:918:27
+    |
+918 |         print *, real(1., 666)
+    |                           ^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
+   --> tests/errors/continue_compilation_1.f90:959:18
+    |
+959 |         print *, findloc(names, key)
+    |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+   --> tests/errors/continue_compilation_1.f90:966:19
+    |
+966 |         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

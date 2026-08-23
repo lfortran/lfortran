@@ -6,7 +6,6 @@
             [(EndOfLine)
             (EndOfLine)]
         )
-        []
         [(ImplicitNone
             []
             (TriviaNode
@@ -14,11 +13,11 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-        )]
-        [(Requirement
+        )
+        (Requirement
             eq
-            [t
-            ne]
+            [(t)
+            (ne)]
             [(DerivedType
                 t
                 []
@@ -37,9 +36,6 @@
                 ()
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -85,7 +81,6 @@
                     ())]
                     ()
                 )]
-                []
                 []
                 []
             )]
@@ -134,9 +129,6 @@
                 mask
                 ()
                 ()
-                []
-                []
-                []
                 [(Declaration
                     (AttrType
                         TypeType
@@ -221,8 +213,8 @@
                     None
                     ())]
                     ()
-                )]
-                [(Assignment
+                )
+                (Assignment
                     0
                     n
                     (FuncCallOrArray
@@ -436,7 +428,6 @@
             )]
         )]
         []
-        []
     )
     (Program
         template_02
@@ -447,12 +438,12 @@
             []
             .false.
             ()
-        )]
-        [(ImplicitNone
+        )
+        (ImplicitNone
             []
             ()
-        )]
-        [(Instantiate
+        )
+        (Instantiate
             change_positions_tmpl
             [(AttrType
                 TypeInteger
@@ -485,8 +476,8 @@
                 change_positions_t
                 change_positions_chr
             )]
-        )]
-        [(Print
+        )
+        (Print
             0
             ()
             [(FuncCallOrArray

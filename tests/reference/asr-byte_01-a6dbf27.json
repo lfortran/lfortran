@@ -1,0 +1,13 @@
+{
+    "basename": "asr-byte_01-a6dbf27",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/warnings/byte_01.f90",
+    "infile_hash": "43985d920dcaed9b8ea474e881b25a6171a06e30dc7480a422adcfa3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-byte_01-a6dbf27.stdout",
+    "stdout_hash": "e79da5cc10846b967c1ead74f812192b4baa69f523376c5d283fb8c7",
+    "stderr": "asr-byte_01-a6dbf27.stderr",
+    "stderr_hash": "ad335d307cfd4ef4a8d2656508191c89a5602442ec6a6edd1436b6e6",
+    "returncode": 0
+}

@@ -153,7 +153,14 @@ void populate_span(diag::Span &s, const LocationManager &lm,
         s.last_column = s.first_column;
     }
     std::string input;
-    if (read_file(s.filename, input)) {
+    // An interactive cell is only ever in memory, so the text comes with the
+    // location rather than from a file of that name.
+    const std::string *in_memory = lm.source_at(first_pos);
+    if (in_memory != nullptr) {
+        for (uint32_t i = s.first_line; i <= s.last_line; i++) {
+            s.source_code.push_back(get_line(*in_memory, i));
+        }
+    } else if (read_file(s.filename, input)) {
         for (uint32_t i = s.first_line; i <= s.last_line; i++) {
             s.source_code.push_back(get_line(input, i));
         }
@@ -218,9 +225,11 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
     std::stringstream out;
 
     auto [message_type, primary_color, type_color] = diag_level_to_str(d, use_colors);
-    out << type_color << message_type << reset << bold << ": " << d.message << reset << std::endl;
+    out << type_color << message_type;
+    if (!d.code.empty()) out << " [" << d.code << "]";
+    out << reset << bold << ": " << d.message << reset << std::endl;
 
-    if (d.labels.size() > 0) {
+    if (d.labels.size() > 0 && d.labels[0].spans.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
         int line_num_width = 1;
@@ -354,7 +363,7 @@ std::string render_diagnostic_short(const Diagnostic &d) {
 
     // Message anatomy:
     // <filename>:<line start>-<end>:<column start>-<end>: <severity>: <message>
-    if (d.labels.size() > 0) {
+    if (d.labels.size() > 0 && d.labels[0].spans.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
         // TODO: print the primary line+column here, not the first label:
@@ -362,7 +371,9 @@ std::string render_diagnostic_short(const Diagnostic &d) {
         out << s.first_column << "-" << s.last_column << ": ";
     }
     auto [message_type, primary, type] = diag_level_to_str(d, false);
-    out << message_type << ": " << d.message << std::endl;
+    out << message_type;
+    if (!d.code.empty()) out << " [" << d.code << "]";
+    out << ": " << d.message << std::endl;
 
     return out.str();
 }
@@ -370,7 +381,9 @@ std::string render_diagnostic_short(const Diagnostic &d) {
 std::string render_diagnostic_short_nospan(const Diagnostic &d) {
     std::stringstream out;
     auto [message_type, primary, type] = diag_level_to_str(d, false);
-    out << message_type << ": " << d.message << std::endl;
+    out << message_type;
+    if (!d.code.empty()) out << " [" << d.code << "]";
+    out << ": " << d.message << std::endl;
     return out.str();
 }
 
@@ -407,6 +420,9 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(
                     break;
                 case (Stage::CodeGen):
                     message_type = "code generation error";
+                    break;
+                case (Stage::ASRParser):
+                    message_type = "ASR syntax error";
                     break;
             }
             break;

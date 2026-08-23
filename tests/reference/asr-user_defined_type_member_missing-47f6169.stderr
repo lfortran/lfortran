@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.user_defined_type.member_is_declared]: 'base' lists the member 'missing', which it does not declare
+ --> tests/asr/verify/user_defined_type_member_missing.asr:9:21
+  |
+9 |             "base" (Struct
+  |                     ^^^^^^ failed here

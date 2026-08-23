@@ -353,7 +353,13 @@ namespace LCompilers {
                         al, current_scope->get_symbol(str_name)), var, true
                 ) ) {
                 ASR::symbol_t* type_decl = nullptr;
-                if ( var != nullptr ) {
+                // Only a derived type is declared by a symbol. Carrying one
+                // over for, say, a character temporary names a symbol that
+                // has nothing to do with the temporary's type.
+                if ( var != nullptr &&
+                     (ASRUtils::is_struct(*var_type) ||
+                      ASRUtils::is_class_type(
+                          ASRUtils::extract_type(var_type))) ) {
                     type_decl = ASRUtils::get_struct_sym_from_struct_expr(var);
                 }
                 str_name = current_scope->get_unique_name(str_name);

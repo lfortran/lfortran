@@ -997,6 +997,9 @@ namespace LCompilers {
                     ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type));
                     if (string_type->m_physical_type == ASR::string_physical_typeType::CChar) {
                         tmp = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), array, idx);
+                    } else if (ASRUtils::is_inline_character_struct_member(expr)) {
+                        tmp = llvm_utils->get_inline_string_element(
+                            string_type, array, idx, "inline_arr_element");
                     } else {
                         tmp = llvm_utils->get_string_element_in_array(string_type, array, idx);
                     }
@@ -1282,8 +1285,74 @@ namespace LCompilers {
             bool is_struct_type = asr_data_type != nullptr &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
             bool has_order = (order != nullptr && order_expr != nullptr);
+            // Class (polymorphic) arrays use a one-wrapper layout rather than
+            // one wrapper per element, so they need their own copy below.
+            // Unlimited polymorphic arrays have their own layout again and are
+            // left to the generic paths.
+            bool is_class_elem = false;
+            if (asr_data_type != nullptr && array_expr != nullptr &&
+                    ASRUtils::is_class_type(ASRUtils::extract_type(asr_data_type))) {
+                ASR::symbol_t* elem_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(array_expr));
+                is_class_elem = elem_sym != nullptr &&
+                    ASR::is_a<ASR::Struct_t>(*elem_sym) &&
+                    !ASRUtils::is_unlimited_polymorphic_type(elem_sym);
+            }
 
-            if (!has_order && is_struct_type && array_expr != nullptr) {
+            if (!has_order && is_class_elem && array_expr != nullptr) {
+                // Class arrays use a ONE-wrapper layout: the descriptor's data
+                // pointer addresses a single {vptr, data_ptr} wrapper whose
+                // data_ptr in turn addresses a contiguous buffer of N elements.
+                // Copy the wrapper's vptr and give the destination its own
+                // heap element buffer (the finalizer frees it), then copy the
+                // elements through the vtable copy function. The destination's
+                // dimension descriptors are set from `shape` further below, so
+                // nothing here may touch them.
+                llvm::Value* src_wrapper = llvm_utils->CreateLoad2(
+                    llvm_data_type->getPointerTo(), ptr2firstptr);
+                llvm::Value* dest_wrapper = llvm_utils->CreateLoad2(
+                    llvm_data_type->getPointerTo(), first_ptr);
+
+                LLVMUtils::UpolyWrapperFields src_w =
+                    llvm_utils->extract_upoly_wrapper(src_wrapper, llvm_data_type);
+                builder->CreateStore(src_w.vptr, builder->CreateBitCast(
+                    dest_wrapper, llvm_utils->vptr_type->getPointerTo()));
+
+                ASR::symbol_t* elem_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(array_expr));
+                llvm::Type* elem_struct_type = llvm_utils->getStructType(
+                    ASR::down_cast<ASR::Struct_t>(elem_struct_sym), module);
+
+                llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                llvm::Value* num_elems_64 =
+                    builder->CreateSExtOrTrunc(num_elements, i64_ty);
+                llvm::Value* total_bytes =
+                    builder->CreateMul(num_elems_64, src_w.elem_size);
+
+                llvm::Value* dest_raw =
+                    llvm_utils->allocate_zeroed_bytes(total_bytes);
+                builder->CreateStore(
+                    builder->CreateBitCast(dest_raw,
+                        elem_struct_type->getPointerTo()),
+                    llvm_utils->create_gep2(llvm_data_type, dest_wrapper, 1));
+
+                llvm::FunctionType* copy_fn_ty = llvm_utils->struct_copy_functype;
+                llvm::Value* ui = llvm_utils->CreateAlloca(*builder, i64_ty);
+                builder->CreateStore(llvm::ConstantInt::get(i64_ty, 0), ui);
+                llvm_utils->create_loop("reshape_class_deepcopy", [&]() {
+                    return builder->CreateICmpSLT(
+                        llvm_utils->CreateLoad2(i64_ty, ui), num_elems_64);
+                }, [&]() {
+                    llvm::Value* ui_val = llvm_utils->CreateLoad2(i64_ty, ui);
+                    llvm::Value* off = builder->CreateMul(ui_val, src_w.elem_size);
+                    builder->CreateCall(copy_fn_ty, src_w.copy_fn, {
+                        builder->CreateGEP(llvm::Type::getInt8Ty(context), src_w.data, off),
+                        builder->CreateGEP(llvm::Type::getInt8Ty(context), dest_raw, off)});
+                    builder->CreateStore(
+                        builder->CreateAdd(ui_val,
+                            llvm::ConstantInt::get(i64_ty, 1)), ui);
+                });
+            } else if (!has_order && is_struct_type && array_expr != nullptr) {
                 // For derived types with allocatable components, do element-wise
                 // deep copy to avoid sharing allocatable component pointers.
                 // Zero-initialize dest buffer so allocatable members start as null.

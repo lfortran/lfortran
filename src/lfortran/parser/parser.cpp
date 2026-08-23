@@ -2,6 +2,7 @@
 #include <string>
 #include <cctype>
 
+#include <lfortran/ast_kind.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
@@ -34,10 +35,7 @@ bool is_program_end(AST::Name_t* name) {
 
 void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
     Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
-    Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
-    Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
-    Vec<AST::unit_decl2_t*> decl; decl.reserve(al, 0);
-    Vec<AST::stmt_t*> body; body.reserve(al, 0);
+    Vec<AST::decl_stmt_t*> items; items.reserve(al, 0);
     Vec<AST::program_unit_t*> contains_body; contains_body.reserve(al, 0);
     bool contains = false, program_added = false;
     for (size_t i = 0; i < ast.n_items; i++) {
@@ -61,8 +59,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                     AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                     if (is_program_end(name)) {
                         AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                            use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                            body.p, body.size(), contains_body.p, contains_body.size());
+                            items.p, items.size(), contains_body.p, contains_body.size());
 
                         global_items.push_back(al, program_ast);
                         program_added = true;
@@ -84,39 +81,30 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                     diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
                 throw parser_local::ParserAbort();
             }
-        } else if (ast.m_items[i]->type == AST::astType::stmt) {
-            body.push_back(al, AST::down_cast<AST::stmt_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::unit_decl1) {
-            // use module_name
-            use.push_back(al, AST::down_cast<AST::unit_decl1_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::implicit_statement) {
-            implicit.push_back(al, AST::down_cast<AST::implicit_statement_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::unit_decl2) {
-            // Declaration, Interface, DerivedType, Template, Enum, Instantiate, Requirement, Requires
-            decl.push_back(al, AST::down_cast<AST::unit_decl2_t>(ast.m_items[i]));
+        } else if (ast.m_items[i]->type == AST::astType::decl_stmt) {
+            items.push_back(al, AST::down_cast<AST::decl_stmt_t>(ast.m_items[i]));
         } else if (ast.m_items[i]->type == AST::astType::expr) {
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
                 if (to_lower(name->m_id) == "stop") {
                     AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(stop_ast));
                 } else if (to_lower(name->m_id) == "return") {
                     AST::ast_t* return_ast = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(return_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(return_ast));
                 } else if (to_lower(name->m_id) == "exit") {
                     AST::ast_t* exit_ast = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(exit_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(exit_ast));
                 } else if (to_lower(name->m_id) == "cycle") {
                     AST::ast_t* cycle_ast = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(cycle_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(cycle_ast));
                 } else if (to_lower(name->m_id) == "continue") {
                     AST::ast_t* continue_ast = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(continue_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(continue_ast));
                 } else if (is_program_end(name)) {
                     AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                    use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
-                    body.p, body.size(), contains_body.p, contains_body.size());
+                    items.p, items.size(), contains_body.p, contains_body.size());
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
@@ -140,7 +128,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(allocate_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(allocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "deallocate") {
                     AST::ast_t* deallocate_ast = AST::make_Deallocate_t(al,
                                                     func_call_or_array->base.base.loc,
@@ -151,7 +139,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(deallocate_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(deallocate_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "open") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -166,7 +154,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(open_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(open_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "close") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -181,7 +169,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(close_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(close_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "nullify") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -196,7 +184,7 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(nullify_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(nullify_ast));
                 } else if (to_lower(func_call_or_array->m_func) == "flush") {
                     Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
                     for (size_t j = 0; j < func_call_or_array->n_args; j++) {
@@ -211,7 +199,68 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                                                     func_call_or_array->n_keywords,
                                                     nullptr);
 
-                    body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(flush_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "rewind") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* rewind_ast = AST::make_Rewind_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(rewind_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "backspace") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* backspace_ast = AST::make_Backspace_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(backspace_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "endfile" || to_lower(func_call_or_array->m_func) == "end_file") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* endfile_ast = AST::make_Endfile_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(endfile_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "inquire") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* inquire_ast = AST::make_Inquire_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr, 0,
+                                                    nullptr);
+
+                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(inquire_ast));
                 }
             } else {
                 diagnostics.add(diag::Diagnostic(
@@ -234,9 +283,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 }
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co)
+        diag::Diagnostics &diagnostics, const CompilerOptions &co,
+        uint32_t loc_offset)
 {
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
+    p.m_tokenizer.loc_offset = loc_offset;
     try {
         if (!p.parse(s)) {
             if (!co.continue_compilation) {

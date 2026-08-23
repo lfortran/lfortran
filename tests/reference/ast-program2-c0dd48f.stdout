@@ -2,13 +2,11 @@
     [(Program
         program2
         ()
-        []
         [(ImplicitNone
             []
             ()
-        )]
-        []
-        [(SubroutineCall
+        )
+        (SubroutineCall
             0
             b
             []
@@ -40,10 +38,6 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
-            []
-            []
-            []
-            []
             [(Print
                 0
                 ()

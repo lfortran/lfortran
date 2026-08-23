@@ -33,10 +33,44 @@
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/utils.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
 namespace nl = nlohmann;
+
+// ── Jupyter display_data bridge ──────────────────────────────────────────────
+// These C-linkage symbols are called from JIT'd Fortran code via bind(C)
+// declarations provided by the lfortran_display runtime module.
+// Native (ORC JIT): resolved from the host process's exported symbol table.
+// WASM: defined in the MAIN_MODULE; side modules import via --allow-undefined
+// and RTLD_DEFAULT resolves them at dlopen time.
+
+#ifdef _WIN32
+#define LFORTRAN_KERNEL_API __declspec(dllexport)
+#else
+#define LFORTRAN_KERNEL_API __attribute__((visibility("default")))
+#endif
+
+extern "C" {
+
+// Generic display bridge: publish arbitrary MIME type + data to Jupyter.
+// Users can send HTML, SVG, LaTeX, Markdown, base64-encoded images, etc.
+// This is the extensibility point - all format-specific encoding (BMP, PNG, etc.)
+// should be done in Fortran user code, not hardcoded here.
+LFORTRAN_KERNEL_API void lfortran_display_data(const char* mime_type, const char* data) {
+    if (!mime_type || !data) return;
+    nl::json bundle = nl::json::object();
+    bundle[mime_type] = std::string(data);
+    xeus::get_interpreter().display_data(
+        std::move(bundle), nl::json::object(), nl::json::object());
+}
+
+LFORTRAN_KERNEL_API void lfortran_clear_output() {
+    xeus::get_interpreter().clear_output(false);
+}
+
+} // extern "C"
 
 namespace LCompilers::LFortran {
 
@@ -85,6 +119,8 @@ namespace LCompilers::LFortran {
     public:
         custom_interpreter() : compiler_options{}, e{compiler_options} {
             e.compiler_options.interactive = true;
+            e.compiler_options.po.runtime_library_dir =
+                LCompilers::LFortran::get_runtime_library_dir();
         }
         virtual ~custom_interpreter() = default;
 
@@ -130,13 +166,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showast")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                     res = e.get_ast(code0, lm, diagnostics);
@@ -160,13 +190,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showasr")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_asr(code0, lm, diagnostics);
@@ -190,13 +214,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showllvm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 diag::Diagnostics diagnostics;
@@ -222,13 +240,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showasm")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 LCompilers::PassManager lpm;
                 lpm.use_default_passes();
                 diag::Diagnostics diagnostics;
@@ -254,13 +266,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showcpp")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_cpp(code0, lm, diagnostics, 1);
@@ -284,13 +290,7 @@ namespace LCompilers::LFortran {
             if (startswith(code, "%%showfmt")) {
                 code0 = code.substr(code.find("\n")+1);
                 LocationManager lm;
-                {
-                    LocationManager::FileLocations fl;
-                    fl.in_filename = "input";
-                    std::ofstream out("input");
-                    out << code0;
-                    lm.files.push_back(fl);
-                }
+                // The evaluator names this cell and keeps its text.
                 diag::Diagnostics diagnostics;
                 Result<std::string>
                 res = e.get_fmt(code0, lm, diagnostics);
@@ -315,13 +315,7 @@ namespace LCompilers::LFortran {
             RedirectStdout s(std_out);
             code0 = code;
             LocationManager lm;
-            {
-                LocationManager::FileLocations fl;
-                fl.in_filename = "input";
-                std::ofstream out("input");
-                out << code0;
-                lm.files.push_back(fl);
-            }
+            // The evaluator names this cell and keeps its text.
             LCompilers::PassManager lpm;
             lpm.use_default_passes();
             diag::Diagnostics diagnostics;
@@ -392,6 +386,12 @@ namespace LCompilers::LFortran {
                 publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
                 break;
             }
+            case (LCompilers::FortranEvaluator::EvalResult::character) : {
+                nl::json pub_data;
+                pub_data["text/plain"] = r.str;
+                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
+                break;
+            }
             case (LCompilers::FortranEvaluator::EvalResult::statement) : {
                 break;
             }
@@ -411,7 +411,7 @@ namespace LCompilers::LFortran {
     
     void custom_interpreter::configure_impl()
     {
-        // Perform some operations
+        xeus::register_interpreter(this);
     }
 
     nl::json custom_interpreter::complete_request_impl(const std::string& code,
@@ -478,19 +478,22 @@ namespace LCompilers::LFortran {
 
     nl::json custom_interpreter::kernel_info_request_impl()
     {
-        nl::json result;
         std::string version = LFORTRAN_VERSION;
         std::string banner = ""
             "LFortran " + version + "\n"
             "Jupyter kernel for Fortran";
-        result["banner"] = banner;
-        result["implementation"] = "LFortran";
-        result["implementation_version"] = version;
-        result["language_info"]["name"] = "fortran";
-        result["language_info"]["version"] = "2018";
-        result["language_info"]["mimetype"] = "text/x-fortran";
-        result["language_info"]["file_extension"] = ".f90";
-        return result;
+        return xeus::create_info_reply(
+            "LFortran",
+            version,
+            "fortran",
+            "2018",
+            "text/x-fortran",
+            ".f90",
+            "",
+            std::string("text/x-fortran"),
+            "",
+            banner
+        );
     }
 
     nl::json custom_interpreter::shutdown_request_impl(bool restart) {

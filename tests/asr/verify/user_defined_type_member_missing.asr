@@ -1,0 +1,57 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "m" (Module
+        (SymbolTable
+          1
+          {
+            "base" (Struct
+              (SymbolTable
+                2
+                {}
+              )
+              "base"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              [
+                "missing"
+              ]
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+          }
+        )
+        "m"
+        nil
+        []
+        false
+        false
+        false
+      )
+      "generated" (Program
+        (SymbolTable
+          6
+          {}
+        )
+        "generated"
+        []
+        []
+      )
+    }
+  )
+  []
+)

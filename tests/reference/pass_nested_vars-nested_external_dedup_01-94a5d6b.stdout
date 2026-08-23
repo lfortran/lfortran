@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            __lcompilers_created__nested_context__outer_:
+            __lcompilers_created__nested_context__nested_external_dedup_01__outer_:
                 (Module
                     (SymbolTable
                         6
@@ -32,7 +32,7 @@
                                     []
                                 )
                         })
-                    __lcompilers_created__nested_context__outer_
+                    __lcompilers_created__nested_context__nested_external_dedup_01__outer_
                     ()
                     []
                     .false.
@@ -78,7 +78,7 @@
                                                     3
                                                     a1
                                                     6 a
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_external_dedup_01__outer_
                                                     []
                                                     a
                                                     Public
@@ -88,7 +88,7 @@
                                                     3
                                                     a_nested_ctx
                                                     6 a
-                                                    __lcompilers_created__nested_context__outer_
+                                                    __lcompilers_created__nested_context__nested_external_dedup_01__outer_
                                                     []
                                                     a
                                                     Public
@@ -103,7 +103,7 @@
                                                                     4
                                                                     a
                                                                     6 a
-                                                                    __lcompilers_created__nested_context__outer_
+                                                                    __lcompilers_created__nested_context__nested_external_dedup_01__outer_
                                                                     []
                                                                     a
                                                                     Public
@@ -155,7 +155,7 @@
                                                                     5
                                                                     a
                                                                     6 a
-                                                                    __lcompilers_created__nested_context__outer_
+                                                                    __lcompilers_created__nested_context__nested_external_dedup_01__outer_
                                                                     []
                                                                     a
                                                                     Public

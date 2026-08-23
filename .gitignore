@@ -103,6 +103,9 @@ src/libasr/asr_lookup_name_visitor.h
 src/libasr/asr_pass_walk_visitor.h
 src/libasr/asr_pickle_visitor.h
 src/libasr/asr_serialization_visitor.h
+src/libasr/asr_symbol_visitor.h
+src/libasr/asr_text_visitor.h
+src/libasr/asr_text_deserialization_visitor.h
 src/libasr/asr_stmt_base_replacer_visitor.h
 src/libasr/asr_tree_visitor.h
 src/libasr/asr_walk_visitor.h
@@ -185,6 +188,8 @@ __pycache__/
 ## Distribution / packaging
 .Python
 build/
+build-wasm/
+.jupyterlite.doit.db
 develop-eggs/
 dist/
 downloads/
@@ -252,3 +257,27 @@ build.ninja
 doc/man/lfortran.1
 !doc/src/javascripts/*.js
 !pass_array_by_data_*.f90
+
+## repro-issue / create-mre scratch artifacts
+## Reproducers live in the repo root by convention (see .agents/skills/).
+## They are throwaway inputs to fix-mre; the deliverable is the integration
+## test it adds under integration_tests/.
+/run.sh
+/run_re.sh
+/mre_*.f90
+/re_*.f90
+/test_ref
+/test_lfortran
+/asr-fuzz-artifacts/
+# Runtime OPEN(status="scratch") files; they land in cwd.
+_lfortran_generated_file*
+/test_gfortran
+/test_flang
+# x86 backend unit tests write their executables into the working directory.
+/cmp32
+/print32
+/print_integer
+/subroutines32
+/subroutines_args32
+/write32
+/write32.asm

@@ -65,7 +65,7 @@ module continue_compilation_1_mod
     end type type_t
 
 
-
+    type, extends(MyClass) :: derived_binding; contains; procedure :: display => display_override; end type  ! {Error} Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
 contains
 
     integer function statement_function_name_conflict()
@@ -182,7 +182,7 @@ contains
         procedure(sub_test), pointer :: pf2
         pf2 => dummy_func
     end subroutine proc_ptr_error_tests
-
+    subroutine display_override(self, a, b); class(derived_binding), intent(in) :: self; integer, intent(in) :: a, b; end subroutine
     function op_clash_f(x) result(y)
         integer, intent(in) :: x
         integer :: y
@@ -625,7 +625,7 @@ program continue_compilation_1
 
     type(container(4)) :: obj1
     type(container) :: obj2
-
+    call set_caller(1)
     arr_idl = (i, i = 1, 4)
     integer :: minloc_shape_mismatch = minloc([2, 1, 3], 1, [.true., .false.])
     integer :: maxloc_shape_mismatch = maxloc([2, 1, 3], 1, [.true., .false.])
@@ -904,4 +904,83 @@ program continue_compilation_1
         x = norm2([1, 2])
         x = norm2([1.0, 2.0], dim=2)
     end subroutine
+
+    subroutine type_used_before_declared_local()
+        implicit none
+        type(t_pair_local) :: x
+        type :: t_pair_local
+            integer :: i
+            real :: x
+        end type
+    end subroutine type_used_before_declared_local
+
+    subroutine real_unsupported_kind_01()
+        print *, real(1., 666)
+    end subroutine
+
+    ! The AST keeps the source order, so with `--continue-compilation` the
+    ! AST -> ASR visitors see the `use` and `implicit` statements below in
+    ! their (invalid) position rather than hoisted to the front. The parser
+    ! reports the ordering errors, the visitors must cope with the raw order.
+    subroutine decl_order_after_decl()
+        integer :: decl_order_first
+        use iso_fortran_env, only: int32
+        implicit none
+        integer(int32) :: decl_order_second
+        decl_order_second = decl_order_first
+    end subroutine
+    subroutine equivalence_nonconstant_subscript()
+        implicit none
+        integer :: a(3), b(3), i
+        equivalence (a(i), b(1))  ! {Error} equivalence array bounds and subscripts must be constant
+    end subroutine equivalence_nonconstant_subscript
+
+    subroutine equivalence_common_scalar_array_element()
+        implicit none
+        integer :: cs, arr(3)
+        common /equivalence_common_scalar/ cs
+        equivalence (cs, arr(2))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    end subroutine equivalence_common_scalar_array_element
+
+    subroutine equivalence_common_array_overrun()
+        implicit none
+        real :: first, second, alias(4)
+        common /equivalence_common_overrun/ first, second
+        equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
+    end subroutine equivalence_common_array_overrun
+    subroutine set_caller(this)
+        class(MyClass) :: this
+    end subroutine
+
+    subroutine findloc_character_kind_mismatch()
+        implicit none
+        character(kind=4, len=1) :: names(1)
+        character(kind=1, len=1) :: key
+        print *, findloc(names, key)
+    end subroutine
+
+    subroutine implied_do_loop_variable_not_integer()
+        implicit none
+        real :: r_idx
+        real :: values(3)
+        values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+        print *, values(1)
+    end subroutine
 end program
+
+! A syntax error inside a module makes the parser skip the erroneous
+! declaration and keep the rest of the module. The symbol table visitor then
+! skips the program units that depend on the discarded declaration, so the body
+! visitor must not assume their symbols exist.
+module module_error_recovery_1
+    type :: t_recovery
+    contains
+      foo    end type t_recovery
+contains
+    pure function foo(self, x) result(res)
+      class(t_recovery), intent(in) :: self
+      real, intent(in) :: x(:)
+      real :: res(size(x))
+    end function foo
+end module
+

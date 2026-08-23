@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.type.real_kind_supported]: Real kind 1 is not supported
+  --> tests/asr/verify/unsupported_real_kind.asr:17:16
+   |
+17 |               (Real
+   |                ^^^^ failed here

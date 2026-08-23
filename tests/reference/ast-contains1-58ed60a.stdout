@@ -2,8 +2,6 @@
     [(Program
         test23stars
         ()
-        []
-        []
         [(Declaration
             (AttrType
                 TypeCharacter
@@ -69,8 +67,8 @@
             None
             ())]
             ()
-        )]
-        [(DataStmt
+        )
+        (DataStmt
             0
             [(DataStmtSet
                 [j
@@ -171,9 +169,6 @@
             []
             ()
             ()
-            []
-            []
-            []
             [(Declaration
                 (AttrType
                     TypeInteger
@@ -337,8 +332,8 @@
                 None
                 ())]
                 ()
-            )]
-            [(SelectRank
+            )
+            (SelectRank
                 0
                 ()
                 ()

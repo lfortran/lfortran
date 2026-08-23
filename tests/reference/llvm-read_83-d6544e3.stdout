@@ -123,28 +123,30 @@ loop.head:                                        ; preds = %ifcont, %then
   %5 = load i32, i32* %result, align 4
   %6 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %7 = load i8*, i8** %6, align 8
-  %8 = sext i32 %5 to i64
-  %9 = sub i64 %8, 1
-  %10 = getelementptr i8, i8* %7, i64 %9
-  %11 = getelementptr %string_descriptor, %string_descriptor* %StringItem, i32 0, i32 0
-  store i8* %10, i8** %11, align 8
-  %12 = getelementptr %string_descriptor, %string_descriptor* %StringItem, i32 0, i32 1
-  store i64 1, i64* %12, align 8
+  %8 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
+  %9 = load i64, i64* %8, align 8
+  %10 = sext i32 %5 to i64
+  %11 = sub i64 %10, 1
+  %12 = getelementptr i8, i8* %7, i64 %11
   %13 = getelementptr %string_descriptor, %string_descriptor* %StringItem, i32 0, i32 0
-  %14 = load i8*, i8** %13, align 8
-  %15 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %16 = load i8, i8* %14, align 1
-  %17 = load i8, i8* %15, align 1
-  %18 = icmp eq i8 %16, %17
-  br i1 %18, label %loop.body, label %loop.end
+  store i8* %12, i8** %13, align 8
+  %14 = getelementptr %string_descriptor, %string_descriptor* %StringItem, i32 0, i32 1
+  store i64 1, i64* %14, align 8
+  %15 = getelementptr %string_descriptor, %string_descriptor* %StringItem, i32 0, i32 0
+  %16 = load i8*, i8** %15, align 8
+  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %18 = load i8, i8* %16, align 1
+  %19 = load i8, i8* %17, align 1
+  %20 = icmp eq i8 %18, %19
+  br i1 %20, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %19 = load i32, i32* %result, align 4
-  %20 = sub i32 %19, 1
-  store i32 %20, i32* %result, align 4
   %21 = load i32, i32* %result, align 4
-  %22 = icmp eq i32 %21, 0
-  br i1 %22, label %then1, label %else
+  %22 = sub i32 %21, 1
+  store i32 %22, i32* %result, align 4
+  %23 = load i32, i32* %result, align 4
+  %24 = icmp eq i32 %23, 0
+  br i1 %24, label %then1, label %else
 
 then1:                                            ; preds = %loop.body
   br label %loop.end
@@ -171,34 +173,45 @@ return:                                           ; preds = %ifcont3
   br label %FINALIZE_SYMTABLE__lcompilers_len_trim_str
 
 FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
-  %23 = load i32, i32* %result, align 4
-  ret i32 %23
+  %25 = load i32, i32* %result, align 4
+  ret i32 %25
 }
 
 define void @_lcompilers_trim_str(%string_descriptor* %str, %string_descriptor* %result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8
-  %1 = call i32 @_lcompilers_len_trim_str(%string_descriptor* %str)
-  %2 = sext i32 %1 to i64
-  %3 = sub i64 %2, 1
-  %4 = add i64 %3, 1
-  %5 = icmp slt i64 %4, 0
-  %6 = select i1 %5, i64 0, i64 %4
-  %7 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
-  %8 = load i8*, i8** %7, align 8
-  %StrSliceGEP = getelementptr i8, i8* %8, i64 0
-  %9 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
-  store i8* %StrSliceGEP, i8** %9, align 8
-  %10 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
-  store i64 %6, i64* %10, align 8
-  %11 = getelementptr %string_descriptor, %string_descriptor* %result, i32 0, i32 0
-  %12 = getelementptr %string_descriptor, %string_descriptor* %result, i32 0, i32 1
-  %13 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %str_desc_local = alloca %string_descriptor, align 8
+  %1 = getelementptr %string_descriptor, %string_descriptor* %result, i32 0, i32 0
+  %2 = load i8*, i8** %1, align 8
+  %3 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 0
+  store i8* %2, i8** %3, align 8
+  %4 = call i32 @_lcompilers_len_trim_str(%string_descriptor* %str)
+  %5 = sext i32 %4 to i64
+  %6 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
+  store i64 %5, i64* %6, align 8
+  %7 = call i32 @_lcompilers_len_trim_str(%string_descriptor* %str)
+  %8 = sext i32 %7 to i64
+  %9 = sub i64 %8, 1
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 0
+  %12 = select i1 %11, i64 0, i64 %10
+  %13 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 0
   %14 = load i8*, i8** %13, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %15 = getelementptr %string_descriptor, %string_descriptor* %str, i32 0, i32 1
   %16 = load i64, i64* %15, align 8
-  call void @_lfortran_strcpy_alloc(i8* %0, i8** %11, i64* %12, i8 0, i8 0, i8* %14, i64 %16, i32 1)
+  %StrSliceGEP = getelementptr i8, i8* %14, i64 0
+  %17 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  store i8* %StrSliceGEP, i8** %17, align 8
+  %18 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  store i64 %12, i64* %18, align 8
+  %19 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 0
+  %20 = getelementptr %string_descriptor, %string_descriptor* %str_desc_local, i32 0, i32 1
+  %21 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 0
+  %22 = load i8*, i8** %21, align 8
+  %23 = getelementptr %string_descriptor, %string_descriptor* %StrSlice_StrView, i32 0, i32 1
+  %24 = load i64, i64* %23, align 8
+  call void @_lfortran_strcpy_alloc(i8* %0, i8** %19, i64* %20, i8 0, i8 0, i8* %22, i64 %24, i32 1)
   br label %return
 
 return:                                           ; preds = %.entry
