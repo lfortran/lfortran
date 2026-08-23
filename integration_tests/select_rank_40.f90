@@ -1,4 +1,4 @@
-module select_rank_39_mod
+module select_rank_40_mod
     implicit none
 
 contains
@@ -28,10 +28,10 @@ contains
         end select
     end subroutine check_2d
 
-end module select_rank_39_mod
+end module select_rank_40_mod
 
-program select_rank_39
-    use select_rank_39_mod
+program select_rank_40
+    use select_rank_40_mod
     implicit none
 
     integer, target  :: a(3), b(2,3)
@@ -49,4 +49,4 @@ program select_rank_39
 
     call check_2d(b)
 
-end program select_rank_39
+end program select_rank_40
