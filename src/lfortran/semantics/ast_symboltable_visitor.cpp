@@ -1642,7 +1642,12 @@ public:
                 throw SemanticAbort();
             }
         }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
+        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ||
+             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check)) ) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -2334,8 +2339,13 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
         if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
+            || interface_name == to_lower(sym_name) ||
+            (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -2393,79 +2403,32 @@ public:
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
 
-        bool update_gp = false;
-        int gp_index_to_be_updated = -1;
-        ASR::symbol_t* f1_ = nullptr;
-
         if (parent_scope->get_symbol(sym_name) != nullptr) {
-            f1_ = parent_scope->get_symbol(sym_name);
-            ASR::symbol_t *f1 = f1_;
-
+            ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*f1)) {
-                ASR::symbol_t *orig = ASRUtils::symbol_get_past_external(f1);
-                
-                if (ASR::is_a<ASR::GenericProcedure_t>(*orig)) {
-                    ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(orig);
-                    if (sym_name == gp->m_name) {
-                        sym_name = sym_name + "~genericprocedure";
-                        func->m_name = s2c(al, sym_name); // Fix linker mismatch
-                    }
-                    update_gp = true;
-                    Vec<ASR::symbol_t*> gp_procs;
-                    gp_procs.from_pointer_n_copy(al, gp->m_procs, gp->n_procs);
-                    f1_ = ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(al, orig->base.loc,
-                        parent_scope, gp->m_name, gp_procs.p, gp_procs.size(), gp->m_access));
-                    parent_scope->overwrite_symbol(gp->m_name, f1_);
-
-                    for (size_t igp = 0; igp < gp->n_procs; igp++) {
-                        if (std::string(ASRUtils::symbol_name(gp->m_procs[igp])) == sym_name) {
-                            gp_index_to_be_updated = igp;
-                            break;
-                        }
-                    }
-                    if (!in_submodule) {
-                        parent_scope->erase_symbol(sym_name);
-                    }
+                if (in_submodule) {
+                    parent_scope->erase_symbol(sym_name);
                 } else {
-                    if (in_submodule) {
+                    ASR::symbol_t *orig = ASRUtils::symbol_get_past_external(f1);
+                    bool is_private_orig = false;
+                    if (ASR::is_a<ASR::Function_t>(*orig)) {
+                        is_private_orig = ASR::down_cast<ASR::Function_t>(
+                            orig)->m_access == ASR::accessType::Private;
+                    }
+                    if (is_private_orig) {
                         parent_scope->erase_symbol(sym_name);
                     } else {
-                        bool is_private_orig = false;
-                        if (ASR::is_a<ASR::Function_t>(*orig)) {
-                            is_private_orig = ASR::down_cast<ASR::Function_t>(
-                                orig)->m_access == ASR::accessType::Private;
-                        }
-                        if (is_private_orig) {
-                            parent_scope->erase_symbol(sym_name);
-                        } else {
-                            diag.add(diag::Diagnostic(
-                                "Function already defined",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {tmp->loc})}));
-                            throw SemanticAbort();
-                        }
+                        diag.add(diag::Diagnostic(
+                            "Function already defined",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {tmp->loc})}));
+                        throw SemanticAbort();
                     }
-                }
-            } else if (ASR::is_a<ASR::GenericProcedure_t>(*f1)) {
-                ASR::GenericProcedure_t* gp = ASR::down_cast<ASR::GenericProcedure_t>(f1);
-                if (sym_name == gp->m_name) {
-                    sym_name = sym_name + "~genericprocedure";
-                    func->m_name = s2c(al, sym_name);
-                }
-
-                update_gp = true;
-                for (size_t igp = 0; igp < gp->n_procs; igp++) {
-                    if (std::string(ASRUtils::symbol_name(gp->m_procs[igp])) == sym_name) {
-                        gp_index_to_be_updated = igp;
-                        break;
-                    }
-                }
-                if (!in_submodule) {
-                    parent_scope->erase_symbol(sym_name);
                 }
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
+                  // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     bool is_placeholder = (f2->n_args == 0 && f2->m_return_var == nullptr);
                     bool was_module_procedure = ASRUtils::get_FunctionType(f2)->m_module;
@@ -2514,6 +2477,7 @@ public:
                     throw SemanticAbort();
                 }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
+                // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
             } else {
                 diag.add(diag::Diagnostic(
@@ -2524,13 +2488,7 @@ public:
             }
         }
         handle_save();
-        parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-
-        if (update_gp) {
-            LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
-            ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
-            f1_gp->m_procs[gp_index_to_be_updated] = ASR::down_cast<ASR::symbol_t>(tmp);
-        }
+        parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
