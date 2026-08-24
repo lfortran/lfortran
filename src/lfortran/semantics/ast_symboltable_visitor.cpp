@@ -1642,7 +1642,12 @@ public:
                 throw SemanticAbort();
             }
         }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
+        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ||
+             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check)) ) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -2334,8 +2339,13 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
         if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
+            || interface_name == to_lower(sym_name) ||
+            (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
             sym_name = sym_name + "~genericprocedure";
         }
 

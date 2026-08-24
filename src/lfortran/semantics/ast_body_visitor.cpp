@@ -5917,7 +5917,8 @@ public:
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
-        if( t->type == ASR::symbolType::GenericProcedure ) {
+        ASR::symbol_t *t_check = ASRUtils::symbol_get_past_external(t);
+        if( t_check->type == ASR::symbolType::GenericProcedure ) {
             std::string subrout_name = to_lower(x.m_name) + "~genericprocedure";
             t = current_scope->get_symbol(subrout_name);
         }
@@ -6026,7 +6027,8 @@ public:
             // comment in `visit_SubmoduleModuleCommon()`.
             throw SemanticAbort();
         }
-        if( t->type == ASR::symbolType::GenericProcedure ) {
+        ASR::symbol_t *t_check = ASRUtils::symbol_get_past_external(t);
+        if( t_check->type == ASR::symbolType::GenericProcedure ) {
             t = current_scope->get_symbol(to_lower(x.m_name) + "~genericprocedure");
         }
 
