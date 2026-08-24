@@ -317,7 +317,7 @@ program continue_compilation_1
 
 
 
-
+    character(0), allocatable :: alloc_ch01
     ! Use the space above to insert new declarations, and remove the line, so
     ! that the lines below do not shift, to keep the diff minimal.
     !
@@ -972,6 +972,14 @@ end program
 ! declaration and keep the rest of the module. The symbol table visitor then
 ! skips the program units that depend on the discarded declaration, so the body
 ! visitor must not assume their symbols exist.
+subroutine allocate_func_target_01()
+    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+end subroutine allocate_func_target_01
+
+function func_alloc_target_01() result(res) bind(c)
+    character(:), pointer :: res
+end function func_alloc_target_01
+
 module module_error_recovery_1
     type :: t_recovery
     contains
@@ -983,4 +991,3 @@ contains
       real :: res(size(x))
     end function foo
 end module
-
