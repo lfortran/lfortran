@@ -542,6 +542,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             new_vector:
                                 (Function
@@ -762,6 +763,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_node:
@@ -1115,6 +1117,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             toml_keyval:
                                 (Struct
@@ -1270,6 +1273,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             match_key:
@@ -1444,6 +1448,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_value:

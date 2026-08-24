@@ -200,6 +200,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             filewrite_string____1:
                                 (ExternalSymbol
@@ -352,6 +353,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    ()
                                     ()
                                 ),
                             join_path:
@@ -616,6 +618,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

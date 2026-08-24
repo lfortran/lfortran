@@ -305,7 +305,8 @@ def procedure(name, returns, dummies, body, extra_locals=None,
         f":args [{args}] "
         f":body [{' '.join(body or [])}] "
         f":return_var {return_var} :access :Public "
-        f":deterministic true :side_effect_free true :module_file nil)"
+        f":deterministic true :side_effect_free true :module_file nil "
+        f":link_name nil)"
     )
 
 
@@ -334,7 +335,8 @@ def function_symbol(name, parameter_name, kind):
         f":args [{var(PROCEDURE_SYMTAB, parameter_name)}] "
         f":body [{body}] "
         f":return_var {var(PROCEDURE_SYMTAB, name)} :access :Public "
-        f":deterministic true :side_effect_free true :module_file nil)"
+        f":deterministic true :side_effect_free true :module_file nil "
+        f":link_name nil)"
     )
 
 

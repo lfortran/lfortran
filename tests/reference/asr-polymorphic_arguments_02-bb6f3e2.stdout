@@ -227,6 +227,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             ~unlimited_polymorphic_type:
                                 (Struct

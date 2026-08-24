@@ -85,6 +85,7 @@
               true
               true
               nil
+              nil
             )
             "my_wrapper" (ExternalSymbol
               1
@@ -411,6 +412,7 @@
               false
               true
               nil
+              nil
             )
             "my_wrapper" (Function
               (SymbolTable
@@ -556,6 +558,7 @@
                     true
                     true
                     nil
+                    nil
                   )
                 }
               )
@@ -625,6 +628,7 @@
               :Public
               true
               true
+        nil
               nil
             )
           }

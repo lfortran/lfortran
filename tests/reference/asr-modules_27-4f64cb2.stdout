@@ -233,6 +233,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             get_elem_keyval:
                                 (Function
@@ -368,6 +369,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             get_elem_table:
@@ -513,6 +515,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             get_value:
@@ -702,6 +705,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             get_value_float_sp:
                                 (Function
@@ -807,6 +811,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             global_var:

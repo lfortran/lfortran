@@ -115,6 +115,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             commutative_p:
                                                 (Function
@@ -273,6 +274,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             equal:
                                                 (Function
@@ -376,6 +378,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             integer:
@@ -539,6 +542,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             commutative_p:
@@ -714,6 +718,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             equal:
                                                 (Function
@@ -825,6 +830,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             t:
@@ -992,6 +998,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             equal:
                                                 (Function
@@ -1103,6 +1110,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             t:
@@ -1328,6 +1336,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             int_plus_comm:
                                 (Function
@@ -1485,6 +1494,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             magma_r:
@@ -1654,6 +1664,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             plus_comm:
                                 (Function
@@ -1812,6 +1823,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             ~add:
                                 (CustomOperator
@@ -1934,6 +1946,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             ~eq:
@@ -2058,6 +2071,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             ~sub:
                                 (CustomOperator
@@ -2180,6 +2194,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 )
                         })

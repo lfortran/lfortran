@@ -212,6 +212,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             datetime_to_string:
                                 (Function
@@ -669,6 +670,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             new_toml_time:
                                 (Function
@@ -1044,6 +1046,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             time_to_string:
@@ -1433,6 +1436,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             toml_date:

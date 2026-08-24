@@ -179,6 +179,7 @@
                                     .true.
                                     .true.
                                     ()
+                                    ()
                                 ),
                             lt_my_type:
                                 (ExternalSymbol
@@ -304,6 +305,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             my_type:
@@ -435,6 +437,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             t:
@@ -662,6 +665,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             qs:
@@ -1061,6 +1065,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             swp:
                                                 (Function
@@ -1194,6 +1199,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             t:
@@ -1361,6 +1367,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             __asr_swp1:
                                                 (Function
@@ -1484,6 +1491,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             __asr_swp2:
@@ -1633,6 +1641,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             i:
@@ -2033,6 +2042,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    ()
                                                     ()
                                                 ),
                                             qsort_my_type:
@@ -2464,6 +2474,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             qsort_real:
                                                 (Function
@@ -2840,6 +2851,7 @@
                                                     .true.
                                                     .true.
                                                     ()
+                                                    ()
                                                 ),
                                             xi:
                                                 (Variable
@@ -3134,6 +3146,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    ()
                                 )
                         })
                     template_sort_01_m
@@ -3303,6 +3316,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    ()
                                     ()
                                 ),
                             my_type:
