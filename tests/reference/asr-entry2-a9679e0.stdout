@@ -117,7 +117,7 @@
                                         []
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
