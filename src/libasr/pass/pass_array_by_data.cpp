@@ -1482,7 +1482,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second)->m_external;
                 }
                 if( v.proc2newproc.find(sym) != v.proc2newproc.end() ) {
-                    LCOMPILERS_ASSERT(item.first == ASRUtils::symbol_name(item.second))
+                    // Record the symbol table *key*, not the symbol's name:
+                    // the two differ for a specific procedure that shares its
+                    // generic interface's name, and erasing by name would
+                    // leave the entry behind.
                     to_be_erased.push_back({item.first, sym});
                 }
                 if ( ASR::is_a<ASR::Module_t>(*item.second) ||

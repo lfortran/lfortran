@@ -3183,7 +3183,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
                 name.c_str(al),
                 final_sym_past_ext,
                 s2c(al, ASRUtils::symbol_name(owner_sym)), nullptr, 0,
-                s2c(al, ASRUtils::symbol_name(final_sym_past_ext)),
+                s2c(al, ASRUtils::symbol_table_key(final_sym_past_ext)),
                 ASR::accessType::Private
             );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));

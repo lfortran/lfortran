@@ -631,13 +631,13 @@ namespace LCompilers {
 
                 void visit_Var(const ASR::Var_t& x) {
                     if( fill_variable_dependencies && ASRUtils::symbol_name(x.m_v) != current_name ) {
-                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
+                        variable_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(x.m_v)));
                     }
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
                     if(fill_variable_dependencies){
-                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                        variable_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(x.m_name)));
                     }
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
@@ -661,13 +661,13 @@ namespace LCompilers {
                                 temp_scope = temp_scope->parent;
                             }
                             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                                function_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(x.m_name)));
                             }
                         }
 
                         if (_return_var_or_intent_out && temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
                             !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
-                            function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                            function_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(x.m_name)));
                         }
                     }
                     if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
@@ -703,7 +703,7 @@ namespace LCompilers {
                                 temp_scope = temp_scope->parent;
                             }
                             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                                function_dependencies.push_back(al, s2c(al, ASRUtils::symbol_table_key(x.m_name)));
                             }
                         }
                     }

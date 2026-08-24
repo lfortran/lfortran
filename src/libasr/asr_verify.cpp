@@ -92,7 +92,11 @@ public:
     // does not actually contain it.
     bool symtab_in_scope(const SymbolTable *symtab, const ASR::symbol_t *sym) {
         unsigned int symtab_ID = symbol_parent_symtab(sym)->counter;
-        char *sym_name = symbol_name(sym);
+        // Look the symbol up by the key it is stored under, not by its name:
+        // the two differ for a specific procedure that shares its generic
+        // interface's name, where looking up by name finds the
+        // GenericProcedure instead and this check would wrongly fail.
+        std::string sym_name = ASRUtils::symbol_table_key(sym);
         const SymbolTable *s = symtab;
         while (s != nullptr) {
             if (s->counter == symtab_ID) {
@@ -1430,9 +1434,17 @@ public:
                 "ExternalSymbol::m_external cannot be nullptr");
             require(!is_a<ExternalSymbol_t>(*x.m_external),
                 "ExternalSymbol::m_external cannot be an ExternalSymbol");
-            char *orig_name = symbol_name(x.m_external);
-            require(std::string(x.m_original_name) == std::string(orig_name),
-                "ExternalSymbol::m_original_name must match external->m_name");
+            // `m_original_name` is the key under which `m_external` is stored
+            // in its defining scope -- that is what fix_external_symbols()
+            // looks up when a modfile is loaded. For nearly every symbol that
+            // key is also the symbol's name, but it need not be: a specific
+            // procedure that shares its generic interface's name keeps the
+            // plain name and is keyed under a disambiguated key instead.
+            SymbolTable *orig_symtab = ASRUtils::symbol_parent_symtab(x.m_external);
+            require(orig_symtab != nullptr &&
+                    orig_symtab->get_symbol(x.m_original_name) == x.m_external,
+                "ExternalSymbol::m_original_name must be the key of m_external "
+                "in its defining symbol table");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
@@ -2320,7 +2332,7 @@ public:
                 temp_scope = temp_scope->parent;
             }
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+                function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
             }
         }
 
@@ -2447,13 +2459,13 @@ public:
                 temp_scope = temp_scope->parent;
             }
             if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+                function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
             }
         }
         if (_return_var_or_intent_out  && _processing_dims &&
             temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() &&
             !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
-            function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
+            function_dependencies.push_back(ASRUtils::symbol_table_key(x.m_name));
         }
 
         if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {

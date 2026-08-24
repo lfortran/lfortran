@@ -8277,7 +8277,7 @@ public:
                             /* a_name */ cname,
                             final_sym,
                             ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
-                            nullptr, 0, ASRUtils::symbol_name(final_sym),
+                            nullptr, 0, s2c(al, ASRUtils::symbol_table_key(final_sym)),
                             ASR::accessType::Private);
                         final_sym = ASR::down_cast<ASR::symbol_t>(sub);
                         current_scope->add_symbol(local_sym, final_sym);

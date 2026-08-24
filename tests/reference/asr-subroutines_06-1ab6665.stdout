@@ -41,7 +41,7 @@
                                 (ExternalSymbol
                                     7
                                     error_handler~genericprocedure
-                                    2 error_handler~genericprocedure
+                                    2 error_handler
                                     subroutines_06_bitset
                                     []
                                     error_handler~genericprocedure
@@ -241,7 +241,7 @@
                                 (GenericProcedure
                                     2
                                     error_handler
-                                    [2 error_handler~genericprocedure]
+                                    [2 error_handler]
                                     Public
                                 ),
                             error_handler~genericprocedure:
@@ -370,7 +370,7 @@
                                                     []
                                                 )
                                         })
-                                    error_handler~genericprocedure
+                                    error_handler
                                     (FunctionType
                                         [(String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
