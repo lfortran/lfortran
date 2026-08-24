@@ -1,0 +1,34 @@
+#include <stdint.h>
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, int __loop_end_0) {
+    int __do_loop_end;
+    int __flat_idx;
+    float b0;
+    float b1;
+    float b2;
+    const float cs[5] = {1.00000000e+00, 5.00000000e-01, 2.50000000e-01, 1.25000000e-01, 6.25000000e-02};
+    int i;
+    int j;
+    const int n = 16;
+    const int nc = 5;
+    float twox;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    b0 = 0.0f;
+    b1 = 0.0f;
+    b2 = 0.0f;
+    twox = (2.0f * x[(i - 1)]);
+    __do_loop_end = nc;
+    j = (1 - 1);
+    while (((j + 1) <= __do_loop_end)) {
+        j = (j + 1);
+        b2 = b1;
+        b1 = b0;
+        b0 = (((twox * b1) - b2) + cs[(((nc - j) + 1) - 1)]);
+    }
+    y[(i - 1)] = (0.5f * (b0 - b2));
+}
+
