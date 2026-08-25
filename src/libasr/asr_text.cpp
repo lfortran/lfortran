@@ -19,51 +19,11 @@
 #include <libasr/asr_text_parser.h>
 #include <libasr/asr_text_visitor.h>
 #include <libasr/asr_utils.h>
+#include <libasr/string_utils.h>
 
 namespace LCompilers {
 
 namespace {
-
-// Returns true if `value` is well-formed UTF-8: the encoding the text format
-// is defined in. Overlong forms, surrogates and out-of-range code points are
-// rejected, so a value that survives this check can be written as a string.
-bool is_valid_utf8(const char *value, size_t size) {
-    size_t i = 0;
-    while (i < size) {
-        const unsigned char c = static_cast<unsigned char>(value[i]);
-        size_t length;
-        uint32_t code_point;
-        if (c < 0x80) {
-            i++;
-            continue;
-        } else if ((c & 0xe0) == 0xc0) {
-            length = 2;
-            code_point = c & 0x1f;
-        } else if ((c & 0xf0) == 0xe0) {
-            length = 3;
-            code_point = c & 0x0f;
-        } else if ((c & 0xf8) == 0xf0) {
-            length = 4;
-            code_point = c & 0x07;
-        } else {
-            return false;
-        }
-        if (i + length > size) return false;
-        for (size_t k = 1; k < length; k++) {
-            const unsigned char cont =
-                static_cast<unsigned char>(value[i + k]);
-            if ((cont & 0xc0) != 0x80) return false;
-            code_point = (code_point << 6) | (cont & 0x3f);
-        }
-        if (length == 2 && code_point < 0x80) return false;
-        if (length == 3 && code_point < 0x800) return false;
-        if (length == 4 && code_point < 0x10000) return false;
-        if (code_point > 0x10ffff) return false;
-        if (code_point >= 0xd800 && code_point <= 0xdfff) return false;
-        i += length;
-    }
-    return true;
-}
 
 std::string byte_hex(const uint8_t *bytes, size_t size) {
     static const char digits[] = "0123456789abcdef";
@@ -129,7 +89,7 @@ class ASRTextWriter
     // byte into a two byte character. Such values are written as #asr/bytes
     // instead, which keeps the document valid UTF-8 and byte exact.
     void write_escaped_string(const char *value, size_t size) {
-        if (!is_valid_utf8(value, size)) {
+        if (!LCompilers::is_valid_utf8(value, size)) {
             write_bytes(value, size);
             return;
         }

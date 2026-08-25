@@ -3121,6 +3121,34 @@ static inline bool is_character(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+// The Fortran characters of a compile time string value: one entry per
+// character. A kind 1 value stores one byte per character, while a kind > 1
+// value stores UTF-8 in `StringConstant::m_s`, so one entry can span several
+// bytes.
+static inline std::vector<std::string> string_value_characters(
+        const char* s, int64_t kind) {
+    std::string str(s);
+    if (kind == 1) {
+        std::vector<std::string> characters;
+        characters.reserve(str.size());
+        for (char c : str) characters.push_back(std::string(1, c));
+        return characters;
+    }
+    return utf8_split(str);
+}
+
+// The Unicode code point of the first character of a compile time string
+// value, i.e. the result of ICHAR/IACHAR applied to it. A kind 1 value yields
+// the byte, a kind > 1 value the code point its UTF-8 encodes.
+static inline int64_t string_first_code_point(ASR::StringConstant_t* s) {
+    int64_t kind = extract_kind_from_ttype_t(s->m_type);
+    if (s->m_s[0] == '\0') return 0;
+    if (kind == 1) return (int64_t)(unsigned char)s->m_s[0];
+    std::vector<uint32_t> code_points = utf8_decode(std::string(s->m_s));
+    LCOMPILERS_ASSERT(code_points.size() >= 1);
+    return (int64_t)code_points[0];
+}
+
 static inline bool is_complex(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Complex_t>(
         *type_get_past_array(

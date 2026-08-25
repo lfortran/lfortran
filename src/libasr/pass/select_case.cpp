@@ -153,7 +153,8 @@ Vec<ASR::stmt_t*> replace_selectcase(Allocator &al, const ASR::Select_t &select_
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
         if (ASRUtils::is_character(*a_type)) {
             a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(a_type), nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
         }
@@ -250,7 +251,8 @@ Vec<ASR::stmt_t*> replace_selectcase_with_fall_through(
         ASR::ttype_t* a_type = ASRUtils::expr_type(a);
         if (ASRUtils::is_character(*a_type)) {
             a_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(a_type), nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
         }
