@@ -12543,7 +12543,8 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
 
     internal_free(s);
     if (dest_kind == 4) internal_free(final_s);
-
+    if (allocated_str) internal_free(allocated_str);
+    if (allocated_end) internal_free(allocated_end);
 
     va_end(args);
     if(iostat != NULL) *iostat = 0;
