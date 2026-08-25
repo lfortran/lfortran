@@ -228,6 +228,20 @@ namespace LCompilers {
                 }
             }
             array_key += "." + std::to_string(n_dims);
+            // The descriptor layout is fully determined by the element type and
+            // the rank, but two ASR types can share a type code and still lower
+            // to different element types. A `DescriptorArray` of strings has
+            // `%string_descriptor` elements, while a bind(C)
+            // `StringArraySinglePointer` of strings has `i8*` elements, and both
+            // encode as "strdesc". Disambiguate by the element type so such
+            // arrays never share a descriptor struct.
+            auto cached = tkr2array.find(array_key);
+            if( cached != tkr2array.end() && cached->second.second != el_type ) {
+                std::string el_type_str;
+                llvm::raw_string_ostream el_type_os(el_type_str);
+                el_type->print(el_type_os);
+                array_key += "." + el_type_os.str();
+            }
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();

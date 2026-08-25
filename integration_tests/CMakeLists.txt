@@ -2036,6 +2036,7 @@ RUN(NAME bindc_52 LABELS gfortran llvm)
 # Extension: BIND(C) character(len>1); GFortran rejects, so llvm only
 RUN(NAME bindc_53 LABELS llvm)
 RUN(NAME bindc_54 LABELS gfortran llvm)
+RUN(NAME bindc_55 LABELS gfortran llvm)
 RUN(NAME bindc_iso_fb_01 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_01c.c)
 RUN(NAME bindc_iso_fb_02 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_02c.c)
 RUN(NAME bindc_iso_fb_03 LABELS gfortran llvm flang EXTRAFILES bindc_iso_fb_03c.c)
