@@ -18990,16 +18990,25 @@ public:
         constexpr int32_t kInt64 = 3;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
+        constexpr int32_t kWideChar = 8;
 
         // Scalar arg: prepend is_descriptor_array=0 before type_code
         llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         if (ASR::is_a<ASR::String_t>(*val_type)) {
+            // A destination of character kind > 1 uses its own type code and
+            // carries the kind, so the runtime knows the field has to be
+            // decoded into code units.
+            int64_t char_kind = ASR::down_cast<ASR::String_t>(val_type)->m_kind;
             args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kChar)));
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
+                char_kind > 1 ? kWideChar : kChar)));
             auto [str_data, str_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(val_type), elem_ptr, true);
             args.push_back(str_data);
             args.push_back(str_len);
+            if (char_kind > 1) {
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, char_kind)));
+            }
         } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
             args.push_back(is_descriptor_array_false);
             args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
@@ -21028,7 +21037,8 @@ public:
                     end_data = LCompilers::create_global_string_ptr(context, *module, *builder, "\n");
                     end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 }
-                printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
+                llvm::Value* str_kind = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                printf(context, *module, *builder, { fmt_ptr, str_data, str_len, str_kind, end_data, end_len });
             } else if (x.n_values == 1){
                 handle_print(x.m_values[0], x.m_end);
             } else {
@@ -21058,6 +21068,7 @@ public:
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_allocatable
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_deferred
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_array_unit
+            args_type.push_back(llvm::Type::getInt32Ty(context)); // char_kind
             args_type.push_back(llvm::Type::getInt64Ty(context)); // array_size
             args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo()); //len
             args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); //iostat
@@ -21432,14 +21443,25 @@ public:
                 }
                 continue;
             }
+            ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
+            bool value_is_wide_char = x.m_is_formatted && ASRUtils::is_character(*t) &&
+                ASRUtils::extract_kind_from_ttype_t(t) > 1;
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],
                 x.base.base.loc); // return of visited expression `m_values[i]` stored in `tmp`
+            if (value_is_wide_char) {
+                // `%S` takes (data, character count, character kind): the
+                // runtime transcodes the code units to UTF-8 on the way out.
+                fmt.back() = "%S";
+            }
 
             // Push the length of the string to args
-            ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
             if (x.m_is_formatted && ASRUtils::is_character(*t)) {
                 llvm::Value *str_len = llvm_utils->get_string_length(ASRUtils::get_string_type(t), tmp);
                 args.push_back(str_len);
+                if (value_is_wide_char) {
+                    args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
+                        ASRUtils::extract_kind_from_ttype_t(t))));
+                }
             }
         }
         if (!x.m_is_formatted) {  // give -1 argument for end of arguments
@@ -21474,9 +21496,15 @@ public:
                 ASRUtils::is_deferredLength_string(ASRUtils::expr_type(x.m_unit))));
             llvm::Value* is_array_unit = llvm::ConstantInt::get(context, llvm::APInt(8,
                 is_string_array_unit));
+            // The internal file's character kind: the formatted record is
+            // produced as UTF-8 bytes, so a kind 4 target needs it decoded
+            // back into code units.
+            llvm::Value* char_kind = llvm::ConstantInt::get(context, llvm::APInt(32,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_unit))));
             printf_args.push_back(is_allocatable);
             printf_args.push_back(is_deferred);
             printf_args.push_back(is_array_unit);
+            printf_args.push_back(char_kind);
             printf_args.push_back(string_array_size);
             printf_args.push_back(string_len);
         }
@@ -21519,7 +21547,7 @@ public:
         ( ) --> Struct
         I   --> Integer
         R   --> Real
-        S-PhysicalType-len? --> Character [S-DESC-10, S-CCHAR-1, S-DESC]
+        S-PhysicalType-K<kind>-len? --> Character [S-DESC-K1-10, S-CCHAR-K1-1, S-DESC-K4]
         L   --> Logical
         { } --> Struct for COMPLEX
         The serialization corresponds to how these arguments are represented in LLVM backend;
@@ -21546,6 +21574,10 @@ public:
             if(str_type->m_physical_type == ASR::DescriptorString) res += "DESC";
             else if(str_type->m_physical_type == ASR::CChar) res +="CCHAR";
             else throw LCompilersException("Unhandled string physical type");
+            // The character kind tells the runtime how many bytes one character
+            // occupies, so that it can transcode a kind 4 value to UTF-8 and
+            // count field widths in characters rather than bytes.
+            res += "-K" + std::to_string(str_type->m_kind);
             int len;
             if(ASRUtils::extract_value(str_type->m_len, len)){res += "-" + std::to_string(len);}
         } else if (ASR::is_a<ASR::Complex_t>(*type)){
@@ -21753,11 +21785,17 @@ public:
         }
 
         std::string fmt_str;
+        // The character kind of the value being written. `main_len` counts
+        // characters, so the runtime needs the kind to know how many bytes
+        // that is and whether to transcode to UTF-8 on the way out.
+        llvm::Value* main_kind = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
 
         if (ASRUtils::is_character(*t)) {
             // --- String path ---
             std::tie(main_data, main_len) = get_string_data_and_length(arg);
             main_len = builder->CreateTrunc(main_len, llvm::Type::getInt32Ty(context));
+            main_kind = llvm::ConstantInt::get(context, llvm::APInt(32,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(t))));
             fmt_str = "%s";
         } else {
             // --- Non-string path ---
@@ -21780,7 +21818,7 @@ public:
         }
         fmt_str += "%s";
         llvm::Value* fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, fmt_str);
-        printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
+        printf(context, *module, *builder, { fmt_ptr, main_data, main_len, main_kind, end_data, end_len });
         llvm_utils->stringFormat_return.free();
     }
 

@@ -4777,6 +4777,8 @@ RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
 RUN(NAME achar_kind_01 LABELS gfortran llvm)
 RUN(NAME char4_string_intrinsics_01 LABELS gfortran llvm)
+RUN(NAME char4_io_01 LABELS gfortran llvm)
+RUN(NAME char4_io_02 LABELS gfortran llvm)
 RUN(NAME char4_string_intrinsics_02 LABELS gfortran llvm)
 # GFortran treats each source byte of a kind 4 literal as one character,
 # LFortran (like LLVM Flang) decodes the UTF-8 source into code points.
