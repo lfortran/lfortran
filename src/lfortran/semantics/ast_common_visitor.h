@@ -918,6 +918,18 @@ inline static void set_intrinsic_return_kind(Allocator& al, const Location& loc,
     }
 }
 
+inline static std::string cmpop_to_str(ASR::cmpopType op) {
+    switch (op) {
+        case (ASR::cmpopType::Eq): return "==";
+        case (ASR::cmpopType::NotEq): return "/=";
+        case (ASR::cmpopType::Lt): return "<";
+        case (ASR::cmpopType::LtE): return "<=";
+        case (ASR::cmpopType::Gt): return ">";
+        case (ASR::cmpopType::GtE): return ">=";
+        default: return "";
+    }
+}
+
 inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
@@ -1072,6 +1084,20 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     }
 
     if( overloaded == nullptr ) {
+        if (ASRUtils::is_character(*left_type2) && ASRUtils::is_character(*right_type2)) {
+            int64_t left_kind = ASRUtils::extract_kind_from_ttype_t(left_type2);
+            int64_t right_kind = ASRUtils::extract_kind_from_ttype_t(right_type2);
+            if (left_kind != right_kind) {
+                diag.add(diag::Diagnostic(
+                    "operands of comparison operator '" + cmpop_to_str(asr_op) +
+                    "' must be character with the same kind, found character(" +
+                    std::to_string(left_kind) + ") and character(" +
+                    std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right), left, right)) {
             diag.add(diag::Diagnostic(
@@ -19532,6 +19558,16 @@ public:
 
         if( ASR::is_a<ASR::String_t>(*left_type) &&
             ASR::is_a<ASR::String_t>(*right_type) ) { // CreateIntrinisc `stringConcat`
+            int64_t left_kind = ASR::down_cast<ASR::String_t>(left_type)->m_kind;
+            int64_t right_kind = ASR::down_cast<ASR::String_t>(right_type)->m_kind;
+            if (left_kind != right_kind) {
+                diag.add(Diagnostic(
+                    "operands of // must be character with the same kind, "
+                    "found character(" + std::to_string(left_kind) + ") and character("
+                    + std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             Vec<ASR::expr_t*> v; v.reserve(al, 1);
             v.push_back(al, left);
             v.push_back(al, right);
@@ -19788,6 +19824,12 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (!ASRUtils::is_supported_character_kind(kind)) {
+            diag.add(Diagnostic("kind " + std::to_string(kind) +
+                " is not supported for character, only 1 and 4 are",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
         }
         if (kind > 1) {
             s_len = (int)utf8_codepoint_count(x.m_s);
@@ -20949,6 +20991,14 @@ public:
                 this->visit_expr(*kind_item->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 str->m_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, kind_item->loc, diag);
+                if (!ASRUtils::is_supported_character_kind(str->m_kind)) {
+                    diag.add(diag::Diagnostic(
+                        "kind " + std::to_string(str->m_kind) +
+                        " is not supported for character, only 1 and 4 are",
+                        Level::Error, Stage::Semantic, {
+                        diag::Label("", {kind_item->loc})}));
+                    throw SemanticAbort();
+                }
                 str->m_physical_type = ASR::DescriptorString;
             }
         } else {

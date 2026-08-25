@@ -3149,6 +3149,13 @@ static inline int64_t string_first_code_point(ASR::StringConstant_t* s) {
     return (int64_t)code_points[0];
 }
 
+// The character kinds the compiler supports: 1 (one byte per character,
+// ASCII / the default kind) and 4 (four bytes per character, ISO 10646 /
+// UCS-4). This matches GFortran; LLVM Flang additionally supports 2 (UCS-2).
+static inline bool is_supported_character_kind(int64_t kind) {
+    return kind == 1 || kind == 4;
+}
+
 static inline bool is_complex(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Complex_t>(
         *type_get_past_array(

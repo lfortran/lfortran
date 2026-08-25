@@ -2998,6 +2998,9 @@ public:
     }
 
     void visit_String(const String_t &x){
+/*Check the character kind*/
+        require(ASRUtils::is_supported_character_kind(x.m_kind),
+            "String kind must be 1 or 4, found " + std::to_string(x.m_kind));
 /*General Check on the length*/ 
         if(x.m_len){
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
