@@ -3370,6 +3370,12 @@ filename = "errors/use_associated_redeclaration_1.f90"
 asr = true
 
 [[test]]
+filename = "errors/char4_backend_c.f90"
+c = true
+cpp = true
+wat = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
