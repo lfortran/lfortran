@@ -5948,6 +5948,9 @@ namespace StringConcat {
             require_impl(   is_character(*arg0) && is_character(*arg1),
                             "Unexpected arg types. StringConcat expects (char, char)",
                             loc, diag);
+            require_impl(   extract_kind_from_ttype_t(arg0) == extract_kind_from_ttype_t(arg1),
+                            "StringConcat expects both operands to have the same character kind",
+                            loc, diag);
         } else {
             require_impl(   false,
                             "Unexpected number of args, StringConcat takes 2 arguments, found "+ std::to_string(n_args),
