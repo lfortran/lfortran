@@ -113,6 +113,7 @@ class ASRToLLVMVisitor;
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
                     llvm::Type::getInt32Ty(context),                               // str_len
+                    llvm::Type::getInt32Ty(context),                               // str_kind
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
                     llvm::Type::getInt32Ty(context)                                // end_len
                 },
