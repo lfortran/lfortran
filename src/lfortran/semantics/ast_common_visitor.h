@@ -9986,11 +9986,22 @@ public:
                     nullptr, 0,
                     ASR::array_physical_typeType::AssumedRankArray));
             } else {
-                type = ASRUtils::make_Array_t_util(
-                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                ASR::array_physical_typeType array_physical_type =
                     dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                     ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
-                                    ASR::array_physical_typeType::DescriptorArray,
+                                    ASR::array_physical_typeType::DescriptorArray;
+                // A StringArraySinglePointer array is one flat character
+                // buffer, so its elements are plain C characters rather than
+                // string descriptors. Keep the two physical types consistent
+                // here, where the array one is decided: a mismatched pair
+                // leaves the representation of the array ambiguous, and any
+                // consumer would have to pick a winner on its own.
+                if (array_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
+                    str->m_physical_type = ASR::CChar;
+                }
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                    array_physical_type,
                     dims.size() > 0 ? true : false);
             }
 
@@ -20844,6 +20855,29 @@ public:
         visit_NameUtil(x.m_member, x.n_member, x.m_id, x.base.base.loc, x.n_member);
     }
 
+    // Returns true if the kind expression names `c_char` from the intrinsic
+    // `iso_c_binding` module. The name is resolved through the symbol table, so
+    // any spelling (`C_char`, `C_CHAR`) and a renamed import
+    // (`use iso_c_binding, only: my_char => c_char`) are all recognised.
+    bool is_iso_c_binding_c_char(AST::expr_t* kind_value) {
+        if (!AST::is_a<AST::Name_t>(*kind_value)) {
+            return false;
+        }
+        std::string name = to_lower(AST::down_cast<AST::Name_t>(kind_value)->m_id);
+        ASR::symbol_t* kind_sym = current_scope->resolve_symbol(name);
+        if (!kind_sym) {
+            return false;
+        }
+        ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(kind_sym);
+        if (!orig_sym || to_lower(ASRUtils::symbol_name(orig_sym)) != "c_char") {
+            return false;
+        }
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(orig_sym);
+        return owner && ASR::is_a<ASR::Module_t>(*owner) &&
+            startswith(to_lower(ASRUtils::symbol_name(owner)),
+                "lfortran_intrinsic_iso_c_binding");
+    }
+
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
     AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
@@ -20861,8 +20895,7 @@ public:
             }
         }
         if (kind_item && kind_item->m_value) {
-            if (AST::is_a<AST::Name_t>(*kind_item->m_value) && 
-                std::string(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char") {
+            if (is_iso_c_binding_c_char(kind_item->m_value)) {
                 if ((is_argument || is_return_var) && abi == ASR::BindC) {
                     str->m_physical_type = ASR::CChar;
                 } else {
