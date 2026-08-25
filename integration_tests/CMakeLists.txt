@@ -1027,6 +1027,7 @@ RUN(NAME select_rank_37 LABELS gfortran llvm)
 RUN(NAME select_rank_38 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_rank_39 LABELS gfortran llvm)
 RUN(NAME select_rank_40 LABELS gfortran llvm)
+RUN(NAME select_rank_41 LABELS gfortran llvm)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

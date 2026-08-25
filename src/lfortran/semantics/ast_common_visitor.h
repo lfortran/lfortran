@@ -18992,9 +18992,11 @@ public:
             throw SemanticAbort();
         }
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Arithmetic", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Arithmetic", x.base.base.loc);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
 
         if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
@@ -19605,33 +19607,63 @@ public:
 
     void visit_UnaryOp(const AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
-        ASR::expr_t *operand = ASRUtils::EXPR(tmp);
+        ASR::expr_t *operand = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(operand, "Arithmetic", x.base.base.loc);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
             current_scope, current_function_dependencies,
             current_module_dependencies, diag);
     }
 
+    // Inside a `select rank` block the selector is known to have a specific
+    // rank, so a reference to it takes part in expressions as a descriptor
+    // array of that rank rather than as an assumed rank array. `expr` is
+    // returned unchanged when it does not reference such a selector.
+    ASR::expr_t* cast_assumed_rank_selector(ASR::expr_t* expr) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr)) ||
+                !ASR::is_a<ASR::Var_t>(*expr)) {
+            return expr;
+        }
+        std::string array_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        auto it = assumed_rank_arrays.find(array_name);
+        if (it == assumed_rank_arrays.end()) {
+            return expr;
+        }
+        // `create_array_type_with_empty_dims` returns the element type itself
+        // for `rank(0)`, i.e. a scalar selector.
+        ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(al,
+            it->second, ASRUtils::extract_type(ASRUtils::expr_type(expr)));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+            expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+    }
+
+    // An assumed rank array that is not the selector of an enclosing
+    // `select rank` block has no known rank, so it cannot take part in an
+    // operation. `op_kind` names the kind of operation, e.g. "Comparison".
+    void ensure_not_assumed_rank(ASR::expr_t* expr, const std::string& op_kind,
+            const Location& loc) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return;
+        }
+        std::string array_name = "";
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            array_name = " ('" + std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "')";
+        }
+        diag.add(Diagnostic(op_kind + " operations are not allowed on "
+            "assumed-rank arrays" + array_name,
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_Compare(const AST::Compare_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
-        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(left))) {
-            std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(left)->m_v);
-            if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
-                diag.add(Diagnostic("Comparison operations are not allowed on assumed-rank arrays ('" + array_name + "')",
-                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            } else {
-                size_t rank = assumed_rank_arrays[array_name];
-                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, 
-                    rank, ASRUtils::extract_type(ASRUtils::expr_type(left)));
-                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                    left->base.loc, left, ASR::array_physical_typeType::AssumedRankArray, 
-                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
-                left = cast_expr;
-            }
-        }
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Comparison", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Comparison", x.base.base.loc);
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
