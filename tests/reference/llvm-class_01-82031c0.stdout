@@ -11,7 +11,7 @@ target datalayout = "..."
 @_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_VTable_circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*)* @_copy_class_circle1_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle1_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle1_for_UPoly to i8*), i8* bitcast (float (%class_circle1.circle.3_class*)* @__module_class_circle1_circle_area to i8*), i8* bitcast (void (%class_circle1.circle.3_class*)* @__module_class_circle1_circle_print to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [25 x i8] c"S-DESC-12,R4,S-DESC-8,R4\00", align 1
+@serialization_info = private unnamed_addr constant [29 x i8] c"S-1-DESC-12,R4,S-1-DESC-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 12 }>
 @string_const_data.1 = private constant [8 x i8] c" area = "
@@ -57,7 +57,7 @@ define void @__module_class_circle1_circle_print(%class_circle1.circle.3_class* 
   %10 = load float, float* %9, align 4
   %11 = alloca float, align 4
   store float %10, float* %11, align 4
-  %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([25 x i8], [25 x i8]* @serialization_info, i32 0, i32 0), i64* %6, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %11, %string_descriptor* @string_const.2, float* %area)
+  %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([29 x i8], [29 x i8]* @serialization_info, i32 0, i32 0), i64* %6, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %11, %string_descriptor* @string_const.2, float* %area)
   %13 = load i64, i64* %6, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %12, i8** %14, align 8

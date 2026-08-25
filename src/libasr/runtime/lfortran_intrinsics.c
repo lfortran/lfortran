@@ -614,6 +614,33 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
+// Helper to encode a single UCS4 codepoint to UTF-8.
+// Returns the number of bytes written to `out_buf`.
+static inline int encode_ucs4_to_utf8(uint32_t codepoint, char* out_buf) {
+    if (codepoint <= 0x7F) {
+        out_buf[0] = (char)codepoint;
+        return 1;
+    } else if (codepoint <= 0x7FF) {
+        out_buf[0] = (char)(0xC0 | (codepoint >> 6));
+        out_buf[1] = (char)(0x80 | (codepoint & 0x3F));
+        return 2;
+    } else if (codepoint <= 0xFFFF) {
+        out_buf[0] = (char)(0xE0 | (codepoint >> 12));
+        out_buf[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+        out_buf[2] = (char)(0x80 | (codepoint & 0x3F));
+        return 3;
+    } else if (codepoint <= 0x10FFFF) {
+        out_buf[0] = (char)(0xF0 | (codepoint >> 18));
+        out_buf[1] = (char)(0x80 | ((codepoint >> 12) & 0x3F));
+        out_buf[2] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+        out_buf[3] = (char)(0x80 | (codepoint & 0x3F));
+        return 4;
+    }
+    
+    fprintf(stderr, "Runtime Error: Invalid UCS4 codepoint (0x%X) encountered during UTF-8 conversion.\n", codepoint);
+    exit(1);
+}
+
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len)
 {
     if (str == NULL) {
@@ -629,10 +656,68 @@ LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_
         exit(1);
     }
 
+    int str_kind = 1;
+    int end_kind = 1;
+    const char *p = format;
+    if (p != NULL) {
+        if (strncmp(p, "%S-", 3) == 0) {
+            p += 3;
+            str_kind = 0;
+            while (isdigit(*p)) {
+                str_kind = str_kind * 10 + (*p - '0');
+                p++;
+            }
+        } else if (strncmp(p, "%s", 2) == 0) {
+            str_kind = 1;
+            p += 2;
+        }
+        
+        if (strncmp(p, "%S-", 3) == 0) {
+            p += 3;
+            end_kind = 0;
+            while (isdigit(*p)) {
+                end_kind = end_kind * 10 + (*p - '0');
+                p++;
+            }
+        } else if (strncmp(p, "%s", 2) == 0) {
+            end_kind = 1;
+            p += 2;
+        }
+    }
+
+    char *allocated_str = NULL;
+    if (str_kind == 4) {
+        uint32_t* ucs4_ptr = (uint32_t*)str;
+        allocated_str = (char*)internal_malloc(str_len * 4 + 1);
+        int64_t bytes = 0;
+        for (int64_t i = 0; i < str_len; i++) {
+            bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_str + bytes);
+        }
+        allocated_str[bytes] = '\0';
+        str = (fchar*)allocated_str;
+        str_len = bytes;
+    }
+
+    char *allocated_end = NULL;
+    if (end != NULL && end_kind == 4) {
+        uint32_t* ucs4_ptr = (uint32_t*)end;
+        allocated_end = (char*)internal_malloc(end_len * 4 + 1);
+        int64_t bytes = 0;
+        for (int64_t i = 0; i < end_len; i++) {
+            bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_end + bytes);
+        }
+        allocated_end[bytes] = '\0';
+        end = (fchar*)allocated_end;
+        end_len = bytes;
+    }
+
     // Printing without depending on null termination:
     fwrite((char*)str, sizeof(char), str_len, stdout);
     fwrite((char*)end, sizeof(char), end_len, stdout);
     fflush(stdout);
+
+    if (allocated_str) internal_free(allocated_str);
+    if (allocated_end) internal_free(allocated_end);
 }
 
 char* substring(const char* str, int start, int end) {
@@ -2421,6 +2506,7 @@ typedef struct serialization_info{
         void* current_arg; // holds pointer to the arg being printed (Scalar or Vector) 
         bool is_complex;
         int64_t current_string_len; // Holds string length 'If Exist'
+        int32_t current_string_kind; // Holds string kind (1 for default, 4 for UCS4, etc.)
     } current_arg_info;
     struct runtime_sizes_lengths{ // Passed array sizes or string legnths.
         int64_t* ptr;
@@ -2464,12 +2550,27 @@ Primitive_Types get_string_primitive_type(Serialization_Info* s_info){
                 s_info->serialization_string);
         exit(1);
     }
+    int32_t kind = 0;
+    while(isdigit(s_info->serialization_string[s_info->current_stop])){
+        kind = kind * 10 + (s_info->serialization_string[s_info->current_stop++] - '0');
+    }
+    // Default to 1 if no kind is provided (for backward compatibility if needed)
+    if(kind == 0) kind = 1;
+    s_info->current_arg_info.current_string_kind = kind;
+
+    if(s_info->serialization_string[s_info->current_stop++] != '-') {
+        fprintf(stderr, "Runtime - compiler internal error"
+            " : Expected '-' after string kind in serialization --> %s\n",
+                s_info->serialization_string);
+        exit(1);
+    }
+
     if(s_info->serialization_string[s_info->current_stop++] == 'D'){
         bool DESC = 
             s_info->serialization_string[s_info->current_stop++] == 'E' &&
             s_info->serialization_string[s_info->current_stop++] == 'S' && 
             s_info->serialization_string[s_info->current_stop++] == 'C';
-        if(!DESC){fprintf(stderr, "%s", "ERROR: string serializatino\n");exit(1);}
+        if(!DESC){fprintf(stderr, "%s", "ERROR: string serialization\n");exit(1);}
         return STRING_DESCRIPTOR_TYPE;
     } else if (s_info->serialization_string[s_info->current_stop++] == 'C'){
         bool CCHAR = 
@@ -2477,7 +2578,7 @@ Primitive_Types get_string_primitive_type(Serialization_Info* s_info){
             s_info->serialization_string[s_info->current_stop++] == 'H' && 
             s_info->serialization_string[s_info->current_stop++] == 'A' &&
             s_info->serialization_string[s_info->current_stop++] == 'R';
-        if(!CCHAR){fprintf(stderr, "%s", "ERROR: string serializatino\n");exit(1);}
+        if(!CCHAR){fprintf(stderr, "%s", "ERROR: string serialization\n");exit(1);}
         return CHAR_PTR_TYPE;
     } else {
         fprintf(stderr, "RunTime - compiler internal error"
@@ -2952,16 +3053,27 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
         case STRING_DESCRIPTOR_TYPE:{
             if(array_of_string_special_case(s_info)){fprintf(stderr,"ERROR : implement this\n");exit(1);}
             char* char_ptr = *(char**)arg;
-                if(char_ptr == NULL){
-                    sprintf(result, "%s", " ");
+            if(char_ptr == NULL){
+                sprintf(result, "%s", " ");
+                return 1;
+            } else {
+                int32_t kind = s_info->current_arg_info.current_string_kind;
+                int64_t char_len = s_info->current_arg_info.current_string_len;
+                if (kind == 4) {
+                    uint32_t* ucs4_ptr = (uint32_t*)char_ptr;
+                    int64_t bytes_written = 0;
+                    for (int64_t i = 0; i < char_len; i++) {
+                        bytes_written += encode_ucs4_to_utf8(ucs4_ptr[i], result + bytes_written);
+                    }
+                    result[bytes_written] = '\0';
+                    return bytes_written;
                 } else {
-                    memcpy(result,
-                        char_ptr,
-                        s_info->current_arg_info.current_string_len);
-                    *(result + s_info->current_arg_info.current_string_len) = '\0';
-                    return s_info->current_arg_info.current_string_len;
+                    memcpy(result, char_ptr, char_len);
+                    *(result + char_len) = '\0';
+                    return char_len;
                 }
-                break;
+            }
+            break;
         }
         case CPTR_VOID_PTR_TYPE:
             sprintf(result, "%p",*(void**)arg);
@@ -3049,7 +3161,8 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
         int size_to_allocate;
         if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
-            size_to_allocate = (s_info->current_arg_info.current_string_len
+            int multiplier = (s_info->current_arg_info.current_string_kind == 4) ? 4 : 1;
+            size_to_allocate = (s_info->current_arg_info.current_string_len * multiplier
                                  + default_spacing_len + 1) * sizeof(char);
         } else {
             size_to_allocate = (60 + default_spacing_len) * sizeof(char);
@@ -3514,25 +3627,47 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     }
                     char* arg = *(char**)s_info.current_arg_info.current_arg;
                     if (arg == NULL) continue;
+                    
+                    int32_t kind = s_info.current_arg_info.current_string_kind;
+                    int64_t char_len = s_info.current_arg_info.current_string_len;
+                    int64_t utf8_len = 0;
+                    char* utf8_arg = arg;
+                    bool should_free_utf8 = false;
+                    
+                    if (kind == 4) {
+                        uint32_t* ucs4_ptr = (uint32_t*)arg;
+                        utf8_arg = (char*)internal_malloc(char_len * 4 + 1);
+                        for (int64_t i = 0; i < char_len; i++) {
+                            utf8_len += encode_ucs4_to_utf8(ucs4_ptr[i], utf8_arg + utf8_len);
+                        }
+                        utf8_arg[utf8_len] = '\0';
+                        should_free_utf8 = true;
+                    } else {
+                        utf8_len = char_len;
+                    }
+
                     if (strlen(value) == 1) {
                         // Simple 'A' format - use full string length, preserve embedded nulls
-                        result = write_to_result_at_pos(al, result, &result_extent, result_len, arg, s_info.current_arg_info.current_string_len);
-                        result_len += s_info.current_arg_info.current_string_len;
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, utf8_arg, utf8_len);
+                        result_len += utf8_len;
                     } else {
                         // 'Aw' format with width: right-justify if width > len, truncate leading part if width < len.
                         int64_t width = atoi(value + 1);
-                        if (width <= 0) continue;
-                        int64_t src_len = s_info.current_arg_info.current_string_len;
-                        int64_t copy_len = (width < src_len) ? width : src_len;
-                        int64_t pad_len = (width > src_len) ? (width - src_len) : 0;
-                        char *field = (char*)internal_malloc((size_t)width);
-                        if (pad_len > 0) {
-                            memset(field, ' ', (size_t)pad_len);
+                        if (width > 0) {
+                            int64_t copy_len = (width < utf8_len) ? width : utf8_len;
+                            int64_t pad_len = (width > utf8_len) ? (width - utf8_len) : 0;
+                            char *field = (char*)internal_malloc((size_t)width);
+                            if (pad_len > 0) {
+                                memset(field, ' ', (size_t)pad_len);
+                            }
+                            memcpy(field + pad_len, utf8_arg, (size_t)copy_len);
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
+                            result_len += width;
+                            internal_free(field);
                         }
-                        memcpy(field + pad_len, arg, (size_t)copy_len);
-                        result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
-                        result_len += width;
-                        internal_free(field);
+                    }
+                    if (should_free_utf8) {
+                        internal_free(utf8_arg);
                     }
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
@@ -5312,7 +5447,7 @@ LFORTRAN_API char* _lfortran_str_slice_assign_alloc(lfortran_allocator_t* al, ch
         dest_char[s_i] = r[d_i++];
         s_i += step;
     }
-    return dest_char;
+    return 0;
 }
 
 LFORTRAN_API int64_t _lfortran_str_len(char* s)
@@ -12090,12 +12225,67 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
         char* end = NULL;
         int64_t end_len = 0;
-        if(strcmp(format_data, "%s%s") == 0){
-            end = va_arg(args, char*);
-            end_len = va_arg(args, int64_t);
-        } else if (strcmp(format_data, "%s") != 0){
-            fprintf(stderr,"Compiler Error : Undefined Format");
-            exit(1);
+        int str_kind = 1;
+        int end_kind = 1;
+
+        const char *p = format_data;
+        if (p != NULL) {
+            if (strncmp(p, "%S-", 3) == 0) {
+                p += 3;
+                str_kind = 0;
+                while (isdigit(*p)) {
+                    str_kind = str_kind * 10 + (*p - '0');
+                    p++;
+                }
+            } else if (strncmp(p, "%s", 2) == 0) {
+                str_kind = 1;
+                p += 2;
+            }
+            
+            if (strncmp(p, "%S-", 3) == 0) {
+                p += 3;
+                end_kind = 0;
+                while (isdigit(*p)) {
+                    end_kind = end_kind * 10 + (*p - '0');
+                    p++;
+                }
+                end = va_arg(args, char*);
+                end_len = va_arg(args, int64_t);
+            } else if (strncmp(p, "%s", 2) == 0) {
+                end_kind = 1;
+                p += 2;
+                end = va_arg(args, char*);
+                end_len = va_arg(args, int64_t);
+            } else if (*p != '\0') {
+                fprintf(stderr,"Compiler Error : Undefined Format %s", format_data);
+                exit(1);
+            }
+        }
+
+        char *allocated_str = NULL;
+        if (str_kind == 4) {
+            uint32_t* ucs4_ptr = (uint32_t*)str;
+            allocated_str = (char*)internal_malloc(str_len * 4 + 1);
+            int64_t bytes = 0;
+            for (int64_t i = 0; i < str_len; i++) {
+                bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_str + bytes);
+            }
+            allocated_str[bytes] = '\0';
+            str = allocated_str;
+            str_len = bytes;
+        }
+
+        char *allocated_end = NULL;
+        if (end != NULL && end_kind == 4) {
+            uint32_t* ucs4_ptr = (uint32_t*)end;
+            allocated_end = (char*)internal_malloc(end_len * 4 + 1);
+            int64_t bytes = 0;
+            for (int64_t i = 0; i < end_len; i++) {
+                bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_end + bytes);
+            }
+            allocated_end[bytes] = '\0';
+            end = allocated_end;
+            end_len = bytes;
         }
 
         // For direct access formatted writes, handle record boundaries:
@@ -12165,6 +12355,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
         if(iostat != NULL) *iostat = 0;
         va_end(args);
+
+        if (allocated_str) internal_free(allocated_str);
+        if (allocated_end) internal_free(allocated_end);
     }
     // Only truncate actual files, not stdout/stderr
     // This removes stale data when overwriting a file with less content
@@ -12175,26 +12368,79 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 }
 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
-    bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
+    bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, int32_t dest_kind, const char* format,
     int64_t format_len, ...) {
     va_list args;
     va_start(args, format_len);
-    char* str = "";
+    char* str = NULL;
     int64_t str_len = 0;
-    char* end_data = "";
+    char* end_data = NULL;
     int64_t end_len = 0;
+    int str_kind = 1;
+    int end_kind = 1;
 
-    if(strcmp(format, "%s%s") == 0){
-        str = va_arg(args, char*);
-        str_len = va_arg(args, int64_t);
-        end_data = va_arg(args, char*);
-        end_len = va_arg(args, int64_t); 
-    } else if(strcmp(format, "%s") == 0){
-        str = va_arg(args, char*);
-        str_len = va_arg(args, int64_t);
-    } else {
-        fprintf(stderr,"Compiler Error : Undefined Format");
-        exit(1);
+    const char *p = format;
+    if (p != NULL) {
+        if (strncmp(p, "%S-", 3) == 0) {
+            p += 3;
+            str_kind = 0;
+            while (isdigit(*p)) {
+                str_kind = str_kind * 10 + (*p - '0');
+                p++;
+            }
+            str = va_arg(args, char*);
+            str_len = va_arg(args, int64_t);
+        } else if (strncmp(p, "%s", 2) == 0) {
+            str_kind = 1;
+            p += 2;
+            str = va_arg(args, char*);
+            str_len = va_arg(args, int64_t);
+        }
+        
+        if (strncmp(p, "%S-", 3) == 0) {
+            p += 3;
+            end_kind = 0;
+            while (isdigit(*p)) {
+                end_kind = end_kind * 10 + (*p - '0');
+                p++;
+            }
+            end_data = va_arg(args, char*);
+            end_len = va_arg(args, int64_t);
+        } else if (strncmp(p, "%s", 2) == 0) {
+            end_kind = 1;
+            p += 2;
+            end_data = va_arg(args, char*);
+            end_len = va_arg(args, int64_t);
+        } else if (*p != '\0') {
+            fprintf(stderr,"Compiler Error : Undefined Format %s", format);
+            exit(1);
+        }
+    }
+
+    char *allocated_str = NULL;
+    if (str_kind == 4) {
+        uint32_t* ucs4_ptr = (uint32_t*)str;
+        allocated_str = (char*)internal_malloc(str_len * 4 + 1);
+        int64_t bytes = 0;
+        for (int64_t i = 0; i < str_len; i++) {
+            bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_str + bytes);
+        }
+        allocated_str[bytes] = '\0';
+        str = allocated_str;
+        str_len = bytes;
+    }
+
+    char *allocated_end = NULL;
+    if (end_data != NULL && end_kind == 4) {
+        uint32_t* ucs4_ptr = (uint32_t*)end_data;
+        allocated_end = (char*)internal_malloc(end_len * 4 + 1);
+        int64_t bytes = 0;
+        for (int64_t i = 0; i < end_len; i++) {
+            bytes += encode_ucs4_to_utf8(ucs4_ptr[i], allocated_end + bytes);
+        }
+        allocated_end[bytes] = '\0';
+        end_data = allocated_end;
+        end_len = bytes;
     }
 
     // Detect "\b" to raise error
@@ -12211,12 +12457,46 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
 
     char *s = (char *) internal_malloc(str_len * sizeof(char) + end_len * sizeof(char) + 1);
 
-    // If format changed, we need to change the hardcoded format passed to sprintf
-    if (strcmp(format, "%s"))
+    // Format s with str and end_data
+    if (end_data == NULL) {
         sprintf(s, "%.*s", (int)str_len, str);
-    else
+    } else {
         sprintf(s, "%.*s%.*s", (int)str_len, str, (int)end_len, end_data);
+    }
 
+    char *final_s = s;
+    int64_t final_s_len = str_len + end_len; // in bytes (UTF-8)
+
+    // Decode UTF-8 to UCS4 if the destination is kind=4
+    if (dest_kind == 4) {
+        // max number of characters is the number of bytes in UTF-8
+        uint32_t *ucs4_s = (uint32_t *)internal_malloc((final_s_len + 1) * sizeof(uint32_t));
+        const char *p = s;
+        int64_t count = 0;
+        while (p < s + final_s_len && *p != '\0') {
+            const unsigned char* up = (const unsigned char*)p;
+            uint32_t codepoint = 0;
+            if (up[0] < 0x80) {
+                codepoint = up[0];
+                p += 1;
+            } else if ((up[0] & 0xE0) == 0xC0) {
+                codepoint = ((up[0] & 0x1F) << 6) | (up[1] & 0x3F);
+                p += 2;
+            } else if ((up[0] & 0xF0) == 0xE0) {
+                codepoint = ((up[0] & 0x0F) << 12) | ((up[1] & 0x3F) << 6) | (up[2] & 0x3F);
+                p += 3;
+            } else if ((up[0] & 0xF8) == 0xF0) {
+                codepoint = ((up[0] & 0x07) << 18) | ((up[1] & 0x3F) << 12) | ((up[2] & 0x3F) << 6) | (up[3] & 0x3F);
+                p += 4;
+            } else {
+                p += 1;
+            }
+            ucs4_s[count++] = codepoint;
+        }
+        ucs4_s[count] = 0;
+        final_s = (char*)ucs4_s;
+        final_s_len = count; // number of characters
+    }
     // Internal WRITE must not reallocate an already-allocated target string.
     // For character array internal files, each '\n' in formatted text denotes
     // the next record (array element).
@@ -12224,23 +12504,29 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
         if (is_array_unit && array_size <= 0) {
             if (iostat != NULL) *iostat = -1;
             internal_free(s);
+            if (dest_kind == 4) internal_free(final_s);
             va_end(args);
             return;
         } else if (is_array_unit) {
             int64_t rec = 0;
             int64_t start = 0;
-            while (rec < array_size && start <= str_len) {
+            while (rec < array_size && start <= final_s_len) {
                 int64_t end = start;
-                while (end < str_len && str[end] != '\n') {
+                while (end < final_s_len) {
+                    if (dest_kind == 4) {
+                        if (((uint32_t*)final_s)[end] == (uint32_t)'\n') break;
+                    } else {
+                        if (final_s[end] == '\n') break;
+                    }
                     end++;
                 }
                 _lfortran_copy_str_and_pad(
-                    (*str_holder) + rec * (*len),
+                    (*str_holder) + rec * (*len) * dest_kind,
                     *len,
-                    str + start,
-                    end - start, 1);
+                    final_s + start * dest_kind,
+                    end - start, dest_kind);
                 rec++;
-                if (end >= str_len) {
+                if (end >= final_s_len) {
                     break;
                 }
                 start = end + 1;
@@ -12249,13 +12535,15 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
             // Remaining records (beyond the output list) are left
             // unchanged, per the Fortran standard.
         } else {
-            _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len, 1);
+            _lfortran_copy_str_and_pad(*str_holder, *len, final_s, final_s_len, dest_kind);
         }
     } else {
-        _lfortran_strcpy_alloc(al, str_holder, len, is_allocatable, is_deferred, str, str_len, 1);
+        _lfortran_strcpy_alloc(al, str_holder, len, is_allocatable, is_deferred, final_s, final_s_len, dest_kind);
     }
 
     internal_free(s);
+    if (dest_kind == 4) internal_free(final_s);
+
 
     va_end(args);
     if(iostat != NULL) *iostat = 0;

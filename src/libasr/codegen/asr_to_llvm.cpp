@@ -21061,6 +21061,7 @@ public:
             args_type.push_back(llvm::Type::getInt64Ty(context)); // array_size
             args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo()); //len
             args_type.push_back(llvm::Type::getInt32Ty(context)->getPointerTo()); //iostat
+            args_type.push_back(llvm::Type::getInt32Ty(context)); //dest_kind
             args_type.push_back(llvm::Type::getInt8Ty(context)->getPointerTo()); //format_data
             args_type.push_back(llvm::Type::getInt64Ty(context)); // format_len
         } else if ( ASRUtils::is_integer(*expr_type(x.m_unit)) ) {
@@ -21481,6 +21482,10 @@ public:
             printf_args.push_back(string_len);
         }
         printf_args.push_back(iostat);
+        if(is_string){
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_unit)));
+            printf_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, dest_kind)));
+        }
         printf_args.push_back(fmt_data);
         printf_args.push_back(fmt_len);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
@@ -21543,6 +21548,7 @@ public:
         } else if (ASR::is_a<ASR::String_t>(*type)) {
             res += "S-";
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+            res += std::to_string(str_type->m_kind) + "-";
             if(str_type->m_physical_type == ASR::DescriptorString) res += "DESC";
             else if(str_type->m_physical_type == ASR::CChar) res +="CCHAR";
             else throw LCompilersException("Unhandled string physical type");
@@ -21698,7 +21704,12 @@ public:
             }
             args.push_back(tmp);
         } else if (t->type == ASR::ttypeType::String) {
-            fmt.push_back("%s");
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);
+            if (kind != 1) {
+                fmt.push_back("%S-" + std::to_string(kind));
+            } else {
+                fmt.push_back("%s");
+            }
             args.push_back(llvm_utils->get_string_data(ASRUtils::get_string_type(t), tmp));
         } else if (ASRUtils::is_logical(*t)) {
             fmt.push_back("%s");
@@ -21758,7 +21769,12 @@ public:
             // --- String path ---
             std::tie(main_data, main_len) = get_string_data_and_length(arg);
             main_len = builder->CreateTrunc(main_len, llvm::Type::getInt32Ty(context));
-            fmt_str = "%s";
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);
+            if (kind != 1) {
+                fmt_str = "%S-" + std::to_string(kind);
+            } else {
+                fmt_str = "%s";
+            }
         } else {
             // --- Non-string path ---
             // Evaluate once
