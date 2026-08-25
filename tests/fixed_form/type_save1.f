@@ -1,5 +1,5 @@
       MODULE G
-        TYPE GT
+        TYPE GT ! trailing comment must not defeat opener detection
           INTEGER N
         END TYPE GT
         TYPE(GT), SAVE:: DAT(10)
