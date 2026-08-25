@@ -1,4 +1,4 @@
-program kind4_io
+program character_35
 
     integer, parameter :: ucs4 = selected_char_kind("ISO_10646")
 
@@ -30,4 +30,4 @@ program kind4_io
     expected = ucs4_"😀"
     if (trim(output) /= trim(expected)) error stop
 
-end program kind4_io
+end program character_35
