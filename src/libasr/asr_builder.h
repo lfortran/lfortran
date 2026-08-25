@@ -376,8 +376,17 @@ class ASRBuilder {
         return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
 
+    // A single character of `x` has the same character kind as `x` itself.
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
-        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(1), nullptr));
+        int char_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x));
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx,
+            String(i32(1), ASR::ExpressionLength, ASR::DescriptorString, char_kind), nullptr));
+    }
+
+    // A blank of the given character kind, for padding and trimming.
+    inline ASR::expr_t* StringBlank(int char_kind) {
+        return StringConstant(" ",
+            String(i32(1), ASR::ExpressionLength, ASR::DescriptorString, char_kind));
     }
 
     inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {

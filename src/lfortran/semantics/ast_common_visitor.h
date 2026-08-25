@@ -422,11 +422,15 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
+    // Substring bounds are character positions. For kind > 1 the value holds
+    // UTF-8, so one character can span several bytes and the value has to be
+    // sliced character by character.
     void visit_StringSection(const ASR::StringSection_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
-        std::string str(str_val);
-        int start = 1, end = (int)str.size();
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
+        int start = 1, end = (int)characters.size();
         if (x.m_start) {
             this->visit_expr(*x.m_start);
             start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
@@ -435,18 +439,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             this->visit_expr(*x.m_end);
             end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        int len = end - start + 1;
-        std::string result = len > 0 ? str.substr(start - 1, len) : "";
+        std::string result;
+        for (int i = start; i <= end && i <= (int)characters.size(); i++) {
+            result += characters[i - 1];
+        }
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
 
     void visit_StringItem(const ASR::StringItem_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
         this->visit_expr(*x.m_idx);
         int idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        std::string result(1, str_val[idx - 1]);
+        std::string result = characters[idx - 1];
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
@@ -10899,8 +10907,17 @@ public:
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
+                        // Substring bounds are character positions. For kind > 1
+                        // the value holds UTF-8, so slice whole characters.
+                        std::vector<std::string> characters =
+                            ASRUtils::string_value_characters(m_str->m_s, s_type->m_kind);
+                        // An initializer shorter than the declared length is
+                        // blank padded, so the value has `str_length` characters.
+                        characters.resize(str_length, " ");
+                        int64_t sliced_len = 0;
                         for( int i = start - 1; i < end; i += step ) {
-                            sliced_str.push_back(m_str->m_s[i]);
+                            sliced_str += characters[i];
+                            sliced_len++;
                         }
                         Str l_str;
                         l_str.from_str(al, sliced_str);
@@ -10908,7 +10925,7 @@ public:
                             ASRUtils::TYPE(ASR::make_String_t(al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type), 
                                 ASRUtils::EXPR(
                                     ASR::make_IntegerConstant_t(
-                                        al, loc, sliced_str.size(),
+                                        al, loc, sliced_len,
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))
                                     )
                                 ),
@@ -19721,6 +19738,9 @@ public:
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
         int kind = 1;
+        // `s_len` is fixed up below once `kind` is known: a kind > 1 literal
+        // holds UTF-8 in ASR, so its Fortran length is the number of code
+        // points, not the number of bytes.
         if (x.m_kind) {
             kind = std::atoi(x.m_kind);
             if (kind == 0) {
@@ -19768,6 +19788,9 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (kind > 1) {
+            s_len = (int)utf8_codepoint_count(x.m_s);
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, kind, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, s_len,
