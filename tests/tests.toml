@@ -3592,6 +3592,10 @@ filename = "errors/fixed_form_6.f"
 ast = true
 
 [[test]]
+filename = "errors/fixed_form_7.f"
+ast = true
+
+[[test]]
 filename = "errors/arithmetic_if1.f90"
 asr = true
 
