@@ -2651,6 +2651,24 @@ public:
                 " is not supported");
     }
 
+    // An assumed rank array has no shape of its own: its rank is only known
+    // from the `select rank` block that selects it. An operation on one has
+    // no result shape, so the frontend must first pin the rank down with an
+    // ArrayPhysicalCast away from AssumedRankArray. Reaching an operation
+    // without that cast means the rank was never resolved, and every later
+    // stage reads the operand as rank 0.
+    void verify_operand_not_assumed_rank(const char *name,
+            const char *position, ASR::ttype_t *type, const Location &loc) {
+        if (type == nullptr) return;
+        require_with_loc_id(
+            !ASRUtils::is_assumed_rank_array(type),
+            "asr.verify.operation.operand_not_assumed_rank",
+            std::string(name) + " " + position + " is an assumed rank "
+                "array, which has no known rank; it must be cast to a "
+                "descriptor array first",
+            loc);
+    }
+
     // An operation combines two operands of one type into a result of that
     // type, and a comparison combines two operands of one type into a
     // logical. The frontend guarantees this by inserting explicit Cast
@@ -2665,6 +2683,9 @@ public:
         ASR::ttype_t *left_type = typed_expr_type(left);
         ASR::ttype_t *right_type = typed_expr_type(right);
         if (left_type == nullptr || right_type == nullptr) return;
+        verify_operand_not_assumed_rank(name, "left operand", left_type, loc);
+        verify_operand_not_assumed_rank(name, "right operand", right_type, loc);
+        if (diagnostics.has_error()) return;
         if (is_procedure_type(left_type) || is_procedure_type(right_type)
                 || is_struct_like_type(left_type)
                 || is_struct_like_type(right_type)) {
@@ -2760,6 +2781,34 @@ public:
         verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
             true, x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
+    void verify_unary_operand(const char *name, ASR::expr_t *arg,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        verify_operand_not_assumed_rank(name, "argument",
+            typed_expr_type(arg), loc);
+    }
+
+    void visit_IntegerUnaryMinus(const IntegerUnaryMinus_t &x) {
+        verify_unary_operand("IntegerUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerUnaryMinus(x);
+    }
+
+    void visit_UnsignedIntegerUnaryMinus(const UnsignedIntegerUnaryMinus_t &x) {
+        verify_unary_operand("UnsignedIntegerUnaryMinus", x.m_arg,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerUnaryMinus(x);
+    }
+
+    void visit_RealUnaryMinus(const RealUnaryMinus_t &x) {
+        verify_unary_operand("RealUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealUnaryMinus(x);
+    }
+
+    void visit_ComplexUnaryMinus(const ComplexUnaryMinus_t &x) {
+        verify_unary_operand("ComplexUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexUnaryMinus(x);
     }
 
     // A StructConstructor's arguments fill the type's members in
