@@ -11,10 +11,10 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:978:7
-    |
-978 |       foo    end type t_recovery
-    |       ^^^ 
+    --> tests/errors/continue_compilation_1.f90:1012:7
+     |
+1012 |       foo    end type t_recovery
+     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
@@ -544,6 +544,24 @@ semantic error: equivalence between a common block variable and this array eleme
 949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: kind 2 is not supported for character, only 1 and 4 are
+   --> tests/errors/continue_compilation_1.f90:999:19
+    |
+999 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+    |                   ^^^^^^ 
+
+semantic error: kind 3 is not supported for character, only 1 and 4 are
+    --> tests/errors/continue_compilation_1.f90:1000:19
+     |
+1000 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
+
+semantic error: kind 8 is not supported for character, only 1 and 4 are
+    --> tests/errors/continue_compilation_1.f90:1001:19
+     |
+1001 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -551,10 +569,10 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:981:7
-    |
-981 |       class(t_recovery), intent(in) :: self
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    --> tests/errors/continue_compilation_1.f90:1015:7
+     |
+1015 |       class(t_recovery), intent(in) :: self
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
  --> tests/errors/continue_compilation_1.f90:1:2
@@ -1883,3 +1901,21 @@ semantic error: The implied do loop variable 'r_idx' must be a scalar integer, n
     |
 966 |         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operands of // must be character with the same kind, found character(4) and character(1)
+   --> tests/errors/continue_compilation_1.f90:976:18
+    |
+976 |         print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+    |                  ^^^^^^^^^^^^^^ 
+
+semantic error: operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+   --> tests/errors/continue_compilation_1.f90:985:13
+    |
+985 |         if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: kind 3 is not supported for character, only 1 and 4 are
+   --> tests/errors/continue_compilation_1.f90:991:13
+    |
+991 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+    |             ^^^^^^^ 

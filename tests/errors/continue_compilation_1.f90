@@ -966,6 +966,40 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
+
+    subroutine character_kind_mixing_concat()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_kind_mixing_compare()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_literal_kind_not_supported()
+        implicit none
+        character(len=4) :: s
+        s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+    end subroutine
+
+    ! Keep the unsupported character kind declarations last: a rejected
+    ! declaration makes the symbol table visitor skip the program units that
+    ! follow it, which would hide the errors expected above.
+    subroutine character_kind_not_supported()
+        implicit none
+        character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+        character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+        character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
