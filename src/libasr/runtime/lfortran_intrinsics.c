@@ -637,8 +637,11 @@ static inline int encode_ucs4_to_utf8(uint32_t codepoint, char* out_buf) {
         return 4;
     }
     
-    fprintf(stderr, "Runtime Error: Invalid UCS4 codepoint (0x%X) encountered during UTF-8 conversion.\n", codepoint);
-    exit(1);
+    // Invalid codepoint: Emit Unicode Replacement Character U+FFFD
+    out_buf[0] = (char)0xEF;
+    out_buf[1] = (char)0xBF;
+    out_buf[2] = (char)0xBD;
+    return 3;
 }
 
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len)
@@ -2628,7 +2631,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         (s_info->current_element_type == CHAR_PTR_TYPE ||
             s_info->current_element_type == STRING_DESCRIPTOR_TYPE)){ // Array of strings (Consecutive memory)
         char* arr_str_ptr = *(char**)s_info->current_arg_info.current_arg;
-        s_info->temp_char_pp =  arr_str_ptr + s_info->current_arg_info.current_string_len;
+        int multiplier = (s_info->current_arg_info.current_string_kind == 4) ? 4 : 1;
+        s_info->temp_char_pp =  arr_str_ptr + s_info->current_arg_info.current_string_len * multiplier;
         s_info->current_arg_info.current_arg = (void*)&s_info->temp_char_pp;
     } else {
         s_info->current_arg_info.current_arg = 
@@ -12459,9 +12463,12 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
 
     // Format s with str and end_data
     if (end_data == NULL) {
-        sprintf(s, "%.*s", (int)str_len, str);
+        memcpy(s, str, str_len);
+        s[str_len] = '\0';
     } else {
-        sprintf(s, "%.*s%.*s", (int)str_len, str, (int)end_len, end_data);
+        memcpy(s, str, str_len);
+        memcpy(s + str_len, end_data, end_len);
+        s[str_len + end_len] = '\0';
     }
 
     char *final_s = s;
@@ -12473,7 +12480,7 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
         uint32_t *ucs4_s = (uint32_t *)internal_malloc((final_s_len + 1) * sizeof(uint32_t));
         const char *p = s;
         int64_t count = 0;
-        while (p < s + final_s_len && *p != '\0') {
+        while (p < s + final_s_len) {
             const unsigned char* up = (const unsigned char*)p;
             uint32_t codepoint = 0;
             if (up[0] < 0x80) {
