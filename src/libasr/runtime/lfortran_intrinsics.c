@@ -614,11 +614,120 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
-LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len)
+// Appends the UTF-8 encoding of one code point to `out`, returning how many
+// bytes it wrote. `out` must have room for 4 bytes.
+static int utf8_encode_code_point(char* out, uint32_t cp)
+{
+    if (cp <= 0x7f) {
+        out[0] = (char)cp;
+        return 1;
+    } else if (cp <= 0x7ff) {
+        out[0] = (char)(0xc0 | (cp >> 6));
+        out[1] = (char)(0x80 | (cp & 0x3f));
+        return 2;
+    } else if (cp <= 0xffff) {
+        out[0] = (char)(0xe0 | (cp >> 12));
+        out[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
+        out[2] = (char)(0x80 | (cp & 0x3f));
+        return 3;
+    }
+    out[0] = (char)(0xf0 | (cp >> 18));
+    out[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
+    out[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
+    out[3] = (char)(0x80 | (cp & 0x3f));
+    return 4;
+}
+
+// Number of bytes the UTF-8 sequence starting with `c` occupies, or 0 if `c`
+// is not a lead byte.
+static int utf8_sequence_length(unsigned char c)
+{
+    if (c < 0x80) return 1;
+    if ((c & 0xe0) == 0xc0) return 2;
+    if ((c & 0xf0) == 0xe0) return 3;
+    if ((c & 0xf8) == 0xf0) return 4;
+    return 0;
+}
+
+/*
+ * A character value of kind > 1 is held in memory as `count` little-endian
+ * code units of `kind` bytes each (kind 4 is UCS-4). Files and the terminal
+ * are byte streams, so such a value is written out as UTF-8. This matches LLVM
+ * Flang, which transcodes kind 4 output regardless of the unit's ENCODING=.
+ *
+ * Returns a newly allocated buffer and stores its length in `*out_len`. The
+ * caller frees it with internal_free.
+ */
+char* _lfortran_unicode_to_utf8(const char* data, int64_t count, int32_t kind,
+        int64_t* out_len)
+{
+    char* out = (char*)internal_malloc((size_t)(count * 4 + 1));
+    int64_t pos = 0;
+    for (int64_t i = 0; i < count; i++) {
+        uint32_t cp = 0;
+        for (int32_t b = 0; b < kind; b++) {
+            cp |= ((uint32_t)(unsigned char)data[i * kind + b]) << (8 * b);
+        }
+        pos += utf8_encode_code_point(out + pos, cp);
+    }
+    out[pos] = '\0';
+    *out_len = pos;
+    return out;
+}
+
+/*
+ * The inverse: decodes at most `count` characters of UTF-8 from `data` into
+ * `kind`-wide little-endian code units written to `dest`, blank padding any
+ * remaining characters. Returns the number of characters decoded.
+ */
+int64_t _lfortran_utf8_to_unicode(const char* data, int64_t data_len,
+        char* dest, int64_t count, int32_t kind)
+{
+    int64_t i = 0, written = 0;
+    while (i < data_len && written < count) {
+        int length = utf8_sequence_length((unsigned char)data[i]);
+        uint32_t cp;
+        if (length == 0 || i + length > data_len) {
+            // Not well-formed; pass the byte through so we always make progress
+            cp = (unsigned char)data[i];
+            length = 1;
+        } else if (length == 1) {
+            cp = (unsigned char)data[i];
+        } else {
+            static const uint32_t lead_mask[5] = {0, 0, 0x1f, 0x0f, 0x07};
+            cp = (unsigned char)data[i] & lead_mask[length];
+            for (int k = 1; k < length; k++) {
+                cp = (cp << 6) | ((unsigned char)data[i + k] & 0x3f);
+            }
+        }
+        for (int32_t b = 0; b < kind; b++) {
+            dest[written * kind + b] = (char)((cp >> (8 * b)) & 0xff);
+        }
+        written++;
+        i += length;
+    }
+    for (int64_t j = written; j < count; j++) {
+        dest[j * kind] = ' ';
+        for (int32_t b = 1; b < kind; b++) dest[j * kind + b] = 0;
+    }
+    return written;
+}
+
+LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
     if (str == NULL) {
         str = (fchar*)" "; // dummy output
         str_len = 1; // length of dummy output
+        str_kind = 1;
+    }
+    // `str_len` counts characters. A kind > 1 value is code units in memory and
+    // is written out as UTF-8.
+    char* encoded = NULL;
+    if (str_kind > 1) {
+        int64_t encoded_len;
+        encoded = _lfortran_unicode_to_utf8((const char*)str, str_len, str_kind, &encoded_len);
+        str = (const fchar*)encoded;
+        str_len = (uint32_t)encoded_len;
     }
     // Detect "\b" to raise error (only if still null-terminated)
     if (str_len > 0 && ((char*)str)[0] == '\b') {
@@ -633,6 +742,7 @@ LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_
     fwrite((char*)str, sizeof(char), str_len, stdout);
     fwrite((char*)end, sizeof(char), end_len, stdout);
     fflush(stdout);
+    internal_free(encoded);
 }
 
 char* substring(const char* str, int start, int end) {
@@ -2421,6 +2531,7 @@ typedef struct serialization_info{
         void* current_arg; // holds pointer to the arg being printed (Scalar or Vector) 
         bool is_complex;
         int64_t current_string_len; // Holds string length 'If Exist'
+        int32_t current_string_kind; // Bytes per character of the string arg
     } current_arg_info;
     struct runtime_sizes_lengths{ // Passed array sizes or string legnths.
         int64_t* ptr;
@@ -2439,6 +2550,22 @@ int64_t transform_string_size_into_int(struct serialization_info* s_info){
         array_size = array_size * 10 + (s_info->serialization_string[s_info->current_stop++] - '0');
     }
     return array_size;
+}
+
+// Reads the `-K<kind>` part that follows the string physical type. The kind is
+// the number of bytes one character occupies: 1 for ASCII/default, 4 for
+// ISO 10646 (UCS-4).
+void set_string_kind(Serialization_Info* s_info){
+    if(s_info->serialization_string[s_info->current_stop] != '-' ||
+       s_info->serialization_string[s_info->current_stop + 1] != 'K') {
+        fprintf(stderr, "RunTime - compiler internal error"
+            " : Missing character kind in string serialization --> %s\n",
+                s_info->serialization_string);
+        exit(1);
+    }
+    s_info->current_stop += 2;
+    s_info->current_arg_info.current_string_kind =
+        (int32_t)transform_string_size_into_int(s_info);
 }
 
 // Sets `current_string_length` either from the serialization string or passed run-time length
@@ -2641,6 +2768,7 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     }
     case 'S':{
         Primitive_Types str_phys_type = get_string_primitive_type(s_info);
+        set_string_kind(s_info);
         set_string_length(s_info);
         *PrimitiveType = str_phys_type;
         break;
@@ -2954,6 +3082,17 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result){
             char* char_ptr = *(char**)arg;
                 if(char_ptr == NULL){
                     sprintf(result, "%s", " ");
+                } else if(s_info->current_arg_info.current_string_kind > 1){
+                    // A kind > 1 value is code units in memory; write it out
+                    // as UTF-8.
+                    int64_t encoded_len;
+                    char* encoded = _lfortran_unicode_to_utf8(char_ptr,
+                        s_info->current_arg_info.current_string_len,
+                        s_info->current_arg_info.current_string_kind, &encoded_len);
+                    memcpy(result, encoded, encoded_len);
+                    *(result + encoded_len) = '\0';
+                    internal_free(encoded);
+                    return encoded_len;
                 } else {
                     memcpy(result,
                         char_ptr,
@@ -3049,7 +3188,9 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
         int size_to_allocate;
         if(curr_is_char &&
             *(char**)s_info->current_arg_info.current_arg != NULL){
+            // A kind > 1 character can take up to 4 bytes once encoded as UTF-8.
             size_to_allocate = (s_info->current_arg_info.current_string_len
+                                    * (s_info->current_arg_info.current_string_kind > 1 ? 4 : 1)
                                  + default_spacing_len + 1) * sizeof(char);
         } else {
             size_to_allocate = (60 + default_spacing_len) * sizeof(char);
@@ -3143,6 +3284,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     s_info.current_arg_info.args = &args;
     s_info.current_element_type = NONE_TYPE;
     s_info.current_arg_info.is_complex = false;
+    s_info.current_arg_info.current_string_kind = 1;
     s_info.array_sizes.current_index = 0;
     s_info.string_lengths.current_index = 0;
     s_info.just_peeked = false;
@@ -3514,26 +3656,49 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     }
                     char* arg = *(char**)s_info.current_arg_info.current_arg;
                     if (arg == NULL) continue;
+                    // `current_string_len` counts characters. A kind 1 value is
+                    // already a byte string; a kind > 1 value is transcoded to
+                    // UTF-8 here, and the field width below stays a character
+                    // count, as the standard requires.
+                    int32_t char_kind = s_info.current_arg_info.current_string_kind;
+                    int64_t src_len = s_info.current_arg_info.current_string_len;
+                    char* encoded = NULL;
+                    int64_t arg_bytes = src_len;
+                    if (char_kind > 1) {
+                        encoded = _lfortran_unicode_to_utf8(arg, src_len, char_kind, &arg_bytes);
+                        arg = encoded;
+                    }
                     if (strlen(value) == 1) {
                         // Simple 'A' format - use full string length, preserve embedded nulls
-                        result = write_to_result_at_pos(al, result, &result_extent, result_len, arg, s_info.current_arg_info.current_string_len);
-                        result_len += s_info.current_arg_info.current_string_len;
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, arg, arg_bytes);
+                        result_len += arg_bytes;
                     } else {
                         // 'Aw' format with width: right-justify if width > len, truncate leading part if width < len.
                         int64_t width = atoi(value + 1);
-                        if (width <= 0) continue;
-                        int64_t src_len = s_info.current_arg_info.current_string_len;
-                        int64_t copy_len = (width < src_len) ? width : src_len;
+                        if (width <= 0) { internal_free(encoded); continue; }
+                        int64_t copy_chars = (width < src_len) ? width : src_len;
                         int64_t pad_len = (width > src_len) ? (width - src_len) : 0;
-                        char *field = (char*)internal_malloc((size_t)width);
+                        // Truncation is by characters, so re-encode just the
+                        // part that is kept.
+                        int64_t copy_bytes = copy_chars;
+                        char* truncated = NULL;
+                        if (char_kind > 1) {
+                            truncated = _lfortran_unicode_to_utf8(
+                                *(char**)s_info.current_arg_info.current_arg,
+                                copy_chars, char_kind, &copy_bytes);
+                        }
+                        int64_t field_len = pad_len + copy_bytes;
+                        char *field = (char*)internal_malloc((size_t)field_len);
                         if (pad_len > 0) {
                             memset(field, ' ', (size_t)pad_len);
                         }
-                        memcpy(field + pad_len, arg, (size_t)copy_len);
-                        result = write_to_result_at_pos(al, result, &result_extent, result_len, field, width);
-                        result_len += width;
+                        memcpy(field + pad_len, truncated ? truncated : arg, (size_t)copy_bytes);
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, field, field_len);
+                        result_len += field_len;
                         internal_free(field);
+                        internal_free(truncated);
                     }
+                    internal_free(encoded);
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
@@ -10349,6 +10514,7 @@ typedef struct {
     long record_length;     // length of current record in characters
     int access_id;          // 0=sequential, 1=stream, 2=direct
     int32_t record_len;     // record length for direct access
+    int encoding_mode;      // 0=unknown, 1=UTF-8, 2=default
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -10542,6 +10708,24 @@ static void parse_logical_from_buffer(char* buffer, int field_len,
     }
 }
 
+// A destination of character kind > 1 holds `kind`-wide code units. With
+// ENCODING='UTF-8' the field is decoded from UTF-8; otherwise each byte of the
+// field is one character, as both GFortran and LLVM Flang do.
+static void parse_wide_character_from_buffer(char* buffer, int field_len,
+        char* str_data, int64_t str_len, int32_t char_kind, int encoding_mode)
+{
+    if (encoding_mode == 1) {
+        _lfortran_utf8_to_unicode(buffer, field_len, str_data, str_len, char_kind);
+        return;
+    }
+    for (int64_t i = 0; i < str_len; i++) {
+        uint32_t cp = (i < field_len) ? (uint32_t)(unsigned char)buffer[i] : (uint32_t)' ';
+        for (int32_t b = 0; b < char_kind; b++) {
+            str_data[i * char_kind + b] = (char)((cp >> (8 * b)) & 0xff);
+        }
+    }
+}
+
 static void parse_character_from_buffer(char* buffer, int field_len,
         char* str_data, int64_t str_len, int width)
 {
@@ -10714,9 +10898,14 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
     // TODO: Add support for read into descriptor-arrays for character reads
     (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
-    (void)type_code;
     char** str_data_ptr = va_arg(*args, char**);
     int64_t str_len = va_arg(*args, int64_t);
+    // Type code 8 marks a destination of character kind > 1; it carries the
+    // kind after the length.
+    int32_t char_kind = 1;
+    if (type_code == 8) {
+        char_kind = va_arg(*args, int32_t);
+    }
     (*arg_idx)++;
 
     char* str_data = str_data_ptr ? *str_data_ptr : NULL;
@@ -10735,7 +10924,12 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         return false;
     }
 
-    parse_character_from_buffer(buffer, field_len, str_data, str_len, read_width);
+    if (char_kind > 1) {
+        parse_wide_character_from_buffer(buffer, field_len, str_data, str_len,
+            char_kind, inputSource->encoding_mode);
+    } else {
+        parse_character_from_buffer(buffer, field_len, str_data, str_len, read_width);
+    }
 
     internal_free(buffer);
     return true;
@@ -11374,16 +11568,19 @@ LFORTRAN_API void _lfortran_formatted_read(
     int pad_mode;
     inputSource.access_id = 0;
     inputSource.record_len = 0;
+    inputSource.encoding_mode = 0;
 
     if (unit_num != -1) {
         int access_id = 0;
         int32_t unit_recl = 0;
         bool read_access = true;
+        int encoding_mode = 0;
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = get_file_pointer_from_unit(unit_num, &unit_file_bin,
-            &access_id, &read_access, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, NULL, NULL, &pad_mode);
+            &access_id, &read_access, NULL, NULL, &blank_zero, &unit_recl, NULL, NULL, &encoding_mode, NULL, &pad_mode);
         inputSource.access_id = access_id;
         inputSource.record_len = unit_recl;
+        inputSource.encoding_mode = encoding_mode;
         if (!inputSource.file) {
             if (iostat) { *iostat = 1; return; }
             printf("No file found with given unit\n");
@@ -12068,6 +12265,14 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         va_start(args, format_len);
         char* str = va_arg(args, char*);
         int64_t str_len = va_arg(args, int64_t);
+        // `%S` marks a value of character kind > 1: it carries a kind after the
+        // length, and its code units are written out as UTF-8.
+        char* wide_encoded = NULL;
+        if (format_data[1] == 'S') {
+            int32_t str_kind = va_arg(args, int32_t);
+            wide_encoded = _lfortran_unicode_to_utf8(str, str_len, str_kind, &str_len);
+            str = wide_encoded;
+        }
 
         // Detect "\b" to raise error
         if(str_len > 0 && str[0] == '\b'){
@@ -12090,7 +12295,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
         char* end = NULL;
         int64_t end_len = 0;
-        if(strcmp(format_data, "%s%s") == 0){
+        if(strcmp(format_data + 2, "%s") == 0){
             end = va_arg(args, char*);
             end_len = va_arg(args, int64_t);
         } else if (strcmp(format_data, "%s") != 0){
@@ -12164,6 +12369,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
 
         if(iostat != NULL) *iostat = 0;
+        internal_free(wide_encoded);
         va_end(args);
     }
     // Only truncate actual files, not stdout/stderr
@@ -12175,7 +12381,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 }
 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
-    bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
+    bool is_array_unit, int32_t char_kind, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
     va_list args;
     va_start(args, format_len);
@@ -12234,11 +12440,17 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
                 while (end < str_len && str[end] != '\n') {
                     end++;
                 }
-                _lfortran_copy_str_and_pad(
-                    (*str_holder) + rec * (*len),
-                    *len,
-                    str + start,
-                    end - start, 1);
+                if (char_kind > 1) {
+                    // The record is UTF-8; the target holds code units.
+                    _lfortran_utf8_to_unicode(str + start, end - start,
+                        (*str_holder) + rec * (*len) * char_kind, *len, char_kind);
+                } else {
+                    _lfortran_copy_str_and_pad(
+                        (*str_holder) + rec * (*len),
+                        *len,
+                        str + start,
+                        end - start, 1);
+                }
                 rec++;
                 if (end >= str_len) {
                     break;
@@ -12248,9 +12460,25 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
 
             // Remaining records (beyond the output list) are left
             // unchanged, per the Fortran standard.
+        } else if (char_kind > 1) {
+            _lfortran_utf8_to_unicode(str, str_len, *str_holder, *len, char_kind);
         } else {
             _lfortran_copy_str_and_pad(*str_holder, *len, str, str_len, 1);
         }
+    } else if (char_kind > 1) {
+        // A deferred length kind 4 target takes one character per code point
+        // of the record.
+        int64_t char_count = 0;
+        for (int64_t i = 0; i < str_len; ) {
+            int seq = utf8_sequence_length((unsigned char)str[i]);
+            i += (seq == 0 || i + seq > str_len) ? 1 : seq;
+            char_count++;
+        }
+        char* decoded = (char*)internal_malloc((size_t)(char_count * char_kind + 1));
+        _lfortran_utf8_to_unicode(str, str_len, decoded, char_count, char_kind);
+        _lfortran_strcpy_alloc(al, str_holder, len, is_allocatable, is_deferred,
+            decoded, char_count, char_kind);
+        internal_free(decoded);
     } else {
         _lfortran_strcpy_alloc(al, str_holder, len, is_allocatable, is_deferred, str, str_len, 1);
     }
