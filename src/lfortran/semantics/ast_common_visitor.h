@@ -9986,22 +9986,11 @@ public:
                     nullptr, 0,
                     ASR::array_physical_typeType::AssumedRankArray));
             } else {
-                ASR::array_physical_typeType array_physical_type =
-                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
-                                    ASR::array_physical_typeType::DescriptorArray;
-                // A StringArraySinglePointer array is one flat character
-                // buffer, so its elements are plain C characters rather than
-                // string descriptors. Keep the two physical types consistent
-                // here, where the array one is decided: a mismatched pair
-                // leaves the representation of the array ambiguous, and any
-                // consumer would have to pick a winner on its own.
-                if (array_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
-                    str->m_physical_type = ASR::CChar;
-                }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
-                    array_physical_type,
+                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
+                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
 

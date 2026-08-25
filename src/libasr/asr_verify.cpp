@@ -2898,6 +2898,18 @@ public:
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
+            // A "StringArraySinglePointer" array is one flat character buffer,
+            // so its elements are plain C characters. Pairing it with
+            // "DescriptorString" elements describes two different layouts at
+            // once, and leaves every consumer to pick one on its own.
+            if(x.m_physical_type == ASR::StringArraySinglePointer){
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(x.m_type));
+                require(str->m_physical_type == ASR::CChar,
+                    "Array of strings with physical type"
+                    " \"StringArraySinglePointer\" must have string physical"
+                    " type \"CChar\", not \"DescriptorString\"")
+            }
         }
         if(ASRUtils::is_class_type(x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
