@@ -944,7 +944,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         type_vec.push_back(i32);
                     } else {
                         throw CodeGenError(
-                            "Strings of kind 1 only supported");
+                            "character(kind=" + std::to_string(v_int->m_kind) +
+                            ") is not supported by the WASM backend, only kind 1 is",
+                            v->base.base.loc);
                     }
                 }
             } else if (ASRUtils::is_complex(*ttype)) {

@@ -1,0 +1,5 @@
+code generation error: character(kind=4) is not supported by the WASM backend, only kind 1 is
+ --> tests/errors/char4_backend_c.f90:5:29
+  |
+5 | character(kind=4, len=3) :: wide
+  |                             ^^^^ 
