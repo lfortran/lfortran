@@ -13491,6 +13491,69 @@ public:
         }
     }
 
+    // Resolves a type parameter inquiry (`%kind`, `%len`) or a complex part
+    // designator (`%re`, `%im`) that is applied to an arbitrary expression,
+    // such as the `%re` in `d%c%re` where the base `d%c` is a component
+    // reference rather than a plain variable. Returns nullptr when `base` is
+    // of a derived or union type, in which case the caller resolves the
+    // member through that type's symbol table instead.
+    ASR::asr_t* resolve_intrinsic_type_member(const Location &loc,
+            const std::string &member_name, ASR::expr_t* base,
+            const std::string &base_name) {
+        ASR::ttype_t* base_type = ASRUtils::extract_type(ASRUtils::expr_type(base));
+        if (ASR::is_a<ASR::StructType_t>(*base_type) ||
+                ASR::is_a<ASR::UnionType_t>(*base_type)) {
+            return nullptr;
+        }
+        if (member_name == "kind") {
+            ASRUtils::create_intrinsic_function create_func =
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(member_name);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, base);
+            return create_func(al, loc, args, diag);
+        }
+        if (ASR::is_a<ASR::Complex_t>(*base_type)) {
+            if (member_name != "re" && member_name != "im") {
+                diag.add(Diagnostic("Complex variable '" + base_name + "' only has %re, %im, and %kind members, not '" + member_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(base_type)));
+            if (ASRUtils::is_array(ASRUtils::expr_type(base))) {
+                ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, base);
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(base)), m_dims);
+                Vec<ASR::dimension_t> dim_vec;
+                dim_vec.from_pointer_n_copy(al, m_dims, n_dims);
+                ASR::ttype_t* real_arr_type = ASRUtils::duplicate_type(al, real_type,
+                    &dim_vec, ASR::array_physical_typeType::DescriptorArray, true);
+                if (member_name == "re") {
+                    return ASR::make_ComplexRe_t(al, loc, desc_arr, real_arr_type, nullptr);
+                }
+                return ASR::make_ComplexIm_t(al, loc, desc_arr, real_arr_type, nullptr);
+            }
+            if (member_name == "re") {
+                return ASR::make_ComplexRe_t(al, loc, base, real_type, nullptr);
+            }
+            return ASR::make_ComplexIm_t(al, loc, base, real_type, nullptr);
+        }
+        if (ASR::is_a<ASR::String_t>(*base_type)) {
+            if (member_name != "len") {
+                diag.add(Diagnostic("Character variable '" + base_name + "' only has %len and %kind members, not '" + member_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            return create_StringLen_from_expr(base, int32, loc);
+        }
+        diag.add(Diagnostic("Variable '" + base_name + "' doesn't have any member named, '" + member_name + "'.",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
             const std::string dt_name, ASR::expr_t* dt_expr, ASR::ttype_t* dt_type, SymbolTable*& scope,
             ASR::symbol_t* parent=nullptr) {
@@ -20684,6 +20747,12 @@ public:
                 }
             }
             i = x_n_member - 1;
+            ASR::asr_t* intrinsic_member = resolve_intrinsic_type_member(loc,
+                to_lower(x_m_id), ASRUtils::EXPR(tmp), to_lower(x_m_member[i].m_name));
+            if( intrinsic_member != nullptr ) {
+                tmp = intrinsic_member;
+                return;
+            }
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
             ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
