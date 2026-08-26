@@ -5060,7 +5060,9 @@ int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
     int i ;
     for (i = 0; i < lim; i++) {
         if (s1[i] != s2[i]) {
-            res = s1[i] - s2[i];
+            /* Characters are ordered by their position in the collating
+               sequence, so compare them as unsigned values */
+            res = (unsigned char)s1[i] - (unsigned char)s2[i];
             break;
         }
     }

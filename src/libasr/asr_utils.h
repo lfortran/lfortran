@@ -2830,6 +2830,20 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
 
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
 
+// Returns a string as long as `string_type` with every character equal to
+// `fill`, or nullptr when that length is not known at compile time.
+static inline ASR::expr_t* get_string_filled_with_char(Allocator& al,
+        ASR::ttype_t* string_type, unsigned char fill) {
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(string_type);
+    int64_t len = -1;
+    if (!str_type->m_len || !ASRUtils::extract_value(str_type->m_len, len) || len < 0) {
+        return nullptr;
+    }
+    std::string value((size_t) len, (char) fill);
+    return ASRUtils::EXPR(ASR::make_StringConstant_t(al, string_type->base.loc,
+        s2c(al, value), string_type));
+}
+
 static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type) {
     asr_type = ASRUtils::type_get_past_array(asr_type);
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
@@ -2855,6 +2869,17 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
                     throw LCompilersException("get_minimum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        case ASR::ttypeType::String: {
+            // The smallest character value is char(0), the first character of
+            // the collating sequence (Fortran 2018, 16.9.126 requires MAXVAL of
+            // a zero sized character array to be a string of char(0))
+            ASR::expr_t* min_value = get_string_filled_with_char(al, asr_type, 0);
+            if (!min_value) {
+                throw LCompilersException("get_minimum_value_with_given_type: "
+                    "string length is not known at compile time");
+            }
+            return min_value;
         }
         default: {
             throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
@@ -2888,6 +2913,23 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
                     throw LCompilersException("get_maximum_value_with_given_type: Unsupported real kind " + std::to_string(kind));
             }
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
+        }
+        case ASR::ttypeType::String: {
+            // The largest character value is char(n - 1), the last character of
+            // the collating sequence, where n is the number of characters
+            // representable with the given kind (Fortran 2018, 16.9.135
+            // requires MINVAL of a zero sized character array to be a string
+            // of that character)
+            if (kind != 1) {
+                throw LCompilersException("get_maximum_value_with_given_type: "
+                    "Unsupported character kind " + std::to_string(kind));
+            }
+            ASR::expr_t* max_value = get_string_filled_with_char(al, asr_type, 0xff);
+            if (!max_value) {
+                throw LCompilersException("get_maximum_value_with_given_type: "
+                    "string length is not known at compile time");
+            }
+            return max_value;
         }
         default: {
             throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
