@@ -561,6 +561,7 @@ RUN(NAME max_03 LABELS  llvm llvm_wasm llvm_wasm_emcc) #gfortran does not suppor
 RUN(NAME min_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
+RUN(NAME minmax_02 LABELS gfortran llvm)
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME arithmetic_if_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)

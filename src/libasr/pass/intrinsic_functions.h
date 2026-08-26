@@ -7668,6 +7668,77 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
 
 } // namespace SetRemove
 
+/*
+    The standard requires the result of MAX/MIN with character arguments to
+    have the length of the longest argument, with a shorter selected argument
+    blank-padded on the right. The helpers below build that length, and pad the
+    compile-time argument values so they compare by the collating sequence.
+*/
+
+static inline std::vector<std::string> blank_pad_string_args(Vec<ASR::expr_t*>& args) {
+    std::vector<std::string> values;
+    size_t max_len = 0;
+    for (size_t i = 0; i < args.size(); i++) {
+        values.push_back(ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s);
+        max_len = std::max(max_len, values.back().size());
+    }
+    for (size_t i = 0; i < values.size(); i++) {
+        values[i].resize(max_len, ' ');
+    }
+    return values;
+}
+
+static inline ASR::expr_t* get_string_length_expr(Allocator& al,
+    const Location& loc, ASR::expr_t* arg) {
+    ASR::String_t* str_type = ASRUtils::get_string_type(ASRUtils::expr_type(arg));
+    if (str_type->m_len && str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+        return str_type->m_len;
+    }
+    return ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, arg,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+}
+
+static inline ASR::expr_t* longest_string_length(Allocator& al,
+    const Location& loc, ASR::expr_t** args, size_t n_args) {
+    ASR::expr_t* max_len = get_string_length_expr(al, loc, args[0]);
+    for (size_t i = 1; i < n_args; i++) {
+        ASR::expr_t* len = get_string_length_expr(al, loc, args[i]);
+        int64_t max_len_value, len_value;
+        if (ASRUtils::is_value_constant(max_len, max_len_value) &&
+                ASRUtils::is_value_constant(len, len_value)) {
+            if (len_value > max_len_value) {
+                max_len = len;
+            }
+        } else {
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t* test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                len, ASR::cmpopType::Gt, max_len, logical_type, nullptr));
+            max_len = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, test, len, max_len,
+                int32_type, nullptr));
+        }
+    }
+    return max_len;
+}
+
+/*
+    Returns `type` with its character length replaced by the length of the
+    longest argument. The array shape (if any) of `type` is preserved.
+*/
+static inline ASR::ttype_t* set_longest_string_length(Allocator& al,
+    const Location& loc, ASR::ttype_t* type, ASR::expr_t** args, size_t n_args) {
+    ASR::String_t* str_type = ASRUtils::get_string_type(type);
+    ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+        str_type->m_kind, longest_string_length(al, loc, args, n_args),
+        ASR::string_length_kindType::ExpressionLength, str_type->m_physical_type));
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
+        return ASRUtils::TYPE(ASR::make_Array_t(al, loc, new_str_type,
+            array_type->m_dims, array_type->n_dims, array_type->m_physical_type));
+    }
+    return new_str_type;
+}
+
 namespace Max {
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -7706,16 +7777,15 @@ namespace Max {
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, max_val, arg_type));
         } else if (ASR::is_a<ASR::String_t>(*arg_type)) {
-            char* max_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-            arg_type = expr_type(args[0]);
-            for (size_t i = 1; i < args.size(); i++) {
-                char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
-                if (strcmp(val, max_val) > 0) {
-                    max_val = val;
-                    arg_type = expr_type(args[i]);
+            std::vector<std::string> values = blank_pad_string_args(args);
+            std::string max_val = values[0];
+            for (size_t i = 1; i < values.size(); i++) {
+                if (values[i] > max_val) {
+                    max_val = values[i];
                 }
             }
-            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, max_val, arg_type));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc,
+                s2c(al, max_val), arg_type));
         } else {
             return nullptr;
         }
@@ -7776,15 +7846,21 @@ namespace Max {
             }
             arg_values.push_back(al, arg_value);
         }
+        // For character arguments the result has the length of the longest
+        // argument, and a shorter selected argument is blank-padded to it.
+        ASR::ttype_t *return_type = ASRUtils::expr_type(args[0]);
+        if (ASRUtils::is_character(*return_type)) {
+            return_type = set_longest_string_length(al, loc, return_type, args.p, args.size());
+        }
         if (is_compile_time) {
-            ASR::expr_t *value = eval_Max(al, loc, expr_type(args[0]), arg_values, diag);
+            ASR::expr_t *value = eval_Max(al, loc, return_type, arg_values, diag);
             return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
-                args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+                args.p, args.n, 0, return_type, value);
         } else {
             return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Max),
-                args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
+                args.p, args.n, 0, return_type, nullptr);
         }
     }
 
@@ -7820,8 +7896,10 @@ namespace Max {
                 fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
                     nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
+            // The result has the length of the longest argument, so that a
+            // shorter selected argument gets blank-padded on assignment.
             function_return_type = TYPE(ASR::make_String_t(al, loc, kind,
-                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+                longest_string_length(al, loc, args.p, args.size()),
                 ASR::ExpressionLength, ASR::DescriptorString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
@@ -7886,14 +7964,15 @@ namespace Min {
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, min_val, arg_type));
         } else if (ASR::is_a<ASR::String_t>(*arg_type)) {
-            char* min_val = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-            for (size_t i = 1; i < args.size(); i++) {
-                char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
-                if (strcmp(val, min_val) < 0) {
-                    min_val = val;
+            std::vector<std::string> values = blank_pad_string_args(args);
+            std::string min_val = values[0];
+            for (size_t i = 1; i < values.size(); i++) {
+                if (values[i] < min_val) {
+                    min_val = values[i];
                 }
             }
-            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, min_val, arg_type));
+            return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc,
+                s2c(al, min_val), arg_type));
         } else {
             return nullptr;
         }
@@ -7955,15 +8034,21 @@ namespace Min {
             }
             arg_values.push_back(al, arg_value);
         }
+        // For character arguments the result has the length of the longest
+        // argument, and a shorter selected argument is blank-padded to it.
+        ASR::ttype_t *return_type = ASRUtils::expr_type(args[0]);
+        if (ASRUtils::is_character(*return_type)) {
+            return_type = set_longest_string_length(al, loc, return_type, args.p, args.size());
+        }
         if (is_compile_time) {
-            ASR::expr_t *value = eval_Min(al, loc, expr_type(args[0]), arg_values, diag);
+            ASR::expr_t *value = eval_Min(al, loc, return_type, arg_values, diag);
             return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
-                args.p, args.n, 0, ASRUtils::expr_type(args[0]), value);
+                args.p, args.n, 0, return_type, value);
         } else {
             return ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
                 static_cast<int64_t>(IntrinsicElementalFunctions::Min),
-                args.p, args.n, 0, ASRUtils::expr_type(args[0]), nullptr);
+                args.p, args.n, 0, return_type, nullptr);
         }
     }
 
@@ -7998,8 +8083,10 @@ namespace Min {
                 fill_func_arg("x" + std::to_string(i), TYPE(ASR::make_String_t(al, loc, kind,
                     nullptr, ASR::AssumedLength, ASR::DescriptorString)));
             }
+            // The result has the length of the longest argument, so that a
+            // shorter selected argument gets blank-padded on assignment.
             return_type = TYPE(ASR::make_String_t(al, loc, kind,
-                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+                longest_string_length(al, loc, args.p, args.size()),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
@@ -8020,8 +8107,12 @@ namespace Min {
             }, {}));
         }
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
+            Vec<ASR::expr_t*> caller_args; caller_args.reserve(al, new_args.size());
+            for (size_t i = 0; i < new_args.size(); i++) {
+                caller_args.push_back(al, new_args[i].m_value);
+            }
             return_type = TYPE(ASR::make_String_t(al, loc, kind,
-                EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
+                longest_string_length(al, loc, caller_args.p, caller_args.size()),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
         }
