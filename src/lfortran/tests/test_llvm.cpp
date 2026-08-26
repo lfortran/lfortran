@@ -1,6 +1,9 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <cstring>
+#include <iostream>
+#include <sstream>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -13,8 +16,21 @@
 #include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
+#include <libasr/modfile.h>
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
+
+#include <llvm/Config/llvm-config.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#if LLVM_VERSION_MAJOR >= 17
+#include <llvm/TargetParser/Triple.h>
+#else
+#include <llvm/ADT/Triple.h>
+#endif
 
 using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
@@ -23,6 +39,125 @@ using LCompilers::CompilerOptions;
 // Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
 // FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
 #ifndef __EMSCRIPTEN__
+
+TEST_CASE("LLVM target configuration") {
+    CompilerOptions default_options;
+    LCompilers::LLVMTargetConfig default_config
+        = LCompilers::resolve_llvm_target_config(default_options);
+    CHECK(default_config.cpu == "generic");
+    CHECK(!default_config.emit_cpu_attribute);
+    CHECK(default_config.features.empty());
+
+    CompilerOptions fast_options;
+    fast_options.po.fast = true;
+    LCompilers::LLVMTargetConfig fast_config
+        = LCompilers::resolve_llvm_target_config(fast_options);
+    CHECK(fast_config.host_target);
+    CHECK(fast_config.emit_cpu_attribute);
+    CHECK(!fast_config.cpu.empty());
+
+    CompilerOptions generic_options;
+    generic_options.po.fast = true;
+    generic_options.mcpu = "generic";
+    LCompilers::LLVMTargetConfig generic_config
+        = LCompilers::resolve_llvm_target_config(generic_options);
+    CHECK(generic_config.cpu == "generic");
+    CHECK(generic_config.emit_cpu_attribute);
+    CHECK(generic_config.features.empty());
+
+    CompilerOptions tune_options;
+    tune_options.mtune = "generic";
+    LCompilers::LLVMTargetConfig tune_config
+        = LCompilers::resolve_llvm_target_config(tune_options);
+    CHECK(tune_config.cpu == "generic");
+    CHECK(tune_config.tune_cpu == "generic");
+    CHECK(!tune_config.emit_cpu_attribute);
+
+    llvm::LLVMContext context;
+    llvm::Module module("target_options", context);
+    llvm::FunctionType *function_type = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(context), false);
+    llvm::Function *function = llvm::Function::Create(function_type,
+        llvm::Function::ExternalLinkage, "f", module);
+    llvm::BasicBlock *entry = llvm::BasicBlock::Create(
+        context, "entry", function);
+    llvm::ReturnInst::Create(context, entry);
+    generic_config.apply_target_attributes(module);
+    CHECK(function->getFnAttribute("target-cpu").getValueAsString()
+        == "generic");
+
+    llvm::Triple triple(default_config.triple);
+    CompilerOptions march_options;
+    CompilerOptions cpu_and_march_options;
+    if (triple.isAArch64()) {
+        // `armv8.7-a` is only known to LLVM 12 and later, and `apple-m1`
+        // only to LLVM 13 and later, so pick names that every supported
+        // LLVM version can parse. `armv8-a` is deliberately avoided here:
+        // it is the AArch64 baseline, and LLVM releases before 12 report no
+        // feature at all for it, so it cannot be used to check that `--march`
+        // contributes features.
+#if LLVM_VERSION_MAJOR >= 12
+        march_options.march = "armv8.7-a";
+#else
+        march_options.march = "armv8.2-a";
+#endif
+        cpu_and_march_options.march = "armv8.1-a";
+        cpu_and_march_options.mcpu = "cortex-a57";
+    } else if (triple.getArch() == llvm::Triple::x86_64) {
+        // `llvm/Support/X86TargetParser.h` only exists from LLVM 11 on, so
+        // `--march` cannot be resolved for x86 against older LLVM releases
+        // and there is nothing to check here.
+#if LLVM_VERSION_MAJOR >= 11
+        // The `x86-64-vN` micro-architecture levels were added in LLVM 12.
+#if LLVM_VERSION_MAJOR >= 12
+        march_options.march = "x86-64-v3";
+#else
+        march_options.march = "x86-64";
+#endif
+        cpu_and_march_options.march = "x86-64";
+        cpu_and_march_options.mcpu = "generic";
+#endif
+    }
+    if (!march_options.march.empty()) {
+        LCompilers::LLVMTargetConfig march_config
+            = LCompilers::resolve_llvm_target_config(march_options);
+        CHECK(march_config.cpu == "generic");
+        CHECK(!march_config.features.empty());
+
+        LCompilers::LLVMTargetConfig cpu_and_march_config
+            = LCompilers::resolve_llvm_target_config(
+                cpu_and_march_options);
+        CHECK(cpu_and_march_config.cpu == "generic");
+        CHECK(cpu_and_march_config.tune_cpu
+            == cpu_and_march_options.mcpu);
+        CHECK(!cpu_and_march_config.features.empty());
+    }
+
+    // `native` must resolve on every host. LLVM reports the CPU as "generic"
+    // when it cannot identify it (any CPU newer than the LLVM release in use,
+    // e.g. Zen 3 under LLVM 11), and "generic" is not a name its architecture
+    // tables accept, so this used to abort the compilation.
+    CompilerOptions native_march_options;
+    native_march_options.march = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_march_options));
+
+    CompilerOptions native_mcpu_options;
+    native_mcpu_options.mcpu = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_mcpu_options));
+
+    CompilerOptions native_mtune_options;
+    native_mtune_options.mtune = "native";
+    CHECK_NOTHROW(
+        LCompilers::resolve_llvm_target_config(native_mtune_options));
+
+    CompilerOptions invalid_cpu_options;
+    invalid_cpu_options.mcpu = "not-a-real-cpu";
+    CHECK_THROWS_AS(
+        LCompilers::resolve_llvm_target_config(invalid_cpu_options),
+        LCompilers::LCompilersException);
+}
 
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
@@ -392,8 +527,8 @@ end function)";
     co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     co.platform = LCompilers::get_platform();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, co, "f", "", "", lm);
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "f", "", "", lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -430,8 +565,9 @@ end function)";
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, compiler_options, "f", "", "", lm);
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, compiler_options, "f", "", "",
+            lm);
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -486,6 +622,43 @@ TEST_CASE("FortranEvaluator character result") {
     REQUIRE(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::character);
     CHECK(r.result.str == "hello");
+}
+
+TEST_CASE("FortranEvaluator character function across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module display_result\n"
+        "contains\n"
+        "function wrap(data) result(result)\n"
+        "character(len=*), intent(in) :: data\n"
+        "character(len=:), allocatable :: result\n"
+        "result = \"[\" // data // \"]\"\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"hello\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "[hello]");
+
+    // A later cell must still see the clean function signature, not the
+    // subroutine produced by the character-return lowering pass.
+    r = e.evaluate2(
+        "use display_result\n"
+        "wrap(\"second cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[second cell]");
+
+    // The imported name remains available without another USE statement.
+    r = e.evaluate2("wrap(\"third cell\")");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "[third cell]");
 }
 
 TEST_CASE("FortranEvaluator 3") {
@@ -1543,3 +1716,839 @@ TEST_CASE("FortranEvaluator program unit in a cell") {
     CHECK(r.result.i32 == 5);
 }
 
+TEST_CASE("FortranEvaluator array-argument module procedure across cells") {
+    // ASR passes rewrite symbols in place. In interactive mode the symbol
+    // table is the session state, so a pass that specialises a procedure --
+    // pass_array_by_data, for an assumed-shape array argument -- used to
+    // leave the module holding only the mangled specialisation, and the next
+    // cell failed with "Function 'sf' not found".
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module mf\n"
+        "implicit none\n"
+        "contains\n"
+        "integer function sf(a)\n"
+        "real, intent(in) :: a(:)\n"
+        "sf = size(a)\n"
+        "end function sf\n"
+        "end module mf\n");
+    CHECK(r.ok);
+
+    // called from a later cell
+    r = e.evaluate2("use mf\nreal :: v(3)\nv = 1\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(v)\n");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+
+    // and from another cell again, with a different array
+    r = e.evaluate2("real :: w(5)\nw = 2\n");
+    CHECK(r.ok);
+    r = e.evaluate2("sf(w)\n");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 5);
+
+    // from inside a program unit too
+    r = e.evaluate2(
+        "program pf\n"
+        "use mf\n"
+        "implicit none\n"
+        "real :: u(7)\n"
+        "u = 3\n"
+        "print *, sf(u)\n"
+        "end program pf\n");
+    CHECK(r.ok);
+}
+
+// Shadowing across interactive cells. Each cell is its own TranslationUnit,
+// chained through SymbolTable::parent, so re-declaring a name in a later cell
+// does not overwrite the earlier one: code compiled in earlier cells keeps
+// using the binding that was in scope when it was compiled, and new code sees
+// the new one. This mirrors what Python does in a notebook.
+
+TEST_CASE("FortranEvaluator shadow a variable across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("integer :: i").ok);
+    CHECK(e.evaluate2("i = 1").ok);
+    // A function compiled now binds to the `i` that exists now.
+    CHECK(e.evaluate2(R"(integer function old_i()
+old_i = i
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_i()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-declaring `i` shadows it; the old one stays alive.
+    CHECK(e.evaluate2("integer :: i").ok);
+    CHECK(e.evaluate2("i = 2").ok);
+    r = e.evaluate2("i");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    r = e.evaluate2("old_i()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
+TEST_CASE("FortranEvaluator shadow a function across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(integer function f()
+f = 1
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("f()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-defining `f` shadows it: new code calls the new one.
+    CHECK(e.evaluate2(R"(integer function f()
+f = 2
+end function
+)").ok);
+    r = e.evaluate2("f()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+
+    // The first `f` is still there. Fortran gives no way to name it once it
+    // is shadowed, so this checks the symbol the first cell emitted: the two
+    // definitions live under different names (the second cell qualifies its
+    // symbols by its cell) and both are defined in the JIT.
+    //
+    // The WASM build executes through WasmLFortranExecutor and has no JIT to
+    // look a symbol up in. `FortranEvaluator old and new function side by
+    // side` covers the same ground there, in Fortran rather than by symbol.
+#ifndef __EMSCRIPTEN__
+    CHECK(e.get_llvm_evaluator().execfn<int32_t>("f") == 1);
+#endif
+}
+
+TEST_CASE("FortranEvaluator shadow a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module m
+implicit none
+integer, parameter :: c = 1
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function old_c()
+use m, only: c
+old_c = c
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("old_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    CHECK(e.evaluate2(R"(module m
+implicit none
+integer, parameter :: c = 2
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function new_c()
+use m, only: c
+new_c = c
+end function
+)").ok);
+    r = e.evaluate2("new_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    // The function compiled against the first `m` still sees c == 1.
+    r = e.evaluate2("old_c()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
+// A module declared in an earlier cell is in a parent scope, not in the cell
+// being compiled. Resolving `use` has to look through the chain; otherwise a
+// modfile is searched for on disk, of which there is none in a notebook.
+
+TEST_CASE("FortranEvaluator module using another module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module ma
+implicit none
+integer, parameter :: c = 5
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(module mb
+use ma
+implicit none
+end module
+)").ok);
+    // A program unit resolves `use` through load_module(), which is the path
+    // that used to report "modfile was not found" for ma, a dependency of mb.
+    CHECK(e.evaluate2(R"(program p
+use mb
+implicit none
+if (c /= 5) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator re-exported module symbol across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // mtop re-exports msub's procedure: its scope holds an ExternalSymbol
+    // pointing into msub. The copy taken for the next cell has to point at the
+    // copy of msub, not at the original, or the symbol looks absent.
+    CHECK(e.evaluate2(R"(module msub
+implicit none
+contains
+    integer function twice(i)
+        integer, intent(in) :: i
+        twice = 2 * i
+    end function
+end module
+module mtop
+use msub
+implicit none
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mtop
+implicit none
+if (twice(3) /= 6) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator optional argument across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Calling this with the optional argument absent only works if the pass
+    // that replaces optional arguments with presence flags has been applied to
+    // the procedure in the earlier cell as well as to this cell's call.
+    CHECK(e.evaluate2(R"(module mopt
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (present(lbl)) then
+            if (x(1) /= 1.0) error stop
+        else
+            if (x(1) /= 1.0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mopt
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+call s(a, "with label")
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator re-run a cell calling an optional argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mopt2
+implicit none
+contains
+    subroutine s(x, lbl)
+        real, intent(in) :: x(:)
+        character(len=*), intent(in), optional :: lbl
+        if (x(1) /= 1.0) error stop
+        if (present(lbl)) then
+            if (len(lbl) == 0) error stop
+        end if
+    end subroutine
+end module
+)").ok);
+    // Running the same cell twice has to keep working. The pass that replaces
+    // optional arguments with presence flags rewrites the procedure in place,
+    // so if it were let at the copy handed to the next cell, `lbl` would come
+    // back as a required argument and this call would stop compiling.
+    const char *cell = R"(program p
+use mopt2
+implicit none
+real :: a(3)
+a = 1.0
+call s(a)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator call a procedure no earlier cell called") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // `untouched` is never called in the cell that declares it. Dead-code
+    // elimination would drop it there, leaving the next cell's call with no
+    // definition to link to.
+    CHECK(e.evaluate2(R"(module munused
+implicit none
+integer :: counter = 0
+contains
+    subroutine called_now()
+        counter = counter + 1
+    end subroutine
+    subroutine untouched()
+        counter = counter + 10
+    end subroutine
+end module
+
+program p1
+use munused
+implicit none
+call called_now()
+if (counter /= 1) error stop
+end program
+)").ok);
+    CHECK(e.evaluate2(R"(program p2
+use munused
+implicit none
+call untouched()
+if (counter /= 11) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator shadow a subroutine across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("integer :: r").ok);
+    CHECK(e.evaluate2(R"(subroutine sub()
+r = 1
+end subroutine
+)").ok);
+    // Compiled now, so it calls the `sub` that exists now.
+    CHECK(e.evaluate2(R"(subroutine call_old_sub()
+call sub()
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call call_old_sub()").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // Re-defining `sub` shadows it: a call made now runs the new one.
+    CHECK(e.evaluate2(R"(subroutine sub()
+r = 2
+end subroutine
+)").ok);
+    CHECK(e.evaluate2("call sub()").ok);
+    r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+
+    // The subroutine compiled against the first `sub` still runs the first one.
+    CHECK(e.evaluate2("call call_old_sub()").ok);
+    r = e.evaluate2("r");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
+// Both bindings have to be reachable from a single cell: an accessor compiled
+// against the old one and an accessor compiled against the new one, called
+// side by side. Re-evaluating the old accessor then rebinds it to the new
+// symbol, which is what a notebook user re-running a cell expects.
+
+TEST_CASE("FortranEvaluator old and new variable side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *accessor = R"(integer function f1()
+f1 = x
+end function
+)";
+    CHECK(e.evaluate2("integer :: x").ok);
+    CHECK(e.evaluate2("x = 1").ok);
+    CHECK(e.evaluate2(accessor).ok);
+    CHECK(e.evaluate2("integer :: x").ok);
+    CHECK(e.evaluate2("x = 2").ok);
+    CHECK(e.evaluate2(R"(integer function f2()
+f2 = x
+end function
+)").ok);
+    // One cell, both accessors: the two `x` are live at the same time.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("f1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("f2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2(R"(if (f1() /= 1) error stop
+if (f2() /= 2) error stop
+if (f1() == f2()) error stop
+)").ok);
+
+    // Re-evaluating f1 rebinds it to the `x` that is in scope now.
+    CHECK(e.evaluate2(accessor).ok);
+    r = e.evaluate2("f1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (f1() /= f2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator old and new function side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *caller = R"(integer function g1()
+g1 = f()
+end function
+)";
+    CHECK(e.evaluate2(R"(integer function f()
+f = 1
+end function
+)").ok);
+    CHECK(e.evaluate2(caller).ok);
+    CHECK(e.evaluate2(R"(integer function f()
+f = 2
+end function
+)").ok);
+    CHECK(e.evaluate2(R"(integer function g2()
+g2 = f()
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("g1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("g2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2(R"(if (g1() /= 1) error stop
+if (g2() /= 2) error stop
+if (g1() == g2()) error stop
+)").ok);
+
+    CHECK(e.evaluate2(caller).ok);
+    r = e.evaluate2("g1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (g1() /= g2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator old and new module side by side") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *accessor = R"(integer function a1()
+use mshadow, only: c
+a1 = c
+end function
+)";
+    CHECK(e.evaluate2(R"(module mshadow
+implicit none
+integer, parameter :: c = 1
+end module
+)").ok);
+    CHECK(e.evaluate2(accessor).ok);
+    CHECK(e.evaluate2(R"(module mshadow
+implicit none
+integer, parameter :: c = 2
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(integer function a2()
+use mshadow, only: c
+a2 = c
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("a1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("a2()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    // Both modules are usable at the same time, from one cell.
+    CHECK(e.evaluate2(R"(if (a1() /= 1) error stop
+if (a2() /= 2) error stop
+if (a1() == a2()) error stop
+)").ok);
+
+    CHECK(e.evaluate2(accessor).ok);
+    r = e.evaluate2("a1()");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 2);
+    CHECK(e.evaluate2("if (a1() /= a2()) error stop").ok);
+}
+
+TEST_CASE("FortranEvaluator generic procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the first cell's generic interface has to resolve to the
+    // copies of its specific procedures. Pointing at the originals selects a
+    // procedure that this cell does not hold and never declares.
+    CHECK(e.evaluate2(R"(module mgen
+implicit none
+interface twice
+    module procedure twice_int
+    module procedure twice_real
+end interface
+contains
+    integer function twice_int(i)
+        integer, intent(in) :: i
+        twice_int = 2 * i
+    end function
+    real function twice_real(x)
+        real, intent(in) :: x
+        twice_real = 2 * x
+    end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mgen
+implicit none
+if (twice(3) /= 6) error stop
+if (twice(1.5) /= 3.0) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator a modfile module used by a cell's module") {
+    // A module loaded from a modfile is held by the cell that first used it,
+    // so a later cell resolves it through the chain and its module calls into
+    // the copy. That copy has to be declared before this cell's own modules
+    // are emitted, or the call has nothing to link to.
+    const char *modsrc = R"(module mcellmod
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)";
+    {
+        Allocator al(1024*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "mcellmod.f90";
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(std::strlen(modsrc));
+        LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
+            LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics, nullptr,
+                false, co, lm));
+        std::ofstream out("mcellmod.mod", std::ios::binary);
+        out << LCompilers::save_modfile(*asr, lm);
+    }
+
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    const char *cell = R"(module mcell
+use mcellmod
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mcell
+implicit none
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+    std::remove("mcellmod.mod");
+}
+
+TEST_CASE("FortranEvaluator a program unit using an earlier cell's module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2(R"(module mearly
+implicit none
+contains
+subroutine say(i)
+integer, intent(in) :: i
+if (i /= 3) error stop
+end subroutine
+end module
+)").ok);
+    // A program unit loads the submodules of what it uses, and that walks the
+    // dependencies of mlate. mearly is one of them and it is a parent scope
+    // away, not a modfile on disk.
+    const char *cell = R"(module mlate
+use mearly
+implicit none
+contains
+subroutine show()
+call say(3)
+end subroutine
+end module
+program p
+use mlate
+implicit none
+call show()
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator a type-bound procedure from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of the type carries the binding, which names the procedure it
+    // binds to. Left pointing at the original, the call reaches a procedure
+    // this cell does not hold and code generation never declares.
+    CHECK(e.evaluate2(R"(module mtb
+implicit none
+type :: point
+    real :: x
+contains
+    procedure :: norm
+end type
+contains
+real function norm(self)
+class(point), intent(in) :: self
+norm = abs(self%x)
+end function
+end module
+)").ok);
+    const char *caller = R"(program p
+use mtb
+implicit none
+type(point) :: a
+a%x = -2.0
+if (a%norm() /= 2.0) error stop
+end program
+)";
+#ifdef _WIN32
+    // Running this hangs on Windows, and so does calling any procedure of an
+    // earlier cell that takes a polymorphic argument -- a bug of its own, see
+    // https://github.com/lfortran/lfortran/issues/12494, and not one this fix
+    // introduced: before it the call did not compile at all. Compiling is what
+    // this test is about: without the fix above it fails with "Function code
+    // not generated for 'norm'".
+    {
+        LCompilers::LocationManager lm;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm(caller, lm, lpm, d).ok);
+    }
+#else
+    CHECK(e.evaluate2(caller).ok);
+#endif
+}
+
+TEST_CASE("FortranEvaluator a derived type argument from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A function returning a derived type is turned into a subroutine by a
+    // pass, and the JIT holds it in that form, so the copy has to be
+    // transformed the same way. Its dummy arguments also name the type they
+    // were declared with, which has to be this chain's copy of it or the call
+    // does not type check.
+    CHECK(e.evaluate2(R"(module mret
+implicit none
+type :: vec
+    real :: x
+end type
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(program p
+use mret
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = addv(a, b)
+if (c%x /= 3.0) error stop
+end program
+)").ok);
+}
+
+TEST_CASE("FortranEvaluator a type re-exported by a module across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // Not get_runtime_library_dir(): this binary never sets the execution
+    // mode that answer depends on, so it cannot find the modfiles itself.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // A module the frontend maps an intrinsic name onto holds its own entry
+    // for `c_ptr` as an import rather than as the derived type. A later cell
+    // relinks its copy of the module against that entry, which would name an
+    // ExternalSymbol from an ExternalSymbol -- a chain nothing that reads the
+    // symbol can follow.
+    const char *cell = R"(module mcptr
+use iso_c_binding, only: c_ptr
+implicit none
+contains
+subroutine takes_ptr(p)
+type(c_ptr), intent(in) :: p
+end subroutine
+end module
+program p
+use mcptr
+use iso_c_binding, only: c_ptr, c_null_ptr
+implicit none
+type(c_ptr) :: q
+q = c_null_ptr
+call takes_ptr(q)
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A custom operator names its specific procedures the way a generic
+    // interface does, and asking it for a scope it does not have used to
+    // abort the copy outright.
+    const char *cell = R"(module mop
+implicit none
+type :: vec
+    real :: x
+end type
+interface operator(+)
+    module procedure addv
+end interface
+contains
+type(vec) function addv(a, b)
+type(vec), intent(in) :: a, b
+addv%x = a%x + b%x
+end function
+end module
+program p
+use mop
+implicit none
+type(vec) :: a, b, c
+a%x = 1.0
+b%x = 2.0
+c = a + b
+if (c%x /= 3.0) error stop
+end program
+)";
+    CHECK(e.evaluate2(cell).ok);
+    CHECK(e.evaluate2(cell).ok);
+}
+
+TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("module mdp; integer, parameter :: dp = kind(0.0d0); end module\n").ok);
+    // The name is declared by the first cell, so the message has to quote that
+    // cell. Each cell is compiled on its own; without a range of its own, the
+    // location is read as a position in this cell and quotes its text.
+    const char *cell = "use mdp; integer, parameter :: dp = kind(0.0)\n";
+    // As the prompt and the kernel set it up: nothing, the evaluator names the
+    // cell and keeps its text.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate(cell, false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    std::string message = d.render(lm, cu);
+    CHECK(message.find("use-associated from module 'mdp'") != std::string::npos);
+    CHECK(message.find("<cell 1>") != std::string::npos);
+    CHECK(message.find("<cell 2>") != std::string::npos);
+    // The quoted line is the one that declares dp, not this cell's text.
+    CHECK(message.find("module mdp; integer, parameter :: dp = kind(0.0d0)")
+        != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator the calls the kernel makes") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The kernel reaches the evaluator through get_ast(), get_asr() and
+    // get_llvm() as well, for its %%showast, %%showasr and %%showllvm magics --
+    // Demo1.ipynb ends on three such cells. Each is a cell of its own, and a
+    // cell that is never opened cannot be closed.
+    auto kernel_lm = []() { return LCompilers::LocationManager(); };
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.evaluate("1+3", false, lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 1);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: i\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 2);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_asr("integer :: j\n", lm, d).ok);
+        CHECK(lm.file_ends.size() == 3);
+    }
+    {
+        LCompilers::LocationManager lm = kernel_lm();
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_llvm("integer :: k\n", lm, lpm, d).ok);
+        CHECK(lm.file_ends.size() == 4);
+    }
+    {
+        // A file compiled in interactive mode -- which is how a file holding
+        // statements outside any program unit is compiled -- keeps its name.
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "some_file.f90";
+        lm.files.push_back(fl);
+        LCompilers::diag::Diagnostics d;
+        CHECK(e.get_ast("integer :: m\n", lm, d).ok);
+        CHECK(lm.files.back().in_filename == "some_file.f90");
+    }
+}

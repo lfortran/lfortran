@@ -228,9 +228,14 @@ public:
 
         std::vector<ArgInfo> indices = get_arg_indices_used::get(&x->base, current_scope);
 
-        SymbolTable* global_scope = current_scope->get_global_scope();
+        SymbolTable* global_scope = current_scope->get_tu_scope();
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
-        SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
+        // The hoisted expression may name a type declared inside a program,
+        // which nothing in the global scope can reach and no ExternalSymbol
+        // can import, so the helper belongs where that expression stood.
+        SymbolTable* helper_parent = PassUtils::instantiation_scope_for_expr(
+            global_scope, current_scope, ASRUtils::EXPR((ASR::asr_t*)x));
+        SymbolTable* new_scope = al.make_new<SymbolTable>(helper_parent);
         SymbolTable* new_function_scope_copy = new_function_scope;
         new_function_scope = new_scope;
 
@@ -289,7 +294,7 @@ public:
                     false, false, false);
 
         ASR::symbol_t* new_function_sym = ASR::down_cast<ASR::symbol_t>(new_function);
-        global_scope->add_or_overwrite_symbol(new_function_name, new_function_sym);
+        helper_parent->add_or_overwrite_symbol(new_function_name, new_function_sym);
 
         ASR::expr_t* new_function_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
                         new_function_sym,
@@ -337,7 +342,12 @@ public:
         std::vector<ArgInfo> indices = get_arg_indices_used::get(x, current_scope);
         SymbolTable* global_scope = current_scope->parent;
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
-        SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
+        // The hoisted expression may name a type declared inside a program,
+        // which nothing in the global scope can reach and no ExternalSymbol
+        // can import, so the helper belongs where that expression stood.
+        SymbolTable* helper_parent = PassUtils::instantiation_scope_for_expr(
+            global_scope, current_scope, ASRUtils::EXPR((ASR::asr_t*)x));
+        SymbolTable* new_scope = al.make_new<SymbolTable>(helper_parent);
         SymbolTable* new_function_scope_copy = new_function_scope;
         new_function_scope = new_scope;
 
@@ -397,7 +407,7 @@ public:
                     false, false, false);
 
         ASR::symbol_t* new_function_sym = ASR::down_cast<ASR::symbol_t>(new_function);
-        global_scope->add_or_overwrite_symbol(new_function_name, new_function_sym);
+        helper_parent->add_or_overwrite_symbol(new_function_name, new_function_sym);
 
         ASR::expr_t* new_function_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.loc,
                         new_function_sym,

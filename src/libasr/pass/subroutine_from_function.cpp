@@ -36,6 +36,16 @@ public:
             std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
             : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP){}
 
+        void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+                x.m_external);
+            if (ASR::is_a<ASR::Function_t>(*target)) {
+                this->visit_Function(*down_cast<ASR::Function_t>(target));
+            } else if (ASR::is_a<ASR::Module_t>(*target)) {
+                this->visit_Module(*down_cast<ASR::Module_t>(target));
+            }
+        }
+
 
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
@@ -87,6 +97,27 @@ public:
                     this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
                 }
             }
+        }
+
+        void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+            // In interactive mode each cell is a TranslationUnit chained to
+            // the previous one, so earlier cells' symbols live in ancestor
+            // scopes. Their functions were turned into subroutines when their
+            // own cell was compiled, and the JIT holds them in that form, so
+            // transform them here too: this cell's calls to them are rewritten
+            // below to match, and code generation declares the signature that
+            // was emitted then.
+            for (SymbolTable *s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if (!ASRUtils::is_tu_scope(s)) continue;
+                for (auto &a : s->get_scope()) {
+                    if (ASR::is_a<ASR::Module_t>(*a.second) ||
+                        ASR::is_a<ASR::Function_t>(*a.second)) {
+                        this->visit_symbol(*a.second);
+                    }
+                }
+            }
+            ASR::BaseWalkVisitor<CreateFunctionFromSubroutine>
+                ::visit_TranslationUnit(x);
         }
 
         void visit_Variable(const ASR::Variable_t &x){

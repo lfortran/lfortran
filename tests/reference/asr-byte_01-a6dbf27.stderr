@@ -1,0 +1,5 @@
+style suggestion: The 'byte' type is non-standard, use integer(1) instead
+ --> tests/warnings/byte_01.f90:2:5
+  |
+2 |     byte :: value
+  |     ^^^^ help: write this as 'integer(1)'

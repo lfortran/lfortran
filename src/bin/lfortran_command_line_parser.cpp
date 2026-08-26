@@ -193,6 +193,7 @@ namespace LCompilers::CommandLineInterface {
         }
 
         fast_opts.arg_file = fast_opts.arg_files[0];
+        fast_opts.from_asr = endswith(fast_opts.arg_file, ".asr");
         compiler_options.use_colors = true;
         compiler_options.use_runtime_colors = false;
         compiler_options.indent = true;
@@ -289,6 +290,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-tokens", opts.show_tokens, "Show tokens for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-ast", opts.show_ast, "Show AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-asr", opts.show_asr, "Show ASR for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--from-asr", opts.from_asr,
+            "Parse the input file as ASR text")->group(group_output_debugging_options);
+        app.add_flag("--verify-asr", opts.verify_asr,
+            "Parse and verify standalone ASR text without running passes")->group(group_output_debugging_options);
         app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR")->group(group_output_debugging_options);
         app.add_flag("--show-ast-f90", opts.show_ast_f90, "Show Fortran from AST for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--no-color", opts.arg_no_color, "Turn off colored AST/ASR")->group(group_output_debugging_options);
@@ -296,7 +301,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--no-indent", opts.arg_no_indent, "Turn off Indented print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST")->group(group_output_debugging_options);
         app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format")->group(group_output_debugging_options);
-        app.add_flag("--clojure", compiler_options.po.clojure, "Print ASR in clojure format")->group(group_output_debugging_options);
+        app.add_flag("--clojure", compiler_options.po.clojure,
+            "Print lossless ASR in canonical Clojure/EDN format")->group(group_output_debugging_options);
+        app.add_flag("--no-member-names", compiler_options.po.no_member_names,
+            "Omit ASR member names in Clojure/EDN output")->group(group_output_debugging_options);
         app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format")->group(group_output_debugging_options);
         app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization")->group(group_output_debugging_options);
         app.add_flag("--show-llvm", opts.show_llvm, "Show LLVM IR for the given file and exit")->group(group_output_debugging_options);
@@ -307,6 +315,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asm", opts.show_asm, "Show assembly for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-wat", opts.show_wat, "Show WAT (WebAssembly Text Format) and exit")->group(group_output_debugging_options);
         app.add_flag("--show-julia", opts.show_julia, "Show Julia translation source for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--show-gpu-kernel-source", opts.show_gpu_kernel_source, "Show the GPU kernel source for the backend selected by --gpu and exit")->group(group_output_debugging_options);
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
@@ -315,6 +324,8 @@ namespace LCompilers::CommandLineInterface {
         // Pass and transformation-related flags
         app.add_option("--pass", opts.arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)")->group(group_pass_transformation_options);
         app.add_option("--skip-pass", opts.skip_pass, "Skip an ASR pass in default pipeline")->group(group_pass_transformation_options);
+        app.add_flag("--verify-all-passes", compiler_options.po.verify_all_passes,
+            "Verify ASR after every pass")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);
@@ -331,12 +342,16 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--linker", opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--march", compiler_options.march, "Generate code for the selected instruction-set architecture (`native` for the host)")->group(group_backend_codegen_options);
+        app.add_option("--mcpu", compiler_options.mcpu, "Generate and tune code for the selected CPU (`native` for the host)")->group(group_backend_codegen_options);
+        app.add_option("--mtune", compiler_options.mtune, "Tune code for the selected CPU without changing the instruction set (`native` for the host)")->group(group_backend_codegen_options);
         app.add_flag("--print-targets", opts.print_targets, "Print the registered targets")->group(group_backend_codegen_options);
         app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -537,14 +552,49 @@ namespace LCompilers::CommandLineInterface {
         // if it's the only file, then we use that file
         // to set the compiler_options
         if (opts.arg_files.size() > 0) {
-            opts.arg_file = opts.arg_files[0];
-            for (const auto& file : opts.arg_files) {
-                // if any Fortran file is present, use the first file to
-                // set compiler_options
-                if (endswith(file, ".f90") || endswith(file, ".f") ||
-                    endswith(file, ".F90") || endswith(file, ".F")) {
-                    opts.arg_file = file;
-                    break;
+            auto is_fortran_source = [](const std::string &file) {
+                return endswith(file, ".f90") || endswith(file, ".f") ||
+                    endswith(file, ".F90") || endswith(file, ".F");
+            };
+            size_t asr_file_count = 0;
+            std::string asr_file;
+            for (const std::string &file : opts.arg_files) {
+                if (endswith(file, ".asr")) {
+                    asr_file_count++;
+                    asr_file = file;
+                }
+            }
+            if (opts.from_asr) {
+                opts.arg_file = opts.arg_files[0];
+                for (size_t i = 1; i < opts.arg_files.size(); i++) {
+                    if (is_fortran_source(opts.arg_files[i]) ||
+                            endswith(opts.arg_files[i], ".asr") ||
+                            endswith(opts.arg_files[i], ".ll")) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+            } else if (asr_file_count > 0) {
+                if (asr_file_count != 1) {
+                    throw lc::LCompilersException(
+                        "Exactly one ASR input file is supported");
+                }
+                for (const std::string &file : opts.arg_files) {
+                    if (file != asr_file &&
+                            (is_fortran_source(file) || endswith(file, ".ll"))) {
+                        throw lc::LCompilersException(
+                            "ASR input cannot be mixed with another source file");
+                    }
+                }
+                opts.from_asr = true;
+                opts.arg_file = asr_file;
+            } else {
+                opts.arg_file = opts.arg_files[0];
+                for (const auto& file : opts.arg_files) {
+                    if (is_fortran_source(file)) {
+                        opts.arg_file = file;
+                        break;
+                    }
                 }
             }
         }

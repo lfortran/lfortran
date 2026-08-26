@@ -80,7 +80,7 @@ ifcont6:                                          ; preds = %else5, %then4
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %14 = load i64, i64* %13, align 8
   %15 = trunc i64 %14 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %12, i32 %15, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
   %16 = icmp eq i8* %7, null
   br i1 %16, label %free_done, label %free_nonnull
 
@@ -111,6 +111,6 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i3
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)

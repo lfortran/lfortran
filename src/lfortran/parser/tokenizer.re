@@ -291,6 +291,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'backspace' { KW(BACKSPACE) }
             'bind' { KW(BIND) }
             'block' { KW(BLOCK) }
+            'byte' { KW(BYTE) }
             'call' { KW(CALL) }
             'case' { KW(CASE) }
             'change' { KW(CHANGE) }
@@ -422,7 +423,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'format' {
                 if (last_token == yytokentype::TK_LABEL) {
                     unsigned char *start;
-                    lex_format(cur, loc, start, diagnostics, continue_compilation, this->string_start);
+                    lex_format(cur, loc, start, diagnostics, continue_compilation, this->string_start, loc_offset);
                     yylval.string.p = (char*) start;
                     yylval.string.n = cur-start-1;
                     RET(TK_FORMAT)
@@ -778,14 +779,16 @@ std::string token(unsigned char *tok, unsigned char* cur)
     return std::string((char *)tok, cur - tok);
 }
 
-void token_loc(Location &loc, unsigned char *cur, unsigned char *tok, unsigned char *string_start)
+void token_loc(Location &loc, unsigned char *cur, unsigned char *tok,
+        unsigned char *string_start, uint32_t loc_offset)
 {
-    loc.first = tok-string_start;
-    loc.last = cur-string_start-1;
+    loc.first = tok-string_start+loc_offset;
+    loc.last = cur-string_start-1+loc_offset;
 }
 
 void lex_format(unsigned char *&cur, Location &loc,
-        unsigned char *&start, diag::Diagnostics &diagnostics, bool continue_compilation, unsigned char *&string_start) {
+        unsigned char *&start, diag::Diagnostics &diagnostics, bool continue_compilation,
+        unsigned char *&string_start, uint32_t loc_offset) {
     int num_paren = 0;
     for (;;) {
         unsigned char *tok = cur;
@@ -848,7 +851,7 @@ void lex_format(unsigned char *&cur, Location &loc,
 
 
             * {
-                token_loc(loc, cur, tok, string_start);
+                token_loc(loc, cur, tok, string_start, loc_offset);
                 std::string t = token(tok, cur);
                 diagnostics.add(diag::Diagnostic(
                     "Token '" + t + "' is not recognized in `format` statement",
@@ -869,20 +872,20 @@ void lex_format(unsigned char *&cur, Location &loc,
                 } else {
                     cur--;
                     unsigned char *tmp;
-                    lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
+                    lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start, loc_offset);
                     continue;
                 }
             }
             int whitespace? '(' {
                 cur--;
                 unsigned char *tmp;
-                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
+                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start, loc_offset);
                 continue;
             }
             '*' whitespace? '(' {
                 cur--;
                 unsigned char *tmp;
-                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
+                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start, loc_offset);
                 continue;
             }
             ')' {
@@ -890,7 +893,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 return;
             }
             end {
-                token_loc(loc, cur, tok, string_start);
+                token_loc(loc, cur, tok, string_start, loc_offset);
                 std::string t = token(tok, cur);
                 diagnostics.add(diag::Diagnostic(
                     "End of file not expected in `format` statement '" + t + "'",

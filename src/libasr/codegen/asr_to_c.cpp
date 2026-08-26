@@ -430,6 +430,16 @@ public:
                 convert_variable_decl_util(v, is_array, declare_as_constant, use_ref, dummy,
                     force_declare, force_declare_name, n_dims, m_dims, v_m_type, dims, sub);
             } else if (ASRUtils::is_character(*v_m_type)) {
+                // The C backend represents a character value as a byte string,
+                // so it can only carry kind 1. A kind 4 value is four byte code
+                // units, which `char *`, `strlen` and `strcmp` would all read
+                // as bytes.
+                int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(v_m_type);
+                if (char_kind != 1) {
+                    throw CodeGenError("character(kind=" + std::to_string(char_kind) +
+                        ") is not supported by the C backend, only kind 1 is",
+                        v.base.base.loc);
+                }
                 bool is_fixed_size = true;
                 dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
                 sub = format_type_c(dims, "char *", v.m_name, use_ref, dummy);

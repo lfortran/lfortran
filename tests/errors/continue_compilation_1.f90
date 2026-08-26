@@ -65,7 +65,7 @@ module continue_compilation_1_mod
     end type type_t
 
 
-
+    type, extends(MyClass) :: derived_binding; contains; procedure :: display => display_override; end type  ! {Error} Type bound procedure 'display' of 'derived_binding' overriding the binding of the same name in 'myclass' must take 2 arguments, not 3
 contains
 
     integer function statement_function_name_conflict()
@@ -182,7 +182,7 @@ contains
         procedure(sub_test), pointer :: pf2
         pf2 => dummy_func
     end subroutine proc_ptr_error_tests
-
+    subroutine display_override(self, a, b); class(derived_binding), intent(in) :: self; integer, intent(in) :: a, b; end subroutine
     function op_clash_f(x) result(y)
         integer, intent(in) :: x
         integer :: y
@@ -957,6 +957,48 @@ program continue_compilation_1
         character(kind=4, len=1) :: names(1)
         character(kind=1, len=1) :: key
         print *, findloc(names, key)
+    end subroutine
+
+    subroutine implied_do_loop_variable_not_integer()
+        implicit none
+        real :: r_idx
+        real :: values(3)
+        values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
+        print *, values(1)
+    end subroutine
+
+    subroutine character_kind_mixing_concat()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_kind_mixing_compare()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_literal_kind_not_supported()
+        implicit none
+        character(len=4) :: s
+        s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+    end subroutine
+
+    ! Keep the unsupported character kind declarations last: a rejected
+    ! declaration makes the symbol table visitor skip the program units that
+    ! follow it, which would hide the errors expected above.
+    subroutine character_kind_not_supported()
+        implicit none
+        character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+        character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+        character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
     end subroutine
 end program
 

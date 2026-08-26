@@ -4667,14 +4667,15 @@ public:
             }
         }
 
-        // Skip loops containing real(8)/integer(8) types — Metal has no double/int64 support
-        for (auto &sym : involved_syms) {
-            ASR::ttype_t *t = sym.second.first;
-            ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-            if (base_t->type == ASR::ttypeType::Real &&
-                ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-            if (base_t->type == ASR::ttypeType::Integer &&
-                ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+        if (pass_options.gpu_offload_metal) {
+            for (auto &sym : involved_syms) {
+                ASR::ttype_t *t = sym.second.first;
+                ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
+                if (base_t->type == ASR::ttypeType::Real &&
+                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
+                if (base_t->type == ASR::ttypeType::Integer &&
+                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+            }
         }
 
         // Collect loop variable names

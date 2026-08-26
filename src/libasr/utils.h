@@ -43,6 +43,7 @@ struct PassOptions {
     bool dump_all_passes = false; // For developer debugging
     bool dump_fortran = false; // For developer debugging
     bool pass_cumulative = false; // Apply passes cumulatively
+    bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
     bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
@@ -58,6 +59,7 @@ struct PassOptions {
     bool mangle_underscore_external = false;
     bool json = false;
     bool clojure = false;
+    bool no_member_names = false;
     bool no_loc = false;
     bool visualize = false;
     bool tree = false;
@@ -107,6 +109,8 @@ struct CompilerOptions {
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";
+    // Toolchain driver used to compile and link GPU device code.
+    std::string device_compiler = "nvcc";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -144,6 +148,9 @@ struct CompilerOptions {
     bool rtlib = false;
     bool use_loop_variable_after_loop = false;
     std::string target = "";
+    std::string march = "";
+    std::string mcpu = "";
+    std::string mtune = "";
     std::string arg_o = "";
     bool emit_debug_info = false;
     bool enable_cpython = false;

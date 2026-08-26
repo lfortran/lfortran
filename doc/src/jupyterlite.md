@@ -330,10 +330,11 @@ lfortran mre.f90 && ./a.out
   Write an ordinary **integration test** in `integration_tests/` and register it
   in `integration_tests/CMakeLists.txt` with the `gfortran` and `llvm` labels.
   That is the preferred form of every LFortran test.
-* If it only fails when the code is split across cells (state persisting in the
-  global symbol table between cells, modules defined in one cell and used in the
-  next, a symbol re-added on a second evaluation, ...), it is an *interactive
-  mode* bug and needs an evaluator test — continue below.
+* If it only fails when the code is split across cells (state persisting
+  between cells, modules defined in one cell and used in the next, a symbol
+  re-added on a second evaluation, ...), it is an *interactive mode* bug and
+  needs an evaluator test — continue below. {doc}`interactive_cells` describes
+  how cells are represented in ASR, which is usually where such a bug lives.
 
 ### Step 2 — write the MRE as an evaluator test
 

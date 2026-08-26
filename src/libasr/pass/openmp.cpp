@@ -4091,11 +4091,75 @@ class ParallelRegionVisitor :
 
 };
 
+// A procedure whose dummy the pass turned into a pointer, so that the region
+// can reach it through the thread data, no longer takes what its callers pass.
+// Point a pointer at the actual and pass that: both are descriptors, so this
+// only says in ASR what the call already does.
+class RepointCallArguments: public PassUtils::PassVisitor<RepointCallArguments> {
+
+    public:
+
+        RepointCallArguments(Allocator& al_) : PassVisitor(al_, nullptr) {
+            pass_result.reserve(al, 1);
+        }
+
+        void repoint(ASR::symbol_t* name, ASR::call_arg_t* args, size_t n_args,
+                const Location& loc) {
+            ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(name);
+            if( callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                current_scope == nullptr ) {
+                return;
+            }
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(callee);
+            if( func->n_args != n_args ) {
+                return;
+            }
+            ASRUtils::ASRBuilder b(al, loc);
+            for( size_t i = 0; i < n_args; i++ ) {
+                if( args[i].m_value == nullptr ||
+                    !ASR::is_a<ASR::Var_t>(*args[i].m_value) ||
+                    !ASR::is_a<ASR::Var_t>(*func->m_args[i]) ) {
+                    continue;
+                }
+                ASR::ttype_t* formal = ASRUtils::expr_type(func->m_args[i]);
+                ASR::ttype_t* actual = ASRUtils::expr_type(args[i].m_value);
+                if( formal == nullptr || actual == nullptr ||
+                    !ASRUtils::is_pointer(formal) ||
+                    ASRUtils::is_pointer(actual) ||
+                    !ASRUtils::is_array(actual) ) {
+                    continue;
+                }
+                std::string name_ = current_scope->get_unique_name(
+                    "__libasr_omp_arg_" + std::string(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v)));
+                ASR::expr_t* ptr = b.Variable(current_scope, name_,
+                    ASRUtils::duplicate_type(al, formal),
+                    ASR::intentType::Local);
+                pass_result.push_back(al, ASRUtils::STMT(
+                    ASR::make_Associate_t(al, loc, ptr, args[i].m_value)));
+                args[i].m_value = ptr;
+            }
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            ASR::SubroutineCall_t& xx =
+                const_cast<ASR::SubroutineCall_t&>(x);
+            repoint(xx.m_name, xx.m_args, xx.n_args, x.base.base.loc);
+            if( pass_result.size() > 0 ) {
+                pass_result.push_back(al, ASRUtils::STMT(
+                    (ASR::asr_t*) &xx));
+                remove_original_stmt = true;
+            }
+        }
+};
+
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
     if (pass_options.openmp) {
         ParallelRegionVisitor v(al, pass_options);
         v.visit_TranslationUnit(unit);
+        RepointCallArguments r(al);
+        r.visit_TranslationUnit(unit);
     }
     return;
 }

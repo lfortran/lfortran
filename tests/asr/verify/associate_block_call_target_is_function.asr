@@ -1,0 +1,51 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "generated" (Program
+        (SymbolTable
+          1
+          {
+            "helper" (Function
+              (SymbolTable
+                2
+                {}
+              )
+              "helper"
+              (FunctionType
+                []
+                nil
+                :Source
+                :Implementation
+                nil
+                false
+                false
+                false
+                false
+                false
+                []
+                false
+              )
+              []
+              []
+              []
+              nil
+              :Public
+              true
+              true
+              nil
+            )
+          }
+        )
+        "generated"
+        []
+        [
+          (AssociateBlockCall
+            (SymbolRef 1 "helper")
+          )
+        ]
+      )
+    }
+  )
+  []
+)

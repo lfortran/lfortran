@@ -88,6 +88,8 @@ set(SRC
     asr_utils.cpp
     casting_utils.cpp
     asr_scopes.cpp
+    asr_text.cpp
+    asr_text_parser.cpp
     modfile.cpp
     pickle.cpp
     serialization.cpp

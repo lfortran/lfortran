@@ -9,7 +9,8 @@ namespace LCompilers {
 
     Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
             diag::Diagnostics &diagnostics,
-            llvm::LLVMContext &context, Allocator &al,
+            llvm::LLVMContext &context,
+            const LLVMTargetConfig &target_config, Allocator &al,
             LCompilers::PassManager& pass_manager,
             CompilerOptions &compiler_options,
             const std::string &run_fn,

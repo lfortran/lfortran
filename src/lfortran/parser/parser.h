@@ -39,10 +39,14 @@ public:
 };
 
 // Parses Fortran code to AST
+// `loc_offset` is added to every location the parse produces. Interactive
+// mode gives each cell a range of its own that way; everything else parses a
+// whole file and leaves it at 0.
 Result<AST::TranslationUnit_t*> parse(Allocator &al,
     const std::string &s,
     diag::Diagnostics &diagnostics,
-    const CompilerOptions &co);
+    const CompilerOptions &co,
+    uint32_t loc_offset=0);
 
 // Tokenizes the `input` and return a list of tokens
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,

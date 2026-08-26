@@ -33,6 +33,22 @@ namespace mlir {
 
 namespace LCompilers {
 
+struct LLVMTargetConfig {
+    std::string triple;
+    std::string cpu = "generic";
+    std::string tune_cpu;
+    std::string features;
+    std::string data_layout;
+    bool emit_cpu_attribute = false;
+    bool host_target = false;
+    bool fast = false;
+
+    void apply_target_attributes(llvm::Module &module) const;
+};
+
+LLVMTargetConfig resolve_llvm_target_config(
+    const CompilerOptions &compiler_options);
+
 class LLVMModule
 {
 public:
@@ -65,10 +81,13 @@ class LLVMEvaluator
 private:
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
     std::unique_ptr<llvm::LLVMContext> context;
-    std::string target_triple;
-    llvm::TargetMachine *TM;
+    LLVMTargetConfig target_config;
+    std::unique_ptr<llvm::TargetMachine> TM;
+    LLVMEvaluator(LLVMTargetConfig target_config);
+    void configure_module(llvm::Module &module) const;
 public:
     LLVMEvaluator(const std::string &t = "");
+    LLVMEvaluator(const CompilerOptions &compiler_options);
     ~LLVMEvaluator();
     std::unique_ptr<llvm::Module> parse_module(const std::string &source, const std::string &filename);
     std::unique_ptr<LLVMModule> parse_module2(const std::string &source, const std::string &filename);
@@ -86,6 +105,9 @@ public:
     static std::string llvm_version();
     llvm::LLVMContext &get_context();
     const llvm::DataLayout &get_jit_data_layout();
+    const LLVMTargetConfig &get_target_config() const {
+        return target_config;
+    }
     static void print_targets();
     static std::string get_default_target_triple();
 

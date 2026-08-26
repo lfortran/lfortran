@@ -1,0 +1,13 @@
+{
+    "basename": "asr-variable_initializer_kind_mismatch-11fecfb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/variable_initializer_kind_mismatch.asr",
+    "infile_hash": "ef0d65e45d35e98873612f6d51aba0deecb750887edc7c3331f48574",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-variable_initializer_kind_mismatch-11fecfb.stderr",
+    "stderr_hash": "0d4f16e0964dabf7b6494a56ac744aca377f7d87d0e05256e84f705f",
+    "returncode": 2
+}

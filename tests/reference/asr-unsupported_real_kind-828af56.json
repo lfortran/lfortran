@@ -1,0 +1,13 @@
+{
+    "basename": "asr-unsupported_real_kind-828af56",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/unsupported_real_kind.asr",
+    "infile_hash": "6e5e9b860d82cffff29f32052b3a290a5ec97070307f78632ae324a3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-unsupported_real_kind-828af56.stderr",
+    "stderr_hash": "a9041aabc83ddc16544f9675ba72ad7aaa7ea08f17bb7fcbe3b06191",
+    "returncode": 2
+}

@@ -86,6 +86,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"backspace", KW_BACKSPACE},
     {"bind", KW_BIND},
     {"block", KW_BLOCK},
+    {"byte", KW_BYTE},
     {"call", KW_CALL},
     {"case", KW_CASE},
     {"change", KW_CHANGE},
@@ -289,7 +290,7 @@ const std::vector<std::string> declarators{
             "character",
 	    "logical*",
             "logical",
-            "bytes",
+            "byte",
             "data",
             "type",
             "class",
@@ -873,24 +874,43 @@ struct FixedFormRecursiveDescent {
         unsigned char *end = start;
         if (!try_name(end)) return false;
 
-        // Try parsing array indices, if any
-        while (*end == '(') {
-            end++;  // Move past '('
-            if (*end == ')') {
-                // Empty parentheses, e.g. zero-argument statement function
+        // Try parsing array indices and/or derived-type component accesses,
+        // if any, e.g. `D(1)%X(2)%Y`. These can be interleaved arbitrarily,
+        // so keep consuming `(...)` groups and `%name` segments until
+        // neither matches.
+        while (true) {
+            if (*end == '(') {
+                end++;  // Move past '('
+                if (*end == ')') {
+                    // Empty parentheses, e.g. zero-argument statement function
+                    end++;  // Move past ')'
+                    continue;
+                }
+                if (!try_expr(end, true)) {
+                    return false;  // Parsing failed, it's not an assignment
+                }
+                if (*end != ')') {
+                    return false;  // Expected closing ')', not an assignment
+                }
                 end++;  // Move past ')'
                 continue;
             }
-            if (!try_expr(end, true)) {
-                return false;  // Parsing failed, it’s not an assignment
+            if (*end == '%') {
+                end++;  // Move past '%'
+                if (!try_name(end)) {
+                    return false;  // Expected a component name after '%'
+                }
+                continue;
             }
-            if (*end != ')') {
-                return false;  // Expected closing ')', not an assignment
-            }
-            end++;  // Move past ')'
+            break;
         }
 
-        // After parsing identifier and indices, check if the next character is `=`
+        // After parsing identifier, indices and component accesses, check
+        // if the next character is `=`. This also matches the start of
+        // `=>` (pointer assignment) - that is intentional: as far as this
+        // statement classifier is concerned it's still "an assignment", and
+        // the `=` vs `=>` distinction is made later, at the token level, by
+        // tokenize_line()'s shared lexer (the same one free form uses).
         if (*end == '=') {
             cur = start;  // Reset to the start to re-tokenize as an assignment
             return true;
@@ -1058,8 +1078,16 @@ struct FixedFormRecursiveDescent {
     void lex_common_block_part(unsigned char *&cur) {
         // tokenize / block_1 / a, b
         bool first_slash = true;
+        int paren_depth = 0;
         while(!next_is_eol(cur)) {
-            if (*(cur+1) == '/' && !first_slash) {
+            if (*cur == '(') {
+                paren_depth++;
+            } else if (*cur == ')') {
+                if (paren_depth > 0) paren_depth--;
+            }
+            // A '/' inside parentheses is a division operator (e.g. in an
+            // array dimension like A(20/4)), not a common block delimiter.
+            if (paren_depth == 0 && *(cur+1) == '/' && !first_slash) {
                 if (*cur != ',') {
                     cur+=1;
                 }
@@ -1068,7 +1096,7 @@ struct FixedFormRecursiveDescent {
                 tokenize_until(end);
                 t.cur = cur;
                 break;
-            } else if (*(cur+1) == '/') {
+            } else if (paren_depth == 0 && *(cur+1) == '/') {
                 first_slash = false;
             }
             cur++;
@@ -1116,6 +1144,13 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur, bool continue_compilation = false) {
         int64_t l = eat_label(cur);
         unsigned char *do_pos = nullptr;
+        if (is_named_do_while(cur, do_pos)) {
+            t.cur = cur;
+            tokenize_until(do_pos);
+            cur = do_pos;
+            lex_dowhile(cur);
+            return true;
+        }
         if (is_named_do_loop(cur, do_pos)) {
             t.cur = cur;
             tokenize_until(do_pos);
@@ -1525,6 +1560,15 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    bool is_named_do_while(unsigned char *cur, unsigned char *&do_pos) {
+        unsigned char *tmp = cur;
+        if (!try_name(tmp)) return false;
+        if (!try_next(tmp, ":")) return false;
+        if (!next_is(tmp, "dowhile(")) return false;
+        do_pos = tmp;
+        return true;
+    }
+
     bool label_last(int64_t label) {
         if (do_labels.size() > 0) {
             if (do_labels[do_labels.size()-1] == label) {
@@ -1652,7 +1696,8 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "do");
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
-        while (!next_is(cur, "enddo\n")) {
+        // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
+        while (!next_is(cur, "enddo")) {
             lex_body_statement(cur);
         }
         push_token_advance(cur, "enddo");
