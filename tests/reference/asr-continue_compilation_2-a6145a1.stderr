@@ -836,7 +836,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 490 |     tm2_x = 5 + "x"
     |     ^^^^^       ^^^ type mismatch (integer and string)
 
-semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
+semantic error: variable 'mycircle' doesn't have any member named 'mymember'
    --> tests/errors/continue_compilation_2.f90:497:14
     |
 497 |     print *, myCircle%mymember

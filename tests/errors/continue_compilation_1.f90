@@ -1003,10 +1003,10 @@ program continue_compilation_1
         end type itm_outer_t
         type(itm_t) :: d
         type(itm_outer_t) :: o
-        print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
-        print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
-        print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
-        print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+        print *, d%c%bogus  ! {Error} complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+        print *, d%s%bogus  ! {Error} character variable 's' only has %len and %kind members, not 'bogus'
+        print *, d%i%bogus  ! {Error} variable 'i' doesn't have any member named 'bogus'
+        print *, o%in%c%bogus  ! {Error} complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
     end subroutine
 
     ! Keep the unsupported character kind declarations last: a rejected

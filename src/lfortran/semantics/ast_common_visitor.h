@@ -13286,7 +13286,7 @@ public:
                 }
             }
             if( member == nullptr ) {
-                diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+                diag.add(Diagnostic("variable '" + dt_name + "' doesn't have any member named '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -13376,7 +13376,7 @@ public:
                     member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
                 return expr_;
             }
-            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+            diag.add(Diagnostic("variable '" + dt_name + "' doesn't have any member named '" + var_name + "'",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
@@ -13422,7 +13422,7 @@ public:
                     al, loc, ASR::down_cast<ASR::expr_t>(v_var), member, member_var->m_type, nullptr);
                 return expr_;
             }
-            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+            diag.add(Diagnostic("variable '" + dt_name + "' doesn't have any member named '" + var_name + "'",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
@@ -13439,7 +13439,7 @@ public:
 
         if (ASR::is_a<ASR::Complex_t>(*v_variable_m_type)) {
             if (var_name != "re" && var_name != "im") {
-                diag.add(Diagnostic("Complex variable '" + dt_name + "' only has %re, %im, and %kind members, not '" + var_name + "'",
+                diag.add(Diagnostic("complex variable '" + dt_name + "' only has %re, %im, and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -13508,7 +13508,7 @@ public:
             }
         } else if (ASR::is_a<ASR::String_t>(*v_variable_m_type)) {
             if (var_name != "len") {
-                diag.add(Diagnostic("Character variable '" + dt_name + "' only has %len and %kind members, not '" + var_name + "'",
+                diag.add(Diagnostic("character variable '" + dt_name + "' only has %len and %kind members, not '" + var_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -13517,7 +13517,7 @@ public:
                 dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
             return create_StringLen_from_expr(ASRUtils::EXPR(v_var), int32, loc);
         } else {
-            diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived or union type",
+            diag.add(Diagnostic("variable '" + dt_name + "' is not a derived or union type",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
@@ -13547,7 +13547,7 @@ public:
         }
         if (ASR::is_a<ASR::Complex_t>(*base_type)) {
             if (member_name != "re" && member_name != "im") {
-                diag.add(Diagnostic("Complex variable '" + base_name + "' only has %re, %im, and %kind members, not '" + member_name + "'",
+                diag.add(Diagnostic("complex variable '" + base_name + "' only has %re, %im, and %kind members, not '" + member_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -13575,13 +13575,13 @@ public:
         }
         if (ASR::is_a<ASR::String_t>(*base_type)) {
             if (member_name != "len") {
-                diag.add(Diagnostic("Character variable '" + base_name + "' only has %len and %kind members, not '" + member_name + "'",
+                diag.add(Diagnostic("character variable '" + base_name + "' only has %len and %kind members, not '" + member_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
             return create_StringLen_from_expr(base, int32, loc);
         }
-        diag.add(Diagnostic("Variable '" + base_name + "' doesn't have any member named, '" + member_name + "'.",
+        diag.add(Diagnostic("variable '" + base_name + "' doesn't have any member named '" + member_name + "'",
             Level::Error, Stage::Semantic, {Label("", {loc})}));
         throw SemanticAbort();
     }
@@ -13600,7 +13600,7 @@ public:
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(dt_expr))));
             } else {
-                diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
+                diag.add(Diagnostic("variable '" + dt_name + "' is not a derived type",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -13614,7 +13614,7 @@ public:
         } else if( der_type->m_parent != nullptr ) {
             member = resolve_deriv_type_proc(loc, var_name, "", nullptr, nullptr, scope, der_type->m_parent);
         } else {
-            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+            diag.add(Diagnostic("variable '" + dt_name + "' doesn't have any member named '" + var_name + "'",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }

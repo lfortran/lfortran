@@ -1225,13 +1225,13 @@ semantic error: Incompatible ranks 2 and 1 in assignment
 499 |     matrix = reshape(source, shape_, pad=[0])
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
+semantic error: complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
    --> tests/errors/continue_compilation_1.f90:504:14
     |
 504 |     print *, c%mymember
     |              ^^^^^^^^^^ 
 
-semantic error: Character variable 'c1' only has %len and %kind members, not 'mymember'
+semantic error: character variable 'c1' only has %len and %kind members, not 'mymember'
    --> tests/errors/continue_compilation_1.f90:506:14
     |
 506 |     print *, c1%mymember
@@ -1920,26 +1920,26 @@ semantic error: kind 3 is not supported for character, only 1 and 4 are
 991 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
     |             ^^^^^^^ 
 
-semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+semantic error: complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
     --> tests/errors/continue_compilation_1.f90:1006:18
      |
-1006 |         print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+1006 |         print *, d%c%bogus  ! {Error} complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
      |                  ^^^^^^^^^ 
 
-semantic error: Character variable 's' only has %len and %kind members, not 'bogus'
+semantic error: character variable 's' only has %len and %kind members, not 'bogus'
     --> tests/errors/continue_compilation_1.f90:1007:18
      |
-1007 |         print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
+1007 |         print *, d%s%bogus  ! {Error} character variable 's' only has %len and %kind members, not 'bogus'
      |                  ^^^^^^^^^ 
 
-semantic error: Variable 'i' doesn't have any member named, 'bogus'.
+semantic error: variable 'i' doesn't have any member named 'bogus'
     --> tests/errors/continue_compilation_1.f90:1008:18
      |
-1008 |         print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
+1008 |         print *, d%i%bogus  ! {Error} variable 'i' doesn't have any member named 'bogus'
      |                  ^^^^^^^^^ 
 
-semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+semantic error: complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
     --> tests/errors/continue_compilation_1.f90:1009:18
      |
-1009 |         print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+1009 |         print *, o%in%c%bogus  ! {Error} complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
      |                  ^^^^^^^^^^^^ 
