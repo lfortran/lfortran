@@ -1391,39 +1391,50 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         }
         strncat(formatted_value, val_str, digits);
     } else {
-        char* temp = substring(val_str, 0, scale);
-        strcat(formatted_value, temp);
-        strcat(formatted_value, ".");
-        // formatted_value = "  1."
-        char* new_str = substring(val_str, scale, strlen(val_str));
-        // new_str = "1230000128" case:  1.123e+10
-        int zeros = 0;
-        if (digits < strlen(new_str)) {
+        if (digits + scale < strlen(val_str)) {
             if (digits + scale <= 15) {
-                new_str[15] = '\0';
-                zeros = strspn(new_str, "0");
-                int drop_digits = strlen(new_str) - digits;
-                long long t = round_scaled_digits(new_str, drop_digits, rounding_mode, is_negative);
-                sprintf(new_str, "%lld", t);
-                int index = zeros;
-                while(index--) {
-                    memmove(new_str + 1, new_str, strlen(new_str)+1);
-                    new_str[0] = '0';
+                val_str[15] = '\0';
+                int expected_len = digits + scale;
+                int drop_digits = strlen(val_str) - expected_len;
+                long long t = round_scaled_digits(val_str, drop_digits, rounding_mode, is_negative);
+                sprintf(val_str, "%lld", t);
+                int pad_zeros = expected_len - strlen(val_str);
+                if (pad_zeros < 0) {
+                    rounding_carry = true;
+                    val_str[expected_len] = '\0';
+                }
+                while(pad_zeros-- > 0) {
+                    memmove(val_str + 1, val_str, strlen(val_str)+1);
+                    val_str[0] = '0';
                 }
             } else {
-                if (should_round_up_digits(new_str, digits, rounding_mode, is_negative)) {
+                int round_pos = digits + scale;
+                if (should_round_up_digits(val_str, round_pos, rounding_mode, is_negative)) {
                     int carry = 1;
-                    for (int k = digits - 1; k >= 0 && carry; k--) {
-                        int d = (new_str[k] - '0') + carry;
-                        new_str[k] = (d % 10) + '0';
+                    for (int k = round_pos - 1; k >= 0 && carry; k--) {
+                        int d = (val_str[k] - '0') + carry;
+                        val_str[k] = (d % 10) + '0';
                         carry = d / 10;
                     }
+                    if (carry) {
+                        rounding_carry = true;
+                        memmove(val_str + 1, val_str, strlen(val_str)+1);
+                        val_str[0] = '1';
+                    }
+                }
+                val_str[round_pos + (rounding_carry ? 1 : 0)] = '\0';
+                if (rounding_carry) {
+                    val_str[round_pos] = '\0';
                 }
             }
         }
+        
+        char* temp = substring(val_str, 0, scale);
+        strcat(formatted_value, temp);
+        strcat(formatted_value, ".");
+        char* new_str = substring(val_str, scale, strlen(val_str));
         new_str[digits] = '\0';
         strcat(formatted_value, new_str);
-        // formatted_value = "  1.12"
         internal_free(new_str);
         internal_free(temp);
     }
