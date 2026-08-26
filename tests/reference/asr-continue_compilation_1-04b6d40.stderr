@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1012:7
+    --> tests/errors/continue_compilation_1.f90:1030:7
      |
-1012 |       foo    end type t_recovery
+1030 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,21 +545,21 @@ semantic error: equivalence between a common block variable and this array eleme
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-   --> tests/errors/continue_compilation_1.f90:999:19
-    |
-999 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
-    |                   ^^^^^^ 
+    --> tests/errors/continue_compilation_1.f90:1017:19
+     |
+1017 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1000:19
+    --> tests/errors/continue_compilation_1.f90:1018:19
      |
-1000 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1018 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1001:19
+    --> tests/errors/continue_compilation_1.f90:1019:19
      |
-1001 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1019 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -569,9 +569,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1015:7
+    --> tests/errors/continue_compilation_1.f90:1033:7
      |
-1015 |       class(t_recovery), intent(in) :: self
+1033 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1919,3 +1919,27 @@ semantic error: kind 3 is not supported for character, only 1 and 4 are
     |
 991 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
     |             ^^^^^^^ 
+
+semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1006:18
+     |
+1006 |         print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+     |                  ^^^^^^^^^ 
+
+semantic error: Character variable 's' only has %len and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1007:18
+     |
+1007 |         print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
+     |                  ^^^^^^^^^ 
+
+semantic error: Variable 'i' doesn't have any member named, 'bogus'.
+    --> tests/errors/continue_compilation_1.f90:1008:18
+     |
+1008 |         print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
+     |                  ^^^^^^^^^ 
+
+semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1009:18
+     |
+1009 |         print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+     |                  ^^^^^^^^^^^^ 

@@ -991,6 +991,24 @@ program continue_compilation_1
         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
     end subroutine
 
+    subroutine intrinsic_type_member_not_found()
+        implicit none
+        type :: itm_t
+            complex :: c
+            character(len=5) :: s
+            integer :: i
+        end type itm_t
+        type :: itm_outer_t
+            type(itm_t) :: in
+        end type itm_outer_t
+        type(itm_t) :: d
+        type(itm_outer_t) :: o
+        print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+        print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
+        print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
+        print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.
