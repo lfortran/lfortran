@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1030:7
+    --> tests/errors/continue_compilation_1.f90:1040:7
      |
-1030 |       foo    end type t_recovery
+1040 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,21 +545,21 @@ semantic error: equivalence between a common block variable and this array eleme
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1017:19
+    --> tests/errors/continue_compilation_1.f90:1027:19
      |
-1017 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+1027 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1018:19
+    --> tests/errors/continue_compilation_1.f90:1028:19
      |
-1018 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1028 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1019:19
+    --> tests/errors/continue_compilation_1.f90:1029:19
      |
-1019 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1029 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -569,9 +569,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1033:7
+    --> tests/errors/continue_compilation_1.f90:1043:7
      |
-1033 |       class(t_recovery), intent(in) :: self
+1043 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1943,3 +1943,27 @@ semantic error: Complex variable 'c' only has %re, %im, and %kind members, not '
      |
 1009 |         print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
      |                  ^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1016:13
+     |
+1016 |         r = maxval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1017:13
+     |
+1017 |         r = minval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1018:13
+     |
+1018 |         s = maxval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1019:13
+     |
+1019 |         s = minval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
