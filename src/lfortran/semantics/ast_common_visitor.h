@@ -422,11 +422,15 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
+    // Substring bounds are character positions. For kind > 1 the value holds
+    // UTF-8, so one character can span several bytes and the value has to be
+    // sliced character by character.
     void visit_StringSection(const ASR::StringSection_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
-        std::string str(str_val);
-        int start = 1, end = (int)str.size();
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
+        int start = 1, end = (int)characters.size();
         if (x.m_start) {
             this->visit_expr(*x.m_start);
             start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
@@ -435,18 +439,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             this->visit_expr(*x.m_end);
             end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        int len = end - start + 1;
-        std::string result = len > 0 ? str.substr(start - 1, len) : "";
+        std::string result;
+        for (int i = start; i <= end && i <= (int)characters.size(); i++) {
+            result += characters[i - 1];
+        }
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
 
     void visit_StringItem(const ASR::StringItem_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
         this->visit_expr(*x.m_idx);
         int idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        std::string result(1, str_val[idx - 1]);
+        std::string result = characters[idx - 1];
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
@@ -910,6 +918,18 @@ inline static void set_intrinsic_return_kind(Allocator& al, const Location& loc,
     }
 }
 
+inline static std::string cmpop_to_str(ASR::cmpopType op) {
+    switch (op) {
+        case (ASR::cmpopType::Eq): return "==";
+        case (ASR::cmpopType::NotEq): return "/=";
+        case (ASR::cmpopType::Lt): return "<";
+        case (ASR::cmpopType::LtE): return "<=";
+        case (ASR::cmpopType::Gt): return ">";
+        case (ASR::cmpopType::GtE): return ">=";
+        default: return "";
+    }
+}
+
 inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
@@ -1064,6 +1084,20 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     }
 
     if( overloaded == nullptr ) {
+        if (ASRUtils::is_character(*left_type2) && ASRUtils::is_character(*right_type2)) {
+            int64_t left_kind = ASRUtils::extract_kind_from_ttype_t(left_type2);
+            int64_t right_kind = ASRUtils::extract_kind_from_ttype_t(right_type2);
+            if (left_kind != right_kind) {
+                diag.add(diag::Diagnostic(
+                    "operands of comparison operator '" + cmpop_to_str(asr_op) +
+                    "' must be character with the same kind, found character(" +
+                    std::to_string(left_kind) + ") and character(" +
+                    std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right), left, right)) {
             diag.add(diag::Diagnostic(
@@ -9986,22 +10020,11 @@ public:
                     nullptr, 0,
                     ASR::array_physical_typeType::AssumedRankArray));
             } else {
-                ASR::array_physical_typeType array_physical_type =
-                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
-                                    ASR::array_physical_typeType::DescriptorArray;
-                // A StringArraySinglePointer array is one flat character
-                // buffer, so its elements are plain C characters rather than
-                // string descriptors. Keep the two physical types consistent
-                // here, where the array one is decided: a mismatched pair
-                // leaves the representation of the array ambiguous, and any
-                // consumer would have to pick a winner on its own.
-                if (array_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
-                    str->m_physical_type = ASR::CChar;
-                }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
-                    array_physical_type,
+                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
+                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
 
@@ -10932,8 +10955,17 @@ public:
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
+                        // Substring bounds are character positions. For kind > 1
+                        // the value holds UTF-8, so slice whole characters.
+                        std::vector<std::string> characters =
+                            ASRUtils::string_value_characters(m_str->m_s, s_type->m_kind);
+                        // An initializer shorter than the declared length is
+                        // blank padded, so the value has `str_length` characters.
+                        characters.resize(str_length, " ");
+                        int64_t sliced_len = 0;
                         for( int i = start - 1; i < end; i += step ) {
-                            sliced_str.push_back(m_str->m_s[i]);
+                            sliced_str += characters[i];
+                            sliced_len++;
                         }
                         Str l_str;
                         l_str.from_str(al, sliced_str);
@@ -10941,7 +10973,7 @@ public:
                             ASRUtils::TYPE(ASR::make_String_t(al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type), 
                                 ASRUtils::EXPR(
                                     ASR::make_IntegerConstant_t(
-                                        al, loc, sliced_str.size(),
+                                        al, loc, sliced_len,
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))
                                     )
                                 ),
@@ -19016,9 +19048,11 @@ public:
             throw SemanticAbort();
         }
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Arithmetic", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Arithmetic", x.base.base.loc);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
 
         if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
@@ -19548,6 +19582,16 @@ public:
 
         if( ASR::is_a<ASR::String_t>(*left_type) &&
             ASR::is_a<ASR::String_t>(*right_type) ) { // CreateIntrinisc `stringConcat`
+            int64_t left_kind = ASR::down_cast<ASR::String_t>(left_type)->m_kind;
+            int64_t right_kind = ASR::down_cast<ASR::String_t>(right_type)->m_kind;
+            if (left_kind != right_kind) {
+                diag.add(Diagnostic(
+                    "operands of // must be character with the same kind, "
+                    "found character(" + std::to_string(left_kind) + ") and character("
+                    + std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             Vec<ASR::expr_t*> v; v.reserve(al, 1);
             v.push_back(al, left);
             v.push_back(al, right);
@@ -19629,33 +19673,63 @@ public:
 
     void visit_UnaryOp(const AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
-        ASR::expr_t *operand = ASRUtils::EXPR(tmp);
+        ASR::expr_t *operand = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(operand, "Arithmetic", x.base.base.loc);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
             current_scope, current_function_dependencies,
             current_module_dependencies, diag);
     }
 
+    // Inside a `select rank` block the selector is known to have a specific
+    // rank, so a reference to it takes part in expressions as a descriptor
+    // array of that rank rather than as an assumed rank array. `expr` is
+    // returned unchanged when it does not reference such a selector.
+    ASR::expr_t* cast_assumed_rank_selector(ASR::expr_t* expr) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr)) ||
+                !ASR::is_a<ASR::Var_t>(*expr)) {
+            return expr;
+        }
+        std::string array_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        auto it = assumed_rank_arrays.find(array_name);
+        if (it == assumed_rank_arrays.end()) {
+            return expr;
+        }
+        // `create_array_type_with_empty_dims` returns the element type itself
+        // for `rank(0)`, i.e. a scalar selector.
+        ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(al,
+            it->second, ASRUtils::extract_type(ASRUtils::expr_type(expr)));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+            expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+    }
+
+    // An assumed rank array that is not the selector of an enclosing
+    // `select rank` block has no known rank, so it cannot take part in an
+    // operation. `op_kind` names the kind of operation, e.g. "Comparison".
+    void ensure_not_assumed_rank(ASR::expr_t* expr, const std::string& op_kind,
+            const Location& loc) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return;
+        }
+        std::string array_name = "";
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            array_name = " ('" + std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "')";
+        }
+        diag.add(Diagnostic(op_kind + " operations are not allowed on "
+            "assumed-rank arrays" + array_name,
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_Compare(const AST::Compare_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
-        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(left))) {
-            std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(left)->m_v);
-            if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
-                diag.add(Diagnostic("Comparison operations are not allowed on assumed-rank arrays ('" + array_name + "')",
-                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            } else {
-                size_t rank = assumed_rank_arrays[array_name];
-                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, 
-                    rank, ASRUtils::extract_type(ASRUtils::expr_type(left)));
-                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                    left->base.loc, left, ASR::array_physical_typeType::AssumedRankArray, 
-                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
-                left = cast_expr;
-            }
-        }
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Comparison", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Comparison", x.base.base.loc);
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
@@ -19724,6 +19798,9 @@ public:
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
         int kind = 1;
+        // `s_len` is fixed up below once `kind` is known: a kind > 1 literal
+        // holds UTF-8 in ASR, so its Fortran length is the number of code
+        // points, not the number of bytes.
         if (x.m_kind) {
             kind = std::atoi(x.m_kind);
             if (kind == 0) {
@@ -19771,6 +19848,15 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (!ASRUtils::is_supported_character_kind(kind)) {
+            diag.add(Diagnostic("kind " + std::to_string(kind) +
+                " is not supported for character, only 1 and 4 are",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (kind > 1) {
+            s_len = (int)utf8_codepoint_count(x.m_s);
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, kind, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, s_len,
@@ -20929,6 +21015,14 @@ public:
                 this->visit_expr(*kind_item->m_value);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 str->m_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, kind_item->loc, diag);
+                if (!ASRUtils::is_supported_character_kind(str->m_kind)) {
+                    diag.add(diag::Diagnostic(
+                        "kind " + std::to_string(str->m_kind) +
+                        " is not supported for character, only 1 and 4 are",
+                        Level::Error, Stage::Semantic, {
+                        diag::Label("", {kind_item->loc})}));
+                    throw SemanticAbort();
+                }
                 str->m_physical_type = ASR::DescriptorString;
             }
         } else {

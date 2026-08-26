@@ -1027,6 +1027,7 @@ RUN(NAME select_rank_37 LABELS gfortran llvm)
 RUN(NAME select_rank_38 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME select_rank_39 LABELS gfortran llvm)
 RUN(NAME select_rank_40 LABELS gfortran llvm)
+RUN(NAME select_rank_41 LABELS gfortran llvm)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4778,6 +4779,12 @@ RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
 RUN(NAME achar_kind_01 LABELS gfortran llvm)
 RUN(NAME char4_string_intrinsics_01 LABELS gfortran llvm)
+RUN(NAME char4_io_01 LABELS gfortran llvm)
+RUN(NAME char4_io_02 LABELS gfortran llvm)
+RUN(NAME char4_string_intrinsics_02 LABELS gfortran llvm)
+# GFortran treats each source byte of a kind 4 literal as one character,
+# LFortran (like LLVM Flang) decodes the UTF-8 source into code points.
+RUN(NAME char4_string_literal_01 LABELS llvm)
 
 #test for coarray
 RUN(NAME coarray_01 LABELS gfortran GFORTRAN_ARGS -fcoarray=single)

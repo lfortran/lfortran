@@ -3370,6 +3370,12 @@ filename = "errors/use_associated_redeclaration_1.f90"
 asr = true
 
 [[test]]
+filename = "errors/char4_backend_c.f90"
+c = true
+cpp = true
+wat = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -5427,6 +5433,14 @@ filename = "asr/verify/binary_op_operand_kind_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/binary_op_assumed_rank_operand.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/unary_op_assumed_rank_operand.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
 asr = true
 
@@ -5584,4 +5598,8 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_constructor_element_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/bindc_string_array_physical_type.asr"
 asr = true

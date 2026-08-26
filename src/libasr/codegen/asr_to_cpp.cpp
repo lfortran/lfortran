@@ -289,6 +289,13 @@ public:
                 dims = convert_dims(n_dims, m_dims, size);
                 sub = format_type(dims, "bool", v.m_name, use_ref, dummy);
             } else if (ASRUtils::is_character(*v.m_type)) {
+                // std::string is a byte string, so it can only carry kind 1.
+                int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(v.m_type);
+                if (char_kind != 1) {
+                    throw CodeGenError("character(kind=" + std::to_string(char_kind) +
+                        ") is not supported by the C++ backend, only kind 1 is",
+                        v.base.base.loc);
+                }
                 size_t size;
                 extract_dimensions(v.m_type)
                 dims = convert_dims(n_dims, m_dims, size);

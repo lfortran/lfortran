@@ -65,7 +65,7 @@ then:                                             ; preds = %.entry
 "~select_type_block_.start":                      ; preds = %then
   %19 = call i8* @llvm.stacksave()
   %20 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %20, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %20, i32 10, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %"~select_type_block_.end"
 
 "~select_type_block_.end":                        ; preds = %"~select_type_block_.start"
@@ -91,7 +91,7 @@ then1:                                            ; preds = %else
 "~select_type_block_1.start":                     ; preds = %then1
   %27 = call i8* @llvm.stacksave()
   %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %28, i32 10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %28, i32 10, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   br label %"~select_type_block_1.end"
 
 "~select_type_block_1.end":                       ; preds = %"~select_type_block_1.start"
@@ -117,7 +117,7 @@ then3:                                            ; preds = %else2
 "~select_type_block_2.start":                     ; preds = %then3
   %35 = call i8* @llvm.stacksave()
   %36 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %36, i32 4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %36, i32 4, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
   br label %"~select_type_block_2.end"
 
 "~select_type_block_2.end":                       ; preds = %"~select_type_block_2.start"
@@ -133,7 +133,7 @@ else4:                                            ; preds = %else2
 "~select_type_block_3.start":                     ; preds = %else4
   %37 = call i8* @llvm.stacksave()
   %38 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %38, i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %38, i32 7, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
   br label %"~select_type_block_3.end"
 
 "~select_type_block_3.end":                       ; preds = %"~select_type_block_3.start"
@@ -205,7 +205,7 @@ declare i8* @__lfortran_dynamic_cast(i8*, i8*, i1)
 ; Function Attrs: nounwind
 declare i8* @llvm.stacksave() #1
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 ; Function Attrs: nounwind
 declare void @llvm.stackrestore(i8*) #1

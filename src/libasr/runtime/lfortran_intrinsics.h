@@ -108,7 +108,7 @@ LFORTRAN_API int _lfortran_init_random_seed(unsigned seed);
 LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
-LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, const fchar* end, uint32_t end_len);
+LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len);
 LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
@@ -355,7 +355,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
 LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_size, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
-        bool is_array_unit, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
+        bool is_array_unit, int32_t char_kind, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
         int64_t format_len, ...);
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...);
 LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child);

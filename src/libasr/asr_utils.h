@@ -3121,6 +3121,41 @@ static inline bool is_character(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+// The Fortran characters of a compile time string value: one entry per
+// character. A kind 1 value stores one byte per character, while a kind > 1
+// value stores UTF-8 in `StringConstant::m_s`, so one entry can span several
+// bytes.
+static inline std::vector<std::string> string_value_characters(
+        const char* s, int64_t kind) {
+    std::string str(s);
+    if (kind == 1) {
+        std::vector<std::string> characters;
+        characters.reserve(str.size());
+        for (char c : str) characters.push_back(std::string(1, c));
+        return characters;
+    }
+    return utf8_split(str);
+}
+
+// The Unicode code point of the first character of a compile time string
+// value, i.e. the result of ICHAR/IACHAR applied to it. A kind 1 value yields
+// the byte, a kind > 1 value the code point its UTF-8 encodes.
+static inline int64_t string_first_code_point(ASR::StringConstant_t* s) {
+    int64_t kind = extract_kind_from_ttype_t(s->m_type);
+    if (s->m_s[0] == '\0') return 0;
+    if (kind == 1) return (int64_t)(unsigned char)s->m_s[0];
+    std::vector<uint32_t> code_points = utf8_decode(std::string(s->m_s));
+    LCOMPILERS_ASSERT(code_points.size() >= 1);
+    return (int64_t)code_points[0];
+}
+
+// The character kinds the compiler supports: 1 (one byte per character,
+// ASCII / the default kind) and 4 (four bytes per character, ISO 10646 /
+// UCS-4). This matches GFortran; LLVM Flang additionally supports 2 (UCS-2).
+static inline bool is_supported_character_kind(int64_t kind) {
+    return kind == 1 || kind == 4;
+}
+
 static inline bool is_complex(ASR::ttype_t &x) {
     return ASR::is_a<ASR::Complex_t>(
         *type_get_past_array(
@@ -3956,6 +3991,21 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 
     // Compile-time-know-size Array of strings must be `PointerArray` physical type
     if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
+
+    // A `StringArraySinglePointer` array is one flat character buffer, so its
+    // elements are plain C characters rather than string descriptors. Keeping
+    // the two physical types consistent here, at the single place Array types
+    // are built, means no consumer has to reconcile a contradictory pair.
+    // Rebuild the element type instead of mutating it, as the String node may
+    // be shared with other types.
+    if(type && ASR::is_a<ASR::String_t>(*type) &&
+            physical_type == ASR::StringArraySinglePointer) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
+        if(str->m_physical_type != ASR::CChar) {
+            type = ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc,
+                str->m_kind, str->m_len, str->m_len_kind, ASR::CChar));
+        }
+    }
 
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
