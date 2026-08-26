@@ -2258,6 +2258,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoBroadcast, "co_broadcast")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMax, "co_max")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMin, "co_min")
             default : {
