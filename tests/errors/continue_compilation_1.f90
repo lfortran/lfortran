@@ -971,6 +971,7 @@ program continue_compilation_1
         print *, iand(o'12345', z'1234')
         print *, ior(o'12345', z'1234')
         print *, ieor(o'12345', z'1234')
+    end subroutine
 
     subroutine character_kind_mixing_concat()
         implicit none
@@ -1003,7 +1004,8 @@ program continue_compilation_1
         implicit none
         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
-        character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are    end subroutine
+        character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
