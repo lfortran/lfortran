@@ -5585,3 +5585,7 @@ asr = true
 [[test]]
 filename = "asr/verify/array_constructor_element_type.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/bindc_string_array_physical_type.asr"
+asr = true

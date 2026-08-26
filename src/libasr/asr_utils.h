@@ -3957,6 +3957,21 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     // Compile-time-know-size Array of strings must be `PointerArray` physical type
     if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerArray;}
 
+    // A `StringArraySinglePointer` array is one flat character buffer, so its
+    // elements are plain C characters rather than string descriptors. Keeping
+    // the two physical types consistent here, at the single place Array types
+    // are built, means no consumer has to reconcile a contradictory pair.
+    // Rebuild the element type instead of mutating it, as the String node may
+    // be shared with other types.
+    if(type && ASR::is_a<ASR::String_t>(*type) &&
+            physical_type == ASR::StringArraySinglePointer) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
+        if(str->m_physical_type != ASR::CChar) {
+            type = ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc,
+                str->m_kind, str->m_len, str->m_len_kind, ASR::CChar));
+        }
+    }
+
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
 }

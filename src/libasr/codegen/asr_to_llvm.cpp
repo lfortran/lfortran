@@ -13530,7 +13530,12 @@ public:
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             auto const arr_data_loaded = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arr_type, tmp));
-            tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(m_type), arr_data_loaded); //StringArraySinglePointer = `char*`
+            // `arr_data_loaded` is the source array's data pointer, so read it
+            // with the source's string type. The cast's result type describes
+            // the flat C buffer being produced, not what is being read from.
+            tmp = llvm_utils->get_string_data(
+                ASRUtils::get_string_type(ASRUtils::expr_type(m_arg)),
+                arr_data_loaded); //StringArraySinglePointer = `char*`
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::PointerArray) {
