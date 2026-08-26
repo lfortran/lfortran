@@ -1860,18 +1860,19 @@ public:
                 ASR::symbol_t* sym = var->m_v;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (var_sym->m_storage == ASR::storage_typeType::Parameter && 
-                        var_sym->m_value != nullptr &&
-                        ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
-                        ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
-                        std::string fmt_str = std::string(fmt_const->m_s);
-                        validate_format_string(fmt_str, a_fmt->base.loc, diag);
-                    }
-                    else if (var_sym->m_symbolic_value != nullptr &&
-                             ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
-                        ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
-                        std::string fmt_str = std::string(fmt_const->m_s);
-                        validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                    if (var_sym->m_storage == ASR::storage_typeType::Parameter) {
+                        if (var_sym->m_value != nullptr &&
+                            ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
+                            ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
+                            std::string fmt_str = std::string(fmt_const->m_s);
+                            validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                        }
+                        else if (var_sym->m_symbolic_value != nullptr &&
+                                 ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
+                            ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
+                            std::string fmt_str = std::string(fmt_const->m_s);
+                            validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                        }
                     }
                 }
             }
@@ -2062,18 +2063,19 @@ public:
                         ASR::symbol_t* sym = var->m_v;
                         if (ASR::is_a<ASR::Variable_t>(*sym)) {
                             ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
-                            if (var_sym->m_storage == ASR::storage_typeType::Parameter && 
-                                var_sym->m_value != nullptr &&
-                                ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
-                                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
-                                std::string fmt_str = std::string(fmt_const->m_s);
-                                validate_format_string(fmt_str, a_fmt->base.loc, diag);
-                            }
-                            else if (var_sym->m_symbolic_value != nullptr &&
-                                     ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
-                                ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
-                                std::string fmt_str = std::string(fmt_const->m_s);
-                                validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                            if (var_sym->m_storage == ASR::storage_typeType::Parameter) {
+                                if (var_sym->m_value != nullptr &&
+                                    ASR::is_a<ASR::StringConstant_t>(*var_sym->m_value)) {
+                                    ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_value);
+                                    std::string fmt_str = std::string(fmt_const->m_s);
+                                    validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                                }
+                                else if (var_sym->m_symbolic_value != nullptr &&
+                                         ASR::is_a<ASR::StringConstant_t>(*var_sym->m_symbolic_value)) {
+                                    ASR::StringConstant_t *fmt_const = ASR::down_cast<ASR::StringConstant_t>(var_sym->m_symbolic_value);
+                                    std::string fmt_str = std::string(fmt_const->m_s);
+                                    validate_format_string(fmt_str, a_fmt->base.loc, diag);
+                                }
                             }
                         }
                     }
