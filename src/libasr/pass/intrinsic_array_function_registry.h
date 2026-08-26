@@ -835,6 +835,13 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(array_type));
         return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
+        if (ASR::is_a<ASR::String_t>(*return_type) &&
+            ASR::down_cast<ASR::String_t>(return_type)->m_len_kind ==
+                ASR::string_length_kindType::DeferredLength) {
+            // A deferred length string is only representable as an allocatable;
+            // the reduction allocates it to `len(array)`
+            return_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, return_type));
+        }
     } else if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
         Vec<ASR::dimension_t> dims;
         size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
@@ -869,6 +876,61 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
 }
 
+// A `DeferredLength` string is only a valid declaration for an allocatable or a
+// pointer variable. The `array` dummy argument of a generated reduction is
+// neither, so it is declared with an assumed length instead.
+static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype_t* type) {
+    ASR::ttype_t* element_type = ASRUtils::extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*element_type)) {
+        return type;
+    }
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
+    if (str_type->m_len_kind != ASR::string_length_kindType::DeferredLength) {
+        return type;
+    }
+    ASRBuilder b(al, type->base.loc);
+    ASR::ttype_t* assumed_length_type = b.String(nullptr,
+        ASR::string_length_kindType::AssumedLength, str_type->m_physical_type,
+        str_type->m_kind);
+    if (!ASRUtils::is_array(type)) {
+        return assumed_length_type;
+    }
+    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    return ASRUtils::make_Array_t_util(al, type->base.loc, assumed_length_type,
+        array_type->m_dims, array_type->n_dims, ASR::abiType::Source, true,
+        array_type->m_physical_type, true);
+}
+
+// Seeds a character reduction with its identity value: a string as long as the
+// elements of `array` with every character equal to `fill`. Every element of
+// `array` compares greater than a string of char(0) and smaller than a string
+// of char(255), so seeding this way also gives an empty `array` (a zero sized
+// array, or one fully masked out) the result the standard requires
+// (Fortran 2018, 16.9.126 and 16.9.135).
+static inline void seed_string_reduction(Allocator& al, const Location& loc,
+    SymbolTable* fn_scope, Vec<ASR::stmt_t*>& fn_body, ASRBuilder& b,
+    ASR::expr_t* return_var, ASR::expr_t* array, unsigned char fill) {
+    ASR::ttype_t* return_type = ASRUtils::expr_type(return_var);
+    ASR::expr_t* identity = ASRUtils::get_string_filled_with_char(al,
+        ASRUtils::extract_type(return_type), fill);
+    if (identity) {
+        fn_body.push_back(al, b.Assignment(return_var, identity));
+        return;
+    }
+    // The length of the elements of `array` is only known at runtime
+    if (ASRUtils::is_allocatable(return_type)) {
+        fn_body.push_back(al, b.Allocate(return_var, nullptr, 0, b.StringLen(array)));
+    }
+    ASR::expr_t* idx = b.Variable(fn_scope,
+        fn_scope->get_unique_name("_lcompilers_string_seed_idx", false),
+        int32, ASR::intentType::Local);
+    fn_body.push_back(al, b.DoLoop(idx, b.i32(1), b.StringLen(array), {
+        b.Assignment(b.StringSection(return_var, idx, idx),
+            b.StringConstant(std::string(1, (char) fill), character(1)))
+    }));
+}
+
 static inline void generate_body_for_array_input(Allocator& al, const Location& loc,
     ASR::expr_t* array, ASR::expr_t* return_var, SymbolTable* fn_scope,
     Vec<ASR::stmt_t*>& fn_body, get_initial_value_func get_initial_value, elemental_operation_func elemental_operation,
@@ -882,18 +944,9 @@ static inline void generate_body_for_array_input(Allocator& al, const Location& 
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             if (ASR::is_a<ASR::String_t>(*element_type)) {
-                Vec<ASR::expr_t*> first_idx;
-                first_idx.reserve(al, 1);
-                ASR::expr_t* one = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(
-                        al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind))));
-                first_idx.push_back(al, one);
-                ASR::expr_t* first_elem = PassUtils::create_array_ref(array, first_idx, al);
-                ASR::expr_t* tmp =
-                    builder.Variable(fn_scope, "_lcompilers_string_tmp", element_type,
-                        ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
-                fn_body.push_back(al, builder.Assignment(tmp, first_elem));
-                fn_body.push_back(al, builder.Assignment(return_var, tmp));
+                seed_string_reduction(al, loc, fn_scope, fn_body, builder,
+                    return_var, array,
+                    elemental_operation == &ASRBuilder::Min ? 0xff : 0);
             } else {
                 ASR::expr_t* initial_val = get_initial_value(al, element_type);
                 ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
@@ -1222,6 +1275,19 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
                             "_" + std::to_string(rank) +
                             "_" + std::to_string(overload_id) +
                             "_idx" + std::to_string(index_kind);
+    ASR::ttype_t* arg_element_type = ASRUtils::extract_type(arg_type);
+    if (ASR::is_a<ASR::String_t>(*arg_element_type)) {
+        // Two character arrays whose elements differ only in length compare
+        // equal with `types_equal`, so make the length part of the name of the
+        // generated function to avoid reusing one written for another length
+        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(arg_element_type);
+        int64_t str_len = -1;
+        if (str_type->m_len && ASRUtils::extract_value(str_type->m_len, str_len)) {
+            new_name += "_len" + std::to_string(str_len);
+        } else {
+            new_name += "_lenstar";
+        }
+    }
     // Check if Function is already defined.
     {
         std::string new_func_name = new_name;
@@ -1254,7 +1320,8 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     Vec<ASR::expr_t*> args;
     args.reserve(al, 1);
 
-    ASR::ttype_t* array_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_type);
+    ASR::ttype_t* array_type = assumed_length_if_deferred(al,
+        ASRUtils::duplicate_type_with_empty_dims(al, arg_type));
     fill_func_arg("array", array_type)
     if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
         ASR::ttype_t* dim_type = ASRUtils::TYPE(ASR::make_Integer_t(
@@ -1307,6 +1374,14 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
     } else if( result_dims == 0 ) {
+        ASR::ttype_t* result_type = ASRUtils::extract_type(return_type);
+        if (ASR::is_a<ASR::String_t>(*result_type) && !ASRUtils::is_allocatable(return_type)
+            && ASR::down_cast<ASR::String_t>(result_type)->m_len_kind ==
+                ASR::string_length_kindType::DeferredLength) {
+            // A deferred length result must be allocatable; it is allocated to
+            // `len(array)` when the reduction is seeded
+            return_type = b.allocatable(result_type);
+        }
         return_var = declare("result", return_type, ReturnVar);
     }
 

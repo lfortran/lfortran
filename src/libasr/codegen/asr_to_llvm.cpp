@@ -14478,7 +14478,9 @@ public:
             }
             case (ASR::cmpopType::Gt) : {
                 if( is_single_char ) {
-                    tmp = builder->CreateICmpSGT(left, right);
+                    // characters are ordered by their position in the
+                    // collating sequence, so compare them as unsigned values
+                    tmp = builder->CreateICmpUGT(left, right);
                 } else {
                     tmp = builder->CreateICmpSGT(tmp, llvm::ConstantInt::get(context, llvm::APInt(32,0)));
                 }
@@ -14486,7 +14488,9 @@ public:
             }
             case (ASR::cmpopType::GtE) : {
                 if( is_single_char ) {
-                    tmp = builder->CreateICmpSGE(left, right);
+                    // characters are ordered by their position in the
+                    // collating sequence, so compare them as unsigned values
+                    tmp = builder->CreateICmpUGE(left, right);
                 } else {
                     tmp = builder->CreateICmpSGE(tmp, llvm::ConstantInt::get(context, llvm::APInt(32,0)));
                 }
@@ -14494,7 +14498,9 @@ public:
             }
             case (ASR::cmpopType::Lt) : {
                 if( is_single_char ) {
-                    tmp = builder->CreateICmpSLT(left, right);
+                    // characters are ordered by their position in the
+                    // collating sequence, so compare them as unsigned values
+                    tmp = builder->CreateICmpULT(left, right);
                 } else {
                     tmp = builder->CreateICmpSLT(tmp, llvm::ConstantInt::get(context, llvm::APInt(32,0)));
                 }
@@ -14502,7 +14508,9 @@ public:
             }
             case (ASR::cmpopType::LtE) : {
                 if( is_single_char ) {
-                    tmp = builder->CreateICmpSLE(left, right);
+                    // characters are ordered by their position in the
+                    // collating sequence, so compare them as unsigned values
+                    tmp = builder->CreateICmpULE(left, right);
                 } else {
                     tmp = builder->CreateICmpSLE(tmp, llvm::ConstantInt::get(context, llvm::APInt(32,0)));
                 }

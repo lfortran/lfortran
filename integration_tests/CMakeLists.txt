@@ -3293,6 +3293,7 @@ RUN(NAME empty_array_02 LABELS gfortran llvm)
 
 RUN(NAME empty_array_03 LABELS gfortran llvm)
 RUN(NAME empty_array_04 LABELS gfortran llvm)
+RUN(NAME empty_array_05 LABELS gfortran llvm)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
