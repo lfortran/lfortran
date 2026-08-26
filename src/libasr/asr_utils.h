@@ -3095,6 +3095,18 @@ static inline bool is_integer(ASR::ttype_t &x) {
                 type_get_past_pointer(&x))));
 }
 
+// Per the Fortran standard, IAND, IOR, and IEOR each require that their
+// two integer arguments not both be BOZ literal constants: if only one
+// argument is BOZ, it is converted to the kind of the other; if both are
+// BOZ there is no other kind to convert to, so this is forbidden.
+static inline bool is_boz_integer_constant(ASR::expr_t* expr) {
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+        return false;
+    }
+    ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+    return int_const->m_intboz_type != ASR::integerbozType::Decimal;
+}
+
 static inline bool is_unsigned_integer(ASR::ttype_t &x) {
     return ASR::is_a<ASR::UnsignedInteger_t>(
         *type_get_past_array(
