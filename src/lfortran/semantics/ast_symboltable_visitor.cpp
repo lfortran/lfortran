@@ -3816,6 +3816,7 @@ public:
 
             add_custom_operator(proc, assgn[current_scope]);
         }
+        assgn_proc_names_locations.clear();
     }
 
     void add_generic_procedures() {
@@ -4119,6 +4120,7 @@ public:
                 sync_pdt_specialization_symbols(clss, current_scope);
             }
         }
+        generic_class_procedures.clear();
     }
 
     bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
@@ -4403,6 +4405,8 @@ public:
             }
         }
         check_class_procedure_overrides();
+        class_procedures.clear();
+        class_deferred_procedures.clear();
     }
 
     // The name of the derived type that declares the binding `x` overrides.
