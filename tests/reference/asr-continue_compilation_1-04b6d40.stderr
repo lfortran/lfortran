@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1012:7
+    --> tests/errors/continue_compilation_1.f90:1018:7
      |
-1012 |       foo    end type t_recovery
+1018 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -545,21 +545,21 @@ semantic error: equivalence between a common block variable and this array eleme
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-   --> tests/errors/continue_compilation_1.f90:999:19
-    |
-999 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
-    |                   ^^^^^^ 
+    --> tests/errors/continue_compilation_1.f90:1005:19
+     |
+1005 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1000:19
+    --> tests/errors/continue_compilation_1.f90:1006:19
      |
-1000 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1006 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1001:19
+    --> tests/errors/continue_compilation_1.f90:1007:19
      |
-1001 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1007 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -569,9 +569,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1015:7
+    --> tests/errors/continue_compilation_1.f90:1021:7
      |
-1015 |       class(t_recovery), intent(in) :: self
+1021 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -1903,19 +1903,19 @@ semantic error: The implied do loop variable 'r_idx' must be a scalar integer, n
     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: operands of // must be character with the same kind, found character(4) and character(1)
-   --> tests/errors/continue_compilation_1.f90:976:18
+   --> tests/errors/continue_compilation_1.f90:982:18
     |
-976 |         print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+982 |         print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
     |                  ^^^^^^^^^^^^^^ 
 
 semantic error: operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
-   --> tests/errors/continue_compilation_1.f90:985:13
+   --> tests/errors/continue_compilation_1.f90:991:13
     |
-985 |         if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+991 |         if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
     |             ^^^^^^^^^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-   --> tests/errors/continue_compilation_1.f90:991:13
+   --> tests/errors/continue_compilation_1.f90:997:13
     |
-991 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+997 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
     |             ^^^^^^^ 

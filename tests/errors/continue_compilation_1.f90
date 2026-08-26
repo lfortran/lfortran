@@ -967,6 +967,12 @@ program continue_compilation_1
         print *, values(1)
     end subroutine
 
+    subroutine iand_ior_ieor_boz_both_args()
+        print *, iand(o'12345', z'1234')
+        print *, ior(o'12345', z'1234')
+        print *, ieor(o'12345', z'1234')
+    end subroutine
+
     subroutine character_kind_mixing_concat()
         implicit none
         character(kind=4, len=3) :: wide

@@ -630,7 +630,8 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_type_arg": 2
+            "same_type_arg": 2,
+            "extra_check": "reject_both_boz_args"
         },
     ],
     "And": [
@@ -643,7 +644,8 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_type_arg": 2
+            "same_type_arg": 2,
+            "extra_check": "reject_both_boz_args"
         },
     ],
     "Or": [
@@ -656,7 +658,8 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
-            "same_type_arg": 2
+            "same_type_arg": 2,
+            "extra_check": "reject_both_boz_args"
         },
     ],
     "Xor": [
@@ -1052,6 +1055,9 @@ def add_verify_arg_type_src(func_name):
                 required_kind = list(arg_spec.values())[0]
                 src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(arg_type{arg_pos});\n"
                 src += 3 * indent + f'ASRUtils::require_impl(kind == {required_kind}, "{arg_name} argument of `{func_name.lower()}` must have kind equal to {required_kind}", x.base.base.loc, diagnostics);\n'
+        extra_check = arg_info.get("extra_check", None)
+        if extra_check == "reject_both_boz_args":
+            src += 3 * indent + f'ASRUtils::require_impl(!(ASRUtils::is_boz_integer_constant(x.m_args[0]) && ASRUtils::is_boz_integer_constant(x.m_args[1])), "\'I\' and \'J\' arguments of \'{func_name}\' cannot both be BOZ literal constants", x.base.base.loc, diagnostics);\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'ASRUtils::require_impl(false, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);\n'
