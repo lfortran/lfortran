@@ -65,7 +65,7 @@ end subroutine draw_rcurve
 program derived_types_157
 
     use iso_c_binding
-    use m_draw
+    use derived_types_157_m
 
     implicit none
 
