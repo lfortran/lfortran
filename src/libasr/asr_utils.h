@@ -78,6 +78,7 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
 inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions=false);
+inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr, bool check_for_dimensions=false);
 
 static inline std::string type_to_str_python_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 
@@ -4852,8 +4853,19 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
  * 3) both are unlimited polymorphic types
  */
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
+    if (a == b || is_parent(a, b) || is_parent(b, a) ||
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b))) {
+        return true;
+    }
+
+    if (std::string(a->m_name) == std::string(b->m_name)) {
+        if ((a->m_abi == ASR::abiType::BindC && b->m_abi == ASR::abiType::BindC) ||
+            (a->m_is_sequence && b->m_is_sequence)) {
+            return types_equal(a->m_struct_signature, b->m_struct_signature, nullptr, nullptr, false);
+        }
+    }
+
+    return false;
 }
 
 // Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
@@ -5013,7 +5025,7 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
 //
 // Returns true if the types are structurally equal.
 inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
-    bool check_for_dimensions=false) {
+    bool check_for_dimensions) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
