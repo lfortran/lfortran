@@ -22,6 +22,14 @@ program intrinsics_474
     if (abs(c(1) - 1.5) > 1e-6) error stop
     if (abs(c(2) - 2.5) > 1e-6) error stop
 
+    d = "abc"
+    call co_broadcast(d, 1)
+    if (d /= "abc") error stop
+
+    e = ["abc", "xyz"]
+    call co_broadcast(e, source_image=1)
+    if (e(1) /= "abc") error stop
+    if (e(2) /= "xyz") error stop
 
     f = .true.
     call co_broadcast(f, 1)
