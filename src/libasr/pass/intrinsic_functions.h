@@ -2651,17 +2651,30 @@ namespace Ble {
 
 } // namespace Ble
 
+//     Character arguments are compared by the comparing sequence after the shorter
+//     is blank-padded on the right to the length of the longer. Pad compile-time
+//     strings before comparing so they compare by the collating sequence..
+//     Used by MAX/MIN eval_* and LGT/LLT/LGE/LLE eval_*.
+
+static inline std::vector<std::string> blank_pad_string_args(Vec<ASR::expr_t*>& args) {
+    std::vector<std::string> values;
+    size_t max_len = 0;
+    for (size_t i = 0; i < args.size(); i++) {
+        values.push_back(ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s);
+        max_len = std::max(max_len, values.back().size());
+    }
+    for (size_t i = 0; i < values.size(); i++) {
+        values[i].resize(max_len, ' ');
+    }
+    return values;
+}
+
 namespace Lgt {
 
     static ASR::expr_t *eval_Lgt(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-        bool result = false;
-        if (strcmp(string_A, string_B) > 0) {
-            result = true;
-        }
-        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        std::vector<std::string> values = blank_pad_string_args(args);
+        return make_ConstantWithType(make_LogicalConstant_t, values[0] > values[1], t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Lgt(Allocator &al, const Location &loc,
@@ -2685,13 +2698,8 @@ namespace Llt {
 
     static ASR::expr_t *eval_Llt(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-        bool result = false;
-        if (strcmp(string_A, string_B) < 0) {
-            result = true;
-        }
-        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        std::vector<std::string> values = blank_pad_string_args(args);
+        return make_ConstantWithType(make_LogicalConstant_t, values[0] < values[1], t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Llt(Allocator &al, const Location &loc,
@@ -2715,13 +2723,8 @@ namespace Lge {
 
     static ASR::expr_t *eval_Lge(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-        bool result = false;
-        if (strcmp(string_A, string_B) >= 0) {
-            result = true;
-        }
-        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        std::vector<std::string> values = blank_pad_string_args(args);
+        return make_ConstantWithType(make_LogicalConstant_t, values[0] >= values[1], t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Lge(Allocator &al, const Location &loc,
@@ -2745,13 +2748,8 @@ namespace Lle {
 
     static ASR::expr_t *eval_Lle(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        char* string_A = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        char* string_B = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
-        bool result = false;
-        if (strcmp(string_A, string_B) <= 0) {
-            result = true;
-        }
-        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        std::vector<std::string> values = blank_pad_string_args(args);
+        return make_ConstantWithType(make_LogicalConstant_t, values[0] <= values[1], t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Lle(Allocator &al, const Location &loc,
@@ -7740,21 +7738,10 @@ static inline ASR::asr_t* create_SetRemove(Allocator& al, const Location& loc,
     The standard requires the result of MAX/MIN with character arguments to
     have the length of the longest argument, with a shorter selected argument
     blank-padded on the right. The helpers below build that length, and pad the
-    compile-time argument values so they compare by the collating sequence.
+    compile-time argument values so they compare by the collating sequence. 
+    The helper `blank_pad_string_args` as defined above is used to pad the compile-time
+    argument values.
 */
-
-static inline std::vector<std::string> blank_pad_string_args(Vec<ASR::expr_t*>& args) {
-    std::vector<std::string> values;
-    size_t max_len = 0;
-    for (size_t i = 0; i < args.size(); i++) {
-        values.push_back(ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s);
-        max_len = std::max(max_len, values.back().size());
-    }
-    for (size_t i = 0; i < values.size(); i++) {
-        values[i].resize(max_len, ' ');
-    }
-    return values;
-}
 
 static inline ASR::expr_t* get_string_length_expr(Allocator& al,
     const Location& loc, ASR::expr_t* arg) {
