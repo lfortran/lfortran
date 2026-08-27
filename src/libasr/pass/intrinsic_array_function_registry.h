@@ -389,6 +389,21 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         if (size == 0 && intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Iparity) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, t));
         }
+        bool is_max_or_min = intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal ||
+                             intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal;
+        if (size == 0 && is_max_or_min && ASRUtils::is_character(*t)) {
+            // MAXVAL of a zero sized character array is a string of char(0) and
+            // MINVAL of one is a string of char(n - 1), the last character of
+            // the collating sequence (Fortran 2018, 16.9.126 and 16.9.135).
+            // A length or a kind we cannot fold gives nullptr, leaving the
+            // reduction to be evaluated at runtime.
+            ASR::ttype_t* string_type = ASRUtils::extract_type(t);
+            if (ASRUtils::extract_kind_from_ttype_t(string_type) != 1) {
+                return nullptr;
+            }
+            return ASRUtils::get_string_filled_with_char(al, string_type,
+                intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal ? 0xff : 0);
+        }
         if (size == 0 && intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal) {
             return ASRUtils::get_minimum_value_with_given_type(al, t);
         }
@@ -802,6 +817,11 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     }
     if (dim && mask) {
         overload_id = id_array_dim_mask;
+    }
+    if (overload_id != id_array && ASRUtils::is_character(*ASRUtils::expr_type(array))) {
+        append_error(diag, "`dim` and `mask` arguments to `" + intrinsic_func_name +
+            "` are not implemented yet for arrays of character type", loc);
+        return nullptr;
     }
 
     ASR::expr_t *value = nullptr;

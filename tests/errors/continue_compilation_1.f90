@@ -1009,6 +1009,16 @@ program continue_compilation_1
         print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
     end subroutine
 
+    subroutine character_maxval_dim_mask_not_supported()
+        implicit none
+        character(len=3) :: c(2,2), r(2), s
+        c = 'abc'
+        r = maxval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+        r = minval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+        s = maxval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+        s = minval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.

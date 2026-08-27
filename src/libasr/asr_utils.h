@@ -2856,7 +2856,9 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
                 case 4: val = std::numeric_limits<int32_t>::min(); break;
                 case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
-                    throw LCompilersException("get_minimum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
+                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
+                    LCOMPILERS_ASSERT(false);
+                    val = 0;
             }
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
         }
@@ -2870,19 +2872,10 @@ static inline ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR:
             }
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
-        case ASR::ttypeType::String: {
-            // The smallest character value is char(0), the first character of
-            // the collating sequence (Fortran 2018, 16.9.126 requires MAXVAL of
-            // a zero sized character array to be a string of char(0))
-            ASR::expr_t* min_value = get_string_filled_with_char(al, asr_type, 0);
-            if (!min_value) {
-                throw LCompilersException("get_minimum_value_with_given_type: "
-                    "string length is not known at compile time");
-            }
-            return min_value;
-        }
         default: {
-            throw LCompilersException("get_minimum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            // MaxVal and MinVal only accept integer, real and character arrays,
+            // and a character reduction is seeded with its identity instead
+            LCOMPILERS_ASSERT(false);
         }
     }
     return nullptr;
@@ -2900,7 +2893,9 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
                 case 4: val = std::numeric_limits<int32_t>::max(); break;
                 case 8: val = std::numeric_limits<int64_t>::max(); break;
                 default:
-                    throw LCompilersException("get_maximum_value_with_given_type: Unsupported integer kind " + std::to_string(kind));
+                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
+                    LCOMPILERS_ASSERT(false);
+                    val = 0;
             }
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_type->base.loc, val, asr_type));
         }
@@ -2914,25 +2909,10 @@ static inline ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR:
             }
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, val, asr_type));
         }
-        case ASR::ttypeType::String: {
-            // The largest character value is char(n - 1), the last character of
-            // the collating sequence, where n is the number of characters
-            // representable with the given kind (Fortran 2018, 16.9.135
-            // requires MINVAL of a zero sized character array to be a string
-            // of that character)
-            if (kind != 1) {
-                throw LCompilersException("get_maximum_value_with_given_type: "
-                    "Unsupported character kind " + std::to_string(kind));
-            }
-            ASR::expr_t* max_value = get_string_filled_with_char(al, asr_type, 0xff);
-            if (!max_value) {
-                throw LCompilersException("get_maximum_value_with_given_type: "
-                    "string length is not known at compile time");
-            }
-            return max_value;
-        }
         default: {
-            throw LCompilersException("get_maximum_value_with_given_type: Not implemented " + std::to_string(asr_type->type));
+            // MaxVal and MinVal only accept integer, real and character arrays,
+            // and a character reduction is seeded with its identity instead
+            LCOMPILERS_ASSERT(false);
         }
     }
     return nullptr;
