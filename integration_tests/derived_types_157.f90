@@ -1,4 +1,4 @@
-module m_draw
+module derived_types_157_m
 
     use iso_c_binding
     implicit none
@@ -44,7 +44,7 @@ contains
 
     end subroutine rcurve
 
-end module m_draw
+end module derived_types_157_m
 
 
 ! Actual implementation
@@ -62,7 +62,7 @@ subroutine draw_rcurve(geom) bind(c, name='draw_rcurve')
 end subroutine draw_rcurve
 
 
-program test
+program derived_types_157
 
     use iso_c_binding
     use m_draw
@@ -75,4 +75,4 @@ program test
 
     call rcurve(a)
 
-end program test
+end program derived_types_157
