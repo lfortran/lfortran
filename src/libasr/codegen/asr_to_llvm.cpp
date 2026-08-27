@@ -1273,7 +1273,7 @@ public:
                 LCOMPILERS_ASSERT( str->m_len )
 
                 tmp = nullptr;
-                visit_expr_load_wrapper(str->m_len, 1);
+                visit_expr_load_wrapper(str->m_len, 1, true);
                 llvm::Value* str_len = tmp;
 
                 // Arrays are allocated on heap by default.
