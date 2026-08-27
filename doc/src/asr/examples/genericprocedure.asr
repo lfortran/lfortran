@@ -1,0 +1,165 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "show" (GenericProcedure
+              :parent_symtab 1
+              :name "show"
+              :procs [
+                (SymbolRef 1 "show_int")
+                (SymbolRef 1 "show_real")
+              ]
+              :access :Public
+            )
+            "show_int" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "x" (Variable
+                    :parent_symtab 2
+                    :name "x"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "show_int"
+              :function_signature (FunctionType
+                :arg_types [
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 2 "x")
+                )
+              ]
+              :body []
+              :return_var nil
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "show_real" (Function
+              :symtab (SymbolTable
+                :id 3
+                :symbols {
+                  "x" (Variable
+                    :parent_symtab 3
+                    :name "x"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "show_real"
+              :function_signature (FunctionType
+                :arg_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 3 "x")
+                )
+              ]
+              :body []
+              :return_var nil
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 4
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

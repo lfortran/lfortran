@@ -1,0 +1,195 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Allocatable
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Variable
+              :parent_symtab 1
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Pointer
+                :type (Integer
+                  :kind 4
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "stat" (Variable
+              :parent_symtab 1
+              :name "stat"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (Allocate
+            :args [
+              (alloc_arg
+                :a (Var
+                  :v (SymbolRef 1 "a")
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 10
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :codims []
+                :len_expr nil
+                :sym_subclass nil
+                :type nil
+              )
+            ]
+            :stat (Var
+              :v (SymbolRef 1 "stat")
+            )
+            :errmsg nil
+            :source nil
+          )
+          (ReAlloc
+            :args [
+              (alloc_arg
+                :a (Var
+                  :v (SymbolRef 1 "a")
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 20
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :codims []
+                :len_expr nil
+                :sym_subclass nil
+                :type nil
+              )
+            ]
+          )
+          (ExplicitDeallocate
+            :vars [
+              (Var
+                :v (SymbolRef 1 "a")
+              )
+            ]
+          )
+          (Nullify
+            :vars [
+              (Var
+                :v (SymbolRef 1 "p")
+              )
+            ]
+          )
+          (ImplicitDeallocate
+            :vars [
+              (Var
+                :v (SymbolRef 1 "a")
+              )
+            ]
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

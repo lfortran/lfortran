@@ -1,0 +1,65 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "constants" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "pi" (Variable
+              :parent_symtab 1
+              :name "pi"
+              :dependencies []
+              :intent :Local
+              :symbolic_value (RealConstant
+                :r 3.1415926535897931
+                :type (Real
+                  :kind 8
+                )
+              )
+              :value (RealConstant
+                :r 3.1415926535897931
+                :type (Real
+                  :kind 8
+                )
+              )
+              :storage :Parameter
+              :type (Real
+                :kind 8
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "constants"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 2
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)
