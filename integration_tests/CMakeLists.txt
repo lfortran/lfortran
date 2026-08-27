@@ -551,6 +551,7 @@ RUN(NAME data_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME data_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME data_22 LABELS gfortran llvm)
 RUN(NAME data_23 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME data_24 LABELS gfortran llvm)
 RUN(NAME data_vector_subscript LABELS llvm)
 RUN(NAME datastmt_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME slash_init_01 LABELS gfortran llvm)
@@ -1857,6 +1858,7 @@ RUN(NAME intrinsics_473 LABELS gfortran llvm) # maxloc/minloc with compile-time 
 RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_broadcast
 RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits of I
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
+RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # right-padding of character args for LGT/LLT/LGE/LLE
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
@@ -2570,7 +2572,7 @@ RUN(NAME derived_types_152 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME derived_types_153 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME derived_types_154 LABELS gfortran llvm)
 RUN(NAME derived_types_155 LABELS gfortran llvm)
-
+RUN(NAME derived_types_156 LABELS gfortran llvm)
 RUN(NAME derived_types_157 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
