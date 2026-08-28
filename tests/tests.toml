@@ -3394,6 +3394,10 @@ filename = "errors/continue_compilation_ff_2.f"
 fixed_form_cc_asr = true
 
 [[test]]
+filename = "errors/continue_compilation_ff_3.f"
+fixed_form_cc_asr = true
+
+[[test]]
 filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
 
@@ -3589,10 +3593,6 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_6.f"
-ast = true
-
-[[test]]
-filename = "errors/fixed_form_7.f"
 ast = true
 
 [[test]]
