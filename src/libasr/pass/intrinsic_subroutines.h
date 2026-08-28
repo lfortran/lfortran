@@ -2183,9 +2183,8 @@ namespace CoBroadcast {
         }
         auto arg_a = b.Variable(fn_symtab, "a", arg_types[0], ASR::intentType::InOut, type_decl);
         args.push_back(al, arg_a);
-        if (arg_types.n >= 2) {
-            fill_func_arg_sub("source_image", arg_types[1], In);
-        }
+        LCOMPILERS_ASSERT(arg_types.n >= 2);
+        fill_func_arg_sub("source_image", arg_types[1], In);
         if (arg_types.n >= 3) {
             fill_func_arg_sub("stat", arg_types[2], In);
         }
