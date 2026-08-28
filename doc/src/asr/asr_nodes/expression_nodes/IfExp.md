@@ -1,78 +1,73 @@
 # IfExp
 
-If Expression, a `expr` ASR node.
+A conditional expression.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|--|--|
-| `test`| expression to be tested |
-| `body`| 0 or more statements or constructs to be executed inside `if` |
-| `orelse` | construct to be executed if `if` fails |
-| `type` | table entry type |
-| `value` | expression |
+| Argument | Description |
+|----------|-------------|
+| `test` | the condition, of a logical type. |
+| `body` | the value when the condition is true. |
+| `orelse` | the value when it is false. |
+| `type` | the type of the expression. Both branches have it. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the IfExp represents.
+The value of the expression.
 
 ## Description
 
-**IfExp** represents If expression type. More information on `if` can be found in
-[if](../statement_nodes/if.md). 
+The two branches have the same type, and the type of the whole expression is
+theirs. Fortran has no conditional expression before Fortran 2023;
+**IfExp** is LPython's `a if c else b` and Fortran 2023's `merge`-like
+conditional expression, and it is also convenient for compiler-generated code.
 
-## Types
-
-Not applicable.
+Unlike the [If](../statement_nodes/If.md) statement, both branches must
+produce a value.
 
 ## Examples
 
-Following example code creates LFortran expression from ASR's `IntegerBinOp`:
-
-```fortran
-program if
-if(1) error stop
-end
+```clojure
+(IfExp
+  :test (Var
+    :v (SymbolRef 1 "b")
+  )
+  :body (IntegerConstant
+    :n 1
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :orelse (IntegerConstant
+    :n 0
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            if:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-
-                        })
-                    if
-                    []
-                    [(If
-                        (IntegerConstant 1 (Integer 4 []))
-                        [(ErrorStop
-                            ()
-                        )]
-                        []
-                    )]
-                )
-
-        })
-    []
-)
-
+```{literalinclude} ../../examples/ifexp.asr
+:language: clojure
 ```
 
 ## See Also
 
+[If](../statement_nodes/If.md), [Select](../statement_nodes/Select.md)

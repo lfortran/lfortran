@@ -1,0 +1,320 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "b" (Variable
+              :parent_symtab 1
+              :name "b"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Logical
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "c" (Variable
+              :parent_symtab 1
+              :name "c"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Allocatable
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "i" (Variable
+              :parent_symtab 1
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "x" (Variable
+              :parent_symtab 1
+              :name "x"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Real
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "y" (Variable
+              :parent_symtab 1
+              :name "y"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Real
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "y")
+            )
+            :value (IntrinsicElementalFunction
+              :intrinsic_id 3
+              :args [
+                (Var
+                  :v (SymbolRef 1 "x")
+                )
+              ]
+              :overload_id 0
+              :type (Real
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "i")
+            )
+            :value (IntrinsicArrayFunction
+              :arr_intrinsic_id 14
+              :args [
+                (ArrayPhysicalCast
+                  :arg (Var
+                    :v (SymbolRef 1 "a")
+                  )
+                  :old :FixedSizeArray
+                  :new :DescriptorArray
+                  :type (Array
+                    :type (Integer
+                      :kind 4
+                    )
+                    :dims [
+                      (dimension
+                        :start (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :length (IntegerConstant
+                          :n 3
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                      )
+                    ]
+                    :physical_type :DescriptorArray
+                  )
+                  :value nil
+                )
+              ]
+              :overload_id 0
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "b")
+            )
+            :value (IntrinsicImpureFunction
+              :impure_intrinsic_id 2
+              :args [
+                (Var
+                  :v (SymbolRef 1 "c")
+                )
+              ]
+              :overload_id 0
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "i")
+            )
+            :value (TypeInquiry
+              :inquiry_id 1
+              :arg_type (Real
+                :kind 4
+              )
+              :arg (Var
+                :v (SymbolRef 1 "x")
+              )
+              :type (Integer
+                :kind 4
+              )
+              :value (IntegerConstant
+                :n 4
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

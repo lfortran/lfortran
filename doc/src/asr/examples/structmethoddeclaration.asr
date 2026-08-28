@@ -1,0 +1,224 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "circle" (Struct
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "area" (StructMethodDeclaration
+                    :parent_symtab 2
+                    :name "area"
+                    :self_argument nil
+                    :proc_name "circle_area"
+                    :proc (SymbolRef 1 "circle_area")
+                    :abi :Source
+                    :is_deferred false
+                    :is_nopass false
+                  )
+                  "r" (Variable
+                    :parent_symtab 2
+                    :name "r"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "circle"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "r"
+              ]
+              :member_functions [
+                "area"
+              ]
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+            "circle_area" (Function
+              :symtab (SymbolTable
+                :id 3
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 3
+                    :name "a"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "self" (Variable
+                    :parent_symtab 3
+                    :name "self"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "circle")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "circle_area"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (Real
+                  :kind 4
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 3 "self")
+                )
+              ]
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 3 "a")
+                  )
+                  :value (StructInstanceMember
+                    :v (Var
+                      :v (SymbolRef 3 "self")
+                    )
+                    :m (SymbolRef 2 "r")
+                    :type (Real
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var (Var
+                :v (SymbolRef 3 "a")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 4
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

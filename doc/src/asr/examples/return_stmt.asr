@@ -1,0 +1,61 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "noop" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {}
+              )
+              :name "noop"
+              :function_signature (FunctionType
+                :arg_types []
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+              )
+              :dependencies []
+              :args []
+              :body [
+                (Return)
+              ]
+              :return_var nil
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

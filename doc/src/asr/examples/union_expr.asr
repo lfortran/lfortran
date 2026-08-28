@@ -1,0 +1,216 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "word" (Union
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "i" (Variable
+                    :parent_symtab 2
+                    :name "i"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "r" (Variable
+                    :parent_symtab 2
+                    :name "r"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "word"
+              :dependencies []
+              :members [
+                "i"
+                "r"
+              ]
+              :abi :Source
+              :access :Public
+              :initializers []
+              :parent nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {
+            "i" (Variable
+              :parent_symtab 3
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "w" (Variable
+              :parent_symtab 3
+              :name "w"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (UnionType
+                :data_member_types [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+              :type_declaration (SymbolRef 3 "word")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "word" (ExternalSymbol
+              :parent_symtab 3
+              :name "word"
+              :external (SymbolRef 1 "word")
+              :module_name "m"
+              :scope_names []
+              :original_name "word"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "w")
+            )
+            :value (UnionConstructor
+              :dt_sym (SymbolRef 3 "word")
+              :args [
+                (IntegerConstant
+                  :n 1
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+              ]
+              :type (UnionType
+                :data_member_types [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "i")
+            )
+            :value (UnionInstanceMember
+              :v (Var
+                :v (SymbolRef 3 "w")
+              )
+              :m (SymbolRef 2 "i")
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)
