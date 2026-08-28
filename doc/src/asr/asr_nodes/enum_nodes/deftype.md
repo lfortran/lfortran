@@ -159,16 +159,17 @@ signature propagates back from the dummy. At that point the arguments are
 filled in and the deftype becomes `Interface`; the symbol stops being a
 placeholder and the invariants above no longer apply to it.
 
-### Limitation
+### References that disagree
 
-Two references in the same scope that pass different actual types cannot both
-be satisfied: the first fixes the inferred `Interface`, and the second is
-reported as a type mismatch. Such a program is not standard-conforming (F2018
-15.5.2.5 requires the actual arguments to agree with the definition's dummies,
-so the two references cannot both agree), and gfortran needs
-`-fallow-argument-mismatch` to accept it. Supporting that shape is
-[lfortran/lfortran#12621](https://github.com/lfortran/lfortran/pull/12621).
+Two references in the same scope may pass different actual types. One inferred
+`Interface` cannot serve both, so the first-inferred signature stays the
+canonical procedure under the user-visible name and each later reference that
+disagrees gets its own `Interface` symbol, reached through a
+[FunctionPointerCast](../expression_nodes/FunctionPointerCast.md). Such a
+program is not standard-conforming (F2018 15.5.2.5 requires the actual
+arguments to agree with the definition's dummies, so the two references cannot
+both agree), and gfortran needs `-fallow-argument-mismatch` to accept it.
 
 ## See Also
 
-[FunctionType](../type_nodes/FunctionType.md), [Function](../symbol_nodes/Function.md), [abi](abi.md)
+[FunctionType](../type_nodes/FunctionType.md), [Function](../symbol_nodes/Function.md), [abi](abi.md), [FunctionPointerCast](../expression_nodes/FunctionPointerCast.md)
