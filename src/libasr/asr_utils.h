@@ -905,7 +905,8 @@ static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type, int overl
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_asr = ASR::down_cast<ASR::EnumType_t>(asr_type);
-            ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_asr->m_enum_type);
+            ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(
+                ASRUtils::symbol_get_past_external(enum_asr->m_enum_type));
             return enum_type->m_type;
         }
         case ASR::ttypeType::Pointer: {
@@ -2486,6 +2487,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             if (!struct_type->m_is_cstruct) {
                 res = res + "_Class";
             }
+            break;
+        }
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
+            res = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(enum_type->m_enum_type));
             break;
         }
         case ASR::ttypeType::UnionType: {
@@ -5319,12 +5326,14 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
     y_underlying = nullptr;
     if( ASR::is_a<ASR::EnumType_t>(*x) ) {
         ASR::EnumType_t *x_enum = ASR::down_cast<ASR::EnumType_t>(x);
-        ASR::Enum_t *x_enum_type = ASR::down_cast<ASR::Enum_t>(x_enum->m_enum_type);
+        ASR::Enum_t *x_enum_type = ASR::down_cast<ASR::Enum_t>(
+            ASRUtils::symbol_get_past_external(x_enum->m_enum_type));
         x_underlying = x_enum_type->m_type;
     }
     if( ASR::is_a<ASR::EnumType_t>(*y) ) {
         ASR::EnumType_t *y_enum = ASR::down_cast<ASR::EnumType_t>(y);
-        ASR::Enum_t *y_enum_type = ASR::down_cast<ASR::Enum_t>(y_enum->m_enum_type);
+        ASR::Enum_t *y_enum_type = ASR::down_cast<ASR::Enum_t>(
+            ASRUtils::symbol_get_past_external(y_enum->m_enum_type));
         y_underlying = y_enum_type->m_type;
     }
     if( x_underlying || y_underlying ) {

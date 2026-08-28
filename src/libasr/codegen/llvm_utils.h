@@ -2350,6 +2350,8 @@ class ASRToLLVMVisitor;
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
+                // An enumeration value is the integer it is stored as.
+                case ASR::EnumType:
                     return false;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
