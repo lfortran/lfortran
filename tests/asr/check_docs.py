@@ -250,6 +250,12 @@ def main():
     parser.add_argument("--lfortran", required=True, type=pathlib.Path)
     args = parser.parse_args()
 
+    if not DOCS.is_dir():
+        print("the ASR documentation is not at %s. A source tarball must "
+              "carry doc/src/asr for this test to run; see "
+              "ci/create_source_tarball0.sh." % DOCS, file=sys.stderr)
+        return 1
+
     failures = []
     documents = check_examples(args.lfortran, failures)
 
