@@ -2024,42 +2024,6 @@ public:
             is_Function = false;
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
-        }
-        // Convert and check arguments
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, x.n_args);
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            std::string arg_s = to_lower(arg);
-            if (current_scope->get_symbol(arg_s) == nullptr) {
-                if (compiler_options.implicit_typing) {
-                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
-                    declare_implicit_variable2(x.base.base.loc, arg_s,
-                        ASRUtils::intent_unspecified, t);
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "Dummy argument '" + arg_s + "' not defined",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                var)));
-        }
 
         // Handle the return variable and type
         // First determine the name of the variable: either the function name
@@ -2358,6 +2322,44 @@ public:
         }
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            current_procedure_args.clear();
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            current_procedure_args = current_procedure_args_copy;
+            default_storage_save = current_storage_save;
+        }
+        // Convert and check arguments
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, x.n_args);
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            std::string arg_s = to_lower(arg);
+            if (current_scope->get_symbol(arg_s) == nullptr) {
+                if (compiler_options.implicit_typing) {
+                    ASR::ttype_t *t = implicit_dictionary[std::string(1, arg_s[0])];
+                    declare_implicit_variable2(x.base.base.loc, arg_s,
+                        ASRUtils::intent_unspecified, t);
+                } else {
+                    diag.add(diag::Diagnostic(
+                        "Dummy argument '" + arg_s + "' not defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            ASR::symbol_t *var = current_scope->get_symbol(arg_s);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
+                var)));
+        }
+
 
         // Create and register the function
         if (assgnd_access.count(sym_name)) {
