@@ -29,9 +29,34 @@ The value of the expression.
 Fortran has no such conversion: an enumerator there is an ordinary named
 constant, so the Fortran frontend never produces this node.
 
-There is no example on this page: an **EnumConstructor** cannot currently be
-printed as ASR text, because the type encoding used to name the operation has
-no case for [EnumType](../type_nodes/EnumType.md).
+## Examples
+
+Converting the integer `1` into a value of the enumeration `color`:
+
+```clojure
+(EnumConstructor
+  :dt_sym (SymbolRef 3 "color")
+  :args [
+    (IntegerConstant
+      :n 1
+      :type (Integer
+        :kind 4
+      )
+      :intboz_type :Decimal
+    )
+  ]
+  :type (EnumType
+    :enum_type (SymbolRef 3 "color")
+  )
+  :value nil
+)
+```
+
+It comes from this complete ASR text document:
+
+```{literalinclude} ../../examples/enum_expr.asr
+:language: clojure
+```
 
 ## See Also
 

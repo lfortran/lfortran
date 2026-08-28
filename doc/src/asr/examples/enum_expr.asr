@@ -215,6 +215,30 @@
         :body [
           (Assignment
             :target (Var
+              :v (SymbolRef 3 "c")
+            )
+            :value (EnumConstructor
+              :dt_sym (SymbolRef 3 "color")
+              :args [
+                (IntegerConstant
+                  :n 1
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+              ]
+              :type (EnumType
+                :enum_type (SymbolRef 3 "color")
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
               :v (SymbolRef 3 "i")
             )
             :value (EnumValue
