@@ -199,6 +199,11 @@ public:
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
+        // A BLOCK is the only construct through which the body visitor adds to
+        // the `external_procedures` accumulator. Restore it when the block
+        // ends, otherwise an `external` declared here stays visible to every
+        // program unit processed afterwards.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ASR::asr_t* block;
@@ -225,6 +230,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -238,6 +244,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -281,6 +288,7 @@ public:
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
+        external_procedures = saved_external_procedures;
         all_loops_blocks_nesting--;
     }
 
@@ -7884,6 +7892,12 @@ public:
                 is_external = false;
             }
         }
+        if (compiler_options.implicit_interface && !is_external
+                && is_implicit_interface_decl(original_sym)) {
+            // Declared `external` with no interface: its argument list is
+            // unknown, so infer the concrete interface from this call.
+            is_external = true;
+        }
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "flush") {
                 // assigns 'tmp' to an ASR node
@@ -8116,7 +8130,41 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
+                // Array-section rewriting needs the Function symbol.
                 legacy_array_sections_helper(final_sym, args, x.base.base.loc);
+                // Under --implicit-interface, a BindC Interface function is a
+                // signature inferred from an earlier reference, not a contract.
+                // If this reference's actuals differ, keep the first signature
+                // as the canonical procedure and call through a
+                // FunctionPointerCast to a view matching this reference.
+                if (compiler_options.implicit_interface
+                        && is_synthesized_implicit_interface(final_sym)
+                        && !call_args_match_function(
+                            ASR::down_cast<ASR::Function_t>(
+                                ASRUtils::symbol_get_past_external(final_sym)),
+                            args)) {
+                    ASR::symbol_t* canonical = final_sym;
+                    ASR::ttype_t* ret_type = nullptr;
+                    ASR::Function_t* cf = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(canonical));
+                    if (cf->m_return_var) {
+                        ret_type = ASRUtils::expr_type(cf->m_return_var);
+                    }
+                    implicit_interface_fpcast_canonical = nullptr;
+                    implicit_interface_fpcast_target = nullptr;
+                    create_implicit_interface_function(
+                        x, sub_name, cf->m_return_var != nullptr, ret_type);
+                    if (implicit_interface_fpcast_target) {
+                        final_sym = make_fpcast_call_target(
+                            x.base.base.loc,
+                            implicit_interface_fpcast_canonical
+                                ? implicit_interface_fpcast_canonical
+                                : canonical,
+                            implicit_interface_fpcast_target);
+                    } else {
+                        final_sym = current_scope->resolve_symbol(sub_name);
+                    }
+                }
                 break;
             }
             case (ASR::symbolType::GenericProcedure) : {
@@ -8434,6 +8482,18 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        // If the call goes through a FunctionPointerCast temp, type-check
+        // against the cast target interface so the call agrees with its callee.
+        if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
+            ASR::Variable_t* fv = ASR::down_cast<ASR::Variable_t>(final_sym);
+            if (fv->m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(
+                    fv->m_type_declaration);
+                if (ASR::is_a<ASR::Function_t>(*td)) {
+                    f = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+        }
         if (f) {
             const int offset { (v_expr == nullptr || nopass) ? 0 : 1 };
             if (args.size() + offset > f->n_args) {
@@ -8615,6 +8675,8 @@ public:
                                         passed_ft->m_arg_types = param_ft->m_arg_types;
                                         passed_ft->n_arg_types = param_ft->n_arg_types;
                                         passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                        // Signature is now known; no longer ImplicitInterface.
+                                        passed_ft->m_deftype = ASR::deftypeType::Interface;
 
                                         // Create matching argument variables in the passed Function's symtab
                                         Vec<ASR::expr_t*> new_args;
@@ -8786,6 +8848,8 @@ public:
                                     passed_ft->m_arg_types = param_ft->m_arg_types;
                                     passed_ft->n_arg_types = param_ft->n_arg_types;
                                     passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                    // Signature is now known; no longer ImplicitInterface.
+                                    passed_ft->m_deftype = ASR::deftypeType::Interface;
 
                                     // Create matching argument variables in the passed Function's symtab
                                     Vec<ASR::expr_t*> new_args;
@@ -10661,13 +10725,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     // This handles the case where callee body is visited after caller body,
     // so the callee's parameter types weren't available during caller visit.
     // Only run if we encountered cases that might need deferred propagation.
-    if (compiler_options.implicit_interface && b.needs_implicit_interface_postprocessing) {
-        for (auto& item : tu->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
-                for (size_t si = 0; si < func->n_body; si++) {
-                    if (ASR::is_a<ASR::SubroutineCall_t>(*func->m_body[si])) {
-                        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(func->m_body[si]);
+    if (compiler_options.implicit_interface) {
+        auto process_body = [&](ASR::stmt_t** body, size_t n_body) {
+          for (size_t si = 0; si < n_body; si++) {
+                    if (ASR::is_a<ASR::SubroutineCall_t>(*body[si])) {
+                        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(body[si]);
                         ASR::symbol_t* callee_sym = ASRUtils::symbol_get_past_external(call->m_name);
                         if (!ASR::is_a<ASR::Function_t>(*callee_sym)) continue;
                         ASR::Function_t* callee = ASR::down_cast<ASR::Function_t>(callee_sym);
@@ -10766,10 +10828,22 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                     passed_func->m_args = new_args.p;
                                     passed_func->n_args = new_args.size();
                                 }
+                                // The interface has now been inferred from the
+                                // dummy argument it is passed to, so this is no
+                                // longer a procedure known only by name.
+                                passed_ft->m_deftype = ASR::deftypeType::Interface;
                             }
                         }
                     }
-                }
+          }
+        };
+        for (auto& item : tu->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
+                process_body(func->m_body, func->n_body);
+            } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                ASR::Program_t* prog = ASR::down_cast<ASR::Program_t>(item.second);
+                process_body(prog->m_body, prog->n_body);
             }
         }
     }
