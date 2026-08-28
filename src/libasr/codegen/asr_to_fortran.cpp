@@ -2951,6 +2951,14 @@ public:
         src = r;
     }
 
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        // The cast only gives one procedure a second, differently typed view
+        // of itself; Fortran has no syntax for that, and the source this ASR
+        // came from just named the procedure. Regenerate that name so the
+        // transformation stays inspectable through --show-fortran.
+        visit_expr(*x.m_arg);
+    }
+
     void visit_BitCast(const ASR::BitCast_t &x) {
         std::string r = "transfer(";
         visit_expr(*x.m_source);
