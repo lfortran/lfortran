@@ -59,7 +59,7 @@ def check_examples(lfortran, failures):
             failures.append("%s: cannot be printed back:\n%s"
                             % (path.name, (out + err).strip()))
             continue
-        if out != path.read_text():
+        if out != path.read_text(encoding="utf-8"):
             failures.append("%s: does not round-trip. Regenerate it with "
                             "`lfortran --from-asr %s --show-asr --clojure "
                             "--no-color`." % (path.name, path.name))
@@ -80,7 +80,7 @@ def check_excerpts(page, text, failures):
             failures.append("%s: includes %s, which does not exist"
                             % (page.relative_to(ROOT), target))
             continue
-        included.append(flatten(path.read_text()))
+        included.append(flatten(path.read_text(encoding="utf-8")))
     if not included:
         return
     for language, block in FENCE.findall(text):
@@ -96,7 +96,7 @@ def check_excerpts(page, text, failures):
 
 # ------------------------------------------------------------ declarations
 def asdl_source():
-    text = "\n".join(line for line in ASDL.read_text().split("\n")
+    text = "\n".join(line for line in ASDL.read_text(encoding="utf-8").split("\n")
                      if not line.strip().startswith("--"))
     body = text[text.index("module ASR {") + len("module ASR {"):]
     return body[:body.rindex("}")]
@@ -253,7 +253,7 @@ def main():
     failures = []
     documents = check_examples(args.lfortran, failures)
 
-    pages = [(path, path.read_text())
+    pages = [(path, path.read_text(encoding="utf-8"))
              for path in sorted(DOCS.rglob("*.md"))]
     for page, text in pages:
         check_excerpts(page, text, failures)
