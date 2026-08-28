@@ -3833,16 +3833,28 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname.first;
-                if( to_lower(pname.first) == proc.first ) {
-                    correct_pname = pname.first + "~genericprocedure";
+                std::string name = to_lower(pname.first);
+                ASR::symbol_t *x = nullptr;
+                if( name == proc.first ) {
+                    // A specific procedure declared in this scope under its
+                    // generic interface's name is stored with the
+                    // genericprocedure suffix, see the comment where the
+                    // suffix is added.
+                    x = current_scope->resolve_symbol(
+                        name + ASRUtils::genericprocedure_suffix);
+                    if (!x) {
+                        // Otherwise it comes from another scope (e.g. it is
+                        // use associated), where it keeps its plain name. The
+                        // generic interface itself is not a candidate.
+                        x = current_scope->resolve_symbol(name);
+                        if (x && ASR::is_a<ASR::GenericProcedure_t>(
+                                *ASRUtils::symbol_get_past_external(x))) {
+                            x = nullptr;
+                        }
+                    }
+                } else {
+                    x = current_scope->resolve_symbol(name);
                 }
-                Str s;
-                s.from_str_view(correct_pname);
-                char *name = s.c_str(al);
-                // lower case the name
-                name = s2c(al, to_lower(name));
-                ASR::symbol_t *x = current_scope->resolve_symbol(name);
                 if (!x) {
                     diag.add(Diagnostic(
                         "Symbol '" + std::string(pname.first) + "' not declared",
