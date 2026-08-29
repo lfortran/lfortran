@@ -319,6 +319,11 @@ public:
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        // Isolate this module's externals from a previous program unit, and
+        // restore that unit's list when the module ends so a later sibling
+        // does not inherit them.
+        std::vector<std::string> saved_external_procedures = external_procedures;
+        external_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
         ASR::asr_t *tmp0 = nullptr;
@@ -456,6 +461,10 @@ public:
                 }
             }
         }
+        // Module_t already exists, so persist before CONTAINS. Nested
+        // procedures can then find these names via parent-scope mapping
+        // lookup even while their own accumulator is isolated.
+        external_procedures_mapping[get_hash(tmp0)] = external_procedures;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -466,6 +475,7 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        external_procedures = saved_external_procedures;
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
@@ -570,6 +580,9 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Isolate this program's externals from a previous program unit.
+        std::vector<std::string> saved_external_procedures = external_procedures;
+        external_procedures.clear();
         generic_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
@@ -733,6 +746,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
 
