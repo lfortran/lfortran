@@ -1500,7 +1500,25 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         // this->visit_expr(*x.m_target);
-        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                x.m_value != nullptr &&
+                ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
+            const ASR::ArrayConstant_t &ac =
+                *ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+            uint32_t offset = 0;
+            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac.m_type); i++) {
+                this->visit_expr(*x.m_target);
+                if (offset > 0) {
+                    m_wa.emit_i32_const(offset);
+                    m_wa.emit_i32_add();
+                }
+                process_ArrayConstant_value(ac.m_data, ac.m_type, i);
+                int element_size_in_bytes = emit_memory_store(
+                    ac.m_type, const_cast<ASR::expr_t*>(&ac.base));
+                offset += element_size_in_bytes;
+            }
+        } else if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
             this->visit_expr(*x.m_value);
             ASR::Variable_t *asr_target = ASRUtils::EXPR2VAR(x.m_target);
             emit_var_set(asr_target);
