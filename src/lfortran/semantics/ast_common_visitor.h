@@ -16996,13 +16996,13 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
-        // The user-visible name denotes a procedure with an implicit
-        // interface: its argument list is unknown. Record that declaration
-        // under `sym_name`, so that every later reference infers its own
-        // concrete interface from its own arguments rather than being matched
-        // against this one. The interface inferred here is a separate symbol;
-        // it carries `sym_name` as its bindc name, so all of them resolve to
-        // the same link-time procedure.
+        // Infer a complete Interface from this reference's actual arguments
+        // and store it under `sym_name`, overwriting any ImplicitInterface
+        // placeholder of the same name. Later references in this scope are
+        // checked against this inferred signature. BindC with a null
+        // bindc_name uses the Fortran name as the link symbol, so this
+        // Interface and any other declaration of the same name resolve to
+        // one procedure at link time.
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
