@@ -22014,13 +22014,9 @@ public:
             src_data_ptr, byte_offset);
 
         llvm::Value* dest_data_ptr;
-        if (is_array_target) {
-            dest_data_ptr = llvm_utils->get_stringArray_data(target_type, target_ptr);
-        } else {
-            dest_data_ptr = llvm_utils->get_string_data(dest_str_type, target_ptr);
-        }
         llvm::Value* copy_length = element_length_val;
         if (is_array_target) {
+            dest_data_ptr = llvm_utils->get_stringArray_data(target_type, target_ptr);
             llvm::Type* arr_type_llvm = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), module.get());
             llvm::Value* num_elems = nullptr;
             if (ASRUtils::is_fixed_size_array(target_type)) {
@@ -22029,11 +22025,15 @@ public:
                 num_elems = arr_descr->get_array_size(arr_type_llvm, target_ptr, nullptr, 4);
             }
             copy_length = builder->CreateMul(copy_length, num_elems);
+            copy_length = builder->CreateSExtOrTrunc(copy_length, llvm::Type::getInt64Ty(context));
+            builder->CreateMemCpy(dest_data_ptr, llvm::MaybeAlign(), byte_ptr, llvm::MaybeAlign(), copy_length);
+        } else {
+            copy_length = builder->CreateSExtOrTrunc(copy_length, llvm::Type::getInt64Ty(context));
+            auto [dest_data_ptr, dest_len_ptr] = llvm_utils->get_string_length_data(
+                dest_str_type, target_ptr, true, true);
+            llvm_utils->lfortran_str_copy_with_data(dest_data_ptr, dest_len_ptr, byte_ptr,
+                copy_length, false, false, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), dest_kind));
         }
-        
-        copy_length = builder->CreateSExtOrTrunc(copy_length, llvm::Type::getInt64Ty(context));
-        
-        builder->CreateMemCpy(dest_data_ptr, llvm::MaybeAlign(), byte_ptr, llvm::MaybeAlign(), copy_length);
         tmp = nullptr;
         return;
     }
