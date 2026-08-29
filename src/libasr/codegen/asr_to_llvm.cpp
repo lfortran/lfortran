@@ -20151,7 +20151,7 @@ public:
                         ptr_loads = ptr_copy;
                         
                         llvm::Value *str_data, *str_len;
-                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(var_type, tmp);
+                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(s, tmp);
                         elem_size = builder->CreateZExtOrTrunc(
                             str_len, llvm::Type::getInt64Ty(context));
                     }
