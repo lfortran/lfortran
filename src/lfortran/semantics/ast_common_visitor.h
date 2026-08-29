@@ -17365,6 +17365,11 @@ public:
         check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
+        }if (idl_nesting_level == 1) {  // Check only for outermost implied DO loop
+        bool is_wrapped_in_array_constructor = false;
+        if (!is_wrapped_in_array_constructor) {
+            throw SemanticError("Implied Do Loop must be wrapped in an array constructor.", x.base.base.loc);
+         }
         }
         tmp = ASR::make_ImpliedDoLoop_t(al, x.base.base.loc, a_values, n_values,
                                         a_var, a_start, a_end, a_increment,
