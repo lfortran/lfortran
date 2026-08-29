@@ -9,6 +9,24 @@
 
 namespace LCompilers {
 
+// One node of a host-evaluable expression tree describing the extent of
+// one VLA workspace dimension.  The tree lets the host reproduce the whole
+// arithmetic of the dimension expression (e.g. `s%m_ + 1`, `2*n`) instead
+// of collapsing it to a single kernel argument, which would silently
+// compute a wrong extent.  Children are indices into
+// `GpuVlaDim::expr_nodes`, so the tree stays copyable.
+struct GpuVlaDimNode {
+    enum class Kind { Constant, CallArg, StructMember, BinOp };
+    Kind kind = Kind::Constant;
+    int64_t constant_value = 0;
+    // Kernel argument supplying the value (CallArg and StructMember).
+    int64_t call_arg_index = -1;
+    // Component chain arg%member_path[0]%member_path[1]%... (StructMember).
+    std::vector<std::string> member_path;
+    ASR::binopType binop = ASR::binopType::Add;
+    int64_t left = -1, right = -1;
+};
+
 // Describes one dimension of a VLA workspace buffer.
 struct GpuVlaDim {
     bool is_constant = false;
@@ -25,6 +43,11 @@ struct GpuVlaDim {
     // kernel-launch time to size the workspace.
     std::vector<std::string> member_path;
     ASR::expr_t *dim_expr = nullptr; // original ASR dimension expression
+    // Host-evaluable expression tree for this extent.  When non-empty it
+    // takes precedence over `call_arg_index`/`member_path`; `expr_root`
+    // indexes the root node in `expr_nodes`.
+    std::vector<GpuVlaDimNode> expr_nodes;
+    int64_t expr_root = -1;
     // When true, size is read from a struct member's allocatable
     // array size, resolved at dispatch time from the struct array's
     // per-element sizes. struct_member_key is "arr_name.member_name".
@@ -343,6 +366,104 @@ inline bool find_struct_member_arg_in_expr(ASR::expr_t *expr,
     return true;
 }
 
+// Build a host-evaluable expression tree for a workspace dimension.
+// Every leaf must be either an integer constant, a scalar kernel argument,
+// or a derived-type component chain rooted at a kernel argument; every
+// interior node must be an arithmetic integer operation.  Returns the
+// index of the root node in `nodes`, or -1 when the expression contains
+// something the host cannot reproduce.  Returning -1 keeps the caller's
+// `-1` sentinel discipline: an unresolvable extent must produce a clean
+// error, never a plausible-but-wrong value.
+inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
+        const std::vector<std::string> &arg_names,
+        std::vector<GpuVlaDimNode> &nodes) {
+    if (!expr) return -1;
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return build_gpu_vla_dim_expr(
+            ASR::down_cast<ASR::Cast_t>(expr)->m_arg, arg_names, nodes);
+    }
+    int64_t const_val;
+    if (try_eval_int_constant(expr, const_val)) {
+        GpuVlaDimNode n;
+        n.kind = GpuVlaDimNode::Kind::Constant;
+        n.constant_value = const_val;
+        nodes.push_back(n);
+        return (int64_t)nodes.size() - 1;
+    }
+    if (ASR::is_a<ASR::Var_t>(*expr)) {
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        for (size_t a = 0; a < arg_names.size(); a++) {
+            if (arg_names[a] == name) {
+                GpuVlaDimNode n;
+                n.kind = GpuVlaDimNode::Kind::CallArg;
+                n.call_arg_index = (int64_t)a;
+                nodes.push_back(n);
+                return (int64_t)nodes.size() - 1;
+            }
+        }
+        return -1;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        size_t arg_index = 0;
+        std::vector<std::string> member_path;
+        if (!find_struct_member_arg_in_expr(expr, arg_names, arg_index,
+                member_path)) {
+            return -1;
+        }
+        GpuVlaDimNode n;
+        n.kind = GpuVlaDimNode::Kind::StructMember;
+        n.call_arg_index = (int64_t)arg_index;
+        n.member_path = member_path;
+        nodes.push_back(n);
+        return (int64_t)nodes.size() - 1;
+    }
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
+        ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+        switch (op->m_op) {
+            case ASR::binopType::Add:
+            case ASR::binopType::Sub:
+            case ASR::binopType::Mul:
+            case ASR::binopType::Div:
+                break;
+            default:
+                return -1;
+        }
+        int64_t left = build_gpu_vla_dim_expr(op->m_left, arg_names, nodes);
+        if (left < 0) return -1;
+        int64_t right = build_gpu_vla_dim_expr(op->m_right, arg_names,
+            nodes);
+        if (right < 0) return -1;
+        GpuVlaDimNode n;
+        n.kind = GpuVlaDimNode::Kind::BinOp;
+        n.binop = op->m_op;
+        n.left = left;
+        n.right = right;
+        nodes.push_back(n);
+        return (int64_t)nodes.size() - 1;
+    }
+    return -1;
+}
+
+// Resolve a workspace dimension by evaluating the whole dimension
+// expression on the host.  Returns true when `vd` was filled in.
+inline bool resolve_gpu_vla_dim_expr(ASR::expr_t *dim,
+        const std::vector<std::string> &arg_names, GpuVlaDim &vd) {
+    std::vector<GpuVlaDimNode> nodes;
+    int64_t root = build_gpu_vla_dim_expr(dim, arg_names, nodes);
+    if (root < 0) return false;
+    if (nodes[root].kind == GpuVlaDimNode::Kind::Constant) {
+        vd.is_constant = true;
+        vd.constant_value = nodes[root].constant_value;
+        return true;
+    }
+    vd.is_constant = false;
+    vd.constant_value = 0;
+    vd.expr_nodes = std::move(nodes);
+    vd.expr_root = root;
+    return true;
+}
+
 // Try to resolve an ArraySize expression through Associate statements
 // to find a kernel argument that determines the dimension size.
 // Handles the pattern: ArraySize(temp, dim) where temp is associated
@@ -563,11 +684,9 @@ inline void scan_kernel_scope_alloc_vlas(
                         vd.is_constant = false;
                         vd.constant_value = 0;
                         size_t idx = 0;
-                        std::vector<std::string> member_path;
-                        if (find_struct_member_arg_in_expr(
-                                dim, arg_names, idx, member_path)) {
-                            vd.call_arg_index = idx;
-                            vd.member_path = member_path;
+                        if (resolve_gpu_vla_dim_expr(
+                                dim, arg_names, vd)) {
+                            // extent evaluated host-side as a whole
                         } else if (find_arg_var_in_expr(
                                 dim, arg_names, idx)) {
                             vd.call_arg_index = idx;
@@ -825,8 +944,6 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
                 ASR::expr_t *dim = arr->m_dims[d].m_length;
                 GpuVlaDim vd;
                 vd.dim_expr = dim;
-                size_t sm_idx = 0;
-                std::vector<std::string> sm_path;
                 if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
                     vd.is_constant = true;
                     vd.constant_value =
@@ -842,12 +959,9 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
                             break;
                         }
                     }
-                } else if (dim && find_struct_member_arg_in_expr(
-                        dim, arg_names, sm_idx, sm_path)) {
-                    vd.is_constant = false;
-                    vd.constant_value = 0;
-                    vd.call_arg_index = sm_idx;
-                    vd.member_path = sm_path;
+                } else if (dim && resolve_gpu_vla_dim_expr(
+                        dim, arg_names, vd)) {
+                    // extent evaluated host-side as a whole
                 } else {
                     vd.is_constant = true;
                     vd.constant_value = 1;

@@ -22135,6 +22135,81 @@ public:
             "arguments", loc);
     }
 
+    // Evaluate a workspace-extent expression tree on the host.  Leaves are
+    // resolved to either a scalar kernel-argument value or a derived-type
+    // component loaded out of the struct that is handed to the kernel as a
+    // buffer; interior nodes reproduce the original integer arithmetic, so
+    // an extent like `s%m_ + 1` is sized exactly.
+    llvm::Value* eval_gpu_vla_dim_expr(const GpuVlaDim &dim,
+            int64_t node_index, const ASR::GpuKernelLaunch_t &x,
+            const std::vector<llvm::Value*> &call_arg_values,
+            const std::vector<llvm::Value*> &call_arg_struct_ptrs,
+            const std::string &ws_name) {
+        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        if (node_index < 0 ||
+                (size_t)node_index >= dim.expr_nodes.size()) {
+            throw CodeGenError("gpu offload: the extent of the temporary "
+                "array `" + ws_name + "` cannot be determined from the "
+                "kernel arguments", x.base.base.loc);
+        }
+        const GpuVlaDimNode &node = dim.expr_nodes[node_index];
+        switch (node.kind) {
+            case GpuVlaDimNode::Kind::Constant: {
+                return llvm::ConstantInt::get(i64, node.constant_value);
+            }
+            case GpuVlaDimNode::Kind::CallArg: {
+                if (node.call_arg_index < 0 ||
+                        (size_t)node.call_arg_index >= x.n_args ||
+                        call_arg_values[node.call_arg_index] == nullptr) {
+                    throw CodeGenError("gpu offload: the extent of the "
+                        "temporary array `" + ws_name + "` cannot be "
+                        "determined from the kernel arguments",
+                        x.base.base.loc);
+                }
+                return builder->CreateIntCast(
+                    call_arg_values[node.call_arg_index], i64, true);
+            }
+            case GpuVlaDimNode::Kind::StructMember: {
+                if (node.call_arg_index < 0 ||
+                        (size_t)node.call_arg_index >= x.n_args) {
+                    throw CodeGenError("gpu offload: the extent of the "
+                        "temporary array `" + ws_name + "` cannot be "
+                        "determined from the kernel arguments",
+                        x.base.base.loc);
+                }
+                llvm::Value *member = load_gpu_struct_member_extent(
+                    x.m_args[node.call_arg_index].m_value,
+                    call_arg_struct_ptrs[node.call_arg_index],
+                    node.member_path, ws_name, x.base.base.loc);
+                return builder->CreateIntCast(member, i64, true);
+            }
+            case GpuVlaDimNode::Kind::BinOp: {
+                llvm::Value *left = eval_gpu_vla_dim_expr(dim, node.left,
+                    x, call_arg_values, call_arg_struct_ptrs, ws_name);
+                llvm::Value *right = eval_gpu_vla_dim_expr(dim, node.right,
+                    x, call_arg_values, call_arg_struct_ptrs, ws_name);
+                switch (node.binop) {
+                    case ASR::binopType::Add:
+                        return builder->CreateAdd(left, right);
+                    case ASR::binopType::Sub:
+                        return builder->CreateSub(left, right);
+                    case ASR::binopType::Mul:
+                        return builder->CreateMul(left, right);
+                    case ASR::binopType::Div:
+                        return builder->CreateSDiv(left, right);
+                    default:
+                        throw CodeGenError("gpu offload: the extent of the "
+                            "temporary array `" + ws_name + "` cannot be "
+                            "determined from the kernel arguments",
+                            x.base.base.loc);
+                }
+            }
+        }
+        throw CodeGenError("gpu offload: the extent of the temporary array "
+            "`" + ws_name + "` cannot be determined from the kernel "
+            "arguments", x.base.base.loc);
+    }
+
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
             llvm::Type::getInt8Ty(context));
@@ -23579,6 +23654,12 @@ public:
                                 builder->CreateIntCast(
                                     sit->second, i64, true));
                         }
+                    } else if (!dim.expr_nodes.empty()) {
+                        per_thread_elems = builder->CreateMul(
+                            per_thread_elems,
+                            eval_gpu_vla_dim_expr(dim, dim.expr_root, x,
+                                call_arg_values, call_arg_struct_ptrs,
+                                ws.var_name));
                     } else {
                         if (dim.call_arg_index < 0 ||
                                 (size_t)dim.call_arg_index >= x.n_args) {
