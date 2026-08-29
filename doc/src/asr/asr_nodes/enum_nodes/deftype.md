@@ -166,7 +166,8 @@ be satisfied: the first fixes the inferred `Interface`, and the second is
 reported as a type mismatch. Such a program is not standard-conforming (F2018
 15.5.2.5 requires the actual arguments to agree with the definition's dummies,
 so the two references cannot both agree), and gfortran needs
-`-fallow-argument-mismatch` to accept it.
+`-fallow-argument-mismatch` to accept it. Supporting that shape is
+[lfortran/lfortran#12621](https://github.com/lfortran/lfortran/pull/12621).
 
 ## See Also
 
