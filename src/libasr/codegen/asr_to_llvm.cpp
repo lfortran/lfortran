@@ -22336,16 +22336,21 @@ public:
             if (!arg_expr) continue;
 
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
-            bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(*arg_type)
+            // Allocatable and pointer arrays are both represented by an
+            // array descriptor, so they are marshalled the same way: the
+            // descriptor pointer is obtained with ptr_loads = 1 and the
+            // data pointer / size are read out of the descriptor.
+            bool is_alloc_ptr_array = (ASR::is_a<ASR::Allocatable_t>(*arg_type)
+                    || ASR::is_a<ASR::Pointer_t>(*arg_type))
                 && ASRUtils::is_array(arg_type);
-            bool is_struct_member_alloc = is_allocatable_array
+            bool is_struct_member_alloc = is_alloc_ptr_array
                 && ASR::is_a<ASR::StructInstanceMember_t>(*arg_expr);
 
             // Check for assumed-shape (descriptor) arrays with null dims
             bool is_descriptor_array = false;
-            if (ASRUtils::is_array(arg_type) && !is_allocatable_array) {
+            if (ASRUtils::is_array(arg_type) && !is_alloc_ptr_array) {
                 ASR::ttype_t *past_alloc =
-                    ASRUtils::type_get_past_allocatable(arg_type);
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type);
                 if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
                     ASR::Array_t *arr_early =
                         ASR::down_cast<ASR::Array_t>(past_alloc);
@@ -22365,7 +22370,7 @@ public:
             // allocatable member field (T**); we load once afterward
             // to get T* (the descriptor pointer).
             int64_t ptr_loads_copy = ptr_loads;
-            if (is_allocatable_array || is_descriptor_array) {
+            if (is_alloc_ptr_array || is_descriptor_array) {
                 ptr_loads = 1;
             }
             this->visit_expr(*arg_expr);
@@ -22378,7 +22383,7 @@ public:
             // descriptor pointer that get_pointer_to_data expects.
             if (is_struct_member_alloc) {
                 ASR::ttype_t *desc_asr_type =
-                    ASRUtils::type_get_past_allocatable(arg_type);
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type);
                 llvm::Type *desc_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, desc_asr_type, module.get());
@@ -22390,9 +22395,9 @@ public:
                 // For allocatable/descriptor arrays, extract data pointer
                 // from the descriptor
                 llvm::Value *data_ptr;
-                if (is_allocatable_array || is_descriptor_array) {
+                if (is_alloc_ptr_array || is_descriptor_array) {
                     ASR::ttype_t *desc_asr_type =
-                        ASRUtils::type_get_past_allocatable(arg_type);
+                        ASRUtils::type_get_past_allocatable_pointer(arg_type);
                     llvm::Type *desc_type =
                         llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, desc_asr_type, module.get());
@@ -22406,7 +22411,7 @@ public:
                 }
                 // Compute size
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                    ASRUtils::type_get_past_allocatable(arg_type));
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type));
                 int elem_size = 4; // default float/int
                 if (arr->m_type->type == ASR::ttypeType::Real) {
                     int kind = ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
@@ -22452,11 +22457,11 @@ public:
                 if (all_constant) {
                     byte_size = llvm::ConstantInt::get(i64, total_elements * elem_size);
                 } else if (has_null_dim &&
-                        (is_allocatable_array || is_descriptor_array)) {
+                        (is_alloc_ptr_array || is_descriptor_array)) {
                     // Allocatable/descriptor arrays: get size from the
                     // descriptor
                     ASR::ttype_t *desc_asr_type =
-                        ASRUtils::type_get_past_allocatable(arg_type);
+                        ASRUtils::type_get_past_allocatable_pointer(arg_type);
                     llvm::Type *desc_type =
                         llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, desc_asr_type, module.get());
@@ -23028,10 +23033,10 @@ public:
                             // the descriptor; otherwise, derive from
                             // byte_size / elem_size.
                             llvm::Value *n_elems_64;
-                            if (is_allocatable_array ||
+                            if (is_alloc_ptr_array ||
                                     is_descriptor_array) {
                                 ASR::ttype_t *alloc_desc_asr =
-                                    ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_allocatable_pointer(
                                         arg_type);
                                 llvm::Type *alloc_desc_llvm =
                                     llvm_utils->get_type_from_ttype_t_util(

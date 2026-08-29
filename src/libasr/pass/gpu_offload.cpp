@@ -5152,10 +5152,10 @@ public:
                 }
             }
 
-            // Strip Allocatable wrapper: GPU kernel parameters receive
-            // raw array data, not allocatable descriptors
+            // Strip Allocatable/Pointer wrapper: GPU kernel parameters
+            // receive raw array data, not array descriptors
             ASR::ttype_t *dup_type = ASRUtils::duplicate_type(al,
-                ASRUtils::type_get_past_allocatable(type));
+                ASRUtils::type_get_past_allocatable_pointer(type));
 
             // Recompute dependencies from the type alone (symbolic_value
             // and value are nullptr for kernel parameters)
@@ -5353,8 +5353,13 @@ public:
         }
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *orig_type = sym_info.first;
-            if (!ASRUtils::is_allocatable(orig_type)) continue;
-            ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(orig_type);
+            // Allocatable and pointer arrays are both deferred-shape:
+            // their extents and lower bounds are only known at run time
+            // and must be passed to the kernel as extra scalar
+            // arguments so it can compute strides.
+            if (!ASRUtils::is_allocatable_or_pointer(orig_type)) continue;
+            ASR::ttype_t *inner =
+                ASRUtils::type_get_past_allocatable_pointer(orig_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
 
             // Locate the kernel-scope Variable whose type we must update
@@ -5362,8 +5367,12 @@ public:
             LCOMPILERS_ASSERT(k_sym);
             ASR::Variable_t *k_var = ASR::down_cast<ASR::Variable_t>(k_sym);
             ASR::ttype_t *k_type = k_var->m_type;
+            if (!ASR::is_a<ASR::Array_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(k_type))) {
+                continue;
+            }
             ASR::Array_t *k_arr = ASR::down_cast<ASR::Array_t>(
-                ASRUtils::type_get_past_allocatable(k_type));
+                ASRUtils::type_get_past_allocatable_pointer(k_type));
 
             ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
             ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
