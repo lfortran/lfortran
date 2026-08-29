@@ -5152,7 +5152,8 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ext_access, ASR::deftypeType::Interface,
+                ASR::abiType::BindC, ext_access,
+                ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -16771,6 +16772,13 @@ public:
         return nullptr;
     }
 
+    // True if `v` denotes a procedure that was declared `external` without an
+    // interface (e.g. `integer, external :: foo`). Unwraps ExternalSymbol and
+    // delegates to ASRUtils::is_bare_implicit_interface.
+    bool is_implicit_interface_decl(ASR::symbol_t* v) {
+        return ASRUtils::is_bare_implicit_interface(v);
+    }
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -16977,6 +16985,13 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
+        // Infer a complete Interface from this reference's actual arguments
+        // and store it under `sym_name`, overwriting any ImplicitInterface
+        // placeholder of the same name. Later references in this scope are
+        // checked against this inferred signature. BindC with a null
+        // bindc_name uses the Fortran name as the link symbol, so this
+        // Interface and any other declaration of the same name resolve to
+        // one procedure at link time.
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -17553,6 +17568,16 @@ public:
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
             }
+        }
+        if (compiler_options.implicit_interface && !is_external_procedure
+                && is_implicit_interface_decl(v)) {
+            // `v` was declared `external` with no interface, so its argument
+            // list is unknown. Infer the concrete interface from this call's
+            // arguments, exactly like a locally declared external. A reference
+            // that passes no arguments infers a zero-argument interface; it
+            // must not be left resolving to the declaration itself, which is
+            // not a call target.
+            is_external_procedure = true;
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
@@ -20519,6 +20544,9 @@ public:
             existing_ft->m_arg_types = arg_type_arr;
             existing_ft->n_arg_types = n_arg_types;
             existing_ft->m_return_var_type = return_type;
+            // The interface is now known, so this is no longer a procedure
+            // known only by name.
+            existing_ft->m_deftype = ASR::deftypeType::Interface;
             iface_type = existing_fn->m_function_signature;
             existing_fn->m_args = args.p;
             existing_fn->n_args = args.size();

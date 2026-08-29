@@ -806,6 +806,20 @@ public:
         require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            require_id(x.n_args == 0,
+                "asr.verify.function.implicit_interface_has_no_args",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no dummy arguments");
+            require_id(x.n_body == 0,
+                "asr.verify.function.implicit_interface_has_no_body",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no body");
+            require_id(function_type->m_abi == ASR::abiType::BindC,
+                "asr.verify.function.implicit_interface_is_bindc",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so its abi must be BindC");
+        }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::ttype_t *argument_type =
@@ -1922,11 +1936,14 @@ public:
         ASR::FunctionType_t *actual = as_procedure_type(actual_type);
         ASR::FunctionType_t *formal = as_procedure_type(formal_type);
         if (actual == nullptr || formal == nullptr) return;
-        // An interface that declares no arguments constrains nothing: that is
-        // the shape `EXTERNAL f` and `procedure(), pointer` produce, and ASR
-        // has no way yet to tell it apart from a genuine argumentless one.
+        // An ImplicitInterface declaration constrains nothing: its argument
+        // list is unknown. `procedure()` and `procedure(), pointer` still
+        // have empty arg_types and deftype Interface, so they also skip until
+        // they have their own ASR state. A genuine zero-argument Interface
+        // shares that empty shape and still skips for the same reason.
         auto unconstrained = [](ASR::FunctionType_t *t) {
-            return t->n_arg_types == 0;
+            return t->m_deftype == ASR::deftypeType::ImplicitInterface
+                || t->n_arg_types == 0;
         };
         if (unconstrained(actual) || unconstrained(formal)) return;
         require_with_loc_id(
@@ -2279,6 +2296,9 @@ public:
                 require(ASR::is_a<ASR::Function_t>(*s) ||
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
+                require(!ASR::is_a<ASR::Function_t>(*s) ||
+                        !ASRUtils::is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(s)),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' was declared external with no interface; the call must reference the signature inferred at this call site.");
             }
             // A CALL statement discards no result, because a procedure
             // invoked by one has none to discard.
@@ -2483,6 +2503,10 @@ public:
             require(fn_->m_return_var != nullptr,
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
+            require(!ASRUtils::is_bare_implicit_interface(*fn_),
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " was declared external with no interface; the call must"
+                    " reference the signature inferred at this call site.");
             // The call site's result type is what the surrounding expression
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.

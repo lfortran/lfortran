@@ -20,7 +20,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `arg_types` | the types of the dummy arguments, in order. |
 | `return_var_type` | the type of the result, or `nil` for a subroutine. |
 | `abi` | the ABI of the procedure; see the [ABI section](../../asr.md) of the ASR overview. |
-| `deftype` | `Implementation` when the body is present, `Interface` when only the signature is; see [deftype](../enum_nodes/deftype.md). |
+| `deftype` | `Implementation` when the body is present, `Interface` when only the signature is, `ImplicitInterface` when neither is known; see [deftype](../enum_nodes/deftype.md). |
 | `bindc_name` | the linker name given by `bind(c, name=...)`. |
 | `elemental` | `true` for an `elemental` procedure, which applies to each element of an array argument. |
 | `pure` | `true` for a `pure` procedure. |
@@ -42,7 +42,9 @@ procedure's symbol table.
 
 A subroutine is a signature with no `return_var_type`. `deftype` says whether
 there is a body: an interface, and a procedure loaded from a module file as
-interface ASR, are `Interface`.
+interface ASR, are `Interface`. An empty `arg_types` means the procedure takes
+no arguments, except under `deftype = ImplicitInterface`, where it means the
+arguments are not known here.
 
 ## Examples
 

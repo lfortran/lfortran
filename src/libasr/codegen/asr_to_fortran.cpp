@@ -446,10 +446,24 @@ public:
         }
         append_namelist_declarations(x.m_symtab, r);
 
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    && ASRUtils::is_bare_implicit_interface(
+                        *down_cast<ASR::Function_t>(item.second))) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+
         visit_body(x, r, false);
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second)
+                    && ASRUtils::is_bare_implicit_interface(
+                        *down_cast<ASR::Function_t>(item.second))) {
+                continue;
+            }
             if (is_a<ASR::Function_t>(*item.second)
                     || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
                 if (prepend_contains_keyword) {
@@ -539,7 +553,10 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                    visit_symbol(*item.second);
+                    r += src;
+                } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
                     interface_func_name.push_back(item.first);
                 } else {
                     func_name.push_back(item.first);
@@ -583,6 +600,21 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            // `integer, external :: f` — not an interface block and not a
+            // bodiless implementation.
+            std::string r = indent;
+            if (x.m_return_var) {
+                ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+                r += get_type(return_var->m_type, return_var->m_type_declaration);
+                r += ", ";
+            }
+            r += "external :: ";
+            r.append(x.m_name);
+            r += "\n";
+            src = r;
+            return;
+        }
         std::string r = indent;
         ASR::FunctionType_t *type = ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
         bool wrap_in_interface = false;
@@ -714,7 +746,10 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
+                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                    visit_symbol(*item.second);
+                    r += src;
+                } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
                     is_interface = true;
                     r += indent;
                     r += "interface\n";

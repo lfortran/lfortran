@@ -2271,7 +2271,8 @@ class ASRToLLVMVisitor;
         static bool non_deallocatable_construct(ASR::asr_t* const s){ // Can't deallocate
             ASR::symbol_t* sym = ASR::is_a<ASR::symbol_t>(*s) ? ASR::down_cast<ASR::symbol_t>(s) : nullptr;
             const bool is_interface = sym && ASR::is_a<ASR::Function_t>(*sym)
-                                      && ASRUtils::get_FunctionType(sym)->m_deftype == ASR::Interface;
+                                      && ASRUtils::is_declaration_deftype(
+                                          ASRUtils::get_FunctionType(sym)->m_deftype);
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
             const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
