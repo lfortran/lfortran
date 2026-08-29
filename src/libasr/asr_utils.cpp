@@ -3045,8 +3045,8 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
                     ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
-                    if (arg1_func_type->m_deftype == ASR::deftypeType::ImplicitInterface ||
-                        arg2_func_type->m_deftype == ASR::deftypeType::ImplicitInterface) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type) ||
+                        ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
                         continue;
                     }
                 }
@@ -3100,7 +3100,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 // explicit interface formal argument.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->m_deftype == ASR::deftypeType::ImplicitInterface) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
                         continue;
                     }
                 }

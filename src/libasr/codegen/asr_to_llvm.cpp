@@ -89,12 +89,12 @@ namespace {
 /**
  * Check if a function is an external interface function.
  * External interface functions are functions with:
- * - Interface deftype
+ * - Interface or ImplicitInterface deftype
  * - Not intrinsic ABI
  * - Not in a module
  */
 static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
-    return ftype->m_deftype == ASR::deftypeType::Interface &&
+    return ASRUtils::is_declaration_deftype(ftype->m_deftype) &&
            ftype->m_abi != ASR::abiType::Intrinsic &&
            !ftype->m_module;
 }

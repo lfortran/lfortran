@@ -16773,21 +16773,10 @@ public:
     }
 
     // True if `v` denotes a procedure that was declared `external` without an
-    // interface (e.g. `integer, external :: foo`). Such a declaration carries
-    // only a result type: its argument list is unknown, which ASR states
-    // explicitly as `deftypeType::ImplicitInterface`. It is never callable and
-    // is never code-generated; every reference infers its own concrete
-    // interface from the actual arguments at that call site.
+    // interface (e.g. `integer, external :: foo`). Unwraps ExternalSymbol and
+    // delegates to ASRUtils::is_bare_implicit_interface.
     bool is_implicit_interface_decl(ASR::symbol_t* v) {
-        if (!v) {
-            return false;
-        }
-        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(v);
-        if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) {
-            return false;
-        }
-        return ASRUtils::get_FunctionType(f2)->m_deftype
-            == ASR::deftypeType::ImplicitInterface;
+        return ASRUtils::is_bare_implicit_interface(v);
     }
 
     template <class Call>

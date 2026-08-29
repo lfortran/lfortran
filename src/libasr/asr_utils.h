@@ -3017,9 +3017,24 @@ static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
 // synthesizes a concrete Interface from the actuals at that reference. Once
 // an interface is inferred (including from a dummy/procedure-pointer use),
 // deftype becomes Interface and this returns false.
+static inline bool is_bare_implicit_interface(const ASR::FunctionType_t &x) {
+    return x.m_deftype == ASR::deftypeType::ImplicitInterface;
+}
+
 static inline bool is_bare_implicit_interface(const ASR::Function_t &x) {
-    return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature)->m_deftype
-        == ASR::deftypeType::ImplicitInterface;
+    return is_bare_implicit_interface(
+        *ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature));
+}
+
+static inline bool is_bare_implicit_interface(ASR::symbol_t *v) {
+    if (!v) {
+        return false;
+    }
+    ASR::symbol_t *f2 = symbol_get_past_external(v);
+    if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) {
+        return false;
+    }
+    return is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(f2));
 }
 
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
@@ -7125,7 +7140,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     // need to be tracked which by default pass arrays by using descriptors.
     if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
          || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
-        && (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface
+        && (ASRUtils::is_declaration_deftype(ASRUtils::get_FunctionType(x)->m_deftype)
             || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
     }

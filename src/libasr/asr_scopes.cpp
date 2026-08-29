@@ -61,8 +61,7 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 if (v_func_type->m_abi != ASR::abiType::ExternalUndefined && v_func_type->m_abi != ASR::abiType::BindC) {
                     v_func_type->m_abi = ASR::abiType::ExternalUndefined;
                 } else if (v_func_type->m_abi == ASR::abiType::BindC
-                        && v_func_type->m_deftype
-                            != ASR::deftypeType::ImplicitInterface) {
+                        && !ASRUtils::is_bare_implicit_interface(*v_func_type)) {
                     // Do not overwrite ImplicitInterface: that is an
                     // interface-less external whose argument list is unknown.
                     // Forcing Interface would make it look like a genuine
