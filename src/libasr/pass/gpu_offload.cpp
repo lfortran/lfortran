@@ -5725,6 +5725,53 @@ public:
                 carg.loc = loc;
                 carg.m_value = host_size;
                 call_args.push_back(al, carg);
+
+                // For a component of rank > 1 the total size is not the
+                // extent of any single dimension, so also pass each
+                // per-dimension extent; size(struct%member, dim) in the
+                // kernel reads these.
+                ASR::ttype_t *mem_inner =
+                    ASRUtils::type_get_past_allocatable(mv->m_type);
+                size_t rank = ASR::down_cast<ASR::Array_t>(
+                    mem_inner)->n_dims;
+                if (rank <= 1) continue;
+                for (size_t d = 0; d < rank; d++) {
+                    std::string dim_size_name = size_name + "_dim"
+                        + std::to_string(d + 1);
+                    ASR::symbol_t *dim_size_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(al, loc,
+                                kernel_scope, s2c(al, dim_size_name),
+                                nullptr, 0,
+                                ASR::intentType::InOut, nullptr,
+                                nullptr,
+                                ASR::storage_typeType::Default,
+                                ASRUtils::duplicate_type(al,
+                                    int_type_sz),
+                                nullptr, ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required, false));
+                    kernel_scope->add_symbol(dim_size_name,
+                        dim_size_sym);
+                    kernel_args.push_back(al,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            dim_size_sym)));
+                    ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc,
+                            (int64_t)(d + 1), int_type_sz,
+                            ASR::integerbozType::Decimal));
+                    ASR::expr_t *dim_member = ASRUtils::EXPR(
+                        ASR::make_StructInstanceMember_t(al, loc,
+                            ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                                orig_sym)),
+                            orig_mem_ref, mv->m_type, nullptr));
+                    ASR::call_arg_t dim_carg;
+                    dim_carg.loc = loc;
+                    dim_carg.m_value = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, loc, dim_member,
+                            dim_expr, int_type_sz, nullptr));
+                    call_args.push_back(al, dim_carg);
+                }
             }
         }
 

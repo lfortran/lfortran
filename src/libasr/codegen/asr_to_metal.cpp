@@ -1672,11 +1672,46 @@ public:
     // allocatable member has dynamic size. For array-of-struct elements
     // like t(i)%v, reads from __sizes_arr_member[idx]. For single
     // struct variables like s%v, reads from func_array_size_params.
-    void emit_struct_member_array_size(ASR::expr_t *sim_expr) {
+    // Rank of an allocatable array component, or 0 when it is not one.
+    static size_t struct_member_rank(ASR::Variable_t *mv) {
+        ASR::ttype_t *inner =
+            ASRUtils::type_get_past_allocatable(mv->m_type);
+        if (!ASR::is_a<ASR::Array_t>(*inner)) return 0;
+        return ASR::down_cast<ASR::Array_t>(inner)->n_dims;
+    }
+
+    // Key under which the extent of dimension `d` (0-based) of a struct
+    // component is registered in func_array_size_params.
+    static std::string struct_member_dim_key(const std::string &base_key,
+            size_t d) {
+        return base_key + "__dim" + std::to_string(d + 1);
+    }
+
+    // Name of the kernel/function parameter holding that extent.
+    static std::string struct_member_dim_param(const std::string &var_name,
+            const std::string &mem_name, size_t d) {
+        return "__size_" + var_name + "_" + mem_name + "_dim"
+            + std::to_string(d + 1);
+    }
+
+    // The constant `dim` of a size() call, or -1 when absent or not a
+    // compile-time constant.
+    static int64_t constant_dim(ASR::expr_t *dim) {
+        if (!dim) return -1;
+        int64_t value = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(dim), value)) {
+            return -1;
+        }
+        return value;
+    }
+
+    void emit_struct_member_array_size(ASR::expr_t *sim_expr,
+            ASR::expr_t *dim = nullptr) {
         ASR::StructInstanceMember_t *sm =
             ASR::down_cast<ASR::StructInstanceMember_t>(sim_expr);
         std::string mem_name = ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(sm->m_m));
+        int64_t dim_value = constant_dim(dim);
         if (ASR::is_a<ASR::ArrayItem_t>(*sm->m_v)) {
             ASR::ArrayItem_t *arr_ai =
                 ASR::down_cast<ASR::ArrayItem_t>(sm->m_v);
@@ -1719,6 +1754,14 @@ public:
             std::string struct_name = ASRUtils::symbol_name(
                 ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
             std::string key = struct_name + "." + mem_name;
+            if (dim_value > 0) {
+                auto dit = func_array_size_params.find(
+                    struct_member_dim_key(key, (size_t)(dim_value - 1)));
+                if (dit != func_array_size_params.end()) {
+                    src << dit->second;
+                    return;
+                }
+            }
             auto sit = func_array_size_params.find(key);
             if (sit != func_array_size_params.end()) {
                 src << sit->second;
@@ -1973,6 +2016,22 @@ public:
                     if (!found) {
                         src << ", __size_" << var_name << "_"
                             << mem_name;
+                    }
+                }
+            }
+
+            // Per-dimension extents, matching the callee signature
+            size_t rank = struct_member_rank(mem_entry.second);
+            if (rank > 1) {
+                std::string key = var_name + "." + mem_name;
+                for (size_t d = 0; d < rank; d++) {
+                    auto dit = func_array_size_params.find(
+                        struct_member_dim_key(key, d));
+                    if (dit != func_array_size_params.end()) {
+                        src << ", " << dit->second;
+                    } else {
+                        src << ", " << struct_member_dim_param(
+                            var_name, mem_name, d);
                     }
                 }
             }
@@ -2351,6 +2410,22 @@ public:
                                 + "_" + mem_name;
                             src << ", int " << size_name;
                             func_array_size_params[key] = size_name;
+                            // Per-dimension extents, so that
+                            // size(arg%member, dim) inside the function
+                            // resolves to the extent rather than the
+                            // total number of elements.
+                            size_t rank = struct_member_rank(mv);
+                            if (rank > 1) {
+                                for (size_t d = 0; d < rank; d++) {
+                                    std::string dim_name =
+                                        struct_member_dim_param(
+                                            arg->m_name, mem_name, d);
+                                    src << ", int " << dim_name;
+                                    func_array_size_params[
+                                        struct_member_dim_key(key, d)]
+                                        = dim_name;
+                                }
+                            }
                         }
                     }
                 }
@@ -3261,6 +3336,16 @@ public:
                                 "__data_" + args[i].name + "_"
                                 + mem_name;
                             func_array_data_params[key] = data_name;
+                            size_t rank = struct_member_rank(
+                                mem_entry.second);
+                            if (rank > 1) {
+                                for (size_t d = 0; d < rank; d++) {
+                                    func_array_size_params[
+                                        struct_member_dim_key(key, d)]
+                                        = struct_member_dim_param(
+                                            args[i].name, mem_name, d);
+                                }
+                            }
                         }
                     }
                 }
@@ -5225,7 +5310,7 @@ public:
                         }
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
-                    emit_struct_member_array_size(as->m_v);
+                    emit_struct_member_array_size(as->m_v, as->m_dim);
                 } else {
                     src << "/* unsupported ArraySize */";
                 }
