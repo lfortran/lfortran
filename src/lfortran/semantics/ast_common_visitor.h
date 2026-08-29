@@ -14926,13 +14926,15 @@ public:
                         ASR::expr_t* numerator = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                             al, x.base.base.loc, src_len_expr, ASR::binopType::Add, mold_bytes_minus_one, local_int_type, nullptr));
                         
-                        ASR::expr_t* div_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                            al, x.base.base.loc, numerator, ASR::binopType::Div, mold_bytes_expr, local_int_type, nullptr));
-                        
                         ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
                         ASR::expr_t* is_zero = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
                             al, x.base.base.loc, mold_bytes_expr, ASR::cmpopType::Eq, zero_expr, cmp_type, nullptr));
                         
+                        ASR::expr_t* safe_divisor = ASRUtils::EXPR(ASR::make_IfExp_t(
+                            al, x.base.base.loc, is_zero, one_expr, mold_bytes_expr, local_int_type, nullptr));
+
+                        ASR::expr_t* div_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                            al, x.base.base.loc, numerator, ASR::binopType::Div, safe_divisor, local_int_type, nullptr));
                         
                         result_size_expr = ASRUtils::EXPR(ASR::make_IfExp_t(
                             al, x.base.base.loc, is_zero, zero_expr, div_expr, local_int_type, nullptr));
