@@ -54,6 +54,36 @@ public:
     }
 };
 
+// Collects, for a single function body, the base array each local
+// array pointer is associated with. Used to give a section temporary
+// the address space of the array it points into.
+class GpuPointerBaseCollector
+        : public ASR::BaseWalkVisitor<GpuPointerBaseCollector> {
+public:
+    std::map<std::string, std::string> ptr_base;
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (!ASR::is_a<ASR::Var_t>(*x.m_target)) return;
+        ASR::expr_t *value = x.m_value;
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
+            value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(value)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+            value = ASR::down_cast<ASR::ArraySection_t>(value)->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*value)) return;
+        std::string target = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+        std::string base = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(value)->m_v);
+        // An earlier association wins: the address space must hold for
+        // every association of this pointer, and chained pointers are
+        // resolved by walking ptr_base at declaration time.
+        if (!ptr_base.count(target)) {
+            ptr_base[target] = base;
+        }
+    }
+};
+
 class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
 public:
     bool needs_erf = false;
@@ -224,6 +254,14 @@ public:
     // Set to "thread" or "device" by emit_function_def_impl; used by
     // variable declaration code to match local pointer address spaces
     // to the function's overload.
+    // For the inline function currently being emitted: the base array
+    // each local array pointer is associated with, the arrays whose
+    // address space follows the overload being emitted, and the arrays
+    // that live in thread space (function-scope locals).
+    std::map<std::string, std::string> func_ptr_base;
+    std::set<std::string> func_var_addr_arrays;
+    std::set<std::string> func_thread_local_arrays;
+
     std::string current_func_addr_space = "device";
 
     // True when the current function being emitted has only input
@@ -304,6 +342,32 @@ public:
         return false;
     }
 
+    // Address space for a local array pointer inside the inline
+    // function being emitted. A pointer into an array must carry the
+    // address space of that array: thread for function-scope locals,
+    // and the overload's own address space for dummy arguments that
+    // were declared with it. Falls back to `device`, which is where
+    // kernel buffers live.
+    std::string inline_pointer_addr_space(const std::string &ptr_name) {
+        std::string base = ptr_name;
+        std::set<std::string> seen;
+        while (true) {
+            auto bit = func_ptr_base.find(base);
+            if (bit == func_ptr_base.end()) break;
+            if (!seen.insert(base).second) break;
+            base = bit->second;
+        }
+        if (base != ptr_name) {
+            if (func_thread_local_arrays.count(base)) return "thread";
+            if (func_var_addr_arrays.count(base)) {
+                return current_func_addr_space;
+            }
+            return "device";
+        }
+        if (current_func_all_input_arrays) return current_func_addr_space;
+        return "device";
+    }
+
     // Emit a local variable declaration, including array dimensions.
     // For scalars: `float x;`
     // For arrays:  `float x[3];` or `float x[n];` (VLA)
@@ -324,9 +388,10 @@ public:
                     src << get_indent() << "thread " << metal_type(arr->m_type)
                         << "* " << sanitize_metal_name(vname) << ";\n";
                 } else {
-                    std::string ptr_addr = (in_inline_function
-                        && current_func_all_input_arrays)
-                        ? current_func_addr_space : "device";
+                    std::string ptr_addr = "device";
+                    if (in_inline_function) {
+                        ptr_addr = inline_pointer_addr_space(vname);
+                    }
                     src << get_indent() << ptr_addr << " "
                         << metal_type(arr->m_type)
                         << "* " << sanitize_metal_name(vname) << ";\n";
@@ -2228,6 +2293,27 @@ public:
         current_func_addr_space = out_addr_space;
         bool all_arrays_input_only = func_all_arrays_input_only(fn);
         current_func_all_input_arrays = all_arrays_input_only;
+        func_ptr_base.clear();
+        func_var_addr_arrays.clear();
+        func_thread_local_arrays.clear();
+        {
+            GpuPointerBaseCollector ptr_base_collector;
+            for (size_t i = 0; i < fn->n_body; i++) {
+                ptr_base_collector.visit_stmt(*fn->m_body[i]);
+            }
+            func_ptr_base = ptr_base_collector.ptr_base;
+        }
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (var->m_intent != ASR::intentType::Local) continue;
+            ASR::ttype_t *vt = ASRUtils::type_get_past_allocatable(
+                var->m_type);
+            if (ASR::is_a<ASR::Array_t>(*vt)) {
+                func_thread_local_arrays.insert(std::string(var->m_name));
+            }
+        }
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -2332,6 +2418,9 @@ public:
                     && all_arrays_input_only);
                 std::string addr_space = use_variable_addr
                     ? out_addr_space : "device";
+                if (use_variable_addr) {
+                    func_var_addr_arrays.insert(std::string(arg->m_name));
+                }
                 std::string elem_type;
                 if (is_struct_type(arr->m_type)) {
                     elem_type = get_struct_name(arg);
@@ -2398,6 +2487,7 @@ public:
                     << metal_type(arg->m_type) << "* "
                     << arg->m_name;
                 alloc_pointer_params.insert(std::string(arg->m_name));
+                func_var_addr_arrays.insert(std::string(arg->m_name));
             } else {
                 src << metal_type(arg->m_type) << " " << arg->m_name;
             }
@@ -2610,6 +2700,9 @@ public:
         func_array_data_params.clear();
         alloc_pointer_params.clear();
         func_array_params.clear();
+        func_ptr_base.clear();
+        func_var_addr_arrays.clear();
+        func_thread_local_arrays.clear();
     }
 
     // Check if a function has any array parameter that needs an
