@@ -595,6 +595,35 @@ public:
     }
 };
 
+// Collects the symbols targeted by Var nodes in a set of statements,
+// descending into nested Block and AssociateBlock bodies (which the base
+// walker does not enter on its own). Used to decide whether a scope is
+// still needed after its associate aliases have been inlined.
+class VarSymbolCollector : public ASR::BaseWalkVisitor<VarSymbolCollector> {
+public:
+    std::set<ASR::symbol_t*> &referenced_syms;
+    VarSymbolCollector(std::set<ASR::symbol_t*> &rs) : referenced_syms(rs) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        referenced_syms.insert(x.m_v);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+};
+
 class GpuAllocStructMemberCollector :
     public ASR::BaseWalkVisitor<GpuAllocStructMemberCollector> {
 public:
@@ -4296,6 +4325,81 @@ public:
         }
     }
 
+    // An AssociateBlock nested inside a do concurrent body is normally
+    // inlined away by substituting each associate name with its selector
+    // expression. An array-valued selector, however, is materialised into
+    // a temporary variable owned by the AssociateBlock's own symbol table,
+    // and that temporary is still referenced by the inlined statements.
+    // It has to stay private to each loop iteration, so the scope cannot
+    // simply be dropped. Rebuild it as an equivalent Block over the same
+    // symbol table, which the kernel extraction already knows how to carry
+    // into the generated kernel, and return the BlockCall replacing the
+    // AssociateBlockCall. Returns nullptr when no symbol of the
+    // AssociateBlock survives, in which case the caller inlines the
+    // statements directly as before.
+    ASR::stmt_t* wrap_assoc_scope_in_block(ASR::AssociateBlock_t *ab,
+            Vec<ASR::stmt_t*> &resolved_stmts, SymbolTable *parent_scope) {
+        std::set<ASR::symbol_t*> referenced_syms;
+        VarSymbolCollector collector(referenced_syms);
+        for (size_t i = 0; i < resolved_stmts.n; i++) {
+            collector.visit_stmt(*resolved_stmts.p[i]);
+        }
+        bool scope_needed = false;
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                    referenced_syms.find(item.second)
+                        != referenced_syms.end()) {
+                scope_needed = true;
+                break;
+            }
+        }
+        if (!scope_needed) return nullptr;
+        std::string block_name = parent_scope->get_unique_name(
+            std::string(ab->m_name) + "_scope");
+        ab->m_symtab->parent = parent_scope;
+        ASR::asr_t *block = ASR::make_Block_t(al, ab->base.base.loc,
+            ab->m_symtab, s2c(al, block_name), resolved_stmts.p,
+            resolved_stmts.n);
+        ab->m_symtab->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        parent_scope->add_symbol(block_name, block_sym);
+        return ASRUtils::STMT(ASR::make_BlockCall_t(al, ab->base.base.loc,
+            -1, block_sym));
+    }
+
+    // Move the symbols of an inlined AssociateBlock that are still
+    // reachable from the resolved statements into the scope that now owns
+    // those statements. ExternalSymbol entries (e.g. type-bound procedure
+    // references) remain referenced by call nodes, and a Block scope may
+    // have been created for a nested AssociateBlock.
+    void migrate_inlined_assoc_symbols(ASR::AssociateBlock_t *ab,
+            SymbolTable *parent_scope) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> to_move;
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ||
+                    ASR::is_a<ASR::Block_t>(*item.second)) {
+                to_move.push_back({item.first, item.second});
+            }
+        }
+        for (auto &item : to_move) {
+            std::string name = item.first;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                if (parent_scope->get_symbol(name)) continue;
+                ASR::down_cast<ASR::ExternalSymbol_t>(item.second)
+                    ->m_parent_symtab = parent_scope;
+            } else {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    item.second);
+                if (parent_scope->get_symbol(name)) {
+                    name = parent_scope->get_unique_name(name);
+                    block->m_name = s2c(al, name);
+                }
+                block->m_symtab->parent = parent_scope;
+            }
+            parent_scope->add_symbol(name, item.second);
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
@@ -4665,20 +4769,33 @@ public:
                         ASR::AssociateBlock_t *inner_ab =
                             ASR::down_cast<ASR::AssociateBlock_t>(
                                 inner_abc->m_m);
+                        Vec<ASR::stmt_t*> inner_stmts;
+                        inner_stmts.reserve(al, inner_ab->n_body);
                         inline_assoc_body(inner_ab, assoc_map,
-                            resolved_stmts);
-                        for (auto &es_item :
-                                 inner_ab->m_symtab->get_scope()) {
-                            if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                                    *es_item.second)) continue;
-                            if (!current_scope->get_symbol(
-                                    es_item.first)) {
-                                ASR::down_cast<ASR::ExternalSymbol_t>(
-                                    es_item.second)->m_parent_symtab =
-                                        current_scope;
-                                current_scope->add_symbol(
-                                    es_item.first, es_item.second);
+                            inner_stmts);
+                        // Resolve the inner statements now: once they are
+                        // wrapped in a Block below the caller's resolver
+                        // no longer reaches them.
+                        if (!assoc_map.empty()) {
+                            AssociateVarResolverVisitor inner_resolver(
+                                al, assoc_map);
+                            for (size_t ii = 0; ii < inner_stmts.n; ii++) {
+                                inner_resolver.visit_stmt(
+                                    *inner_stmts.p[ii]);
                             }
+                        }
+                        ASR::stmt_t *inner_call =
+                            wrap_assoc_scope_in_block(inner_ab,
+                                inner_stmts, ab->m_symtab);
+                        if (inner_call) {
+                            resolved_stmts.push_back(al, inner_call);
+                        } else {
+                            for (size_t ii = 0; ii < inner_stmts.n; ii++) {
+                                resolved_stmts.push_back(al,
+                                    inner_stmts.p[ii]);
+                            }
+                            migrate_inlined_assoc_symbols(inner_ab,
+                                ab->m_symtab);
                         }
                         std::string inner_name = inner_ab->m_name;
                         ab->m_symtab->erase_symbol(inner_name);
@@ -4753,26 +4870,26 @@ public:
                         resolver.visit_stmt(*resolved_stmts.p[ri]);
                     }
                 }
-                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
-                    new_block_body.push_back(al, resolved_stmts.p[ri]);
-                }
-                // Migrate ExternalSymbol entries (e.g., type-bound
-                // procedure references like `1_t_f`) from the
-                // AssociateBlock's symtab to the enclosing scope
-                // before erasing it. These symbols are still
-                // referenced by FunctionCall/SubroutineCall nodes
-                // in the resolved statements and must remain
-                // reachable for import_struct_def.
-                for (auto &es_item : ab->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                            *es_item.second)) continue;
-                    if (!current_scope->get_symbol(es_item.first)) {
-                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                            es_item.second)->m_parent_symtab =
-                                current_scope;
-                        current_scope->add_symbol(es_item.first,
-                            es_item.second);
+                // If the AssociateBlock still owns variables referenced by
+                // the resolved statements (an array-valued selector
+                // temporary), keep the scope alive as a Block instead of
+                // dropping it.
+                ASR::stmt_t *block_call = wrap_assoc_scope_in_block(
+                    ab, resolved_stmts, block->m_symtab);
+                if (block_call) {
+                    new_block_body.push_back(al, block_call);
+                } else {
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        new_block_body.push_back(al, resolved_stmts.p[ri]);
                     }
+                    // Migrate ExternalSymbol entries (e.g., type-bound
+                    // procedure references like `1_t_f`) from the
+                    // AssociateBlock's symtab to the enclosing scope
+                    // before erasing it. These symbols are still
+                    // referenced by FunctionCall/SubroutineCall nodes
+                    // in the resolved statements and must remain
+                    // reachable for import_struct_def.
+                    migrate_inlined_assoc_symbols(ab, current_scope);
                 }
                 std::string ab_name = ab->m_name;
                 block->m_symtab->erase_symbol(ab_name);
@@ -4822,22 +4939,20 @@ public:
                         resolver.visit_stmt(*resolved_stmts.p[ri]);
                     }
                 }
-                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
-                    new_dc_body.push_back(al, resolved_stmts.p[ri]);
-                }
-                // Migrate ExternalSymbol entries from the
-                // AssociateBlock's symtab to the enclosing scope
-                // before erasing it (same as above for BlockCall).
-                for (auto &es_item : ab->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                            *es_item.second)) continue;
-                    if (!current_scope->get_symbol(es_item.first)) {
-                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                            es_item.second)->m_parent_symtab =
-                                current_scope;
-                        current_scope->add_symbol(es_item.first,
-                            es_item.second);
+                // Keep the scope alive as a Block when it still owns
+                // variables referenced by the resolved statements.
+                ASR::stmt_t *block_call = wrap_assoc_scope_in_block(
+                    ab, resolved_stmts, current_scope);
+                if (block_call) {
+                    new_dc_body.push_back(al, block_call);
+                } else {
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        new_dc_body.push_back(al, resolved_stmts.p[ri]);
                     }
+                    // Migrate ExternalSymbol entries from the
+                    // AssociateBlock's symtab to the enclosing scope
+                    // before erasing it (same as above for BlockCall).
+                    migrate_inlined_assoc_symbols(ab, current_scope);
                 }
                 std::string ab_name = ab->m_name;
                 current_scope->erase_symbol(ab_name);
