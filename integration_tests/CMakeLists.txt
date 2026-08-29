@@ -850,6 +850,7 @@ RUN(NAME arrays_reshape_42 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_43 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_44 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_45 LABELS llvm) # gfortran segfaults on reshape () of polymorphic allocatable array
+RUN(NAME arrays_reshape_46 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
