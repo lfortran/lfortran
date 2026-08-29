@@ -1964,6 +1964,76 @@ int compile_to_binary_fortran(const std::string &infile,
     return 0;
 }
 
+// Returns true if `path` refers to a regular file that is executable
+bool is_regular_executable(const std::filesystem::path &path)
+{
+    std::error_code ec;
+    std::filesystem::file_status status = std::filesystem::status(path, ec);
+    if (ec || !std::filesystem::is_regular_file(status)) {
+        return false;
+    }
+#ifdef _WIN32
+    // There is no executable permission bit on Windows, existence of a
+    // regular file with a known executable suffix is sufficient
+    return true;
+#else
+    using perms = std::filesystem::perms;
+    return (status.permissions() &
+            (perms::owner_exec | perms::group_exec | perms::others_exec))
+                != perms::none;
+#endif
+}
+
+// Looks up an external program the same way a shell does: if `dir` is
+// non-empty, only that directory is searched; otherwise the directories
+// from the `PATH` environment variable are scanned in order. Returns the
+// first name from `names` for which an executable file was found
+// (on Windows the ".exe" suffix is tried as well), or an empty string
+// if nothing was found.
+std::string find_program(const std::vector<std::string> &names,
+        const std::string &dir)
+{
+    std::vector<std::filesystem::path> dirs;
+    if (!dir.empty()) {
+        dirs.emplace_back(dir);
+    } else {
+        const char *path_env = std::getenv("PATH");
+        if (path_env == nullptr) {
+            return "";
+        }
+        std::string path_list{path_env};
+#ifdef _WIN32
+        const char sep = ';';
+#else
+        const char sep = ':';
+#endif
+        size_t start = 0;
+        while (start < path_list.size()) {
+            size_t end = path_list.find(sep, start);
+            if (end == std::string::npos) {
+                end = path_list.size();
+            }
+            if (end > start) {
+                dirs.emplace_back(path_list.substr(start, end - start));
+            }
+            start = end + 1;
+        }
+    }
+    for (const std::string &name : names) {
+        for (const std::filesystem::path &d : dirs) {
+            if (is_regular_executable(d / name)) {
+                return name;
+            }
+#ifdef _WIN32
+            if (is_regular_executable(d / (name + ".exe"))) {
+                return name + ".exe";
+            }
+#endif
+        }
+    }
+    return "";
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -2115,7 +2185,8 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (!linker_path.empty()) {
                 CC = linker_path;
-            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH")) {
+            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH");
+                    env_path != nullptr && env_path[0] != '\0') {
                 CC = env_path;
             }
 
@@ -2126,13 +2197,65 @@ int link_executable(const std::vector<std::string> &infiles,
 
             if (!linker.empty()) {
                 CC += linker;
-            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
+            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER");
+                    env_linker != nullptr && env_linker[0] != '\0') {
                 CC += env_linker;
             } else {
                 // TODO: Add support for msvc linker for Windows
                 // TODO: Add support for lld linker
-                // Default linker to be used
-                CC += "clang";
+                // No linker was requested explicitly; probe for an
+                // available C compiler driver. clang is tried first
+                // to preserve the historical default, but the object
+                // files emitted by LFortran can be linked by any
+                // standard C compiler driver.
+                std::string driver;
+                if (compiler_options.gpu_backend == "metal") {
+                    // The Metal backend compiles its Objective-C runtime
+                    // with the same driver, which must be clang: gcc
+                    // cannot compile Objective-C .m files.
+                    driver = find_program({"clang"}, CC);
+                } else {
+                    driver = find_program({"clang", "cc", "gcc"}, CC);
+                }
+                if (driver.empty()) {
+                    std::string searched = CC;
+                    if (!searched.empty() && searched.back() == '/') {
+                        searched.pop_back();
+                    }
+                    std::cerr << "No C compiler driver found for linking "
+                        "(searched for "
+                        << (compiler_options.gpu_backend == "metal"
+                                ? std::string("clang, which is required to "
+                                              "compile the Metal backend's "
+                                              "Objective-C runtime")
+                                : std::string("clang, cc, gcc"))
+                        << " in "
+                        << (searched.empty() ? std::string("$PATH")
+                                             : "'" + searched + "'")
+                        << "). LFortran needs a C compiler driver to link "
+                        "executables; install one (for example with "
+                        "`apt install build-essential`, the Xcode command "
+                        "line tools, or `conda install clang`), "
+                        "or point LFortran at one explicitly with "
+                        "--linker=<CC> / LFORTRAN_LINKER=<CC> and "
+                        "optionally --linker-path=<DIR> / "
+                        "LFORTRAN_LINKER_PATH=<DIR>." << std::endl;
+                    return 10;
+                }
+                CC += driver;
+            }
+
+            if (compiler_options.gpu_backend == "metal"
+                    && CC.find("clang") == std::string::npos) {
+                // The Metal backend compiles its Objective-C runtime (.m)
+                // with the resolved driver; only clang can compile
+                // Objective-C, so an explicitly selected other driver
+                // cannot work here.
+                std::cerr << "The Metal backend requires the clang driver "
+                    "to compile its Objective-C runtime, but the selected "
+                    "driver is '" << CC << "'. Use --linker=clang or "
+                    "LFORTRAN_LINKER=clang." << std::endl;
+                return 10;
             }
 
             if (compiler_options.target != "" &&
@@ -2186,7 +2309,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
+                std::string metal_compile_cmd = CC + " -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
@@ -2276,35 +2399,64 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cerr << "Tip: If there is a linker issue, switch the linker "
                 "using --linker=<CC> option or create an environment "
                 "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
-                "clang or gcc" << std::endl;
-            std::cerr << "Also, if required use --linker-path=<PATH>, "
-                "where PATH has location to look for the linker "
-                "executable" << std::endl;
+                "clang, cc or gcc" << std::endl;
+            std::cerr << "Also, if required use --linker-path=<PATH> or "
+                "`export LFORTRAN_LINKER_PATH=<PATH>`, where PATH has "
+                "location to look for the linker executable. By default "
+                "LFortran searches $PATH for clang, then cc, then gcc."
+                << std::endl;
             return 10;
         }
 
 #ifdef HAVE_RUNTIME_STACKTRACE
         if (compiler_options.emit_debug_info) {
             // TODO: Replace the following hardcoded part
-            std::string cmd = "";
+            // The debug line-information files used for line numbers in
+            // runtime stacktraces are generated by external LLVM tools.
+            // If those are not available, warn and skip this step instead
+            // of failing the whole compilation; the executable is still
+            // built with the DWARF debug information emitted by LLVM.
+            std::string missing_tools;
+            if (find_program({"llvm-dwarfdump"}, "").empty()) {
+                missing_tools = "`llvm-dwarfdump`";
+            }
 #ifdef HAVE_LFORTRAN_MACHO
-            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
-                + outfile + ".dSYM > ";
-#else
-            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
+            if (find_program({"dsymutil"}, "").empty()) {
+                if (!missing_tools.empty()) {
+                    missing_tools += " and ";
+                }
+                missing_tools += "`dsymutil` (which ships with the Xcode "
+                    "command line tools)";
+            }
 #endif
-            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                + file_name + "_lines.dat)";
-            int status = system(cmd.c_str());
-            if ( status != 0 ) {
-                std::cerr << "Error in creating the files used to generate "
-                    "the debug information. This might be caused because either"
-                    " `llvm-dwarfdump` or `Python` are not available. "
-                    "Please activate the CONDA environment and compile again.\n";
-                return status;
+            if (!missing_tools.empty()) {
+                std::cerr << "warning: skipping generation of debug line "
+                    "information requested by `-g`: " << missing_tools
+                    << " not found in $PATH. Install the LLVM tools (for "
+                    "example `conda install llvm-tools`) and recompile "
+                    "with `-g` to get line numbers in runtime stacktraces."
+                    << std::endl;
+            } else {
+                std::string cmd = "";
+#ifdef HAVE_LFORTRAN_MACHO
+                cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
+                    + outfile + ".dSYM > ";
+#else
+                cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
+#endif
+                std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
+                cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
+                    + file_name + "_ldd.txt " + file_name + "_lines.txt "
+                    + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
+                    + file_name + "_lines.dat)";
+                int status = system(cmd.c_str());
+                if ( status != 0 ) {
+                    std::cerr << "Error in creating the files used to generate "
+                        "the debug information. This might be caused because either"
+                        " `llvm-dwarfdump` or `Python` are not available. "
+                        "Please activate the CONDA environment and compile again.\n";
+                    return status;
+                }
             }
         }
 #endif

@@ -115,4 +115,22 @@ cd $(mktemp -d)
 echo "Testing invalid command-line usage"
 ! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"
 
+if [[ $FC == "lfortran" ]]; then
+    cd $(mktemp -d)
+    echo "Testing explicit linker override via LFORTRAN_LINKER"
+    LFORTRAN_LINKER=cc $FC $f -o a.out
+    [ -x "a.out" ]
+    ./a.out
+
+    cd $(mktemp -d)
+    echo "Testing explicit error when no C compiler driver is available"
+    mkdir bin
+    ln -s "$(command -v lfortran)" bin/lfortran
+    if PATH="$(pwd)/bin" lfortran $f -o a.out 2> no_driver_err.txt; then
+        echo "Expected failure when no C compiler driver is in PATH"
+        exit 1
+    fi
+    grep "No C compiler driver found" no_driver_err.txt
+fi
+
 echo "All tests succeeded"

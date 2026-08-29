@@ -225,7 +225,6 @@ including `git`.
   sudo apt update
   sudo apt-get install build-essential
   sudo apt-get install zlib1g-dev libzstd-dev
-  sudo apt install clang
   ```
 
 * Run the following commands
@@ -236,6 +235,11 @@ including `git`.
   cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
   make -j8
   ```
+
+  Note: producing executables with the built `lfortran` requires a C
+  compiler driver (`clang`, `cc` or `gcc`) in `$PATH`, which the
+  `build-essential` package above provides; see the user guide section
+  "Selecting the C Compiler (Link Driver)".
 
 * If everything compiles, you can use LFortran as follows
 
