@@ -14935,7 +14935,7 @@ public:
                         
                         
                         result_size_expr = ASRUtils::EXPR(ASR::make_IfExp_t(
-                            al, x.base.base.loc, is_zero, zero_expr, div_expr, local_int_type));
+                            al, x.base.base.loc, is_zero, zero_expr, div_expr, local_int_type, nullptr));
                     }
                 }
                 ASR::dimension_t size_dim;
