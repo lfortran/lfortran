@@ -139,6 +139,33 @@ public:
     }
 };
 
+// Answers whether the Metal Shading Language can represent `t` with the
+// same in-memory width the host uses. MSL has no 64-bit floating point
+// type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no complex
+// type, so the Metal backend lowers all of those to a narrower (or bogus)
+// type. Offloading a `do concurrent` that touches such data would make the
+// kernel reinterpret the host buffers and the by-value scalar-argument
+// struct at the wrong element size, silently producing wrong results, so
+// such a loop has to stay on the CPU.
+//
+// Note: kind-8 integers are representable (MSL `long` is 8 bytes), but are
+// rejected here to preserve the pre-existing bail-out behaviour.
+static bool is_metal_representable_type(ASR::ttype_t *t) {
+    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+    switch (base_t->type) {
+        case ASR::ttypeType::Real:
+            return ASR::down_cast<ASR::Real_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Integer:
+            return ASR::down_cast<ASR::Integer_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Logical:
+            return ASR::down_cast<ASR::Logical_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Complex:
+            return false;
+        default:
+            return true;
+    }
+}
+
 // Checks whether an expression tree contains a FunctionCall node.
 class ContainsFunctionCall : public ASR::BaseWalkVisitor<ContainsFunctionCall> {
 public:
@@ -4728,13 +4755,12 @@ public:
         }
 
         if (pass_options.gpu_offload_metal) {
+            // Every symbol reaching the kernel — buffer parameters,
+            // by-value members of the __ScalarArgs struct and kernel-local
+            // temporaries alike — is collected in `involved_syms`, so a
+            // single sweep here covers all of them.
             for (auto &sym : involved_syms) {
-                ASR::ttype_t *t = sym.second.first;
-                ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-                if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-                if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+                if (!is_metal_representable_type(sym.second.first)) return;
             }
         }
 
