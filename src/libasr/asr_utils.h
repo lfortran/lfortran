@@ -4859,6 +4859,48 @@ inline bool is_parent(SymbolTable* a, SymbolTable* b) {
     return false;
 }
 
+// Enumerate the allocatable array components of `st`, including the ones it
+// inherits from the types it extends.  Components declared by an ancestor are
+// listed before the type's own, matching the order in which the type layers
+// are laid out.  `visited` guards against a malformed cyclic parent chain.
+inline void collect_allocatable_array_members(ASR::Struct_t* st,
+        std::vector<std::pair<std::string, ASR::Variable_t*>>& members,
+        std::set<ASR::Struct_t*>& visited) {
+    if( !st || !visited.insert(st).second ) {
+        return;
+    }
+    if( st->m_parent ) {
+        ASR::symbol_t* parent = symbol_get_past_external(st->m_parent);
+        if( ASR::is_a<ASR::Struct_t>(*parent) ) {
+            collect_allocatable_array_members(
+                ASR::down_cast<ASR::Struct_t>(parent), members, visited);
+        }
+    }
+    for( size_t i = 0; i < st->n_members; i++ ) {
+        ASR::symbol_t* mem = st->m_symtab->get_symbol(st->m_members[i]);
+        if( !mem || !ASR::is_a<ASR::Variable_t>(*mem) ) {
+            continue;
+        }
+        ASR::Variable_t* mv = ASR::down_cast<ASR::Variable_t>(mem);
+        if( !ASR::is_a<ASR::Allocatable_t>(*mv->m_type) ) {
+            continue;
+        }
+        if( !ASR::is_a<ASR::Array_t>(
+                *type_get_past_allocatable(mv->m_type)) ) {
+            continue;
+        }
+        members.push_back(std::make_pair(std::string(st->m_members[i]), mv));
+    }
+}
+
+inline std::vector<std::pair<std::string, ASR::Variable_t*>>
+collect_allocatable_array_members(ASR::Struct_t* st) {
+    std::vector<std::pair<std::string, ASR::Variable_t*>> members;
+    std::set<ASR::Struct_t*> visited;
+    collect_allocatable_array_members(st, members, visited);
+    return members;
+}
+
 inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     ASR::symbol_t* current_parent = b->m_parent;
     while( current_parent ) {

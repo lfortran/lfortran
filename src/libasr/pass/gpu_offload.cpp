@@ -5668,19 +5668,13 @@ public:
             ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
             ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *mem_sym =
-                    st->m_symtab->get_symbol(st->m_members[m]);
-                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
-                    continue;
-                ASR::Variable_t *mv =
-                    down_cast<ASR::Variable_t>(mem_sym);
-                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
-                ASR::ttype_t *mem_inner =
-                    ASRUtils::type_get_past_allocatable(mv->m_type);
-                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
+            for (auto &mem_entry :
+                    ASRUtils::collect_allocatable_array_members(st)) {
+                const std::string &mem_name = mem_entry.first;
+                ASR::Variable_t *mv = mem_entry.second;
+                ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 std::string size_name = "__size_" + sym_name + "_"
-                    + std::string(st->m_members[m]);
+                    + mem_name;
                 ASR::symbol_t *size_sym =
                     ASR::down_cast<ASR::symbol_t>(
                         ASRUtils::make_Variable_t_util(al, loc,
@@ -5757,19 +5751,15 @@ public:
                     orig_var->m_type_declaration);
             if (!is_a<ASR::Struct_t>(*struct_sym)) continue;
             ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *mem_sym =
-                    st->m_symtab->get_symbol(st->m_members[m]);
-                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
-                    continue;
-                ASR::Variable_t *mv =
-                    down_cast<ASR::Variable_t>(mem_sym);
-                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+            for (auto &mem_entry :
+                    ASRUtils::collect_allocatable_array_members(st)) {
+                const std::string &mem_name = mem_entry.first;
+                ASR::Variable_t *mv = mem_entry.second;
+                ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 ASR::ttype_t *mem_inner =
                     ASRUtils::type_get_past_allocatable(mv->m_type);
-                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
                 std::string data_name = "__data_" + sym_name + "_"
-                    + std::string(st->m_members[m]);
+                    + mem_name;
                 ASR::ttype_t *data_type =
                     ASRUtils::duplicate_type(al, mem_inner);
                 ASR::symbol_t *data_type_decl = nullptr;
