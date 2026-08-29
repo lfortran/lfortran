@@ -377,11 +377,14 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 // Only consider module procedure interfaces (m_module=true).
                 // Abstract interfaces should not be removed.
                 if (!ftype->m_module) continue;
-                SymbolTable* parent_symtab = func->m_symtab->parent;
-                if (!parent_symtab || !parent_symtab->asr_owner) continue;
-                ASR::symbol_t* parent_sym = ASR::down_cast<ASR::symbol_t>(
-                    parent_symtab->asr_owner);
-                if (!ASR::is_a<ASR::Module_t>(*parent_sym)) continue;
+                // Not every module-procedure interface is owned by a Module:
+                // a pass may synthesize one directly in the global scope, whose
+                // owner is the TranslationUnit rather than a symbol (the
+                // coarray pass does this for the `prif` module procedures).
+                // get_asr_owner returns nullptr for such a scope instead of
+                // down_casting a non-symbol.
+                ASR::symbol_t* parent_sym = ASRUtils::get_asr_owner(kv.first);
+                if (!parent_sym || !ASR::is_a<ASR::Module_t>(*parent_sym)) continue;
                 ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(parent_sym);
                 if (!mod->m_has_submodules) continue;
                 std::string func_name = std::string(func->m_name);
