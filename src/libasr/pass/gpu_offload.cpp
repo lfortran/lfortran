@@ -108,27 +108,25 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
-        // Skip variables local to Block scopes, except those in
-        // enclosing Block scopes (which need to become kernel parameters
-        // when a do concurrent is inside one or more nested Blocks)
+        // A variable owned by a Block or AssociateBlock scope that is
+        // nested *inside* the loop travels with that scope into the
+        // kernel, so it must not become a kernel parameter. A variable
+        // owned by a Block or AssociateBlock that *encloses* the loop is
+        // left behind when the loop is extracted, so it does have to be
+        // passed in. `enclosing_scopes` holds exactly the latter.
         if (ASR::is_a<ASR::Variable_t>(*x.m_v)) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x.m_v);
             if (var->m_parent_symtab->asr_owner &&
-                ASR::is_a<ASR::Block_t>(
-                    *ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner))) {
-                if (enclosing_scopes.find(var->m_parent_symtab)
+                var->m_parent_symtab->asr_owner->type
+                    == ASR::asrType::symbol) {
+                ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                    var->m_parent_symtab->asr_owner);
+                if ((ASR::is_a<ASR::Block_t>(*owner) ||
+                     ASR::is_a<ASR::AssociateBlock_t>(*owner)) &&
+                    enclosing_scopes.find(var->m_parent_symtab)
                         == enclosing_scopes.end()) {
                     return;
                 }
-            }
-            // Skip variables local to AssociateBlock scopes — they are
-            // internal aliases that stay in the AssociateBlock's symtab
-            if (var->m_parent_symtab->asr_owner &&
-                ASR::is_a<ASR::AssociateBlock_t>(
-                    *ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner))) {
-                return;
             }
         }
         std::string name = ASRUtils::symbol_name(x.m_v);
@@ -406,14 +404,12 @@ public:
                 if (var->m_parent_symtab->asr_owner) {
                     ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
                         var->m_parent_symtab->asr_owner);
-                    if (ASR::is_a<ASR::Block_t>(*owner)) {
+                    if (ASR::is_a<ASR::Block_t>(*owner) ||
+                        ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
                         if (enclosing_scopes.find(var->m_parent_symtab)
                                 == enclosing_scopes.end()) {
                             is_block_local = true;
                         }
-                    }
-                    if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                        is_block_local = true;
                     }
                 }
             }
@@ -4357,6 +4353,18 @@ public:
                         // regular assignment like `v = 0.`, whose RHS
                         // may reference `v` itself and cause infinite
                         // recursion during resolution.
+                        // Only scalar selectors are inlined. An
+                        // array-valued selector is materialized by the
+                        // compiler into a temporary that lives in this
+                        // AssociateBlock's symtab, and its defining
+                        // expression may itself reference further
+                        // AssociateBlock-local symbols (the array
+                        // constant buffer, the resolved specific
+                        // procedure of a generic constructor, ...).
+                        // Inlining it would drag those unreachable
+                        // symbols into the kernel. The associate name is
+                        // backed by real storage here, so it is passed
+                        // into the kernel as an ordinary buffer instead.
                         ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
                             ab->m_body[i]);
                         if (is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -4365,6 +4373,8 @@ public:
                             if (is_a<ASR::Variable_t>(*sym) &&
                                 down_cast<ASR::Variable_t>(sym)->m_parent_symtab
                                     == ab->m_symtab &&
+                                !ASRUtils::is_array(
+                                    down_cast<ASR::Variable_t>(sym)->m_type) &&
                                 assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             }
@@ -4517,10 +4527,9 @@ public:
                    scope->asr_owner->type == ASR::asrType::symbol) {
                 ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
                     scope->asr_owner);
-                if (is_a<ASR::Block_t>(*owner_sym)) {
+                if (is_a<ASR::Block_t>(*owner_sym) ||
+                    is_a<ASR::AssociateBlock_t>(*owner_sym)) {
                     enclosing_block_scopes.insert(scope);
-                    scope = scope->parent;
-                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
                     scope = scope->parent;
                 } else {
                     break;
