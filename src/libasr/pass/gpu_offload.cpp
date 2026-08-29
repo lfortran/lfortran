@@ -150,8 +150,7 @@ public:
 //
 // Note: kind-8 integers are representable (MSL `long` is 8 bytes), but are
 // rejected here to preserve the pre-existing bail-out behaviour.
-static bool is_metal_representable_type(ASR::ttype_t *t) {
-    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
     switch (base_t->type) {
         case ASR::ttypeType::Real:
             return ASR::down_cast<ASR::Real_t>(base_t)->m_kind != 8;
@@ -164,6 +163,71 @@ static bool is_metal_representable_type(ASR::ttype_t *t) {
         default:
             return true;
     }
+}
+
+// A derived type is representable only when every one of its data members
+// is, because the Metal struct is laid out member by member: a single fp64
+// member anywhere in the type changes the element size the kernel would
+// have to stride by, while the host buffer keeps the wider layout. The
+// members inherited through `extends` live in the parent Struct (they are
+// reached at run time through the `__parent` member), so the parent chain
+// has to be walked as well. `visited` guards against self-referential
+// types such as `type(node), pointer :: next`, whose member graph is
+// cyclic.
+static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
+        // The derived type cannot be inspected, so it cannot be shown to
+        // be representable: keep the loop on the CPU.
+        return false;
+    }
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    if (!visited.insert(st).second) {
+        // Already on the walk stack; its members are checked there.
+        return true;
+    }
+    if (st->m_parent
+            && !is_metal_representable_struct(st->m_parent, visited)) {
+        return false;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!msym) continue;
+        msym = ASRUtils::symbol_get_past_external(msym);
+        if (!ASR::is_a<ASR::Variable_t>(*msym)) continue;
+        ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(msym);
+        ASR::ttype_t *mtype = ASRUtils::extract_type(mvar->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*mtype)) {
+            if (!mvar->m_type_declaration
+                    || !is_metal_representable_struct(
+                        mvar->m_type_declaration, visited)) {
+                return false;
+            }
+        } else if (!is_metal_representable_scalar_type(mtype)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Answers whether the Metal Shading Language can represent the type of `e`
+// with the same in-memory width the host uses. MSL has no 64-bit floating
+// point type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no
+// complex type, so the Metal backend lowers all of those to a narrower (or
+// bogus) type. Offloading a `do concurrent` that touches such data would
+// make the kernel reinterpret the host buffers and the by-value
+// scalar-argument struct at the wrong element size, silently producing
+// wrong results, so such a loop has to stay on the CPU.
+static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
+    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+    if (ASR::is_a<ASR::StructType_t>(*base_t)) {
+        if (!e) return false;
+        std::set<ASR::Struct_t*> visited;
+        return is_metal_representable_struct(
+            ASRUtils::get_struct_sym_from_struct_expr(e), visited);
+    }
+    return is_metal_representable_scalar_type(base_t);
 }
 
 // Checks whether an expression tree contains a FunctionCall node.
@@ -4481,7 +4545,8 @@ public:
             // temporaries alike — is collected here, so a single sweep
             // covers all of them.
             for (auto &sym : candidate_syms) {
-                if (!is_metal_representable_type(sym.second.first)) return;
+                if (!is_metal_representable_type(sym.second.first,
+                        sym.second.second)) return;
             }
         }
 
