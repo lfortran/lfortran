@@ -23,6 +23,43 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
+// Look up a member (component or type-bound procedure) by name in a
+// Struct's symbol table, walking the inheritance chain: a component
+// inherited from a parent type lives in the parent Struct's symtab, not
+// in the extending type's own scope.
+static ASR::symbol_t* get_struct_member_recursive(ASR::Struct_t *s,
+        const std::string &name) {
+    std::set<ASR::Struct_t*> seen;
+    while (s != nullptr) {
+        if (!seen.insert(s).second) break;
+        ASR::symbol_t *member = s->m_symtab->get_symbol(name);
+        if (member) return member;
+        if (!s->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            s->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        s = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return nullptr;
+}
+
+// Name of the Struct that owns `member`, used as the m_module_name of an
+// ExternalSymbol pointing at it. For an inherited member this is the
+// ancestor type, not the type the reference was written through.
+static std::string struct_member_owner_name(ASR::symbol_t *member,
+        const std::string &fallback) {
+    SymbolTable *owner_st = ASRUtils::symbol_parent_symtab(member);
+    if (owner_st && owner_st->asr_owner &&
+            owner_st->asr_owner->type == ASR::asrType::symbol) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            owner_st->asr_owner);
+        if (ASR::is_a<ASR::Struct_t>(*owner)) {
+            return std::string(ASRUtils::symbol_name(owner));
+        }
+    }
+    return fallback;
+}
+
 // Collects all symbols referenced in expressions/statements
 class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
 public:
@@ -774,7 +811,7 @@ public:
         for (auto &item : kernel_scope->get_scope()) {
             if (!is_a<ASR::Struct_t>(*item.second)) continue;
             ASR::Struct_t *s = down_cast<ASR::Struct_t>(item.second);
-            if (s->m_symtab->get_symbol(member_name)) {
+            if (get_struct_member_recursive(s, member_name)) {
                 return item.second;
             }
         }
@@ -792,6 +829,23 @@ public:
         // If already imported, return existing
         ASR::symbol_t *existing = kernel_scope->get_symbol(struct_name);
         if (existing) return existing;
+
+        // Import the parent type first, so the extending type keeps its
+        // inheritance chain in the kernel scope. Members inherited from
+        // the parent are declared in the parent's symtab, so without this
+        // they would be lost entirely. The parent chain is acyclic, so
+        // this terminates; and since the parent is added to kernel_scope
+        // before this struct, the early-return guard above stays correct.
+        ASR::symbol_t *new_parent = nullptr;
+        if (orig_struct->m_parent) {
+            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                orig_struct->m_parent);
+            if (is_a<ASR::Struct_t>(*parent_sym)) {
+                new_parent = import_struct_def(
+                    down_cast<ASR::Struct_t>(parent_sym),
+                    orig_scope, kernel_scope, loc);
+            }
+        }
 
         // Deep-copy the Struct into kernel scope
         SymbolTable *new_st = al.make_new<SymbolTable>(kernel_scope);
@@ -852,7 +906,7 @@ public:
             orig_struct->m_abi, orig_struct->m_access,
             orig_struct->m_is_packed, orig_struct->m_is_abstract,
             orig_struct->m_is_sequence,
-            nullptr, 0, nullptr, nullptr, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0);
         ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
         kernel_scope->add_symbol(struct_name, kernel_struct);
 
@@ -882,19 +936,25 @@ public:
                     ASR::symbol_t *es_struct_owner =
                         down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                     if (is_a<ASR::Struct_t>(*es_struct_owner) &&
-                            new_st->get_symbol(es->m_original_name)) {
+                            get_struct_member_recursive(
+                                down_cast<ASR::Struct_t>(kernel_struct),
+                                es->m_original_name)) {
                         is_member = true;
                     }
                 }
                 if (is_member) {
                     std::string es_name = item.first;
                     if (kernel_scope->get_symbol(es_name)) continue;
-                    ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
-                        es->m_original_name);
+                    ASR::symbol_t *new_member_in_struct =
+                        get_struct_member_recursive(
+                            down_cast<ASR::Struct_t>(kernel_struct),
+                            es->m_original_name);
                     if (!new_member_in_struct) continue;
+                    std::string owner_name = struct_member_owner_name(
+                        new_member_in_struct, struct_name);
                     ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
                         kernel_scope, s2c(al, es_name),
-                        new_member_in_struct, s2c(al, struct_name),
+                        new_member_in_struct, s2c(al, owner_name),
                         nullptr, 0, s2c(al, es->m_original_name),
                         es->m_access);
                     kernel_scope->add_symbol(es_name,
@@ -5944,8 +6004,11 @@ public:
                                 ASR::Struct_t *ks =
                                     down_cast<ASR::Struct_t>(kernel_struct);
                                 ASR::symbol_t *kernel_method =
-                                    ks->m_symtab->get_symbol(orig_name);
+                                    get_struct_member_recursive(ks,
+                                        orig_name);
                                 if (kernel_method) {
+                                    struct_name = struct_member_owner_name(
+                                        kernel_method, struct_name);
                                     ASR::asr_t *new_es =
                                         ASR::make_ExternalSymbol_t(al, loc,
                                             kernel_scope,

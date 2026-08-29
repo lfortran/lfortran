@@ -16,6 +16,31 @@
 
 namespace LCompilers {
 
+// An extended type is laid out with the parent type as its first field, the
+// same way the LLVM backend lays it out, so that a struct copied to the
+// device keeps identical member offsets on both sides. This is the name of
+// that field in the generated Metal source.
+static const char *metal_parent_field = "__parent";
+
+// Number of parent-field hops from `st` up to the type that declares
+// `member_name`, or -1 when no type in the chain declares it.
+static int struct_parent_depth(ASR::Struct_t *st,
+        const std::string &member_name) {
+    int depth = 0;
+    std::set<ASR::Struct_t*> seen;
+    while (st != nullptr) {
+        if (!seen.insert(st).second) break;
+        if (st->m_symtab->get_symbol(member_name)) return depth;
+        if (!st->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        st = ASR::down_cast<ASR::Struct_t>(parent);
+        depth++;
+    }
+    return -1;
+}
+
 class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
 public:
     std::set<std::string> called;
@@ -2014,6 +2039,15 @@ public:
     // Emit a Metal struct definition for a Struct symbol
     void emit_struct_def(ASR::Struct_t *st) {
         src << "struct " << st->m_name << " {\n";
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            if (ASR::is_a<ASR::Struct_t>(*parent)) {
+                src << "    "
+                    << ASR::down_cast<ASR::Struct_t>(parent)->m_name << " "
+                    << metal_parent_field << ";\n";
+            }
+        }
         for (size_t i = 0; i < st->n_members; i++) {
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
@@ -2042,13 +2076,65 @@ public:
         src << "};\n\n";
     }
 
+    // Static Struct type an expression is read from. Only the forms that
+    // can appear as the base of a component reference are handled; anything
+    // else yields nullptr.
+    ASR::Struct_t* struct_of_expr(ASR::expr_t *e) {
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        }
+        ASR::symbol_t *decl = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*v)) {
+                decl = ASR::down_cast<ASR::Variable_t>(v)->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*m)) {
+                decl = ASR::down_cast<ASR::Variable_t>(m)->m_type_declaration;
+            } else if (ASR::is_a<ASR::Struct_t>(*m)) {
+                decl = m;
+            }
+        }
+        if (!decl) return nullptr;
+        decl = ASRUtils::symbol_get_past_external(decl);
+        if (!ASR::is_a<ASR::Struct_t>(*decl)) return nullptr;
+        return ASR::down_cast<ASR::Struct_t>(decl);
+    }
+
+    // Emit the parent-field selectors that lead from the static type of
+    // `base` down to the type declaring `mem_name`. Emits nothing when the
+    // member is declared by that type itself.
+    void emit_parent_field_path(ASR::expr_t *base,
+            const std::string &mem_name) {
+        ASR::Struct_t *st = struct_of_expr(base);
+        if (!st) return;
+        int depth = struct_parent_depth(st, mem_name);
+        for (int d = 0; d < depth; d++) {
+            src << "." << metal_parent_field;
+        }
+    }
+
     // Collect struct definitions in dependency order (nested structs first)
     void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
             std::set<std::string> &emitted,
             std::vector<ASR::Struct_t*> &ordered) {
         std::string name = st->m_name;
         if (emitted.count(name)) return;
-        // Emit dependencies first
+        // Emit dependencies first: the parent type is an inline field of
+        // this one, so it must be defined before it.
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            if (ASR::is_a<ASR::Struct_t>(*parent)) {
+                collect_structs_ordered(
+                    ASR::down_cast<ASR::Struct_t>(parent),
+                    scope, emitted, ordered);
+            }
+        }
         for (size_t i = 0; i < st->n_members; i++) {
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
@@ -5030,6 +5116,7 @@ public:
                     }
                 }
                 visit_expr(sm->m_v);
+                emit_parent_field_path(sm->m_v, mem_name);
                 src << ".";
                 src << mem_name;
                 break;
