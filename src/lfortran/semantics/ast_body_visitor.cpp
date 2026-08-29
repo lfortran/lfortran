@@ -8572,6 +8572,7 @@ public:
                                             ASRUtils::type_get_past_array(v->m_type));
                                         param_ft->m_arg_types = passed_ft->m_arg_types;
                                         param_ft->n_arg_types = passed_ft->n_arg_types;
+                                        param_ft->m_deftype = ASR::deftypeType::Interface;
                                         // Also update the callee's function signature
                                         ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
                                             f->m_function_signature);
@@ -8772,6 +8773,7 @@ public:
                                 // Update the FunctionType's arg_types
                                 param_ft->m_arg_types = passed_ft->m_arg_types;
                                 param_ft->n_arg_types = passed_ft->n_arg_types;
+                                param_ft->m_deftype = ASR::deftypeType::Interface;
 
                                 // Create matching argument variables in the Function's symtab
                                 Vec<ASR::expr_t*> new_args;
