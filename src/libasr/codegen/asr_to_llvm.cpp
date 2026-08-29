@@ -22078,6 +22078,63 @@ public:
         return fn;
     }
 
+    // Load a scalar derived-type component chain (e.g. `s%m_`) of a GPU
+    // kernel argument on the host, so that a VLA workspace buffer sized by
+    // that component can be allocated before the kernel is launched.  The
+    // struct itself is handed to the kernel as a buffer, so its components
+    // are not materialized as scalar kernel arguments.
+    llvm::Value* load_gpu_struct_member_extent(ASR::expr_t *base_expr,
+            llvm::Value *struct_ptr,
+            const std::vector<std::string> &member_path,
+            const std::string &ws_name, const Location &loc) {
+        if (base_expr == nullptr || struct_ptr == nullptr) {
+            throw CodeGenError("gpu offload: the extent of the temporary "
+                "array `" + ws_name + "` cannot be determined from the "
+                "kernel arguments", loc);
+        }
+        llvm::Value *ptr = struct_ptr;
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(base_expr));
+        for (size_t m = 0; m < member_path.size(); m++) {
+            if (struct_sym == nullptr ||
+                    !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                throw CodeGenError("gpu offload: the extent of the "
+                    "temporary array `" + ws_name + "` cannot be "
+                    "determined from component `" + member_path[m] + "`",
+                    loc);
+            }
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            std::string type_key = get_type_key(struct_sym);
+            ASR::symbol_t *member_sym = st->m_symtab->get_symbol(
+                member_path[m]);
+            if (member_sym == nullptr ||
+                    name2dertype.find(type_key) == name2dertype.end() ||
+                    name2memidx[type_key].find(member_path[m]) ==
+                        name2memidx[type_key].end()) {
+                throw CodeGenError("gpu offload: the extent of the "
+                    "temporary array `" + ws_name + "` cannot be "
+                    "determined from component `" + member_path[m] + "`",
+                    loc);
+            }
+            ASR::Variable_t *member_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(member_sym));
+            ptr = llvm_utils->create_gep2(name2dertype[type_key], ptr,
+                name2memidx[type_key][member_path[m]]);
+            if (m + 1 == member_path.size()) {
+                llvm::Type *member_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        member_var->m_type, member_var->m_type_declaration,
+                        module.get());
+                return llvm_utils->CreateLoad2(member_type, ptr);
+            }
+            struct_sym = ASRUtils::symbol_get_past_external(
+                member_var->m_type_declaration);
+        }
+        throw CodeGenError("gpu offload: the extent of the temporary array "
+            "`" + ws_name + "` cannot be determined from the kernel "
+            "arguments", loc);
+    }
+
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
             llvm::Type::getInt8Ty(context));
@@ -22144,6 +22201,11 @@ public:
 
         // Save scalar arg LLVM values for VLA workspace size computation
         std::vector<llvm::Value*> call_arg_values(x.n_args, nullptr);
+        // Save struct arg pointers so that a VLA workspace whose extent is
+        // a derived-type component (e.g. `s%m_`) can load that component
+        // here on the host: a struct is passed to the kernel as a buffer,
+        // so it never appears in `call_arg_values`.
+        std::vector<llvm::Value*> call_arg_struct_ptrs(x.n_args, nullptr);
 
         // Track scalar args to pack into a single struct buffer
         struct ScalarArgInfo {
@@ -23247,6 +23309,7 @@ public:
                 llvm::Value *struct_ptr;
                 llvm::Type *struct_type;
                 if (arg_val->getType()->isPointerTy()) {
+                    call_arg_struct_ptrs[i] = arg_val;
                     struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
                     struct_type = llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, arg_type, module.get());
@@ -23257,6 +23320,7 @@ public:
                     llvm::AllocaInst *struct_alloca =
                         llvm_utils->CreateAlloca(struct_type);
                     builder->CreateStore(arg_val, struct_alloca);
+                    call_arg_struct_ptrs[i] = struct_alloca;
                     struct_ptr = builder->CreatePointerCast(struct_alloca, i8_ptr);
                 }
                 uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
@@ -23516,9 +23580,29 @@ public:
                                     sit->second, i64, true));
                         }
                     } else {
-                        llvm::Value *dim_val =
-                            call_arg_values[dim.call_arg_index];
-                        LCOMPILERS_ASSERT(dim_val != nullptr);
+                        if (dim.call_arg_index < 0 ||
+                                (size_t)dim.call_arg_index >= x.n_args) {
+                            throw CodeGenError("gpu offload: the extent of "
+                                "the temporary array `" + ws.var_name +
+                                "` cannot be determined from the kernel "
+                                "arguments", x.base.base.loc);
+                        }
+                        llvm::Value *dim_val = nullptr;
+                        if (!dim.member_path.empty()) {
+                            dim_val = load_gpu_struct_member_extent(
+                                x.m_args[dim.call_arg_index].m_value,
+                                call_arg_struct_ptrs[dim.call_arg_index],
+                                dim.member_path, ws.var_name,
+                                x.base.base.loc);
+                        } else {
+                            dim_val = call_arg_values[dim.call_arg_index];
+                        }
+                        if (dim_val == nullptr) {
+                            throw CodeGenError("gpu offload: the extent of "
+                                "the temporary array `" + ws.var_name +
+                                "` cannot be determined from the kernel "
+                                "arguments", x.base.base.loc);
+                        }
                         per_thread_elems = builder->CreateMul(
                             per_thread_elems,
                             builder->CreateIntCast(dim_val, i64, true));
