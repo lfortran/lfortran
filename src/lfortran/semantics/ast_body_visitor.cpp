@@ -199,6 +199,11 @@ public:
     void visit_Block(const AST::Block_t &x) {
         all_loops_blocks_nesting++;
         from_block = true;
+        // A BLOCK is the only construct through which the body visitor adds to
+        // the `external_procedures` accumulator. Restore it when the block
+        // ends, otherwise an `external` declared here stays visible to every
+        // program unit processed afterwards.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ASR::asr_t* block;
@@ -225,6 +230,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -238,6 +244,7 @@ public:
                 if (!compiler_options.continue_compilation) {
                     current_scope = parent_scope;
                     from_block = false;
+                    external_procedures = saved_external_procedures;
                     all_loops_blocks_nesting--;
                     throw a;
                 }
@@ -281,6 +288,7 @@ public:
         tmp = ASR::make_BlockCall_t(al, x.base.base.loc,  -1,
                                     ASR::down_cast<ASR::symbol_t>(block));
         from_block = false;
+        external_procedures = saved_external_procedures;
         all_loops_blocks_nesting--;
     }
 

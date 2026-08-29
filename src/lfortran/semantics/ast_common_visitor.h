@@ -5231,25 +5231,31 @@ public:
     }
 
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
-        if (scope) {
-            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
-        } else if (current_scope->asr_owner) {
-            external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
-        }
-        if (std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end()) {
+        // The `external_procedures` member accumulates the external procedures
+        // of the scope currently being built (filled by
+        // `create_external_function`). It is only valid for that in-progress
+        // scope, so consult it only when the caller did not pass a specific
+        // `scope`. We must not overwrite it: the previous implementation
+        // assigned the (still empty) map entry to this member, which dropped
+        // every external procedure declared earlier in the same scope.
+        if (scope == nullptr &&
+            std::find(external_procedures.begin(), external_procedures.end(),
+                sym) != external_procedures.end()) {
             return true;
         }
-        SymbolTable* s = (scope ? scope : current_scope);
-        s = s->parent;
-        while (s && s->asr_owner) {
+        // Then consult the persisted mapping for the requested (or current)
+        // scope and all of its parents. Skip tables whose asr_owner is not
+        // set yet (the ASR node is created after the spec part for Program /
+        // Function / Subroutine) rather than aborting the walk.
+        for (SymbolTable *s = (scope ? scope : current_scope); s; s = s->parent) {
+            if (!s->asr_owner) continue;
             auto it = external_procedures_mapping.find(get_hash(s->asr_owner));
             if (it != external_procedures_mapping.end()) {
-                const std::vector<std::string>& parent_procs = it->second;
-                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                const std::vector<std::string>& procs = it->second;
+                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
                     return true;
                 }
             }
-            s = s->parent;
         }
         return false;
     }
