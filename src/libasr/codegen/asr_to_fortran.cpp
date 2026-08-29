@@ -1604,7 +1604,74 @@ public:
 
     // void visit_FileEndfile(const ASR::FileEndfile_t &x) {}
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        std::string r = indent;
+        r += "inquire(";
+        bool first = true;
+        auto append_kw = [&](const char *kw, ASR::expr_t* e) {
+            if (!e) return;
+            if (!first) r += ", ";
+            r += kw;
+            r += "=";
+            visit_expr(*e);
+            r += src;
+            first = false;
+        };
+        append_kw("unit", x.m_unit);
+        append_kw("file", x.m_file);
+        append_kw("iostat", x.m_iostat);
+        append_kw("err", x.m_err);
+        append_kw("exist", x.m_exist);
+        append_kw("opened", x.m_opened);
+        append_kw("number", x.m_number);
+        append_kw("named", x.m_named);
+        append_kw("name", x.m_name);
+        append_kw("access", x.m_access);
+        append_kw("sequential", x.m_sequential);
+        append_kw("direct", x.m_direct);
+        append_kw("form", x.m_form);
+        append_kw("formatted", x.m_formatted);
+        append_kw("unformatted", x.m_unformatted);
+        append_kw("recl", x.m_recl);
+        append_kw("nextrec", x.m_nextrec);
+        append_kw("blank", x.m_blank);
+        append_kw("position", x.m_position);
+        append_kw("action", x.m_action);
+        append_kw("read", x.m_read);
+        append_kw("write", x.m_write);
+        append_kw("readwrite", x.m_readwrite);
+        append_kw("delim", x.m_delim);
+        append_kw("pad", x.m_pad);
+        append_kw("flen", x.m_flen);
+        append_kw("blocksize", x.m_blocksize);
+        append_kw("convert", x.m_convert);
+        append_kw("carriagecontrol", x.m_carriagecontrol);
+        append_kw("size", x.m_size);
+        append_kw("pos", x.m_pos);
+        append_kw("iolength", x.m_iolength);
+        append_kw("decimal", x.m_decimal);
+        append_kw("sign", x.m_sign);
+        append_kw("encoding", x.m_encoding);
+        append_kw("stream", x.m_stream);
+        append_kw("iomsg", x.m_iomsg);
+        append_kw("round", x.m_round);
+        append_kw("pending", x.m_pending);
+        append_kw("asynchronous", x.m_asynchronous);
+        r += ")";
+        // `INQUIRE(IOLENGTH=iolen) v1, v2, ...` has the output list appended
+        // after the parenthesized keyword list.
+        if (x.n_iolength_vars > 0) {
+            r += " ";
+            for (size_t i = 0; i < x.n_iolength_vars; i++) {
+                visit_expr(*x.m_iolength_vars[i]);
+                r += src;
+                if (i + 1 < x.n_iolength_vars) r += ", ";
+            }
+        }
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         ASR::StringFormat_t *sf = nullptr;
