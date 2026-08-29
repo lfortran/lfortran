@@ -1300,6 +1300,25 @@ public:
         }
     }
 
+    // Resolve an element-count expression for an array-valued variable
+    // that is represented as a bare pointer inside a kernel: an
+    // associated array-section pointer, a local allocatable array, or
+    // an array dummy argument. Returns an empty string when the count
+    // cannot be determined.
+    std::string array_count_expr(const std::string &name) {
+        auto pit = ptr_section_sizes.find(name);
+        if (pit != ptr_section_sizes.end()) return pit->second;
+        auto sit = alloc_array_sizes.find(name);
+        if (sit != alloc_array_sizes.end()) {
+            return std::to_string(sit->second);
+        }
+        auto eit = alloc_array_size_exprs.find(name);
+        if (eit != alloc_array_size_exprs.end()) return eit->second;
+        auto fit = func_array_size_params.find(name);
+        if (fit != func_array_size_params.end()) return fit->second;
+        return "";
+    }
+
     bool propagate_alloc_size_from_stmt(ASR::stmt_t *stmt) {
         if (stmt->type != ASR::stmtType::Assignment) return false;
         ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(stmt);
@@ -3552,7 +3571,40 @@ public:
                         ASR::down_cast<ASR::Var_t>(a->m_value)->m_v);
                     rhs_is_local_alloc = local_alloc_arrays.count(rname) > 0;
                 }
-                if (target_is_local_alloc && rhs_is_array_or_alloc) {
+                // A whole-array (or array-section) assignment whose
+                // target is represented as a bare pointer: an array
+                // pointer variable (an associated section) or an array
+                // dummy argument. Metal has no whole-array assignment,
+                // so a plain `p = rhs` would either fail to compile
+                // (scalar RHS) or silently overwrite the pointer itself
+                // instead of the pointee (array RHS). Expand into an
+                // element loop, broadcasting a scalar RHS.
+                bool target_is_ptr_array = false;
+                std::string ptr_array_count;
+                if (!deref_target
+                        && !target_is_local_alloc
+                        && ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && is_array_type(tgt_type)
+                        && (ASR::is_a<ASR::Pointer_t>(*tgt_type)
+                            || (target_is_func_array_param
+                                && !rhs_is_array_or_alloc))) {
+                    std::string tname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+                    ptr_array_count = array_count_expr(tname);
+                    target_is_ptr_array = !ptr_array_count.empty();
+                }
+                if (target_is_ptr_array) {
+                    std::string loop_var = "__copy_i";
+                    src << "for (int " << loop_var << " = 0; "
+                        << loop_var << " < (" << ptr_array_count
+                        << "); " << loop_var << "++) ";
+                    visit_expr(a->m_target);
+                    src << "[" << loop_var << "] = ";
+                    array_elem_index_var = loop_var;
+                    visit_expr(a->m_value);
+                    array_elem_index_var.clear();
+                    src << ";\n";
+                } else if (target_is_local_alloc && rhs_is_array_or_alloc) {
                     // Copy between local allocatable arrays
                     std::string tname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
