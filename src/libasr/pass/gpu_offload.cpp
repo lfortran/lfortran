@@ -27,6 +27,38 @@ static int gpu_kernel_counter = 0;
 // Struct's symbol table, walking the inheritance chain: a component
 // inherited from a parent type lives in the parent Struct's symtab, not
 // in the extending type's own scope.
+// Fill in the `start`/`end` bounds of a synthesized `do` loop head for
+// dimension `d` of `arr_expr`. Descriptor arrays (allocatables, pointers,
+// assumed-shape dummies and the temporaries created for array-valued
+// `associate` selectors) carry no compile-time `dimension_t` entries, so
+// their `m_start`/`m_length` are null; fall back to the runtime bounds in
+// that case instead of emitting a loop head with null bounds.
+static std::pair<ASR::expr_t*, ASR::expr_t*> get_dim_bounds(Allocator &al,
+        const Location &loc, ASR::dimension_t *dims, size_t d,
+        ASR::expr_t *arr_expr) {
+    if (dims && dims[d].m_start && dims[d].m_length) {
+        return {dims[d].m_start, dims[d].m_length};
+    }
+    ASR::ttype_t *int_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, 4));
+    ASR::expr_t *dim_expr = ASRUtils::EXPR(
+        ASR::make_IntegerConstant_t(al, loc, (int64_t)d + 1, int_type,
+            ASR::integerbozType::Decimal));
+    return {ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arr_expr,
+                dim_expr, int_type, ASR::arrayboundType::LBound, nullptr)),
+            ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arr_expr,
+                dim_expr, int_type, ASR::arrayboundType::UBound, nullptr))};
+}
+
+static void set_loop_head_bounds(Allocator &al, const Location &loc,
+        ASR::do_loop_head_t &head, ASR::dimension_t *dims, size_t d,
+        ASR::expr_t *arr_expr) {
+    std::pair<ASR::expr_t*, ASR::expr_t*> bounds =
+        get_dim_bounds(al, loc, dims, d, arr_expr);
+    head.m_start = bounds.first;
+    head.m_end = bounds.second;
+}
+
 static ASR::symbol_t* get_struct_member_recursive(ASR::Struct_t *s,
         const std::string &name) {
     std::set<ASR::Struct_t*> seen;
@@ -227,6 +259,59 @@ static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
     }
     return is_metal_representable_scalar_type(base_t);
 }
+
+// A variable declared inside the `do concurrent` body by a BLOCK or an
+// ASSOCIATE construct is carried into the generated kernel as a
+// kernel-local declaration. The Metal Shading Language has no
+// variable-length arrays, so such a local can only be emitted when its
+// extent is a compile-time constant. A descriptor array -- an allocatable
+// local, or the temporary the frontend materialises for an array-valued
+// ASSOCIATE selector whose operand is an allocatable or an assumed-shape
+// dummy -- carries no static shape, so the kernel would declare it with a
+// bogus one-element extent and index out of bounds. Such a loop has to
+// stay on the CPU.
+class GpuLocalArrayChecker :
+        public ASR::BaseWalkVisitor<GpuLocalArrayChecker> {
+public:
+    bool has_unsized_local_array = false;
+
+    void check_scope(SymbolTable *symtab) {
+        if (!symtab) return;
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::ttype_t *t =
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_type);
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
+            if (rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank)) {
+                has_unsized_local_array = true;
+            }
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        check_scope(blk->m_symtab);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        check_scope(blk->m_symtab);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
 
 // Checks whether an expression tree contains a FunctionCall node.
 class ContainsFunctionCall : public ASR::BaseWalkVisitor<ContainsFunctionCall> {
@@ -1914,7 +1999,8 @@ public:
                         }
                     }
                 }
-                return {dims[dim_idx].m_start, dims[dim_idx].m_length};
+                return get_dim_bounds(al, arg->base.loc, dims,
+                    (size_t)dim_idx, arg);
             };
 
             ASR::expr_t *zero;
@@ -3134,16 +3220,10 @@ public:
             // j loops over columns of b = rows of a (dim 0 of result)
             // a(m, n): dims[0] = m, dims[1] = n
             // b(n, m): i = 1..n, j = 1..m
-            ASR::expr_t *i_start = dims[1].m_start;
-            ASR::expr_t *i_end = dims[1].m_length;
-            ASR::expr_t *j_start = dims[0].m_start;
-            ASR::expr_t *j_end = dims[0].m_length;
-
             ASR::do_loop_head_t inner_head;
             inner_head.loc = loc;
             inner_head.m_v = var_i;
-            inner_head.m_start = i_start;
-            inner_head.m_end = i_end;
+            set_loop_head_bounds(al, loc, inner_head, dims, 1, arr_arg);
             inner_head.m_increment = nullptr;
             ASR::stmt_t *inner_loop = ASRUtils::STMT(
                 ASR::make_DoLoop_t(al, loc, nullptr, inner_head,
@@ -3156,8 +3236,7 @@ public:
             ASR::do_loop_head_t outer_head;
             outer_head.loc = loc;
             outer_head.m_v = var_j;
-            outer_head.m_start = j_start;
-            outer_head.m_end = j_end;
+            set_loop_head_bounds(al, loc, outer_head, dims, 0, arr_arg);
             outer_head.m_increment = nullptr;
             ASR::stmt_t *outer_loop = ASRUtils::STMT(
                 ASR::make_DoLoop_t(al, loc, nullptr, outer_head,
@@ -3781,8 +3860,8 @@ public:
                         ASR::do_loop_head_t head;
                         head.loc = loc;
                         head.m_v = loop_vars[d];
-                        head.m_start = dims[d].m_start;
-                        head.m_end = dims[d].m_length;
+                        set_loop_head_bounds(al, loc, head, dims, (size_t)d,
+                            asgn->m_target);
                         head.m_increment = nullptr;
                         if (loop_nest == nullptr) {
                             loop_nest = ASRUtils::STMT(
@@ -4060,8 +4139,8 @@ public:
                     ASR::do_loop_head_t head;
                     head.loc = loc;
                     head.m_v = loop_vars[d];
-                    head.m_start = dims[d].m_start;
-                    head.m_end = dims[d].m_length;
+                    set_loop_head_bounds(al, loc, head, dims, (size_t)d,
+                        asgn->m_target);
                     head.m_increment = nullptr;
                     if (loop_nest == nullptr) {
                         loop_nest = ASRUtils::STMT(
@@ -4661,6 +4740,11 @@ public:
                 if (!is_metal_representable_type(sym.second.first,
                         sym.second.second)) return;
             }
+            GpuLocalArrayChecker local_array_checker;
+            for (size_t i = 0; i < x.n_body; i++) {
+                local_array_checker.visit_stmt(*x.m_body[i]);
+            }
+            if (local_array_checker.has_unsized_local_array) return;
         }
 
         // Inline IntrinsicArrayFunction All before kernel extraction
