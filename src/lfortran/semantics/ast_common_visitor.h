@@ -5041,7 +5041,10 @@ public:
             if (assgnd_access.find(sym) != assgnd_access.end()) {
                 ext_access = assgnd_access[sym];
             }
-            assgnd_access[sym] = ext_access;
+            // Do not record `ext_access` back into `assgnd_access`: that map is
+            // never cleared between program units, so a `private` module would
+            // make the same-named external private in every later program unit
+            // of the same file.
             if (assgnd_pointer.count(sym) > 0) {
                 ASR::ttype_t *type = nullptr;
                 if (determined_type) {
