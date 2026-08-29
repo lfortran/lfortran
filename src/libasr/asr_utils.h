@@ -7656,14 +7656,28 @@ static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
 // ABI. When `proc_iface_syms` is unavailable the descriptor ABI is used.
 static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
         const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
-    if (get_asr_owner(fn_sym) == nullptr) {
-        return true;
-    }
     if (!ASR::is_a<ASR::Function_t>(*fn_sym)) {
-        return false;
+        return get_asr_owner(fn_sym) == nullptr;
     }
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
     ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
+    // A module procedure (declared with the MODULE prefix and implemented in a
+    // submodule) always has an explicit interface, so it keeps the
+    // string-descriptor ABI no matter where its declaration is placed. This is
+    // checked before the ownerless test below because a pass may synthesize
+    // such a declaration directly in the global scope, where it has no ASR
+    // owner: the coarray pass does this for the `prif` module procedures it
+    // calls into (Caffeine's coarray runtime). Without this check the
+    // synthesized declaration would be taken for an ownerless external
+    // procedure and given the classic hidden-length ABI, while a caller that
+    // reaches the same procedure through `use prif` keeps the descriptor ABI --
+    // the two disagree on the argument list of one LLVM function.
+    if (ft->m_module) {
+        return false;
+    }
+    if (get_asr_owner(fn_sym) == nullptr) {
+        return true;
+    }
     if (ft->m_deftype == ASR::deftypeType::Interface) {
         ASR::symbol_t* owner = get_asr_owner(fn_sym);
         if (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
