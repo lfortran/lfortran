@@ -5536,6 +5536,14 @@ public:
                     throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
                 }
                 arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
+            } else {
+                visit_expr_wrapper(elem);
+                llvm::Constant* c = llvm::dyn_cast<llvm::Constant>(tmp);
+                if (c) {
+                    arr_elements.push_back(c);
+                } else {
+                    throw CodeGenError("Unsupported element type in array constant initializer");
+                }
             }
         }
         if (!arr_type) {
@@ -9357,7 +9365,7 @@ public:
                 ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
                 load_cptr = !is_cptr_dummy_passed_by_value(p_var);
             }
-            if (load_cptr) {
+            if (load_cptr && ptr->getType() != p_llvm_type) {
                 ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
             }
         }
@@ -9403,7 +9411,9 @@ public:
             if (load_tgt) {
                 llvm::Type* t_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_tgt, ASRUtils::expr_type(x.m_tgt), module.get());
-                tgt = llvm_utils->CreateLoad2(t_llvm_type, tgt);
+                if (tgt->getType() != t_llvm_type) {
+                    tgt = llvm_utils->CreateLoad2(t_llvm_type, tgt);
+                }
             }
             tmp = builder->CreateICmpEQ(to_int64(ptr), to_int64(tgt));
             return ;
@@ -15835,6 +15845,37 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*x_m_type) ||
+                   ASR::is_a<ASR::CPtr_t>(*x_m_type)) {
+            // Struct and CPtr elements: allocate a flat [N x T] array on the
+            // stack, store each element into it and return a pointer to element 0.
+            // The resulting pointer is compatible with the FixedSizeArray memcpy
+            // path in set_VariableInital_value.
+            int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
+            // Evaluate the first element to get the concrete LLVM type
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            this->visit_expr_wrapper(x.m_args[0], true);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value *first_elem = tmp;
+            el_type = first_elem->getType();
+
+            llvm::Type* arr_alloca_type = llvm::ArrayType::get(el_type, simd_n > 0 ? simd_n : 0);
+            llvm::AllocaInst *p = llvm_utils->CreateAlloca(*builder, arr_alloca_type);
+
+            llvm::Value *slot0 = llvm_utils->create_gep2(arr_alloca_type, p, 0);
+            builder->CreateStore(first_elem, slot0);
+
+            for (int64_t i = 1; i < simd_n; i++) {
+                llvm::Value *slot = llvm_utils->create_gep2(arr_alloca_type, p, i);
+                ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                this->visit_expr_wrapper(x.m_args[i], true);
+                ptr_loads = ptr_loads_copy;
+                builder->CreateStore(tmp, slot);
+            }
+            tmp = llvm_utils->create_gep2(arr_alloca_type, p, 0);
+            return;
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
@@ -15904,6 +15945,36 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*x_m_type) || ASR::is_a<ASR::CPtr_t>(*x_m_type)) {
+            // Struct and CPtr element arrays: cannot be emitted as a global LLVM
+            // ConstantArray (elements are complex IR values). Fall back to the
+            // allocate-and-store approach used by visit_ArrayConstructorUtil.
+            int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
+            ASR::expr_t *el0 = ASRUtils::fetch_ArrayConstant_value(al, x, 0);
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            this->visit_expr_wrapper(el0, true);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value *first_elem = tmp;
+            el_type = first_elem->getType();
+
+            llvm::Type* arr_alloca_type = llvm::ArrayType::get(el_type, simd_n > 0 ? simd_n : 0);
+            llvm::AllocaInst *p = llvm_utils->CreateAlloca(*builder, arr_alloca_type);
+
+            llvm::Value *slot0 = llvm_utils->create_gep2(arr_alloca_type, p, 0);
+            builder->CreateStore(first_elem, slot0);
+
+            for (int64_t i = 1; i < simd_n; i++) {
+                llvm::Value *slot = llvm_utils->create_gep2(arr_alloca_type, p, i);
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                this->visit_expr_wrapper(el, true);
+                ptr_loads = ptr_loads_copy;
+                builder->CreateStore(tmp, slot);
+            }
+            tmp = llvm_utils->create_gep2(arr_alloca_type, p, 0);
+            return;
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
@@ -24516,6 +24587,11 @@ public:
                             value = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                 al, orig_arg->base.base.loc, &orig_arg->base)),
                                 orig_arg->m_type, value);
+                        }
+                        if (orig_arg && !orig_arg->m_value_attr && ASR::is_a<ASR::CPtr_t>(*arg_type)) {
+                            llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                            builder->CreateStore(value, target);
+                            value = target;
                         }
                         use_value = true;
                     } else if ( (ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
