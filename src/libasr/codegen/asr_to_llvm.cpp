@@ -348,6 +348,10 @@ public:
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
+    // Hashes of LLVM functions created for a bare ImplicitInterface
+    // placeholder. A later Function that owns the same link name may replace
+    // that declare; the decision is this set, not LLVM type inequality.
+    std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
@@ -8328,6 +8332,7 @@ public:
                     llvm::Function::ExternalLinkage, fn_name, module.get());
                 llvm_symtab_fn_names[fn_name] = h;
                 llvm_symtab_fn[h] = F;
+                llvm_fn_from_bare_implicit_interface.insert(h);
             }
             return;
         }
@@ -8382,11 +8387,12 @@ public:
                 uint32_t old_h = llvm_symtab_fn_names[fn_name];
                 F = llvm_symtab_fn[old_h];
                 // A bare ImplicitInterface may have claimed this link name with
-                // a placeholder 0-arg declare. If this symbol has a real
-                // signature (or a body), replace the placeholder so calls and
-                // the definition use the correct type.
-                if (F->isDeclaration()
-                        && F->getFunctionType() != function_type) {
+                // a placeholder declare. Replace that placeholder so calls and
+                // the definition use the real signature. The set, not LLVM
+                // type inequality, decides whether the occupant is a
+                // placeholder.
+                if (llvm_fn_from_bare_implicit_interface.count(old_h)
+                        && F->isDeclaration()) {
                     llvm::Function* new_F = llvm::Function::Create(
                         function_type, llvm::Function::ExternalLinkage,
                         "", module.get());
@@ -8400,6 +8406,7 @@ public:
                     F = new_F;
                     llvm_symtab_fn[old_h] = F;
                     llvm_symtab_fn_names[fn_name] = h;
+                    llvm_fn_from_bare_implicit_interface.erase(old_h);
                 }
             }
             llvm_symtab_fn[h] = F;
