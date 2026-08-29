@@ -190,7 +190,7 @@ class PRIFInterface {
                 args.p, args.n, nullptr, 0, nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface, s2c(al, symbol_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
 
             global_scope->add_symbol(symbol_name, ASR::down_cast<ASR::symbol_t>(fn));
@@ -248,7 +248,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -829,7 +829,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -898,7 +898,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1001,7 +1001,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1030,7 +1030,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1115,7 +1115,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1333,7 +1333,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1370,7 +1370,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1393,7 +1393,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1425,7 +1425,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1517,7 +1517,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -1565,7 +1565,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
@@ -2384,7 +2384,7 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, lcobound_sym)));
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, false, false, false, nullptr, 0, false, false, false, nullptr);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, true, false, false, nullptr, 0, false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
@@ -2406,7 +2406,7 @@ class PRIFInterface {
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, coarray_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ucobound_sym)));
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, false, false, false, nullptr, 0, false, false, false, nullptr);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0, args.p, args.n, nullptr, 0, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Interface, s2c(al, sym_name), false, false, true, false, false, nullptr, 0, false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
         }
@@ -2617,7 +2617,7 @@ class PRIFInterface {
                 ASR::abiType::Source, ASR::accessType::Public,
                 ASR::deftypeType::Interface,
                 s2c(al, sym_name),
-                false, false, false, false, false, nullptr, 0,
+                false, false, true, false, false, nullptr, 0,
                 false, false, false, nullptr);
             global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
             return ASR::down_cast<ASR::symbol_t>(fn);
