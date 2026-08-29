@@ -55,6 +55,13 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
             ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_StructInstanceMember(x);
         }
     }
+    void replace_CoarrayRef(ASR::CoarrayRef_t* x) {
+        if( ASRUtils::is_array(x->m_type) ) {
+            vars.push_back(al, current_expr);
+        } else {
+            ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_CoarrayRef(x);
+        }
+    }
 
     void replace_ArrayItem(ASR::ArrayItem_t* /*x*/) {
     }
@@ -254,6 +261,15 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             xx.m_type = ASRUtils::extract_type(x.m_type);
         }
     }
+    void visit_CoarrayRef(const ASR::CoarrayRef_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_CoarrayRef(x);
+        ASR::CoarrayRef_t& xx = const_cast<ASR::CoarrayRef_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_var)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
+            xx.m_value = nullptr;
+        }
+    }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x){
         if( !ASRUtils::is_array(x.m_type) ) {
@@ -291,6 +307,13 @@ class CleanupDegenerateArraySection: public ASR::BaseExprReplacer<CleanupDegener
         if (ASRUtils::is_array(x->m_type) &&
             !ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) &&
             !ASRUtils::is_array(ASRUtils::symbol_type(x->m_m))) {
+            x->m_type = ASRUtils::extract_type(x->m_type);
+        }
+    }
+    void replace_CoarrayRef(ASR::CoarrayRef_t* x) {
+        ASR::BaseExprReplacer<CleanupDegenerateArraySection>::replace_CoarrayRef(x);
+        if (ASRUtils::is_array(x->m_type) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x->m_var))) {
             x->m_type = ASRUtils::extract_type(x->m_type);
         }
     }
@@ -498,6 +521,7 @@ public:
         void visit_ArraySize(const ASR::ArraySize_t&) {}
         void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
         void visit_ArrayBound(const ASR::ArrayBound_t&) {}
+        void visit_CoarrayRef(const ASR::CoarrayRef_t&) {}
 
         void visit_Var(const ASR::Var_t& x) {
             ASR::Var_t *xx = const_cast<ASR::Var_t*>(&x);

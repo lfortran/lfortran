@@ -595,6 +595,13 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(value);
+            set_allocation_size(al, coarray_ref->m_var, temporary_var, 
+                                allocate_dims, target_n_dims, 
+                                add_allocated_check, len_allocte_expr);
+            break;
+        }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item_t = ASR::down_cast<ASR::ArrayItem_t>(value);
             allocate_dims.reserve(al, array_item_t->n_args);
@@ -1337,6 +1344,9 @@ ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
         case ASR::exprType::ArraySection: {
             return extract_symbol(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
         }
+        case ASR::exprType::CoarrayRef: {
+            return extract_symbol(ASR::down_cast<ASR::CoarrayRef_t>(expr)->m_var);
+        }
         case ASR::exprType::ArrayItem: {
             return extract_symbol(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
         }
@@ -1669,6 +1679,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     case ASR::exprType::ArraySection:
                         return get_root_var(
                             ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+                    case ASR::exprType::CoarrayRef:
+                        return get_root_var(
+                            ASR::down_cast<ASR::CoarrayRef_t>(e)->m_var);        
                     default:
                         return nullptr;
                 }

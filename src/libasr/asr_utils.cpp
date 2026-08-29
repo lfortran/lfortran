@@ -279,6 +279,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
             return ASRUtils::get_struct_sym_from_struct_expr(array_section->m_v);
+        }    
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(expression);
+            return ASRUtils::get_struct_sym_from_struct_expr(coarray_ref->m_var);
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
@@ -638,6 +642,10 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
             return set_struct_sym_to_struct_expr(array_section->m_v, struct_sym);
+        }  
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(expression);
+            return set_struct_sym_to_struct_expr(coarray_ref->m_var, struct_sym);
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
@@ -776,6 +784,10 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(expr);
             return get_function_from_expr(as->m_v);
+        }
+        case ASR::exprType::CoarrayRef: {
+            ASR::CoarrayRef_t* car = ASR::down_cast<ASR::CoarrayRef_t>(expr);
+            return get_function_from_expr(car->m_var);
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
