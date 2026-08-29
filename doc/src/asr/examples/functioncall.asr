@@ -1,0 +1,210 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "square" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 2
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 2
+                    :name "b"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "square"
+              :function_signature (FunctionType
+                :arg_types [
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :return_var_type (Integer
+                  :kind 4
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 2 "a")
+                )
+              ]
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 2 "b")
+                  )
+                  :value (IntegerBinOp
+                    :left (Var
+                      :v (SymbolRef 2 "a")
+                    )
+                    :op :Mul
+                    :right (Var
+                      :v (SymbolRef 2 "a")
+                    )
+                    :type (Integer
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var (Var
+                :v (SymbolRef 2 "b")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {
+            "n" (Variable
+              :parent_symtab 3
+              :name "n"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "square" (ExternalSymbol
+              :parent_symtab 3
+              :name "square"
+              :external (SymbolRef 1 "square")
+              :module_name "m"
+              :scope_names []
+              :original_name "square"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "n")
+            )
+            :value (FunctionCall
+              :name (SymbolRef 3 "square")
+              :original_name nil
+              :args [
+                (call_arg
+                  :value (IntegerConstant
+                    :n 5
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                )
+              ]
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+              :dt nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

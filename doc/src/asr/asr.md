@@ -14,6 +14,36 @@ equivalent to the original code.
 
 ASR can be used to do Fortran-level transformations (such as optimizations).
 
+For the lossless direct representation used by compiler tests and tools, see
+the [ASR text format](asr_text.md).
+
+## The node reference
+
+Every constructor of [ASR.asdl](https://github.com/lfortran/lfortran/blob/main/src/libasr/ASR.asdl)
+has a page of its own, grouped by the type it belongs to:
+
+- [unit](asr_nodes/unit_nodes/unit_nodes.md) — the root of the graph;
+- [symbol](asr_nodes/symbol_nodes/symbol_nodes.md) — what a symbol table maps
+  a name to;
+- [stmt](asr_nodes/statement_nodes/statement_nodes.md) — executed for effect;
+- [expr](asr_nodes/expression_nodes/expression_nodes.md) — has a type and
+  produces a value;
+- [ttype](asr_nodes/type_nodes/ttype.md) — what a value is;
+- [helper nodes](asr_nodes/helper_nodes/helper_nodes.md) — the products and
+  small sum types that appear inside the nodes;
+- [enumerations](asr_nodes/enum_nodes/enum_nodes.md),
+  [cast_kind](asr_nodes/cast_kind_nodes/cast_kind.md) and
+  [kinds](asr_nodes/kinds_nodes/kinds.md);
+- [OpenMP nodes](asr_nodes/omp_nodes/omp_nodes.md).
+
+Each page shows the declaration exactly as `ASR.asdl` spells it, describes
+every member, and includes a complete ASR text example under
+`doc/src/asr/examples/`. `tests/asr/check_docs.py` checks that every example
+round-trips through the ASR text reader, that every excerpt is a verbatim part
+of the example it is taken from, and that every declaration on a page still
+matches `ASR.asdl`, so a change to the ASR that the documentation does not
+follow fails a test rather than going unnoticed.
+
 ## Abstract Syntax Description Language (ASDL)
 
 Abstract Syntax Description Language describes the abstract syntax of the compiler
@@ -25,14 +55,12 @@ ASDL consists of three fundamental constructs: ***types, constructors***, and
 ***productions***.
 
 Let's take an example of a node from [ASR.asdl](https://github.com/lfortran/lfortran/blob/main/src/libasr/ASR.asdl):
-```asdl
-symbol
-    = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body)
-    | Module(symbol_table symtab, identifier name, identifier* dependencies, bool loaded_from_mod, bool intrinsic)
-    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file)
+
+```text
+Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
 ```
 
-#### Types
+### Types
 The **types** are required to begin with a lowercase. ASDL's builtin
 types are:
 - identifier
@@ -44,16 +72,20 @@ We extend these by:
 - float (floating point number of infinite precision)
 - symbol_table (scoped Symbol Table implementation)
 - node (any ASR node)
+- location (a span of the original source, used for diagnostics; location
+  members are not printed in the ASR text format)
 
 > ***Note***: symbol_table contains `identifier` -> `symbol` mappings
 
-In the above example, `symbol_table`, `identifier`, `stmt`, `bool`, etc are types.
+In the above example, `symbol_table`, `identifier`, `stmt`, and `location` are
+types.
 
-#### Constructors
-The **constructors** names must begin with an upper case.
-In above example has three constructors, `Program`, `Module`, and `Function`,
-where the Program constructor has four fields whose values are of type `symbol_table`,
-`identifier`, `identifier*`, and `stmt*`. These are, basically, subtrees.
+### Constructors
+The **constructors** names must begin with an upper case. The `symbol` type has
+`Program`, `Module`, `Function` and the other constructors listed on the
+[symbol](asr_nodes/symbol_nodes/symbol.md) page, where the `Program`
+constructor has the four members above plus the two source locations. These
+are, basically, subtrees.
 
 ## Symbol type
 
@@ -115,17 +147,21 @@ table. A new cell starts with an empty symbol table, whose parent symbol
 table is the previous cell. That allows function/declaration shadowing.
 
 ## ABI Type
-```asdl
-abi                   -- External     ABI
-    = Source          --   No         Unspecified
-    | LFortranModule  --   Yes        LFortran
-    | GFortranModule  --   Yes        GFortran
-    | BindC           --   Yes        C
-    | BindPython      --   Yes        Python
-    | BindJS          --   Yes        Javascript
-    | Interactive     --   Yes        Unspecified
-    | Intrinsic       --   Yes        Unspecified
-```
+
+The [abi](asr_nodes/enum_nodes/abi.md) member of a symbol says where its
+implementation lives and which calling convention reaches it:
+
+|                    | External | ABI          |
+|--------------------|----------|--------------|
+| `Source`           | No       | Unspecified  |
+| `LFortranModule`   | Yes      | LFortran     |
+| `GFortranModule`   | Yes      | GFortran     |
+| `BindC`            | Yes      | C            |
+| `BindPython`       | Yes      | Python       |
+| `BindJS`           | Yes      | JavaScript   |
+| `ExternalUndefined`| Yes      | Unspecified  |
+| `Intrinsic`        | Yes      | Unspecified  |
+
 - **External Yes**: the symbol's implementation is not part of ASR; the
 symbol is just an interface (e.g., subroutine/function interface, or variable
 marked as external, not allocated by this ASR).
@@ -147,11 +183,8 @@ and also converts the return values from such symbols.
 - **abi=BindJS**: the symbol's implementation is
 available with Javascript.
 This abi type is to be mainly used with the WASM Backend.
-- **abi=Interactive**: the symbol's implementation has been provided by the
-previous REPL execution (e.g., if LLVM backend is used for the interactive
-mode, the previous execution generated machine code for this symbol's
-implementation that was loaded into memory). Note: this option might be
-converted/eliminated to just use LFortran ABI in the future.
+- **abi=ExternalUndefined**: the symbol is external and no calling convention
+has been recorded for it yet.
 - **abi=Intrinsic**: the symbol's implementation is implicitly provided by the
 language itself as an intrinsic function. That means the backend is free to
 implement it in any way it wants. The function does not have a body, it is
@@ -170,12 +203,11 @@ the `id` is only unique within a procedure.
 
 ### Expr nodes
 1. **Cast**: It changes the value (the bits) of the `arg`.
-2. **ArrayPhysicalCast**: This ArrayPhysicalCast we only change the physical type,
-the logical type does not change
+2. **ArrayPhysicalCast**: only the physical type changes; the logical type
+does not.
     > Note: the "new" physical type here will also be part of the "type" member
 
     This allows to represent any combination, but we'll only support a few; at least we need:
-    Maybe it's easier to add an enumeration here:
     - Descriptor -> Pointer
     - Pointer -> Descriptor
     - CompileTimeFixedSizeArray -> Pointer
@@ -184,37 +216,24 @@ the logical type does not change
     - NumPy -> Descriptor
     - ISODescriptor -> Descriptor
     - Descriptor -> ISODescriptor
+3. **StringPhysicalCast**: the same idea for strings, between a descriptor and
+a bare `char*`.
 
 ### Ttype nodes
-```asdl
-ttype = Integer(int kind) | UnsignedInteger(int kind) | Real(int kind) | ...
-```
 
-**`len`** in Character:
-- $>=0$ ... the length of the string, known at compile time
-- $-1$ ... character( * ), i.e., inferred at runtime
-- $-2$ ... character(:), allocatable (possibly we might use -1 for that also)
-- $-3$ ... character(n+3), i.e., a runtime expression stored in `len_expr`
+See [ttype](asr_nodes/type_nodes/ttype.md) for the whole type language, and
+[kinds](asr_nodes/kinds_nodes/kinds.md) for the kinds each intrinsic type
+supports.
 
-**`kind`**: The `kind` member selects the kind of a given type. We currently
-support the following:
-- Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
-- Real kinds: 4 (f32), 8 (f64)
-- Complex kinds: 4 (c32), 8 (c64)
-- Character kinds: 1 (utf8 string)
-- Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
-kind is 4, just like the default integer kind, consistent with Python
-and Fortran: in Python, "Booleans in Python are implemented as a subclass
-of integers"; in Fortran the "default logical kind has the same storage
-size as the default integer"; we currently use kind=4 as default
-integer, so we also use kind=4 for the default logical.)
+The length of a [String](asr_nodes/type_nodes/String.md) is described by two
+members together: `len_kind` says how the length is determined and `len`
+carries the expression when there is one. A `character(*)` dummy argument is
+`AssumedLength` with no `len`, a `character(:), allocatable` is
+`DeferredLength`, and `character(n+3)` is `ExpressionLength` with the
+expression in `len`.
 
 ### String format kind
-```asdl
-string_format_kind
-    = FormatFortran        -- "(f8.3,i4.2)", a, b
-    | FormatC              -- "%f: %d", a, b
-    | FormatPythonPercent  -- "%f: %d" % (a, b)
-    | FormatPythonFString  -- f"{a}: {b}"
-    | FormatPythonFormat   -- "{}: {}".format(a, b)
-```
+
+See [string_format_kind](asr_nodes/enum_nodes/string_format_kind.md) for the
+formatting languages a [StringFormat](asr_nodes/expression_nodes/StringFormat.md)
+can use.

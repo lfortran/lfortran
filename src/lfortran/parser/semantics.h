@@ -28,6 +28,8 @@ using LCompilers::LFortran::FnArg;
 using LCompilers::LFortran::CoarrayArg;
 using LCompilers::LFortran::VarType;
 using LCompilers::LFortran::ArgStarKw;
+using LCompilers::LFortran::EndStmt;
+using LCompilers::LFortran::ContainsEnd;
 
 
 static inline expr_t* EXPR(const ast_t *f)
@@ -1702,12 +1704,58 @@ Vec<ast_t*> empty_sync(Allocator &al) {
 #define EVENT_WAIT_KW_ARG(id, e, l) make_AttrEventWaitKwArg_t(p.m_a, l, \
         name2char(id), EXPR(e))
 
+void append_labeled_end(Allocator &al, Vec<ast_t*> &decl_stmts,
+        int64_t end_label, const Location &end_loc) {
+    if (end_label == 0) return;
+    // A labeled END is a branch target immediately before implicit termination.
+    decl_stmts.push_back(al, make_Continue_t(
+        al, end_loc, end_label, nullptr));
+}
+
+// The END statement of a program unit: the name it optionally repeats, and
+// the label it optionally carries.
+EndStmt END_STMT(ast_t *name, int64_t label, const Location &loc) {
+    return {name, label, loc};
+}
+
+// A program unit's contains block together with its END statement. The two
+// are parsed as one symbol so that a label on the END does not have to be
+// distinguished from a label starting a statement in the contains block.
+// CONTAINS_END1 is the unit with no contains block, CONTAINS_END2 the one
+// that has it.
+ContainsEnd* CONTAINS_END1(Allocator &al, EndStmt end) {
+    ContainsEnd *result = al.make_new<ContainsEnd>();
+    result->contains.reserve(al, 0);
+    result->end = end;
+    return result;
+}
+
+ContainsEnd* CONTAINS_END2(Allocator &al, Vec<ast_t*> contains, EndStmt end) {
+    ContainsEnd *result = al.make_new<ContainsEnd>();
+    result->contains = contains;
+    result->end = end;
+    return result;
+}
+
+// A program unit's contains block and END statement reach these macros as one
+// value. Reading them here keeps their layout out of the grammar actions. The
+// field names live in these accessors rather than in the program-unit macros,
+// where a parameter of the same name would capture them.
+#define CE_CONTAINS(ce) ((ce)->contains)
+#define CE_END(ce) ((ce)->end)
+#define END_NAME(e) ((e).name)
+#define END_LABEL(e) ((e).label)
+#define END_LOC(e) ((e).loc)
+#define END_NAME_LOC(e) (END_NAME(e) ? &(END_NAME(e)->loc) : nullptr)
+
 ast_t* SUBROUTINE2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
         size_t n_attributes, bind_t* a_bind, trivia_t* a_trivia,
         Vec<ast_t*> decl_stmts, program_unit_t** a_contains, size_t n_contains,
         char** a_temp_args, size_t n_temp_args, Location* a_start_name,
-        Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
+        Location* a_end_name, int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
     check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Subroutine_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_bind, a_trivia,
@@ -1720,7 +1768,9 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
         size_t n_attributes, trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
+        int64_t end_label, const Location &end_loc,
         LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
     check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Procedure_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_trivia,
@@ -1728,9 +1778,10 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         a_contains, n_contains);
 }
 
-#define SUBROUTINE(name, args, bind, trivia, decl_stmts, contains, name_opt, l) \
+#define SUBROUTINE(name, args, bind, trivia, decl_stmts, ce, l) \
     SUBROUTINE2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "subroutine", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1738,15 +1789,17 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
-#define SUBROUTINE1(fn_mod, name, args, bind, trivia, decl_stmts, contains, \
-        name_opt, l) SUBROUTINE2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "subroutine", p.diag), \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define SUBROUTINE1(fn_mod, name, args, bind, trivia, decl_stmts, ce, l) \
+    SUBROUTINE2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "subroutine", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_mod, decl_attribute), \
@@ -1754,13 +1807,14 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
-#define PROCEDURE(fn_mod, name, args, trivia, decl_stmts, contains, l) \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define PROCEDURE(fn_mod, name, args, trivia, decl_stmts, ce, l) \
     PROCEDURE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, args), \
@@ -1769,8 +1823,9 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         /*n_attributes*/ fn_mod.size(), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), p.diag)
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
 char *str_or_null(Allocator &al, const LCompilers::Str &s) {
     if (s.size() == 0) {
@@ -1786,7 +1841,9 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         trivia_t* a_trivia, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
         char** a_temp_args, size_t n_temp_args, Location* a_start_name,
-        Location* a_end_name, LCompilers::diag::Diagnostics &diag) {
+        Location* a_end_name, int64_t end_label, const Location &end_loc,
+        LCompilers::diag::Diagnostics &diag) {
+    append_labeled_end(al, decl_stmts, end_label, end_loc);
     check_decl_order(decl_stmts, DeclContext::Subprogram, diag);
     return make_Function_t(al, l, a_name, a_args, n_args,
         a_attributes, n_attributes, a_return_var, a_bind, a_trivia,
@@ -1796,8 +1853,9 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
 }
 
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, decl_stmts, \
-        contains, name_opt, l) FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        ce, l) FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "function", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1806,15 +1864,17 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
-#define FUNCTION0(name, args, return_var, bind, trivia, decl_stmts, contains, \
-        name_opt, l) FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
+#define FUNCTION0(name, args, return_var, bind, trivia, decl_stmts, ce, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "function", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, args), \
         /*n_args*/ args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1823,16 +1883,19 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*bind*/ bind_opt(bind), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*temp_args*/ nullptr, \
         /*n_temp_args*/ 0, \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
 #define TEMPLATED_FUNCTION(fn_type, name, temp_args, fn_args, return_var, \
-        bind, trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        bind, trivia, decl_stmts, end, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ VEC_CAST(fn_type, decl_attribute), \
@@ -1846,10 +1909,13 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
+        /*end_name*/ END_NAME_LOC(end), \
+        END_LABEL(end), END_LOC(end), p.diag)
 #define TEMPLATED_FUNCTION0(name, temp_args, fn_args, return_var, bind, \
-        trivia, decl_stmts, name_opt, l) FUNCTION2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "function", p.diag), \
+        trivia, decl_stmts, end, l) \
+    FUNCTION2(p.m_a, l, \
+        /*name*/ name2char_with_check(name, END_NAME(end), l, "function", \
+            p.diag), \
         /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
         /*m_attributes*/ nullptr, \
@@ -1863,9 +1929,10 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name_opt->loc), p.diag)
+        /*end_name*/ END_NAME_LOC(end), \
+        END_LABEL(end), END_LOC(end), p.diag)
 #define TEMPLATED_SUBROUTINE(name, temp_args, fn_args, bind, trivia, \
-        decl_stmts, l) SUBROUTINE2(p.m_a, l, \
+        decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1879,9 +1946,9 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc), p.diag)
+        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
 #define TEMPLATED_SUBROUTINE1(fn_type, name, temp_args, fn_args, bind, \
-        trivia, decl_stmts, l) SUBROUTINE2(p.m_a, l, \
+        trivia, decl_stmts, end, l) SUBROUTINE2(p.m_a, l, \
         /*name*/ name2char(name), \
         /*args*/ ARGS(p.m_a, fn_args), \
         /*n_args*/ fn_args.size(), \
@@ -1895,13 +1962,15 @@ ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         /*temp_args*/ REDUCE_ARGS(p.m_a, temp_args), \
         /*n_temp_args*/ temp_args.size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ &(name->loc), p.diag)
+        /*end_name*/ &(name->loc), END_LABEL(end), END_LOC(end), p.diag)
 
 ast_t* PROGRAM2(Allocator &al, const Location &a_loc, char* a_name,
         trivia_t* a_trivia, Vec<ast_t*> decl_stmts, program_unit_t** a_contains,
         size_t n_contains, Location *start_name, Location *end_name,
+        int64_t end_label, const Location &end_loc,
         LCompilers::diag::Diagnostics &diag) {
 
+append_labeled_end(al, decl_stmts, end_label, end_loc);
 check_decl_order(decl_stmts, DeclContext::Program, diag);
 
 return make_Program_t(al, a_loc,
@@ -1917,16 +1986,22 @@ return make_Program_t(al, a_loc,
 }
 
 
-#define PROGRAM(name, trivia, decl_stmts, contains, name_opt, l) \
+#define PROGRAM(name, trivia, decl_stmts, ce, l) \
     PROGRAM2(p.m_a, l, \
-        /*name*/ name2char_with_check(name, name_opt, l, "program", p.diag), \
+        /*name*/ name2char_with_check(name, END_NAME(CE_END(ce)), l, "program", \
+            p.diag), \
         trivia_cast(trivia), \
         decl_stmts, \
-        /*contains*/ CONTAINS(contains), \
-        /*n_contains*/ contains.size(), \
+        /*contains*/ CONTAINS(CE_CONTAINS(ce)), \
+        /*n_contains*/ CE_CONTAINS(ce).size(), \
         /*start_name*/ &(name->loc), \
-        /*end_name*/ (name_opt) ? &((name_opt)->loc) : nullptr, p.diag)
+        /*end_name*/ END_NAME_LOC(CE_END(ce)), \
+        END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 #define RESULT(x) p.result.push_back(p.m_a, x)
+// A labeled END terminating an implicit main program. The label is a branch
+// target immediately before termination, and the END still ends the unit.
+#define LABELED_END(label, end_kw, l) \
+    (RESULT(make_Continue_t(p.m_a, l, label, nullptr)), SYMBOL(end_kw, l))
 
 #define STMT_NAME(id_first, id_last, stmt) \
         stmt; \
@@ -2161,6 +2236,11 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'logical(8)'");
             }
+        } else if (end_token == yytokentype::KW_BYTE) {
+            diagnostics.parser_style_label(
+                "The 'byte' type is non-standard, use integer(1) instead",
+                {loc},
+                "help: write this as 'integer(1)'");
         }
 
     }
@@ -2172,6 +2252,7 @@ void add_ws_warning(const Location &loc,
 #define WARN_COMPLEXSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_COMPLEX, x.int_n.n)
 #define WARN_INTEGERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_INTEGER, x.int_n.n)
 #define WARN_CHARACTERSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, x.int_n.n)
+#define WARN_BYTE(l) add_ws_warning(l, p.diag, p.fixed_form, KW_BYTE)
 #define WARN_CHARACTERSTAR_EXPR(l) add_ws_warning(l, p.diag, p.fixed_form, KW_CHARACTER, -1)
 #define WARN_LOGICALSTAR(x, l) add_ws_warning(l, p.diag, p.fixed_form, KW_LOGICAL, x.int_n.n)
 

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct_member.belongs_to_struct]: 'base' has no member named 'j'
+   --> tests/asr/verify/struct_member_of_unrelated_type.asr:203:14
+    |
+203 |             (StructInstanceMember
+    |              ^^^^^^^^^^^^^^^^^^^^ failed here

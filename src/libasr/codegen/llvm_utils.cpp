@@ -2,6 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
+#include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -496,27 +497,19 @@ namespace LCompilers {
                 member_idx += 1;
             }
             Allocator al(1024);
-            bool is_bindc = (der_type->m_abi == ASR::abiType::BindC) || der_type->m_is_sequence;
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
                 llvm::Type* llvm_mem_type;
-                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps to inline [len x i8]
+                // bind(C)/SEQUENCE: non-pointer, non-allocatable character maps
+                // to an inline [count*len*kind x i8] byte blob
                 ASR::ttype_t* mem_type = member->m_type;
-                bool is_direct_char = is_bindc &&
-                    !ASR::is_a<ASR::Pointer_t>(*mem_type) &&
-                    !ASR::is_a<ASR::Allocatable_t>(*mem_type) &&
-                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(mem_type));
-                if (is_direct_char) {
-                    ASR::String_t* s = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::type_get_past_array(mem_type));
-                    int64_t slen = 1;
-                    if (s->m_len) {
-                        ASRUtils::extract_value(s->m_len, slen);
-                    }
-                    if (slen < 1) slen = 1;
+                if (ASRUtils::is_inline_character_struct_member(
+                        der_type, mem_type)) {
+                    int64_t inline_bytes =
+                        ASRUtils::inline_character_storage_size(mem_type);
                     llvm_mem_type = llvm::ArrayType::get(
-                        llvm::Type::getInt8Ty(context), (uint64_t)slen);
+                        llvm::Type::getInt8Ty(context), (uint64_t)inline_bytes);
                 } else {
                     llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                         al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
@@ -608,11 +601,23 @@ namespace LCompilers {
                 case 8:
                     type_ptr =  llvm::Type::getDoubleTy(context)->getPointerTo();
                     break;
+                case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context)->getPointerTo();
+#else
+                    // Linux/Windows x86: 80-bit extended precision
+                    type_ptr = llvm::Type::getX86_FP80Ty(context)->getPointerTo();
+#endif
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128 bits real kinds are supported.");
             }
         } else {
             switch(a_kind)
@@ -623,11 +628,23 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getDoubleTy(context);
                     break;
+                case 10:
+#if defined(__APPLE__) && defined(__aarch64__)
+                    // Apple Silicon: long double = 128-bit IEEE quad
+                    type_ptr = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+                    // macOS x86-64: Apple maps long double to 64-bit double
+                    type_ptr = llvm::Type::getDoubleTy(context);
+#else
+                    // Linux/Windows x86: 80-bit extended precision
+                    type_ptr = llvm::Type::getX86_FP80Ty(context);
+#endif
+                    break;
                 case 16:
                     type_ptr = llvm::Type::getFP128Ty(context);
                     break;
                 default:
-                    throw CodeGenError("Only 32, 64 and 128bits real kinds are supported.");
+                    throw CodeGenError("Only 32, 64, 80 and 128bits real kinds are supported.");
             }
         }
         return type_ptr;
@@ -2452,6 +2469,25 @@ namespace LCompilers {
         return create_string_descriptor(desired_ptr, get_string_length(str_type, data), "arr_element");
     }
 
+    llvm::Value* LLVMUtils::get_inline_string_element(ASR::String_t* str_type,
+            llvm::Value* blob_ptr, llvm::Value* idx, std::string name){
+        int64_t len = 1;
+        if (str_type->m_len) {
+            ASRUtils::extract_value(str_type->m_len, len);
+        }
+        llvm::Value* elem_bytes = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(context), len * str_type->m_kind);
+        llvm::Value* off = builder->CreateMul(
+            convert_kind(idx, llvm::Type::getInt64Ty(context)), elem_bytes);
+        // blob_ptr points at the inline [count*len x i8] blob; view it as a
+        // flat i8 buffer before indexing to the element.
+        llvm::Value* bytes = builder->CreateBitCast(blob_ptr, character_type);
+        llvm::Value* elem_ptr = create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), bytes, off);
+        return create_string_descriptor(elem_ptr,
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len), name);
+    }
+
 
     void LLVMUtils::allocate_allocatable_string(ASR::String_t* str_type, llvm::Value* str, llvm::Value* amount_to_allocate){
         // Make sure the str data was not allocated before (equals null)
@@ -2866,49 +2902,6 @@ namespace LCompilers {
             throw LCompilersException("Unhandled case");
         }
     }
-    /*
-     * Decodes a UTF-8 encoded string into a sequence of Unicode codepoints,
-     * then serializes each codepoint into `kind`-width little-endian bytes.
-     *   kind=2 -> 2 bytes per codepoint (UCS-2 / UTF-16 code unit)
-     *   kind=4 -> 4 bytes per codepoint (UCS-4 / UTF-32)
-     */
-    static std::vector<uint8_t> utf8_to_unicode_bytes(const std::string& str, int kind) {
-        std::vector<uint32_t> codepoints;
-        size_t i = 0;
-        while (i < str.length()) {
-            uint32_t codepoint = 0;
-            unsigned char c = str[i];
-            if (c <= 0x7F) {
-                codepoint = c;
-                i += 1;
-            } else if ((c & 0xE0) == 0xC0) {
-                LCOMPILERS_ASSERT(i + 1 < str.length());
-                codepoint = ((c & 0x1F) << 6) | (str[i + 1] & 0x3F);
-                i += 2;
-            } else if ((c & 0xF0) == 0xE0) {
-                LCOMPILERS_ASSERT(i + 2 < str.length());
-                codepoint = ((c & 0x0F) << 12) | ((str[i + 1] & 0x3F) << 6) | (str[i + 2] & 0x3F);
-                i += 3;
-            } else if ((c & 0xF8) == 0xF0) {
-                LCOMPILERS_ASSERT(i + 3 < str.length());
-                codepoint = ((c & 0x07) << 18) | ((str[i + 1] & 0x3F) << 12) | ((str[i + 2] & 0x3F) << 6) | (str[i + 3] & 0x3F);
-                i += 4;
-            } else {
-                LCOMPILERS_ASSERT(false); // Invalid UTF-8 lead byte
-            }
-            codepoints.push_back(codepoint);
-        }
-        // Serialize codepoints into kind-width little-endian bytes
-        std::vector<uint8_t> bytes(codepoints.size() * kind);
-        for (size_t idx = 0; idx < codepoints.size(); ++idx) {
-            uint32_t cp = codepoints[idx];
-            for (int b = 0; b < kind; ++b) {
-                bytes[idx * kind + b] = (cp >> (8 * b)) & 0xFF;
-            }
-        }
-        return bytes;
-    }
-
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
         llvm::GlobalValue::LinkageTypes linkage,
@@ -2955,7 +2948,7 @@ namespace LCompilers {
                         initial_data_padded.resize(len, ' ');
                         const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data_padded, false);
                     } else if (kind == 2 || kind == 4) {
-                        std::vector<uint8_t> bytes = utf8_to_unicode_bytes(initial_data_padded, kind);
+                        std::vector<uint8_t> bytes = LCompilers::utf8_to_unicode_bytes(initial_data_padded, kind);
                         size_t orig_count = bytes.size() / kind;
                         bytes.resize(len * kind, 0x00);
                         // Pad remaining slots with space character (0x20)
@@ -10770,12 +10763,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Type *mem_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                         ASRUtils::symbol_type(mem_sym), module);
                     ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
-                    bool is_inline_char = (struct_sym->m_abi == ASR::abiType::BindC ||
-                            struct_sym->m_is_sequence) &&
-                        !ASR::is_a<ASR::Pointer_t>(*member_type) &&
-                        !ASR::is_a<ASR::Allocatable_t>(*member_type) &&
-                        ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_type));
-                    if (is_inline_char) {
+                    if (ASRUtils::is_inline_character_struct_member(
+                            struct_sym, member_type)) {
                         llvm::Type* inline_type = llvm_utils->name2dertype[
                             der_type_name]->getElementType(mem_idx);
                         if (src_member->getType()->isPointerTy()) {

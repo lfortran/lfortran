@@ -968,12 +968,6 @@ warning: Format string missing comma between descriptors (F2023 constraint C1302
 533 |     write (*,badfmt_p) "hi", 3
     |              ^^^^^^^^ 
 
-warning: Format string missing comma between descriptors (F2023 constraint C1302)
-   --> tests/errors/continue_compilation_2.f90:534:14
-    |
-534 |     write (*,badfmt_s) "hi", 3
-    |              ^^^^^^^^ 
-
 semantic error: Function 'add_parens' not found (not user defined nor intrinsic)
    --> tests/errors/continue_compilation_2.f90:535:15
     |

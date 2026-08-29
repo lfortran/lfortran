@@ -1,91 +1,80 @@
 # ArrayConstant
 
-Array constant.
+An array constant, stored as raw data.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-ArrayConstant(expr* args, ttype type, arraystorage storage_format)
+```text
+ArrayConstant(int n_data, void data, ttype type,
+    arraystorage storage_format)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`args`     | expression arguments |
-|`type` | table entry type |
-|`storage_format` | array storage format |
+| Argument | Description |
+|----------|-------------|
+| `n_data` | the size of `data` in bytes. |
+| `data` | the elements, in the order given by `storage_format`, as the raw bytes of the element type. |
+| `type` | the array type, which gives the element type and the shape. |
+| `storage_format` | `RowMajor` or `ColMajor`; see [arraystorage](../enum_nodes/arraystorage.md). |
 
 ### Return values
 
-The return value is the expression that the Array Constant represents.
+The value of the expression.
 
 ## Description
 
-**ArrayConstant** represents array constant. Array can be one or multi dimensional.
-The dimension of an array may be specified by a type specification statement
-`DIMENSION`.
+An array whose elements are all compile time constants is stored as bytes
+rather than as a list of expression nodes. A large data statement then costs
+its data and nothing else, and a backend can emit it as an initialised object
+directly.
 
-The value of the individual array elements of the array A may be initialized to
-the values 1, 2, 3, ..., 10.
-
-The assignment of the values of one array to another is allowed provided that both
-arrays in question have the same physical dimension.
-
-An array may be allocatable, i.e., it may be assigned memory storage during execution.
-
-## Types
-
-Only accepts integers, floating points as values of array indexes.
+[ArrayConstructor](ArrayConstructor.md) is the node for an array whose
+elements are not all constant. ASR text writes the bytes with the
+`#asr/bytes` tag, and never truncates them.
 
 ## Examples
 
-```fortran
-integer :: m(4)
-m = [ 1, 0, 0, 2 ]
+```clojure
+(ArrayConstant
+  :n_data 12
+  :data #asr/bytes "010000000200000003000000"
+  :type (Array
+    :type (Integer
+      :kind 4
+    )
+    :dims [
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 3
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+    ]
+    :physical_type :FixedSizeArray
+  )
+  :storage_format :ColMajor
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            m:
-                (Variable
-                    1
-                    m
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 4 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 m)
-        (ArrayConstant
-            [(IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))
-            (IntegerConstant 2 (Integer 4 []))]
-            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 4 (Integer 4 [])))])
-        )
-        ()
-    )]
-)
+```{literalinclude} ../../examples/array_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerConstant](IntegerConstant.md)
+[ArrayConstructor](ArrayConstructor.md), [Array](../type_nodes/Array.md), [arraystorage](../enum_nodes/arraystorage.md)

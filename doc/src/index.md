@@ -153,6 +153,7 @@ progress
 design
 developer_tutorial
 ast_and_asr
+interactive_cells
 jupyterlite
 contributing
 ```
@@ -173,11 +174,16 @@ intrinsics/misc
 ```{toctree}
 :caption: LFortran ASR Nodes
 :hidden:
-asr/asr_nodes/cast_kind_nodes/cast_kind.md
-asr/asr_nodes/expression_nodes/expression_nodes.md
-asr/asr_nodes/kinds_nodes/kinds.md
-asr/asr_nodes/statement_nodes/statement_nodes.md
+asr/asr.md
+asr/asr_text.md
+asr/asr_nodes/unit_nodes/unit_nodes.md
 asr/asr_nodes/symbol_nodes/symbol_nodes.md
+asr/asr_nodes/statement_nodes/statement_nodes.md
+asr/asr_nodes/expression_nodes/expression_nodes.md
 asr/asr_nodes/type_nodes/ttype.md
+asr/asr_nodes/helper_nodes/helper_nodes.md
+asr/asr_nodes/enum_nodes/enum_nodes.md
+asr/asr_nodes/cast_kind_nodes/cast_kind.md
+asr/asr_nodes/kinds_nodes/kinds.md
 asr/asr_nodes/omp_nodes/omp_nodes.md
 ```

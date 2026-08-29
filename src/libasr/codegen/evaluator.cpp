@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <optional>
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/ADT/STLExtras.h>
@@ -26,8 +28,11 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/ADT/APFloat.h>
+#include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/STLExtras.h>
+#include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/MC/MCSubtargetInfo.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
@@ -60,9 +65,35 @@
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #endif
 
+// `llvm/ADT/Triple.h` and `llvm/Support/Host.h` moved to `llvm/TargetParser/`
+// in LLVM 17; only `Host.h` was left behind as a forwarding header.
+#if LLVM_VERSION_MAJOR >= 17
+#    include <llvm/TargetParser/Host.h>
+#    include <llvm/TargetParser/Triple.h>
+#else
+#    include <llvm/ADT/Triple.h>
+#    include <llvm/Support/Host.h>
+#endif
 #if LLVM_VERSION_MAJOR < 18
 #    include <llvm/Transforms/Vectorize.h>
-#    include <llvm/Support/Host.h>
+#endif
+// The per-architecture target parsers moved to `llvm/TargetParser/` in LLVM 16.
+#ifdef HAVE_TARGET_AARCH64
+#    if LLVM_VERSION_MAJOR >= 16
+#        include <llvm/TargetParser/AArch64TargetParser.h>
+#    else
+#        include <llvm/Support/AArch64TargetParser.h>
+#    endif
+#endif
+// `X86TargetParser.h` was only introduced in LLVM 11, so `--march` cannot be
+// resolved for x86 targets when building against an older LLVM.
+#if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 11
+#    define LFORTRAN_HAVE_X86_TARGET_PARSER 1
+#    if LLVM_VERSION_MAJOR >= 16
+#        include <llvm/TargetParser/X86TargetParser.h>
+#    else
+#        include <llvm/Support/X86TargetParser.h>
+#    endif
 #endif
 
 #include <libasr/codegen/KaleidoscopeJIT.h>
@@ -88,6 +119,539 @@ LLD_HAS_DRIVER(wasm)
 #endif
 
 namespace LCompilers {
+
+namespace {
+
+void initialize_llvm_targets()
+{
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+
+#ifdef HAVE_TARGET_AARCH64
+    LLVMInitializeAArch64Target();
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64AsmPrinter();
+    LLVMInitializeAArch64AsmParser();
+#endif
+#ifdef HAVE_TARGET_X86
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmPrinter();
+    LLVMInitializeX86AsmParser();
+#endif
+#ifdef HAVE_TARGET_WASM
+    LLVMInitializeWebAssemblyTarget();
+    LLVMInitializeWebAssemblyTargetInfo();
+    LLVMInitializeWebAssemblyTargetMC();
+    LLVMInitializeWebAssemblyAsmPrinter();
+    LLVMInitializeWebAssemblyAsmParser();
+#endif
+}
+
+const llvm::Target *get_llvm_target(const std::string &triple)
+{
+    std::string error;
+#if LLVM_VERSION_MAJOR >= 21
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(
+        llvm::Triple(triple), error);
+#else
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(
+        triple, error);
+#endif
+    if (!target) {
+        throw LCompilersException(error);
+    }
+    return target;
+}
+
+bool is_host_target(const llvm::Triple &target)
+{
+    llvm::Triple host(llvm::Triple::normalize(
+        llvm::sys::getDefaultTargetTriple()));
+    return target.getArch() == host.getArch()
+        && target.getOS() == host.getOS()
+        && target.getEnvironment() == host.getEnvironment();
+}
+
+std::string join_features(const std::vector<std::string> &features)
+{
+    std::string result;
+    for (size_t i = 0; i < features.size(); i++) {
+        if (i > 0) {
+            result += ",";
+        }
+        result += features[i];
+    }
+    return result;
+}
+
+std::vector<std::string> get_detected_host_features()
+{
+    std::vector<std::string> features;
+#if LLVM_VERSION_MAJOR >= 19
+    auto host_features = llvm::sys::getHostCPUFeatures();
+#else
+    llvm::StringMap<bool, llvm::MallocAllocator> host_features;
+    llvm::sys::getHostCPUFeatures(host_features);
+#endif
+    features.reserve(host_features.size());
+    for (const auto &feature: host_features) {
+        features.push_back(
+            std::string(feature.getValue() ? "+" : "-")
+            + feature.getKey().str());
+    }
+    std::sort(features.begin(), features.end());
+    return features;
+}
+
+#if defined(HAVE_TARGET_AARCH64) && LLVM_VERSION_MAJOR >= 18
+std::vector<std::string> get_aarch64_extension_features(
+    const llvm::AArch64::ExtensionSet &extensions)
+{
+#if LLVM_VERSION_MAJOR == 18
+    std::vector<llvm::StringRef> parsed_features;
+    extensions.toLLVMFeatureList(parsed_features);
+    std::vector<std::string> features;
+    features.reserve(parsed_features.size());
+    for (llvm::StringRef feature: parsed_features) {
+        features.push_back(feature.str());
+    }
+    return features;
+#else
+    std::vector<std::string> features;
+    extensions.toLLVMFeatureList(features);
+    return features;
+#endif
+}
+#endif
+
+std::vector<std::string> get_aarch64_cpu_features(
+    const std::string &cpu, const llvm::Triple &triple)
+{
+#ifdef HAVE_TARGET_AARCH64
+#if LLVM_VERSION_MAJOR >= 18
+    std::optional<llvm::AArch64::CpuInfo> cpu_info
+        = llvm::AArch64::parseCpu(cpu);
+    if (!cpu_info) {
+        throw LCompilersException("unsupported cpu '" + cpu
+            + "' for target '" + triple.str() + "'");
+    }
+    llvm::AArch64::ExtensionSet extensions;
+    extensions.addCPUDefaults(*cpu_info);
+    return get_aarch64_extension_features(extensions);
+#else
+#if LLVM_VERSION_MAJOR == 17
+    std::optional<llvm::AArch64::CpuInfo> cpu_info
+        = llvm::AArch64::parseCpu(cpu);
+    if (!cpu_info) {
+        throw LCompilersException("unsupported cpu '" + cpu
+            + "' for target '" + triple.str() + "'");
+    }
+    std::vector<llvm::StringRef> parsed_features = {
+        cpu_info->Arch.ArchFeature
+    };
+    llvm::AArch64::getExtensionFeatures(
+        cpu_info->getImpliedExtensions(), parsed_features);
+#elif LLVM_VERSION_MAJOR == 16
+    const llvm::AArch64::CpuInfo &cpu_info
+        = llvm::AArch64::parseCpu(cpu);
+    if (cpu_info.Name == "invalid") {
+        throw LCompilersException("unsupported cpu '" + cpu
+            + "' for target '" + triple.str() + "'");
+    }
+    std::vector<llvm::StringRef> parsed_features = {
+        cpu_info.Arch.ArchFeature
+    };
+    llvm::AArch64::getExtensionFeatures(
+        llvm::AArch64::getDefaultExtensions(cpu, cpu_info.Arch),
+        parsed_features);
+#else
+    llvm::AArch64::ArchKind arch = llvm::AArch64::parseCPUArch(cpu);
+    if (arch == llvm::AArch64::ArchKind::INVALID) {
+        throw LCompilersException("unsupported cpu '" + cpu
+            + "' for target '" + triple.str() + "'");
+    }
+    std::vector<llvm::StringRef> parsed_features;
+    llvm::AArch64::getArchFeatures(arch, parsed_features);
+    llvm::AArch64::getExtensionFeatures(
+        llvm::AArch64::getDefaultExtensions(cpu, arch), parsed_features);
+#endif
+    std::vector<std::string> features;
+    features.reserve(parsed_features.size());
+    for (llvm::StringRef feature: parsed_features) {
+        features.push_back(feature.str());
+    }
+    return features;
+#endif
+#else
+    (void)cpu;
+    throw LCompilersException("cpu feature detection is not supported for target '"
+        + triple.str() + "' by this LFortran build");
+#endif
+}
+
+std::string get_host_cpu(const std::string &option,
+    const LLVMTargetConfig &config)
+{
+    if (!config.host_target) {
+        throw LCompilersException("`" + option
+            + "=native` is only supported when targeting the host");
+    }
+    std::string cpu = llvm::sys::getHostCPUName().str();
+    if (cpu.empty()) {
+        throw LCompilersException("could not detect the host cpu for `"
+            + option + "=native`");
+    }
+    return cpu;
+}
+
+bool is_valid_cpu(const llvm::Target &target, const llvm::Triple &triple,
+    const std::string &cpu)
+{
+    if (cpu == "generic") {
+        return true;
+    }
+    std::unique_ptr<llvm::MCSubtargetInfo> subtarget(
+#if LLVM_VERSION_MAJOR >= 22
+        target.createMCSubtargetInfo(triple, "generic", "")
+#else
+        target.createMCSubtargetInfo(triple.str(), "generic", "")
+#endif
+    );
+    return subtarget && subtarget->isCPUStringValid(cpu);
+}
+
+void validate_cpu(const llvm::Target &target, const llvm::Triple &triple,
+    const std::string &cpu, const std::string &option)
+{
+    if (!is_valid_cpu(target, triple, cpu)) {
+        throw LCompilersException("unsupported cpu '" + cpu
+            + "' for target '" + triple.str() + "' in `" + option + "`");
+    }
+}
+
+// Resolve `native` for `--mcpu` / `--mtune`. LLVM reports "generic" when it
+// cannot identify the host, and may name a CPU that this LLVM's code generator
+// does not accept; falling back to "generic" keeps `--fast` and
+// `<option>=native` working on such hosts instead of failing the compilation.
+std::string resolve_native_cpu(const llvm::Target &target,
+    const llvm::Triple &triple, const std::string &option,
+    const LLVMTargetConfig &config)
+{
+    std::string cpu = get_host_cpu(option, config);
+    if (!is_valid_cpu(target, triple, cpu)) {
+        return "generic";
+    }
+    return cpu;
+}
+
+std::vector<std::string> get_aarch64_arch_features(
+    const std::string &march, const llvm::Triple &triple)
+{
+#ifdef HAVE_TARGET_AARCH64
+    llvm::SmallVector<llvm::StringRef, 8> parts;
+    llvm::StringRef(march).split(parts, '+', -1, false);
+    if (parts.empty()) {
+        throw LCompilersException("missing architecture in `--march`");
+    }
+
+#if LLVM_VERSION_MAJOR >= 18
+    const llvm::AArch64::ArchInfo *arch
+        = llvm::AArch64::parseArch(parts[0]);
+    if (!arch) {
+        throw LCompilersException("unsupported architecture '" + march
+            + "' for target '" + triple.str()
+            + "'; use `--mcpu` for processor names");
+    }
+    llvm::AArch64::ExtensionSet extensions;
+    extensions.addArchDefaults(*arch);
+    for (size_t i = 1; i < parts.size(); i++) {
+        if (!extensions.parseModifier(parts[i])) {
+            throw LCompilersException("unsupported architecture extension '"
+                + parts[i].str() + "' in `--march=" + march + "`");
+        }
+    }
+    return get_aarch64_extension_features(extensions);
+#else
+#if LLVM_VERSION_MAJOR == 17
+    std::optional<llvm::AArch64::ArchInfo> arch_info
+        = llvm::AArch64::parseArch(parts[0]);
+    if (!arch_info) {
+        throw LCompilersException("unsupported architecture '" + march
+            + "' for target '" + triple.str()
+            + "'; use `--mcpu` for processor names");
+    }
+    std::vector<llvm::StringRef> parsed_features = {
+        arch_info->ArchFeature
+    };
+    llvm::AArch64::getExtensionFeatures(
+        arch_info->DefaultExts, parsed_features);
+#elif LLVM_VERSION_MAJOR == 16
+    const llvm::AArch64::ArchInfo &arch
+        = llvm::AArch64::parseArch(parts[0]);
+    if (arch.Name == "invalid") {
+        throw LCompilersException("unsupported architecture '" + march
+            + "' for target '" + triple.str()
+            + "'; use `--mcpu` for processor names");
+    }
+    std::vector<llvm::StringRef> parsed_features = {
+        arch.ArchFeature
+    };
+    llvm::AArch64::getExtensionFeatures(
+        llvm::AArch64::getDefaultExtensions("", arch), parsed_features);
+#else
+    llvm::AArch64::ArchKind arch = llvm::AArch64::parseArch(parts[0]);
+    if (arch == llvm::AArch64::ArchKind::INVALID) {
+        throw LCompilersException("unsupported architecture '" + march
+            + "' for target '" + triple.str()
+            + "'; use `--mcpu` for processor names");
+    }
+    std::vector<llvm::StringRef> parsed_features;
+    llvm::AArch64::getArchFeatures(arch, parsed_features);
+    llvm::AArch64::getExtensionFeatures(
+        llvm::AArch64::getDefaultExtensions("", arch), parsed_features);
+#endif
+    std::vector<std::string> features;
+    features.reserve(parsed_features.size() + parts.size() - 1);
+    for (llvm::StringRef feature: parsed_features) {
+        features.push_back(feature.str());
+    }
+    for (size_t i = 1; i < parts.size(); i++) {
+        llvm::StringRef extension = parts[i];
+        bool disable = extension.consume_front("no");
+        llvm::StringRef feature
+            = llvm::AArch64::getArchExtFeature(extension);
+        if (feature.empty()) {
+            throw LCompilersException("unsupported architecture extension '"
+                + parts[i].str() + "' in `--march=" + march + "`");
+        }
+        std::string feature_string = feature.str();
+        if (disable) {
+            if (!feature_string.empty() && feature_string[0] == '+') {
+                feature_string[0] = '-';
+            } else {
+                feature_string = "-" + feature_string;
+            }
+        }
+        features.push_back(feature_string);
+    }
+    return features;
+#endif
+#else
+    (void)march;
+    throw LCompilersException("`--march` is not supported for target '"
+        + triple.str() + "' by this LFortran build");
+#endif
+}
+
+std::vector<std::string> get_x86_arch_features(
+    const std::string &march, const llvm::Triple &triple)
+{
+#ifdef LFORTRAN_HAVE_X86_TARGET_PARSER
+    bool only_64_bit = triple.getArch() == llvm::Triple::x86_64;
+    if (llvm::X86::parseArchX86(march, only_64_bit)
+            == llvm::X86::CK_None) {
+        throw LCompilersException("unsupported architecture '" + march
+            + "' for target '" + triple.str() + "'");
+    }
+    llvm::SmallVector<llvm::StringRef, 32> parsed_features;
+#if LLVM_VERSION_MAJOR >= 22
+    llvm::X86::getFeaturesForCPU(march, parsed_features, true);
+#else
+    llvm::X86::getFeaturesForCPU(march, parsed_features);
+#endif
+    std::vector<std::string> features;
+    features.reserve(parsed_features.size());
+    for (llvm::StringRef feature: parsed_features) {
+#if LLVM_VERSION_MAJOR >= 22
+        features.push_back(feature.str());
+#else
+        features.push_back("+" + feature.str());
+#endif
+    }
+    return features;
+#else
+    (void)march;
+    throw LCompilersException("`--march` is not supported for target '"
+        + triple.str() + "' by this LFortran build");
+#endif
+}
+
+std::vector<std::string> get_arch_features(
+    const std::string &march, const llvm::Triple &triple,
+    const LLVMTargetConfig &config)
+{
+    if (march == "native") {
+        std::string host_cpu = get_host_cpu("--march", config);
+        std::vector<std::string> features;
+        // LLVM reports "generic" when it cannot identify the host, and a CPU
+        // newer than this LLVM release is not in its architecture tables
+        // either. Neither is a user error, so treat the table lookup as a
+        // best-effort refinement: the detected feature set below is what
+        // `native` actually promises.
+        if (host_cpu != "generic") {
+            try {
+                if (triple.isAArch64()) {
+                    features = get_aarch64_cpu_features(host_cpu, triple);
+                } else if (triple.getArch() == llvm::Triple::x86
+                        || triple.getArch() == llvm::Triple::x86_64) {
+                    features = get_x86_arch_features(host_cpu, triple);
+                }
+            } catch (const LCompilersException &) {
+                features.clear();
+            }
+        }
+        std::vector<std::string> detected_features
+            = get_detected_host_features();
+        features.insert(features.end(), detected_features.begin(),
+            detected_features.end());
+        return features;
+    }
+    if (triple.isAArch64()) {
+        return get_aarch64_arch_features(march, triple);
+    }
+    if (triple.getArch() == llvm::Triple::x86
+            || triple.getArch() == llvm::Triple::x86_64) {
+        return get_x86_arch_features(march, triple);
+    }
+    throw LCompilersException("`--march` is not supported for target '"
+        + triple.str() + "'");
+}
+
+std::unique_ptr<llvm::TargetMachine> create_target_machine(
+    const LLVMTargetConfig &config)
+{
+    const llvm::Target *target = get_llvm_target(config.triple);
+    llvm::TargetOptions options;
+#if LLVM_VERSION_MAJOR >= 8
+    RM_OPTIONAL_TYPE<llvm::Reloc::Model> relocation_model
+        = llvm::Reloc::Model::PIC_;
+    RM_OPTIONAL_TYPE<llvm::CodeModel::Model> code_model;
+    llvm::TargetMachine *machine = target->createTargetMachine(
+#if LLVM_VERSION_MAJOR >= 21
+        llvm::Triple(config.triple),
+#else
+        config.triple,
+#endif
+        config.cpu, config.features, options, relocation_model, code_model,
+#if LLVM_VERSION_MAJOR >= 18
+        config.fast ? llvm::CodeGenOptLevel::Aggressive
+                    : llvm::CodeGenOptLevel::Default
+#else
+        config.fast ? llvm::CodeGenOpt::Aggressive
+                    : llvm::CodeGenOpt::Default
+#endif
+    );
+    if (!machine) {
+        throw LCompilersException("could not create target machine for '"
+            + config.triple + "'");
+    }
+    return std::unique_ptr<llvm::TargetMachine>(machine);
+#else
+    llvm::EngineBuilder builder;
+    builder.setEngineKind(llvm::EngineKind::JIT);
+    builder.setRelocationModel(llvm::Reloc::Model::PIC_);
+    llvm::TargetMachine *machine = builder.selectTarget();
+    if (!machine) {
+        throw LCompilersException("could not create target machine for '"
+            + config.triple + "'");
+    }
+    return std::unique_ptr<llvm::TargetMachine>(machine);
+#endif
+}
+
+LLVMTargetConfig resolve_target_only(const std::string &target)
+{
+    CompilerOptions compiler_options;
+    compiler_options.target = target;
+    return resolve_llvm_target_config(compiler_options);
+}
+
+} // namespace
+
+void LLVMTargetConfig::apply_target_attributes(llvm::Module &module) const
+{
+    for (llvm::Function &function: module) {
+        if (function.isDeclaration()) {
+            continue;
+        }
+        if (emit_cpu_attribute) {
+            function.addFnAttr("target-cpu", cpu);
+        }
+        if (!features.empty()) {
+            function.addFnAttr("target-features", features);
+        }
+        if (!tune_cpu.empty()) {
+            function.addFnAttr("tune-cpu", tune_cpu);
+        }
+    }
+}
+
+LLVMTargetConfig resolve_llvm_target_config(
+    const CompilerOptions &compiler_options)
+{
+    initialize_llvm_targets();
+
+    LLVMTargetConfig config;
+    config.fast = compiler_options.po.fast;
+    config.triple = compiler_options.target.empty()
+        ? llvm::sys::getDefaultTargetTriple()
+        : llvm::Triple::normalize(compiler_options.target);
+    llvm::Triple triple(config.triple);
+    config.host_target = is_host_target(triple);
+    const llvm::Target *target = get_llvm_target(config.triple);
+
+    std::string march = compiler_options.march;
+    std::string mcpu = compiler_options.mcpu;
+    std::string mtune = compiler_options.mtune;
+    if (config.fast && compiler_options.target.empty()
+            && march.empty() && mcpu.empty() && mtune.empty()) {
+        mcpu = "native";
+    }
+
+    std::vector<std::string> features;
+    if (!march.empty()) {
+        features = get_arch_features(march, triple, config);
+    }
+
+    std::string resolved_cpu;
+    if (!mcpu.empty()) {
+        resolved_cpu = mcpu == "native"
+            ? resolve_native_cpu(*target, triple, "--mcpu", config)
+            : mcpu;
+        validate_cpu(*target, triple, resolved_cpu, "--mcpu");
+    }
+
+    if (!march.empty()) {
+        config.cpu = "generic";
+        if (!resolved_cpu.empty()) {
+            config.tune_cpu = resolved_cpu;
+        }
+    } else if (!resolved_cpu.empty()) {
+        config.cpu = resolved_cpu;
+        config.emit_cpu_attribute = true;
+        if (mcpu == "native") {
+            features = get_detected_host_features();
+        }
+    }
+
+    if (!mtune.empty()) {
+        config.tune_cpu = mtune == "native"
+            ? resolve_native_cpu(*target, triple, "--mtune", config)
+            : mtune;
+        validate_cpu(*target, triple, config.tune_cpu, "--mtune");
+    }
+
+    config.features = join_features(features);
+    std::unique_ptr<llvm::TargetMachine> machine
+        = create_target_machine(config);
+    config.data_layout
+        = machine->createDataLayout().getStringRepresentation();
+    return config;
+}
 
 // Extracts the integer from APInt.
 // APInt does not seem to have this functionality, so we implement it here.
@@ -208,73 +772,21 @@ float _lfortran_stan(float x);
 
 }
 
-LLVMEvaluator::LLVMEvaluator(const std::string &t)
+LLVMEvaluator::LLVMEvaluator(const std::string &target)
+    : LLVMEvaluator(resolve_target_only(target))
 {
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-    llvm::InitializeNativeTargetAsmParser();
+}
 
-#ifdef HAVE_TARGET_AARCH64
-    LLVMInitializeAArch64Target();
-    LLVMInitializeAArch64TargetInfo();
-    LLVMInitializeAArch64TargetMC();
-    LLVMInitializeAArch64AsmPrinter();
-    LLVMInitializeAArch64AsmParser();
-#endif
-#ifdef HAVE_TARGET_X86
-    LLVMInitializeX86Target();
-    LLVMInitializeX86TargetInfo();
-    LLVMInitializeX86TargetMC();
-    LLVMInitializeX86AsmPrinter();
-    LLVMInitializeX86AsmParser();
-#endif
-#ifdef HAVE_TARGET_WASM
-    LLVMInitializeWebAssemblyTarget();
-    LLVMInitializeWebAssemblyTargetInfo();
-    LLVMInitializeWebAssemblyTargetMC();
-    LLVMInitializeWebAssemblyAsmPrinter();
-    LLVMInitializeWebAssemblyAsmParser();
-#endif
+LLVMEvaluator::LLVMEvaluator(const CompilerOptions &compiler_options)
+    : LLVMEvaluator(resolve_llvm_target_config(compiler_options))
+{
+}
 
+LLVMEvaluator::LLVMEvaluator(LLVMTargetConfig target_config_)
+    : target_config(std::move(target_config_))
+{
     context = std::make_unique<llvm::LLVMContext>();
-
-    if (t != "")
-        target_triple = t;
-    else
-        target_triple = LLVMGetDefaultTargetTriple();
-
-    std::string Error;
-#if LLVM_VERSION_MAJOR >= 21
-    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(llvm::Triple(target_triple), Error);
-#else
-    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(target_triple, Error);
-#endif
-    if (!target) {
-        throw LCompilersException(Error);
-    }
-    std::string CPU = "generic";
-    std::string features = "";
-    llvm::TargetOptions opt;
-#if LLVM_VERSION_MAJOR >= 8
-    RM_OPTIONAL_TYPE<llvm::Reloc::Model> RM = llvm::Reloc::Model::PIC_;
-    TM = target->createTargetMachine(
-#if LLVM_VERSION_MAJOR >= 21
-        llvm::Triple(target_triple),
-#else
-        target_triple,
-#endif
-        CPU, features, opt, RM);
-#else
-    // LLVM 7: Use EngineBuilder with setRelocationModel to avoid ABI issues
-    // with Optional parameters while still specifying PIC relocation model
-    llvm::EngineBuilder builder;
-    builder.setEngineKind(llvm::EngineKind::JIT);
-    builder.setRelocationModel(llvm::Reloc::Model::PIC_ );
-    TM = builder.selectTarget();
-    if (!TM) {
-        throw LCompilersException("Could not create target machine");
-    }
-#endif
+    TM = create_target_machine(target_config);
 
     // For some reason the JIT requires a different TargetMachine
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
@@ -286,6 +798,17 @@ LLVMEvaluator::~LLVMEvaluator()
 {
     jit.reset();
     context.reset();
+}
+
+void LLVMEvaluator::configure_module(llvm::Module &module) const
+{
+#if LLVM_VERSION_MAJOR >= 21
+    module.setTargetTriple(llvm::Triple(target_config.triple));
+#else
+    module.setTargetTriple(target_config.triple);
+#endif
+    module.setDataLayout(target_config.data_layout);
+    target_config.apply_target_attributes(module);
 }
 
 std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")
@@ -305,12 +828,7 @@ std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &sou
     if (v) {
         throw LCompilersException("parse_module(): module failed verification.");
     };
-#if LLVM_VERSION_MAJOR >= 21
-    module->setTargetTriple(llvm::Triple(target_triple));
-#else
-    module->setTargetTriple(target_triple);
-#endif
-    module->setDataLayout(jit->getDataLayout());
+    configure_module(*module);
     return module;
 }
 
@@ -334,11 +852,7 @@ void LLVMEvaluator::add_module(const std::string &source) {
 void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // These are already set in parse_module(), but we set it here again for
     // cases when the Module was constructed directly, not via parse_module().
-#if LLVM_VERSION_MAJOR >= 21
-    mod->setTargetTriple(llvm::Triple(target_triple));
-#else
-    mod->setTargetTriple(target_triple);
-#endif
+    configure_module(*mod);
     mod->setDataLayout(jit->getDataLayout());
     llvm::Error err = jit->addModule(std::move(mod), context);
     if (err) {
@@ -419,6 +933,7 @@ void write_file(const std::string &filename, const std::string &contents)
 
 std::string LLVMEvaluator::get_asm(llvm::Module &m)
 {
+    configure_module(m);
     llvm::legacy::PassManager pass;
 #if LLVM_VERSION_MAJOR < 10
     llvm::LLVMTargetMachine::CodeGenFileType ft = llvm::LLVMTargetMachine::CGFT_AssemblyFile;
@@ -442,12 +957,7 @@ void LLVMEvaluator::save_asm_file(llvm::Module &m, const std::string &filename)
 }
 
 void LLVMEvaluator::save_object_file(llvm::Module &m, const std::string &filename) {
-#if LLVM_VERSION_MAJOR >= 21
-    m.setTargetTriple(llvm::Triple(target_triple));
-#else
-    m.setTargetTriple(target_triple);
-#endif
-    m.setDataLayout(TM->createDataLayout());
+    configure_module(m);
 
     llvm::legacy::PassManager pass;
 #if LLVM_VERSION_MAJOR < 10
@@ -476,19 +986,14 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
 }
 
 void LLVMEvaluator::opt(llvm::Module &m) {
-#if LLVM_VERSION_MAJOR >= 21
-    m.setTargetTriple(llvm::Triple(target_triple));
-#else
-    m.setTargetTriple(target_triple);
-#endif
-    m.setDataLayout(TM->createDataLayout());
+    configure_module(m);
 
 #if LLVM_VERSION_MAJOR >= 17
     llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;
     llvm::CGSCCAnalysisManager CGAM;
     llvm::ModuleAnalysisManager MAM;
-    llvm::PassBuilder PB = llvm::PassBuilder(TM);
+    llvm::PassBuilder PB = llvm::PassBuilder(TM.get());
     PB.registerModuleAnalyses(MAM);
     PB.registerCGSCCAnalyses(CGAM);
     PB.registerFunctionAnalyses(FAM);
@@ -632,6 +1137,25 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     // one has to carry the instance id too.
     if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
         fn->setName(unique_stem + "_program");
+
+    // Symbols qualified by their cell (__cell<N>_...) are named per session,
+    // so two executors in one process emit the same names. The wasm dynamic
+    // linker has one global namespace, so the second definition collides with
+    // the first -- and if their signatures differ, a module importing the name
+    // fails to link. Give each instance its own, the same way the run function
+    // above is made unique. Renaming here covers definitions and the
+    // declarations other modules of this instance import them through, so they
+    // still resolve to each other.
+    {
+        const std::string cell_prefix = "__cell";
+        const std::string instance = "__e" + std::to_string(m_id) + "_";
+        auto qualify = [&](llvm::GlobalValue &g) {
+            std::string n = g.getName().str();
+            if (n.rfind(cell_prefix, 0) == 0) g.setName(instance + n);
+        };
+        for (llvm::Function &f : mod->functions()) qualify(f);
+        for (llvm::GlobalVariable &g : mod->globals()) qualify(g);
+    }
 
     const std::string triple = "wasm32-unknown-emscripten";
     std::string err;

@@ -26,7 +26,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-D TEXT ...`: Define `<macro>=<value>` (or 1 if `<value>` omitted)
 - `--version`: Display compiler version information
 - `-W TEXT ...`: Linker flags
-- `-f TEXT ...`: All `-f*` flags (only -fPIC supported for now)
+- `-f TEXT ...`: All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)
 - `--cpp`: Enable C preprocessing
 - `--fixed-form`: Use fixed form Fortran source parsing
 - `--fixed-form-infer`: Use heuristics to infer if a file is in fixed form
@@ -41,7 +41,11 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--no-indent`: Turn off Indented print ASR/AST
 - `--tree`: Tree structure print ASR/AST
 - `--json`: Print ASR/AST Json format
-- `--clojure`: Print ASR in clojure format
+- `--clojure`: Print lossless ASR in canonical Clojure/EDN format
+- `--no-member-names`: Omit ASR member names in Clojure/EDN output
+- `--from-asr`: Parse the input file as ASR text
+- `--verify-asr`: Parse and verify standalone ASR text without running passes
+- `--verify-all-passes`: Verify ASR after every pass
 - `--no-loc`: Skip location information in ASR/AST Json format
 - `--visualize`: Print ASR/AST Visualization
 - `--pass TEXT`: Apply the ASR pass and show ASR (implies --show-asr)
@@ -52,6 +56,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-asm`: Show assembly for the given file and exit
 - `--show-wat`: Show WAT (WebAssembly Text Format) and exit
 - `--show-julia`: Show Julia translation source for the given file and exit
+- `--show-gpu-kernel-source`: Show the GPU kernel source for the backend selected by `--gpu` and exit
 - `--show-fortran`: Show Fortran translation source for the given file and exit
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
@@ -63,13 +68,17 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--continue-compilation`: Collect error messages and continue compilation after encountering semantic errors
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
+- `--device-compiler TEXT=nvcc`: Toolchain driver used to compile and link GPU device code
 - `--openmp`: Enable OpenMP
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--use-loop-variable-after-loop`: Allow using loop variable after the loop
-- `--fast`: Best performance (disable strict standard compliance)
+- `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target
+- `--march TEXT`: Generate code for the selected instruction-set architecture (`native` for the host)
+- `--mcpu TEXT`: Generate and tune code for the selected CPU (`native` for the host)
+- `--mtune TEXT`: Tune code for the selected CPU without changing the instruction set (`native` for the host)
 - `--print-targets`: Print the registered targets
 - `--implicit-typing`: Allow implicit typing
 - `--implicit-interface`: Allow implicit interface

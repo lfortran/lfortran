@@ -220,7 +220,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             // freshly translated AST will be rewritten by the call-site
             // replacer using existing proc2newproc state populated below
             // for newly inserted procedures only.
-            if (current_scope->get_symbol(new_name) != nullptr) {
+            if (ASR::symbol_t* existing = current_scope->get_symbol(new_name)) {
+                // The specialisation is already there: either an earlier run
+                // of this pass in the same interactive session made it, or an
+                // earlier cell did (and the JIT already holds its definition).
+                // Map to it, so that this cell's call sites are rewritten to
+                // the procedure that actually exists.
+                proc2newproc[(ASR::symbol_t*) x] = std::make_pair(existing, indices);
                 return nullptr;
             }
             if( ASR::is_a<ASR::Function_t>( *((ASR::symbol_t*) x) ) ) {
@@ -331,6 +337,23 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             }    \
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+            // In interactive mode each cell is a TranslationUnit chained to
+            // the previous one, so earlier cells' symbols live in ancestor
+            // scopes. Their procedures were specialised when their own cell
+            // was compiled; specialise them here too so that calls from this
+            // cell resolve to the procedures the JIT already holds. The
+            // generated names are derived from the signature, so they come
+            // out the same as they did then.
+            for (SymbolTable* s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if( !ASRUtils::is_tu_scope(s) ) continue;
+                for (auto &a : s->get_scope()) {
+                    if( ASR::is_a<ASR::Module_t>(*a.second) ||
+                        ASR::is_a<ASR::Function_t>(*a.second) ) {
+                        this->visit_symbol(*a.second);
+                    }
+                }
+            }
+
             // Visit functions in global scope first
             bfs_visit_SymbolContainingFunctions();
 
@@ -619,7 +642,29 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 }
                 if ( resolved_type_dec ) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(resolved_type_dec);
-                    var->m_type_declaration = resolved_type_dec;
+                    // The rewritten procedure lives in whichever scope this
+                    // pass rebuilt it into, so import it the same way the
+                    // shared Variable constructor would.
+                    ASR::symbol_t* new_type_dec = ASRUtils::import_type_declaration(
+                        v.al, resolved_type_dec, var->m_parent_symtab);
+                    if ( !ASRUtils::is_visible_from(new_type_dec, var->m_parent_symtab) &&
+                            ASR::is_a<ASR::ExternalSymbol_t>(*var->m_type_declaration) ) {
+                        // The old declaration reached the procedure through an
+                        // ExternalSymbol; the specialisation lives beside the
+                        // original, so it is reachable the very same way.
+                        ASR::ExternalSymbol_t* old_ext = ASR::down_cast<ASR::ExternalSymbol_t>(
+                            var->m_type_declaration);
+                        std::string ext_name = var->m_parent_symtab->get_unique_name(
+                            ASRUtils::symbol_name(resolved_type_dec));
+                        new_type_dec = ASR::down_cast<ASR::symbol_t>(
+                            ASR::make_ExternalSymbol_t(v.al, old_ext->base.base.loc,
+                                var->m_parent_symtab, s2c(v.al, ext_name), resolved_type_dec,
+                                old_ext->m_module_name, old_ext->m_scope_names,
+                                old_ext->n_scope_names,
+                                ASRUtils::symbol_name(resolved_type_dec), old_ext->m_access));
+                        var->m_parent_symtab->add_symbol(ext_name, new_type_dec);
+                    }
+                    var->m_type_declaration = new_type_dec;
                     ASR::ttype_t* new_type = fn->m_function_signature;
                     if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
                         new_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, var->base.base.loc, new_type));

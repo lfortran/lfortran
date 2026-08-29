@@ -937,6 +937,20 @@ class PRIFInterface {
             return struct_sym;
         }
 
+        static bool type_declaration_in_use(ASR::symbol_t *decl, SymbolTable *symtab) {
+            for (auto &item : symtab->get_scope()) {
+                ASR::symbol_t *sym = item.second;
+                if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                        ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration == decl) {
+                    return true;
+                }
+                if (SymbolTable *child = ASRUtils::symbol_symtab(sym)) {
+                    if (type_declaration_in_use(decl, child)) return true;
+                }
+            }
+            return false;
+        }
+
         void convert_team_type(const Location &loc, ASR::expr_t *team) {
             if (team && ASR::is_a<ASR::Var_t>(*team)) {
                 ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
@@ -949,11 +963,16 @@ class PRIFInterface {
                     team_var->m_type_declaration = prif_decl;
                     team_var->m_type = ASRUtils::make_StructType_t_util(al, loc, prif_decl, true);
                     LCOMPILERS_ASSERT(orig_decl != nullptr);
-                    SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
-                    LCOMPILERS_ASSERT(parent_symtab != nullptr);
-                    std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
-                    if (parent_symtab->get_symbol(sym_name)) {
-                        parent_symtab->erase_symbol(sym_name);
+                    // Drop the import, not the type defined in iso_fortran_env,
+                    // and only once nothing else still names it.
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*orig_decl)) {
+                        SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(orig_decl);
+                        LCOMPILERS_ASSERT(parent_symtab != nullptr);
+                        std::string sym_name = std::string(ASRUtils::symbol_name(orig_decl));
+                        if (parent_symtab->get_symbol(sym_name) == orig_decl &&
+                                !type_declaration_in_use(orig_decl, parent_symtab)) {
+                            parent_symtab->erase_symbol(sym_name);
+                        }
                     }
                 }
             }
