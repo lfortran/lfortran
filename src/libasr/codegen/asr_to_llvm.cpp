@@ -23383,7 +23383,38 @@ public:
                 // and results are copied back to the host
                 llvm::Value *struct_ptr;
                 llvm::Type *struct_type;
-                if (arg_val->getType()->isPointerTy()) {
+                // A polymorphic (`class(...)`) argument is represented as the
+                // class container `{vtable*, struct*}`.  The kernel is
+                // generated against the underlying struct, so unwrap the
+                // container here: both the buffer handed to the kernel and
+                // any workspace extent read out of a component must refer to
+                // the underlying struct, not to the container.
+                ASR::symbol_t *arg_class_sym = nullptr;
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))
+                        && !ASRUtils::is_unlimited_polymorphic_type(arg_type)
+                        && !LLVM::is_llvm_pointer(*arg_type)
+                        && arg_val->getType()->isPointerTy()) {
+                    arg_class_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+                    if (arg_class_sym != nullptr &&
+                            !ASR::is_a<ASR::Struct_t>(*arg_class_sym)) {
+                        arg_class_sym = nullptr;
+                    }
+                }
+                if (arg_class_sym != nullptr) {
+                    ASR::Struct_t *class_st = ASR::down_cast<ASR::Struct_t>(
+                        arg_class_sym);
+                    llvm::Value *underlying = llvm_utils->CreateLoad2(
+                        llvm_utils->getStructType(class_st, module.get(),
+                            true),
+                        llvm_utils->create_gep2(
+                            llvm_utils->getClassType(class_st), arg_val, 1));
+                    call_arg_struct_ptrs[i] = underlying;
+                    struct_ptr = builder->CreatePointerCast(underlying,
+                        i8_ptr);
+                    struct_type = llvm_utils->getStructType(class_st,
+                        module.get());
+                } else if (arg_val->getType()->isPointerTy()) {
                     call_arg_struct_ptrs[i] = arg_val;
                     struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
                     struct_type = llvm_utils->get_type_from_ttype_t_util(
