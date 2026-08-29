@@ -20,21 +20,23 @@ module template_sort_02_m
     use template_sort_02_type
     implicit none
 
-    requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
-        pure elemental function op_func(lhs, rhs) result(res)
-            type(T), intent(in) :: lhs
-            type(T), intent(in) :: rhs
-            type(V) :: res
-        end function
+    requirement op_r{T, U, V, op_func}
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(T), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
     end requirement
 
 contains
     
-    subroutine swap {T} (lhs, rhs)
-        type, deferred :: T
+    template subroutine swap {T} (lhs, rhs)
+        deferred type :: T
         type(T), intent(inout) :: lhs
         type(T), intent(inout) :: rhs
 
@@ -46,8 +48,8 @@ contains
     end subroutine
 
     ! non-generic reference
-    recursive subroutine quicksort {T, lt} (arr, low, high)
-        require :: op_r(T, T, logical, lt)
+    template recursive subroutine quicksort {T, lt} (arr, low, high)
+        require op_r{T, T, logical, lt}
         type(T), intent(inout) :: arr(:)
         integer, intent(in) :: low, high
         

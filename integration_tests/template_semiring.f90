@@ -5,8 +5,8 @@ module semiring_m
     private
     public :: semiring
 
-    requirement semiring(T, plus, zero, mult, one)
-        require :: monoid(T, plus, zero)
-        require :: monoid(T, mult, one)
+    requirement semiring{T, plus, zero, mult, one}
+        require monoid{T, plus, zero}
+        require monoid{T, mult, one}
     end requirement
 end module
