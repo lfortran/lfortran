@@ -322,6 +322,11 @@ need one; WASM targets either need no driver or use user-provided
 toolchains (`EMSDK_PATH`, `WASI_SDK_PATH`). On Windows the default link
 path uses MSVC's `link` instead.
 
+The one exception to "any driver works" is the Metal GPU backend
+(`--gpu=metal`): it compiles its Objective-C runtime with the same
+driver, and only clang can compile Objective-C, so that backend requires
+clang.
+
 ## Debug Line Information
 
 When compiling with `-g`, LFortran additionally generates side files with
