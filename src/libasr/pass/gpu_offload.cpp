@@ -4196,6 +4196,46 @@ public:
         }
     }
 
+    // Collects every symbol the kernel would have to reference for `x`:
+    // the symbols appearing in the loop head and body, plus the symbols
+    // that only appear inside the array-dimension expressions of those
+    // symbols' types (e.g. `tmp(size(b))` pulls in `b`).
+    void collect_involved_syms(const ASR::DoConcurrentLoop_t &x,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms) {
+        GpuSymbolCollector collector(al, involved_syms,
+            enclosing_block_scopes);
+        collector.visit_DoConcurrentLoop(x);
+        bool added = true;
+        while (added) {
+            added = false;
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
+            GpuSymbolCollector type_collector(al, extra_syms,
+                enclosing_block_scopes);
+            for (auto &[sym_name, sym_info] : involved_syms) {
+                ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+                if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_start)
+                        type_collector.visit_expr(*arr->m_dims[d].m_start);
+                    if (arr->m_dims[d].m_length)
+                        type_collector.visit_expr(*arr->m_dims[d].m_length);
+                }
+            }
+            for (auto &[name, info] : extra_syms) {
+                if (involved_syms.find(name) == involved_syms.end()) {
+                    involved_syms[name] = info;
+                    added = true;
+                }
+            }
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
@@ -4398,6 +4438,50 @@ public:
                         }
                     }
                 }
+            }
+        }
+
+        // Detect if the do concurrent is inside a Block scope. If so,
+        // block-local variables need to be collected as kernel parameters
+        // rather than skipped. Walk up through AssociateBlock and Block
+        // parents to find ALL enclosing Block scopes (e.g., do concurrent
+        // inside a nested Block that accesses variables from outer Blocks).
+        std::set<SymbolTable*> enclosing_block_scopes;
+        {
+            SymbolTable *scope = current_scope;
+            while (scope && scope->asr_owner &&
+                   scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (is_a<ASR::Block_t>(*owner_sym)) {
+                    enclosing_block_scopes.insert(scope);
+                    scope = scope->parent;
+                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                    scope = scope->parent;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Decide whether this loop can be offloaded at all *before* any of
+        // the inline_* helpers below rewrite the loop body. Those helpers
+        // are destructive: they lower array-section and intrinsic-array
+        // assignments into explicit element loops, a half-lowered shape
+        // that only the kernel extractor understands. If we declined the
+        // offload after rewriting, the loop would stay on the host in a
+        // form the later array_op pass no longer normalizes, and codegen
+        // would fail. So: no mutation until the decision is made.
+        if (pass_options.gpu_offload_metal) {
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+                candidate_syms;
+            collect_involved_syms(x, enclosing_block_scopes, candidate_syms);
+            // Every symbol reaching the kernel — buffer parameters,
+            // by-value members of the __ScalarArgs struct and kernel-local
+            // temporaries alike — is collected here, so a single sweep
+            // covers all of them.
+            for (auto &sym : candidate_syms) {
+                if (!is_metal_representable_type(sym.second.first)) return;
             }
         }
 
@@ -4693,76 +4777,9 @@ public:
             }
         }
 
-        // Detect if the do concurrent is inside a Block scope. If so,
-        // block-local variables need to be collected as kernel parameters
-        // rather than skipped. Walk up through AssociateBlock and Block
-        // parents to find ALL enclosing Block scopes (e.g., do concurrent
-        // inside a nested Block that accesses variables from outer Blocks).
-        std::set<SymbolTable*> enclosing_block_scopes;
-        {
-            SymbolTable *scope = current_scope;
-            while (scope && scope->asr_owner &&
-                   scope->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
-                    scope->asr_owner);
-                if (is_a<ASR::Block_t>(*owner_sym)) {
-                    enclosing_block_scopes.insert(scope);
-                    scope = scope->parent;
-                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                    scope = scope->parent;
-                } else {
-                    break;
-                }
-            }
-        }
-
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
-        GpuSymbolCollector collector(al, involved_syms, enclosing_block_scopes);
-        collector.visit_DoConcurrentLoop(x);
-
-        // Also collect symbols referenced in the type expressions (array
-        // dimensions) of already-collected symbols. For example, if
-        // `tmp(size(b))` is used in the body, `tmp` is collected but `b`
-        // only appears in tmp's type — we must also pull `b` into
-        // involved_syms so it becomes a kernel parameter.
-        {
-            bool added = true;
-            while (added) {
-                added = false;
-                std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
-                GpuSymbolCollector type_collector(al, extra_syms, enclosing_block_scopes);
-                for (auto &[sym_name, sym_info] : involved_syms) {
-                    ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
-                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
-                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
-                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
-                    for (size_t d = 0; d < arr->n_dims; d++) {
-                        if (arr->m_dims[d].m_start)
-                            type_collector.visit_expr(*arr->m_dims[d].m_start);
-                        if (arr->m_dims[d].m_length)
-                            type_collector.visit_expr(*arr->m_dims[d].m_length);
-                    }
-                }
-                for (auto &[name, info] : extra_syms) {
-                    if (involved_syms.find(name) == involved_syms.end()) {
-                        involved_syms[name] = info;
-                        added = true;
-                    }
-                }
-            }
-        }
-
-        if (pass_options.gpu_offload_metal) {
-            // Every symbol reaching the kernel — buffer parameters,
-            // by-value members of the __ScalarArgs struct and kernel-local
-            // temporaries alike — is collected in `involved_syms`, so a
-            // single sweep here covers all of them.
-            for (auto &sym : involved_syms) {
-                if (!is_metal_representable_type(sym.second.first)) return;
-            }
-        }
+        collect_involved_syms(x, enclosing_block_scopes, involved_syms);
 
         // Collect loop variable names
         std::vector<std::string> loop_var_names;
