@@ -7892,6 +7892,12 @@ public:
                 is_external = false;
             }
         }
+        if (compiler_options.implicit_interface && !is_external
+                && is_implicit_interface_decl(original_sym)) {
+            // Declared `external` with no interface: its argument list is
+            // unknown, so infer the concrete interface from this call.
+            is_external = true;
+        }
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "flush") {
                 // assigns 'tmp' to an ASR node
@@ -8623,6 +8629,8 @@ public:
                                         passed_ft->m_arg_types = param_ft->m_arg_types;
                                         passed_ft->n_arg_types = param_ft->n_arg_types;
                                         passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                        // Signature is now known; no longer ImplicitInterface.
+                                        passed_ft->m_deftype = ASR::deftypeType::Interface;
 
                                         // Create matching argument variables in the passed Function's symtab
                                         Vec<ASR::expr_t*> new_args;
@@ -8794,6 +8802,8 @@ public:
                                     passed_ft->m_arg_types = param_ft->m_arg_types;
                                     passed_ft->n_arg_types = param_ft->n_arg_types;
                                     passed_ft->m_return_var_type = param_ft->m_return_var_type;
+                                    // Signature is now known; no longer ImplicitInterface.
+                                    passed_ft->m_deftype = ASR::deftypeType::Interface;
 
                                     // Create matching argument variables in the passed Function's symtab
                                     Vec<ASR::expr_t*> new_args;
@@ -10669,13 +10679,11 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     // This handles the case where callee body is visited after caller body,
     // so the callee's parameter types weren't available during caller visit.
     // Only run if we encountered cases that might need deferred propagation.
-    if (compiler_options.implicit_interface && b.needs_implicit_interface_postprocessing) {
-        for (auto& item : tu->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
-                for (size_t si = 0; si < func->n_body; si++) {
-                    if (ASR::is_a<ASR::SubroutineCall_t>(*func->m_body[si])) {
-                        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(func->m_body[si]);
+    if (compiler_options.implicit_interface) {
+        auto process_body = [&](ASR::stmt_t** body, size_t n_body) {
+          for (size_t si = 0; si < n_body; si++) {
+                    if (ASR::is_a<ASR::SubroutineCall_t>(*body[si])) {
+                        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(body[si]);
                         ASR::symbol_t* callee_sym = ASRUtils::symbol_get_past_external(call->m_name);
                         if (!ASR::is_a<ASR::Function_t>(*callee_sym)) continue;
                         ASR::Function_t* callee = ASR::down_cast<ASR::Function_t>(callee_sym);
@@ -10774,10 +10782,22 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                     passed_func->m_args = new_args.p;
                                     passed_func->n_args = new_args.size();
                                 }
+                                // The interface has now been inferred from the
+                                // dummy argument it is passed to, so this is no
+                                // longer a procedure known only by name.
+                                passed_ft->m_deftype = ASR::deftypeType::Interface;
                             }
                         }
                     }
-                }
+          }
+        };
+        for (auto& item : tu->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
+                process_body(func->m_body, func->n_body);
+            } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                ASR::Program_t* prog = ASR::down_cast<ASR::Program_t>(item.second);
+                process_body(prog->m_body, prog->n_body);
             }
         }
     }
