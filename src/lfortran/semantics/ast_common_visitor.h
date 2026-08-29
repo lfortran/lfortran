@@ -17581,10 +17581,13 @@ public:
             }
         }
         if (compiler_options.implicit_interface && !is_external_procedure
-                && x.n_args > 0 && is_implicit_interface_decl(v)) {
+                && is_implicit_interface_decl(v)) {
             // `v` was declared `external` with no interface, so its argument
             // list is unknown. Infer the concrete interface from this call's
-            // arguments, exactly like a locally declared external.
+            // arguments, exactly like a locally declared external. A reference
+            // that passes no arguments infers a zero-argument interface; it
+            // must not be left resolving to the declaration itself, which is
+            // not a call target.
             is_external_procedure = true;
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
