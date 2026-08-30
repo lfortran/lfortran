@@ -1772,6 +1772,87 @@ public:
         return out;
     }
 
+    // An element-wise operator tree over arrays, such as `x + c`,
+    // `2.0*x` or `-x`. Metal cannot evaluate such an expression as a
+    // whole, so it must be emitted once per element with the array
+    // leaves subscripted, rather than emitted as a whole and then
+    // subscripted (which yields `(x + c)[i]`). Scalar operands are
+    // left unsubscripted so that they broadcast.
+    bool is_elementwise_array_expr(ASR::expr_t *e) {
+        if (!e) return false;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return is_elementwise_array_expr(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        }
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(e));
+        if (!ASR::is_a<ASR::Array_t>(*t)) return false;
+        switch (e->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t *op =
+                    ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                return is_elementwise_array_operand(op->m_left)
+                    && is_elementwise_array_operand(op->m_right);
+            }
+            case ASR::exprType::RealBinOp: {
+                ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(e);
+                return is_elementwise_array_operand(op->m_left)
+                    && is_elementwise_array_operand(op->m_right);
+            }
+            case ASR::exprType::LogicalBinOp: {
+                ASR::LogicalBinOp_t *op =
+                    ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                return is_elementwise_array_operand(op->m_left)
+                    && is_elementwise_array_operand(op->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_elementwise_array_operand(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+            }
+            case ASR::exprType::RealUnaryMinus: {
+                return is_elementwise_array_operand(
+                    ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+            }
+            case ASR::exprType::LogicalNot: {
+                return is_elementwise_array_operand(
+                    ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg);
+            }
+            default: return false;
+        }
+    }
+
+    bool is_elementwise_array_operand(ASR::expr_t *e) {
+        if (!e) return false;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return is_elementwise_array_operand(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        }
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(e));
+        // A scalar operand broadcasts, so it needs no subscript.
+        if (!ASR::is_a<ASR::Array_t>(*t)) return true;
+        // An array variable is an indexable leaf.
+        if (ASR::is_a<ASR::Var_t>(*e)) return true;
+        return is_elementwise_array_expr(e);
+    }
+
+    // Emit one element of an array valued right hand side, subscripted
+    // by `index_var`. An element-wise operator tree is emitted with the
+    // index pushed down to its array leaves; anything else is emitted as
+    // a whole and subscripted.
+    void emit_array_rhs_element(ASR::expr_t *value,
+            const std::string &index_var) {
+        if (is_elementwise_array_expr(value)) {
+            std::string saved = array_elem_index_var;
+            array_elem_index_var = index_var;
+            visit_expr(value);
+            array_elem_index_var = saved;
+        } else {
+            visit_expr(value);
+            src << "[" << index_var << "]";
+        }
+    }
+
     // Metal has no aggregate array assignment, so an array constructor on
     // the right hand side is expanded into a sequence of element writes
     // into the target. Scalar elements are written one at a time and
@@ -4124,9 +4205,9 @@ public:
                             << eit->second << "); __copy_i++) ";
                         visit_expr(a->m_target);
                         src << "[__copy_i] = ";
-                        if (rhs_is_simple_var) {
-                            visit_expr(a->m_value);
-                            src << "[__copy_i]";
+                        if (rhs_is_simple_var
+                                || is_elementwise_array_expr(a->m_value)) {
+                            emit_array_rhs_element(a->m_value, "__copy_i");
                         } else {
                             array_elem_index = -2;
                             visit_expr(a->m_value);
@@ -4401,8 +4482,8 @@ public:
                         << size_var << "; __copy_i++) ";
                     visit_expr(a->m_target);
                     src << "[__copy_i] = ";
-                    visit_expr(a->m_value);
-                    src << "[__copy_i];\n";
+                    emit_array_rhs_element(a->m_value, "__copy_i");
+                    src << ";\n";
                 } else if (target_is_array_buffer) {
                     // Compute the fixed size of the target array
                     int64_t fixed_sz = 1;
@@ -4538,8 +4619,8 @@ public:
                             << size_expr << "; __copy_i++) ";
                         visit_expr(a->m_target);
                         src << "[__copy_i] = ";
-                        visit_expr(a->m_value);
-                        src << "[__copy_i];\n";
+                        emit_array_rhs_element(a->m_value, "__copy_i");
+                        src << ";\n";
                     } else {
                         visit_expr(a->m_target);
                         src << " = ";
