@@ -272,10 +272,6 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
-                // Expanding a kernel launch reads the kernel body, so it has
-                // to run once the body is in the shape the device code
-                // generators see.
-                "device_launch_expand",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
@@ -284,6 +280,13 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // Expanding a kernel launch reads the kernel signature and
+                // body, so it has to run once both are in the shape the
+                // device code generators see: after pass_array_by_data has
+                // turned array extents into explicit kernel arguments, and
+                // after array_dim_intrinsics_update has rewritten the size
+                // intrinsics that read them.
+                "device_launch_expand",
                 "do_loops",
                 "while_else",
                 "unused_functions",

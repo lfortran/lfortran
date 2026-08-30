@@ -113,6 +113,11 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
         std::map< ASR::symbol_t*, std::pair<ASR::symbol_t*, std::vector<size_t>> > proc2newproc;
         std::set<ASR::symbol_t*> newprocs;
+        // Procedures transformed in place, with the argument indices whose
+        // extents became explicit arguments. A device kernel is transformed
+        // this way because it has no Fortran caller to redirect: the only
+        // reference to it is the launch statement, which is updated instead.
+        std::map< ASR::symbol_t*, std::vector<size_t> > proc2inplace;
 
         PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
@@ -251,7 +256,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             return new_symbol;
         }
 
-        void edit_new_procedure_args(ASR::Function_t* x, std::vector<size_t>& indices) {
+        void edit_procedure_args(ASR::Function_t* x, std::vector<size_t>& indices) {
             Vec<ASR::expr_t*> new_args;
             new_args.reserve(al, x->n_args);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -314,20 +319,26 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             for( auto& item: xx.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
-                    // TODO(stage-02b): remove this skip. A device function is
-                    // emitted as Metal/CUDA source, where array arguments are
-                    // already plain buffers, so it must not be specialised
-                    // into a pass-array-by-data variant.
+                    std::vector<size_t> arg_indices;
                     if( ASRUtils::is_device_function(*subrout) ) {
+                        // A device kernel is emitted as Metal/CUDA source,
+                        // where an array argument is a bare pointer that
+                        // carries no extents. Transform it in place so the
+                        // extents arrive as scalar arguments the device code
+                        // can read; a specialised copy would be pointless
+                        // because nothing but the launch refers to it.
+                        if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                            edit_procedure_args(subrout, arg_indices);
+                            proc2inplace[item.second] = arg_indices;
+                        }
                         continue;
                     }
                     pass_array_by_data_functions.push_back(subrout);
-                    std::vector<size_t> arg_indices;
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
-                            edit_new_procedure_args(new_subrout, arg_indices);
+                            edit_procedure_args(new_subrout, arg_indices);
                         }
                     }
                 }
@@ -1244,6 +1255,38 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 xx.m_name = resolve_new_proc(x.m_name);
                 xx.m_original_name = resolve_new_proc(x.m_name);
             }
+            xx.m_args = new_args.p;
+            xx.n_args = new_args.size();
+        }
+
+        // A GPU kernel is transformed in place, so the launch keeps
+        // pointing at the same symbol and only has to hand over the extents
+        // the kernel now takes as arguments.
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t& x) {
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_GpuKernelLaunch(x);
+            auto it = v.proc2inplace.find(x.m_kernel);
+            if( it == v.proc2inplace.end() ) {
+                return;
+            }
+            std::vector<size_t>& indices = it->second;
+            Vec<ASR::call_arg_t> new_args;
+            new_args.reserve(al, x.n_args);
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                new_args.push_back(al, x.m_args[i]);
+                if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
+                    continue;
+                }
+                Vec<ASR::expr_t*> dim_vars;
+                dim_vars.reserve(al, 2);
+                get_dimensions(x.m_args[i].m_value, dim_vars, al);
+                for( size_t j = 0; j < dim_vars.size(); j++ ) {
+                    ASR::call_arg_t dim_arg;
+                    dim_arg.loc = dim_vars[j]->base.loc;
+                    dim_arg.m_value = dim_vars[j];
+                    new_args.push_back(al, dim_arg);
+                }
+            }
+            ASR::GpuKernelLaunch_t& xx = const_cast<ASR::GpuKernelLaunch_t&>(x);
             xx.m_args = new_args.p;
             xx.n_args = new_args.size();
         }
