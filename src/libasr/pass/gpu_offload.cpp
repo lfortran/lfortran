@@ -690,6 +690,75 @@ public:
     }
 };
 
+// Collects every DoConcurrentLoop reached from the statements walked,
+// descending into BLOCK and ASSOCIATE scopes so a loop nested there is
+// seen too.
+class GpuDoConcurrentCollector :
+        public ASR::BaseWalkVisitor<GpuDoConcurrentCollector> {
+public:
+    std::set<const ASR::DoConcurrentLoop_t*> loops;
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        loops.insert(&x);
+        ASR::BaseWalkVisitor<GpuDoConcurrentCollector>::
+            visit_DoConcurrentLoop(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// Rewrites the listed DoConcurrentLoops into ordinary sequential
+// DoLoops. `do concurrent` only permits the iterations to run in any
+// order, so running them in order is always correct; inside device code
+// it is the only thing that can be done.
+class GpuHostOnlyLoopSequentializer :
+        public ASR::StatementWalkVisitor<GpuHostOnlyLoopSequentializer> {
+public:
+    const std::set<const ASR::DoConcurrentLoop_t*> &sequential_loops;
+
+    GpuHostOnlyLoopSequentializer(Allocator &al_,
+            const std::set<const ASR::DoConcurrentLoop_t*> &loops)
+        : StatementWalkVisitor(al_), sequential_loops(loops) {}
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (!sequential_loops.count(&x)) return;
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al, x.m_body[i]);
+        }
+        for (size_t i = x.n_head; i-- > 1; ) {
+            ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+                x.base.base.loc, s2c(al, ""), x.m_head[i], body.p, body.n,
+                nullptr, 0));
+            body.reserve(al, 1);
+            body.n = 0;
+            body.push_back(al, inner);
+        }
+        pass_result.reserve(al, 1);
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(al,
+            x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n,
+            nullptr, 0)));
+    }
+};
+
 // Metal shaders have neither variable-length arrays nor a heap, so a
 // device function (an `inline` callee of a kernel) can only declare
 // locals whose extent the shader compiler can fold to a constant. An
@@ -2246,6 +2315,74 @@ public:
         if (!r || !ASR::is_a<ASR::Function_t>(*r)) return nullptr;
         return resolve_function_implementation(
             ASR::down_cast<ASR::Function_t>(r));
+    }
+
+    // A `do concurrent` inside a procedure that device code can reach
+    // has to stay an ordinary sequential loop. Offloading it rewrites it
+    // into a host-side kernel launch, and a kernel launch has no meaning
+    // inside a kernel: the device copy of that procedure is then emitted
+    // with an empty body -- silently, because the GPU backends have no
+    // lowering for a launch -- and the caller reads uninitialised
+    // memory. The same holds for a loop already lifted into a kernel.
+    // Both are sequentialized here, before this round rewrites anything,
+    // so the decision is made on intact ASR.
+    std::set<const ASR::DoConcurrentLoop_t*> host_only_loops;
+    std::set<ASR::Function_t*> device_reachable_functions;
+
+    void collect_host_only_loops() {
+        GpuDoConcurrentCollector all_loops;
+        all_loops.visit_TranslationUnit(tu);
+        std::vector<ASR::Function_t*> pending;
+        auto add_callees = [&](ASR::stmt_t **body, size_t n_body) {
+            GpuFunctionCollector fc;
+            for (size_t i = 0; i < n_body; i++) {
+                fc.visit_stmt(*body[i]);
+            }
+            for (auto &item : fc.functions) {
+                ASR::Function_t *callee = resolve_device_function(
+                    item.second);
+                if (callee &&
+                        device_reachable_functions.insert(callee).second) {
+                    pending.push_back(callee);
+                }
+            }
+        };
+        GpuDoConcurrentCollector blocked;
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) continue;
+            ASR::GpuKernelFunction_t *k =
+                ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+            add_callees(k->m_body, k->n_body);
+            for (size_t i = 0; i < k->n_body; i++) {
+                blocked.visit_stmt(*k->m_body[i]);
+            }
+        }
+        for (const ASR::DoConcurrentLoop_t *loop : all_loops.loops) {
+            add_callees(loop->m_body, loop->n_body);
+        }
+        // A procedure stays device-reachable once its caller's loop has
+        // been rewritten into a launch, so the set accumulates across
+        // rounds rather than being rebuilt from the loops still present.
+        for (ASR::Function_t *fn : device_reachable_functions) {
+            pending.push_back(fn);
+        }
+        while (!pending.empty()) {
+            ASR::Function_t *fn = pending.back();
+            pending.pop_back();
+            add_callees(fn->m_body, fn->n_body);
+        }
+        for (ASR::Function_t *fn : device_reachable_functions) {
+            for (size_t i = 0; i < fn->n_body; i++) {
+                blocked.visit_stmt(*fn->m_body[i]);
+            }
+        }
+        host_only_loops.insert(blocked.loops.begin(), blocked.loops.end());
+        GpuHostOnlyLoopSequentializer seq(al, host_only_loops);
+        seq.asr_changed = true;
+        while (seq.asr_changed) {
+            seq.asr_changed = false;
+            seq.visit_TranslationUnit(tu);
+        }
     }
 
     // Strip the physical-type casts wrapping an actual argument. The
@@ -9627,6 +9764,7 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
     v.asr_changed = true;
     while (v.asr_changed) {
         v.asr_changed = false;
+        v.collect_host_only_loops();
         v.visit_TranslationUnit(unit);
     }
     // Kernel extraction moves Block symbols out of their enclosing
