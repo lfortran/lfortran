@@ -1409,6 +1409,60 @@ public:
 
     std::string last_section_size;
 
+    // Renders an expression to Metal source without disturbing the output
+    // being built.
+    std::string expr_str(ASR::expr_t *e) {
+        std::stringstream save;
+        save << src.str();
+        src.str("");
+        visit_expr(e);
+        std::string out = src.str();
+        src.str("");
+        src << save.str();
+        return out;
+    }
+
+    // True when every extent of an array type is an expression the device
+    // code can evaluate. pass_array_by_data gives an array dummy its extents
+    // as arguments of their own, so nothing has to be synthesised for it.
+    static bool array_extents_are_explicit(ASR::ttype_t *type) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(type));
+        if (!ASR::is_a<ASR::Array_t>(*t)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+        if (arr->n_dims == 0) return false;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (!arr->m_dims[d].m_length) return false;
+        }
+        return true;
+    }
+
+    // Registers the extents of an array parameter, read from the type
+    // itself, so that a bound or a size of it resolves to them.
+    void register_array_extents(const std::string &name,
+            ASR::ttype_t *type) {
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(type)));
+        std::string total;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
+            func_array_size_params[name + "__dim"
+                + std::to_string(d + 1)] = len;
+            total += total.empty() ? len : (" * " + len);
+        }
+        func_array_size_params[name] = "(" + total + ")";
+    }
+
+    // True when the callee's signature carries a synthesised size parameter
+    // for this argument.
+    bool formal_has_size_param(ASR::Function_t *fn, size_t arg_idx) {
+        if (!fn || arg_idx >= fn->n_args) return true;
+        ASR::Variable_t *farg = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[arg_idx])->m_v);
+        return !array_extents_are_explicit(farg->m_type);
+    }
+
     // Emit the total size of an array expression (product of dimensions).
     // Used at function call sites to pass array sizes for DescriptorArray
     // parameters that are represented as device pointers in Metal.
@@ -1416,7 +1470,8 @@ public:
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
             expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
         }
-        ASR::ttype_t *type = ASRUtils::expr_type(expr);
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(expr));
         // Pointer(Array) — lookup the associated section size
         if (ASR::is_a<ASR::Pointer_t>(*type)) {
             ASR::ttype_t *inner = ASR::down_cast<ASR::Pointer_t>(type)->m_type;
@@ -2240,41 +2295,40 @@ public:
                 }
                 src << addr_space << " "
                     << elem_type << "* " << arg->m_name;
-                // For DescriptorArray (assumed-shape) params with null
-                // dimension lengths, emit per-dimension size params so
-                // that emit_array_section_pointer and
-                // emit_linearized_index can resolve strides.
+                // The extents of an array dummy are arguments of their
+                // own once pass_array_by_data has run, so they are read
+                // from the type. Only a dummy the pass could not transform
+                // still needs a size parameter synthesised here, so that
+                // emit_array_section_pointer and emit_linearized_index can
+                // resolve strides.
                 bool desc_per_dim = false;
-                if (arr->m_physical_type
-                        == ASR::array_physical_typeType::DescriptorArray) {
-                    bool has_null = false;
+                bool extents_explicit =
+                    array_extents_are_explicit(arg->m_type);
+                if (extents_explicit) {
+                    register_array_extents(std::string(arg->m_name),
+                        arg->m_type);
+                } else if (arr->m_physical_type
+                        == ASR::array_physical_typeType::DescriptorArray
+                        && arr->n_dims > 0) {
+                    desc_per_dim = true;
+                    std::string aname(arg->m_name);
                     for (size_t d = 0; d < arr->n_dims; d++) {
-                        if (!arr->m_dims[d].m_length) {
-                            has_null = true;
-                            break;
-                        }
+                        std::string dim_name = "__size_" + aname
+                            + "_dim" + std::to_string(d + 1);
+                        src << ", int " << dim_name;
+                        func_array_size_params[aname + "__dim"
+                            + std::to_string(d + 1)] = dim_name;
                     }
-                    if (has_null && arr->n_dims > 0) {
-                        desc_per_dim = true;
-                        std::string aname(arg->m_name);
-                        for (size_t d = 0; d < arr->n_dims; d++) {
-                            std::string dim_name = "__size_" + aname
-                                + "_dim" + std::to_string(d + 1);
-                            src << ", int " << dim_name;
-                            func_array_size_params[aname + "__dim"
-                                + std::to_string(d + 1)] = dim_name;
-                        }
-                        // Register total size as the product
-                        std::string total = "__size_" + aname + "_dim1";
-                        for (size_t d = 1; d < arr->n_dims; d++) {
-                            total += " * __size_" + aname + "_dim"
-                                + std::to_string(d + 1);
-                        }
-                        func_array_size_params[aname] = "("
-                            + total + ")";
+                    // Register total size as the product
+                    std::string total = "__size_" + aname + "_dim1";
+                    for (size_t d = 1; d < arr->n_dims; d++) {
+                        total += " * __size_" + aname + "_dim"
+                            + std::to_string(d + 1);
                     }
+                    func_array_size_params[aname] = "("
+                        + total + ")";
                 }
-                if (!desc_per_dim) {
+                if (!extents_explicit && !desc_per_dim) {
                     std::string size_name = std::string("__size_")
                         + arg->m_name;
                     src << ", int " << size_name;
@@ -3208,7 +3262,12 @@ public:
                     break;
                 }
             }
-            if (!has_null_dim) continue;
+            if (!has_null_dim) {
+                if (array_extents_are_explicit(var->m_type)) {
+                    register_array_extents(args[i].name, var->m_type);
+                }
+                continue;
+            }
             for (size_t d = 0; d < arr->n_dims; d++) {
                 std::string dim_key = args[i].name + "__dim"
                     + std::to_string(d + 1);
@@ -4242,9 +4301,11 @@ public:
                                 && !ASRUtils::is_allocatable(arg_type);
                         }
                         if (formal_is_array) {
-                            src << ", ";
-                            emit_array_size_args_for_call(
-                                sc->m_args[i].m_value, fn, i);
+                            if (formal_has_size_param(fn, i)) {
+                                src << ", ";
+                                emit_array_size_args_for_call(
+                                    sc->m_args[i].m_value, fn, i);
+                            }
                         } else if (is_struct_type(arg_type)) {
                             emit_struct_member_args_interleaved(
                                 sc->m_args[i].m_value);
@@ -4792,10 +4853,12 @@ public:
                                     is_struct_type(arg_type);
                             }
                             if (formal_is_array) {
-                                src << ", ";
-                                emit_array_size_args_for_call(
-                                    fc->m_args[i].m_value,
-                                    fn, i);
+                                if (formal_has_size_param(fn, i)) {
+                                    src << ", ";
+                                    emit_array_size_args_for_call(
+                                        fc->m_args[i].m_value,
+                                        fn, i);
+                                }
                             } else if (formal_is_struct) {
                                 emit_struct_member_args_interleaved(
                                     fc->m_args[i].m_value);
