@@ -35,18 +35,50 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
 A launch whose argument shape is not handled yet is left untouched, and the
 LLVM backend expands it as before.
 */
-// Size of one array element in bytes, or 0 for element types the device code
-// generators do not lay out as plain scalars.
-static int element_byte_size(ASR::ttype_t *array_type) {
-    ASR::ttype_t *elem = ASRUtils::type_get_past_array(
-        ASRUtils::type_get_past_allocatable(
-            ASRUtils::type_get_past_pointer(array_type)));
-    if (ASR::is_a<ASR::Real_t>(*elem)) {
-        return ASR::down_cast<ASR::Real_t>(elem)->m_kind;
-    } else if (ASR::is_a<ASR::Integer_t>(*elem)) {
-        return ASR::down_cast<ASR::Integer_t>(elem)->m_kind;
+// A struct passed to a kernel is sized with SizeOfType, which lays it out as
+// an anonymous struct of its member types. Only structs whose members are
+// plain scalars and fixed size arrays are laid out that way, so anything else
+// (an extended type, character, allocatable or pointer members) is left to
+// the LLVM backend, which resolves the layout through the struct symbol.
+// Allocatable array members are also what the device code generators
+// decompose into extra flat buffers, which this pass does not build yet.
+static bool struct_is_plain(ASR::symbol_t *struct_sym) {
+    if (!struct_sym) return false;
+    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) return false;
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
+    if (st->m_parent) return false;
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
+        ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
+        if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) {
+            return false;
+        }
+        if (ASRUtils::is_array(type) &&
+                ASRUtils::get_fixed_size_of_array(type) <= 0) {
+            return false;
+        }
+        ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::Integer_t>(*base) &&
+                !ASR::is_a<ASR::Real_t>(*base) &&
+                !ASR::is_a<ASR::Logical_t>(*base)) {
+            return false;
+        }
     }
-    return 0;
+    return true;
+}
+
+// True when a value of this type can be handed to the runtime as a plain
+// block of bytes whose size SizeOfType computes correctly.
+static bool is_supported_buffer(ASR::expr_t *arg) {
+    ASR::ttype_t *base = ASRUtils::type_get_past_array(
+        ASRUtils::extract_type(ASRUtils::expr_type(arg)));
+    if (ASR::is_a<ASR::StructType_t>(*base)) {
+        return struct_is_plain(ASRUtils::get_struct_sym_from_struct_expr(arg));
+    }
+    return ASR::is_a<ASR::Integer_t>(*base) || ASR::is_a<ASR::Real_t>(*base)
+        || ASR::is_a<ASR::Logical_t>(*base);
 }
 
 static bool is_supported_scalar(ASR::ttype_t *type) {
@@ -63,30 +95,33 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 }
 
 // True when every argument of this launch has a shape the pass can expand.
+static std::string launch_reason;
+static bool no(const char *why) { launch_reason = why; return false; }
+
 static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
     ASR::GpuKernelFunction_t *kernel =
         ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
-    if (x.n_args != kernel->n_args) return false;
+    if (x.n_args != kernel->n_args) return no("arg-count");
     // Packing many buffers into one, and workspaces for variable-length
     // arrays, are not expanded here yet.
-    if (gpu_kernel_needs_buffer_packing(*kernel)) return false;
-    if (count_gpu_vla_workspaces(*kernel) > 0) return false;
+    if (gpu_kernel_needs_buffer_packing(*kernel)) return no("packed");
+    if (count_gpu_vla_workspaces(*kernel) > 0) return no("vla");
     for (size_t i = 0; i < x.n_args; i++) {
         ASR::expr_t *arg = x.m_args[i].m_value;
-        if (!arg) return false;
+        if (!arg) return no("null-arg");
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
             ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-        if (ASRUtils::is_array(arg_type)) {
-            if (element_byte_size(arg_type) == 0) return false;
-        } else if (ASR::is_a<ASR::StructType_t>(
-                *ASRUtils::extract_type(arg_type))) {
-            // Struct arguments are passed as a buffer of their own.
-            return false;
+        if (ASRUtils::is_array(arg_type) ||
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_type))) {
+            if (!is_supported_buffer(arg)) return no("buffer");
         } else {
-            if (!is_supported_scalar(arg_type)) return false;
-            if (!same_scalar_type(arg_type, kparam->m_type)) return false;
+            if (!is_supported_scalar(arg_type)) return no("scalar-type");
+            if (!same_scalar_type(arg_type, kparam->m_type)) {
+                return no("scalar-kind-mismatch");
+            }
         }
     }
     return true;
@@ -240,17 +275,20 @@ class DeviceLaunchExpandVisitor :
                 b.CPtr());
         }
 
-        ASR::expr_t* array_byte_size(const Location &loc, ASR::expr_t *arg,
-                int elem_size) {
+        // Number of bytes the runtime has to copy for one buffer argument.
+        ASR::expr_t* buffer_byte_size(const Location &loc, ASR::expr_t *arg) {
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::ttype_t *array_type = ASRUtils::type_get_past_allocatable(
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
-            int64_t n_elements = ASRUtils::get_fixed_size_of_array(array_type);
-            if (n_elements > 0) {
-                return b.i64(n_elements * elem_size);
+            if (!ASRUtils::is_array(type) ||
+                    ASRUtils::get_fixed_size_of_array(type) > 0) {
+                return ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, type,
+                    int64, nullptr));
             }
+            ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
             return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
-                b.i64(elem_size));
+                ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
+                    int64, nullptr)));
         }
 
         // True when the kernel takes this argument as an assumed shape array,
@@ -328,10 +366,11 @@ class DeviceLaunchExpandVisitor :
                 ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
                     ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
-                if (ASRUtils::is_array(arg_type)) {
+                if (ASRUtils::is_array(arg_type) ||
+                        ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::extract_type(arg_type))) {
                     buffers.push_back({address_of(loc, arg),
-                        array_byte_size(loc, arg,
-                            element_byte_size(arg_type))});
+                        buffer_byte_size(loc, arg)});
                 } else {
                     scalar_fields.push_back({std::string(kparam->m_name),
                         ASRUtils::extract_type(arg_type)});
@@ -470,7 +509,8 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     support.visit_TranslationUnit(unit);
     if (std::getenv("LFORTRAN_GPU_LAUNCH_REPORT")) {
         std::fprintf(stderr, "device_launch_expand: %s\n",
-            support.all_supported ? "expanded" : "left to the llvm backend");
+            support.all_supported ? "expanded"
+                : ("left to the llvm backend: " + launch_reason).c_str());
     }
     if (!support.all_supported) return;
     DeviceLaunchExpandVisitor v(al, unit);
