@@ -58,6 +58,10 @@
 #include <string>
 #include <sstream>
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
+
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
 
@@ -2034,6 +2038,28 @@ std::string find_program(const std::vector<std::string> &names,
     return "";
 }
 
+// The C compiler driver used when none was selected explicitly with
+// --linker/LFORTRAN_LINKER or the standard CC environment variable. The
+// choice is a fixed per-platform default so that LFortran never has to
+// search $PATH itself on every invocation; the shell resolves the name in
+// one step when the link command runs. LFortran objects can be linked by
+// any standard C compiler driver, so a different one can always be
+// selected explicitly.
+const char *default_c_driver()
+{
+#if defined(__APPLE__)
+    // Provided by the Xcode command line tools
+    return "clang";
+#elif defined(_WIN32)
+    // Used only for non-MSVC (MinGW) targets; the MSVC target is linked
+    // directly with `link`
+    return "gcc";
+#else
+    // Provided by the system gcc (e.g. the build-essential package)
+    return "cc";
+#endif
+}
+
 // infile is an object file
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
@@ -2195,62 +2221,102 @@ int link_executable(const std::vector<std::string> &infiles,
                 CC += "/";
             }
 
+            // TODO: Add support for msvc linker for Windows
+            // TODO: Add support for lld linker
+            // Select the C compiler driver driving the link, in order:
+            // --linker, LFORTRAN_LINKER, the standard CC variable (set by
+            // conda environments and honored by CMake and autotools), and
+            // finally the fixed per-platform default. The Metal backend
+            // compiles its Objective-C runtime with the same driver and
+            // must use clang; gcc cannot compile Objective-C .m files.
+            std::string driver;
             if (!linker.empty()) {
-                CC += linker;
+                driver = linker;
             } else if (char *env_linker = std::getenv("LFORTRAN_LINKER");
                     env_linker != nullptr && env_linker[0] != '\0') {
-                CC += env_linker;
+                driver = env_linker;
+            } else if (char *env_cc = std::getenv("CC");
+                    env_cc != nullptr && env_cc[0] != '\0') {
+                driver = env_cc;
+            } else if (compiler_options.gpu_backend == "metal") {
+                driver = "clang";
             } else {
-                // TODO: Add support for msvc linker for Windows
-                // TODO: Add support for lld linker
-                // No linker was requested explicitly; probe for an
-                // available C compiler driver. clang is tried first
-                // to preserve the historical default, but the object
-                // files emitted by LFortran can be linked by any
-                // standard C compiler driver.
-                std::string driver;
-                if (compiler_options.gpu_backend == "metal") {
-                    // The Metal backend compiles its Objective-C runtime
-                    // with the same driver, which must be clang: gcc
-                    // cannot compile Objective-C .m files.
-                    driver = find_program({"clang"}, CC);
-                } else {
-                    driver = find_program({"clang", "cc", "gcc"}, CC);
-                }
-                if (driver.empty()) {
-                    std::string searched = CC;
-                    if (!searched.empty() && searched.back() == '/') {
-                        searched.pop_back();
-                    }
-                    std::cerr << "No C compiler driver found for linking "
-                        "(searched for "
-                        << (compiler_options.gpu_backend == "metal"
-                                ? std::string("clang, which is required to "
-                                              "compile the Metal backend's "
-                                              "Objective-C runtime")
-                                : std::string("clang, cc, gcc"))
-                        << " in "
-                        << (searched.empty() ? std::string("$PATH")
-                                             : "'" + searched + "'")
-                        << "). LFortran needs a C compiler driver to link "
-                        "executables; install one (for example with "
-                        "`apt install build-essential`, the Xcode command "
-                        "line tools, or `conda install clang`), "
-                        "or point LFortran at one explicitly with "
-                        "--linker=<CC> / LFORTRAN_LINKER=<CC> and "
-                        "optionally --linker-path=<DIR> / "
-                        "LFORTRAN_LINKER_PATH=<DIR>." << std::endl;
-                    return 10;
-                }
-                CC += driver;
+                driver = default_c_driver();
             }
 
-            if (compiler_options.gpu_backend == "metal"
-                    && CC.find("clang") == std::string::npos) {
+            // The driver string may contain arguments in addition to the
+            // program name, e.g. `CC="ccache clang"` or `CC="gcc -m32"`;
+            // split it so the program name and clang detection work on
+            // tokens, not on the whole string.
+            std::istringstream driver_stream(driver);
+            std::vector<std::string> driver_tokens;
+            for (std::string token; driver_stream >> token;) {
+                driver_tokens.push_back(token);
+            }
+            if (driver_tokens.empty()) {
+                // `driver` was effectively empty (e.g. a whitespace-only
+                // `CC` value); fall back to the platform default so the
+                // link command is not malformed.
+                driver = default_c_driver();
+                driver_tokens.push_back(driver);
+            }
+
+            if (!CC.empty()) {
+                // A linker directory was requested explicitly; validate
+                // the selection here so that a wrong --linker-path fails
+                // with a clear error instead of a confusing shell message.
+                // Only the first token is the program name; the rest are
+                // arguments. Without a directory, the driver is resolved
+                // by the shell when the link command runs, so no $PATH
+                // scan is needed.
+                std::string searched = CC;
+                if (searched.back() == '/') {
+                    searched.pop_back();
+                }
+                if (find_program({driver_tokens[0]}, searched).empty()) {
+                    std::cerr << "No C compiler driver found for linking: '"
+                        << driver_tokens[0] << "' is not present in '"
+                        << searched
+                        << "'. Check --linker / LFORTRAN_LINKER and "
+                        "--linker-path / LFORTRAN_LINKER_PATH. LFortran "
+                        "needs a C compiler driver (for example clang, cc "
+                        "or gcc) to link executables; leave these options "
+                        "unset to use the CC environment variable or the "
+                        "default driver '"
+                        << default_c_driver() << "'." << std::endl;
+                    return 10;
+                }
+            }
+            CC += driver;
+
+            // True when a token of the driver is a clang program (clang,
+            // clang-14, `ccache clang`, ...), after stripping any directory
+            // from the token; an incidental "clang" inside a --linker-path
+            // directory name does not make the driver clang. On macOS the
+            // system `cc` is the clang driver (a symlink), so it counts as
+            // clang there too. Used for the clang-only behavior below: the
+            // Metal backend's Objective-C runtime, the -target flag and
+            // the clang OpenMP runtime.
+            bool driver_is_clang = false;
+            for (std::string token : driver_tokens) {
+                size_t slash = token.find_last_of("/\\");
+                if (slash != std::string::npos) {
+                    token = token.substr(slash + 1);
+                }
+                if (LCompilers::startswith(token, "clang")
+#ifdef __APPLE__
+                        || token == "cc"
+#endif
+                        ) {
+                    driver_is_clang = true;
+                    break;
+                }
+            }
+
+            if (compiler_options.gpu_backend == "metal" && !driver_is_clang) {
                 // The Metal backend compiles its Objective-C runtime (.m)
-                // with the resolved driver; only clang can compile
-                // Objective-C, so an explicitly selected other driver
-                // cannot work here.
+                // with the resolved driver, and only clang can compile
+                // Objective-C, so any other driver cannot work here.
                 std::cerr << "The Metal backend requires the clang driver "
                     "to compile its Objective-C runtime, but the selected "
                     "driver is '" << CC << "'. Use --linker=clang or "
@@ -2258,8 +2324,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 return 10;
             }
 
-            if (compiler_options.target != "" &&
-                    CC.find("clang" ) != std::string::npos) {
+            if (compiler_options.target != "" && driver_is_clang) {
                 options = " -target " + compiler_options.target;
             }
 
@@ -2296,7 +2361,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
-            if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
+            if (compiler_options.openmp && driver_is_clang) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
                 if (!openmp_shared_library.empty()) {
@@ -2396,6 +2461,23 @@ int link_executable(const std::vector<std::string> &infiles,
         int err = system(compile_cmd.c_str());
         if (err) {
             std::cerr << "The command '" + compile_cmd + "' failed." << std::endl;
+#ifndef _WIN32
+            if (WIFEXITED(err) && WEXITSTATUS(err) == 127) {
+                // Exit 127 is the shell's "command not found": the external
+                // command itself does not exist (the C compiler driver for
+                // the final link, emcc / WASI clang for WASM targets, ...),
+                // so report that precisely instead of only hinting at
+                // linker issues below.
+                std::cerr << "error: the linker/compiler command was not "
+                    "found. LFortran invokes an external command to produce "
+                    "the executable; for the LLVM backend the final link "
+                    "uses a C compiler driver (for example clang, cc or "
+                    "gcc), which can be selected with --linker=<CC>, "
+                    "LFORTRAN_LINKER=<CC> or the standard CC environment "
+                    "variable; WASM targets need their toolchain "
+                    "(EMSDK_PATH / WASI_SDK_PATH)." << std::endl;
+            }
+#endif
             std::cerr << "Tip: If there is a linker issue, switch the linker "
                 "using --linker=<CC> option or create an environment "
                 "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
@@ -2403,7 +2485,8 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cerr << "Also, if required use --linker-path=<PATH> or "
                 "`export LFORTRAN_LINKER_PATH=<PATH>`, where PATH has "
                 "location to look for the linker executable. By default "
-                "LFortran searches $PATH for clang, then cc, then gcc."
+                "LFortran uses the platform C compiler driver ('"
+                << default_c_driver() << "' on this platform)."
                 << std::endl;
             return 10;
         }
@@ -2413,50 +2496,48 @@ int link_executable(const std::vector<std::string> &infiles,
             // TODO: Replace the following hardcoded part
             // The debug line-information files used for line numbers in
             // runtime stacktraces are generated by external LLVM tools.
-            // If those are not available, warn and skip this step instead
+            // This step is optional: if it fails for any reason (the tools
+            // or Python are not installed, ...), warn and continue instead
             // of failing the whole compilation; the executable is still
             // built with the DWARF debug information emitted by LLVM.
-            std::string missing_tools;
-            if (find_program({"llvm-dwarfdump"}, "").empty()) {
-                missing_tools = "`llvm-dwarfdump`";
-            }
+            std::string cmd = "";
 #ifdef HAVE_LFORTRAN_MACHO
-            if (find_program({"dsymutil"}, "").empty()) {
-                if (!missing_tools.empty()) {
-                    missing_tools += " and ";
-                }
-                missing_tools += "`dsymutil` (which ships with the Xcode "
-                    "command line tools)";
-            }
-#endif
-            if (!missing_tools.empty()) {
-                std::cerr << "warning: skipping generation of debug line "
-                    "information requested by `-g`: " << missing_tools
-                    << " not found in $PATH. Install the LLVM tools (for "
-                    "example `conda install llvm-tools`) and recompile "
-                    "with `-g` to get line numbers in runtime stacktraces."
-                    << std::endl;
-            } else {
-                std::string cmd = "";
-#ifdef HAVE_LFORTRAN_MACHO
-                cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
-                    + outfile + ".dSYM > ";
+            cmd += "dsymutil " + outfile + " && llvm-dwarfdump --debug-line "
+                + outfile + ".dSYM > ";
 #else
-                cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
+            cmd += "llvm-dwarfdump --debug-line " + outfile + " > ";
 #endif
-                std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
-                cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
-                    + file_name + "_ldd.txt " + file_name + "_lines.txt "
-                    + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
-                    + file_name + "_lines.dat)";
-                int status = system(cmd.c_str());
-                if ( status != 0 ) {
-                    std::cerr << "Error in creating the files used to generate "
-                        "the debug information. This might be caused because either"
-                        " `llvm-dwarfdump` or `Python` are not available. "
-                        "Please activate the CONDA environment and compile again.\n";
-                    return status;
-                }
+            std::string dwarf_scripts_path = LCompilers::LFortran::get_dwarf_scripts_dir();
+            cmd += file_name + "_ldd.txt && (" + dwarf_scripts_path + "/dwarf_convert.py "
+                + file_name + "_ldd.txt " + file_name + "_lines.txt "
+                + file_name + "_lines.dat && " + dwarf_scripts_path + "/dat_convert.py "
+                + file_name + "_lines.dat)";
+            int status = system(cmd.c_str());
+            if ( status != 0 ) {
+                // Remove partial outputs the failed step may have created:
+                // the shell creates the `>` redirect file even when the
+                // external tool is missing, and dsymutil may already have
+                // produced the .dSYM bundle before a later step failed.
+                std::error_code ec;
+                std::filesystem::remove(file_name + "_ldd.txt", ec);
+                std::filesystem::remove(file_name + "_lines.txt", ec);
+                std::filesystem::remove(file_name + "_lines.dat", ec);
+#ifdef HAVE_LFORTRAN_MACHO
+                std::filesystem::remove_all(outfile + ".dSYM", ec);
+#endif
+                std::cerr << "warning: could not generate the debug line "
+                    "information requested by `-g`, continuing without it. "
+                    "This step needs the external LLVM tools "
+                    "(`llvm-dwarfdump`"
+#ifdef HAVE_LFORTRAN_MACHO
+                    ", `dsymutil` (which ships with the Xcode command line "
+                    "tools)"
+#endif
+                    ") and Python in $PATH. Install them (for example with "
+                    "`conda install llvm-tools`) and recompile with `-g` to "
+                    "get line numbers in runtime stacktraces. The "
+                    "executable itself was built successfully."
+                    << std::endl;
             }
         }
 #endif

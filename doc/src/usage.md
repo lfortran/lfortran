@@ -295,19 +295,23 @@ backends (`--backend=c`, `--backend=cpp`) compile the generated C/C++
 source with the driver from the `LFORTRAN_CC` environment variable
 (default `cc`).
 
-If no driver is selected explicitly, LFortran searches `$PATH` for the
-first executable among `clang`, `cc` and `gcc`, in this order (`clang` is
-preferred for historical reasons). This means that producing executables
-works with any installed C compiler, and on a system without any of the
-three drivers LFortran fails with an explicit, actionable error message
-instead of a shell error.
+If no driver is selected with `--linker` or `LFORTRAN_LINKER`, LFortran
+uses the standard `CC` environment variable if it is set (conda compiler
+environments set it, and CMake and autotools honor it), and otherwise a
+fixed per-platform default driver (`clang` on macOS, `gcc` on Windows,
+`cc` on Linux and other Unix systems, where it is normally provided by
+the system gcc). LFortran deliberately does not search `$PATH` for a
+driver on every invocation — the selected name is resolved by the shell
+when the link command runs; if it does not exist, LFortran reports that
+the linker command was not found and how to select a different one.
 
-The driver can be selected explicitly with the `--linker` option or the
-`LFORTRAN_LINKER` environment variable, and a non-standard directory
-containing it with `--linker-path` or `LFORTRAN_LINKER_PATH`:
+A non-standard directory containing the driver can be selected with
+`--linker-path` or `LFORTRAN_LINKER_PATH`; that directory is verified
+up front, so a misplaced `--linker-path` fails with an explicit,
+actionable error message instead of a shell error:
 
 ```
-lfortran hw.f90                      # first of clang, cc, gcc found in $PATH
+lfortran hw.f90                      # $CC if set, otherwise platform default
 lfortran hw.f90 --linker=gcc         # use gcc
 export LFORTRAN_LINKER=gcc
 lfortran hw.f90                      # same via environment variable
@@ -332,11 +336,12 @@ clang.
 When compiling with `-g`, LFortran additionally generates side files with
 line information used to print source line numbers in runtime stacktraces.
 This step uses the external LLVM tools `llvm-dwarfdump` (and `dsymutil` on
-macOS, which ships with the Xcode command line tools). If those tools are
-not in `$PATH`, LFortran prints a warning and skips this step — the
-executable is still built with the DWARF debug information emitted by
-LLVM, only the line numbers in runtime stacktraces are missing. Install
-the LLVM tools (for example `conda install llvm-tools`) to enable them.
+macOS, which ships with the Xcode command line tools) plus Python. This
+step is optional: if any of these tools are missing or the step otherwise
+fails, LFortran prints a warning and continues — the executable is still
+built with the DWARF debug information emitted by LLVM, only the line
+numbers in runtime stacktraces are missing. Install the LLVM tools (for
+example `conda install llvm-tools`) to enable them.
 
 ## Differences from other compilers
 

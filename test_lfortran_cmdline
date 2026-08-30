@@ -123,14 +123,37 @@ if [[ $FC == "lfortran" ]]; then
     ./a.out
 
     cd $(mktemp -d)
-    echo "Testing explicit error when no C compiler driver is available"
-    mkdir bin
-    ln -s "$(command -v lfortran)" bin/lfortran
-    if PATH="$(pwd)/bin" lfortran $f -o a.out 2> no_driver_err.txt; then
-        echo "Expected failure when no C compiler driver is in PATH"
+    echo "Testing driver selection via the standard CC environment variable"
+    CC=cc $FC $f -o a.out
+    [ -x "a.out" ]
+    ./a.out
+
+    cd $(mktemp -d)
+    echo "Testing a CC value with arguments (e.g. ccache-style wrappers)"
+    if ! CC="$(command -v cc) -Qunused-arguments" $FC $f -o a.out 2> cc_args_err.txt; then
+        echo "Expected success when CC contains the driver plus arguments"
+        cat cc_args_err.txt
+        exit 1
+    fi
+    [ -x "a.out" ]
+    ./a.out
+
+    cd $(mktemp -d)
+    echo "Testing explicit error when the linker is not in LFORTRAN_LINKER_PATH"
+    mkdir empty_dir
+    if LFORTRAN_LINKER_PATH="$(pwd)/empty_dir" LFORTRAN_LINKER=cc $FC $f -o a.out 2> no_driver_err.txt; then
+        echo "Expected failure when the linker is not present in LFORTRAN_LINKER_PATH"
         exit 1
     fi
     grep "No C compiler driver found" no_driver_err.txt
+
+    cd $(mktemp -d)
+    echo "Testing targeted error when the selected linker does not exist"
+    if LFORTRAN_LINKER=lfortran-nonexistent-driver-xyz $FC $f -o a.out 2> not_found_err.txt; then
+        echo "Expected failure when the selected linker does not exist"
+        exit 1
+    fi
+    grep "command was not found" not_found_err.txt
 fi
 
 echo "All tests succeeded"

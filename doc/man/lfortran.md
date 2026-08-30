@@ -62,7 +62,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
 - `--time-report`: Show compilation time report
 - `--static`: Create a static executable
-- `--linker TEXT`: Specify the linker (C compiler driver) to be used, e.g. clang, cc or gcc; by default $PATH is searched for clang, then cc, then gcc
+- `--linker TEXT`: Specify the linker (C compiler driver) to be used, e.g. clang, cc or gcc; defaults to the `CC` environment variable if set, otherwise the platform C compiler driver (clang on macOS, gcc on Windows, cc otherwise)
 - `--linker-path TEXT`: Use the linker from this path
 - `--no-warnings`: Turn off all warnings
 - `--no-style-suggestions`: Turn off style suggestions
