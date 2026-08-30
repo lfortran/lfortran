@@ -1,0 +1,526 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            implicit_interface_string_expr_arg:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            istart:
+                                (Variable
+                                    2
+                                    istart
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            istop:
+                                (Variable
+                                    2
+                                    istop
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            line:
+                                (Variable
+                                    2
+                                    line
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 200 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            text:
+                                (Variable
+                                    2
+                                    text
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            ustop:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            ustop_arg_0:
+                                                (Variable
+                                                    3
+                                                    ustop_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ustop
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 3 ustop_arg_0)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            ustop_many:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            ustop_many_arg_0:
+                                                (Variable
+                                                    4
+                                                    ustop_many_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            ustop_many_arg_1:
+                                                (Variable
+                                                    4
+                                                    ustop_many_arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    ustop_many
+                                    (FunctionType
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (Array
+                                            (String 1 () AssumedLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 ustop_many_arg_0)
+                                    (Var 4 ustop_many_arg_1)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            words:
+                                (Variable
+                                    2
+                                    words
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        PointerArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    implicit_interface_string_expr_arg
+                    (FunctionType
+                        [(String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        (String 1 (IntegerConstant 200 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        (Integer 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 text)
+                    (Var 2 line)
+                    (Var 2 istart)
+                    (Var 2 istop)]
+                    [(SubroutineCall
+                        2 ustop
+                        ()
+                        [((IntrinsicElementalFunction
+                            StringConcat
+                            [(StringConstant
+                                "Invalid "
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 text)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )]
+                            0
+                            (String 1 () DeferredLength DescriptorString)
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 ustop
+                        ()
+                        [((IntrinsicElementalFunction
+                            StringConcat
+                            [(IntrinsicElementalFunction
+                                StringConcat
+                                [(IntrinsicElementalFunction
+                                    StringConcat
+                                    [(StringConstant
+                                        "Invalid "
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (IntrinsicElementalFunction
+                                        StringTrim
+                                        [(IntrinsicElementalFunction
+                                            Adjustl
+                                            [(Var 2 text)]
+                                            0
+                                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ()
+                                        )]
+                                        0
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        ()
+                                    )]
+                                    0
+                                    (String 1 () DeferredLength DescriptorString)
+                                    ()
+                                )
+                                (StringConstant
+                                    " option: "
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )]
+                                0
+                                (String 1 () DeferredLength DescriptorString)
+                                ()
+                            )
+                            (StringSection
+                                (Var 2 line)
+                                (Var 2 istart)
+                                (Var 2 istop)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (String 1 (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 2 istop)
+                                        Sub
+                                        (Var 2 istart)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ) ExpressionLength DescriptorString)
+                                ()
+                            )]
+                            0
+                            (String 1 () DeferredLength DescriptorString)
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 ustop
+                        ()
+                        [((IntrinsicElementalFunction
+                            StringConcat
+                            [(StringSection
+                                (Var 2 line)
+                                (Var 2 istart)
+                                (Var 2 istop)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (String 1 (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 2 istop)
+                                        Sub
+                                        (Var 2 istart)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ) ExpressionLength DescriptorString)
+                                ()
+                            )
+                            (StringConstant
+                                " "
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            0
+                            (String 1 () DeferredLength DescriptorString)
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 ustop
+                        ()
+                        [((IntrinsicElementalFunction
+                            StringConcat
+                            [(IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 text)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                            (IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 line)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )]
+                            0
+                            (String 1 () DeferredLength DescriptorString)
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 ustop_many
+                        ()
+                        [((IntrinsicElementalFunction
+                            StringConcat
+                            [(IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 text)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                            (StringConstant
+                                " "
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )]
+                            0
+                            (String 1 () DeferredLength DescriptorString)
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (IntrinsicElementalFunction
+                                StringConcat
+                                [(Var 2 words)
+                                (IntrinsicElementalFunction
+                                    StringTrim
+                                    [(Var 2 text)]
+                                    0
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
+                                    ()
+                                )]
+                                0
+                                (Array
+                                    (String 1 () DeferredLength DescriptorString)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    PointerArray
+                                )
+                                ()
+                            )
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (String 1 () DeferredLength DescriptorString)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                DescriptorArray
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)
