@@ -117,7 +117,19 @@ struct GpuStructMemberBuffer {
     // that extends another keeps the parent as field 0 and its own
     // components follow it.
     int field_index = -1;
+    // Rank of the component.  A component of rank two or more needs its
+    // extents on the device to linearize an index, so the sizes buffer
+    // carries one entry per dimension per element; see
+    // `gpu_struct_member_sizes_name`.
+    size_t rank = 0;
 };
+
+// Rank of an allocatable array component of a kernel argument.
+inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
+    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*inner)) return 0;
+    return ASR::down_cast<ASR::Array_t>(inner)->n_dims;
+}
 
 // The derived type of a kernel argument that is an array of one, or nullptr
 // when the argument is not such an array.
@@ -170,6 +182,7 @@ inline std::vector<GpuStructMemberBuffer> gpu_struct_member_buffers(
             }
         }
         if (entry.field_index < 0) return {};
+        entry.rank = gpu_struct_member_rank(entry.var);
         result.push_back(entry);
     }
     return result;
@@ -191,6 +204,14 @@ inline std::string gpu_struct_member_offsets_name(const std::string &arg,
     return "__offsets_" + arg + "_" + member;
 }
 
+// The sizes buffer holds the *extents* of the component, one entry per
+// dimension per element, in dimension order: element `k` of a rank `R`
+// component occupies entries `k*R .. k*R + R - 1`.  A rank-1 component
+// therefore keeps one entry per element, which is that element's total
+// number of elements, exactly as before; for a higher rank the total is
+// the product of the R entries.  Carrying the extents rather than only
+// the total is what lets the shader linearize `a(i)%m(p,q)`, which needs
+// the extent of every dimension but the last.
 inline std::string gpu_struct_member_sizes_name(const std::string &arg,
         const std::string &member) {
     return "__sizes_" + arg + "_" + member;

@@ -22719,6 +22719,14 @@ public:
                                 }
                             }
                             std::vector<llvm::Value*> dps, szs;
+                            // Extents of every dimension of the
+                            // component, per element.  They go to the
+                            // device in the sizes buffer so that the
+                            // shader can linearize an index into a
+                            // component of rank two or more.
+                            std::vector<std::vector<llvm::Value*>>
+                                dim_exts;
+                            size_t mem_rank = mem_entry.rank;
                             llvm::Value *tot =
                                 llvm::ConstantInt::get(i64, 0);
                             for (int64_t k = 0;
@@ -22745,6 +22753,24 @@ public:
                                         dpp);
                                 raw = builder->CreatePointerCast(
                                     raw, i8_ptr);
+                                if (vla_member_sz > 0
+                                        || runtime_sourced) {
+                                    // A component the kernel writes to
+                                    // is given a freshly built rank-one
+                                    // descriptor below, so its extents
+                                    // are only known for rank one.
+                                    if (mem_rank > 1) {
+                                        throw CodeGenError(
+                                            "gpu offload: a rank-"
+                                            + std::to_string(mem_rank)
+                                            + " allocatable component `"
+                                            + mem_entry.name
+                                            + "` that the kernel "
+                                            "allocates cannot be "
+                                            "marshalled to the device",
+                                            x.base.base.loc);
+                                    }
+                                }
                                 if (vla_member_sz > 0) {
                                     // Kernel writes to this member.
                                     // The descriptor pointer in the
@@ -22914,6 +22940,38 @@ public:
                                                 context)),
                                         extent_ptr);
                                     dps.push_back(new_dp);
+                                } else if (mem_rank > 1) {
+                                    // The element count of a component
+                                    // of rank two or more is the product
+                                    // of its extents; they are read out
+                                    // of the descriptor here and handed
+                                    // to the device as well, so that the
+                                    // shader can linearize an index.
+                                    llvm::Value *dda =
+                                        arr_descr->get_pointer_to_dimension_descriptor_array(
+                                            desc_type, dp);
+                                    std::vector<llvm::Value*> ev;
+                                    llvm::Value *ne64 =
+                                        llvm::ConstantInt::get(i64, 1);
+                                    for (size_t d = 0;
+                                            d < mem_rank; d++) {
+                                        llvm::Value *ext =
+                                            arr_descr->get_dimension_size(
+                                                dda,
+                                                llvm::ConstantInt::get(
+                                                    i32, d));
+                                        ev.push_back(
+                                            builder->CreateSExtOrTrunc(
+                                                ext,
+                                                llvm::Type::getInt32Ty(
+                                                    context)));
+                                        ne64 = builder->CreateMul(ne64,
+                                            builder->CreateSExtOrTrunc(
+                                                ext, i64));
+                                    }
+                                    dim_exts.push_back(ev);
+                                    szs.push_back(ne64);
+                                    dps.push_back(raw);
                                 } else {
                                     llvm::Value *ne =
                                         arr_descr->get_array_size(
@@ -23021,10 +23079,18 @@ public:
                             emit_gpu_buffer(flat, tot_bytes);
                             // Set offsets buffer
                             emit_gpu_buffer(off_buf, off_sz);
-                            // Set sizes buffer (per-element sizes)
+                            // Set sizes buffer: the extents of the
+                            // component, one entry per dimension per
+                            // element.  A rank-one component keeps one
+                            // entry per element, its element count.
+                            int64_t sz_stride =
+                                (int64_t)std::max<size_t>(mem_rank, 1);
+                            llvm::Value *szs_bytes =
+                                llvm::ConstantInt::get(i64,
+                                    total_elements * sz_stride * 4);
                             llvm::Value *sz_buf =
                                 builder->CreateCall(
-                                    mfn, {off_sz});
+                                    mfn, {szs_bytes});
                             llvm::Value *sz_ptr =
                                 builder->CreatePointerCast(
                                     sz_buf,
@@ -23032,20 +23098,26 @@ public:
                                         context)->getPointerTo());
                             for (int64_t k = 0;
                                     k < total_elements; k++) {
-                                llvm::Value *sz32 =
-                                    builder->CreateTrunc(
-                                        szs[k],
-                                        llvm::Type::getInt32Ty(
-                                            context));
-                                builder->CreateStore(sz32,
-                                    builder->CreateGEP(
-                                        llvm::Type::getInt32Ty(
-                                            context),
-                                        sz_ptr,
-                                        llvm::ConstantInt::get(
-                                            i32, k)));
+                                for (int64_t d = 0;
+                                        d < sz_stride; d++) {
+                                    llvm::Value *sz32 =
+                                        mem_rank > 1
+                                        ? dim_exts[k][d]
+                                        : builder->CreateTrunc(
+                                            szs[k],
+                                            llvm::Type::getInt32Ty(
+                                                context));
+                                    builder->CreateStore(sz32,
+                                        builder->CreateGEP(
+                                            llvm::Type::getInt32Ty(
+                                                context),
+                                            sz_ptr,
+                                            llvm::ConstantInt::get(
+                                                i32,
+                                                k * sz_stride + d)));
+                                }
                             }
-                            emit_gpu_buffer(sz_buf, off_sz);
+                            emit_gpu_buffer(sz_buf, szs_bytes);
                             // Record write-back info for copying
                             // data from the flat buffer back to
                             // struct member descriptors after
@@ -23171,13 +23243,25 @@ public:
                             llvm::Value *me_size_val =
                                 llvm::ConstantInt::get(i64,
                                     me_size);
-                            // Allocate sizes and offsets buffers
+                            // Allocate sizes and offsets buffers.
+                            // The sizes buffer carries the extents of
+                            // the component, one entry per dimension
+                            // per element, so that the shader can
+                            // linearize an index into a component of
+                            // rank two or more.
+                            size_t mem_rank = mem_entry.rank;
+                            int64_t sz_stride =
+                                (int64_t)std::max<size_t>(mem_rank, 1);
                             llvm::Value *buf_bytes =
                                 builder->CreateMul(n_elems_64,
                                     llvm::ConstantInt::get(i64, 4));
+                            llvm::Value *szs_bytes =
+                                builder->CreateMul(n_elems_64,
+                                    llvm::ConstantInt::get(
+                                        i64, sz_stride * 4));
                             llvm::Value *sz_buf =
                                 builder->CreateCall(mfn,
-                                    {buf_bytes});
+                                    {szs_bytes});
                             llvm::Value *sz_ptr =
                                 builder->CreatePointerCast(sz_buf,
                                     llvm::Type::getInt32Ty(
@@ -23245,23 +23329,61 @@ public:
                                         mem_desc_type
                                             ->getPointerTo(),
                                         fp);
-                                llvm::Value *ne =
-                                    arr_descr->get_array_size(
-                                        mem_desc_type, dp,
-                                        nullptr, 4);
-                                llvm::Value *ne64 =
-                                    builder->CreateSExtOrTrunc(
+                                llvm::Value *ne64;
+                                // Store the extents of the element.
+                                // A component of rank two or more has
+                                // its element count from the product of
+                                // its extents, which the device needs
+                                // anyway to linearize an index.
+                                if (mem_rank > 1) {
+                                    llvm::Value *dda =
+                                        arr_descr->get_pointer_to_dimension_descriptor_array(
+                                            mem_desc_type, dp);
+                                    llvm::Value *base32 =
+                                        builder->CreateMul(kv32,
+                                            llvm::ConstantInt::get(
+                                                i32, sz_stride));
+                                    ne64 = llvm::ConstantInt::get(i64, 1);
+                                    for (size_t d = 0;
+                                            d < mem_rank; d++) {
+                                        llvm::Value *ext =
+                                            arr_descr->get_dimension_size(
+                                                dda,
+                                                llvm::ConstantInt::get(
+                                                    i32, d));
+                                        builder->CreateStore(
+                                            builder->CreateSExtOrTrunc(
+                                                ext,
+                                                llvm::Type::getInt32Ty(
+                                                    context)),
+                                            builder->CreateGEP(
+                                                llvm::Type::getInt32Ty(
+                                                    context),
+                                                sz_ptr,
+                                                builder->CreateAdd(
+                                                    base32,
+                                                    llvm::ConstantInt::get(
+                                                        i32, d))));
+                                        ne64 = builder->CreateMul(ne64,
+                                            builder->CreateSExtOrTrunc(
+                                                ext, i64));
+                                    }
+                                } else {
+                                    llvm::Value *ne =
+                                        arr_descr->get_array_size(
+                                            mem_desc_type, dp,
+                                            nullptr, 4);
+                                    ne64 = builder->CreateSExtOrTrunc(
                                         ne, i64);
-                                // Store size
-                                llvm::Value *ne32 =
-                                    builder->CreateTrunc(ne64,
-                                        llvm::Type::getInt32Ty(
-                                            context));
-                                builder->CreateStore(ne32,
-                                    builder->CreateGEP(
-                                        llvm::Type::getInt32Ty(
-                                            context),
-                                        sz_ptr, kv32));
+                                    builder->CreateStore(
+                                        builder->CreateTrunc(ne64,
+                                            llvm::Type::getInt32Ty(
+                                                context)),
+                                        builder->CreateGEP(
+                                            llvm::Type::getInt32Ty(
+                                                context),
+                                            sz_ptr, kv32));
+                                }
                                 // Accumulate total
                                 llvm::Value *cur =
                                     llvm_utils->CreateLoad2(
@@ -23359,19 +23481,33 @@ public:
                                         dpp);
                                 raw = builder->CreatePointerCast(
                                     raw, i8_ptr);
-                                // Get per-element size from
-                                // sizes buffer
-                                llvm::Value *esz =
-                                    llvm_utils->CreateLoad2(
-                                        llvm::Type::getInt32Ty(
-                                            context),
-                                        builder->CreateGEP(
+                                // Element count of this element, the
+                                // product of the extents the sizes
+                                // buffer holds for it.
+                                llvm::Value *base32 =
+                                    builder->CreateMul(kv32,
+                                        llvm::ConstantInt::get(
+                                            i32, sz_stride));
+                                llvm::Value *esz64 =
+                                    llvm::ConstantInt::get(i64, 1);
+                                for (int64_t d = 0;
+                                        d < sz_stride; d++) {
+                                    llvm::Value *ext =
+                                        llvm_utils->CreateLoad2(
                                             llvm::Type::getInt32Ty(
                                                 context),
-                                            sz_ptr, kv32));
-                                llvm::Value *esz64 =
-                                    builder->CreateSExtOrTrunc(
-                                        esz, i64);
+                                            builder->CreateGEP(
+                                                llvm::Type::getInt32Ty(
+                                                    context),
+                                                sz_ptr,
+                                                builder->CreateAdd(
+                                                    base32,
+                                                    llvm::ConstantInt::get(
+                                                        i32, d))));
+                                    esz64 = builder->CreateMul(esz64,
+                                        builder->CreateSExtOrTrunc(
+                                            ext, i64));
+                                }
                                 // Copy data
                                 llvm::Value *boff =
                                     builder->CreateMul(run,
@@ -23408,7 +23544,7 @@ public:
                             // Set offsets buffer
                             emit_gpu_buffer(off_buf, buf_bytes);
                             // Set sizes buffer
-                            emit_gpu_buffer(sz_buf, buf_bytes);
+                            emit_gpu_buffer(sz_buf, szs_bytes);
                         }
                     }
             } else if (ASR::is_a<ASR::StructType_t>(
