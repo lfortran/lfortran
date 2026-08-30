@@ -1620,10 +1620,21 @@ class PRIFInterface {
 
         void make_static_struct_broadcast(Allocator &al, const Location &loc, ASR::expr_t *payload,
                     ASR::expr_t *source_image, ASR::expr_t *stat, ASR::expr_t *errmsg,
-                   SymbolTable * /*fallback_scope*/, PRIFInterface & /*prif*/, Vec<ASR::stmt_t*> &body)
+                   Vec<ASR::stmt_t*> &body)
         {
             ASR::ttype_t *payload_type = ASRUtils::expr_type(payload);
             int64_t s0_size = ASRUtils::get_type_byte_size(payload_type);
+            ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(payload));
+            if (struct_sym != nullptr && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                auto [size, _align] = ASRUtils::compute_struct_type_size_align(
+                    ASR::down_cast<ASR::Struct_t>(struct_sym));
+                (void)_align;
+                if (size > 0) {
+                    int64_t n_elements = ASRUtils::get_fixed_size_of_array(payload_type);
+                    s0_size = n_elements > 0 ? size * n_elements : size;
+                }
+            }
 
             ASR::ttype_t *int8_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
             ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
@@ -1702,6 +1713,7 @@ class PRIFInterface {
                                            ASR::expr_t *errmsg = nullptr,
                                            ASR::expr_t *errmsg_alloc = nullptr) {
             ASR::symbol_t *sub = get_or_create_prif_co_broadcast_cptr_sub(loc);
+            select_errmsg_arg(errmsg, errmsg_alloc);
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 6);
 
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = a_ptr;
@@ -2985,7 +2997,7 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                         if (ASR::is_a<ASR::StructType_t>(*a_type)) {
                             replacer.prif.make_static_struct_broadcast(
                                 replacer.al, x->base.base.loc, a, source_image, stat, errmsg,
-                                replacer.current_scope, replacer.prif, body
+                                body
                             );
                         } else {
                             body.push_back(replacer.al, replacer.prif.make_prif_co_broadcast_call(

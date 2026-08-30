@@ -2128,12 +2128,7 @@ namespace CoBroadcast {
              + std::to_string(x.n_args),
             x.base.base.loc, diagnostics);
 
-        ASRUtils::require_impl(
-            ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_complex(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_args[0])) ||
+        ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ||
             is_static_pod_type(ASRUtils::expr_type(x.m_args[0])),
             "First argument must be of integer, real, complex, character, logical or static derived type",
             x.base.base.loc, diagnostics);
@@ -2142,9 +2137,7 @@ namespace CoBroadcast {
     static inline ASR::asr_t* create_CoBroadcast(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
-        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type)
-                && !ASRUtils::is_complex(*arg_type) && !ASRUtils::is_character(*arg_type)
-                && !ASRUtils::is_logical(*arg_type) && !is_static_pod_type(arg_type)) {
+        if (!ASRUtils::is_character(*arg_type) && !is_static_pod_type(arg_type)) {
             diag.add(diag::Diagnostic(
                 "`a` argument of `co_broadcast` must currently be of integer, real, complex, character, logical or static derived type, but got " +
                     ASRUtils::type_to_str_fortran_expr(arg_type, args[0]) +
