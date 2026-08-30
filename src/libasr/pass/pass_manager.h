@@ -59,6 +59,9 @@
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_partition.h>
+#include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -118,10 +121,14 @@ namespace LCompilers {
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"gpu_offload", &pass_replace_gpu_offload},
+            {"device_partition", &pass_device_partition},
+            {"device_launch_expand", &pass_device_launch_expand},
+            {"gpu_memory_space", &pass_gpu_memory_space},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"array_struct_temporary", &pass_array_struct_temporary},
             {"coarray", &pass_replace_coarray}
         };
@@ -135,8 +142,9 @@ namespace LCompilers {
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           diag::Diagnostics &diagnostics,
                            double &cummulative_time_taken_by_passes_in_microseconds) {
+            pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -255,6 +263,10 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
+                // Everything a kernel reaches is device code, and the
+                // passes below have to know which routines those are.
+                "device_partition",
+                "gpu_device_allocatable",
                 "array_struct_temporary",
                 "coarray",
                 "transform_optional_argument_functions",
@@ -269,6 +281,13 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // A pass above can add a routine of its own, such as the
+                // shared lowering of an intrinsic, so the partition is
+                // taken again before the device passes below read it.
+                "device_partition",
+                // A routine's array result becomes an argument here, so a
+                // device routine's result needs the shape of that argument.
+                "gpu_device_allocatable",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
@@ -277,6 +296,17 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A device routine's address spaces are settled here, once
+                // every array of device code has the type it is emitted
+                // with, and before the code generators read those types.
+                "gpu_memory_space",
+                // Expanding a kernel launch reads the kernel signature and
+                // body, so it has to run once both are in the shape the
+                // device code generators see: after pass_array_by_data has
+                // turned array extents into explicit kernel arguments, and
+                // after array_dim_intrinsics_update has rewritten the size
+                // intrinsics that read them.
+                "device_launch_expand",
                 "do_loops",
                 "while_else",
                 "unused_functions",

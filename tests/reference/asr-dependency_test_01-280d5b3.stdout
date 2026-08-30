@@ -114,6 +114,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Allocatable
@@ -165,6 +166,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Allocatable
@@ -196,6 +198,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 self)
@@ -529,6 +532,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 dependency_node_t
@@ -688,6 +692,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Allocatable
@@ -812,6 +817,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Allocatable
@@ -863,6 +869,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Allocatable
@@ -894,6 +901,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 self)

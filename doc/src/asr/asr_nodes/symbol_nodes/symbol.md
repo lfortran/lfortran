@@ -24,7 +24,6 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
-    | GpuKernelFunction(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, access access, location start_name, location end_name)
 ```
 
 ### Arguments
@@ -44,8 +43,8 @@ because the parent is reachable from a symbol table it owns.
 
 The symbols divide into:
 
-- program units: [Program](Program.md), [Module](Module.md),
-  [Function](Function.md) and [GpuKernelFunction](GpuKernelFunction.md);
+- program units: [Program](Program.md), [Module](Module.md) and
+  [Function](Function.md);
 - type definitions: [Struct](Struct.md), [Enum](Enum.md) and [Union](Union.md),
   with [StructMethodDeclaration](StructMethodDeclaration.md) for a type-bound
   procedure;

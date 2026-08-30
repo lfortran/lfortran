@@ -29,7 +29,6 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
-    | GpuKernelFunction(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, access access, location start_name, location end_name)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -236,8 +235,8 @@ ttype
     | CPtr()
     | SymbolicExpression()
     | TypeParameter(identifier param)
-    | Array(ttype type, dimension* dims, array_physical_type physical_type)
-    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
+    | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
+    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 storage_type = Default | Save | Parameter
@@ -247,6 +246,8 @@ deftype = Implementation | Interface | ImplicitInterface
 presence = Required | Optional
 pass_attr = NotMethod | Pass | NoPass
 abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
+exec_space = Host | Device | HostDevice | Kernel
+memory_space = Global | Shared | Constant | Thread
 dimension = (expr? start, expr? length)
 codimension = (expr? start, expr? end, codimension_type end_star)
 codimension_type = CodimensionExpr | CodimensionStar

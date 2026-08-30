@@ -350,7 +350,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
-        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
@@ -504,10 +504,23 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.gpu_offload_metal = true;
         } else if (compiler_options.gpu_backend == "cuda") {
             compiler_options.po.gpu_offload_cuda = true;
+        } else if (compiler_options.gpu_backend == "cuda_cpu") {
+            // Same ASR pass and same device code generation as cuda; only the
+            // toolchain that compiles and runs the device code differs.
+            compiler_options.gpu_backend = "cuda";
+            compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.gpu_cpu_emulation = true;
+            if (compiler_options.device_compiler == "nvcc") {
+                // Not overridden by --device-compiler, so use a host
+                // compiler. The generated device code is C++, so the driver
+                // has to be the C++ one: `cc` is a C compiler on some
+                // toolchains and then has no C++ front end to call at all.
+                compiler_options.device_compiler = "c++";
+            }
         } else if (!compiler_options.gpu_backend.empty()) {
             throw lc::LCompilersException(
                 "The GPU backend `" + compiler_options.gpu_backend
-                + "` is not supported; supported values: metal, cuda"
+                + "` is not supported; supported values: metal, cuda, cuda_cpu"
             );
         }
 

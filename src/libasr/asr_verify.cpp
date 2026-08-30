@@ -726,6 +726,57 @@ public:
         }
     }
 
+    static ASR::memory_spaceType array_memory_space(ASR::ttype_t *type) {
+        ASR::ttype_t *base =
+            ASRUtils::type_get_past_allocatable_pointer(type);
+        if (ASR::is_a<ASR::Array_t>(*base)) {
+            return ASR::down_cast<ASR::Array_t>(base)->m_memory_space;
+        }
+        return ASR::memory_spaceType::Global;
+    }
+
+    // Whether a scope belongs to code the host runs, which has one flat
+    // memory and so knows only the Global space. Everything device_partition
+    // did not take is host code, the clones the memory space pass makes for
+    // the device included.
+    static bool is_host_only_scope(SymbolTable *symtab) {
+        while (symtab) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
+                if (ASRUtils::runs_on_device(sym)) return false;
+            }
+            symtab = symtab->parent;
+        }
+        return true;
+    }
+
+    // The memory space of an array is part of a routine's interface, so the
+    // signature and the dummy it describes have to name the same one. A code
+    // generator that qualifies a parameter from one and indexes it from the
+    // other would otherwise read the wrong memory.
+    void verify_argument_memory_spaces(const Function_t &x) {
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+        for (size_t i = 0; i < x.n_args && i < ftype->n_arg_types; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+            if (!arg_sym || !ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::ttype_t *declared =
+                ASR::down_cast<ASR::Variable_t>(arg_sym)->m_type;
+            if (!declared || !ftype->m_arg_types[i]) continue;
+            if (!ASRUtils::is_array(declared) ||
+                    !ASRUtils::is_array(ftype->m_arg_types[i])) {
+                continue;
+            }
+            require(array_memory_space(declared)
+                        == array_memory_space(ftype->m_arg_types[i]),
+                "Argument " + std::to_string(i + 1) + " of `"
+                    + std::string(x.m_name) + "` is declared in a different "
+                    "memory space than its signature gives it");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -770,6 +821,7 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
+        verify_argument_memory_spaces(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
@@ -887,32 +939,6 @@ public:
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
-    }
-
-    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        require(x.m_symtab != nullptr,
-            "GpuKernelFunction::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == parent_symtab,
-            "GpuKernelFunction::m_symtab->parent is not the right parent");
-        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
-            "GpuKernelFunction::m_symtab::asr_owner must point to it");
-        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
-            "GpuKernelFunction::m_symtab->counter must be unique");
-        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        for (auto &a : x.m_symtab->get_scope()) {
-            LCOMPILERS_ASSERT(a.second);
-            this->visit_symbol(*a.second);
-        }
-        visit_ttype(*x.m_function_signature);
-        for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-        }
-        current_symtab = parent_symtab;
     }
 
     template <typename T>
@@ -1219,6 +1245,13 @@ public:
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
+        if (x.m_type && ASRUtils::is_array(x.m_type)) {
+            require(array_memory_space(x.m_type)
+                        == ASR::memory_spaceType::Global
+                    || !is_host_only_scope(symtab),
+                "Variable '" + std::string(x.m_name) + "' is host code, so "
+                "its array cannot live in a device memory space");
+        }
 
         ASR::asr_t* asr_owner = symtab->asr_owner;
         bool is_module = false, is_struct = false;
@@ -1452,7 +1485,6 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
-            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -1469,8 +1501,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -1483,9 +1514,6 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
-                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
-                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
-                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -1537,8 +1565,6 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
-            } else if( gkfm ) {
-                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -2279,6 +2305,19 @@ public:
             _processing_unbounded_pointer_array = _processing_unbounded_pointer_array_copy;
             _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
+    }
+
+    // TODO: also verify that a Device function only calls Device
+    // or HostDevice functions. That invariant does not hold yet: a kernel body
+    // is copied verbatim from the host loop, so it still calls Host functions
+    // until the device call-graph closure pass exists.
+    void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
+            "GpuKernelLaunch::m_kernel '" +
+                std::string(ASRUtils::symbol_name(x.m_kernel)) +
+                "' must be a function that runs on the device");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {

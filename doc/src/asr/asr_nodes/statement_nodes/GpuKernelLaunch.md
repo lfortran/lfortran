@@ -15,7 +15,7 @@ GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
 
 | Argument | Description |
 |----------|-------------|
-| `kernel` | the [GpuKernelFunction](../symbol_nodes/GpuKernelFunction.md) to run. |
+| `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
 | `grid_size` | the number of blocks to launch. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
@@ -32,6 +32,10 @@ the backend says otherwise, returns without waiting for them.
 
 The execution configuration is part of the node rather than of the kernel,
 because the same kernel is normally launched with different sizes.
+
+The kernel is an ordinary [Function](../symbol_nodes/Function.md); what makes
+it launchable is that its signature has `exec_space = Kernel`, and a kernel
+has no result. See [exec_space](../enum_nodes/exec_space.md).
 
 ## Examples
 
@@ -70,4 +74,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[GpuKernelFunction](../symbol_nodes/GpuKernelFunction.md), [GpuSync](GpuSync.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)
+[Function](../symbol_nodes/Function.md), [exec_space](../enum_nodes/exec_space.md), [GpuSync](GpuSync.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)

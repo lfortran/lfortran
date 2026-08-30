@@ -7,28 +7,16 @@
 #include <omp.h>
 #include <math.h>
 
+// dim3/uint3, the built-in thread coordinates and the execution space
+// qualifiers are shared with the cuda_cpu GPU-offload emulation.
+#include "cuda_cpu_device.h"
+
 // CUDA Runtime API Emulation for CPU
 typedef enum {
     cudaSuccess = 0,
     cudaErrorMemoryAllocation = 2,
     cudaErrorInvalidValue = 11
 } cudaError_t;
-
-// Device execution configuration
-typedef struct {
-    unsigned int x, y, z;
-} dim3;
-
-// Thread and block index emulation
-typedef struct {
-    unsigned int x, y, z;
-} uint3;
-
-// Global thread identifiers (CPU emulation)
-extern __thread uint3 threadIdx;
-extern __thread uint3 blockIdx;
-extern __thread dim3 blockDim;
-extern __thread dim3 gridDim;
 
 // Memory management API
 cudaError_t cudaMalloc(void **devPtr, size_t size);
@@ -47,9 +35,6 @@ cudaError_t cudaLaunchKernel(void *func, dim3 gridDim, dim3 blockDim,
 
 // Error handling
 const char* cudaGetErrorString(cudaError_t error);
-
-// Device synchronization
-#define __syncthreads() _Pragma("omp barrier")
 
 // Memory allocation tracking structure
 typedef struct {
