@@ -2231,7 +2231,13 @@ int link_executable(const std::vector<std::string> &infiles,
                     cu_out.close();
                 }
                 // Compile the kernel .cu with the device compiler. When
-                // emulating, the device code is ordinary host C++.
+                // emulating, the device code is ordinary host C++, and the
+                // language has to be named explicitly because no host
+                // compiler knows the .cu suffix. The emulation is built
+                // without OpenMP, so the threads of a block run one after
+                // another and a __syncthreads() reports that it cannot be
+                // honoured; the device code and the runtime below have to
+                // agree on that, so neither is given -fopenmp.
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
                 std::string runtime_include = " -I" + runtime_library_dir
                     + "/../libasr/runtime";
@@ -2247,7 +2253,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
 
                 // Compile the GPU runtime. The CPU emulation uses its own
-                // implementation of the same C API.
+                // implementation of the same C API, and is C rather than C++,
+                // so the language is named explicitly for the C++ driver that
+                // compiled the kernel.
                 std::string cuda_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/"
                     + (emulate_cpu ? "lfortran_gpu_cpu.c"
@@ -2268,9 +2276,21 @@ int link_executable(const std::vector<std::string> &infiles,
 
                 if (emulate_cpu) {
                     // Everything is host code, so the ordinary host linker
-                    // that was set up above does the link.
+                    // that was set up above does the link. That driver is a C
+                    // one, so the C++ standard library the device translation
+                    // unit was compiled against has to be named here, and the
+                    // libraries the two objects need have to follow them:
+                    // a linker that resolves in command line order looks no
+                    // further back than the object that asks.
+                    bool is_macos = compiler_options.platform
+                            == LCompilers::Platform::macOS_Intel
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_ARM
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_PowerPC;
                     compile_cmd += " " + cuda_kernel_obj
-                        + " " + cuda_runtime_obj;
+                        + " " + cuda_runtime_obj
+                        + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
                 } else {
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.

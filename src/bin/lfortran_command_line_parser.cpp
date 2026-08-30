@@ -511,8 +511,11 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.gpu_offload_cuda = true;
             compiler_options.gpu_cpu_emulation = true;
             if (compiler_options.device_compiler == "nvcc") {
-                // Not overridden by --device-compiler, so use a host compiler.
-                compiler_options.device_compiler = "cc";
+                // Not overridden by --device-compiler, so use a host
+                // compiler. The generated device code is C++, so the driver
+                // has to be the C++ one: `cc` is a C compiler on some
+                // toolchains and then has no C++ front end to call at all.
+                compiler_options.device_compiler = "c++";
             }
         } else if (!compiler_options.gpu_backend.empty()) {
             throw lc::LCompilersException(
