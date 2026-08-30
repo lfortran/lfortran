@@ -6990,7 +6990,8 @@ public:
             ASR::make_FunctionType_t(al, loc,
                 arg_types.p, arg_types.n, nullptr,
                 ASR::abiType::Source, ASR::deftypeType::Implementation,
-                nullptr, false, false, false, false, false, nullptr, 0, false));
+                nullptr, false, false, false, false, false, nullptr, 0, false,
+                ASR::exec_spaceType::Device));
 
         // 6. Create GpuKernelFunction
         ASR::asr_t *kernel_func = ASR::make_GpuKernelFunction_t(al, loc,
