@@ -2257,10 +2257,15 @@ public:
         for (size_t i = 0; i < fn->n_args; i++) {
             if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) return false;
         }
-        // Only Variables: a nested scope (BLOCK, ASSOCIATE) or contained
-        // procedure would have to be re-homed into the caller's scope,
-        // which this splice does not do.
+        // Only Variables and ExternalSymbols: a nested scope (BLOCK,
+        // ASSOCIATE) or contained procedure would have to be re-homed
+        // into the caller's scope, which this splice does not do.
         for (auto &item : fn->m_symtab->get_scope()) {
+            // An ExternalSymbol only names an entity owned by another
+            // module -- a derived-type component, a type, a procedure.
+            // It resolves through that module from wherever the cloned
+            // body ends up, so it needs no re-homing.
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) return false;
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                 item.second);
@@ -2428,6 +2433,9 @@ public:
         for (auto &item : fn->m_symtab->get_scope()) {
             ASR::symbol_t *sym = item.second;
             if (dummies.count(sym)) continue;
+            // ExternalSymbols keep resolving through their owning
+            // module; the cloned body may reference them as they are.
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) continue;
             if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
             std::string name = block_scope->get_unique_name(v->m_name);
