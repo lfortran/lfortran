@@ -148,6 +148,30 @@ if [[ $FC == "lfortran" ]]; then
         exit 1
     fi
     grep "command was not found" not_found_err.txt
+
+    cd $(mktemp -d)
+    echo "Testing --openmp link flags are passed to a non-clang named driver"
+    # A driver stub records its arguments and succeeds, so the link command
+    # can be inspected without a real OpenMP runtime being installed. The
+    # stub is deliberately not called `clang`/`cc`: -lomp must be added
+    # regardless of the driver name, since --openmp-lib-dir points at it.
+    cat > drv.sh <<'EOF'
+#!/bin/sh
+for a in "$@"; do echo "$a" >> "$LFORTRAN_TEST_DRV_ARGS"; done
+exit 0
+EOF
+    chmod +x drv.sh
+    mkdir omplib
+    export LFORTRAN_TEST_DRV_ARGS="$(pwd)/drv_args.txt"
+    touch "$LFORTRAN_TEST_DRV_ARGS"
+    if ! LFORTRAN_LINKER="$(pwd)/drv.sh" $FC $f -o a.out --openmp "--openmp-lib-dir=$(pwd)/omplib"; then
+        echo "Expected the driver stub link to succeed"
+        exit 1
+    fi
+    grep -x -- "-lomp" "$LFORTRAN_TEST_DRV_ARGS"
+    grep -x -- "-L$(pwd)/omplib" "$LFORTRAN_TEST_DRV_ARGS"
+    grep -x -- "-Wl,-rpath,$(pwd)/omplib" "$LFORTRAN_TEST_DRV_ARGS"
+    unset LFORTRAN_TEST_DRV_ARGS
 fi
 
 echo "All tests succeeded"

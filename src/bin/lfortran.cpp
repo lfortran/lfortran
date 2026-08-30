@@ -2292,8 +2292,7 @@ int link_executable(const std::vector<std::string> &infiles,
             // directory name does not make the driver clang. On macOS the
             // system `cc` is the clang driver (a symlink), so it counts as
             // clang there too. Used for the clang-only behavior below: the
-            // Metal backend's Objective-C runtime, the -target flag and
-            // the clang OpenMP runtime.
+            // Metal backend's Objective-C runtime and the -target flag.
             bool driver_is_clang = false;
             for (std::string token : driver_tokens) {
                 size_t slash = token.find_last_of("/\\");
@@ -2358,7 +2357,12 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
-            if (compiler_options.openmp && driver_is_clang) {
+            // Deliberately not gated on the driver: -lomp is resolved from
+            // the directory given by --openmp-lib-dir (e.g. conda's
+            // llvm-openmp), which any link driver can consume; gating here
+            // silently dropped OpenMP linking with non-clang default
+            // drivers.
+            if (compiler_options.openmp) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
                 if (!openmp_shared_library.empty()) {
