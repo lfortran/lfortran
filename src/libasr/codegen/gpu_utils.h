@@ -30,13 +30,20 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
-// One buffer parameter of a generated device kernel, in the order the host
-// runtime binds it. A dialect that has to unpack the runtime's argument array
-// again -- the CPU emulation of CUDA does -- reads the list back.
+// How the host runtime's argument slot holds one kernel parameter.
+enum class GpuKernelParamKind {
+    Buffer,           // slot points at the buffer pointer
+    StructReference,  // slot points at the pointer to the struct
+    ScalarStruct,     // slot points at the packed scalar struct itself
+};
+
+// One parameter of a generated device kernel, in the order the host runtime
+// binds it. A dialect that has to unpack the runtime's argument array again --
+// the CPU emulation of CUDA does -- reads the list back.
 struct GpuKernelParam {
     std::string type;   // element type, or the struct name for a reference
     std::string name;
-    bool is_reference;  // bound as a struct reference rather than a pointer
+    GpuKernelParamKind kind;
 };
 
 // Classify kernel arguments into buffer (array/struct) and scalar categories.

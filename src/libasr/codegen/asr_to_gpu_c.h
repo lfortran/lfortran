@@ -374,7 +374,7 @@ public:
                 if (vla_it != current_vla_infos.end()) {
                     src << get_indent() << global_prefix() << elem_type
                         << "* " << vname << " = __vla_" << vname
-                        << " + __thread_id * (";
+                        << " + " << dialect.global_thread_id() << " * (";
                     int64_t total_const_size = 1;
                     bool all_const = true;
                     for (size_t d = 0; d < vla_it->dims.size(); d++) {
@@ -2316,7 +2316,7 @@ public:
                                 elem_type_str =
                                     gpu_type(mem_arr->m_type);
                             }
-                            src << ", device "
+                            src << ", " << global_prefix()
                                 << elem_type_str
                                 << "* " << data_name;
                             func_array_data_params[key] = data_name;
@@ -3042,7 +3042,8 @@ public:
         if (packed_mode) {
             src << "    " << global_prefix() << "char* __packed_arrays"
                 << dialect.buffer_attr(buffer_idx++);
-            kernel_params.push_back({"char", "__packed_arrays", false});
+            kernel_params.push_back(
+                {"char", "__packed_arrays", GpuKernelParamKind::Buffer});
             has_prev = true;
         } else {
             for (size_t i = 0; i < args.size(); i++) {
@@ -3055,7 +3056,8 @@ public:
                     src << global_prefix() << elem_type << "* "
                         << args[i].name << dialect.buffer_attr(buffer_idx++);
                     kernel_params.push_back(
-                        {elem_type, args[i].name, false});
+                        {elem_type, args[i].name,
+                         GpuKernelParamKind::Buffer});
                     has_prev = true;
                     // For array-of-struct args, emit additional buffers
                     // for allocatable array members' data and offsets
@@ -3102,7 +3104,8 @@ public:
                                     << dialect.buffer_attr(
                                         buffer_idx++);
                                 kernel_params.push_back(
-                                    {et, data_name, false});
+                                    {et, data_name,
+                                     GpuKernelParamKind::Buffer});
                                 std::string off_name =
                                     "__offsets_" + args[i].name + "_"
                                     + st->m_members[m];
@@ -3112,7 +3115,8 @@ public:
                                     << dialect.buffer_attr(
                                         buffer_idx++);
                                 kernel_params.push_back(
-                                    {"int", off_name, false});
+                                    {"int", off_name,
+                                     GpuKernelParamKind::Buffer});
                                 std::string sizes_name =
                                     "__sizes_" + args[i].name + "_"
                                     + st->m_members[m];
@@ -3122,7 +3126,8 @@ public:
                                     << dialect.buffer_attr(
                                         buffer_idx++);
                                 kernel_params.push_back(
-                                    {"int", sizes_name, false});
+                                    {"int", sizes_name,
+                                     GpuKernelParamKind::Buffer});
                             }
                         }
                     }
@@ -3132,7 +3137,8 @@ public:
                     src << global_prefix() << args[i].struct_name << "& "
                         << args[i].name << dialect.buffer_attr(buffer_idx++);
                     kernel_params.push_back(
-                        {args[i].struct_name, args[i].name, true});
+                        {args[i].struct_name, args[i].name,
+                         GpuKernelParamKind::StructReference});
                     has_prev = true;
                 }
             }
@@ -3143,6 +3149,8 @@ public:
             if (has_prev) src << ",\n";
             dialect.emit_scalar_args_param(src, scalar_struct_name,
                 buffer_idx++);
+            kernel_params.push_back({scalar_struct_name, "__scalar_args",
+                GpuKernelParamKind::ScalarStruct});
             has_prev = true;
         }
 
@@ -3187,7 +3195,8 @@ public:
                 << "* __vla_" << current_vla_infos[v].var_name
                 << dialect.buffer_attr(buffer_idx++);
             kernel_params.push_back({elem_type_str,
-                "__vla_" + current_vla_infos[v].var_name, false});
+                "__vla_" + current_vla_infos[v].var_name,
+                GpuKernelParamKind::Buffer});
             has_prev = true;
         }
 
@@ -3195,8 +3204,6 @@ public:
 
         src << ")\n{\n";
         indent_level++;
-
-        dialect.emit_kernel_body_prologue(src, get_indent());
 
         // Unpack scalar args from the struct into local variables
         for (auto &sa : scalar_args) {
@@ -3432,8 +3439,7 @@ public:
         indent_level--;
         src << "}\n\n";
 
-        dialect.emit_kernel_epilogue(src, name, kernel_params,
-            has_scalar_struct ? scalar_struct_name : std::string());
+        dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
     void visit_stmt(ASR::stmt_t *stmt) {
@@ -4195,7 +4201,8 @@ public:
                         src << get_indent() << global_prefix()
                             << elem_type_str << "* " << vname
                             << " = __vla_" << vname
-                            << " + __thread_id * ";
+                            << " + " << dialect.global_thread_id()
+                            << " * ";
                         if (vla_it->dims.size() == 1) {
                             if (vla_it->dims[0].is_constant) {
                                 src << vla_it->dims[0].constant_value;
@@ -4569,7 +4576,8 @@ public:
             }
             case ASR::exprType::RealConstant: {
                 ASR::RealConstant_t *c = ASR::down_cast<ASR::RealConstant_t>(expr);
-                src << double_to_scientific(c->m_r);
+                src << dialect.real_literal(c->m_r,
+                    ASRUtils::extract_kind_from_ttype_t(c->m_type));
                 break;
             }
             case ASR::exprType::LogicalConstant: {
@@ -5108,15 +5116,15 @@ public:
                 break;
             }
             case ASR::exprType::GpuThreadIndex: {
-                src << "__thread_id";
+                src << dialect.thread_index();
                 break;
             }
             case ASR::exprType::GpuBlockIndex: {
-                src << "0";
+                src << dialect.block_index();
                 break;
             }
             case ASR::exprType::GpuBlockSize: {
-                src << "0";
+                src << dialect.block_size();
                 break;
             }
             case ASR::exprType::RealSqrt: {

@@ -48,6 +48,20 @@ struct MetalDialect {
         src << "    uint __thread_id [[thread_position_in_grid]]";
     }
 
+    // Every real is single precision, so a literal needs no suffix to say
+    // which precision it is.
+    std::string real_literal(double value, int /*kind*/) const {
+        return double_to_scientific(value);
+    }
+
+    // The grid position already accounts for the block, so a kernel that
+    // asks for its block coordinates is asking about a grid Metal does not
+    // divide up: the block is the whole grid and its index is zero.
+    std::string thread_index() const { return "__thread_id"; }
+    std::string global_thread_id() const { return "__thread_id"; }
+    std::string block_index() const { return "0"; }
+    std::string block_size() const { return "0"; }
+
     std::string uint_type() const {
         return "uint";
     }
@@ -60,13 +74,9 @@ struct MetalDialect {
             << buffer_attr(buffer_index);
     }
 
-    void emit_kernel_body_prologue(std::stringstream & /*src*/,
-            const std::string & /*indent*/) const {}
-
     void emit_kernel_epilogue(std::stringstream & /*src*/,
             const std::string & /*kernel_name*/,
-            const std::vector<GpuKernelParam> & /*params*/,
-            const std::string & /*scalar_struct_name*/) const {}
+            const std::vector<GpuKernelParam> & /*params*/) const {}
 
     void emit_translation_unit_epilogue(std::stringstream & /*src*/,
             const std::vector<std::string> & /*kernel_names*/) const {}
