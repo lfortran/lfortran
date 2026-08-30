@@ -2199,21 +2199,25 @@ int link_executable(const std::vector<std::string> &infiles,
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
-                // Collect CUDA kernel source. In single-invocation mode
-                // it's in gpu_cuda_source; in separate compilation it's
-                // saved as a sidecar file next to each .o file.
-                std::string cuda_source = compiler_options.gpu_cuda_source;
-                if (cuda_source.empty()) {
-                    for (auto &s : infiles) {
-                        std::string sidecar = s + ".cuda.cu";
-                        std::ifstream f(sidecar);
-                        if (f.good()) {
-                            std::string content(
-                                (std::istreambuf_iterator<char>(f)),
-                                std::istreambuf_iterator<char>());
-                            cuda_source += content;
-                        }
+                // Collect CUDA kernel source. Every object file carries the
+                // device source of its own translation unit in a sidecar, so
+                // reading all of them is what picks up a kernel that lives in
+                // a module compiled separately. Only a link that finds no
+                // sidecar at all falls back to the source this invocation
+                // generated.
+                std::string cuda_source;
+                for (auto &s : infiles) {
+                    std::string sidecar = s + ".cuda.cu";
+                    std::ifstream f(sidecar);
+                    if (f.good()) {
+                        std::string content(
+                            (std::istreambuf_iterator<char>(f)),
+                            std::istreambuf_iterator<char>());
+                        cuda_source += content;
                     }
+                }
+                if (cuda_source.empty()) {
+                    cuda_source = compiler_options.gpu_cuda_source;
                 }
 
                 // Write CUDA kernel source to a temp .cu file
