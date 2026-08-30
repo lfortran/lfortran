@@ -166,6 +166,10 @@ public:
     // that point into array sections.
     std::map<std::string, std::string> ptr_section_sizes;
 
+    // The same, one entry per ranged dimension, for a routine that needs the
+    // section's extents rather than its total size.
+    std::map<std::string, std::vector<std::string>> ptr_section_dim_sizes;
+
     // Tracks pointer variables that are associated with local
     // (thread-space) arrays rather than device buffer arrays.
     std::set<std::string> ptr_to_local_alloc;
@@ -1347,6 +1351,7 @@ public:
         // Section size is the product of range extents.
         std::stringstream size_ss;
         bool first_size = true;
+        last_section_dim_sizes.clear();
         src << arr_name << " + ";
         bool first_dim = true;
         std::string stride = "1";
@@ -1387,6 +1392,7 @@ public:
                 if (!first_size) size_ss << " * ";
                 first_size = false;
                 size_ss << dim_size;
+                last_section_dim_sizes.push_back(dim_size);
             }
             // Update stride for next dimension
             if (arr && d < arr->n_dims) {
@@ -1425,6 +1431,11 @@ public:
 
     std::string last_section_size;
 
+    // The extent of each ranged dimension of the section last rendered by
+    // emit_array_section_pointer, so that a routine the section is passed to
+    // can be given them one by one.
+    std::vector<std::string> last_section_dim_sizes;
+
     // Renders an expression to Metal source without disturbing the output
     // being built.
     std::string expr_str(ASR::expr_t *e) {
@@ -1451,6 +1462,19 @@ public:
             if (!arr->m_dims[d].m_length) return false;
         }
         return true;
+    }
+
+    // True when an allocatable dummy carries no extents of its own, so the
+    // routine has to be given them as arguments. An allocatable reaches the
+    // device as a bare pointer, exactly like any other array dummy, and a
+    // descriptor it could read its shape from does not exist there.
+    static bool allocatable_needs_extent_params(ASR::ttype_t *type) {
+        if (!ASRUtils::is_allocatable(type)) return false;
+        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(type);
+        if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+        if (arr->n_dims == 0) return false;
+        return !array_extents_are_explicit(type);
     }
 
     // Registers the extents of an array parameter, read from the type
@@ -1567,7 +1591,8 @@ public:
         if (fn && arg_idx < fn->n_args) {
             ASR::Variable_t *farg = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_args[arg_idx])->m_v);
-            ASR::ttype_t *ftype = farg->m_type;
+            ASR::ttype_t *ftype = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(farg->m_type));
             if (ASR::is_a<ASR::Array_t>(*ftype)) {
                 ASR::Array_t *farr = ASR::down_cast<ASR::Array_t>(ftype);
                 if (farr->m_physical_type
@@ -1589,6 +1614,17 @@ public:
         emit_array_size_expr(actual_arg);
     }
 
+    // Emit the extents an allocatable dummy needs, one per dimension, at a
+    // call site.
+    void emit_allocatable_extent_args(ASR::expr_t *actual_arg,
+            ASR::Function_t *fn, size_t arg_idx) {
+        ASR::Array_t *farr = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::symbol_type(ASR::down_cast<ASR::Var_t>(
+                    fn->m_args[arg_idx])->m_v)));
+        emit_per_dim_sizes_for_call(actual_arg, farr);
+    }
+
     // Emit per-dimension size arguments at a call site for a
     // DescriptorArray formal parameter with null dimension lengths.
     void emit_per_dim_sizes_for_call(ASR::expr_t *actual_arg,
@@ -1599,7 +1635,8 @@ public:
                 actual_arg)->m_arg;
         }
         ASR::ttype_t *atype = ASRUtils::expr_type(actual_arg);
-        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(atype);
+        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(atype));
         bool first_dim = true;
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
@@ -1615,8 +1652,12 @@ public:
                         ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
                     auto dit = func_array_size_params.find(
                         vname + "__dim" + std::to_string(d + 1));
+                    auto sect = ptr_section_dim_sizes.find(vname);
                     if (dit != func_array_size_params.end()) {
                         src << dit->second;
+                    } else if (sect != ptr_section_dim_sizes.end()
+                            && d < sect->second.size()) {
+                        src << sect->second[d];
                     } else if (local_alloc_arrays.count(vname)) {
                         auto ait = alloc_array_sizes.find(vname);
                         if (ait != alloc_array_sizes.end()) {
@@ -2332,6 +2373,25 @@ public:
                     << metal_type(arg->m_type) << "* "
                     << arg->m_name;
                 alloc_pointer_params.insert(std::string(arg->m_name));
+                // An allocatable dummy reaches the device as a bare pointer
+                // too, so its extents have to travel with it just like those
+                // of any other array dummy.
+                if (allocatable_needs_extent_params(arg->m_type)) {
+                    ASR::Array_t *aarr = ASR::down_cast<ASR::Array_t>(
+                        ASRUtils::type_get_past_allocatable(arg->m_type));
+                    std::string aname(arg->m_name);
+                    std::string total;
+                    for (size_t d = 0; d < aarr->n_dims; d++) {
+                        std::string dim_name = "__size_" + aname + "_dim"
+                            + std::to_string(d + 1);
+                        src << ", int " << dim_name;
+                        func_array_size_params[aname + "__dim"
+                            + std::to_string(d + 1)] = dim_name;
+                        total += total.empty()
+                            ? dim_name : (" * " + dim_name);
+                    }
+                    func_array_size_params[aname] = "(" + total + ")";
+                }
             } else {
                 src << metal_type(arg->m_type) << " " << arg->m_name;
             }
@@ -2550,6 +2610,7 @@ public:
         std::string name(x.m_name);
         local_alloc_arrays.clear();
         ptr_section_sizes.clear();
+        ptr_section_dim_sizes.clear();
 
         // Analyze blocks in the kernel body for VLAs (arrays with
         // non-constant dimensions) using the shared GPU utility.
@@ -4268,6 +4329,14 @@ public:
                                 emit_array_size_args_for_call(
                                     sc->m_args[i].m_value, fn, i);
                             }
+                        } else if (fn && i < fn->n_args
+                                && allocatable_needs_extent_params(
+                                    ASRUtils::symbol_type(
+                                        ASR::down_cast<ASR::Var_t>(
+                                            fn->m_args[i])->m_v))) {
+                            src << ", ";
+                            emit_allocatable_extent_args(
+                                sc->m_args[i].m_value, fn, i);
                         } else if (is_struct_type(arg_type)) {
                             emit_struct_member_args_interleaved(
                                 sc->m_args[i].m_value);
@@ -4304,6 +4373,8 @@ public:
                         ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
                     if (!last_section_size.empty()) {
                         ptr_section_sizes[tgt_name] = last_section_size;
+                        ptr_section_dim_sizes[tgt_name] =
+                            last_section_dim_sizes;
                     }
                     // For pointer-to-local-alloc associations, record
                     // the allocatable's size for later use
@@ -4821,6 +4892,14 @@ public:
                                         fc->m_args[i].m_value,
                                         fn, i);
                                 }
+                            } else if (fn && i < fn->n_args
+                                    && allocatable_needs_extent_params(
+                                        ASRUtils::symbol_type(
+                                            ASR::down_cast<ASR::Var_t>(
+                                                fn->m_args[i])->m_v))) {
+                                src << ", ";
+                                emit_allocatable_extent_args(
+                                    fc->m_args[i].m_value, fn, i);
                             } else if (formal_is_struct) {
                                 emit_struct_member_args_interleaved(
                                     fc->m_args[i].m_value);
@@ -5158,7 +5237,8 @@ public:
         // stride_0 = 1, stride_1 = dim[0], stride_2 = dim[0]*dim[1], ...
         // Strides are built as string expressions to handle variable dims.
         ASR::Array_t *arr = nullptr;
-        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(arr_type);
+        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(arr_type));
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             arr = ASR::down_cast<ASR::Array_t>(inner);
         }
@@ -5199,8 +5279,20 @@ public:
                             ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
                     }
                 } else if (!arr_var_name.empty()) {
-                    len_str = "__size_" + arr_var_name + "_dim"
-                        + std::to_string(d + 1);
+                    // The extent is an argument of the routine, or, for a
+                    // pointer into a section, the extent of that section.
+                    auto pit = func_array_size_params.find(arr_var_name
+                        + "__dim" + std::to_string(d + 1));
+                    auto sit = ptr_section_dim_sizes.find(arr_var_name);
+                    if (pit != func_array_size_params.end()) {
+                        len_str = pit->second;
+                    } else if (sit != ptr_section_dim_sizes.end()
+                            && d < sit->second.size()) {
+                        len_str = sit->second[d];
+                    } else {
+                        len_str = "__size_" + arr_var_name + "_dim"
+                            + std::to_string(d + 1);
+                    }
                 }
                 if (stride == "1") {
                     stride = len_str;
