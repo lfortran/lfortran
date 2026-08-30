@@ -123,16 +123,10 @@ if [[ $FC == "lfortran" ]]; then
     ./a.out
 
     cd $(mktemp -d)
-    echo "Testing driver selection via the standard CC environment variable"
-    CC=cc $FC $f -o a.out
-    [ -x "a.out" ]
-    ./a.out
-
-    cd $(mktemp -d)
-    echo "Testing a CC value with arguments (e.g. ccache-style wrappers)"
-    if ! CC="$(command -v cc) -Qunused-arguments" $FC $f -o a.out 2> cc_args_err.txt; then
-        echo "Expected success when CC contains the driver plus arguments"
-        cat cc_args_err.txt
+    echo "Testing an LFORTRAN_LINKER value with arguments (e.g. ccache-style wrappers)"
+    if ! LFORTRAN_LINKER="$(command -v cc) -pipe" $FC $f -o a.out 2> linker_args_err.txt; then
+        echo "Expected success when LFORTRAN_LINKER contains the driver plus arguments"
+        cat linker_args_err.txt
         exit 1
     fi
     [ -x "a.out" ]

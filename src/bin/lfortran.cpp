@@ -2039,12 +2039,14 @@ std::string find_program(const std::vector<std::string> &names,
 }
 
 // The C compiler driver used when none was selected explicitly with
-// --linker/LFORTRAN_LINKER or the standard CC environment variable. The
-// choice is a fixed per-platform default so that LFortran never has to
-// search $PATH itself on every invocation; the shell resolves the name in
-// one step when the link command runs. LFortran objects can be linked by
-// any standard C compiler driver, so a different one can always be
-// selected explicitly.
+// --linker/LFORTRAN_LINKER. The choice is a fixed per-platform default so
+// that LFortran never has to search $PATH itself on every invocation; the
+// shell resolves the name in one step when the link command runs. LFortran
+// objects can be linked by any standard C compiler driver, so a different
+// one can always be selected explicitly. The standard CC variable is
+// deliberately not consulted: build tools and CMake export CC values (full
+// toolchain-internal paths, command arguments, cross compilers) that fit
+// their own context, not LFortran's final link step.
 const char *default_c_driver()
 {
 #if defined(__APPLE__)
@@ -2224,20 +2226,16 @@ int link_executable(const std::vector<std::string> &infiles,
             // TODO: Add support for msvc linker for Windows
             // TODO: Add support for lld linker
             // Select the C compiler driver driving the link, in order:
-            // --linker, LFORTRAN_LINKER, the standard CC variable (set by
-            // conda environments and honored by CMake and autotools), and
-            // finally the fixed per-platform default. The Metal backend
-            // compiles its Objective-C runtime with the same driver and
-            // must use clang; gcc cannot compile Objective-C .m files.
+            // --linker, LFORTRAN_LINKER, and finally the fixed per-platform
+            // default (clang for the Metal backend, which compiles its
+            // Objective-C runtime with the same driver). The standard CC
+            // environment variable is not used: see default_c_driver().
             std::string driver;
             if (!linker.empty()) {
                 driver = linker;
             } else if (char *env_linker = std::getenv("LFORTRAN_LINKER");
                     env_linker != nullptr && env_linker[0] != '\0') {
                 driver = env_linker;
-            } else if (char *env_cc = std::getenv("CC");
-                    env_cc != nullptr && env_cc[0] != '\0') {
-                driver = env_cc;
             } else if (compiler_options.gpu_backend == "metal") {
                 driver = "clang";
             } else {
@@ -2281,8 +2279,7 @@ int link_executable(const std::vector<std::string> &infiles,
                         "--linker-path / LFORTRAN_LINKER_PATH. LFortran "
                         "needs a C compiler driver (for example clang, cc "
                         "or gcc) to link executables; leave these options "
-                        "unset to use the CC environment variable or the "
-                        "default driver '"
+                        "unset to use the default driver '"
                         << default_c_driver() << "'." << std::endl;
                     return 10;
                 }
@@ -2472,9 +2469,8 @@ int link_executable(const std::vector<std::string> &infiles,
                     "found. LFortran invokes an external command to produce "
                     "the executable; for the LLVM backend the final link "
                     "uses a C compiler driver (for example clang, cc or "
-                    "gcc), which can be selected with --linker=<CC>, "
-                    "LFORTRAN_LINKER=<CC> or the standard CC environment "
-                    "variable; WASM targets need their toolchain "
+                    "gcc), which can be selected with --linker=<CC> or "
+                    "LFORTRAN_LINKER=<CC>; WASM targets need their toolchain "
                     "(EMSDK_PATH / WASI_SDK_PATH)." << std::endl;
             }
 #endif

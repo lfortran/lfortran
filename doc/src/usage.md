@@ -296,14 +296,16 @@ source with the driver from the `LFORTRAN_CC` environment variable
 (default `cc`).
 
 If no driver is selected with `--linker` or `LFORTRAN_LINKER`, LFortran
-uses the standard `CC` environment variable if it is set (conda compiler
-environments set it, and CMake and autotools honor it), and otherwise a
-fixed per-platform default driver (`clang` on macOS, `gcc` on Windows,
-`cc` on Linux and other Unix systems, where it is normally provided by
-the system gcc). LFortran deliberately does not search `$PATH` for a
-driver on every invocation — the selected name is resolved by the shell
-when the link command runs; if it does not exist, LFortran reports that
-the linker command was not found and how to select a different one.
+uses a fixed per-platform default driver (`clang` on macOS, `gcc` on
+Windows MinGW targets, `cc` on Linux and other Unix systems, where it is
+normally provided by the system gcc). LFortran deliberately does not
+search `$PATH` for a driver on every invocation and does not consult the
+standard `CC` environment variable — build tools and CMake often export
+`CC` values (toolchain-internal paths, extra flags, cross compilers) that
+belong to their own context and are not valid link drivers for LFortran.
+The selected name is resolved by the shell when the link command runs;
+if it does not exist, LFortran reports that the linker command was not
+found and how to select a different one.
 
 A non-standard directory containing the driver can be selected with
 `--linker-path` or `LFORTRAN_LINKER_PATH`; that directory is verified
@@ -311,10 +313,12 @@ up front, so a misplaced `--linker-path` fails with an explicit,
 actionable error message instead of a shell error:
 
 ```
-lfortran hw.f90                      # $CC if set, otherwise platform default
+lfortran hw.f90                      # platform default driver
 lfortran hw.f90 --linker=gcc         # use gcc
 export LFORTRAN_LINKER=gcc
 lfortran hw.f90                      # same via environment variable
+export LFORTRAN_LINKER="ccache clang"
+lfortran hw.f90                      # wrappers and extra arguments work
 export LFORTRAN_LINKER_PATH=/usr/local/bin
 export LFORTRAN_LINKER=gcc-13
 lfortran hw.f90                      # use /usr/local/bin/gcc-13
