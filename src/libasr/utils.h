@@ -72,7 +72,6 @@ struct PassOptions {
     bool enable_cpython = false;
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
-    bool enable_gpu_offloading = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
     bool time_report = false;

@@ -221,18 +221,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             execute_process(COMMAND lfortran ${extra_args} --backend=mlir
                 ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "mlir_omp")
-            execute_process(COMMAND lfortran ${extra_args} --backend=mlir
-                --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib
-                --mlir-gpu-offloading
-                ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "mlir_llvm_omp")
-            execute_process(COMMAND lfortran ${extra_args} --backend=llvm
-                --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib
-                --mlir-gpu-offloading
-                ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "metal")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=metal ${extra_args}>)
@@ -286,7 +274,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -377,10 +365,7 @@ endmacro(COMPILE)
 # x86           --- compile to x86 binary directly
 # wasm          --- compile to WASM binary directly
 # mlir          --- generate mlir, convert to llvm ir and compile to binary
-# mlir_omp      --- generate mlir with OpenMP, convert to llvm ir and compile to binary
 # llvm_single_invocation --- compile all sources in a single LFortran invocation
-# mlir_llvm_omp --- generate mlir for a module with OpenMP, convert and link
-#                   it with the existing llvm ir and compile to binary
 
 # `reduce` is not supported by GFortran yet:
 # RUN(NAME doconcurrentloop_02 LABELS gfortran)
@@ -4289,7 +4274,7 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fort
 
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
-RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir mlir_omp mlir_llvm_omp)
+RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir)
 RUN(NAME do_concurrent_02 LABELS llvm_omp llvm)
 RUN(NAME do_concurrent_03 LABELS llvm_omp)
 RUN(NAME do_concurrent_04 LABELS llvm_omp)
