@@ -263,6 +263,9 @@ public:
     std::set<std::string> func_thread_local_arrays;
 
     std::string current_func_addr_space = "device";
+    // Address space chosen for each variable-address-space argument of
+    // the function overload currently being emitted.
+    std::map<std::string, std::string> func_arg_addr_space;
 
     // True when the current function being emitted has only input
     // array parameters (no Out/InOut). Set by emit_function_def_impl.
@@ -360,6 +363,8 @@ public:
         if (base != ptr_name) {
             if (func_thread_local_arrays.count(base)) return "thread";
             if (func_var_addr_arrays.count(base)) {
+                auto ait = func_arg_addr_space.find(base);
+                if (ait != func_arg_addr_space.end()) return ait->second;
                 return current_func_addr_space;
             }
             return "device";
@@ -2314,13 +2319,28 @@ public:
         return has_array;
     }
 
-    void emit_function_def_impl(ASR::Function_t *fn,
+    // Emit one overload of `fn`. Every array (or allocatable) argument
+    // may be handed either a `thread` or a `device` pointer by the
+    // caller, independently of the other arguments; `addr_mask` picks
+    // the address space of each such argument in declaration order (bit
+    // clear = thread, bit set = device). Returns how many arguments the
+    // mask applies to.
+    size_t emit_function_def_impl(ASR::Function_t *fn,
             const std::string &metal_name,
-            const std::string &out_addr_space) {
+            uint64_t addr_mask) {
         func_array_size_params.clear();
         func_array_data_params.clear();
         func_array_params.clear();
-        current_func_addr_space = out_addr_space;
+        func_arg_addr_space.clear();
+        size_t addr_arg_count = 0;
+        auto next_addr_space = [&](const std::string &name) {
+            std::string sp = ((addr_mask >> addr_arg_count) & 1)
+                ? "device" : "thread";
+            addr_arg_count++;
+            func_arg_addr_space[name] = sp;
+            return sp;
+        };
+        current_func_addr_space = addr_mask ? "device" : "thread";
         bool all_arrays_input_only = func_all_arrays_input_only(fn);
         current_func_all_input_arrays = all_arrays_input_only;
         func_ptr_base.clear();
@@ -2442,21 +2462,9 @@ public:
                 // _lcompilers_Sum_*), PointerArray/DescriptorArray In
                 // params also use variable address space so both
                 // thread and device overloads are generated.
-                bool use_variable_addr = (arr->m_physical_type
-                    == ASR::array_physical_typeType::FixedSizeArray)
-                    || (arr->m_physical_type
-                    == ASR::array_physical_typeType::PointerArray
-                    && (arg->m_intent == ASR::intentType::Out
-                        || arg->m_intent == ASR::intentType::InOut
-                        || all_arrays_input_only))
-                    || (arr->m_physical_type
-                    == ASR::array_physical_typeType::DescriptorArray
-                    && all_arrays_input_only);
-                std::string addr_space = use_variable_addr
-                    ? out_addr_space : "device";
-                if (use_variable_addr) {
-                    func_var_addr_arrays.insert(std::string(arg->m_name));
-                }
+                std::string addr_space =
+                    next_addr_space(std::string(arg->m_name));
+                func_var_addr_arrays.insert(std::string(arg->m_name));
                 std::string elem_type;
                 if (is_struct_type(arr->m_type)) {
                     elem_type = get_struct_name(arg);
@@ -2519,7 +2527,7 @@ public:
                 // may be backed by thread-local stack (constant size) or
                 // device VLA workspace (runtime size). Use out_addr_space
                 // to generate both overloads.
-                src << out_addr_space << " "
+                src << next_addr_space(std::string(arg->m_name)) << " "
                     << metal_type(arg->m_type) << "* "
                     << arg->m_name;
                 alloc_pointer_params.insert(std::string(arg->m_name));
@@ -2739,6 +2747,8 @@ public:
         func_ptr_base.clear();
         func_var_addr_arrays.clear();
         func_thread_local_arrays.clear();
+        func_arg_addr_space.clear();
+        return addr_arg_count;
     }
 
     // Check if a function has any array parameter that needs an
@@ -2774,9 +2784,19 @@ public:
     // array out parameters when needed.
     void emit_function_def(ASR::Function_t *fn,
             const std::string &metal_name) {
-        emit_function_def_impl(fn, metal_name, "thread");
-        if (func_needs_device_overload(fn)) {
-            emit_function_def_impl(fn, metal_name, "device");
+        size_t n = emit_function_def_impl(fn, metal_name, 0);
+        if (n == 0) return;
+        // Emit every thread/device combination so that any mix of
+        // caller-supplied pointers resolves. Fall back to the two
+        // uniform overloads when there are too many arguments for that
+        // to be practical.
+        const size_t max_combination_args = 4;
+        if (n <= max_combination_args) {
+            for (uint64_t mask = 1; mask < (1ull << n); mask++) {
+                emit_function_def_impl(fn, metal_name, mask);
+            }
+        } else {
+            emit_function_def_impl(fn, metal_name, (1ull << n) - 1);
         }
     }
 
