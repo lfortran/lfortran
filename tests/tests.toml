@@ -3530,6 +3530,10 @@ filename = "implicit_interface_allocatable_array.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "implicit_interface_string_expr_arg.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "implicit_interface2.f90"
 asr_implicit_interface = true
 

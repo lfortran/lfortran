@@ -16987,6 +16987,31 @@ public:
                         var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
                     }
                 }
+                // A character *expression* actual argument (a concatenation with
+                // a runtime-length operand, a substring with computed bounds, ...)
+                // has a `DeferredLength` string type. A variable may only be
+                // `DeferredLength` when it is allocatable or a pointer, so the
+                // dummy synthesized for it takes the assumed-length form the
+                // callee would have declared: `character(len=*)`.
+                if (!ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
+                    if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+                        if (str_type->m_len_kind == ASR::DeferredLength) {
+                            ASR::ttype_t* assumed_len_type = ASRUtils::TYPE(ASR::make_String_t(
+                                al, elem_type->base.loc, str_type->m_kind, nullptr,
+                                ASR::AssumedLength, str_type->m_physical_type));
+                            if (ASRUtils::is_array(var_type)) {
+                                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var_type);
+                                var_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+                                    var_type->base.loc, assumed_len_type, arr_type->m_dims,
+                                    arr_type->n_dims, arr_type->m_physical_type));
+                            } else {
+                                var_type = assumed_len_type;
+                            }
+                        }
+                    }
+                }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, var_type);
