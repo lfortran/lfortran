@@ -3171,11 +3171,19 @@ public:
                    *ASR::down_cast<ASR::symbol_t>(var_scope->asr_owner))) {
             var_scope = var_scope->parent;
         }
-        hoist_nested_matmuls_in_body(x.m_body, x.n_body, var_scope);
+        hoist_nested_matmuls_in_body(x.m_body, x.n_body, var_scope,
+            false, true);
     }
 
+    // `scope_has_workspaces` says whether a run-time sized temporary put
+    // into `var_scope` will be given a per-thread VLA workspace buffer.
+    // Only a BLOCK that is a direct statement of the loop body is scanned
+    // for those; a temporary at kernel scope would be a single buffer
+    // shared by every thread.  `at_loop_top` tracks whether this
+    // statement list is that loop body itself.
     void hoist_nested_matmuls_in_body(ASR::stmt_t** &body, size_t &n_body,
-            SymbolTable *var_scope) {
+            SymbolTable *var_scope, bool scope_has_workspaces,
+            bool at_loop_top) {
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, n_body * 2);
         bool changed = false;
@@ -3185,7 +3193,7 @@ public:
             if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 hoist_nested_matmuls_in_body(dl->m_body, dl->n_body,
-                    var_scope);
+                    var_scope, scope_has_workspaces, false);
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -3197,7 +3205,7 @@ public:
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                     hoist_nested_matmuls_in_body(blk->m_body, blk->n_body,
-                        blk->m_symtab);
+                        blk->m_symtab, at_loop_top, false);
                 }
                 new_body.push_back(al, stmt);
                 continue;
@@ -3207,7 +3215,7 @@ public:
                     ASR::down_cast<ASR::AssociateBlock_t>(
                         ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
                 hoist_nested_matmuls_in_body(ab->m_body, ab->n_body,
-                    var_scope);
+                    var_scope, scope_has_workspaces, false);
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -3217,7 +3225,8 @@ public:
             }
             size_t before = new_body.size();
             hoist_matmuls_from_assignment(
-                ASR::down_cast<ASR::Assignment_t>(stmt), new_body, var_scope);
+                ASR::down_cast<ASR::Assignment_t>(stmt), new_body, var_scope,
+                scope_has_workspaces);
             new_body.push_back(al, stmt);
             if (new_body.size() != before + 1) changed = true;
         }
@@ -3234,7 +3243,8 @@ public:
     // place; its arguments are still searched, so a nested matmul such as
     // `matmul(a, matmul(a, b))` has its inner operand hoisted.
     void hoist_matmuls_from_assignment(ASR::Assignment_t *asgn,
-            Vec<ASR::stmt_t*> &out, SymbolTable *var_scope) {
+            Vec<ASR::stmt_t*> &out, SymbolTable *var_scope,
+            bool scope_has_workspaces) {
         ASR::expr_t *binop_other = nullptr;
         ASR::binopType binop_op = ASR::binopType::Add;
         bool matmul_is_left = true;
@@ -3247,7 +3257,7 @@ public:
                 handled);
             if (!mm) break;
             ASR::expr_t *tmp_var = make_matmul_result_temp(mm, loc,
-                var_scope);
+                var_scope, scope_has_workspaces);
             if (!tmp_var) break;
             ASR::stmt_t *tmp_asgn = ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false));
@@ -3256,7 +3266,8 @@ public:
                 break;
             }
             hoist_matmuls_from_assignment(
-                ASR::down_cast<ASR::Assignment_t>(tmp_asgn), out, var_scope);
+                ASR::down_cast<ASR::Assignment_t>(tmp_asgn), out, var_scope,
+                scope_has_workspaces);
             out.push_back(al, tmp_asgn);
         }
     }
@@ -3264,7 +3275,8 @@ public:
     // A local temporary holding the result of `mm`, or nullptr if the
     // result shape cannot be determined from the operands.
     ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
-            const Location &loc, SymbolTable *var_scope) {
+            const Location &loc, SymbolTable *var_scope,
+            bool scope_has_workspaces) {
         ASR::expr_t *e = (ASR::expr_t*)mm;
         if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return nullptr;
         Vec<ASR::dimension_t> dims;
@@ -3278,6 +3290,10 @@ public:
                 all_const = false;
             }
         }
+        // A run-time sized temporary is only correct where each thread
+        // gets its own workspace slice; anywhere else it would be one
+        // buffer written by every thread at once.
+        if (!all_const && !scope_has_workspaces) return nullptr;
         ASR::ttype_t *tmp_type = ASRUtils::TYPE(
             ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
                 all_const
@@ -3323,19 +3339,41 @@ public:
                 ASRUtils::expr_type(b)), db);
         dims.reserve(al, 2);
         if (ra == 2 && rb == 1) {
-            if (!da[0].m_length) return false;
-            dims.push_back(al, da[0]);
+            dims.push_back(al, dim_or_runtime_extent(a, da, 0));
         } else if (ra == 1 && rb == 2) {
-            if (!db[1].m_length) return false;
-            dims.push_back(al, db[1]);
+            dims.push_back(al, dim_or_runtime_extent(b, db, 1));
         } else if (ra == 2 && rb == 2) {
-            if (!da[0].m_length || !db[1].m_length) return false;
-            dims.push_back(al, da[0]);
-            dims.push_back(al, db[1]);
+            dims.push_back(al, dim_or_runtime_extent(a, da, 0));
+            dims.push_back(al, dim_or_runtime_extent(b, db, 1));
         } else {
             return false;
         }
         return true;
+    }
+
+    // Dimension `d` of `operand`, described so that the extent is
+    // available wherever the shape is needed.  A deferred-shape operand
+    // -- an allocatable, a pointer or an assumed-shape dummy -- carries no
+    // declared length, so its extent is the operand's own run-time
+    // `size(operand, d + 1)` instead.  That expression is what the VLA
+    // workspace machinery resolves back to the extents the host already
+    // passes to the kernel.
+    ASR::dimension_t dim_or_runtime_extent(ASR::expr_t *operand,
+            ASR::dimension_t *dims, size_t d) {
+        if (dims && dims[d].m_length) return dims[d];
+        const Location &loc = operand->base.loc;
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        ASR::dimension_t res;
+        res.loc = loc;
+        res.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type, ASR::integerbozType::Decimal));
+        ASR::expr_t *dim_expr = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, (int64_t)d + 1, int_type,
+                ASR::integerbozType::Decimal));
+        res.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+            operand, dim_expr, int_type, nullptr));
+        return res;
     }
 
     void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
