@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
@@ -120,6 +121,7 @@ namespace LCompilers {
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"gpu_offload", &pass_replace_gpu_offload},
+            {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_memory_space", &pass_gpu_memory_space},
             {"print_struct_type", &pass_replace_print_struct_type},
@@ -261,6 +263,9 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
+                // Everything a kernel reaches is device code, and the
+                // passes below have to know which routines those are.
+                "device_partition",
                 "gpu_device_allocatable",
                 "array_struct_temporary",
                 "coarray",
@@ -276,6 +281,10 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // A pass above can add a routine of its own, such as the
+                // shared lowering of an intrinsic, so the partition is
+                // taken again before the device passes below read it.
+                "device_partition",
                 // A routine's array result becomes an argument here, so a
                 // device routine's result needs the shape of that argument.
                 "gpu_device_allocatable",
