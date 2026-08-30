@@ -729,7 +729,7 @@ RUN(NAME types_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm fortran
 
 # GFortran + LFortran C++
 RUN(NAME doconcurrentloop_01 LABELS gfortran cpp)
-RUN(NAME doconcurrentloop_03 LABELS llvm llvm_wasm llvm_wasm_emcc fortran) # type-spec in concurrent-header is not yet implemented by gfortran.
+RUN(NAME doconcurrentloop_03 LABELS llvm llvm_wasm llvm_wasm_emcc) # # GFortran does not yet accept a type declaration in a DO CONCURRENT control header, including through the Fortran backend.
 
 RUN(NAME arrays_01 LABELS gfortran cpp llvm llvmStackArray wasm)
 RUN(NAME arrays_01_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
@@ -4327,6 +4327,7 @@ RUN(NAME do_concurrent_12 LABELS llvm_omp llvm NO_FAST_MATH) # to not include is
 RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
 RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_concurrent_16 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
