@@ -35,6 +35,10 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
 A launch whose argument shape is not handled yet is left untouched, and the
 LLVM backend expands it as before.
 */
+static std::string launch_reason;
+static bool no(const char *why) { launch_reason = why; return false; }
+static bool no2(const char *why) { launch_reason = why; return false; }
+
 // A struct passed to a kernel is sized with SizeOfType, which lays it out as
 // an anonymous struct of its member types. Only structs whose members are
 // plain scalars and fixed size arrays are laid out that way, so anything else
@@ -43,27 +47,35 @@ LLVM backend expands it as before.
 // Allocatable array members are also what the device code generators
 // decompose into extra flat buffers, which this pass does not build yet.
 static bool struct_is_plain(ASR::symbol_t *struct_sym) {
-    if (!struct_sym) return false;
+    if (!struct_sym) return no2("struct-unknown");
     ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(struct_sym);
-    if (!ASR::is_a<ASR::Struct_t>(*sym)) return false;
+    if (!ASR::is_a<ASR::Struct_t>(*sym)) return no2("struct-unknown");
     ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
-    if (st->m_parent) return false;
+    if (st->m_parent) return no2("struct-parent");
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return no2("struct-member");
         ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
         if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) {
-            return false;
+            return no2("struct-alloc-member");
         }
         if (ASRUtils::is_array(type) &&
                 ASRUtils::get_fixed_size_of_array(type) <= 0) {
-            return false;
+            return no2("struct-vla-member");
         }
         ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::StructType_t>(*base)) {
+            if (!struct_is_plain(
+                    ASR::down_cast<ASR::Variable_t>(member)
+                        ->m_type_declaration)) {
+                return false;
+            }
+            continue;
+        }
         if (!ASR::is_a<ASR::Integer_t>(*base) &&
                 !ASR::is_a<ASR::Real_t>(*base) &&
                 !ASR::is_a<ASR::Logical_t>(*base)) {
-            return false;
+            return no2("struct-member-type");
         }
     }
     return true;
@@ -77,8 +89,11 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
     if (ASR::is_a<ASR::StructType_t>(*base)) {
         return struct_is_plain(ASRUtils::get_struct_sym_from_struct_expr(arg));
     }
-    return ASR::is_a<ASR::Integer_t>(*base) || ASR::is_a<ASR::Real_t>(*base)
-        || ASR::is_a<ASR::Logical_t>(*base);
+    if (ASR::is_a<ASR::Integer_t>(*base) || ASR::is_a<ASR::Real_t>(*base)
+            || ASR::is_a<ASR::Logical_t>(*base)) {
+        return true;
+    }
+    return no2("buffer-elem");
 }
 
 static bool is_supported_scalar(ASR::ttype_t *type) {
@@ -95,17 +110,21 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 }
 
 // True when every argument of this launch has a shape the pass can expand.
-static std::string launch_reason;
-static bool no(const char *why) { launch_reason = why; return false; }
-
 static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
     ASR::GpuKernelFunction_t *kernel =
         ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
     if (x.n_args != kernel->n_args) return no("arg-count");
     // Packing many buffers into one, and workspaces for variable-length
     // arrays, are not expanded here yet.
-    if (gpu_kernel_needs_buffer_packing(*kernel)) return no("packed");
-    if (count_gpu_vla_workspaces(*kernel) > 0) return no("vla");
+    for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
+        for (auto &dim : workspace.dims) {
+            // A workspace sized from a struct member needs the struct
+            // decomposition, which this pass does not build yet.
+            if (dim.is_struct_member_size) return no("vla-struct-member");
+            if (!dim.is_constant &&
+                    dim.call_arg_index >= x.n_args) return no("vla-dim");
+        }
+    }
     for (size_t i = 0; i < x.n_args; i++) {
         ASR::expr_t *arg = x.m_args[i].m_value;
         if (!arg) return no("null-arg");
@@ -116,7 +135,7 @@ static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
         if (ASRUtils::is_array(arg_type) ||
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
-            if (!is_supported_buffer(arg)) return no("buffer");
+            if (!is_supported_buffer(arg)) return false;
         } else {
             if (!is_supported_scalar(arg_type)) return no("scalar-type");
             if (!same_scalar_type(arg_type, kparam->m_type)) {
@@ -209,7 +228,8 @@ class DeviceLaunchExpandVisitor :
                 const std::string &name,
                 const std::vector<ASR::ttype_t*> &arg_types,
                 const std::vector<bool> &by_value,
-                ASR::ttype_t *return_type) {
+                ASR::ttype_t *return_type,
+                const std::string &c_name = "") {
             SymbolTable *global_scope = unit.m_symtab;
             if (ASR::symbol_t *existing = global_scope->get_symbol(name)) {
                 return existing;
@@ -234,7 +254,8 @@ class DeviceLaunchExpandVisitor :
                 al, loc, fn_symtab, s2c(al, name), nullptr, 0,
                 args.p, args.n, nullptr, 0, return_var,
                 ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::deftypeType::Interface, s2c(al, name),
+                ASR::deftypeType::Interface,
+                s2c(al, c_name.empty() ? name : c_name),
                 false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr);
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(fn);
@@ -273,6 +294,41 @@ class DeviceLaunchExpandVisitor :
             return b.PointerToCPtr(ASRUtils::EXPR(
                 ASR::make_GetPointer_t(al, loc, x, ptr_type, nullptr)),
                 b.CPtr());
+        }
+
+        // One array argument inside the combined buffer of a packed launch.
+        struct PackedBuffer {
+            ASR::expr_t *arg;
+            ASR::expr_t *offset;
+            ASR::expr_t *byte_size;
+        };
+
+        ASR::stmt_t* allocate_bytes(const Location &loc, ASR::expr_t *buffer,
+                ASR::expr_t *n_bytes) {
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = b.i64(1);
+            dim.m_length = n_bytes;
+            dims.push_back(al, dim);
+            return b.Allocate(buffer, dims.p, dims.n);
+        }
+
+        ASR::stmt_t* memcpy_call(const Location &loc, ASR::expr_t *dest,
+                ASR::expr_t *source, ASR::expr_t *n_bytes) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::symbol_t *sym = runtime_symbol(loc, "_lfortran_gpu_memcpy",
+                {b.CPtr(), b.CPtr(), int64}, {true, true, true}, b.CPtr(),
+                "memcpy");
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 3);
+            args.push_back(al, call_arg(loc, dest));
+            args.push_back(al, call_arg(loc, source));
+            args.push_back(al, call_arg(loc, n_bytes));
+            return ASRUtils::STMT(ASR::make_Expr_t(al, loc,
+                b.Call(sym, args, b.CPtr())));
         }
 
         // Number of bytes the runtime has to copy for one buffer argument.
@@ -352,6 +408,7 @@ class DeviceLaunchExpandVisitor :
             if (!launch_is_supported(x)) return false;
 
             struct BufferArg {
+                ASR::expr_t *arg;
                 ASR::expr_t *address;
                 ASR::expr_t *byte_size;
             };
@@ -369,7 +426,7 @@ class DeviceLaunchExpandVisitor :
                 if (ASRUtils::is_array(arg_type) ||
                         ASR::is_a<ASR::StructType_t>(
                             *ASRUtils::extract_type(arg_type))) {
-                    buffers.push_back({address_of(loc, arg),
+                    buffers.push_back({arg, address_of(loc, arg),
                         buffer_byte_size(loc, arg)});
                 } else {
                     scalar_fields.push_back({std::string(kparam->m_name),
@@ -426,14 +483,63 @@ class DeviceLaunchExpandVisitor :
                 {b.CPtr(), int32, b.CPtr(), int64},
                 {true, true, true, true});
             int buffer_idx = 0;
-            for (auto &buffer : buffers) {
+            std::vector<PackedBuffer> packed_buffers;
+            ASR::expr_t *packed = nullptr;
+            ASR::expr_t *packed_size = nullptr;
+            if (gpu_kernel_needs_buffer_packing(*kernel)) {
+                // Metal binds at most 31 buffers, so past that the device
+                // code generator puts every array into one combined buffer
+                // and reads each one at an offset handed over as a scalar.
+                packed_size = declare_local(loc, "gpu_packed_size", int64);
+                out.push_back(al, b.Assignment(packed_size, b.i64(0)));
+                for (size_t i = 0; i < buffers.size(); i++) {
+                    ASR::expr_t *size = declare_local(loc, "gpu_buffer_size",
+                        int64);
+                    ASR::expr_t *offset = declare_local(loc, "gpu_offset",
+                        int64);
+                    out.push_back(al, b.Assignment(size,
+                        buffers[i].byte_size));
+                    // Round the running total up to the buffer alignment.
+                    out.push_back(al, b.Assignment(offset, b.Mul(
+                        b.Div(b.Add(packed_size, b.i64(PACKED_BUFFER_ALIGN - 1)),
+                            b.i64(PACKED_BUFFER_ALIGN)),
+                        b.i64(PACKED_BUFFER_ALIGN))));
+                    out.push_back(al, b.Assignment(packed_size,
+                        b.Add(offset, size)));
+                    packed_buffers.push_back({buffers[i].arg, offset, size});
+                }
+                packed = declare_local(loc, "gpu_packed",
+                    b.allocatable(b.Array({-1}, int8)));
+                out.push_back(al, allocate_bytes(loc, packed, packed_size));
+                for (auto &buffer : packed_buffers) {
+                    out.push_back(al, memcpy_call(loc,
+                        address_of(loc, b.ArrayItem_01(packed,
+                            {b.Add(buffer.offset, b.i64(1))})),
+                        address_of(loc, buffer.arg), buffer.byte_size));
+                }
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 4);
                 args.push_back(al, call_arg(loc, gpu_kernel));
                 args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
-                args.push_back(al, call_arg(loc, buffer.address));
-                args.push_back(al, call_arg(loc, buffer.byte_size));
+                args.push_back(al, call_arg(loc, address_of(loc, packed)));
+                args.push_back(al, call_arg(loc, packed_size));
                 out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
+                for (size_t i = 0; i < packed_buffers.size(); i++) {
+                    scalar_fields.push_back({"__offset_"
+                        + std::to_string(i), int32});
+                    scalar_values.push_back(
+                        b.i2i_t(packed_buffers[i].offset, int32));
+                }
+            } else {
+                for (auto &buffer : buffers) {
+                    Vec<ASR::call_arg_t> args;
+                    args.reserve(al, 4);
+                    args.push_back(al, call_arg(loc, gpu_kernel));
+                    args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
+                    args.push_back(al, call_arg(loc, buffer.address));
+                    args.push_back(al, call_arg(loc, buffer.byte_size));
+                    out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
+                }
             }
 
             if (!scalar_fields.empty()) {
@@ -474,6 +580,36 @@ class DeviceLaunchExpandVisitor :
             fill_geometry(loc, out, grid, x.m_grid_size);
             fill_geometry(loc, out, block, x.m_block_size);
 
+            // A block local variable length array in the kernel becomes an
+            // extra device buffer holding one instance per thread, because
+            // the device languages have no variable length arrays.
+            std::vector<ASR::expr_t*> workspaces;
+            for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
+                ASR::expr_t *n_elements = b.Mul(
+                    b.i2i_t(x.m_grid_size, int64),
+                    b.i2i_t(x.m_block_size, int64));
+                for (auto &dim : workspace.dims) {
+                    n_elements = b.Mul(n_elements, dim.is_constant
+                        ? b.i64(dim.constant_value)
+                        : b.i2i_t(x.m_args[dim.call_arg_index].m_value,
+                            int64));
+                }
+                ASR::expr_t *n_bytes = b.Mul(n_elements,
+                    b.i64(workspace.elem_size));
+                ASR::expr_t *buffer = declare_local(loc, "gpu_workspace",
+                    b.allocatable(b.Array({-1}, int8)));
+                out.push_back(al, allocate_bytes(loc, buffer, n_bytes));
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, 4);
+                args.push_back(al, call_arg(loc, gpu_kernel));
+                args.push_back(al, call_arg(loc,
+                    b.i32(workspace.buffer_index)));
+                args.push_back(al, call_arg(loc, address_of(loc, buffer)));
+                args.push_back(al, call_arg(loc, n_bytes));
+                out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
+                workspaces.push_back(buffer);
+            }
+
             Vec<ASR::call_arg_t> launch_args;
             launch_args.reserve(al, 4);
             launch_args.push_back(al, call_arg(loc, ctx));
@@ -484,6 +620,17 @@ class DeviceLaunchExpandVisitor :
                 "lfortran_gpu_launch",
                 {b.CPtr(), b.CPtr(), b.CPtr(), b.CPtr()},
                 {true, true, true, true}), launch_args));
+            for (auto &buffer : packed_buffers) {
+                out.push_back(al, memcpy_call(loc,
+                    address_of(loc, buffer.arg),
+                    address_of(loc, b.ArrayItem_01(packed,
+                        {b.Add(buffer.offset, b.i64(1))})),
+                    buffer.byte_size));
+            }
+            if (packed) out.push_back(al, b.Deallocate(packed));
+            for (ASR::expr_t *workspace : workspaces) {
+                out.push_back(al, b.Deallocate(workspace));
+            }
             return true;
         }
 
