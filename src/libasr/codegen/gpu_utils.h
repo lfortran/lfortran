@@ -1289,29 +1289,57 @@ inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
         && dim.expr_nodes.empty() && dim.call_arg_index < 0;
 }
 
+// An array constructor together with the statement list of the scope it
+// belongs to.  The extent of the temporary it becomes has to be resolved
+// against that list -- the names it is written in terms of are bound
+// there -- exactly as `collect_gpu_vla_workspaces` resolves a BLOCK's
+// declared workspaces against the BLOCK's own body.
+struct GpuScopedArrayConstructor {
+    ASR::ArrayConstructor_t *ctor = nullptr;
+    ASR::stmt_t **body = nullptr;
+    size_t n_body = 0;
+};
+
 // Every array constructor reachable from a statement list, nested scopes
 // included.  Each one becomes a temporary array later, so each one is a
 // workspace the backend may have to size.
 class GpuArrayConstructorCollector :
         public ASR::BaseWalkVisitor<GpuArrayConstructorCollector> {
 public:
-    std::vector<ASR::ArrayConstructor_t*> found;
+    std::vector<GpuScopedArrayConstructor> found;
+
+    GpuArrayConstructorCollector(ASR::stmt_t **body, size_t n_body)
+        : scope_body_(body), scope_n_body_(n_body) {}
 
     void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
-        found.push_back(const_cast<ASR::ArrayConstructor_t*>(&x));
+        GpuScopedArrayConstructor sc;
+        sc.ctor = const_cast<ASR::ArrayConstructor_t*>(&x);
+        sc.body = scope_body_;
+        sc.n_body = scope_n_body_;
+        found.push_back(sc);
         ASR::BaseWalkVisitor<GpuArrayConstructorCollector>
             ::visit_ArrayConstructor(x);
     }
 
     // The generated walker stops at a BLOCK or ASSOCIATE call, but a
     // constructor inside one still becomes a temporary of the kernel.
+    // A BLOCK is a scope of its own, and the backend sizes its
+    // workspaces against its body, so that body becomes the resolution
+    // context from here down.  An ASSOCIATE construct is not scanned
+    // separately by the backend, so it keeps the enclosing context.
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
         if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
         ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        ASR::stmt_t **outer_body = scope_body_;
+        size_t outer_n_body = scope_n_body_;
+        scope_body_ = blk->m_body;
+        scope_n_body_ = blk->n_body;
         for (size_t i = 0; i < blk->n_body; i++) {
             visit_stmt(*blk->m_body[i]);
         }
+        scope_body_ = outer_body;
+        scope_n_body_ = outer_n_body;
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
@@ -1323,6 +1351,10 @@ public:
             visit_stmt(*blk->m_body[i]);
         }
     }
+
+private:
+    ASR::stmt_t **scope_body_ = nullptr;
+    size_t scope_n_body_ = 0;
 };
 
 // Pre-flight for the GPU offload pass: can every workspace extent that
@@ -1370,14 +1402,15 @@ inline bool gpu_block_workspace_extents_resolvable(Allocator &al,
             }
         }
     }
-    GpuArrayConstructorCollector constructors;
+    GpuArrayConstructorCollector constructors(body, n_body);
     for (size_t i = 0; i < n_body; i++) {
         constructors.visit_stmt(*body[i]);
     }
-    for (ASR::ArrayConstructor_t *ac : constructors.found) {
-        ASR::expr_t *extent = ASRUtils::get_ArrayConstructor_size(al, ac);
-        GpuVlaDim dim = resolve_gpu_workspace_dim(extent, body, n_body,
-            arg_names);
+    for (GpuScopedArrayConstructor &sc : constructors.found) {
+        ASR::expr_t *extent =
+            ASRUtils::get_ArrayConstructor_size(al, sc.ctor);
+        GpuVlaDim dim = resolve_gpu_workspace_dim(extent, sc.body,
+            sc.n_body, arg_names);
         if (gpu_vla_dim_is_unresolvable(dim)) {
             unresolved_name = "<array constructor>";
             return false;

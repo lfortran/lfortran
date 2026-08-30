@@ -15,13 +15,13 @@
 ! Shading Language does not have.
 !
 ! `run_one_assoc`, `run_nested_assoc` and `run_one_block` therefore
-! offload, where before the splice they all stayed on the host: this
-! program emits exactly 3 kernels.  `run_assoc_section` and
-! `run_block_workspace` still decline, with
-! `status=host reason=workspace-extent-unresolvable` -- the extent of
-! their array-constructor temporary is not one the host can evaluate
-! from the kernel arguments -- and run on the host.  Every result below
-! is checked either way, so the loops that decline are still covered.
+! offload, where before the splice they all stayed on the host.
+! `run_assoc_section` and `run_block_workspace` offload too, since the
+! array-constructor extent pre-flight learned to look for the names an
+! extent is written in terms of in the scope the constructor belongs to
+! (see gpu_metal_256): this program emits exactly 5 kernels.  Every
+! result below is checked either way, so the program is a correctness
+! test whichever loops offload.
 module gpu_metal_255_mod
 implicit none
 
