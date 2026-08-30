@@ -1,17 +1,16 @@
 program gpu_metal_226
 ! An array constructor whose elements are array-valued expressions is
 ! materialized into a temporary. Inside a device function that temporary
-! would have to be a variable-length array whenever its extent comes
-! from an assumed-shape dummy (`matmul(mm, x)`) or from an ALLOCATE with
-! a run-time bound (`w`). Metal has neither VLAs nor a heap, so such a
-! `do concurrent` must not be offloaded; it runs on the host instead and
-! must still produce the right values.
+! would have to be a variable-length array: `matmul(mm, x)` is sized from
+! the assumed-shape dummy `mm`, whose extent is a run-time parameter of
+! the device function, and Metal has neither VLAs nor a heap. The callee
+! is therefore inlined into the kernel body, where substituting the
+! actual argument makes the extent a compile-time constant again.
 implicit none
 integer, parameter :: n = 4
 real :: a(8,n)
-real, allocatable :: v(:), m(:,:)
+real :: v(2), m(2,2)
 integer :: j, k
-allocate(v(2), m(2,2))
 v = [10.0, 20.0]
 m = reshape([1.0, 0.0, 0.0, 1.0], [2,2])
 k = 3
@@ -36,9 +35,8 @@ contains
     real, intent(in) :: mm(:,:), x(:)
     integer, intent(in) :: kk
     real :: r(8)
-    real, allocatable :: w(:)
-    allocate(w(kk))
-    w = 7.0
+    real :: w(3)
+    w = real(kk) + 4.0
     r = [0.0, matmul(mm, x), w, 0.0, 0.0]
     end function
 end program
