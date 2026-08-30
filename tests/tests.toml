@@ -211,6 +211,10 @@ filename = "../integration_tests/openmp_46.f90"
 asr_openmp = true
 
 [[test]]
+filename = "../integration_tests/openmp_70.f90"
+c_target_omp = true
+
+[[test]]
 filename = "subroutine2.f90"
 ast = true
 
