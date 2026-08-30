@@ -80,21 +80,24 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
 }
 
 lfortran_gpu_kernel* lfortran_gpu_load_kernel(
-    lfortran_gpu_ctx* ctx, const char* entry_point)
+    lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len)
 {
     if (!ctx || !entry_point) return NULL;
+
+    char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
+    lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
 
     // Look up the kernel in the registry
     kernel_func_t func = NULL;
     for (int i = 0; i < n_registered; i++) {
-        if (strcmp(kernel_registry[i].name, entry_point) == 0) {
+        if (strcmp(kernel_registry[i].name, name_buf) == 0) {
             func = kernel_registry[i].func;
             break;
         }
     }
     if (!func) {
         fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
-            entry_point);
+            name_buf);
         exit(1);
     }
 

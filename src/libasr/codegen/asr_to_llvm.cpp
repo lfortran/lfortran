@@ -22255,12 +22255,13 @@ public:
         llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
 #endif
 
-        // 3. lfortran_gpu_load_kernel(ctx, entry_point) -> kernel
+        // 3. lfortran_gpu_load_kernel(ctx, entry_point, len) -> kernel
         llvm::FunctionType *load_ft = llvm::FunctionType::get(
-            i8_ptr, {i8_ptr, i8_ptr}, false);
+            i8_ptr, {i8_ptr, i8_ptr, i32}, false);
         llvm::Function *load_fn = get_gpu_runtime_func("lfortran_gpu_load_kernel", load_ft);
         llvm::Value *gpu_kernel = builder->CreateCall(load_fn,
-            {gpu_ctx, entry_name});
+            {gpu_ctx, entry_name,
+             llvm::ConstantInt::get(i32, kernel_name.size())});
 
         // 4. Set arguments
         llvm::FunctionType *set_buffer_ft = llvm::FunctionType::get(

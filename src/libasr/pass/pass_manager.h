@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -118,6 +119,7 @@ namespace LCompilers {
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"gpu_offload", &pass_replace_gpu_offload},
+            {"device_launch_expand", &pass_device_launch_expand},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -255,6 +257,7 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
+                "device_launch_expand",
                 "array_struct_temporary",
                 "coarray",
                 "transform_optional_argument_functions",
