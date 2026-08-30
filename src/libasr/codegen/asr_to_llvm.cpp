@@ -28231,6 +28231,19 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
     }
 }
 
+// A translation unit needs a Metal shader only once the gpu offload pass has
+// turned at least one loop into a kernel. Kernels are added directly to the
+// translation unit scope.
+static bool translation_unit_has_gpu_kernel(const ASR::TranslationUnit_t &asr)
+{
+    for (auto &item : asr.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics,
         llvm::LLVMContext &context,
@@ -28283,6 +28296,22 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         Result<std::string> metal_res = asr_to_metal(al, asr, metal_diag, co);
         if (metal_res.ok) {
             co.gpu_metal_source = metal_res.result;
+        } else if (translation_unit_has_gpu_kernel(asr)) {
+            // The translation unit already carries kernel launches, so an
+            // empty shader would only surface at run time as a missing
+            // kernel function. Report the shader failure at compile time
+            // instead. A unit with no kernel needs no shader, so that case
+            // keeps producing an empty source without an error.
+            diagnostics.diagnostics.insert(diagnostics.diagnostics.end(),
+                metal_diag.diagnostics.begin(), metal_diag.diagnostics.end());
+            if (!diagnostics.has_error()) {
+                diagnostics.add(diag::Diagnostic(
+                    "gpu offload: the metal shader for this file could not "
+                    "be generated",
+                    diag::Level::Error, diag::Stage::CodeGen));
+            }
+            Error error;
+            return error;
         }
     }
 
