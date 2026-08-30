@@ -58,6 +58,7 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/replace_openmp_target.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
@@ -120,6 +121,7 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
+            {"openmp_target", &pass_replace_openmp_target},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
@@ -261,6 +263,12 @@ namespace LCompilers {
                 "init_expr",
                 "function_call_in_declaration",
                 "openmp",
+                // An `!$omp target` region is normalized into the same
+                // `do concurrent` loop the GPU passes below already lower.
+                // The OpenMP pass above leaves a target region alone, and it
+                // is taken apart here rather than before it so that the loops
+                // this pass produces are not lowered onto host threads.
+                "openmp_target",
                 "implied_do_loops",
                 "gpu_offload",
                 // Everything a kernel reaches is device code, and the
