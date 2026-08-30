@@ -255,6 +255,14 @@ public:
     // device buffers and must keep device address space.
     std::set<std::string> vla_workspace_names;
 
+    // Names of kernel array arguments that are reached through an array
+    // descriptor on the host. Their per-dimension strides are unknown at
+    // compile time (the actual argument may be a non-contiguous section)
+    // and are passed in as __stride_<name>_dim<N> scalar arguments, which
+    // the index arithmetic below must use instead of assuming that the
+    // element stride is the product of the preceding extents.
+    std::set<std::string> descriptor_stride_args;
+
     // Names of allocatable array variables in kernel/block scope that
     // are NOT kernel args and NOT VLA workspaces. These are emitted as
     // fixed-size thread-local arrays and should be treated as
@@ -880,6 +888,7 @@ public:
         ptr_to_local_alloc.clear();
         kernel_arg_names.clear();
         vla_workspace_names.clear();
+        descriptor_stride_args.clear();
         prescan_local_allocs.clear();
         // Collect kernel argument names (device buffer parameters)
         for (size_t i = 0; i < kf.n_args; i++) {
@@ -3379,6 +3388,25 @@ public:
             }
         }
 
+        // Add per-dimension element strides for kernel arguments that are
+        // reached through an array descriptor. The actual argument may be
+        // a non-contiguous section such as a(3,:), whose elements are
+        // strided in the flat device buffer, so the stride cannot be
+        // derived from the extents and has to come from the descriptor.
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(v->m_v));
+            if (!gpu_arg_is_descriptor_array(var)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(var->m_type));
+            descriptor_stride_args.insert(args[i].name);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                scalar_args.push_back(
+                    {gpu_stride_arg_name(args[i].name, d), "int"});
+            }
+        }
+
         // In packed mode, collect info about arrays/structs that will
         // be packed into a single combined buffer
         struct PackedArrayInfo {
@@ -5537,9 +5565,14 @@ public:
                             arr_1d = ASR::down_cast<ASR::Array_t>(inner_1d);
                         }
                         std::string lb = get_lower_bound_str(arr_1d, 0);
+                        std::string dstride = get_descriptor_stride_str(
+                            get_array_base_name(ai->m_v), 0);
                         src << "((int)(";
                         visit_expr(idx);
                         src << ") - (" << lb << "))";
+                        if (!dstride.empty()) {
+                            src << " * " << dstride;
+                        }
                     } else {
                         src << "0";
                     }
@@ -5767,6 +5800,25 @@ public:
         return "1";
     }
 
+    // Name of the base variable of an array reference, or "" when the
+    // reference is not a plain variable (struct member, function result, ...).
+    std::string get_array_base_name(ASR::expr_t *v) {
+        if (v && ASR::is_a<ASR::Var_t>(*v)) {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(v)->m_v);
+        }
+        return "";
+    }
+
+    // Run-time element stride of dimension `d` for a descriptor-backed
+    // kernel argument, or "" when the stride is the compile-time one.
+    std::string get_descriptor_stride_str(const std::string &base_name,
+                                          size_t d) {
+        if (base_name.empty() || !descriptor_stride_args.count(base_name)) {
+            return "";
+        }
+        return gpu_stride_arg_name(base_name, d);
+    }
+
     void emit_linearized_index(ASR::ArrayItem_t *ai,
                                ASR::ttype_t *arr_type) {
         // Column-major linearization: index = sum_d( (idx_d - lb_d) * stride_d )
@@ -5792,12 +5844,18 @@ public:
             if (!first) src << " + ";
             first = false;
             std::string lb = get_lower_bound_str(arr, d);
-            if (stride == "1") {
+            // A descriptor-backed argument carries its own run-time
+            // stride per dimension; it replaces the compile-time
+            // product of the preceding extents.
+            std::string dim_stride =
+                get_descriptor_stride_str(arr_var_name, d);
+            if (dim_stride.empty()) dim_stride = stride;
+            if (dim_stride == "1") {
                 src << "((int)(";
                 visit_expr(idx);
                 src << ") - (" << lb << "))";
             } else {
-                src << "(" << stride << " * ((int)(";
+                src << "(" << dim_stride << " * ((int)(";
                 visit_expr(idx);
                 src << ") - (" << lb << ")))";
             }

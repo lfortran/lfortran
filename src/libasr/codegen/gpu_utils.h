@@ -63,6 +63,34 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
+// A kernel array argument is reached through an array descriptor when it is
+// allocatable/pointer or assumed-shape (at least one extent unknown at
+// compile time).  Such an argument carries a per-dimension stride that is
+// only known at run time: the actual argument may be a non-contiguous
+// section (for example `a(3,:)`), in which case consecutive Fortran
+// elements are NOT consecutive in the flat device buffer.  Both the host
+// (which fills the scalar-argument struct) and the Metal code generator
+// (which emits the struct and the index arithmetic) use this predicate so
+// that they agree on the scalar-argument layout.
+inline bool gpu_arg_is_descriptor_array(const ASR::Variable_t *var) {
+    std::string name(var->m_name);
+    // Synthetic kernel args (__data_*, __size_*, ...) are already flat.
+    if (name.size() >= 2 && name[0] == '_' && name[1] == '_') return false;
+    ASR::ttype_t *type = var->m_type;
+    if (!ASRUtils::is_array(type)) return false;
+    ASR::ttype_t *past = ASRUtils::type_get_past_allocatable_pointer(type);
+    if (!ASR::is_a<ASR::Array_t>(*past)) return false;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(past);
+    return arr->m_physical_type
+        == ASR::array_physical_typeType::DescriptorArray;
+}
+
+// Name of the run-time stride scalar for dimension `d` (0-based) of the
+// descriptor array kernel argument `name`.
+inline std::string gpu_stride_arg_name(const std::string &name, size_t d) {
+    return "__stride_" + name + "_dim" + std::to_string(d + 1);
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra

@@ -22331,6 +22331,11 @@ public:
         std::map<std::string, std::string> struct_member_runtime_sources =
             find_struct_member_vla_runtime_sources(*kernel_func);
 
+        // Array descriptors of the call arguments that have one, keyed by
+        // argument index. They are captured while the device buffers are
+        // set up (the descriptor pointer of a struct member needs an extra
+        // load) and reused below to read the per-dimension strides.
+        std::map<size_t, std::pair<llvm::Value*, llvm::Type*>> arg_descriptors;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *arg_expr = x.m_args[i].m_value;
             if (!arg_expr) continue;
@@ -22401,6 +22406,7 @@ public:
                     llvm::Type *desc_type =
                         llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, desc_asr_type, module.get());
+                    arg_descriptors[i] = {arg_val, desc_type};
                     llvm::Value *data_ptr_ptr =
                         arr_descr->get_pointer_to_data(desc_type, arg_val);
                     data_ptr = llvm_utils->CreateLoad2(
@@ -22469,7 +22475,46 @@ public:
                         desc_type, arg_val, nullptr, 4);
                     llvm::Value *n_elems_64 =
                         builder->CreateSExtOrTrunc(n_elems, i64);
-                    byte_size = builder->CreateMul(n_elems_64,
+                    // The descriptor may describe a non-contiguous
+                    // section, in which case the elements span
+                    // 1 + sum_d (extent_d - 1) * stride_d slots of the
+                    // underlying storage rather than just their count.
+                    // The buffer handed to the GPU has to cover that
+                    // whole span, since the kernel indexes it with the
+                    // descriptor strides.
+                    llvm::Value *dim_des_arr =
+                        arr_descr
+                        ->get_pointer_to_dimension_descriptor_array(
+                            desc_type, arg_val);
+                    llvm::Value *span = llvm::ConstantInt::get(i64, 1);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        llvm::Value *dim_desc =
+                            arr_descr
+                            ->get_pointer_to_dimension_descriptor(
+                                dim_des_arr,
+                                llvm::ConstantInt::get(i32, d));
+                        llvm::Value *extent =
+                            builder->CreateSExtOrTrunc(
+                                arr_descr->get_array_size(desc_type,
+                                    arg_val,
+                                    llvm::ConstantInt::get(i32, d + 1),
+                                    4),
+                                i64);
+                        llvm::Value *stride_d =
+                            builder->CreateSExtOrTrunc(
+                                arr_descr->get_stride(dim_desc), i64);
+                        span = builder->CreateAdd(span,
+                            builder->CreateMul(
+                                builder->CreateSub(extent,
+                                    llvm::ConstantInt::get(i64, 1)),
+                                stride_d));
+                    }
+                    // Guard against descending strides, which would make
+                    // the span smaller than the element count.
+                    span = builder->CreateSelect(
+                        builder->CreateICmpSGT(span, n_elems_64),
+                        span, n_elems_64);
+                    byte_size = builder->CreateMul(span,
                         llvm::ConstantInt::get(i64, elem_size));
                 } else {
                     // Compute array size at runtime from dimension expressions
@@ -23548,6 +23593,73 @@ public:
                         {dim_size, llvm::Type::getInt32Ty(context)});
                 }
                 ptr_loads = ptr_loads_copy;
+            }
+        }
+
+        // Add per-dimension element strides for kernel arguments that are
+        // reached through an array descriptor, matching the Metal codegen's
+        // scalar struct layout. The actual argument may be a non-contiguous
+        // section (for example a(3,:)), whose elements are strided in the
+        // flat device buffer; the kernel cannot derive that stride from the
+        // extents, so it is read out of the descriptor here.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg_expr = x.m_args[i].m_value;
+            if (!arg_expr) continue;
+            ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(kernel_func->m_args[i])->m_v);
+            if (!gpu_arg_is_descriptor_array(kparam)) continue;
+            ASR::Array_t *kparam_arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(kparam->m_type));
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+            ASR::ttype_t *past_alloc3 =
+                ASRUtils::type_get_past_allocatable_pointer(arg_type);
+            llvm::Value *dim_des_arr = nullptr;
+            auto desc_it = arg_descriptors.find(i);
+            if (desc_it != arg_descriptors.end()) {
+                dim_des_arr =
+                    arr_descr->get_pointer_to_dimension_descriptor_array(
+                        desc_it->second.second, desc_it->second.first);
+            }
+            for (size_t d = 0; d < kparam_arr->n_dims; d++) {
+                llvm::Value *stride_val;
+                if (dim_des_arr) {
+                    llvm::Value *dim_desc =
+                        arr_descr->get_pointer_to_dimension_descriptor(
+                            dim_des_arr,
+                            llvm::ConstantInt::get(i32, d));
+                    stride_val = builder->CreateSExtOrTrunc(
+                        arr_descr->get_stride(dim_desc),
+                        llvm::Type::getInt32Ty(context));
+                } else {
+                    // No descriptor available: the flat buffer is
+                    // contiguous, so the stride is the product of the
+                    // preceding extents, which is what the kernel would
+                    // have assumed anyway.
+                    stride_val = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 1);
+                    ASR::Array_t *call_arr =
+                        ASR::is_a<ASR::Array_t>(*past_alloc3)
+                        ? ASR::down_cast<ASR::Array_t>(past_alloc3)
+                        : nullptr;
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    for (size_t e = 0; e < d; e++) {
+                        if (!call_arr || e >= call_arr->n_dims
+                                || !call_arr->m_dims[e].m_length) continue;
+                        this->visit_expr(*call_arr->m_dims[e].m_length);
+                        llvm::Value *dim_len = tmp;
+                        if (dim_len->getType()->isPointerTy()) {
+                            dim_len = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt32Ty(context), dim_len);
+                        }
+                        stride_val = builder->CreateMul(stride_val,
+                            builder->CreateSExtOrTrunc(dim_len,
+                                llvm::Type::getInt32Ty(context)));
+                    }
+                    ptr_loads = ptr_loads_copy;
+                }
+                scalar_arg_infos.push_back(
+                    {stride_val, llvm::Type::getInt32Ty(context)});
             }
         }
 
