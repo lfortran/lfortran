@@ -1676,7 +1676,16 @@ public:
         // Section size is the product of range extents.
         std::stringstream size_ss;
         bool first_size = true;
-        src << arr_name << " + ";
+        // The base need not be a plain variable: `st%c(k:k+2)` has a
+        // StructInstanceMember base, which has no name to print. Emit the
+        // designator itself in that case. `arr_name` stays the key for the
+        // per-dimension extent lookups below, which are keyed by variable.
+        if (arr_name.empty()) {
+            visit_expr(as->m_v);
+        } else {
+            src << arr_name;
+        }
+        src << " + ";
         bool first_dim = true;
         std::string stride = "1";
         for (size_t d = 0; d < as->n_args; d++) {

@@ -5913,6 +5913,474 @@ public:
         }
     }
 
+
+    // ---- gather/scatter for a strided section actual argument ----
+    //
+    // A strided array section passed as an actual argument --
+    // `s3(a(j:j+4:2))` -- reaches a device function as a bare base pointer
+    // plus an element count. A device pointer cannot express a stride, so
+    // the callee reads the contiguous run a(j), a(j+1), a(j+2) instead of
+    // every second element: finite numbers, wrong answers, no diagnostic.
+    //
+    // Gather the section into a contiguous temporary before the call, pass
+    // the temporary, and scatter it back afterwards when the dummy may be
+    // written. The temporary is an ordinary loop-body local, so each thread
+    // gets its own copy through the machinery that already sizes and slices
+    // kernel locals.
+    //
+    // A unit-stride section is left alone: base pointer plus element count
+    // describes it exactly, and that path must stay as cheap as it is.
+    // Linear form of an integer expression: a constant plus integer
+    // multiples of scalar variables. It exists to fold `(j + 4) - j` to 4,
+    // which makes the extent of a section like `a(j:j+4:2)` a compile-time
+    // constant even though neither of its bounds is one.
+    struct LinearForm {
+        int64_t constant = 0;
+        std::map<ASR::symbol_t*, int64_t> terms;
+    };
+
+    bool linear_form(ASR::expr_t *e, LinearForm &f, int64_t scale) {
+        if (!e) return false;
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (v) e = v;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            f.constant += scale
+                * ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return linear_form(ASR::down_cast<ASR::Cast_t>(e)->m_arg, f,
+                scale);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            return linear_form(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg, f,
+                -scale);
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            f.terms[ASR::down_cast<ASR::Var_t>(e)->m_v] += scale;
+            return true;
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            int64_t c;
+            switch (b->m_op) {
+                case ASR::binopType::Add:
+                    return linear_form(b->m_left, f, scale)
+                        && linear_form(b->m_right, f, scale);
+                case ASR::binopType::Sub:
+                    return linear_form(b->m_left, f, scale)
+                        && linear_form(b->m_right, f, -scale);
+                case ASR::binopType::Mul:
+                    if (eval_int_literal(b->m_left, c)) {
+                        return linear_form(b->m_right, f, scale * c);
+                    }
+                    if (eval_int_literal(b->m_right, c)) {
+                        return linear_form(b->m_left, f, scale * c);
+                    }
+                    return false;
+                default: return false;
+            }
+        }
+        return false;
+    }
+
+    // Number of elements of the section dimension `lo:hi:step` when it is
+    // a compile-time constant, which it is whenever `hi - lo` and `step`
+    // are -- the bounds themselves need not be.
+    bool const_section_extent(const ASR::array_index_t &d, int64_t &n) {
+        int64_t step;
+        if (!d.m_left || !d.m_right || !d.m_step) return false;
+        if (!eval_int_literal(d.m_step, step) || step == 0) return false;
+        LinearForm f;
+        if (!linear_form(d.m_right, f, 1)) return false;
+        if (!linear_form(d.m_left, f, -1)) return false;
+        for (auto &t : f.terms) {
+            if (t.second != 0) return false;
+        }
+        n = f.constant / step + 1;
+        if (n < 0) n = 0;
+        return true;
+    }
+
+    static bool section_is_strided(const ASR::ArraySection_t *as) {
+        for (size_t i = 0; i < as->n_args; i++) {
+            if (!as->m_args[i].m_left || !as->m_args[i].m_right
+                    || !as->m_args[i].m_step) {
+                continue;
+            }
+            if (!is_int_literal(as->m_args[i].m_step, 1)) return true;
+        }
+        return false;
+    }
+
+    // A dummy the callee may write has to be copied back. An unknown
+    // intent is treated as writable: a wrong answer is worse than a copy.
+    static bool dummy_is_written(ASR::Function_t *fn, size_t arg_index) {
+        if (!fn || arg_index >= fn->n_args) return true;
+        if (!ASR::is_a<ASR::Var_t>(*fn->m_args[arg_index])) return true;
+        ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(
+            fn->m_args[arg_index])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
+        return ASR::down_cast<ASR::Variable_t>(s)->m_intent
+            != ASR::intentType::In;
+    }
+
+    // Build `do c = 1, extent ... end do` nests copying between the
+    // section `as` of its base array and the contiguous temporary `tmp`.
+    // With `to_temp` the section is read into the temporary (gather);
+    // otherwise the temporary is written back into the section (scatter).
+    ASR::stmt_t* build_section_copy_loops(const Location &loc,
+            SymbolTable *var_scope, ASR::ArraySection_t *as,
+            const std::vector<int> &range_dims, ASR::expr_t *tmp,
+            bool to_temp) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        std::vector<ASR::expr_t*> counters(range_dims.size());
+        for (size_t ri = 0; ri < range_dims.size(); ri++) {
+            std::string name = var_scope->get_unique_name("__gpu_gather_i");
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, int_type), nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            var_scope->add_symbol(name, sym);
+            counters[ri] = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        }
+        ASR::ttype_t *elem_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(as->m_v));
+
+        // The section element for this iteration.
+        Vec<ASR::array_index_t> src_args;
+        src_args.reserve(al, as->n_args);
+        size_t ri = 0;
+        for (size_t d = 0; d < as->n_args; d++) {
+            ASR::array_index_t idx;
+            idx.loc = as->m_args[d].loc;
+            bool is_range = ri < range_dims.size()
+                && (int)d == range_dims[ri];
+            if (is_range) {
+                idx.m_left = nullptr;
+                idx.m_right = section_index(loc, as->m_args[d],
+                    counters[ri]);
+                idx.m_step = nullptr;
+                ri++;
+            } else {
+                idx.m_left = as->m_args[d].m_left;
+                idx.m_right = as->m_args[d].m_right;
+                idx.m_step = as->m_args[d].m_step;
+            }
+            src_args.push_back(al, idx);
+        }
+        ASR::expr_t *src_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
+            loc, as->m_v, src_args.p, src_args.n, elem_type,
+            ASR::arraystorageType::ColMajor, nullptr));
+
+        // The temporary's element for the same iteration: the temporary is
+        // 1-based and contiguous, so the counters index it directly.
+        Vec<ASR::array_index_t> tmp_args;
+        tmp_args.reserve(al, range_dims.size());
+        for (size_t k = 0; k < range_dims.size(); k++) {
+            ASR::array_index_t idx;
+            idx.loc = loc;
+            idx.m_left = nullptr;
+            idx.m_right = counters[k];
+            idx.m_step = nullptr;
+            tmp_args.push_back(al, idx);
+        }
+        ASR::expr_t *tmp_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
+            loc, tmp, tmp_args.p, tmp_args.n, elem_type,
+            ASR::arraystorageType::ColMajor, nullptr));
+
+        ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+            to_temp ? tmp_elem : src_elem,
+            to_temp ? src_elem : tmp_elem, nullptr, false, false));
+        for (int k = (int)range_dims.size() - 1; k >= 0; k--) {
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = counters[k];
+            head.m_start = int32_const(loc, 1);
+            head.m_end = section_extent(loc, as->m_args[range_dims[k]]);
+            head.m_increment = nullptr;
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, inner);
+            inner = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                head, body.p, body.n, nullptr, 0));
+        }
+        return inner;
+    }
+
+    // The strided section under any physical casts of an actual argument,
+    // or nullptr when the argument is not one.
+    static ASR::ArraySection_t* strided_section_actual(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (!e || !ASR::is_a<ASR::ArraySection_t>(*e)) return nullptr;
+        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
+        return section_is_strided(as) ? as : nullptr;
+    }
+
+    // Can this strided section be gathered into a contiguous temporary?
+    // The base has to be a designator the copy loops can index, and every
+    // extent has to fold to a constant, because the temporary is a
+    // kernel-local array.
+    bool strided_section_is_gatherable(ASR::ArraySection_t *as) {
+        if (!ASR::is_a<ASR::Var_t>(*as->m_v)
+                && !ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
+            return false;
+        }
+        bool any_range = false;
+        for (size_t d = 0; d < as->n_args; d++) {
+            if (!as->m_args[d].m_left || !as->m_args[d].m_right
+                    || !as->m_args[d].m_step) {
+                continue;
+            }
+            any_range = true;
+            int64_t n;
+            if (!const_section_extent(as->m_args[d], n)) return false;
+        }
+        return any_range;
+    }
+
+    // Replace a strided section actual argument in `slot` with a gathered
+    // temporary, appending the gather to `before` and, when the dummy may
+    // be written, the scatter to `after`. Returns true when it did.
+    bool gather_strided_section_arg(const Location &loc,
+            SymbolTable *block_scope, ASR::expr_t **slot, bool writable,
+            std::vector<ASR::stmt_t*> &before,
+            std::vector<ASR::stmt_t*> &after) {
+        ASR::ArrayPhysicalCast_t *cast = nullptr;
+        ASR::expr_t *inner = *slot;
+        while (inner && ASR::is_a<ASR::ArrayPhysicalCast_t>(*inner)) {
+            cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(inner);
+            inner = cast->m_arg;
+        }
+        if (!inner || !ASR::is_a<ASR::ArraySection_t>(*inner)) return false;
+        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(inner);
+        if (!section_is_strided(as)) return false;
+        if (!strided_section_is_gatherable(as)) return false;
+        std::vector<int> range_dims;
+        for (size_t d = 0; d < as->n_args; d++) {
+            if (as->m_args[d].m_left && as->m_args[d].m_right
+                    && as->m_args[d].m_step) {
+                range_dims.push_back((int)d);
+            }
+        }
+        if (range_dims.empty()) return false;
+
+        // Every extent has to fold to a constant: the gathered buffer is a
+        // kernel-local array, and a device function cannot declare one
+        // whose size is only known per thread.
+        Vec<ASR::expr_t*> extents;
+        extents.reserve(al, range_dims.size());
+        for (int d : range_dims) {
+            int64_t n = 0;
+            const_section_extent(as->m_args[d], n);
+            extents.push_back(al, int32_const(loc, (int)n));
+        }
+        ASR::ttype_t *elem_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(as->m_v));
+        ASR::expr_t *tmp = declare_temp_array(loc, block_scope, elem_type,
+            extents.p, extents.n, "__gpu_gather");
+
+        before.push_back(build_section_copy_loops(loc, block_scope, as,
+            range_dims, tmp, true));
+        if (writable) {
+            after.push_back(build_section_copy_loops(loc, block_scope, as,
+                range_dims, tmp, false));
+        }
+        // The temporary is contiguous, so no physical-type cast is left to
+        // make: the dummy takes the array as it stands.
+        *slot = tmp;
+        (void)cast;
+        return true;
+    }
+
+    // Rewrite every strided section actual argument of every call in
+    // `stmt`, collecting the gather and scatter statements that have to
+    // bracket it.
+    bool gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
+            SymbolTable *block_scope, std::vector<ASR::stmt_t*> &before,
+            std::vector<ASR::stmt_t*> &after) {
+        bool changed = false;
+        const Location &loc = stmt->base.loc;
+        auto do_call = [&](ASR::symbol_t *name, ASR::call_arg_t *args,
+                size_t n_args) {
+            ASR::symbol_t *resolved =
+                ASRUtils::symbol_get_past_external(name);
+            ASR::Function_t *fn =
+                (resolved && ASR::is_a<ASR::Function_t>(*resolved))
+                    ? ASR::down_cast<ASR::Function_t>(resolved) : nullptr;
+            for (size_t i = 0; i < n_args; i++) {
+                if (!args[i].m_value) continue;
+                if (gather_strided_section_arg(loc, block_scope,
+                        &args[i].m_value, dummy_is_written(fn, i),
+                        before, after)) {
+                    changed = true;
+                }
+            }
+        };
+        if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+            ASR::SubroutineCall_t *sc =
+                ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+            do_call(sc->m_name, sc->m_args, sc->n_args);
+        }
+        GpuCallSiteCollector csc;
+        csc.visit_stmt(*stmt);
+        for (const ASR::FunctionCall_t *c : csc.calls) {
+            ASR::FunctionCall_t *fc = const_cast<ASR::FunctionCall_t*>(c);
+            do_call(fc->m_name, fc->m_args, fc->n_args);
+        }
+        return changed;
+    }
+
+    // True when some call in `body` takes a strided section this pass
+    // cannot gather. Passing it on would drop the stride silently, so the
+    // loop is declined for offload instead, while the body is untouched.
+    bool body_has_ungatherable_strided_section(ASR::stmt_t **body,
+            size_t n_body) {
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                if (body_has_ungatherable_strided_section(dl->m_body,
+                        dl->n_body)) return true;
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    if (body_has_ungatherable_strided_section(blk->m_body,
+                            blk->n_body)) return true;
+                }
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(b);
+                    if (body_has_ungatherable_strided_section(ab->m_body,
+                            ab->n_body)) return true;
+                }
+                continue;
+            }
+            std::vector<ASR::call_arg_t*> arg_lists;
+            std::vector<size_t> arg_counts;
+            if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+                ASR::SubroutineCall_t *sc =
+                    ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+                arg_lists.push_back(sc->m_args);
+                arg_counts.push_back(sc->n_args);
+            }
+            GpuCallSiteCollector csc;
+            csc.visit_stmt(*stmt);
+            for (const ASR::FunctionCall_t *c : csc.calls) {
+                arg_lists.push_back(c->m_args);
+                arg_counts.push_back(c->n_args);
+            }
+            for (size_t li = 0; li < arg_lists.size(); li++) {
+                for (size_t i = 0; i < arg_counts[li]; i++) {
+                    if (!arg_lists[li][i].m_value) continue;
+                    ASR::ArraySection_t *as = strided_section_actual(
+                        arg_lists[li][i].m_value);
+                    if (as && !strided_section_is_gatherable(as)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    void gather_strided_section_arguments(ASR::DoConcurrentLoop_t &x) {
+        gather_strided_sections_in_body(x.m_body, x.n_body, current_scope);
+    }
+
+    // `scope` owns the statements in `body`: the new BLOCK has to be
+    // registered there, not in the procedure, or it will not resolve from
+    // the BlockCall that replaces the statement.
+    void gather_strided_sections_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body);
+        bool changed = false;
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                gather_strided_sections_in_body(dl->m_body, dl->n_body,
+                    scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    gather_strided_sections_in_body(blk->m_body,
+                        blk->n_body, blk->m_symtab);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(b);
+                    gather_strided_sections_in_body(ab->m_body,
+                        ab->n_body, ab->m_symtab);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            // The gathered buffers and their loop counters live in a
+            // BLOCK scope nested inside the loop. A variable owned by such
+            // a scope travels into the kernel with the block instead of
+            // becoming a kernel parameter, which is what makes the buffer
+            // per-thread: one shared buffer written by every thread would
+            // be a race.
+            SymbolTable *block_scope = al.make_new<SymbolTable>(scope);
+            std::vector<ASR::stmt_t*> before, after;
+            if (!gather_strided_sections_in_stmt(stmt, block_scope, before,
+                    after)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            Vec<ASR::stmt_t*> block_body;
+            block_body.reserve(al, before.size() + after.size() + 1);
+            for (ASR::stmt_t *s : before) block_body.push_back(al, s);
+            block_body.push_back(al, stmt);
+            for (ASR::stmt_t *s : after) block_body.push_back(al, s);
+            std::string block_name = scope->get_unique_name(
+                "__gpu_gather_scope");
+            ASR::asr_t *block = ASR::make_Block_t(al, stmt->base.loc,
+                block_scope, s2c(al, block_name), block_body.p,
+                block_body.n);
+            block_scope->asr_owner = block;
+            ASR::symbol_t *block_sym =
+                ASR::down_cast<ASR::symbol_t>(block);
+            scope->add_symbol(block_name, block_sym);
+            new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+                al, stmt->base.loc, -1, block_sym)));
+            changed = true;
+        }
+        if (changed) {
+            body = new_body.p;
+            n_body = new_body.n;
+        }
+    }
+
     // Inline whole-array assignments whose RHS contains ArraySection
     // wrapped in elemental operations (e.g., b = abs(a(:,l))).
     // Replaces:
@@ -7070,6 +7538,15 @@ public:
                     "runtime-sized-alias-temp");
                 return;
             }
+            // A strided section actual argument is gathered into a
+            // contiguous kernel-local temporary below. When that temporary
+            // cannot be sized at compile time the gather is impossible,
+            // and passing the section on would silently drop its stride.
+            if (body_has_ungatherable_strided_section(x.m_body, x.n_body)) {
+                GpuOffloadReport::emit(loc, report_proc,
+                    "strided-section-cannot-be-gathered");
+                return;
+            }
             // A device function may need a run-time sized local -- an
             // array-constructor temporary sized from an assumed-shape
             // dummy, say -- which Metal cannot declare. Work out here
@@ -7426,6 +7903,14 @@ public:
                 xx.n_body = new_dc_body.n;
             }
         }
+
+        // A strided section actual argument cannot be handed to a device
+        // function as a base pointer; gather it into a contiguous
+        // temporary first. This runs after the ASSOCIATE scopes above have
+        // been inlined, so a section whose bounds come from an associate
+        // name is gathered with the selector substituted in.
+        gather_strided_section_arguments(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
