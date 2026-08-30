@@ -429,15 +429,110 @@ inline std::string find_struct_alloc_member_key(
     return "";
 }
 
+// The size in bytes of an array's element.
+inline int gpu_vla_elem_size(ASR::Array_t *arr) {
+    if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
+        return ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
+    }
+    if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
+        return ASR::down_cast<ASR::Integer_t>(arr->m_type)->m_kind;
+    }
+    return 4;
+}
+
+// The argument of an Allocate statement that gives `var_name` its shape.
+inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
+        const std::string &var_name) {
+    for (size_t ai = 0; ai < alloc->n_args; ai++) {
+        if (!alloc->m_args[ai].m_a) continue;
+        if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a)) continue;
+        std::string aname = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(alloc->m_args[ai].m_a)->m_v);
+        if (aname == var_name) return &alloc->m_args[ai];
+    }
+    return nullptr;
+}
+
+// Describes, as a per-thread workspace, the shape an `allocate` gives an
+// array. Returns false when every extent is known at compile time, in which
+// case the array needs no workspace: the device code declares it in thread
+// memory instead.
+inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
+        ASR::Array_t *arr, const std::string &var_name,
+        ASR::stmt_t **body, size_t n_body,
+        const std::vector<std::string> &arg_names,
+        GpuVlaWorkspace &ws) {
+    bool has_runtime_dim = false;
+    for (size_t d = 0; d < alloc_arg.n_dims; d++) {
+        if (alloc_arg.m_dims[d].m_length &&
+                !ASR::is_a<ASR::IntegerConstant_t>(
+                    *alloc_arg.m_dims[d].m_length)) {
+            has_runtime_dim = true;
+            break;
+        }
+    }
+    if (!has_runtime_dim) return false;
+    ws.var_name = var_name;
+    ws.elem_size = gpu_vla_elem_size(arr);
+    for (size_t d = 0; d < alloc_arg.n_dims; d++) {
+        ASR::expr_t *dim = alloc_arg.m_dims[d].m_length;
+        GpuVlaDim vd;
+        vd.dim_expr = dim;
+        vd.is_constant = true;
+        vd.constant_value = 1;
+        vd.call_arg_index = 0;
+        if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
+            vd.constant_value =
+                ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
+        } else if (dim) {
+            int64_t const_val;
+            if (try_resolve_alloc_dim_constant(dim, body, n_body,
+                    const_val)) {
+                vd.constant_value = const_val;
+            } else {
+                vd.is_constant = false;
+                vd.constant_value = 0;
+                size_t idx = 0;
+                if (find_arg_var_in_expr(dim, arg_names, idx)) {
+                    vd.call_arg_index = idx;
+                } else if (try_resolve_array_size_to_arg_var(dim, body,
+                        n_body, arg_names, idx)) {
+                    vd.call_arg_index = idx;
+                }
+            }
+        }
+        ws.dims.push_back(vd);
+    }
+    return true;
+}
+
+// A per-thread workspace for an allocatable array whose size is only known
+// on the device, sized from the struct member the array is copied from.
+inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
+        ASR::Array_t *arr, const std::string &var_name,
+        GpuVlaWorkspace &ws) {
+    std::string struct_key = find_struct_alloc_member_key(kernel);
+    if (struct_key.empty()) return false;
+    ws.var_name = var_name;
+    ws.elem_size = gpu_vla_elem_size(arr);
+    GpuVlaDim vd;
+    vd.dim_expr = nullptr;
+    vd.is_constant = false;
+    vd.constant_value = 0;
+    vd.call_arg_index = 0;
+    vd.is_struct_member_size = true;
+    vd.struct_member_key = struct_key;
+    ws.dims.push_back(vd);
+    return true;
+}
+
 // Scan kernel-scope Allocatable(Array) variables for VLA workspaces.
 inline void scan_kernel_scope_alloc_vlas(
         const ASR::Function_t &kernel,
         const std::vector<std::string> &arg_names,
         int &buffer_idx,
         std::vector<GpuVlaWorkspace> &result) {
-    // Build a set of kernel arg names for quick lookup
     std::set<std::string> arg_set(arg_names.begin(), arg_names.end());
-    // Collect already-handled var names from result
     std::set<std::string> handled_names;
     for (auto &ws : result) handled_names.insert(ws.var_name);
 
@@ -449,273 +544,37 @@ inline void scan_kernel_scope_alloc_vlas(
         ASR::ttype_t *inner =
             ASRUtils::type_get_past_allocatable(var->m_type);
         if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
         std::string vname(var->m_name);
         if (arg_set.count(vname)) continue;
         if (handled_names.count(vname)) continue;
+        GpuVlaWorkspace ws;
+        bool have = false;
         ASR::Allocate_t *alloc = find_allocate_for_var(
             kernel.m_body, kernel.n_body, vname);
         if (alloc) {
-            // Has Allocate: existing logic
-            ASR::alloc_arg_t *target_arg = nullptr;
-            for (size_t ai = 0; ai < alloc->n_args; ai++) {
-                if (!alloc->m_args[ai].m_a) continue;
-                if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
-                    continue;
-                std::string aname = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(
-                        alloc->m_args[ai].m_a)->m_v);
-                if (aname == vname) {
-                    target_arg = &alloc->m_args[ai];
-                    break;
-                }
-            }
+            ASR::alloc_arg_t *target_arg = find_alloc_arg_for_var(
+                alloc, vname);
             if (!target_arg) continue;
-            bool has_runtime_dim = false;
-            for (size_t d = 0; d < target_arg->n_dims; d++) {
-                ASR::dimension_t &dim = target_arg->m_dims[d];
-                if (dim.m_length &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(
-                            *dim.m_length)) {
-                    has_runtime_dim = true;
-                    break;
-                }
-            }
-            if (!has_runtime_dim) continue;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
-            GpuVlaWorkspace ws;
-            ws.var_name = vname;
-            ws.buffer_index = buffer_idx++;
-            if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Real_t>(
-                    arr->m_type)->m_kind;
-            } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Integer_t>(
-                    arr->m_type)->m_kind;
-            } else {
-                ws.elem_size = 4;
-            }
-            for (size_t d = 0; d < target_arg->n_dims; d++) {
-                ASR::expr_t *dim = target_arg->m_dims[d].m_length;
-                GpuVlaDim vd;
-                vd.dim_expr = dim;
-                if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
-                    vd.is_constant = true;
-                    vd.constant_value =
-                        ASR::down_cast<ASR::IntegerConstant_t>(
-                            dim)->m_n;
-                    vd.call_arg_index = 0;
-                } else if (dim) {
-                    int64_t const_val;
-                    if (try_resolve_alloc_dim_constant(
-                            dim, kernel.m_body, kernel.n_body,
-                            const_val)) {
-                        vd.is_constant = true;
-                        vd.constant_value = const_val;
-                        vd.call_arg_index = 0;
-                    } else {
-                        vd.is_constant = false;
-                        vd.constant_value = 0;
-                        vd.call_arg_index = 0;
-                        size_t idx = 0;
-                        if (find_arg_var_in_expr(dim, arg_names, idx)) {
-                            vd.call_arg_index = idx;
-                        } else if (try_resolve_array_size_to_arg_var(
-                                dim, kernel.m_body, kernel.n_body,
-                                arg_names, idx)) {
-                            vd.call_arg_index = idx;
-                        }
-                    }
-                } else {
-                    vd.is_constant = true;
-                    vd.constant_value = 1;
-                    vd.call_arg_index = 0;
-                }
-                ws.dims.push_back(vd);
-            }
-            result.push_back(std::move(ws));
+            have = alloc_shape_to_vla_workspace(*target_arg, arr, vname,
+                kernel.m_body, kernel.n_body, arg_names, ws);
         } else {
-            // No Allocate: this is likely a function-call result temp
-            // whose size depends on a struct member's allocatable array.
-            // Find the first struct array kernel arg with an allocatable
-            // array member to determine the size.
-            std::string struct_key;
-            for (size_t ai = 0; ai < kernel.n_args; ai++) {
-                ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(
-                    kernel.m_args[ai]);
-                ASR::Variable_t *avar =
-                    ASR::down_cast<ASR::Variable_t>(
-                        ASRUtils::symbol_get_past_external(
-                            av->m_v));
-                ASR::ttype_t *atype =
-                    ASRUtils::type_get_past_allocatable(avar->m_type);
-                if (!ASR::is_a<ASR::Array_t>(*atype)) continue;
-                ASR::Array_t *arr_t =
-                    ASR::down_cast<ASR::Array_t>(atype);
-                if (!ASR::is_a<ASR::StructType_t>(*arr_t->m_type))
-                    continue;
-                if (!avar->m_type_declaration) continue;
-                ASR::symbol_t *decl_sym =
-                    ASRUtils::symbol_get_past_external(
-                        avar->m_type_declaration);
-                if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) continue;
-                ASR::Struct_t *stype =
-                    ASR::down_cast<ASR::Struct_t>(decl_sym);
-                for (auto &mem : stype->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::Variable_t>(*mem.second))
-                        continue;
-                    ASR::Variable_t *mv =
-                        ASR::down_cast<ASR::Variable_t>(mem.second);
-                    if (!ASRUtils::is_allocatable(mv->m_type)) continue;
-                    ASR::ttype_t *mt =
-                        ASRUtils::type_get_past_allocatable(mv->m_type);
-                    if (!ASR::is_a<ASR::Array_t>(*mt)) continue;
-                    struct_key = std::string(avar->m_name)
-                        + "." + std::string(mv->m_name);
-                    break;
-                }
-                if (!struct_key.empty()) break;
-            }
-            if (struct_key.empty()) continue;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
-            GpuVlaWorkspace ws;
-            ws.var_name = vname;
-            ws.buffer_index = buffer_idx++;
-            if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Real_t>(
-                    arr->m_type)->m_kind;
-            } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Integer_t>(
-                    arr->m_type)->m_kind;
-            } else {
-                ws.elem_size = 4;
-            }
-            GpuVlaDim vd;
-            vd.dim_expr = nullptr;
-            vd.is_constant = false;
-            vd.constant_value = 0;
-            vd.call_arg_index = 0;
-            vd.is_struct_member_size = true;
-            vd.struct_member_key = struct_key;
-            ws.dims.push_back(vd);
-            result.push_back(std::move(ws));
+            // No Allocate: this is a function-call result temporary whose
+            // size depends on a struct member's allocatable array.
+            have = struct_member_vla_workspace(kernel, arr, vname, ws);
         }
+        if (!have) continue;
+        ws.buffer_index = buffer_idx++;
+        result.push_back(std::move(ws));
     }
 }
 
-// Count VLA workspaces in a kernel without assigning buffer indices.
-inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
-    int count = 0;
-    bool has_struct_alloc_member =
-        !find_struct_alloc_member_key(kernel).empty();
-    for (size_t i = 0; i < kernel.n_body; i++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            kernel.m_body[i]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
-        for (auto &item : block->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                item.second);
-            if (ASR::is_a<ASR::Array_t>(*var->m_type)) {
-                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                    var->m_type);
-                for (size_t d = 0; d < arr->n_dims; d++) {
-                    if (arr->m_dims[d].m_length &&
-                            !ASR::is_a<ASR::IntegerConstant_t>(
-                                *arr->m_dims[d].m_length)) {
-                        count++;
-                        break;
-                    }
-                }
-            } else if (ASRUtils::is_allocatable(var->m_type)) {
-                ASR::ttype_t *inner =
-                    ASRUtils::type_get_past_allocatable(var->m_type);
-                if (ASR::is_a<ASR::Array_t>(*inner) &&
-                        has_struct_alloc_member) {
-                    count++;
-                }
-            }
-        }
-    }
-    // Also count kernel-scope Allocatable(Array) variables with
-    // runtime-dependent Allocate dimensions or no Allocate (func temps)
-    std::set<std::string> arg_name_set;
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
-        arg_name_set.insert(std::string(ASRUtils::symbol_name(
-            ASRUtils::symbol_get_past_external(v->m_v))));
-    }
-    for (auto &item : kernel.m_symtab->get_scope()) {
-        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-        ASR::Variable_t *var =
-            ASR::down_cast<ASR::Variable_t>(item.second);
-        if (!ASRUtils::is_allocatable(var->m_type)) continue;
-        ASR::ttype_t *inner =
-            ASRUtils::type_get_past_allocatable(var->m_type);
-        if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
-        std::string vname(var->m_name);
-        if (arg_name_set.count(vname)) continue;
-        ASR::Allocate_t *alloc = find_allocate_for_var(
-            kernel.m_body, kernel.n_body, vname);
-        if (!alloc) {
-            if (has_struct_alloc_member) count++;
-            continue;
-        }
-        for (size_t ai = 0; ai < alloc->n_args; ai++) {
-            if (!alloc->m_args[ai].m_a) continue;
-            if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
-                continue;
-            std::string aname = ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(
-                    alloc->m_args[ai].m_a)->m_v);
-            if (aname != std::string(var->m_name)) continue;
-            bool has_runtime = false;
-            for (size_t d = 0; d < alloc->m_args[ai].n_dims; d++) {
-                if (alloc->m_args[ai].m_dims[d].m_length &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(
-                            *alloc->m_args[ai].m_dims[d].m_length)) {
-                    has_runtime = true;
-                    break;
-                }
-            }
-            if (has_runtime) count++;
-            break;
-        }
-    }
-    return count;
-}
-
-static const int MAX_METAL_BUFFERS = 31;
-static const int PACKED_BUFFER_ALIGN = 16;
-
-// Determine whether a kernel needs buffer packing because its total
-// buffer count exceeds Metal's 31-slot limit.
-inline bool gpu_kernel_needs_buffer_packing(
-        const ASR::Function_t &kernel) {
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
-    return total > MAX_METAL_BUFFERS;
-}
-
-// Compute the Metal buffer index where VLA workspace buffers start.
-// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
-// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
-inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
-    if (gpu_kernel_needs_buffer_packing(kernel)) {
-        return 2;
-    }
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    return n_buffer + (n_scalar > 0 ? 1 : 0);
-}
-
-// Analyze a GPU kernel function for variable-length arrays in blocks.
-// Returns workspace metadata for each VLA found, with buffer indices
-// assigned sequentially starting after the kernel's packed arguments.
-inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
-        const ASR::Function_t &kernel) {
-    // Build the kernel argument name list for mapping dim vars to arg indices
+// Every per-thread workspace a GPU kernel needs, with buffer indices assigned
+// sequentially from `buffer_idx`.
+inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
+        const ASR::Function_t &kernel, int buffer_idx) {
+    // The kernel argument names, so that a workspace extent that is one of
+    // them can be read on the host at dispatch time.
     std::vector<std::string> arg_names;
     for (size_t i = 0; i < kernel.n_args; i++) {
         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
@@ -724,12 +583,8 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         arg_names.push_back(std::string(var->m_name));
     }
 
-    // Buffer index starts after buffer args + optional scalar struct
-    int buffer_idx = gpu_vla_buffer_start(kernel);
-
     std::vector<GpuVlaWorkspace> result;
 
-    // Scan BlockCall statements in the kernel body for VLAs
     for (size_t i = 0; i < kernel.n_body; i++) {
         if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
         ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
@@ -737,6 +592,8 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
         if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
 
+        // An automatic array of the block, whose extents the device cannot
+        // declare because they are not compile-time constants.
         for (auto &item : block->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
@@ -758,19 +615,7 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
             GpuVlaWorkspace ws;
             ws.var_name = var->m_name;
             ws.buffer_index = buffer_idx++;
-
-            // Compute element size from the array element type
-            if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Real_t>(
-                    arr->m_type)->m_kind;
-            } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Integer_t>(
-                    arr->m_type)->m_kind;
-            } else {
-                ws.elem_size = 4;
-            }
-
-            // Process each dimension
+            ws.elem_size = gpu_vla_elem_size(arr);
             for (size_t d = 0; d < arr->n_dims; d++) {
                 ASR::expr_t *dim = arr->m_dims[d].m_length;
                 GpuVlaDim vd;
@@ -802,9 +647,10 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
             result.push_back(std::move(ws));
         }
 
-        // Also scan allocatable arrays in block scope (temporaries from
-        // subroutine_from_function pass whose size depends on a struct
-        // member's allocatable array).
+        // An allocatable array of the block: its shape comes from the
+        // `allocate` that gives it one, or, for a temporary the
+        // subroutine_from_function pass created, from the struct member it
+        // is copied from.
         for (auto &item2 : block->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item2.second)) continue;
             ASR::Variable_t *var2 = ASR::down_cast<ASR::Variable_t>(
@@ -813,45 +659,73 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(var2->m_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+            ASR::Array_t *arr2 = ASR::down_cast<ASR::Array_t>(inner);
             std::string vname(var2->m_name);
             bool already = false;
             for (auto &r : result) {
                 if (r.var_name == vname) { already = true; break; }
             }
             if (already) continue;
-            std::string struct_key = find_struct_alloc_member_key(kernel);
-            if (struct_key.empty()) continue;
-            ASR::Array_t *arr2 = ASR::down_cast<ASR::Array_t>(inner);
             GpuVlaWorkspace ws;
-            ws.var_name = vname;
-            ws.buffer_index = buffer_idx++;
-            if (ASR::is_a<ASR::Real_t>(*arr2->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Real_t>(
-                    arr2->m_type)->m_kind;
-            } else if (ASR::is_a<ASR::Integer_t>(*arr2->m_type)) {
-                ws.elem_size = ASR::down_cast<ASR::Integer_t>(
-                    arr2->m_type)->m_kind;
-            } else {
-                ws.elem_size = 4;
+            bool have = false;
+            ASR::Allocate_t *alloc = find_allocate_for_var(
+                block->m_body, block->n_body, vname);
+            if (alloc) {
+                ASR::alloc_arg_t *target_arg = find_alloc_arg_for_var(
+                    alloc, vname);
+                if (target_arg) {
+                    have = alloc_shape_to_vla_workspace(*target_arg, arr2,
+                        vname, block->m_body, block->n_body, arg_names, ws);
+                }
             }
-            GpuVlaDim vd;
-            vd.dim_expr = nullptr;
-            vd.is_constant = false;
-            vd.constant_value = 0;
-            vd.call_arg_index = 0;
-            vd.is_struct_member_size = true;
-            vd.struct_member_key = struct_key;
-            ws.dims.push_back(vd);
+            if (!have) {
+                have = struct_member_vla_workspace(kernel, arr2, vname, ws);
+            }
+            if (!have) continue;
+            ws.buffer_index = buffer_idx++;
             result.push_back(std::move(ws));
         }
     }
 
-    // Also scan kernel-scope Allocatable(Array) variables whose Allocate
-    // statements have runtime-dependent dimensions (e.g. temporaries from
-    // subroutine_from_function pass with runtime-sized array sections).
     scan_kernel_scope_alloc_vlas(kernel, arg_names, buffer_idx, result);
 
     return result;
+}
+
+// Count VLA workspaces in a kernel without assigning buffer indices.
+inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
+    return static_cast<int>(collect_gpu_vla_workspaces(kernel, 0).size());
+}
+
+static const int MAX_METAL_BUFFERS = 31;
+static const int PACKED_BUFFER_ALIGN = 16;
+
+// Determine whether a kernel needs buffer packing because its total
+// buffer count exceeds Metal's 31-slot limit.
+inline bool gpu_kernel_needs_buffer_packing(
+        const ASR::Function_t &kernel) {
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    int n_vla = count_gpu_vla_workspaces(kernel);
+    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
+    return total > MAX_METAL_BUFFERS;
+}
+
+// Compute the Metal buffer index where VLA workspace buffers start.
+// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
+// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
+inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
+    if (gpu_kernel_needs_buffer_packing(kernel)) {
+        return 2;
+    }
+    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    return n_buffer + (n_scalar > 0 ? 1 : 0);
+}
+
+// Analyze a GPU kernel function for the per-thread workspaces it needs, with
+// buffer indices assigned sequentially after the kernel's packed arguments.
+inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
+        const ASR::Function_t &kernel) {
+    return collect_gpu_vla_workspaces(kernel, gpu_vla_buffer_start(kernel));
 }
 
 // Scan a kernel body for alloc-assign statements that write a VLA workspace
