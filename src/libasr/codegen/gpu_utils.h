@@ -1193,9 +1193,45 @@ inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
         && dim.expr_nodes.empty() && dim.call_arg_index < 0;
 }
 
+// Every array constructor reachable from a statement list, nested scopes
+// included.  Each one becomes a temporary array later, so each one is a
+// workspace the backend may have to size.
+class GpuArrayConstructorCollector :
+        public ASR::BaseWalkVisitor<GpuArrayConstructorCollector> {
+public:
+    std::vector<ASR::ArrayConstructor_t*> found;
+
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        found.push_back(const_cast<ASR::ArrayConstructor_t*>(&x));
+        ASR::BaseWalkVisitor<GpuArrayConstructorCollector>
+            ::visit_ArrayConstructor(x);
+    }
+
+    // The generated walker stops at a BLOCK or ASSOCIATE call, but a
+    // constructor inside one still becomes a temporary of the kernel.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
 // Pre-flight for the GPU offload pass: can every workspace extent that
-// the BLOCK scopes of `body` require be evaluated on the host from the
-// kernel arguments named in `arg_names`?
+// `body` requires be evaluated on the host from the kernel arguments
+// named in `arg_names`?
 //
 // The backend evaluates these extents when it launches the kernel, and
 // one it cannot evaluate is a hard code-generation error -- far too late,
@@ -1204,7 +1240,19 @@ inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
 // offload instead and leave the loop on the host.  Both paths go through
 // `scan_gpu_scope_vlas` and `resolve_gpu_workspace_dim`, so the pre-flight
 // and the backend cannot disagree about what resolves.
-inline bool gpu_block_workspace_extents_resolvable(
+//
+// Two kinds of workspace have to be accounted for.  The BLOCK scopes of
+// `body` already hold theirs as declared symbols, so those are scanned
+// directly.  An array constructor, on the other hand, is still an
+// expression at this point: `array_struct_temporary` turns it into a
+// temporary array only after this pass has run, and puts that temporary
+// in the scope the constructor ends up in -- the kernel's own scope,
+// where no symbol exists yet for the scan to find.  Predict it instead:
+// the extent it will be allocated with is exactly
+// `get_ArrayConstructor_size`, which is what `array_struct_temporary`
+// itself uses, so resolving that expression here decides the same
+// question the backend will be asked later.
+inline bool gpu_block_workspace_extents_resolvable(Allocator &al,
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name) {
@@ -1224,6 +1272,19 @@ inline bool gpu_block_workspace_extents_resolvable(
                 unresolved_name = ws.var_name;
                 return false;
             }
+        }
+    }
+    GpuArrayConstructorCollector constructors;
+    for (size_t i = 0; i < n_body; i++) {
+        constructors.visit_stmt(*body[i]);
+    }
+    for (ASR::ArrayConstructor_t *ac : constructors.found) {
+        ASR::expr_t *extent = ASRUtils::get_ArrayConstructor_size(al, ac);
+        GpuVlaDim dim = resolve_gpu_workspace_dim(extent, body, n_body,
+            arg_names);
+        if (gpu_vla_dim_is_unresolvable(dim)) {
+            unresolved_name = "<array constructor>";
+            return false;
         }
     }
     return true;

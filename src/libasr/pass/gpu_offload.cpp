@@ -7887,8 +7887,8 @@ public:
             collect_kernel_arg_names(x, enclosing_block_scopes,
                 kernel_arg_names);
             std::string unresolved_name;
-            if (!gpu_block_workspace_extents_resolvable(x.m_body, x.n_body,
-                    kernel_arg_names, unresolved_name)) {
+            if (!gpu_block_workspace_extents_resolvable(al, x.m_body,
+                    x.n_body, kernel_arg_names, unresolved_name)) {
                 splice_snapshot.restore();
                 GpuOffloadReport::set_detail("sym=" + unresolved_name);
                 GpuOffloadReport::emit(loc, report_proc,
