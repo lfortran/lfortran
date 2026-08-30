@@ -6198,6 +6198,12 @@ public:
                                                     ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
                                             }
                                         } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                                            // Same as above: the ALLOCATABLE statement may be the
+                                            // entity's only declaration under implicit typing,
+                                            // and its array-spec is then the only shape it has.
+                                            if (s.n_dim > 0) {
+                                                dimension_variable(s, x.base.base.loc);
+                                            }
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                             if (!ASRUtils::is_allocatable(v->m_type)) {
                                                 v->m_type = ASRUtils::TYPE(
