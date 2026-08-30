@@ -206,6 +206,15 @@ public:
     // for runtime-dependent allocation sizes that cannot be resolved to
     // compile-time constants.
     std::map<std::string, std::string> alloc_array_size_exprs;
+    // Kernel-scope functions that allocate an output array argument with
+    // an extent that is not a compile-time constant. Maps the function
+    // name to {argument index -> the Allocate argument}, so that the
+    // extent can be re-evaluated in terms of the actual arguments at
+    // each call site.
+    std::map<std::string, std::map<size_t, ASR::alloc_arg_t*>>
+        func_dynamic_alloc_args;
+    // The kernel-scope Function_t the above entries were collected from.
+    std::map<std::string, ASR::Function_t*> func_dynamic_alloc_owner;
 
     // Maps pointer-to-section variable names to the Metal C expression
     // string for the section size, set when processing Associate stmts
@@ -534,6 +543,133 @@ public:
 
     // Compute the total allocation size from an Allocate statement's
     // alloc_arg dimensions. Returns -1 if any dimension is non-constant.
+    // Render the total element count of an Allocate argument as a C
+    // expression. Returns an empty string when any extent cannot be
+    // expressed in the current scope.
+    std::string alloc_size_to_string(ASR::alloc_arg_t &arg) {
+        if (arg.n_dims == 0) return "";
+        std::stringstream saved;
+        saved.swap(src);
+        bool ok = true;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            if (!arg.m_dims[d].m_length) {
+                ok = false;
+                break;
+            }
+            if (d > 0) src << " * ";
+            visit_expr(arg.m_dims[d].m_length);
+        }
+        std::string out = src.str();
+        saved.swap(src);
+        if (!ok || out.find("/*") != std::string::npos) return "";
+        return "(" + out + ")";
+    }
+
+    // Extent of `arr` along `const_dim` (1-based), or its total element
+    // count when `const_dim` is 0. Empty when it cannot be determined.
+    std::string array_extent_string(ASR::expr_t *arr, int64_t const_dim) {
+        while (arr && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr)) {
+            arr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arr)->m_arg;
+        }
+        if (!arr || !ASR::is_a<ASR::Var_t>(*arr)) return "";
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(arr)->m_v);
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(arr));
+        ASR::Array_t *arr_t = ASR::is_a<ASR::Array_t>(*t)
+            ? ASR::down_cast<ASR::Array_t>(t) : nullptr;
+        if (const_dim > 0 && !(arr_t && arr_t->n_dims == 1)) {
+            auto dit = func_array_size_params.find(name + "__dim"
+                + std::to_string(const_dim));
+            if (dit != func_array_size_params.end()) return dit->second;
+            if (arr_t && (size_t)const_dim <= arr_t->n_dims
+                    && arr_t->m_dims[const_dim - 1].m_length) {
+                return expr_to_string(arr_t->m_dims[const_dim - 1].m_length);
+            }
+            return "";
+        }
+        std::string total = array_count_expr(name);
+        if (!total.empty()) return total;
+        if (arr_t) {
+            std::string out;
+            for (size_t d = 0; d < arr_t->n_dims; d++) {
+                if (!arr_t->m_dims[d].m_length) return "";
+                if (d > 0) out += " * ";
+                out += expr_to_string(arr_t->m_dims[d].m_length);
+            }
+            return out;
+        }
+        return "";
+    }
+
+    // Index of the formal argument of `fn` that `e` refers to, or -1.
+    int64_t formal_arg_index(ASR::expr_t *e, ASR::Function_t *fn) {
+        if (!fn || !e || !ASR::is_a<ASR::Var_t>(*e)) return -1;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v == sym) {
+                return (int64_t)i;
+            }
+        }
+        return -1;
+    }
+
+    // Re-express an extent written in terms of `fn`'s formal arguments
+    // using the actual arguments of the call `sc`. Empty when some part
+    // of the expression cannot be translated.
+    std::string call_site_expr_string(ASR::expr_t *e, ASR::Function_t *fn,
+            ASR::SubroutineCall_t *sc) {
+        if (!e) return "";
+        switch (e->type) {
+            case ASR::exprType::IntegerConstant: {
+                return std::to_string(
+                    ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+            }
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t *b =
+                    ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                std::string op;
+                switch (b->m_op) {
+                    case ASR::binopType::Add: op = " + "; break;
+                    case ASR::binopType::Sub: op = " - "; break;
+                    case ASR::binopType::Mul: op = " * "; break;
+                    case ASR::binopType::Div: op = " / "; break;
+                    default: return "";
+                }
+                std::string l = call_site_expr_string(b->m_left, fn, sc);
+                std::string r = call_site_expr_string(b->m_right, fn, sc);
+                if (l.empty() || r.empty()) return "";
+                return "(" + l + op + r + ")";
+            }
+            case ASR::exprType::Cast: {
+                return call_site_expr_string(
+                    ASR::down_cast<ASR::Cast_t>(e)->m_arg, fn, sc);
+            }
+            case ASR::exprType::ArraySize: {
+                ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(e);
+                int64_t idx = formal_arg_index(as->m_v, fn);
+                if (idx < 0 || (size_t)idx >= sc->n_args) return "";
+                int64_t const_dim = 0;
+                if (as->m_dim
+                        && ASR::is_a<ASR::IntegerConstant_t>(*as->m_dim)) {
+                    const_dim = ASR::down_cast<ASR::IntegerConstant_t>(
+                        as->m_dim)->m_n;
+                }
+                return array_extent_string(sc->m_args[idx].m_value,
+                    const_dim);
+            }
+            case ASR::exprType::Var: {
+                int64_t idx = formal_arg_index(e, fn);
+                if (idx < 0 || (size_t)idx >= sc->n_args) return "";
+                ASR::expr_t *actual = sc->m_args[idx].m_value;
+                if (!actual) return "";
+                return expr_to_string(actual);
+            }
+            default:
+                return "";
+        }
+    }
+
     int64_t compute_alloc_size(ASR::alloc_arg_t &arg) {
         int64_t total = 1;
         for (size_t d = 0; d < arg.n_dims; d++) {
@@ -814,16 +950,22 @@ public:
                                 alloc->m_args[ai].m_a)->m_v);
                         int64_t sz = compute_alloc_size(
                             alloc->m_args[ai]);
-                        if (sz <= 0) continue;
                         for (size_t pi = 0; pi < fn->n_args; pi++) {
                             ASR::Variable_t *pv =
                                 ASR::down_cast<ASR::Variable_t>(
                                     ASR::down_cast<ASR::Var_t>(
                                         fn->m_args[pi])->m_v);
-                            if (std::string(pv->m_name) == alloc_var) {
-                                func_allocs[fn_name][pi] = sz;
-                                break;
+                            if (std::string(pv->m_name) != alloc_var) {
+                                continue;
                             }
+                            if (sz > 0) {
+                                func_allocs[fn_name][pi] = sz;
+                            } else {
+                                func_dynamic_alloc_args[fn_name][pi] =
+                                    &alloc->m_args[ai];
+                                func_dynamic_alloc_owner[fn_name] = fn;
+                            }
+                            break;
                         }
                     }
                 } else if (fn->m_body[si]->type ==
@@ -1085,6 +1227,47 @@ public:
                     std::string actual_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(actual)->m_v);
                     alloc_array_sizes[actual_name] = sz;
+                }
+            }
+            // The callee allocates an output argument to an extent that
+            // depends on its own arguments; re-evaluate that extent with
+            // the actual arguments so the caller's temporary is sized
+            // correctly.
+            auto dyn_it = func_dynamic_alloc_args.find(fn_name);
+            if (dyn_it != func_dynamic_alloc_args.end()) {
+                ASR::Function_t *callee =
+                    func_dynamic_alloc_owner[fn_name];
+                for (auto &[param_idx, alloc_arg] : dyn_it->second) {
+                    if (param_idx >= sc->n_args) continue;
+                    ASR::expr_t *actual = sc->m_args[param_idx].m_value;
+                    if (!actual || !ASR::is_a<ASR::Var_t>(*actual)) continue;
+                    std::string actual_name = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(actual)->m_v);
+                    if (alloc_array_sizes.count(actual_name)
+                            || alloc_array_size_exprs.count(actual_name)) {
+                        continue;
+                    }
+                    std::string size_str;
+                    for (size_t d = 0; d < alloc_arg->n_dims; d++) {
+                        std::string part = call_site_expr_string(
+                            alloc_arg->m_dims[d].m_length, callee, sc);
+                        if (part.empty()) {
+                            size_str.clear();
+                            break;
+                        }
+                        if (d > 0) size_str += " * ";
+                        size_str += part;
+                    }
+                    if (size_str.empty()) continue;
+                    char *end = nullptr;
+                    long long as_int = std::strtoll(size_str.c_str(),
+                        &end, 10);
+                    if (end && *end == '\0' && as_int > 0) {
+                        alloc_array_sizes[actual_name] = as_int;
+                    } else {
+                        alloc_array_size_exprs[actual_name] =
+                            "(" + size_str + ")";
+                    }
                 }
             }
             // out_param = in_param: propagate size from actual in arg
@@ -2716,6 +2899,16 @@ public:
                             alloc->m_args[ai]);
                         if (sz > 0) {
                             alloc_array_sizes[vname] = sz;
+                        } else if (!alloc_array_size_exprs.count(vname)) {
+                            // Extents that depend on the function's own
+                            // arguments (e.g. allocate(r(size(mm,1))))
+                            // are known inside the function even though
+                            // they are not compile-time constants.
+                            std::string sz_expr = alloc_size_to_string(
+                                alloc->m_args[ai]);
+                            if (!sz_expr.empty()) {
+                                alloc_array_size_exprs[vname] = sz_expr;
+                            }
                         }
                     }
                 } else if (fn->m_body[i]->type ==
@@ -4494,13 +4687,27 @@ public:
                         // a pointer from __data + __offsets indexing).
                         if (ASRUtils::is_allocatable(arg_type)) {
                             bool skip_addr = false;
-                            if (ASR::is_a<ASR::Var_t>(
-                                    *sc->m_args[i].m_value)) {
+                            ASR::expr_t *bare_arg = sc->m_args[i].m_value;
+                            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(
+                                    *bare_arg)) {
+                                bare_arg = ASR::down_cast<
+                                    ASR::ArrayPhysicalCast_t>(
+                                        bare_arg)->m_arg;
+                            }
+                            if (ASR::is_a<ASR::Var_t>(*bare_arg)) {
                                 std::string aname = ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(
-                                        sc->m_args[i].m_value)->m_v);
+                                        bare_arg)->m_v);
+                                // A local that is itself emitted as a
+                                // bare pointer (a fixed-size workspace,
+                                // a pointer parameter or a pointer
+                                // alias) is already an address.
                                 skip_addr =
-                                    local_alloc_arrays.count(aname) > 0;
+                                    local_alloc_arrays.count(aname) > 0
+                                    || alloc_pointer_params.count(aname) > 0
+                                    || ASR::is_a<ASR::Pointer_t>(
+                                        *ASRUtils::type_get_past_allocatable(
+                                            ASRUtils::expr_type(bare_arg)));
                             } else if (ASR::is_a<ASR::StructInstanceMember_t>(
                                     *sc->m_args[i].m_value)) {
                                 ASR::StructInstanceMember_t *sm =
@@ -5359,7 +5566,36 @@ public:
                 } else if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
                     std::string arr_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+                    // size(a, dim) with a constant dim asks for a single
+                    // extent, not the total element count.
+                    int64_t const_dim = 0;
+                    if (as->m_dim
+                            && ASR::is_a<ASR::IntegerConstant_t>(*as->m_dim)) {
+                        const_dim = ASR::down_cast<ASR::IntegerConstant_t>(
+                            as->m_dim)->m_n;
+                    }
                     auto it = func_array_size_params.find(arr_name);
+                    if (const_dim > 0) {
+                        auto dit = func_array_size_params.find(arr_name
+                            + "__dim" + std::to_string(const_dim));
+                        if (dit != func_array_size_params.end()) {
+                            src << dit->second;
+                            break;
+                        }
+                        ASR::ttype_t *dim_type =
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(as->m_v));
+                        if (ASR::is_a<ASR::Array_t>(*dim_type)) {
+                            ASR::Array_t *darr =
+                                ASR::down_cast<ASR::Array_t>(dim_type);
+                            if ((size_t)const_dim <= darr->n_dims
+                                    && darr->m_dims[const_dim - 1].m_length) {
+                                visit_expr(
+                                    darr->m_dims[const_dim - 1].m_length);
+                                break;
+                            }
+                        }
+                    }
                     if (it != func_array_size_params.end()) {
                         src << it->second;
                     } else {

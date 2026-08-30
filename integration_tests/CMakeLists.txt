@@ -5069,6 +5069,7 @@ RUN(NAME gpu_metal_219 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_220 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_221 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_222 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_223 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_224 LABELS gfortran llvm metal)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
