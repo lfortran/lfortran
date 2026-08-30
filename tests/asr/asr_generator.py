@@ -300,7 +300,7 @@ def procedure(name, returns, dummies, body, extra_locals=None,
         f":arg_types [{arg_types}] :return_var_type {return_type} "
         f":abi :Source :deftype :{deftype} :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
-        f":static false :restrictions [] :is_restriction false) "
+        f":static false :restrictions [] :is_restriction false :external_abi false) "
         f":dependencies [] "
         f":args [{args}] "
         f":body [{' '.join(body or [])}] "
@@ -329,7 +329,7 @@ def function_symbol(name, parameter_name, kind):
         f":return_var_type {integer_type(kind)} "
         f":abi :Source :deftype :Implementation :bindc_name nil "
         f":elemental false :pure false :module false :inline false "
-        f":static false :restrictions [] :is_restriction false) "
+        f":static false :restrictions [] :is_restriction false :external_abi false) "
         f":dependencies [] "
         f":args [{var(PROCEDURE_SYMTAB, parameter_name)}] "
         f":body [{body}] "
@@ -429,7 +429,7 @@ def function_type(arg_types, return_type=None, deftype="Interface"):
         f":return_var_type {return_type or 'nil'} :abi :Source "
         f":deftype :{deftype} :bindc_name nil :elemental false :pure false "
         f":module false :inline false :static false :restrictions [] "
-        f":is_restriction false)"
+        f":is_restriction false :external_abi false)"
     )
 
 

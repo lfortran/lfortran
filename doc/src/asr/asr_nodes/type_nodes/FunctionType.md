@@ -10,7 +10,7 @@ The signature of a procedure.
 FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
     deftype deftype, string? bindc_name, bool elemental, bool pure,
     bool module, bool inline, bool static, symbol* restrictions,
-    bool is_restriction)
+    bool is_restriction, bool external_abi)
 ```
 
 ### Arguments
@@ -29,6 +29,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `static` | `true` when the procedure's local variables are allocated statically rather than on the stack. |
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
+| `external_abi` | `true` for a separately compiled external procedure: a subprogram defined at the top level, an interface body in a plain (non-abstract, non-module) interface block, or an interface synthesized for a procedure referenced without an explicit one. Such procedures use the classic Fortran external ABI, in which a CHARACTER dummy is passed as a data pointer with its length as a hidden trailing argument, so that they interoperate with gfortran and flang. Compiler-synthesized procedures leave this `false`. |
 
 ### Return values
 
@@ -71,6 +72,7 @@ arguments are not known here.
   :static false
   :restrictions []
   :is_restriction false
+  :external_abi false
 )
 ```
 

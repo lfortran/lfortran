@@ -25,6 +25,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :external_abi false
               )
               :dependencies []
               :args []

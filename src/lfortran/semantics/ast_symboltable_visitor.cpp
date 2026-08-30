@@ -1727,7 +1727,8 @@ public:
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free,
             nullptr, nullptr, nullptr,
-            declares_external_procedure(parent_scope, is_module));
+            declares_external_procedure(parent_scope, is_module,
+                current_procedure_abi_type));
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2440,7 +2441,7 @@ public:
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr,
             /* m_external_abi */ declares_external_procedure(parent_scope,
-                is_module)
+                is_module, current_procedure_abi_type)
         );
 
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -3364,8 +3365,8 @@ public:
     // is the ABI gfortran and flang use and therefore the one LFortran must
     // commit to; everything else is free to use LFortran's own conventions.
     //
-    //   * an interface body in a plain (non-abstract, non-module) interface
-    //     block declares such a procedure;
+    //   * an interface body in a plain (non-abstract, non-module, non-bind(c))
+    //     interface block declares such a procedure;
     //   * a subprogram defined at the top level (not contained in a module,
     //     program or another subprogram) is such a procedure.
     //
@@ -3374,7 +3375,12 @@ public:
     // interface is implemented in a submodule of the same build, so neither
     // is external.
     bool declares_external_procedure(SymbolTable* parent_scope,
-            bool is_module_procedure) const {
+            bool is_module_procedure, ASR::abiType abi) const {
+        if (abi == ASR::abiType::BindC) {
+            // A bind(c) procedure uses the C ABI; the classic Fortran external
+            // ABI and the C one are mutually exclusive.
+            return false;
+        }
         if (is_module_procedure) {
             return false;
         }
