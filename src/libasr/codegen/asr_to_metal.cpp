@@ -41,6 +41,26 @@ static int struct_parent_depth(ASR::Struct_t *st,
     return -1;
 }
 
+// Checks whether every variable an expression refers to is declared in a
+// given scope or one of its ancestors. An ALLOCATE inside a BLOCK or
+// ASSOCIATE construct may size a local declared in the enclosing routine;
+// its extent can only be reused at that outer level when the extent does
+// not depend on symbols that are local to the nested construct.
+class GpuScopeVisibilityChecker :
+        public ASR::BaseWalkVisitor<GpuScopeVisibilityChecker> {
+public:
+    const SymbolTable *scope = nullptr;
+    bool visible = true;
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        const SymbolTable *owner = ASRUtils::symbol_parent_symtab(sym);
+        for (const SymbolTable *s = scope; s != nullptr; s = s->parent) {
+            if (s == owner) return;
+        }
+        visible = false;
+    }
+};
+
 class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
 public:
     std::set<std::string> called;
@@ -539,6 +559,25 @@ public:
             }
         }
         return total;
+    }
+
+    // An ALLOCATE inside a BLOCK or ASSOCIATE construct sizes a variable
+    // that lives in the enclosing routine, but the construct's own locals
+    // are emitted inside a nested MSL scope. Only reuse such an extent at
+    // the routine level when every symbol it names is visible there.
+    bool alloc_extent_visible_in(ASR::alloc_arg_t &arg,
+            const SymbolTable *scope) {
+        GpuScopeVisibilityChecker checker;
+        checker.scope = scope;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            if (arg.m_dims[d].m_length) {
+                checker.visit_expr(*arg.m_dims[d].m_length);
+            }
+            if (arg.m_dims[d].m_start) {
+                checker.visit_expr(*arg.m_dims[d].m_start);
+            }
+        }
+        return checker.visible;
     }
 
     // Compute the total allocation size from an Allocate statement's
@@ -2557,6 +2596,155 @@ public:
         return has_array;
     }
 
+    // Record the extents of arrays allocated in a device function
+    // body, and propagate sizes across assignments. Nested constructs
+    // (BLOCK, ASSOCIATE) and control flow are emitted into the same
+    // MSL function, so an ALLOCATE inside one still sizes an array
+    // declared in the enclosing scope.
+    void prescan_inline_allocs(ASR::Function_t *fn,
+            ASR::stmt_t **stmts, size_t n_stmts,
+            const std::map<std::string, int64_t> &local_fixed_sizes) {
+        for (size_t i = 0; i < n_stmts; i++) {
+            switch (stmts[i]->type) {
+                case ASR::stmtType::BlockCall: {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(
+                        ASR::down_cast<ASR::BlockCall_t>(
+                            stmts[i])->m_m);
+                    prescan_inline_allocs(fn, blk->m_body,
+                        blk->n_body, local_fixed_sizes);
+                    break;
+                }
+                case ASR::stmtType::AssociateBlockCall: {
+                    ASR::AssociateBlock_t *ablk =
+                        ASR::down_cast<ASR::AssociateBlock_t>(
+                            ASR::down_cast<
+                                ASR::AssociateBlockCall_t>(
+                                stmts[i])->m_m);
+                    prescan_inline_allocs(fn, ablk->m_body,
+                        ablk->n_body, local_fixed_sizes);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *dl =
+                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                    prescan_inline_allocs(fn, dl->m_body, dl->n_body,
+                        local_fixed_sizes);
+                    break;
+                }
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *wl =
+                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                    prescan_inline_allocs(fn, wl->m_body, wl->n_body,
+                        local_fixed_sizes);
+                    break;
+                }
+                case ASR::stmtType::If: {
+                    ASR::If_t *ifs =
+                        ASR::down_cast<ASR::If_t>(stmts[i]);
+                    prescan_inline_allocs(fn, ifs->m_body, ifs->n_body,
+                        local_fixed_sizes);
+                    prescan_inline_allocs(fn, ifs->m_orelse,
+                        ifs->n_orelse, local_fixed_sizes);
+                    break;
+                }
+                default:
+                    break;
+            }
+            if (stmts[i]->type == ASR::stmtType::Allocate) {
+                ASR::Allocate_t *alloc =
+                    ASR::down_cast<ASR::Allocate_t>(stmts[i]);
+                for (size_t ai = 0; ai < alloc->n_args; ai++) {
+                    if (!alloc->m_args[ai].m_a) continue;
+                    if (!ASR::is_a<ASR::Var_t>(
+                            *alloc->m_args[ai].m_a))
+                        continue;
+                    std::string vname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(
+                            alloc->m_args[ai].m_a)->m_v);
+                    int64_t sz = compute_alloc_size(
+                        alloc->m_args[ai]);
+                    if (sz > 0) {
+                        alloc_array_sizes[vname] = sz;
+                    } else if (!alloc_array_size_exprs.count(vname)
+                            && alloc_extent_visible_in(
+                                alloc->m_args[ai], fn->m_symtab)) {
+                        // Extents that depend on the function's own
+                        // arguments (e.g. allocate(r(size(mm,1))))
+                        // are known inside the function even though
+                        // they are not compile-time constants.
+                        std::string sz_expr = alloc_size_to_string(
+                            alloc->m_args[ai]);
+                        if (!sz_expr.empty()) {
+                            alloc_array_size_exprs[vname] = sz_expr;
+                        }
+                    }
+                }
+            } else if (stmts[i]->type ==
+                    ASR::stmtType::Assignment) {
+                ASR::Assignment_t *asgn =
+                    ASR::down_cast<ASR::Assignment_t>(
+                        stmts[i]);
+                if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+                ASR::expr_t *val = asgn->m_value;
+                // Unwrap ArrayPhysicalCast to reach the underlying Var
+                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*val)) {
+                    val = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                        val)->m_arg;
+                }
+                std::string tgt_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(
+                        asgn->m_target)->m_v);
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*val)) {
+                    ASR::StructInstanceMember_t *sm =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(val);
+                    std::string mem_name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(sm->m_m));
+                    if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
+                        std::string struct_name = ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
+                        std::string key = struct_name + "." + mem_name;
+                        auto spit = func_array_size_params.find(key);
+                        if (spit != func_array_size_params.end() &&
+                                !func_array_size_params.count(tgt_name)) {
+                            func_array_size_params[tgt_name] = spit->second;
+                        }
+                    }
+                    continue;
+                }
+                if (!ASR::is_a<ASR::Var_t>(*val)) continue;
+                std::string val_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(val)->m_v);
+                auto fit = local_fixed_sizes.find(val_name);
+                if (fit != local_fixed_sizes.end() &&
+                        !alloc_array_sizes.count(tgt_name)) {
+                    alloc_array_sizes[tgt_name] = fit->second;
+                }
+                // Propagate size info when a local pointer is
+                // assigned from a function parameter whose size
+                // is tracked (e.g. temp = assumed_shape_param).
+                auto spit = func_array_size_params.find(val_name);
+                if (spit != func_array_size_params.end() &&
+                        !func_array_size_params.count(tgt_name)) {
+                    func_array_size_params[tgt_name] = spit->second;
+                    // Collect per-dimension size entries to add
+                    std::vector<std::pair<std::string, std::string>>
+                        new_entries;
+                    std::string prefix = val_name + "__dim";
+                    for (auto &entry : func_array_size_params) {
+                        if (entry.first.find(prefix) == 0) {
+                            std::string suffix = entry.first.substr(
+                                val_name.size());
+                            new_entries.push_back(
+                                {tgt_name + suffix, entry.second});
+                        }
+                    }
+                    for (auto &e : new_entries) {
+                        func_array_size_params[e.first] = e.second;
+                    }
+                }
+            }
+        }
+    }
     // Emit one overload of `fn`. Every array (or allocatable) argument
     // may be handed either a `thread` or a `device` pointer by the
     // caller, independently of the other arguments; `addr_mask` picks
@@ -2823,32 +3011,7 @@ public:
                 src << ";\n";
             }
         }
-        // Declare local variables (non-argument, non-return, non-parameter)
         in_inline_function = true;
-        {
-            std::set<std::string> arg_names;
-            for (size_t i = 0; i < fn->n_args; i++) {
-                ASR::Variable_t *a = ASR::down_cast<ASR::Variable_t>(
-                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-                arg_names.insert(std::string(a->m_name));
-            }
-            std::string ret_name;
-            if (fn->m_return_var) {
-                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
-                    ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
-                ret_name = rv->m_name;
-            }
-            for (auto &item : fn->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                    item.second);
-                if (var->m_storage == ASR::storage_typeType::Parameter)
-                    continue;
-                if (arg_names.count(std::string(var->m_name))) continue;
-                if (std::string(var->m_name) == ret_name) continue;
-                emit_local_var_decl(var);
-            }
-        }
         // Pre-scan the inline function body for Allocate statements
         // and assignments from FixedSizeArray locals to allocatable
         // parameters, so we know sizes of function-internal allocatable
@@ -2883,98 +3046,32 @@ public:
                     local_fixed_sizes[std::string(var->m_name)] = total;
                 }
             }
-            for (size_t i = 0; i < fn->n_body; i++) {
-                if (fn->m_body[i]->type == ASR::stmtType::Allocate) {
-                    ASR::Allocate_t *alloc =
-                        ASR::down_cast<ASR::Allocate_t>(fn->m_body[i]);
-                    for (size_t ai = 0; ai < alloc->n_args; ai++) {
-                        if (!alloc->m_args[ai].m_a) continue;
-                        if (!ASR::is_a<ASR::Var_t>(
-                                *alloc->m_args[ai].m_a))
-                            continue;
-                        std::string vname = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(
-                                alloc->m_args[ai].m_a)->m_v);
-                        int64_t sz = compute_alloc_size(
-                            alloc->m_args[ai]);
-                        if (sz > 0) {
-                            alloc_array_sizes[vname] = sz;
-                        } else if (!alloc_array_size_exprs.count(vname)) {
-                            // Extents that depend on the function's own
-                            // arguments (e.g. allocate(r(size(mm,1))))
-                            // are known inside the function even though
-                            // they are not compile-time constants.
-                            std::string sz_expr = alloc_size_to_string(
-                                alloc->m_args[ai]);
-                            if (!sz_expr.empty()) {
-                                alloc_array_size_exprs[vname] = sz_expr;
-                            }
-                        }
-                    }
-                } else if (fn->m_body[i]->type ==
-                        ASR::stmtType::Assignment) {
-                    ASR::Assignment_t *asgn =
-                        ASR::down_cast<ASR::Assignment_t>(
-                            fn->m_body[i]);
-                    if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
-                    ASR::expr_t *val = asgn->m_value;
-                    // Unwrap ArrayPhysicalCast to reach the underlying Var
-                    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*val)) {
-                        val = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                            val)->m_arg;
-                    }
-                    std::string tgt_name = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(
-                            asgn->m_target)->m_v);
-                    if (ASR::is_a<ASR::StructInstanceMember_t>(*val)) {
-                        ASR::StructInstanceMember_t *sm =
-                            ASR::down_cast<ASR::StructInstanceMember_t>(val);
-                        std::string mem_name = ASRUtils::symbol_name(
-                            ASRUtils::symbol_get_past_external(sm->m_m));
-                        if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
-                            std::string struct_name = ASRUtils::symbol_name(
-                                ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
-                            std::string key = struct_name + "." + mem_name;
-                            auto spit = func_array_size_params.find(key);
-                            if (spit != func_array_size_params.end() &&
-                                    !func_array_size_params.count(tgt_name)) {
-                                func_array_size_params[tgt_name] = spit->second;
-                            }
-                        }
-                        continue;
-                    }
-                    if (!ASR::is_a<ASR::Var_t>(*val)) continue;
-                    std::string val_name = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(val)->m_v);
-                    auto fit = local_fixed_sizes.find(val_name);
-                    if (fit != local_fixed_sizes.end() &&
-                            !alloc_array_sizes.count(tgt_name)) {
-                        alloc_array_sizes[tgt_name] = fit->second;
-                    }
-                    // Propagate size info when a local pointer is
-                    // assigned from a function parameter whose size
-                    // is tracked (e.g. temp = assumed_shape_param).
-                    auto spit = func_array_size_params.find(val_name);
-                    if (spit != func_array_size_params.end() &&
-                            !func_array_size_params.count(tgt_name)) {
-                        func_array_size_params[tgt_name] = spit->second;
-                        // Collect per-dimension size entries to add
-                        std::vector<std::pair<std::string, std::string>>
-                            new_entries;
-                        std::string prefix = val_name + "__dim";
-                        for (auto &entry : func_array_size_params) {
-                            if (entry.first.find(prefix) == 0) {
-                                std::string suffix = entry.first.substr(
-                                    val_name.size());
-                                new_entries.push_back(
-                                    {tgt_name + suffix, entry.second});
-                            }
-                        }
-                        for (auto &e : new_entries) {
-                            func_array_size_params[e.first] = e.second;
-                        }
-                    }
-                }
+            prescan_inline_allocs(fn, fn->m_body, fn->n_body,
+                local_fixed_sizes);
+        }
+        // Declare local variables (non-argument, non-return, non-parameter)
+        {
+            std::set<std::string> arg_names;
+            for (size_t i = 0; i < fn->n_args; i++) {
+                ASR::Variable_t *a = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+                arg_names.insert(std::string(a->m_name));
+            }
+            std::string ret_name;
+            if (fn->m_return_var) {
+                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+                ret_name = rv->m_name;
+            }
+            for (auto &item : fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                if (var->m_storage == ASR::storage_typeType::Parameter)
+                    continue;
+                if (arg_names.count(std::string(var->m_name))) continue;
+                if (std::string(var->m_name) == ret_name) continue;
+                emit_local_var_decl(var);
             }
         }
         for (size_t i = 0; i < fn->n_body; i++) {
