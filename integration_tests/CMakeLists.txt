@@ -197,39 +197,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 ENVIRONMENT
                     "KMP_TEAMS_THREAD_LIMIT=32"
             )
-        elseif (LFORTRAN_BACKEND STREQUAL "target_offload")
-            set(c_file "${CURRENT_BINARY_DIR}/${file_name}.c")
-            execute_process(
-                COMMAND lfortran ${extra_args} --openmp --show-c --target-offload
-                        ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-                OUTPUT_FILE ${c_file}
-                RESULT_VARIABLE convert_result
-            )
-            # The header goes into this project's own binary directory: the
-            # source tree already holds the config.h of the compiler build, and
-            # overwriting it here would replace it with one configured from
-            # this project's (unset) variables.
-            configure_file(
-                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h.in
-                ${CMAKE_BINARY_DIR}/generated/libasr/config.h
-                @ONLY
-            )
-            add_executable(${name}
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/lfortran_intrinsics.c
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/cuda_cpu_runtime.c
-                ${c_file}
-            )
-            target_include_directories(${name} PUBLIC
-                ${CMAKE_BINARY_DIR}/generated
-                ${CMAKE_SOURCE_DIR}/../src/
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime
-            )
-            target_compile_options(${name} PUBLIC -fopenmp)
-            target_link_libraries(${name} PUBLIC m)
-            target_link_options(${name} PUBLIC -fopenmp)
-            target_link_options(${name} PUBLIC -L$ENV{CONDA_PREFIX}/lib ${extra_args})
-
-            add_test(NAME ${name} COMMAND ${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_submodule")
             set(object_files "")
             set(prev_file "")
@@ -319,7 +286,7 @@ macro(RUN)
                         "${multiValueArgs}" ${ARGN} )
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|target_offload|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|mlir_omp|mlir_llvm_omp|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()

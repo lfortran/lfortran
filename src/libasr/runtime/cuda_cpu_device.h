@@ -8,8 +8,8 @@
 // built-in thread coordinates become thread-local variables that the host
 // runtime sets before each emulated thread runs its kernel body.
 //
-// It is included both by the generated device source (compiled as host C++
-// by the `cuda_cpu` mode) and by cuda_cpu_runtime.h.
+// It is included by the generated device source, which the `cuda_cpu` mode
+// compiles as host C++.
 
 #include <math.h>
 

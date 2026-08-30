@@ -112,7 +112,6 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
-    bool target_offload_enabled = false;
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";
