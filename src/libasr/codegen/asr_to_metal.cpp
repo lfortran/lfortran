@@ -1731,8 +1731,11 @@ public:
                         src << save.str();
                     }
                 } else if (!arr_name.empty()) {
-                    len_str = "__size_" + arr_name + "_dim"
-                        + std::to_string(d + 1);
+                    len_str = vla_workspace_dim_str(arr_name, d);
+                    if (len_str.empty()) {
+                        len_str = "__size_" + arr_name + "_dim"
+                            + std::to_string(d + 1);
+                    }
                 }
                 if (stride == "1") {
                     stride = len_str;
@@ -1754,6 +1757,29 @@ public:
     // parameters that are represented as device pointers in Metal.
     // Render an expression into a string without touching the current
     // output position.
+    // Extent of dimension `d` (0-based) of a local array that is backed
+    // by a VLA workspace buffer, rendered as Metal source. Such a local
+    // is allocatable, so its type carries deferred (null) lengths and the
+    // usual `__size_<name>_dimN` kernel argument does not exist for it --
+    // the extents live in the workspace description instead. Returns an
+    // empty string when `name` has no workspace or no such dimension.
+    std::string vla_workspace_dim_str(const std::string &name, size_t d) {
+        auto it = std::find_if(current_vla_infos.begin(),
+            current_vla_infos.end(),
+            [&](const GpuVlaWorkspace &ws) { return ws.var_name == name; });
+        if (it == current_vla_infos.end()) return "";
+        if (d >= it->dims.size()) return "";
+        const GpuVlaDim &dim = it->dims[d];
+        if (dim.is_constant) return std::to_string(dim.constant_value);
+        if (dim.is_struct_member_size) {
+            auto dot = dim.struct_member_key.find('.');
+            return "__sizes_" + dim.struct_member_key.substr(0, dot) + "_"
+                + dim.struct_member_key.substr(dot + 1) + "[0]";
+        }
+        if (dim.dim_expr) return expr_to_string(dim.dim_expr);
+        return "";
+    }
+
     std::string expr_to_string(ASR::expr_t *expr) {
         std::stringstream saved;
         saved.swap(src);
@@ -5956,8 +5982,11 @@ public:
                         len_str.clear();
                     }
                 } else if (!arr_var_name.empty()) {
-                    len_str = "__size_" + arr_var_name + "_dim"
-                        + std::to_string(d + 1);
+                    len_str = vla_workspace_dim_str(arr_var_name, d);
+                    if (len_str.empty()) {
+                        len_str = "__size_" + arr_var_name + "_dim"
+                            + std::to_string(d + 1);
+                    }
                 }
                 if (len_str.empty()) {
                     throw CodeGenError("gpu offload: the extent of "

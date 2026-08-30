@@ -10,6 +10,7 @@
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/codegen/gpu_utils.h>
 
 #include <filesystem>
 #include <map>
@@ -264,11 +265,18 @@ static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a
 // kernel-local declaration. The Metal Shading Language has no
-// variable-length arrays, so such a local can only be emitted when its
-// extent is a compile-time constant. A descriptor array -- an allocatable
-// local, or the temporary the frontend materialises for an array-valued
-// ASSOCIATE selector whose operand is an allocatable or an assumed-shape
-// dummy -- carries no static shape, so the kernel would declare it with a
+// variable-length arrays and no heap, so a local whose extent is not a
+// compile-time constant can only be emitted when the GPU workspace
+// machinery (`analyze_gpu_vla_workspaces`) can bind it to a per-thread
+// slice of a device buffer. That needs an extent expression: either the
+// array declares one itself (an automatic array `real :: t(m)`) or an
+// ALLOCATE in the same construct supplies one.
+//
+// What is left over has no extent anywhere: a descriptor local -- the
+// temporary the frontend materialises for an array-valued ASSOCIATE
+// selector whose operand is an allocatable or an assumed-shape dummy, or
+// an allocatable never allocated in this construct -- carries deferred
+// `dimension_t` with null lengths, so the kernel would declare it with a
 // bogus one-element extent and index out of bounds. Such a loop has to
 // stay on the CPU.
 class GpuLocalArrayChecker :
@@ -276,19 +284,38 @@ class GpuLocalArrayChecker :
 public:
     bool has_unsized_local_array = false;
 
-    void check_scope(SymbolTable *symtab) {
+    // True when every extent of the array is present as an expression,
+    // so a workspace buffer can be sized from it.
+    static bool dims_have_lengths(ASR::dimension_t *dims, size_t n) {
+        if (n == 0) return false;
+        for (size_t d = 0; d < n; d++) {
+            if (!dims[d].m_length) return false;
+        }
+        return true;
+    }
+
+    void check_scope(SymbolTable *symtab, ASR::stmt_t **body,
+            size_t n_body) {
         if (!symtab) return;
         for (auto &item : symtab->get_scope()) {
             ASR::symbol_t *sym = item.second;
             if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
             ASR::ttype_t *t =
-                ASRUtils::type_get_past_allocatable_pointer(
-                    ASR::down_cast<ASR::Variable_t>(sym)->m_type);
+                ASRUtils::type_get_past_allocatable_pointer(var->m_type);
             ASR::dimension_t *dims = nullptr;
             int rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
-            if (rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank)) {
-                has_unsized_local_array = true;
+            if (rank <= 0) continue;
+            if (ASRUtils::is_fixed_size_array(dims, rank)) continue;
+            if (dims_have_lengths(dims, (size_t)rank)) continue;
+            if (ASRUtils::is_allocatable(var->m_type)) {
+                ASR::alloc_arg_t *aa = find_alloc_arg_for_var(body, n_body,
+                    std::string(var->m_name));
+                if (aa && dims_have_lengths(aa->m_dims, aa->n_dims)) {
+                    continue;
+                }
             }
+            has_unsized_local_array = true;
         }
     }
 
@@ -296,7 +323,7 @@ public:
         ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
         if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
         ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        check_scope(blk->m_symtab);
+        check_scope(blk->m_symtab, blk->m_body, blk->n_body);
         for (size_t i = 0; i < blk->n_body; i++) {
             visit_stmt(*blk->m_body[i]);
         }
@@ -307,7 +334,7 @@ public:
         if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
         ASR::AssociateBlock_t *blk =
             ASR::down_cast<ASR::AssociateBlock_t>(b);
-        check_scope(blk->m_symtab);
+        check_scope(blk->m_symtab, blk->m_body, blk->n_body);
         for (size_t i = 0; i < blk->n_body; i++) {
             visit_stmt(*blk->m_body[i]);
         }
