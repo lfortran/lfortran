@@ -2247,6 +2247,7 @@ RUN(NAME implicit_interface_57 LABELS gfortran llvm)
 RUN(NAME implicit_interface_58 LABELS gfortran llvm)
 RUN(NAME implicit_interface_59 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
     GFORTRAN_ARGS -fallow-argument-mismatch)
+RUN(NAME implicit_interface_60 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)

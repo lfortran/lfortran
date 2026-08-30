@@ -6744,7 +6744,8 @@ class SymbolDuplicator {
             function_type->m_module, function_type->m_inline, function_type->m_static,
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
-            function->m_side_effect_free));
+            function->m_side_effect_free, nullptr, nullptr, nullptr,
+            function_type->m_external_abi));
     }
 
     ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,

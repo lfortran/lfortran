@@ -103,7 +103,9 @@ public:
             x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
             x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
-            ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
+            ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic,
+            x->m_side_effect_free, nullptr, nullptr, nullptr,
+            ftype->m_external_abi));
 
         parent_scope->add_symbol(new_sym_name, new_f);
         current_scope = parent_scope;
@@ -306,7 +308,8 @@ public:
             func_elemental, func_pure, func_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
             ASRUtils::get_FunctionType(x)->n_restrictions, false,
-            x->m_deterministic, x->m_side_effect_free);
+            x->m_deterministic, x->m_side_effect_free, nullptr, nullptr, nullptr,
+            ASRUtils::get_FunctionType(x)->m_external_abi);
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
         func_scope->add_symbol(new_sym_name, t);
@@ -933,7 +936,9 @@ public:
             x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
             x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
-            ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
+            ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic,
+            x->m_side_effect_free, nullptr, nullptr, nullptr,
+            ftype->m_external_abi));
 
         parent_scope->add_symbol(new_sym_name, new_f);
         current_scope = parent_scope;
@@ -1145,7 +1150,8 @@ public:
             ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
             ASRUtils::get_FunctionType(x)->n_restrictions, false,
-            x->m_deterministic, x->m_side_effect_free);
+            x->m_deterministic, x->m_side_effect_free, nullptr, nullptr, nullptr,
+            ASRUtils::get_FunctionType(x)->m_external_abi);
 
         ASR::symbol_t *f = ASR::down_cast<ASR::symbol_t>(result);
         target_scope->add_symbol(new_sym_name, f);
