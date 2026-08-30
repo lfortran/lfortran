@@ -2846,6 +2846,31 @@ public:
                     loop_vars[1]);
             };
 
+            // The other operand of `z = matmul(w, a) <op> b` is combined
+            // with the matmul result element by element. A scalar operand
+            // is the same for every element, so it is used as it is; only
+            // an array operand is indexed by the loop variables. A scalar
+            // reaches here wrapped in an ArrayBroadcast, whose type is an
+            // array, so the wrapper is stripped before the rank is
+            // checked.
+            auto make_binop_other_item = [&](ASR::expr_t *other,
+                    std::vector<ASR::expr_t*> loop_vars) -> ASR::expr_t* {
+                while (true) {
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other)) {
+                        other = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                            other)->m_arg;
+                    } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*other)) {
+                        other = ASR::down_cast<ASR::ArrayBroadcast_t>(
+                            other)->m_array;
+                    } else {
+                        break;
+                    }
+                }
+                if (!ASRUtils::is_array(ASRUtils::expr_type(other)))
+                    return other;
+                return make_section_item(other, loop_vars);
+            };
+
             // When an argument is an ArraySection, extract loop bounds
             // from the section's range specs rather than from the type
             // dimensions (which may be null for section result types).
@@ -2921,12 +2946,8 @@ public:
                     make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
-                    ASR::expr_t *other_op = binop_other;
-                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
-                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                            other_op)->m_arg;
-                    ASR::expr_t *other_i = make_section_item(
-                        other_op, {var_i});
+                    ASR::expr_t *other_i = make_binop_other_item(
+                        binop_other, {var_i});
                     ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
                     ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -2977,12 +2998,8 @@ public:
                     make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
-                    ASR::expr_t *other_op = binop_other;
-                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
-                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                            other_op)->m_arg;
-                    ASR::expr_t *other_j = make_section_item(
-                        other_op, {var_j});
+                    ASR::expr_t *other_j = make_binop_other_item(
+                        binop_other, {var_j});
                     ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
                     ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -3040,12 +3057,8 @@ public:
                     make_do_loop(var_k, k_start, k_end, k_body));
 
                 if (binop_other) {
-                    ASR::expr_t *other_op = binop_other;
-                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other_op))
-                        other_op = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                            other_op)->m_arg;
-                    ASR::expr_t *other_ij = make_section_item(
-                        other_op, {var_i, var_j});
+                    ASR::expr_t *other_ij = make_binop_other_item(
+                        binop_other, {var_i, var_j});
                     ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
                     ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
                     ASR::expr_t *combined = ASRUtils::EXPR(
