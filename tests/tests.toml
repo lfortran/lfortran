@@ -1621,6 +1621,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "allocatable_attr_dims.f90"
+asr = true
+
+[[test]]
 filename = "allocate_02.f90"
 llvm = true
 

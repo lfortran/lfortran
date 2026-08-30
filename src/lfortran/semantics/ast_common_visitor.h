@@ -6131,6 +6131,21 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (sym_) {
+                                        // An ALLOCATABLE statement carries an array-spec of its
+                                        // own: its allocatable-decl is
+                                        // `object-name [( array-spec )] [lbracket coarray-spec
+                                        // rbracket]` (F2018 8.6.1). That spec is the only place
+                                        // the shape can appear when the type was declared in a
+                                        // separate statement:
+                                        //     integer loop
+                                        //     allocatable loop(:)
+                                        // Apply the dimensions first, exactly as a DIMENSION
+                                        // statement would, and add the allocatable attribute on
+                                        // top, so this spells the same thing as the combined
+                                        // form `integer, allocatable :: loop(:)`.
+                                        if (s.n_dim > 0) {
+                                            dimension_variable(s, x.base.base.loc);
+                                        }
                                         ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
