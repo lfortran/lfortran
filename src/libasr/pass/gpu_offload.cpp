@@ -6417,7 +6417,12 @@ public:
 
         Location loc = x.base.base.loc;
         size_t n_dims = x.n_head;
-        if (n_dims == 0 || n_dims > 3) return;
+        // Any rank is supported: the nest is dispatched as a flat 1-D grid of
+        // product(extents) threads and every index is recovered from the flat
+        // thread id by successive divmod over the per-dimension extents. The
+        // 3-D shape of the underlying dispatch grid therefore does not limit
+        // the number of loop indices.
+        if (n_dims == 0) return;
 
         for (size_t d = 0; d < n_dims; d++) {
             if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) return;
