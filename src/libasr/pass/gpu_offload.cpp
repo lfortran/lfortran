@@ -7,6 +7,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
@@ -5376,6 +5377,23 @@ public:
             kernel_body.p, kernel_body.n,
             nullptr, ASR::accessType::Public, false, false,
             nullptr, nullptr, nullptr);
+
+        // `device_launch_expand` builds the host side of the launch, laying
+        // every argument out exactly as the device code generator does. An
+        // argument shape it cannot lay out keeps the loop on the host, where
+        // ordinary Fortran semantics always apply. The kernel is checked
+        // before it enters the symbol table, so nothing is left behind.
+        {
+            std::string reason;
+            if (!gpu_launch_is_supported(
+                    ASR::down_cast<ASR::symbol_t>(kernel_func),
+                    call_args.p, call_args.n, reason)) {
+                report_not_offloaded(x.base.base.loc,
+                    "the gpu backend does not support " + reason);
+                return;
+            }
+        }
+
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 

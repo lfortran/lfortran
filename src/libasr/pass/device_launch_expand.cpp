@@ -32,11 +32,12 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
 
-The pass rejects an argument shape it does not lay out the same way as the
-device code generator, rather than building a launch that would read the
-wrong bytes.
+`gpu_offload` asks this pass, through gpu_launch_is_supported(), whether it
+can lay out every argument of a launch the same way as the device code
+generator, and keeps the loop on the host when it cannot, rather than
+building a launch that would read the wrong bytes.
 */
-// Why the last rejected launch could not be expanded, for the error message.
+// Why the last rejected launch could not be expanded, for the warning.
 static std::string unsupported_reason;
 static bool unsupported(const char *why) {
     unsupported_reason = why;
@@ -80,8 +81,8 @@ static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
 // an anonymous struct of its member types. Only structs whose members are
 // plain scalars, fixed size arrays, nested plain structs and decomposed
 // allocatable arrays are laid out that way; anything else (an extended type,
-// character or pointer members) is left to the LLVM backend, which resolves
-// the layout through the struct symbol.
+// character or pointer members) has no device layout at all, so a loop that
+// needs it stays on the host.
 static bool struct_is_plain(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) {
@@ -95,9 +96,16 @@ static bool struct_is_plain(ASR::symbol_t *struct_sym) {
         }
         if (is_decomposed_member(member)) continue;
         ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
-        if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) {
+        if (ASRUtils::is_pointer(type)) {
+            return unsupported("a derived type with a pointer member");
+        }
+        if (ASRUtils::is_allocatable(type)) {
+            if (ASRUtils::is_array(type)) {
+                return unsupported("a derived type with an allocatable array "
+                    "member the gpu backend cannot decompose");
+            }
             return unsupported(
-                "a derived type with a pointer or scalar allocatable member");
+                "a derived type with an allocatable scalar member");
         }
         if (ASRUtils::is_array(type) &&
                 ASRUtils::get_fixed_size_of_array(type) <= 0) {
@@ -166,24 +174,24 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 }
 
 // True when every argument of this launch has a shape the pass can expand.
-static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
-    ASR::Function_t *kernel =
-        ASR::down_cast<ASR::Function_t>(x.m_kernel);
-    if (x.n_args != kernel->n_args) {
+static bool launch_is_supported(ASR::symbol_t *kernel_sym,
+        ASR::call_arg_t *call_args, size_t n_call_args) {
+    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
+    if (n_call_args != kernel->n_args) {
         return unsupported("a kernel that takes a different number of "
             "arguments");
     }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
             if (dim.is_constant || dim.is_struct_member_size) continue;
-            if (dim.call_arg_index >= x.n_args) {
+            if (dim.call_arg_index >= n_call_args) {
                 return unsupported("a variable length array sized outside "
                     "the kernel arguments");
             }
         }
     }
-    for (size_t i = 0; i < x.n_args; i++) {
-        ASR::expr_t *arg = x.m_args[i].m_value;
+    for (size_t i = 0; i < n_call_args; i++) {
+        ASR::expr_t *arg = call_args[i].m_value;
         if (!arg) return unsupported("a missing argument");
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
@@ -207,18 +215,13 @@ static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
     return true;
 }
 
-// A translation unit is expanded all at once or not at all, so that the ASR
-// calls and the calls the LLVM backend emits never meet in one module.
-class LaunchSupportVisitor :
-        public ASR::BaseWalkVisitor<LaunchSupportVisitor>
-{
-    public:
-        bool all_supported = true;
-
-        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-            if (!launch_is_supported(x)) all_supported = false;
-        }
-};
+bool gpu_launch_is_supported(ASR::symbol_t *kernel, ASR::call_arg_t *args,
+        size_t n_args, std::string &reason) {
+    unsupported_reason.clear();
+    if (launch_is_supported(kernel, args, n_args)) return true;
+    reason = unsupported_reason;
+    return false;
+}
 
 class DeviceLaunchExpandVisitor :
         public PassUtils::PassVisitor<DeviceLaunchExpandVisitor>
@@ -904,12 +907,6 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
     if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) {
         return;
-    }
-    LaunchSupportVisitor support;
-    support.visit_TranslationUnit(unit);
-    if (!support.all_supported) {
-        throw LCompilersException("cannot launch a gpu kernel with "
-            + unsupported_reason);
     }
     DeviceLaunchExpandVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
