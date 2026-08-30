@@ -2226,10 +2226,15 @@ int link_executable(const std::vector<std::string> &infiles,
                     cu_out << cuda_source;
                     cu_out.close();
                 }
-                // Compile the kernel .cu with the device compiler
+                // Compile the kernel .cu with the device compiler. When
+                // emulating, the device code is ordinary host C++.
+                bool emulate_cpu = compiler_options.gpu_cpu_emulation;
+                std::string runtime_include = " -I" + runtime_library_dir
+                    + "/../libasr/runtime";
                 std::string device_cc = compiler_options.device_compiler;
-                std::string cuda_kernel_cmd = device_cc + " -c -O2 -o "
-                    + cuda_kernel_obj + " " + cuda_kernel_src;
+                std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                    + (emulate_cpu ? runtime_include + " -x c++" : "")
+                    + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
                 int cuda_err = system(cuda_kernel_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA kernel: "
@@ -2237,14 +2242,18 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // Compile CUDA runtime
+                // Compile the GPU runtime. The CPU emulation uses its own
+                // implementation of the same C API.
                 std::string cuda_runtime_src = runtime_library_dir
-                    + "/../libasr/runtime/lfortran_gpu_cuda.cu";
+                    + "/../libasr/runtime/"
+                    + (emulate_cpu ? "lfortran_gpu_cpu.c"
+                                   : "lfortran_gpu_cuda.cu");
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
                 std::string cuda_rt_cmd = device_cc + " -c -O2"
-                    " -I" + runtime_library_dir + "/../libasr/runtime"
-                    " -o " + cuda_runtime_obj
+                    + runtime_include
+                    + (emulate_cpu ? " -x c" : "")
+                    + " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
                 cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {
@@ -2253,16 +2262,23 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // The device compiler also drives the link, since it knows
-                // where its own device runtime lives.
-                compile_cmd = device_cc + " -o " + outfile + " ";
-                for (auto &s : infiles) {
-                    compile_cmd += s + " ";
+                if (emulate_cpu) {
+                    // Everything is host code, so the ordinary host linker
+                    // that was set up above does the link.
+                    compile_cmd += " " + cuda_kernel_obj
+                        + " " + cuda_runtime_obj;
+                } else {
+                    // The device compiler also drives the link, since it knows
+                    // where its own device runtime lives.
+                    compile_cmd = device_cc + " -o " + outfile + " ";
+                    for (auto &s : infiles) {
+                        compile_cmd += s + " ";
+                    }
+                    compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                    compile_cmd += " -L" + base_path
+                        + " -Xlinker -rpath -Xlinker " + base_path
+                        + " -l" + runtime_lib + " -lm";
                 }
-                compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
-                compile_cmd += " -L" + base_path
-                    + " -Xlinker -rpath -Xlinker " + base_path
-                    + " -l" + runtime_lib + " -lm";
             }
             run_cmd = "./" + outfile;
         }

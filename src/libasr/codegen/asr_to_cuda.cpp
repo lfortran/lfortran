@@ -22,12 +22,16 @@ public:
     CompilerOptions &co;
     int indent_level = 0;
     bool emit_registrar = true;
+    // Emit the extra shims the CPU emulation needs. The real CUDA output is
+    // left untouched.
+    bool emulate_cpu = false;
 
     // Maps for tracking array size parameters
     std::map<std::string, std::string> func_array_size_params;
 
     ASRToCudaVisitor(CompilerOptions &co, bool emit_registrar)
-        : co(co), emit_registrar(emit_registrar) {}
+        : co(co), emit_registrar(emit_registrar),
+          emulate_cpu(co.gpu_cpu_emulation) {}
 
     std::string get_indent() {
         return std::string(indent_level * 4, ' ');
@@ -124,7 +128,13 @@ public:
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
-        src << "#include <stdint.h>\n\n";
+        src << "#include <stdint.h>\n";
+        if (emulate_cpu) {
+            // Turns the CUDA execution space qualifiers and the built-in
+            // thread coordinates into plain host C++.
+            src << "#include \"cuda_cpu_device.h\"\n";
+        }
+        src << "\n";
 
         // Collect kernel names for registration
         std::vector<std::string> kernel_names;
@@ -142,6 +152,26 @@ public:
 
         // Emit kernel registration
         src << "\n// Auto-generated kernel registration\n";
+        if (emulate_cpu) {
+            if (kernel_names.empty()) return;
+            // The thunks are registered instead of the kernels, and a plain
+            // constructor attribute keeps the file free of any C++ runtime
+            // dependency. Under separate compilation the per-object device
+            // sources are concatenated, so the registrar is named after the
+            // first kernel to keep it unique per translation unit.
+            src << "typedef void (*kernel_func_t)(void **);\n";
+            src << "extern \"C\" void lfortran_gpu_register_kernel("
+                   "const char *name, kernel_func_t func);\n\n";
+            src << "__attribute__((constructor)) static void "
+                   "_lfortran_cuda_cpu_registrar_" << kernel_names[0]
+                << "(void) {\n";
+            for (auto &kname : kernel_names) {
+                src << "    lfortran_gpu_register_kernel(\"" << kname
+                    << "\", __lf_thunk_" << kname << ");\n";
+            }
+            src << "}\n";
+            return;
+        }
         src << "typedef void (*kernel_func_t)(void);\n";
         src << "extern \"C\" void lfortran_gpu_register_kernel("
                "const char *name, kernel_func_t func);\n\n";
@@ -231,6 +261,51 @@ public:
 
         indent_level--;
         src << "}\n\n";
+
+        if (emulate_cpu) {
+            // On the CPU there is no portable way to call a function pointer
+            // with a dynamically built argument list, so every kernel gets a
+            // thunk that unpacks the argument array the runtime passes.
+            size_t n_buffers = 0;
+            for (size_t i = 0; i < args.size(); i++) {
+                if (args[i].is_array) n_buffers++;
+            }
+            if (!scalar_args.empty()) {
+                // The host packs every scalar into a single struct, handed
+                // over in the argument slot right after the buffers.
+                src << "struct __lf_scalars_" << name << " {\n";
+                for (auto &sa : scalar_args) {
+                    src << "    " << sa.cuda_type_str << " " << sa.name
+                        << ";\n";
+                }
+                src << "};\n";
+            }
+            src << "extern \"C\" void __lf_thunk_" << name
+                << "(void **a) {\n";
+            if (!scalar_args.empty()) {
+                src << "    struct __lf_scalars_" << name << " *s = "
+                    << "(struct __lf_scalars_" << name << " *)a["
+                    << n_buffers << "];\n";
+            }
+            src << "    " << name << "(";
+            bool first_thunk_arg = true;
+            size_t buffer_slot = 0;
+            for (size_t i = 0; i < args.size(); i++) {
+                if (!args[i].is_array) continue;
+                if (!first_thunk_arg) src << ", ";
+                src << "*(" << cuda_type(args[i].type) << " **)a["
+                    << buffer_slot << "]";
+                first_thunk_arg = false;
+                buffer_slot++;
+            }
+            for (auto &sa : scalar_args) {
+                if (!first_thunk_arg) src << ", ";
+                src << "s->" << sa.name;
+                first_thunk_arg = false;
+            }
+            src << ");\n";
+            src << "}\n\n";
+        }
     }
 
     void emit_local_var_decl(ASR::Variable_t *var) {

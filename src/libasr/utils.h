@@ -109,6 +109,9 @@ struct CompilerOptions {
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";
+    // Compile the generated device code as ordinary host code and run the
+    // kernels on the CPU, so the GPU path is testable without a GPU.
+    bool gpu_cpu_emulation = false;
     // Toolchain driver used to compile and link GPU device code.
     std::string device_compiler = "nvcc";
     std::string openmp_lib_dir = "";
