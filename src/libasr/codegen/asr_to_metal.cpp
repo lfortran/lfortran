@@ -178,6 +178,11 @@ public:
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
 
+    // Names of the arguments of the kernel being emitted, indexed the way
+    // GpuVlaDimNode::call_arg_index is. Used to render a workspace extent
+    // from its resolved expression tree.
+    std::vector<std::string> current_kernel_arg_names;
+
     // Maps array parameter names to their synthesized size parameter
     // names within the current function being emitted. Populated by
     // emit_function_def for DescriptorArray parameters and consumed
@@ -479,7 +484,7 @@ public:
                                 << mem_name << "[0]";
                             all_const = false;
                         } else {
-                            visit_expr(vla_it->dims[d].dim_expr);
+                            src << vla_dim_extent_str(vla_it->dims[d]);
                             all_const = false;
                         }
                     }
@@ -504,7 +509,7 @@ public:
                                 src << "__sizes_" << arr_name << "_"
                                     << mem_name << "[0]";
                             } else {
-                                visit_expr(vla_it->dims[d].dim_expr);
+                                src << vla_dim_extent_str(vla_it->dims[d]);
                             }
                         }
                         alloc_array_size_exprs[vname] = src.str();
@@ -1775,6 +1780,63 @@ public:
             auto dot = dim.struct_member_key.find('.');
             return "__sizes_" + dim.struct_member_key.substr(0, dot) + "_"
                 + dim.struct_member_key.substr(dot + 1) + "[0]";
+        }
+        return vla_dim_extent_str(dim);
+    }
+
+    // Render one node of a workspace extent's resolved expression tree as
+    // Metal source.
+    std::string vla_dim_node_str(const GpuVlaDim &dim, int64_t node) {
+        if (node < 0 || (size_t)node >= dim.expr_nodes.size()) return "";
+        const GpuVlaDimNode &n = dim.expr_nodes[node];
+        switch (n.kind) {
+            case GpuVlaDimNode::Kind::Constant: {
+                return std::to_string(n.constant_value);
+            }
+            case GpuVlaDimNode::Kind::CallArg:
+            case GpuVlaDimNode::Kind::StructMember: {
+                if (n.call_arg_index < 0 || (size_t)n.call_arg_index >=
+                        current_kernel_arg_names.size()) {
+                    return "";
+                }
+                std::string out = sanitize_metal_name(
+                    current_kernel_arg_names[n.call_arg_index]);
+                for (auto &m : n.member_path) {
+                    out += "." + sanitize_metal_name(m);
+                }
+                return out;
+            }
+            case GpuVlaDimNode::Kind::BinOp: {
+                std::string l = vla_dim_node_str(dim, n.left);
+                std::string r = vla_dim_node_str(dim, n.right);
+                if (l.empty() || r.empty()) return "";
+                std::string op;
+                switch (n.binop) {
+                    case ASR::binopType::Add: op = " + "; break;
+                    case ASR::binopType::Sub: op = " - "; break;
+                    case ASR::binopType::Mul: op = " * "; break;
+                    case ASR::binopType::Div: op = " / "; break;
+                    default: return "";
+                }
+                return "(" + l + op + r + ")";
+            }
+        }
+        return "";
+    }
+
+    // Extent of one workspace dimension as Metal source. The resolved
+    // expression tree is preferred over the original ASR expression: its
+    // leaves are only kernel arguments, derived-type components of them
+    // and integer constants, all of which are live where the workspace
+    // pointer is declared. The ASR expression may instead name a local --
+    // an ASSOCIATE name spliced into the kernel body, say -- that is not
+    // assigned until later in the body, so emitting it there would read
+    // an uninitialized value and give every thread a wrong stride.
+    std::string vla_dim_extent_str(const GpuVlaDim &dim) {
+        if (dim.is_constant) return std::to_string(dim.constant_value);
+        if (dim.expr_root >= 0) {
+            std::string out = vla_dim_node_str(dim, dim.expr_root);
+            if (!out.empty()) return out;
         }
         if (dim.dim_expr) return expr_to_string(dim.dim_expr);
         return "";
@@ -3271,6 +3333,12 @@ public:
         // This must happen before prescan_alloc_sizes so the prescan
         // can identify VLA workspace variables.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
+        current_kernel_arg_names.clear();
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
+            current_kernel_arg_names.push_back(ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(av->m_v)));
+        }
 
         // Pre-scan Allocate statements to determine sizes
         // for local allocatable array variables.
@@ -4802,7 +4870,7 @@ public:
                                 src << "__sizes_" << arr_name << "_"
                                     << mem_name << "[0]";
                             } else {
-                                visit_expr(vla_it->dims[0].dim_expr);
+                                src << vla_dim_extent_str(vla_it->dims[0]);
                             }
                         } else {
                             src << "(";
@@ -4820,7 +4888,8 @@ public:
                                     src << "__sizes_" << arr_name << "_"
                                         << mem_name << "[0]";
                                 } else {
-                                    visit_expr(vla_it->dims[d].dim_expr);
+                                    src << vla_dim_extent_str(
+                                        vla_it->dims[d]);
                                 }
                             }
                             src << ")";
@@ -4849,14 +4918,8 @@ public:
                                     size_ss << "__sizes_" << arr_name
                                         << "_" << mem_name << "[0]";
                                 } else {
-                                    std::stringstream tmp;
-                                    tmp << src.str();
-                                    src.str("");
-                                    visit_expr(
-                                        vla_it->dims[d].dim_expr);
-                                    size_ss << src.str();
-                                    src.str("");
-                                    src << tmp.str();
+                                    size_ss << vla_dim_extent_str(
+                                        vla_it->dims[d]);
                                 }
                             }
                             alloc_array_size_exprs[vname] =

@@ -3,7 +3,9 @@
 
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_walk_visitor.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -383,6 +385,112 @@ inline bool find_struct_member_arg_in_expr(ASR::expr_t *expr,
     return true;
 }
 
+// Count every write to `target` in a statement tree, and remember the
+// value of the single defining binding when there is exactly one.  An
+// ASSOCIATE construct that the GPU offload pass splices into a kernel
+// body leaves its name behind as an ordinary local scalar defined by one
+// assignment, so a workspace extent naming it can only be sized on the
+// host by substituting that value -- which is sound solely when nothing
+// else writes the name.  A loop index and a subroutine actual argument
+// therefore count as writes too, and the whole statement tree is walked
+// (BLOCK and ASSOCIATE bodies included) so no write can be missed.
+class GpuScalarBindingCounter :
+        public ASR::BaseWalkVisitor<GpuScalarBindingCounter> {
+public:
+    ASR::symbol_t *target;
+    size_t n_writes = 0;
+    ASR::expr_t *value = nullptr;
+
+    GpuScalarBindingCounter(ASR::symbol_t *target_) : target(target_) {}
+
+    bool is_target(ASR::expr_t *e) {
+        return e != nullptr && ASR::is_a<ASR::Var_t>(*e) &&
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v) == target;
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (is_target(x.m_head.m_v)) n_writes++;
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) {
+            if (is_target(x.m_head[i].m_v)) n_writes++;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>
+            ::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (is_target(x.m_args[i].m_value)) n_writes++;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>
+            ::visit_SubroutineCall(x);
+    }
+
+    // The generated walker stops at a BLOCK or ASSOCIATE call, but a
+    // write hidden inside one must still be seen.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// The value bound to the kernel-local integer scalar `sym` in `body`, or
+// nullptr when the name is not defined exactly once there.  This is how a
+// workspace extent reaches through an ASSOCIATE name: after the offload
+// pass splices the construct, `associate(rows => self%m_ + 2)` shows up as
+// a local `rows` assigned `self%m_ + 2` once, and only the selector
+// expression can be evaluated on the host.
+inline ASR::expr_t* find_gpu_local_scalar_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+    if (s == nullptr || !ASR::is_a<ASR::Variable_t>(*s)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(s);
+    if (ASRUtils::is_array(var->m_type)) return nullptr;
+    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(var->m_type))) {
+        return nullptr;
+    }
+    GpuScalarBindingCounter counter(s);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    if (counter.n_writes != 1) return nullptr;
+    return counter.value;
+}
+
 // Build a host-evaluable expression tree for a workspace dimension.
 // Every leaf must be either an integer constant, a scalar kernel argument,
 // or a derived-type component chain rooted at a kernel argument; every
@@ -393,11 +501,14 @@ inline bool find_struct_member_arg_in_expr(ASR::expr_t *expr,
 // error, never a plausible-but-wrong value.
 inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
         const std::vector<std::string> &arg_names,
+        ASR::stmt_t **body, size_t n_body,
+        std::set<ASR::symbol_t*> &substituted,
         std::vector<GpuVlaDimNode> &nodes) {
     if (!expr) return -1;
     if (ASR::is_a<ASR::Cast_t>(*expr)) {
         return build_gpu_vla_dim_expr(
-            ASR::down_cast<ASR::Cast_t>(expr)->m_arg, arg_names, nodes);
+            ASR::down_cast<ASR::Cast_t>(expr)->m_arg, arg_names,
+            body, n_body, substituted, nodes);
     }
     int64_t const_val;
     if (try_eval_int_constant(expr, const_val)) {
@@ -419,7 +530,23 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
                 return (int64_t)nodes.size() - 1;
             }
         }
-        return -1;
+        // Not a kernel argument.  It may still be a local scalar bound
+        // once in this scope -- what an ASSOCIATE name becomes once the
+        // construct is spliced into the kernel body, or a block-local set
+        // before the ALLOCATE -- in which case the extent is whatever it
+        // was bound to.  A name already substituted is not substituted
+        // again, so a self-referential binding cannot loop.
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        if (substituted.count(sym)) return -1;
+        ASR::expr_t *bound = find_gpu_local_scalar_binding(sym, body,
+            n_body);
+        if (bound == nullptr) return -1;
+        substituted.insert(sym);
+        int64_t root = build_gpu_vla_dim_expr(bound, arg_names, body,
+            n_body, substituted, nodes);
+        substituted.erase(sym);
+        return root;
     }
     if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
         size_t arg_index = 0;
@@ -446,10 +573,11 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
             default:
                 return -1;
         }
-        int64_t left = build_gpu_vla_dim_expr(op->m_left, arg_names, nodes);
+        int64_t left = build_gpu_vla_dim_expr(op->m_left, arg_names,
+            body, n_body, substituted, nodes);
         if (left < 0) return -1;
         int64_t right = build_gpu_vla_dim_expr(op->m_right, arg_names,
-            nodes);
+            body, n_body, substituted, nodes);
         if (right < 0) return -1;
         GpuVlaDimNode n;
         n.kind = GpuVlaDimNode::Kind::BinOp;
@@ -465,9 +593,12 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
 // Resolve a workspace dimension by evaluating the whole dimension
 // expression on the host.  Returns true when `vd` was filled in.
 inline bool resolve_gpu_vla_dim_expr(ASR::expr_t *dim,
-        const std::vector<std::string> &arg_names, GpuVlaDim &vd) {
+        const std::vector<std::string> &arg_names,
+        ASR::stmt_t **body, size_t n_body, GpuVlaDim &vd) {
     std::vector<GpuVlaDimNode> nodes;
-    int64_t root = build_gpu_vla_dim_expr(dim, arg_names, nodes);
+    std::set<ASR::symbol_t*> substituted;
+    int64_t root = build_gpu_vla_dim_expr(dim, arg_names, body, n_body,
+        substituted, nodes);
     if (root < 0) return false;
     if (nodes[root].kind == GpuVlaDimNode::Kind::Constant) {
         vd.is_constant = true;
@@ -649,7 +780,9 @@ inline GpuVlaDim resolve_gpu_workspace_dim(ASR::expr_t *dim,
     }
     vd.is_constant = false;
     vd.constant_value = 0;
-    if (resolve_gpu_vla_dim_expr(dim, arg_names, vd)) return vd;
+    if (resolve_gpu_vla_dim_expr(dim, arg_names, body, n_body, vd)) {
+        return vd;
+    }
     size_t idx = 0;
     if (find_arg_var_in_expr(dim, arg_names, idx)) {
         vd.call_arg_index = (int64_t)idx;
