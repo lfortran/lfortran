@@ -172,6 +172,38 @@ EOF
     grep -x -- "-L$(pwd)/omplib" "$LFORTRAN_TEST_DRV_ARGS"
     grep -x -- "-Wl,-rpath,$(pwd)/omplib" "$LFORTRAN_TEST_DRV_ARGS"
     unset LFORTRAN_TEST_DRV_ARGS
+
+    # The -g debug line-information step is compiled in only for builds with
+    # runtime stacktrace support. Probe with the real tools first: if the
+    # sidecar file appears, this build takes the -g step, so the negative
+    # test below applies; otherwise skip (e.g. such a build, or missing
+    # llvm tools/python here).
+    if command -v llvm-dwarfdump > /dev/null 2>&1 && command -v cc > /dev/null 2>&1; then
+        cd $(mktemp -d)
+        $FC $f -o g_probe.out -g 2> /dev/null || true
+        if [ -f g_probe_lines.dat ]; then
+            cd $(mktemp -d)
+            echo "Testing -g warns and continues when LLVM tools are not in PATH"
+            # Run lfortran with a PATH that only contains the compiler
+            # itself (a symlinked copy, so tool directories living next to
+            # it do not leak in) and an absolute-path driver, so only the
+            # optional llvm-dwarfdump/dsymutil step is missing.
+            ln -s "$(command -v $FC)" drvbin_lfortran
+            mkdir -p onlybin && mv drvbin_lfortran onlybin/lfortran
+            real_cc="$(command -v cc)"
+            if ! PATH="$(pwd)/onlybin" LFORTRAN_LINKER="$real_cc" lfortran $f -o a.out -g 2> g_warn_err.txt; then
+                echo "Expected -g to succeed when llvm-dwarfdump is missing"
+                cat g_warn_err.txt
+                exit 1
+            fi
+            grep "continuing without it" g_warn_err.txt
+            [ ! -f a_ldd.txt ]
+            [ ! -f a_lines.dat ]
+            [ ! -d a.out.dSYM ]
+            [ -x "a.out" ]
+            ./a.out
+        fi
+    fi
 fi
 
 echo "All tests succeeded"
