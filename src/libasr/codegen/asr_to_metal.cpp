@@ -2641,8 +2641,16 @@ public:
                     // pointer size to keep the struct layout aligned.
                     src << "    long " << mv->m_name << ";\n";
                 } else if (is_struct_type(mv->m_type)) {
+                    // A component that is an array of a derived type
+                    // keeps its extent: the element count is the same on
+                    // the host, and a component reference into it is
+                    // emitted as a subscript.
                     src << "    " << get_struct_name(mv) << " "
-                        << mv->m_name << ";\n";
+                        << mv->m_name;
+                    if (is_array_type(mv->m_type)) {
+                        src << "[" << get_total_elements(mv->m_type) << "]";
+                    }
+                    src << ";\n";
                 } else if (is_array_type(mv->m_type)) {
                     ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(mv->m_type);
                     src << "    " << metal_type(arr->m_type) << " "
