@@ -5859,26 +5859,35 @@ public:
                 visit_expr(idx);
                 src << ") - (" << lb << ")))";
             }
-            if (arr && d < arr->n_dims) {
+            // The running stride is consumed by the *following*
+            // dimension only, so an extent that cannot be rendered is
+            // harmless in the last indexed dimension.
+            if (arr && d < arr->n_dims && d + 1 < ai->n_args) {
                 ASR::expr_t *dim_len = arr->m_dims[d].m_length;
-                std::string len_str = "0";
+                std::string len_str;
                 if (dim_len) {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
-                        len_str = std::to_string(
-                            ASR::down_cast<ASR::IntegerConstant_t>(
-                                dim_len)->m_n);
-                    } else if (ASR::is_a<ASR::Var_t>(*dim_len)) {
-                        len_str = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
+                    // The extent can be an arbitrary specification
+                    // expression (a literal, a scalar argument, or
+                    // `size(other_arg)`), so render it the same way the
+                    // rest of the kernel body renders expressions.
+                    len_str = expr_to_string(dim_len);
+                    if (len_str.find("/*") != std::string::npos) {
+                        len_str.clear();
                     }
                 } else if (!arr_var_name.empty()) {
                     len_str = "__size_" + arr_var_name + "_dim"
                         + std::to_string(d + 1);
                 }
+                if (len_str.empty()) {
+                    throw CodeGenError("gpu offload: the extent of "
+                        "dimension " + std::to_string(d + 1) + " of `"
+                        + arr_var_name + "` cannot be evaluated inside a "
+                        "gpu kernel", ai->base.base.loc);
+                }
                 if (stride == "1") {
-                    stride = len_str;
+                    stride = "(" + len_str + ")";
                 } else {
-                    stride = "(" + stride + " * " + len_str + ")";
+                    stride = "(" + stride + " * (" + len_str + "))";
                 }
             }
         }
