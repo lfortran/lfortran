@@ -582,6 +582,164 @@ public:
     }
 };
 
+// Metal shaders have neither variable-length arrays nor a heap, so a
+// device function (an `inline` callee of a kernel) can only declare
+// locals whose extent the shader compiler can fold to a constant. An
+// array constructor whose elements are themselves array-valued
+// expressions is materialized by the later `array_struct_temporary`
+// pass into a temporary sized from those elements. An element sized
+// from an assumed-shape or deferred-shape dummy argument, or from a
+// local allocatable whose ALLOCATE bounds are themselves only known at
+// run time, would have to be a VLA inside the device function -- which
+// Metal cannot express. Detect that shape here so the loop can be
+// declined and run on the host instead. Elements sized from a local
+// allocatable with constant ALLOCATE bounds are fine: the Metal backend
+// resolves those extents from the ALLOCATE statement.
+class GpuDeviceFunctionArrayTempChecker :
+        public ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker> {
+private:
+
+    // Entities of the function being checked whose extent is not a
+    // compile-time constant: assumed-shape/deferred-shape dummy
+    // arguments, and local allocatables whose ALLOCATE bounds are only
+    // known at run time.
+    std::set<ASR::symbol_t*> runtime_extent_syms;
+
+    static bool has_runtime_extent(ASR::ttype_t *t) {
+        if (!t) return false;
+        ASR::dimension_t *dims = nullptr;
+        int rank = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(t), dims);
+        return rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank);
+    }
+
+    class VarRefCollector :
+            public ASR::BaseWalkVisitor<VarRefCollector> {
+    public:
+        std::set<ASR::symbol_t*> vars;
+
+        void visit_Var(const ASR::Var_t &x) {
+            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    };
+
+    // Collects the targets of ALLOCATE statements whose bounds are not
+    // compile-time constants, descending into BLOCK and ASSOCIATE
+    // scopes so an allocation nested there is seen too.
+    class RuntimeAllocCollector :
+            public ASR::BaseWalkVisitor<RuntimeAllocCollector> {
+    public:
+        std::set<ASR::symbol_t*> vars;
+
+        void visit_Allocate(const ASR::Allocate_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (!x.m_args[i].m_a ||
+                        !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_a)) continue;
+                bool all_const = true;
+                for (size_t d = 0; d < x.m_args[i].n_dims; d++) {
+                    ASR::expr_t *len = x.m_args[i].m_dims[d].m_length;
+                    if (!len || !ASRUtils::expr_value(len)) {
+                        all_const = false;
+                    }
+                }
+                if (all_const) continue;
+                vars.insert(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i].m_a)->m_v));
+            }
+        }
+
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            for (size_t i = 0; i < blk->n_body; i++) {
+                visit_stmt(*blk->m_body[i]);
+            }
+        }
+
+        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+            ASR::AssociateBlock_t *blk =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            for (size_t i = 0; i < blk->n_body; i++) {
+                visit_stmt(*blk->m_body[i]);
+            }
+        }
+    };
+
+public:
+    bool has_runtime_sized_temp = false;
+
+    void check_function(ASR::Function_t *fn) {
+        runtime_extent_syms.clear();
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t *bare = ASRUtils::extract_type(var->m_type);
+            // A struct dummy carries the extents of its allocatable
+            // components in run-time parameters too, so an element sized
+            // from one of its components is just as unrepresentable.
+            if (has_runtime_extent(var->m_type) ||
+                    ASR::is_a<ASR::StructType_t>(*bare) ||
+                    ASRUtils::is_class_type(bare)) {
+                runtime_extent_syms.insert(sym);
+            }
+        }
+        {
+            RuntimeAllocCollector alloc_collector;
+            for (size_t i = 0; i < fn->n_body; i++) {
+                alloc_collector.visit_stmt(*fn->m_body[i]);
+            }
+            runtime_extent_syms.insert(alloc_collector.vars.begin(),
+                alloc_collector.vars.end());
+        }
+        if (runtime_extent_syms.empty()) return;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            visit_stmt(*fn->m_body[i]);
+        }
+    }
+
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg = x.m_args[i];
+            if (!arg) continue;
+            if (!has_runtime_extent(ASRUtils::expr_type(arg))) continue;
+            VarRefCollector vc;
+            vc.visit_expr(*arg);
+            for (ASR::symbol_t *v : vc.vars) {
+                if (runtime_extent_syms.count(v)) {
+                    has_runtime_sized_temp = true;
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker>::
+            visit_ArrayConstructor(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
 // Collects Var references in function bodies that point to symbols
 // not reachable through the function's scope chain. This happens when
 // a contained function references host-scope variables (e.g., Parameters)
@@ -4745,6 +4903,61 @@ public:
                 local_array_checker.visit_stmt(*x.m_body[i]);
             }
             if (local_array_checker.has_unsized_local_array) return;
+            // Same restriction, one call level down: a function called
+            // from the loop body becomes an `inline` device function,
+            // and its locals are subject to the same no-VLA rule.
+            {
+                GpuFunctionCollector fc;
+                for (size_t i = 0; i < x.n_body; i++) {
+                    fc.visit_stmt(*x.m_body[i]);
+                }
+                bool added = true;
+                while (added) {
+                    added = false;
+                    GpuFunctionCollector tc;
+                    for (auto &[fn_name, fn_sym] : fc.functions) {
+                        ASR::symbol_t *resolved =
+                            ASRUtils::symbol_get_past_external(fn_sym);
+                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                *resolved)) {
+                            resolved = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<
+                                    ASR::StructMethodDeclaration_t>(
+                                        resolved)->m_proc);
+                        }
+                        if (!resolved ||
+                                !ASR::is_a<ASR::Function_t>(*resolved))
+                            continue;
+                        ASR::Function_t *fn =
+                            ASR::down_cast<ASR::Function_t>(resolved);
+                        for (size_t i = 0; i < fn->n_body; i++) {
+                            tc.visit_stmt(*fn->m_body[i]);
+                        }
+                    }
+                    for (auto &[name, sym] : tc.functions) {
+                        if (fc.functions.find(name) == fc.functions.end()) {
+                            fc.functions[name] = sym;
+                            added = true;
+                        }
+                    }
+                }
+                GpuDeviceFunctionArrayTempChecker temp_checker;
+                for (auto &[fn_name, fn_sym] : fc.functions) {
+                    ASR::symbol_t *resolved =
+                        ASRUtils::symbol_get_past_external(fn_sym);
+                    if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                            *resolved)) {
+                        resolved = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                resolved)->m_proc);
+                    }
+                    if (!resolved ||
+                            !ASR::is_a<ASR::Function_t>(*resolved)) continue;
+                    temp_checker.check_function(
+                        ASR::down_cast<ASR::Function_t>(resolved));
+                }
+                if (temp_checker.has_runtime_sized_temp) return;
+            }
         }
 
         // Inline IntrinsicArrayFunction All before kernel extraction
