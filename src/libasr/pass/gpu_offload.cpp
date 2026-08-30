@@ -4277,6 +4277,83 @@ public:
         }
     }
 
+    // Is `e` the integer literal `value`?
+    static bool is_int_literal(ASR::expr_t *e, int64_t value) {
+        if (!e) return false;
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (!v) v = e;
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*v)) return false;
+        return ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n == value;
+    }
+
+    ASR::expr_t *int32_const(const Location &loc, int64_t n) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n,
+            int_type, ASR::integerbozType::Decimal));
+    }
+
+    // The loop counters generated below are integer(4); a section bound
+    // of another integer kind has to be converted before it can be
+    // combined with them.
+    ASR::expr_t *to_int32(const Location &loc, ASR::expr_t *e) {
+        ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(e));
+        if (ASR::is_a<ASR::Integer_t>(*t)
+                && ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4) {
+            return e;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
+            ASR::cast_kindType::IntegerToInteger, int_type, nullptr,
+            nullptr));
+    }
+
+    // Number of elements of a section dimension `lo:hi:step`, which is
+    // (hi - lo)/step + 1. Truncating integer division gives the right
+    // answer for a negative step too, since numerator and denominator
+    // then have the same sign.
+    ASR::expr_t *section_extent(const Location &loc,
+            const ASR::array_index_t &d) {
+        if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
+            return d.m_right;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            loc, to_int32(loc, d.m_right), ASR::binopType::Sub,
+            to_int32(loc, d.m_left), int_type, nullptr));
+        if (!is_int_literal(d.m_step, 1)) {
+            span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
+                ASR::binopType::Div, to_int32(loc, d.m_step), int_type,
+                nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
+            ASR::binopType::Add, int32_const(loc, 1), int_type, nullptr));
+    }
+
+    // Array index of the `counter`-th element (counter = 1..extent) of a
+    // section dimension `lo:hi:step`, which is lo + (counter - 1)*step.
+    ASR::expr_t *section_index(const Location &loc,
+            const ASR::array_index_t &d, ASR::expr_t *counter) {
+        if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
+            return counter;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            loc, counter, ASR::binopType::Sub, int32_const(loc, 1),
+            int_type, nullptr));
+        if (!is_int_literal(d.m_step, 1)) {
+            offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                offset, ASR::binopType::Mul, to_int32(loc, d.m_step),
+                int_type, nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            to_int32(loc, d.m_left), ASR::binopType::Add, offset,
+            int_type, nullptr));
+    }
+
     // Inline ArraySection assignments inside a DoConcurrentLoop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
@@ -4402,7 +4479,8 @@ public:
                 for (size_t ri = 0; ri < range_dims.size(); ri++) {
                     if ((int)i == range_dims[ri]) {
                         idx.m_left = nullptr;
-                        idx.m_right = loop_vars[ri];
+                        idx.m_right = section_index(loc, as->m_args[i],
+                            loop_vars[ri]);
                         idx.m_step = nullptr;
                         is_range = true;
                         break;
@@ -4440,7 +4518,8 @@ public:
                                 rhs_as->m_args[i].m_step) {
                             if (rv_idx < loop_vars.size()) {
                                 idx.m_left = nullptr;
-                                idx.m_right = loop_vars[rv_idx];
+                                idx.m_right = section_index(loc,
+                                    rhs_as->m_args[i], loop_vars[rv_idx]);
                                 idx.m_step = nullptr;
                                 rv_idx++;
                             } else {
@@ -4668,8 +4747,8 @@ public:
                 ASR::do_loop_head_t head;
                 head.loc = loc;
                 head.m_v = loop_vars[ri];
-                head.m_start = as->m_args[dim].m_left;
-                head.m_end = as->m_args[dim].m_right;
+                head.m_start = int32_const(loc, 1);
+                head.m_end = section_extent(loc, as->m_args[dim]);
                 head.m_increment = nullptr;
 
                 Vec<ASR::stmt_t*> body;
@@ -5247,8 +5326,9 @@ public:
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
 
-            ASR::expr_t *loop_start = first_as->m_args[range_dim].m_left;
-            ASR::expr_t *loop_end = first_as->m_args[range_dim].m_right;
+            ASR::expr_t *loop_start = int32_const(loc, 1);
+            ASR::expr_t *loop_end = section_extent(loc,
+                first_as->m_args[range_dim]);
 
             // Create loop variable in the containing function/program scope
             SymbolTable *var_scope = current_scope;
@@ -5289,7 +5369,8 @@ public:
                         if (as->m_args[i].m_left && as->m_args[i].m_right
                                 && as->m_args[i].m_step) {
                             idx.m_left = nullptr;
-                            idx.m_right = loop_var;
+                            idx.m_right = section_index(loc,
+                                as->m_args[i], loop_var);
                             idx.m_step = nullptr;
                         } else {
                             idx.m_left = as->m_args[i].m_left;
