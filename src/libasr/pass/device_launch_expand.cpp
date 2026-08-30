@@ -4,6 +4,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <cstdlib>
@@ -47,14 +48,22 @@ static bool is_plain_scalar(ASR::ttype_t *type) {
 // An allocatable rank one array member of a struct is not stored inline: the
 // device code generators hand it over as three extra flat buffers holding
 // every element's data, offset and size.
+static bool struct_is_plain(ASR::symbol_t *struct_sym);
+static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym);
+
 static bool is_decomposed_member(ASR::symbol_t *member) {
     if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
-    ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
-    if (!ASRUtils::is_allocatable(type)) return false;
-    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(type);
+    ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
+    if (!ASRUtils::is_allocatable(variable->m_type)) return false;
+    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
+        variable->m_type);
     if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
-    return ASR::down_cast<ASR::Array_t>(inner)->n_dims == 1 &&
-        is_plain_scalar(ASRUtils::type_get_past_array(inner));
+    if (ASR::down_cast<ASR::Array_t>(inner)->n_dims != 1) return false;
+    ASR::ttype_t *element = ASRUtils::type_get_past_array(inner);
+    if (ASR::is_a<ASR::StructType_t>(*element)) {
+        return struct_is_plain(variable->m_type_declaration);
+    }
+    return is_plain_scalar(element);
 }
 
 static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
@@ -112,16 +121,19 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         ASR::symbol_t *struct_sym =
             ASRUtils::get_struct_sym_from_struct_expr(arg);
         if (!struct_is_plain(struct_sym)) return false;
+        // Only an array of structs is decomposed; a scalar struct is passed
+        // as it stands, with the members the kernel needs handed over as
+        // separate arguments. Decomposing means walking the array element by
+        // element, which needs a plain variable to subscript.
+        if (!ASRUtils::is_array(arg_type) || ASR::is_a<ASR::Var_t>(*arg)) {
+            return true;
+        }
         ASR::Struct_t *st = get_struct(struct_sym);
         for (size_t i = 0; i < st->n_members; i++) {
-            if (!is_decomposed_member(st->m_symtab->get_symbol(
+            if (is_decomposed_member(st->m_symtab->get_symbol(
                     st->m_members[i]))) {
-                continue;
+                return no2("struct-array-expr");
             }
-            // Decomposing a member means walking the struct array element by
-            // element, which needs a plain variable to subscript.
-            if (!ASRUtils::is_array(arg_type)) return no2("struct-scalar-alloc");
-            if (!ASR::is_a<ASR::Var_t>(*arg)) return no2("struct-array-expr");
         }
         return true;
     }
@@ -151,21 +163,11 @@ static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
     // arrays, are not expanded here yet.
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
-            // A workspace sized from a struct member needs the struct
-            // decomposition, which this pass does not build yet.
-            if (dim.is_struct_member_size) return no("vla-struct-member");
+            if (dim.is_struct_member_size) continue;
             if (!dim.is_constant &&
                     dim.call_arg_index >= x.n_args) return no("vla-dim");
         }
     }
-    // A member the kernel writes into but that the caller has not allocated,
-    // and a member sized at run time from another one, both need the host to
-    // allocate the member before the launch; that is not expanded here yet.
-    std::map<std::string, int64_t> member_write_sizes =
-        find_struct_member_vla_write_sizes(*kernel,
-            analyze_gpu_vla_workspaces(*kernel));
-    std::map<std::string, std::string> member_runtime_sources =
-        find_struct_member_vla_runtime_sources(*kernel);
     for (size_t i = 0; i < x.n_args; i++) {
         ASR::expr_t *arg = x.m_args[i].m_value;
         if (!arg) return no("null-arg");
@@ -177,25 +179,6 @@ static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(arg_type))) {
             if (!is_supported_buffer(arg)) return false;
-            ASR::Struct_t *st = get_struct(
-                ASRUtils::get_struct_sym_from_struct_expr(arg));
-            if (st) {
-                std::string arg_name = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(arg)->m_v);
-                for (size_t m = 0; m < st->n_members; m++) {
-                    if (!is_decomposed_member(
-                            st->m_symtab->get_symbol(st->m_members[m]))) {
-                        continue;
-                    }
-                    std::string key = arg_name + "." + st->m_members[m];
-                    if (member_write_sizes.count(key)) {
-                        return no("struct-member-write");
-                    }
-                    if (member_runtime_sources.count(key)) {
-                        return no("struct-member-runtime-size");
-                    }
-                }
-            }
         } else {
             if (!is_supported_scalar(arg_type)) return no("scalar-type");
             if (!same_scalar_type(arg_type, kparam->m_type)) {
@@ -264,6 +247,10 @@ class DeviceLaunchExpandVisitor :
         ASR::TranslationUnit_t &unit;
         // Scalar argument struct created for each kernel, by kernel name.
         std::map<std::string, ASR::symbol_t*> scalar_arg_structs;
+        // Size of the first element of a decomposed struct member, by
+        // "<array>.<member>". A member sized at run time from another one,
+        // and a workspace sized from a member, both read it.
+        std::map<std::string, ASR::expr_t*> member_first_sizes;
 
         ASR::call_arg_t call_arg(const Location &loc, ASR::expr_t *value) {
             ASR::call_arg_t arg;
@@ -472,21 +459,57 @@ class DeviceLaunchExpandVisitor :
         void decompose_struct_members(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
                 std::vector<BufferArg> &buffers,
-                std::vector<ASR::stmt_t*> &writebacks) {
+                std::vector<ASR::stmt_t*> &writebacks,
+                const ASR::GpuKernelFunction_t &kernel) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::Struct_t *st = get_struct(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
+            std::string arg_name = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            std::map<std::string, int64_t> write_sizes =
+                find_struct_member_vla_write_sizes(kernel,
+                    analyze_gpu_vla_workspaces(kernel));
+            std::map<std::string, std::string> runtime_sources =
+                find_struct_member_vla_runtime_sources(kernel);
             for (size_t m = 0; m < st->n_members; m++) {
                 ASR::symbol_t *member = st->m_symtab->get_symbol(
                     st->m_members[m]);
                 if (!is_decomposed_member(member)) continue;
+                ASR::ttype_t *member_type = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::symbol_type(member));
                 ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::symbol_type(member)));
-                ASR::expr_t *element_bytes = ASRUtils::EXPR(
-                    ASR::make_SizeOfType_t(al, loc, element_type, int64,
-                        nullptr));
+                    member_type);
+                // A struct with no data members occupies no bytes on the host
+                // but one byte in the device language; size the buffer so
+                // that every element stays addressable, and copy nothing,
+                // because there is nothing to copy.
+                ASR::Struct_t *element_struct = get_struct(
+                    ASR::down_cast<ASR::Variable_t>(member)
+                        ->m_type_declaration);
+                bool element_is_empty = ASR::is_a<ASR::StructType_t>(
+                    *element_type) && element_struct &&
+                    element_struct->n_members == 0;
+                ASR::expr_t *element_bytes = element_is_empty
+                    ? b.i64(1)
+                    : ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
+                        element_type, int64, nullptr));
+
+                // The kernel writes into a member the caller never allocated,
+                // so the host has to give it storage first.
+                std::string key = arg_name + "." + st->m_members[m];
+                ASR::expr_t *missing_size = nullptr;
+                auto write_size = write_sizes.find(key);
+                if (write_size != write_sizes.end()) {
+                    missing_size = b.i32(write_size->second);
+                } else {
+                    auto source = runtime_sources.find(key);
+                    if (source != runtime_sources.end()) {
+                        auto first = member_first_sizes.find(source->second);
+                        missing_size = first != member_first_sizes.end()
+                            ? first->second : b.i32(1);
+                    }
+                }
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
@@ -511,22 +534,42 @@ class DeviceLaunchExpandVisitor :
                 out.push_back(al, b.Allocate(sizes, dims.p, dims.n));
                 out.push_back(al, b.Allocate(offsets, dims.p, dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
-                out.push_back(al, b.DoLoop(k, b.i32(1), n, {
-                    b.Assignment(b.ArrayItem_01(offsets, {k}), total),
-                    b.Assignment(b.ArrayItem_01(sizes, {k}),
-                        b.ArraySize(struct_member(loc, arg, k, member),
-                            nullptr, int32)),
-                    b.Assignment(total, b.Add(total,
-                        b.ArrayItem_01(sizes, {k})))}));
+                std::vector<ASR::stmt_t*> measure;
+                if (missing_size) {
+                    Vec<ASR::dimension_t> member_dims;
+                    member_dims.reserve(al, 1);
+                    ASR::dimension_t member_dim;
+                    member_dim.loc = loc;
+                    member_dim.m_start = b.i32(1);
+                    member_dim.m_length = missing_size;
+                    member_dims.push_back(al, member_dim);
+                    measure.push_back(b.If(b.Not(is_allocated(loc,
+                        struct_member(loc, arg, k, member))),
+                        {b.Allocate(struct_member(loc, arg, k, member),
+                            member_dims.p, member_dims.n)}, {}));
+                }
+                measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
+                    total));
+                measure.push_back(b.Assignment(b.ArrayItem_01(sizes, {k}),
+                    b.ArraySize(struct_member(loc, arg, k, member),
+                        nullptr, int32)));
+                measure.push_back(b.Assignment(total, b.Add(total,
+                    b.ArrayItem_01(sizes, {k}))));
+                out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
+                member_first_sizes[key] = b.ArrayItem_01(sizes, {b.i32(1)});
                 ASR::expr_t *data_bytes = b.Mul(b.i2i_t(total, int64),
                     element_bytes);
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
-                out.push_back(al, b.DoLoop(k, b.i32(1), n, {
-                    memcpy_call(loc,
-                        member_data_address(loc, data, offsets, k,
-                            element_bytes),
-                        address_of(loc, struct_member(loc, arg, k, member)),
-                        member_byte_size(loc, sizes, k, element_bytes))}));
+                if (!element_is_empty) {
+                    out.push_back(al, b.DoLoop(k, b.i32(1), n, {
+                        memcpy_call(loc,
+                            member_data_address(loc, data, offsets, k,
+                                element_bytes),
+                            address_of(loc,
+                                struct_member(loc, arg, k, member)),
+                            member_byte_size(loc, sizes, k,
+                                element_bytes))}));
+                }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
@@ -535,16 +578,31 @@ class DeviceLaunchExpandVisitor :
                 buffers.push_back({sizes, address_of(loc, sizes),
                     index_bytes});
 
-                writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
-                    memcpy_call(loc,
-                        address_of(loc, struct_member(loc, arg, k, member)),
-                        member_data_address(loc, data, offsets, k,
-                            element_bytes),
-                        member_byte_size(loc, sizes, k, element_bytes))}));
+                if (!element_is_empty) {
+                    writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
+                        memcpy_call(loc,
+                            address_of(loc,
+                                struct_member(loc, arg, k, member)),
+                            member_data_address(loc, data, offsets, k,
+                                element_bytes),
+                            member_byte_size(loc, sizes, k,
+                                element_bytes))}));
+                }
                 writebacks.push_back(b.Deallocate(data));
                 writebacks.push_back(b.Deallocate(offsets));
                 writebacks.push_back(b.Deallocate(sizes));
             }
+        }
+
+        ASR::expr_t* is_allocated(const Location &loc, ASR::expr_t *x) {
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, x);
+            return ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(
+                    ASRUtils::IntrinsicImpureFunctions::Allocated),
+                args.p, args.n, 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
         }
 
         ASR::expr_t* struct_member(const Location &loc, ASR::expr_t *arg,
@@ -621,8 +679,11 @@ class DeviceLaunchExpandVisitor :
                             *ASRUtils::extract_type(arg_type))) {
                     buffers.push_back({arg, address_of(loc, arg),
                         buffer_byte_size(loc, arg)});
-                    decompose_struct_members(loc, out, arg, buffers,
-                        writebacks);
+                    if (ASRUtils::is_array(arg_type) &&
+                            ASR::is_a<ASR::Var_t>(*arg)) {
+                        decompose_struct_members(loc, out, arg, buffers,
+                            writebacks, *kernel);
+                    }
                 } else {
                     scalar_fields.push_back({std::string(kparam->m_name),
                         ASRUtils::extract_type(arg_type)});
@@ -761,10 +822,19 @@ class DeviceLaunchExpandVisitor :
                     b.i2i_t(x.m_grid_size, int64),
                     b.i2i_t(x.m_block_size, int64));
                 for (auto &dim : workspace.dims) {
-                    n_elements = b.Mul(n_elements, dim.is_constant
-                        ? b.i64(dim.constant_value)
-                        : b.i2i_t(x.m_args[dim.call_arg_index].m_value,
-                            int64));
+                    ASR::expr_t *extent = nullptr;
+                    if (dim.is_constant) {
+                        extent = b.i64(dim.constant_value);
+                    } else if (dim.is_struct_member_size) {
+                        auto first = member_first_sizes.find(
+                            dim.struct_member_key);
+                        if (first == member_first_sizes.end()) continue;
+                        extent = b.i2i_t(first->second, int64);
+                    } else {
+                        extent = b.i2i_t(
+                            x.m_args[dim.call_arg_index].m_value, int64);
+                    }
+                    n_elements = b.Mul(n_elements, extent);
                 }
                 ASR::expr_t *n_bytes = b.Mul(n_elements,
                     b.i64(workspace.elem_size));
