@@ -8,6 +8,8 @@
 
 namespace LCompilers {
 
+struct LocationManager;
+
 enum Platform {
     Linux,
     macOS_Intel,
@@ -71,6 +73,12 @@ struct PassOptions {
     bool enable_gpu_offloading = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
+    // `--gpu-offload-report`: print one line per `do concurrent` that does
+    // not become a GPU kernel of its own, saying why.
+    bool gpu_offload_report = false;
+    // Resolves a `Location` to file/line/column for that report only. Not
+    // owned, and null whenever the caller has no LocationManager to hand.
+    const LocationManager *loc_manager = nullptr;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;

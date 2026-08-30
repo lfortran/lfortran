@@ -13,6 +13,7 @@
 #include <libasr/codegen/gpu_utils.h>
 
 #include <filesystem>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -22,6 +23,70 @@ namespace LCompilers {
 
 using ASR::down_cast;
 using ASR::is_a;
+
+// `--gpu-offload-report`. Every `do concurrent` that does not end up as a
+// GPU kernel of its own is reported on stderr with the source position, the
+// enclosing procedure and a `reason=` tag. A loop that device code has to
+// run in order is reported too, under its own reason, so a loop running
+// serially *on the device* can be told apart from one left on the host.
+//
+// The state is per-run and set once by the visitor's constructor, so every
+// report site costs a single bool test while the report is off.
+namespace {
+
+struct GpuOffloadReport {
+    static bool enabled;
+    static const LocationManager *lm;
+    // Extra `key=value` fields for the next report, filled in by the
+    // analysis that found the obstruction.
+    static std::string detail;
+
+    static void configure(const PassOptions &po) {
+        enabled = po.gpu_offload_report;
+        lm = po.loc_manager;
+        detail.clear();
+    }
+
+    static void set_detail(const std::string &d) {
+        if (enabled) detail = d;
+    }
+
+    static void clear_detail() {
+        detail.clear();
+    }
+
+    // `on_device` distinguishes a loop the device runs serially from one
+    // that falls back to the host altogether.
+    static void emit(const Location &loc, const std::string &proc,
+            const std::string &reason, bool on_device = false) {
+        if (!enabled) return;
+        std::string where;
+        if (lm != nullptr && !lm->files.empty()) {
+            uint32_t line = 0, col = 0;
+            std::string filename;
+            lm->pos_to_linecol(lm->output_to_input_pos(loc.first, false),
+                line, col, filename);
+            where = filename + ":" + std::to_string(line) + ":"
+                + std::to_string(col);
+        } else {
+            where = "<offset " + std::to_string(loc.first) + ">";
+        }
+        std::cerr << "gpu-offload-report: " << where << ": do concurrent"
+                  << " status=" << (on_device ? "device-serial" : "host")
+                  << " proc=" << proc << " reason=" << reason;
+        if (!detail.empty()) {
+            std::cerr << " " << detail;
+        }
+        std::cerr << std::endl;
+        detail.clear();
+    }
+};
+
+bool GpuOffloadReport::enabled = false;
+const LocationManager *GpuOffloadReport::lm = nullptr;
+std::string GpuOffloadReport::detail;
+
+} // anonymous namespace
 
 static int gpu_kernel_counter = 0;
 
@@ -283,6 +348,8 @@ class GpuLocalArrayChecker :
         public ASR::BaseWalkVisitor<GpuLocalArrayChecker> {
 public:
     bool has_unsized_local_array = false;
+    // Name of the first offending local, for --gpu-offload-report.
+    std::string unsized_name;
 
     // True when every extent of the array is present as an expression,
     // so a workspace buffer can be sized from it.
@@ -316,6 +383,7 @@ public:
                 }
             }
             has_unsized_local_array = true;
+            if (unsized_name.empty()) unsized_name = item.first;
         }
     }
 
@@ -1385,7 +1453,26 @@ public:
 
     GpuOffloadVisitor(Allocator &al, PassOptions pass_options_,
                       ASR::TranslationUnit_t &tu_)
-        : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
+        : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {
+        GpuOffloadReport::configure(pass_options);
+    }
+
+    // Name of the procedure the loop being visited sits in, for
+    // --gpu-offload-report. BLOCK and ASSOCIATE scopes are skipped: they
+    // are not what a user calls the enclosing procedure.
+    std::string report_enclosing_proc() const {
+        SymbolTable *scope = current_scope;
+        while (scope && scope->asr_owner
+                && scope->asr_owner->type == ASR::asrType::symbol) {
+            ASR::symbol_t *owner = down_cast<ASR::symbol_t>(scope->asr_owner);
+            if (!ASR::is_a<ASR::Block_t>(*owner)
+                    && !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                return ASRUtils::symbol_name(owner);
+            }
+            scope = scope->parent;
+        }
+        return "<global>";
+    }
 
     // Load any module dependencies of a loaded submodule TU into
     // the main TU's symbol table so that fix_external_symbols can
@@ -2348,14 +2435,27 @@ public:
             }
         };
         GpuDoConcurrentCollector blocked;
+        // Owner of each blocked loop, for --gpu-offload-report only.
+        std::map<const ASR::DoConcurrentLoop_t*, std::string> blocked_owner;
+        auto note_owner = [&](const GpuDoConcurrentCollector &c,
+                const std::string &owner) {
+            if (!GpuOffloadReport::enabled) return;
+            for (const ASR::DoConcurrentLoop_t *loop : c.loops) {
+                blocked_owner.emplace(loop, owner);
+            }
+        };
         for (auto &item : tu.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) continue;
             ASR::GpuKernelFunction_t *k =
                 ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
             add_callees(k->m_body, k->n_body);
+            GpuDoConcurrentCollector in_kernel;
             for (size_t i = 0; i < k->n_body; i++) {
-                blocked.visit_stmt(*k->m_body[i]);
+                in_kernel.visit_stmt(*k->m_body[i]);
             }
+            note_owner(in_kernel, item.first);
+            blocked.loops.insert(in_kernel.loops.begin(),
+                in_kernel.loops.end());
         }
         for (const ASR::DoConcurrentLoop_t *loop : all_loops.loops) {
             add_callees(loop->m_body, loop->n_body);
@@ -2372,11 +2472,20 @@ public:
             add_callees(fn->m_body, fn->n_body);
         }
         for (ASR::Function_t *fn : device_reachable_functions) {
+            GpuDoConcurrentCollector in_fn;
             for (size_t i = 0; i < fn->n_body; i++) {
-                blocked.visit_stmt(*fn->m_body[i]);
+                in_fn.visit_stmt(*fn->m_body[i]);
             }
+            note_owner(in_fn, fn->m_name);
+            blocked.loops.insert(in_fn.loops.begin(), in_fn.loops.end());
         }
-        host_only_loops.insert(blocked.loops.begin(), blocked.loops.end());
+        for (const ASR::DoConcurrentLoop_t *loop : blocked.loops) {
+            if (!host_only_loops.insert(loop).second) continue;
+            auto owner = blocked_owner.find(loop);
+            GpuOffloadReport::emit(loop->base.base.loc,
+                owner == blocked_owner.end() ? "<unknown>" : owner->second,
+                "sequentialized-for-device", true);
+        }
         GpuHostOnlyLoopSequentializer seq(al, host_only_loops);
         seq.asr_changed = true;
         while (seq.asr_changed) {
@@ -2408,18 +2517,36 @@ public:
     // Can this callee's body be spliced verbatim into the caller?
     static bool can_inline_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc) {
-        if (!fn || !fn->m_return_var || fn->n_body == 0) return false;
+        std::string callee = fn ? std::string(fn->m_name) : std::string("?");
+        auto decline = [&](const char *sub) {
+            GpuOffloadReport::set_detail(std::string("sub=") + sub
+                + " callee=" + callee);
+            return false;
+        };
+        if (!fn || !fn->m_return_var || fn->n_body == 0) {
+            return decline("callee-no-return-var-or-empty-body");
+        }
         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
-        if (ft->m_abi != ASR::abiType::Source) return false;
-        if (ft->m_deftype != ASR::deftypeType::Implementation) return false;
-        if (fn->n_args != fc->n_args) return false;
+        if (ft->m_abi != ASR::abiType::Source) {
+            return decline("callee-abi-not-source");
+        }
+        if (ft->m_deftype != ASR::deftypeType::Implementation) {
+            return decline("callee-not-implementation");
+        }
+        if (fn->n_args != fc->n_args) {
+            return decline("callee-arg-count-mismatch");
+        }
         for (size_t i = 0; i < fc->n_args; i++) {
             // An absent optional actual has no expression to substitute.
-            if (!fc->m_args[i].m_value) return false;
+            if (!fc->m_args[i].m_value) {
+                return decline("callee-absent-optional-actual");
+            }
         }
         for (size_t i = 0; i < fn->n_args; i++) {
-            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) return false;
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                return decline("callee-dummy-not-var");
+            }
         }
         // Only Variables and ExternalSymbols: a nested scope (BLOCK,
         // ASSOCIATE) or contained procedure would have to be re-homed
@@ -2430,12 +2557,21 @@ public:
             // It resolves through that module from wherever the cloned
             // body ends up, so it needs no re-homing.
             if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) return false;
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                GpuOffloadReport::set_detail(
+                    "sub=callee-symtab-has-non-variable callee=" + callee
+                    + " sym=" + item.first);
+                return false;
+            }
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                 item.second);
             // SAVE state must persist across calls; inlining would give
             // every call site its own copy.
-            if (v->m_storage == ASR::storage_typeType::Save) return false;
+            if (v->m_storage == ASR::storage_typeType::Save) {
+                GpuOffloadReport::set_detail("sub=callee-save-local callee="
+                    + callee + " sym=" + item.first);
+                return false;
+            }
         }
         // A `return` anywhere but as the final statement needs control
         // flow the splice cannot express.
@@ -2443,10 +2579,10 @@ public:
         for (size_t i = 0; i < fn->n_body; i++) {
             rc.visit_stmt(*fn->m_body[i]);
         }
-        if (rc.count > 1) return false;
+        if (rc.count > 1) return decline("callee-multiple-returns");
         if (rc.count == 1 &&
                 !ASR::is_a<ASR::Return_t>(*fn->m_body[fn->n_body - 1])) {
-            return false;
+            return decline("callee-return-not-last");
         }
         return true;
     }
@@ -2526,8 +2662,17 @@ public:
                 // Only a call that *is* the assignment's value can be
                 // spliced; one nested inside a larger expression would
                 // need a temporary the caller does not have.
-                if (call != top) return false;
-                if (on_stack.count(callee)) return false;
+                if (call != top) {
+                    GpuOffloadReport::set_detail(
+                        "sub=call-not-top-level-value callee="
+                        + std::string(callee->m_name));
+                    return false;
+                }
+                if (on_stack.count(callee)) {
+                    GpuOffloadReport::set_detail("sub=callee-recursive callee="
+                        + std::string(callee->m_name));
+                    return false;
+                }
                 if (!can_inline_device_function(callee, call)) return false;
                 functions_to_inline.insert(callee);
                 on_stack.insert(callee);
@@ -6622,8 +6767,16 @@ public:
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
+        GpuOffloadReport::clear_detail();
+        std::string report_proc;
+        if (GpuOffloadReport::enabled) report_proc = report_enclosing_proc();
+
         // Skip loops with reduce clause (let do_loops handle as regular loop)
-        if (x.n_reduction > 0) return;
+        if (x.n_reduction > 0) {
+            GpuOffloadReport::emit(x.base.base.loc, report_proc,
+                "reduce-clause");
+            return;
+        }
 
         Location loc = x.base.base.loc;
         size_t n_dims = x.n_head;
@@ -6632,10 +6785,17 @@ public:
         // thread id by successive divmod over the per-dimension extents. The
         // 3-D shape of the underlying dispatch grid therefore does not limit
         // the number of loop indices.
-        if (n_dims == 0) return;
+        if (n_dims == 0) {
+            GpuOffloadReport::emit(loc, report_proc, "no-loop-index");
+            return;
+        }
 
         for (size_t d = 0; d < n_dims; d++) {
-            if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) return;
+            if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) {
+                GpuOffloadReport::emit(loc, report_proc,
+                    "loop-head-incomplete");
+                return;
+            }
         }
 
         // Resolve associate variables to their original targets if this
@@ -6883,18 +7043,31 @@ public:
             // covers all of them.
             for (auto &sym : candidate_syms) {
                 if (!is_metal_representable_type(sym.second.first,
-                        sym.second.second)) return;
+                        sym.second.second)) {
+                    GpuOffloadReport::set_detail("sym=" + sym.first);
+                    GpuOffloadReport::emit(loc, report_proc,
+                        "type-not-metal-representable");
+                    return;
+                }
             }
             GpuLocalArrayChecker local_array_checker;
             for (size_t i = 0; i < x.n_body; i++) {
                 local_array_checker.visit_stmt(*x.m_body[i]);
             }
-            if (local_array_checker.has_unsized_local_array) return;
+            if (local_array_checker.has_unsized_local_array) {
+                GpuOffloadReport::set_detail(
+                    "sym=" + local_array_checker.unsized_name);
+                GpuOffloadReport::emit(loc, report_proc,
+                    "unsized-local-array");
+                return;
+            }
             // An array assignment whose two sides overlap the same array
             // needs a temporary (see materialize_aliased_assignments).
             // If that temporary cannot be fixed-size, decline here,
             // while the body is still untouched.
             if (body_needs_unsupported_alias_temp(x.m_body, x.n_body)) {
+                GpuOffloadReport::emit(loc, report_proc,
+                    "runtime-sized-alias-temp");
                 return;
             }
             // A device function may need a run-time sized local -- an
@@ -6916,6 +7089,8 @@ public:
                     // result). Emitting a shader that cannot compile
                     // would be worse than not offloading at all.
                     functions_to_inline.clear();
+                    GpuOffloadReport::emit(loc, report_proc,
+                        "device-function-cannot-be-inlined");
                     return;
                 }
             }

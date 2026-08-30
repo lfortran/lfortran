@@ -28269,6 +28269,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
+    // Let a pass that reports on source constructs (--gpu-offload-report)
+    // turn a Location back into a file, line and column.
+    co.po.loc_manager = &lm;
     auto t1 = std::chrono::high_resolution_clock::now();
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
     auto t2 = std::chrono::high_resolution_clock::now();

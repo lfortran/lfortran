@@ -69,6 +69,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
 - `--device-compiler TEXT=nvcc`: Toolchain driver used to compile and link GPU device code
+- `--gpu-offload-report`: Report on stderr every `do concurrent` that does not become a GPU kernel of its own, and why
 - `--openmp`: Enable OpenMP
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
