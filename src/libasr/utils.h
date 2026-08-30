@@ -25,6 +25,10 @@ std::string get_unique_ID();
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
 std::string generate_visualize_html(std::string &astr_data_json);
 
+namespace diag {
+    struct Diagnostics;
+}
+
 struct PassOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
@@ -81,6 +85,9 @@ struct PassOptions {
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;
+    // Set by the pass manager so that a pass can report a diagnostic. It is
+    // null when the passes are run outside the pass manager.
+    diag::Diagnostics *diagnostics = nullptr;
 };
 
 struct CompilerOptions {

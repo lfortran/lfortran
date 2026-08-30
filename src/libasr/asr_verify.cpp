@@ -2248,6 +2248,19 @@ public:
         }
     }
 
+    // TODO(stage-02b): also verify that a Device function only calls Device
+    // or HostDevice functions. That invariant does not hold yet: a kernel body
+    // is copied verbatim from the host loop, so it still calls Host functions
+    // until the device call-graph closure pass exists.
+    void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
+            "GpuKernelLaunch::m_kernel '" +
+                std::string(ASRUtils::symbol_name(x.m_kernel)) +
+                "' must be a function that runs on the device");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");

@@ -137,8 +137,9 @@ namespace LCompilers {
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           diag::Diagnostics &diagnostics,
                            double &cummulative_time_taken_by_passes_in_microseconds) {
+            pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(

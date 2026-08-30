@@ -243,7 +243,12 @@ public:
                 return "int";
             }
             case ASR::ttypeType::Real: {
-                // Metal does not support double precision; use float for all
+                // Metal does not support double precision; use float for all.
+                // This silently narrows real(8), and is only correct because
+                // pass_replace_gpu_offload refuses to offload a loop that
+                // touches real(8) or integer(8) and reports it instead. Do not
+                // lift that guard without also giving real(8) a correct
+                // lowering here.
                 return "float";
             }
             case ASR::ttypeType::Logical: {

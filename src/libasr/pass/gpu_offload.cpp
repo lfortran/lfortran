@@ -3,6 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/diagnostics.h>
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
@@ -4671,10 +4672,30 @@ public:
             for (auto &sym : involved_syms) {
                 ASR::ttype_t *t = sym.second.first;
                 ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
+                std::string unsupported_kind;
                 if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-                if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) {
+                    unsupported_kind = "real(8)";
+                } else if (base_t->type == ASR::ttypeType::Integer &&
+                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) {
+                    unsupported_kind = "integer(8)";
+                }
+                if (!unsupported_kind.empty()) {
+                    // `do concurrent` is ordinary Fortran, so a loop that
+                    // cannot be offloaded must still compile and run; report
+                    // it and leave the loop on the host.
+                    if (pass_options.diagnostics) {
+                        pass_options.diagnostics->message_label(
+                            "do concurrent loop not offloaded to the GPU, "
+                            "it runs on the CPU instead",
+                            {x.base.base.loc},
+                            "the Metal backend does not support " +
+                                unsupported_kind + ", used by '" +
+                                sym.first + "'",
+                            diag::Level::Warning, diag::Stage::ASRPass);
+                    }
+                    return;
+                }
             }
         }
 
