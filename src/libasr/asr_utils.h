@@ -4342,7 +4342,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
                 ft->m_static, ft->m_restrictions, ft->n_restrictions,
-                ft->m_is_restriction));
+                ft->m_is_restriction, ft->m_external_abi));
         }
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
@@ -6417,7 +6417,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
     char* a_bindc_name, bool a_elemental, bool a_pure, bool a_module, bool a_inline,
     bool a_static,
-    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope) {
+    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope,
+    bool a_external_abi=false) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
@@ -6439,7 +6440,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
         al, a_loc, arg_types.p, arg_types.size(), return_var_type, a_abi, a_deftype,
         a_bindc_name, a_elemental, a_pure, a_module, a_inline,
         a_static, a_restrictions, n_restrictions,
-        a_is_restriction);
+        a_is_restriction, a_external_abi);
 }
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc,
@@ -6448,7 +6449,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
         ft->m_abi, ft->m_deftype, ft->m_bindc_name, ft->m_elemental,
         ft->m_pure, ft->m_module, ft->m_inline, ft->m_static,
         ft->m_restrictions,
-        ft->n_restrictions, ft->m_is_restriction, current_scope);
+        ft->n_restrictions, ft->m_is_restriction, current_scope,
+        ft->m_external_abi);
 }
 
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
@@ -6459,11 +6461,12 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
-    Location* m_end_name = nullptr) {
+    Location* m_end_name = nullptr, bool m_external_abi = false) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
-        m_restrictions, n_restrictions, m_is_restriction, m_symtab));
+        m_restrictions, n_restrictions, m_is_restriction, m_symtab,
+        m_external_abi));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -7632,150 +7635,64 @@ static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
     return true;
 }
 
-// True if `fn_sym` denotes an external procedure reached through an implicit
-// (or bare `external`) interface:
-//   * a top-level definition (no ASR owner), or
-//   * an interface body with no implementation placed outside a module (a
-//     per-call synthesized implicit interface, or an explicit external
-//     interface block in a program/subprogram scope), or
-//   * a plain (non-abstract) interface block owned by a module that declares a
-//     separately compiled external procedure.
-// Such procedures use the classic Fortran hidden-length character ABI: the
-// character data pointer is passed directly at the argument position and the
-// length travels as a hidden trailing argument (matching gfortran/flang).
-// Module and contained procedures, and abstract interfaces, have a normal
-// explicit interface and keep the string-descriptor ABI.
+// True if `fn` uses the classic Fortran external ABI: the CHARACTER data
+// pointer is passed directly at the argument position and the per-element
+// length travels as a hidden trailing argument, after all positional
+// arguments, exactly as gfortran and flang do.
 //
-// A module-owned `abstract interface` and a module-owned external `interface`
-// block are indistinguishable in the ASR (LFortran does not record the
-// `abstract` attribute), so `proc_iface_syms` (the set of functions used as a
-// procedure interface anywhere in the translation unit) is consulted to tell
-// them apart: an abstract interface is referenced as a procedure interface and
-// stays on the descriptor ABI, preserving procedure-pointer/dummy/deferred
-// calls, while a plain external interface block is not and uses the classic
-// ABI. When `proc_iface_syms` is unavailable the descriptor ABI is used.
-static inline bool is_external_implicit_interface_proc(ASR::symbol_t* fn_sym,
-        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
-    if (!ASR::is_a<ASR::Function_t>(*fn_sym)) {
-        return get_asr_owner(fn_sym) == nullptr;
-    }
-    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
-    ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
-    // A module procedure (declared with the MODULE prefix and implemented in a
-    // submodule) always has an explicit interface, so it keeps the
-    // string-descriptor ABI no matter where its declaration is placed. This is
-    // checked before the ownerless test below because a pass may synthesize
-    // such a declaration directly in the global scope, where it has no ASR
-    // owner: the coarray pass does this for the `prif` module procedures it
-    // calls into (Caffeine's coarray runtime). Without this check the
-    // synthesized declaration would be taken for an ownerless external
-    // procedure and given the classic hidden-length ABI, while a caller that
-    // reaches the same procedure through `use prif` keeps the descriptor ABI --
-    // the two disagree on the argument list of one LLVM function.
-    if (ft->m_module) {
+// This is the ABI LFortran commits to for separately compiled external
+// procedures, so that an LFortran caller and a gfortran-compiled definition
+// (or the reverse) agree. It is recorded explicitly by the frontend in
+// `FunctionType::m_external_abi` -- see `declares_external_procedure` in the
+// symbol-table visitor -- rather than guessed here from ownership, deftype or
+// abi. Compiler-synthesized procedures (intrinsic instantiations, coarray
+// runtime declarations, pass-generated helpers) leave the field at its `false`
+// default and therefore keep LFortran's own string-descriptor conventions.
+//
+// Two structural exclusions remain, because they are properties of how the
+// symbol is *used* rather than of how it was declared:
+//
+//   * `fn` is a dummy procedure of its owner. Its interface body describes
+//     whatever procedure is bound to it, which is usually an ordinary module
+//     or contained procedure, so the call through it must use the ordinary
+//     ABI.
+//   * `fn`'s address is taken somewhere in this translation unit (it is passed
+//     as an actual argument or assigned to a procedure pointer). The resulting
+//     function pointer has to match the dummy procedure / procedure pointer it
+//     is bound to, which uses the ordinary ABI by the previous rule.
+//     `descriptor_abi_names` carries that set; when it is unavailable the
+//     declared ABI is used unchanged. It is keyed by procedure name because an
+//     interface body and the definition it describes are two ASR symbols for
+//     one linked procedure, and both have to reach the same decision.
+//
+// NOTE: the second exclusion is decided per translation unit, so an external
+// procedure whose address is taken in one unit and called directly from
+// another still disagrees with itself across that boundary. Making this sound
+// needs either a single uniform ABI or an ABI-adapting thunk at the point the
+// address is taken; see the PR discussion.
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
+        const std::set<std::string>* descriptor_abi_names = nullptr) {
+    if (!ASRUtils::get_FunctionType(&fn)->m_external_abi) {
         return false;
     }
-    if (get_asr_owner(fn_sym) == nullptr) {
-        return true;
-    }
-    if (ft->m_deftype == ASR::deftypeType::Interface) {
-        ASR::symbol_t* owner = get_asr_owner(fn_sym);
-        if (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
-            // A non-module interface body denotes an external procedure reached
-            // by the classic ABI. A later pass may attach a body to such an
-            // interface when the procedure is also defined in the same
-            // translation unit (as with an interface block whose external
-            // procedure has a top-level definition); that definition itself is
-            // an external procedure (no owner) using the hidden-length ABI, so
-            // the interface must agree regardless of whether it carries a body.
-            //
-            // Exclusions, mirroring the module-owned branch below:
-            //   * a dummy procedure of the enclosing procedure (its interface
-            //     body lives in the enclosing procedure's scope): calls
-            //     through it must match the ordinary (descriptor-ABI)
-            //     procedures that may be bound to it as actual arguments;
-            //   * an interface used as a procedure interface elsewhere
-            //     (procedure pointers, procedure components), collected in
-            //     proc_iface_syms, for the same reason.
-            // Note: abi (e.g. BindC) is deliberately NOT consulted here. The
-            // classification must stay symmetric between a caller-side
-            // interface and the separately visible definition, and the two can
-            // legitimately disagree on abi: subroutine_from_function marks the
-            // synthesized result argument's interface BindC while the
-            // definition stays Source (see assumed_length_return_01), so an
-            // abi-sensitive rule would give the call and the definition
-            // different signatures.
-            if (ASR::is_a<ASR::Function_t>(*owner)) {
-                ASR::Function_t* owner_fn =
-                    ASR::down_cast<ASR::Function_t>(owner);
-                for (size_t i = 0; i < owner_fn->n_args; i++) {
-                    if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
-                            ASR::down_cast<ASR::Var_t>(
-                                owner_fn->m_args[i])->m_v == fn_sym) {
-                        return false;
-                    }
-                }
-            }
-            if (proc_iface_syms != nullptr &&
-                    proc_iface_syms->find(fn_sym) != proc_iface_syms->end()) {
+    ASR::symbol_t* fn_sym = (ASR::symbol_t*)&fn.base;
+    ASR::symbol_t* owner = get_asr_owner(fn_sym);
+    if (owner != nullptr && ASR::is_a<ASR::Function_t>(*owner)) {
+        ASR::Function_t* owner_fn = ASR::down_cast<ASR::Function_t>(owner);
+        for (size_t i = 0; i < owner_fn->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v
+                        == fn_sym) {
                 return false;
             }
-            return true;
-        }
-        if (owner != nullptr && ASR::is_a<ASR::Module_t>(*owner) &&
-                (ft->m_abi == ASR::abiType::Source ||
-                 ft->m_abi == ASR::abiType::ExternalUndefined)) {
-            // A plain Fortran-source module interface body has abi Source when
-            // the module is compiled in the current translation unit, but abi
-            // ExternalUndefined once the module has been loaded from a .mod file
-            // (SymbolTable::mark_all_variables_external rewrites Source to
-            // ExternalUndefined for every symbol of a loaded module). Both
-            // denote the same construct and must take the same ABI decision, so
-            // the separately compiled caller (netcdf-fortran's ncvgtc, which
-            // reaches nf_get_vara_text through the USEd module interface) agrees
-            // with the separately compiled definition; otherwise the hidden
-            // length is dropped and LEN(text) inside the callee is garbage.
-            // A module-owned interface body is one of:
-            //   * a module procedure (declared with the MODULE prefix and
-            //     implemented in a submodule): m_module is set. It has a normal
-            //     explicit interface and keeps the string-descriptor ABI.
-            //   * an abstract interface used to type procedure pointers, dummy
-            //     procedures or deferred type-bound procedures. Its targets are
-            //     ordinary (descriptor-ABI) procedures, so it too keeps the
-            //     descriptor ABI. Such an interface is referenced as a procedure
-            //     interface somewhere in the translation unit; those references
-            //     are collected in proc_iface_syms.
-            //   * a plain interface block declaring a separately compiled
-            //     external procedure (as in netcdf-fortran's
-            //     module_netcdf_nf_interfaces). This denotes an external
-            //     procedure reached by the classic hidden-length ABI, matching
-            //     the external definition (which has no ASR owner and therefore
-            //     already uses that ABI).
-            // An `abstract interface` and a plain external `interface` block are
-            // indistinguishable in the ASR (LFortran does not record the
-            // `abstract` attribute), so we treat a module interface body as
-            // abstract iff it is used as a procedure interface. When
-            // proc_iface_syms is unavailable we conservatively keep the
-            // descriptor ABI (the historical behavior).
-            if (ft->m_module) {
-                return false;
-            }
-            if (proc_iface_syms == nullptr) {
-                return false;
-            }
-            if (proc_iface_syms->find(fn_sym) != proc_iface_syms->end()) {
-                return false;
-            }
-            return true;
         }
     }
-    return false;
-}
-
-static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
-        const std::set<ASR::symbol_t*>* proc_iface_syms = nullptr) {
-    return is_external_implicit_interface_proc((ASR::symbol_t*)&fn.base,
-        proc_iface_syms);
+    if (descriptor_abi_names != nullptr &&
+            descriptor_abi_names->find(std::string(fn.m_name))
+                != descriptor_abi_names->end()) {
+        return false;
+    }
+    return true;
 }
 
 // Normalize the dummy type synthesized for an implicit-interface procedure

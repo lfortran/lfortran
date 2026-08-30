@@ -106,6 +106,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .false.
                                     )
                                     []
                                     [(Var 4 string)]
@@ -274,6 +275,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     [len_string]

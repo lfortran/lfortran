@@ -124,6 +124,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 5 lsame_arg_0)
@@ -174,6 +175,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     []
                     [(Var 2 uplo)]

@@ -2,12 +2,12 @@
     "basename": "asr-function_dummy_not_declared_locally-1f40122",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/function_dummy_not_declared_locally.asr",
-    "infile_hash": "f50f990f9f06b462f35c99cdf2fb4b8d26dc717b07555b325a78e5dc",
+    "infile_hash": "799e2e3ec8afd0156ea93880fdbb56cf5e392842f95c10d936084e2d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-function_dummy_not_declared_locally-1f40122.stderr",
-    "stderr_hash": "f546db4a8a7d66ed9ec6e7e2486e9dc9f2136857b1c500d372c28b7f",
+    "stderr_hash": "e271a8c9cc707f4746e48422c98dd5cb79dbc7ad1947113527982def",
     "returncode": 2
 }

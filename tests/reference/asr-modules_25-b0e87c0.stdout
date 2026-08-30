@@ -115,6 +115,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .false.
                                     )
                                     []
                                     [(Var 6 de)
@@ -327,6 +328,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .false.
                                     )
                                     []
                                     [(Var 12 de)
@@ -446,6 +448,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     []

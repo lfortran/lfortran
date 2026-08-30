@@ -173,6 +173,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 3 prinf_arg_0)
@@ -276,6 +277,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     []
                     [(Var 2 m)

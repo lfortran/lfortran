@@ -82,6 +82,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     [b]
                     []
@@ -177,6 +178,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     []
                     [(Var 4 factor)]

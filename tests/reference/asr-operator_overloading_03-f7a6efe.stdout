@@ -459,6 +459,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .false.
                                     )
                                     []
                                     [(Var 3 log1)
@@ -610,6 +611,7 @@
                                         .false.
                                         []
                                         .false.
+                                        .false.
                                     )
                                     []
                                     [(Var 4 log1)
@@ -760,6 +762,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     [less_than_inverse]

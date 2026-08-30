@@ -152,6 +152,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 4 x)]
@@ -178,6 +179,7 @@
                                             .false.
                                             []
                                             .false.
+                                            .true.
                                         )
                                         (Real 4)
                                         (Real 4)]
@@ -191,6 +193,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     []
@@ -363,6 +366,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 6 x)]
@@ -409,6 +413,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     [cb]

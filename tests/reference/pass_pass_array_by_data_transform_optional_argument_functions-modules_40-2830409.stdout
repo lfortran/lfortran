@@ -213,6 +213,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .false.
                                                     )
                                                     [resize]
                                                     [(Var 6 de)
@@ -382,6 +383,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 7 stack)
@@ -413,6 +415,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     []

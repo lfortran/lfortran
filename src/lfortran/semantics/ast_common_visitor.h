@@ -5063,7 +5063,7 @@ public:
                 ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                     al, loc, nullptr, 0, type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr, false, false,
-                    false, false, false, nullptr, 0, false));
+                    false, false, false, nullptr, 0, false, false));
                 std::string iface_name = "__" + sym + "_iface_implicit";
                 SymbolTable *parent_scope = current_scope->parent;
                 if (!parent_scope) parent_scope = current_scope;
@@ -5160,7 +5160,8 @@ public:
                 ASR::abiType::BindC, ext_access,
                 ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
-                false, false, false);
+                false, false, false, nullptr, nullptr, nullptr,
+                /* m_external_abi */ true);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
         } else {
@@ -10585,8 +10586,8 @@ public:
                         al, loc,
                         nullptr, 0, return_type, ASR::abiType::Source,
                         ASR::deftypeType::Interface, nullptr,
-                        false, false, false, false, false, nullptr, 0, false
-                        ));
+                        false, false, false, false, false, nullptr, 0, false,
+                        false));
                     std::string iface_name = "__" + sym + "_iface_implicit";
                     SymbolTable *parent_scope = current_scope->parent;
                     ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
@@ -10656,8 +10657,8 @@ public:
                     al, loc,
                     nullptr, 0, return_type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr,
-                    false, false, false, false, false, nullptr, 0, false
-                    ));
+                    false, false, false, false, false, nullptr, 0, false,
+                    false));
                 // Create a backing Function symbol so type_declaration is set.
                 std::string iface_name = "__" + sym + "_iface_" + func_name;
                 SymbolTable *parent_scope = current_scope->parent;
@@ -10692,8 +10693,8 @@ public:
                         al, attr_loc,
                         nullptr, 0, nullptr, ASR::abiType::Source,        
                         ASR::deftypeType::Interface, nullptr,                     
-                        false, false, false, false, false, nullptr, 0, false
-                        )); 
+                        false, false, false, false, false, nullptr, 0, false,
+                        false)); 
                     SymbolTable *parent_scope = current_scope->parent; 
                     SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                     ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
@@ -17088,7 +17089,8 @@ public:
             /* a_return_var */ to_return,
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            false, false, false, nullptr, nullptr, nullptr,
+            /* m_external_abi */ true);
         ASR::symbol_t* new_fn = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::symbol_t* existing = sym_scope->get_symbol(sym_name);
         // First inference (or replacing a bare ImplicitInterface declaration):
@@ -20681,7 +20683,7 @@ public:
             iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                 al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
                 ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
-                false, false, false, false, false, nullptr, 0, false));
+                false, false, false, false, false, nullptr, 0, false, false));
             ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Function_t(
                     al, loc, fn_scope, s2c(al, iface_name),

@@ -129,6 +129,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 4 x)
@@ -184,6 +185,7 @@
                                             .false.
                                             []
                                             .false.
+                                            .true.
                                         )]
                                         ()
                                         Source
@@ -195,6 +197,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     []
@@ -398,6 +401,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 6 x)
@@ -494,6 +498,7 @@
                                         .false.
                                         .false.
                                         []
+                                        .false.
                                         .false.
                                     )
                                     [cb]

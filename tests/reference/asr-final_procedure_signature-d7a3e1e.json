@@ -2,7 +2,7 @@
     "basename": "asr-final_procedure_signature-d7a3e1e",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/final_procedure_signature.asr",
-    "infile_hash": "f84807779a63085c644ee525a68e22fa2d0398605a5a513b838f1887",
+    "infile_hash": "6b29f675000476c36e6cf9194b01e8ab5170eee2957289a3c1a6b090",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

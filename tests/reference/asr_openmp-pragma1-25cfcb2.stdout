@@ -148,6 +148,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     []
                     [(Var 2 n)
@@ -380,6 +381,7 @@
                         .false.
                         []
                         .false.
+                        .true.
                     )
                     []
                     [(Var 3 n)
