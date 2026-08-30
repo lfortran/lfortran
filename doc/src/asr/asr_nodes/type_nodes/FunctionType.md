@@ -10,7 +10,7 @@ The signature of a procedure.
 FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
     deftype deftype, string? bindc_name, bool elemental, bool pure,
     bool module, bool inline, bool static, symbol* restrictions,
-    bool is_restriction)
+    bool is_restriction, exec_space exec_space)
 ```
 
 ### Arguments
@@ -29,6 +29,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `static` | `true` when the procedure's local variables are allocated statically rather than on the stack. |
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
+| `exec_space` | where the procedure runs: `Host`, `Device`, `HostDevice`, or `Kernel`. |
 
 ### Return values
 
@@ -39,6 +40,15 @@ None. A type is not evaluated.
 Everything about a procedure other than its body and its symbols lives here,
 so a call site can be checked against the signature without looking at the
 procedure's symbol table.
+
+`exec_space` mirrors the execution space qualifiers of CUDA. `Host` is the
+default and runs on the CPU. `Device` runs on the GPU only, and `HostDevice`
+is compiled for both, which is what a routine reachable from the host and from
+a kernel alike becomes. `Kernel` is the entry point of a GPU kernel, the
+counterpart of `__global__`: it runs on the device and the host launches it
+with a [GpuKernelLaunch](../statement_nodes/GpuKernelLaunch.md). The
+`device_partition` pass takes the closure of the call graph from the kernels
+and gives every routine it reaches the space it belongs in.
 
 A subroutine is a signature with no `return_var_type`. `deftype` says whether
 there is a body: an interface, and a procedure loaded from a module file as
