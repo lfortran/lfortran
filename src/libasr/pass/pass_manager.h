@@ -257,7 +257,6 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
-                "device_launch_expand",
                 "array_struct_temporary",
                 "coarray",
                 "transform_optional_argument_functions",
@@ -272,6 +271,10 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // Expanding a kernel launch reads the kernel body, so it has
+                // to run once the body is in the shape the device code
+                // generators see.
+                "device_launch_expand",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
