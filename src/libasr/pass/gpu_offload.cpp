@@ -86,6 +86,82 @@ bool GpuOffloadReport::enabled = false;
 const LocationManager *GpuOffloadReport::lm = nullptr;
 std::string GpuOffloadReport::detail;
 
+// `inline_device_function_calls` splices a device callee into the loop
+// body by replacing whole statement vectors -- the loop's own and that of
+// every BLOCK it recurses into -- and never edits a statement in place.
+// It only ever adds symbols to the enclosing scope, one Block per splice.
+// Recording those vectors and that scope's symbol names therefore makes
+// the splice exactly reversible. That is what lets the workspace
+// pre-flight run on the spliced shape, where a callee's locals have
+// become kernel workspaces, and still leave the loop exactly as it was
+// found when the offload is declined.
+//
+// Dropping the spliced-in Blocks again matters as much as restoring the
+// statements: an orphaned Block is still a symbol of the enclosing scope,
+// so the pass would walk into it on its next round, offload the loops it
+// holds, splice once more and never reach a fixed point.
+class GpuLoopBodySnapshot {
+public:
+    void record(ASR::DoConcurrentLoop_t &loop, SymbolTable *scope) {
+        loop_ = &loop;
+        loop_body_ = loop.m_body;
+        loop_n_body_ = loop.n_body;
+        scope_ = scope;
+        if (scope_ != nullptr) {
+            for (auto &item : scope_->get_scope()) {
+                scope_symbols_.insert(item.first);
+            }
+        }
+        record_blocks(loop.m_body, loop.n_body);
+    }
+
+    void restore() {
+        if (loop_ == nullptr) return;
+        loop_->m_body = loop_body_;
+        loop_->n_body = loop_n_body_;
+        for (auto &saved : blocks_) {
+            saved.block->m_body = saved.body;
+            saved.block->n_body = saved.n_body;
+        }
+        if (scope_ == nullptr) return;
+        std::vector<std::string> added;
+        for (auto &item : scope_->get_scope()) {
+            if (scope_symbols_.count(item.first) == 0) {
+                added.push_back(item.first);
+            }
+        }
+        for (auto &name : added) {
+            scope_->erase_symbol(name);
+        }
+    }
+
+private:
+    struct SavedBlock {
+        ASR::Block_t *block;
+        ASR::stmt_t **body;
+        size_t n_body;
+    };
+
+    void record_blocks(ASR::stmt_t **body, size_t n_body) {
+        for (size_t i = 0; i < n_body; i++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*body[i])) continue;
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+            blocks_.push_back({block, block->m_body, block->n_body});
+            record_blocks(block->m_body, block->n_body);
+        }
+    }
+
+    ASR::DoConcurrentLoop_t *loop_ = nullptr;
+    ASR::stmt_t **loop_body_ = nullptr;
+    size_t loop_n_body_ = 0;
+    std::vector<SavedBlock> blocks_;
+    SymbolTable *scope_ = nullptr;
+    std::set<std::string> scope_symbols_;
+};
+
 } // anonymous namespace
 
 static int gpu_kernel_counter = 0;
@@ -7140,6 +7216,29 @@ public:
     // the symbols appearing in the loop head and body, plus the symbols
     // that only appear inside the array-dimension expressions of those
     // symbols' types (e.g. `tmp(size(b))` pulls in `b`).
+    // The names the kernel arguments will carry, in the spelling the
+    // workspace extent resolver expects: every symbol the loop involves,
+    // plus the synthetic per-dimension extent scalar the kernel
+    // extraction adds for each dimension of an array argument.
+    void collect_kernel_arg_names(const ASR::DoConcurrentLoop_t &x,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            std::vector<std::string> &arg_names) {
+        std::map<std::string,
+            std::pair<ASR::ttype_t*, ASR::expr_t*>> syms;
+        collect_involved_syms(x, enclosing_block_scopes, syms);
+        for (auto &sym : syms) {
+            arg_names.push_back(sym.first);
+            if (sym.second.first == nullptr) continue;
+            ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                sym.second.first);
+            if (!ASR::is_a<ASR::Array_t>(*type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                arg_names.push_back(gpu_dim_arg_name(sym.first, d));
+            }
+        }
+    }
+
     void collect_involved_syms(const ASR::DoConcurrentLoop_t &x,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             std::map<std::string,
@@ -7595,11 +7694,40 @@ public:
         // Splice the planned device functions into the loop body. This
         // must come first among the rewrites below: the intrinsic and
         // array-section inliners then see the spliced-in statements too.
+        // The splice is recorded so that it can be undone: the workspace
+        // pre-flight right below needs the spliced shape, but must still
+        // be able to leave the loop untouched when it declines.
+        GpuLoopBodySnapshot splice_snapshot;
         {
             ASR::DoConcurrentLoop_t &xx =
                 const_cast<ASR::DoConcurrentLoop_t&>(x);
+            splice_snapshot.record(xx, current_scope);
             inline_device_function_calls(xx.m_body, xx.n_body);
             functions_to_inline.clear();
+        }
+
+        // Each run-time sized local of a kernel BLOCK becomes a per-thread
+        // workspace buffer, which the host has to size before it launches
+        // the kernel. An extent the host cannot work out from the kernel
+        // arguments is a code generation error -- raised long after the
+        // pass has committed to offloading, and so a hard build failure.
+        // Run the backend's own resolution here instead, while the loop
+        // can still be left on the host. This is the last point at which
+        // it can be: the workspaces only exist once the callees are
+        // spliced in, and the rewrites below are not reversible.
+        if (pass_options.gpu_offload_metal) {
+            std::vector<std::string> kernel_arg_names;
+            collect_kernel_arg_names(x, enclosing_block_scopes,
+                kernel_arg_names);
+            std::string unresolved_name;
+            if (!gpu_block_workspace_extents_resolvable(x.m_body, x.n_body,
+                    kernel_arg_names, unresolved_name)) {
+                splice_snapshot.restore();
+                GpuOffloadReport::set_detail("sym=" + unresolved_name);
+                GpuOffloadReport::emit(loc, report_proc,
+                    "workspace-extent-unresolvable");
+                return;
+            }
         }
 
         // Inline IntrinsicArrayFunction All before kernel extraction
@@ -8361,8 +8489,8 @@ public:
                         di.orig_mem_sym, di.alloc_type, nullptr));
 
                 for (size_t d = 0; d < arr->n_dims; d++) {
-                    std::string dim_name = "__dim_" + di.param_name
-                        + "_" + std::to_string(d);
+                    std::string dim_name =
+                        gpu_dim_arg_name(di.param_name, d);
                     ASR::symbol_t *dim_sym =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
@@ -8459,8 +8587,7 @@ public:
                 ASR::make_Integer_t(al, loc, 4));
 
             for (size_t d = 0; d < k_arr->n_dims; d++) {
-                std::string dim_name = "__dim_" + sym_name + "_"
-                    + std::to_string(d);
+                std::string dim_name = gpu_dim_arg_name(sym_name, d);
                 ASR::symbol_t *dim_sym = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
                         s2c(al, dim_name), nullptr, 0,

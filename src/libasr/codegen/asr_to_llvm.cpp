@@ -22140,6 +22140,12 @@ public:
     // component loaded out of the struct that is handed to the kernel as a
     // buffer; interior nodes reproduce the original integer arithmetic, so
     // an extent like `s%m_ + 1` is sized exactly.
+    //
+    // The gpu_offload pass runs this same resolution as a pre-flight and
+    // declines the offload when an extent does not resolve, so the errors
+    // below should be unreachable.  They stay as assertions: a workspace
+    // sized from a plausible-but-wrong extent is far worse than a build
+    // that stops here.
     llvm::Value* eval_gpu_vla_dim_expr(const GpuVlaDim &dim,
             int64_t node_index, const ASR::GpuKernelLaunch_t &x,
             const std::vector<llvm::Value*> &call_arg_values,

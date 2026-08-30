@@ -93,6 +93,15 @@ inline std::string gpu_stride_arg_name(const std::string &name, size_t d) {
     return "__stride_" + name + "_dim" + std::to_string(d + 1);
 }
 
+// Name of the synthetic extent scalar for dimension `d` (0-based) of the
+// array kernel argument `name`.  The kernel extraction adds one of these
+// per dimension so that a workspace extent written as `size(a, d)` can be
+// resolved on the host; both the producer and the resolver go through
+// this function so the two spellings cannot drift apart.
+inline std::string gpu_dim_arg_name(const std::string &name, size_t d) {
+    return "__dim_" + name + "_" + std::to_string(d);
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
@@ -624,8 +633,7 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
         for (size_t d = d_begin; d < d_end; d++) {
             int64_t one = -1;
             if (is_kernel_arg) {
-                std::string dim_arg = "__dim_" + arr_name + "_"
-                    + std::to_string(d);
+                std::string dim_arg = gpu_dim_arg_name(arr_name, d);
                 for (size_t a = 0; a < arg_names.size(); a++) {
                     if (arg_names[a] != dim_arg) continue;
                     GpuVlaDimNode n;
@@ -941,7 +949,7 @@ inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::stmt_t **body,
 // would change the buffer accounting that `classify_gpu_kernel_args` and
 // `gpu_vla_buffer_start` agree on.
 inline void scan_gpu_scope_vlas(
-        const ASR::GpuKernelFunction_t &kernel,
+        const ASR::GpuKernelFunction_t *kernel,
         SymbolTable *symtab,
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
@@ -1014,7 +1022,8 @@ inline void scan_gpu_scope_vlas(
 
         // An allocatable with no ALLOCATE: a function-result temporary
         // sized from a struct member's allocatable array.
-        std::string struct_key = find_struct_alloc_member_key(kernel);
+        if (kernel == nullptr) continue;
+        std::string struct_key = find_struct_alloc_member_key(*kernel);
         if (struct_key.empty()) continue;
         GpuVlaWorkspace ws;
         ws.var_name = vname;
@@ -1054,10 +1063,10 @@ inline void collect_gpu_vla_workspaces(
             kernel.m_body[i]);
         if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
-        scan_gpu_scope_vlas(kernel, block->m_symtab, block->m_body,
+        scan_gpu_scope_vlas(&kernel, block->m_symtab, block->m_body,
             block->n_body, arg_names, true, buffer_idx, result);
     }
-    scan_gpu_scope_vlas(kernel, kernel.m_symtab, kernel.m_body,
+    scan_gpu_scope_vlas(&kernel, kernel.m_symtab, kernel.m_body,
         kernel.n_body, arg_names, false, buffer_idx, result);
 }
 
@@ -1067,6 +1076,52 @@ inline int count_gpu_vla_workspaces(const ASR::GpuKernelFunction_t &kernel) {
     std::vector<GpuVlaWorkspace> result;
     collect_gpu_vla_workspaces(kernel, buffer_idx, result);
     return (int)result.size();
+}
+
+// An extent that nothing could resolve: not a compile-time constant, no
+// host-evaluable expression tree, no kernel argument and not tied to a
+// struct member's allocatable size.  `resolve_gpu_workspace_dim` leaves
+// this shape behind on purpose -- guessing an extent would silently size
+// the workspace wrongly -- and the host has to refuse it.
+inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
+    return !dim.is_constant && !dim.is_struct_member_size
+        && dim.expr_nodes.empty() && dim.call_arg_index < 0;
+}
+
+// Pre-flight for the GPU offload pass: can every workspace extent that
+// the BLOCK scopes of `body` require be evaluated on the host from the
+// kernel arguments named in `arg_names`?
+//
+// The backend evaluates these extents when it launches the kernel, and
+// one it cannot evaluate is a hard code-generation error -- far too late,
+// because the offload has been committed to by then.  Running the very
+// same scan and the very same resolution here lets the pass decline the
+// offload instead and leave the loop on the host.  Both paths go through
+// `scan_gpu_scope_vlas` and `resolve_gpu_workspace_dim`, so the pre-flight
+// and the backend cannot disagree about what resolves.
+inline bool gpu_block_workspace_extents_resolvable(
+        ASR::stmt_t **body, size_t n_body,
+        const std::vector<std::string> &arg_names,
+        std::string &unresolved_name) {
+    std::vector<GpuVlaWorkspace> workspaces;
+    int buffer_idx = 0;
+    for (size_t i = 0; i < n_body; i++) {
+        if (!ASR::is_a<ASR::BlockCall_t>(*body[i])) continue;
+        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(body[i]);
+        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+        scan_gpu_scope_vlas(nullptr, block->m_symtab, block->m_body,
+            block->n_body, arg_names, true, buffer_idx, workspaces);
+    }
+    for (auto &ws : workspaces) {
+        for (auto &dim : ws.dims) {
+            if (gpu_vla_dim_is_unresolvable(dim)) {
+                unresolved_name = ws.var_name;
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 static const int MAX_METAL_BUFFERS = 31;
