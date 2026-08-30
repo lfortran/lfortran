@@ -1815,6 +1815,14 @@ public:
                 }
                 return out;
             }
+            case GpuVlaDimNode::Kind::StructArrayMemberDim: {
+                // The GPU offload pass rewrites this shape into a scalar
+                // kernel argument before the kernel is emitted, so the
+                // node never reaches here.  Nothing sensible can be
+                // written for it, and a guess would give every thread a
+                // wrong workspace stride.
+                return "";
+            }
             case GpuVlaDimNode::Kind::BinOp: {
                 std::string l = vla_dim_node_str(dim, n.left);
                 std::string r = vla_dim_node_str(dim, n.right);

@@ -22189,6 +22189,17 @@ public:
                     node.member_path, ws_name, x.base.base.loc);
                 return builder->CreateIntCast(member, i64, true);
             }
+            case GpuVlaDimNode::Kind::StructArrayMemberDim: {
+                // The GPU offload pass rewrites `size(a(i)%m, d)` into a
+                // scalar kernel argument before codegen sees the kernel,
+                // so this node is unreachable.  It stays a hard error
+                // rather than a guessed extent: a wrong per-thread
+                // workspace stride corrupts every thread's results.
+                throw CodeGenError("gpu offload: the extent of the "
+                    "temporary array `" + ws_name + "` cannot be "
+                    "determined from the kernel arguments",
+                    x.base.base.loc);
+            }
             case GpuVlaDimNode::Kind::BinOp: {
                 llvm::Value *left = eval_gpu_vla_dim_expr(dim, node.left,
                     x, call_arg_values, call_arg_struct_ptrs, ws_name);

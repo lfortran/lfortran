@@ -18,7 +18,8 @@ namespace LCompilers {
 // compute a wrong extent.  Children are indices into
 // `GpuVlaDim::expr_nodes`, so the tree stays copyable.
 struct GpuVlaDimNode {
-    enum class Kind { Constant, CallArg, StructMember, BinOp };
+    enum class Kind { Constant, CallArg, StructMember,
+        StructArrayMemberDim, BinOp };
     Kind kind = Kind::Constant;
     int64_t constant_value = 0;
     // Kernel argument supplying the value (CallArg and StructMember).
@@ -533,6 +534,88 @@ inline ASR::expr_t* find_gpu_local_array_extent(ASR::symbol_t *sym,
     return nullptr;
 }
 
+// The pieces of `size(a(i)%m, d)`: the extent of one dimension of an
+// allocatable array component reached through a subscript into an array
+// of derived types.  Neither side of a kernel launch can reproduce such
+// an extent as it stands -- the kernel is handed the component as one
+// flat data buffer plus a per-element total size, never the component's
+// individual extents, and the host resolver cannot walk a subscript in
+// the middle of a component path -- so the GPU offload pass turns it into
+// a scalar kernel argument instead.  The pass and the workspace resolver
+// recognise the shape through this one function, so what the pass
+// rewrites and what the resolver accepts cannot drift apart.
+struct GpuStructArrayMemberExtentRef {
+    ASR::ArrayItem_t *item = nullptr;
+    ASR::StructInstanceMember_t *member = nullptr;
+    int64_t dim = 0; // 1-based
+};
+
+inline ASR::expr_t* gpu_past_array_physical_cast(ASR::expr_t *e) {
+    while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+    }
+    return e;
+}
+
+inline bool match_gpu_struct_array_member_extent(ASR::expr_t *expr,
+        const std::vector<std::string> &arg_names,
+        GpuStructArrayMemberExtentRef &out) {
+    if (!expr || !ASR::is_a<ASR::ArraySize_t>(*expr)) return false;
+    ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
+    if (!as->m_dim || !ASR::is_a<ASR::IntegerConstant_t>(*as->m_dim)) {
+        return false;
+    }
+    int64_t d = ASR::down_cast<ASR::IntegerConstant_t>(as->m_dim)->m_n;
+    if (d < 1) return false;
+    ASR::expr_t *base = gpu_past_array_physical_cast(as->m_v);
+    if (!base || !ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+        return false;
+    }
+    ASR::StructInstanceMember_t *sim =
+        ASR::down_cast<ASR::StructInstanceMember_t>(base);
+    ASR::expr_t *inner = gpu_past_array_physical_cast(sim->m_v);
+    if (!inner || !ASR::is_a<ASR::ArrayItem_t>(*inner)) return false;
+    ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(inner);
+    if (!ASR::is_a<ASR::Var_t>(*ai->m_v)) return false;
+    std::string arr_name = ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+    bool is_arg = false;
+    for (auto &a : arg_names) {
+        if (a == arr_name) { is_arg = true; break; }
+    }
+    if (!is_arg) return false;
+    ASR::ttype_t *mem_t =
+        ASRUtils::type_get_past_allocatable_pointer(sim->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*mem_t)) return false;
+    if ((size_t)d > ASR::down_cast<ASR::Array_t>(mem_t)->n_dims) {
+        return false;
+    }
+    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(as->m_type))) {
+        return false;
+    }
+    // Every subscript has to be reproducible in the host scope too: a
+    // compile-time integer constant (a named constant included), or a
+    // scalar the kernel is handed as an argument.
+    for (size_t k = 0; k < ai->n_args; k++) {
+        ASR::array_index_t &ix = ai->m_args[k];
+        if (ix.m_left || ix.m_step || !ix.m_right) return false;
+        int64_t sub_val;
+        if (try_eval_int_constant(ix.m_right, sub_val)) continue;
+        if (!ASR::is_a<ASR::Var_t>(*ix.m_right)) return false;
+        std::string sub_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(ix.m_right)->m_v);
+        bool sub_is_arg = false;
+        for (auto &a : arg_names) {
+            if (a == sub_name) { sub_is_arg = true; break; }
+        }
+        if (!sub_is_arg) return false;
+    }
+    out.item = ai;
+    out.member = sim;
+    out.dim = d;
+    return true;
+}
+
 // Build a host-evaluable expression tree for a workspace dimension.
 // Every leaf must be either an integer constant, a scalar kernel argument,
 // or a derived-type component chain rooted at a kernel argument; every
@@ -591,6 +674,18 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
         return root;
     }
     if (ASR::is_a<ASR::ArraySize_t>(*expr)) {
+        // `size(a(i)%m, d)`: the GPU offload pass replaces this shape
+        // with a scalar kernel argument once the kernel body is built,
+        // so it resolves -- but only when the pass would recognise it,
+        // which is what `match_gpu_struct_array_member_extent` decides
+        // for both of them.
+        GpuStructArrayMemberExtentRef ref;
+        if (match_gpu_struct_array_member_extent(expr, arg_names, ref)) {
+            GpuVlaDimNode n;
+            n.kind = GpuVlaDimNode::Kind::StructArrayMemberDim;
+            nodes.push_back(n);
+            return (int64_t)nodes.size() - 1;
+        }
         // `size(a)` of an array that is itself sized by the kernel
         // arguments: a kernel-argument array, whose extents the host
         // already passes as `__dim_<name>_<d>` scalars, or a kernel-local

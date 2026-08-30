@@ -623,6 +623,171 @@ public:
     }
 };
 
+// A workspace extent written as `size(a(i)%m, d)` -- the extent of an
+// allocatable array component reached through a subscript into an array
+// of derived types -- can be reproduced on neither side of the launch as
+// it stands.  The kernel receives such a component as one flat data
+// buffer plus a per-element total size, never the component's individual
+// extents, and the host resolver cannot walk a subscript in the middle of
+// a component path.  The value is an ordinary integer the host can
+// compute before the launch, though, so it becomes one more scalar kernel
+// argument: this replacer rewrites every such `size(...)` in the kernel
+// body to a Var naming that argument and records the matching host-scope
+// expression for the caller to pass as the actual.  Host workspace sizing
+// and shader stride then read one and the same scalar and cannot
+// disagree.
+class GpuStructArrayMemberExtent :
+        public ASR::BaseExprReplacer<GpuStructArrayMemberExtent> {
+public:
+    Allocator &al;
+    SymbolTable *orig_scope;
+    SymbolTable *kernel_scope;
+    const std::vector<std::string> &arg_names;
+    // Kernel parameter and the host expression that supplies its value,
+    // in the order the parameters were created.
+    std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added;
+    std::map<std::string, ASR::symbol_t*> by_key;
+
+    GpuStructArrayMemberExtent(Allocator &al_, SymbolTable *orig_scope_,
+            SymbolTable *kernel_scope_,
+            const std::vector<std::string> &arg_names_,
+            std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added_)
+        : al(al_), orig_scope(orig_scope_), kernel_scope(kernel_scope_),
+          arg_names(arg_names_), added(added_) {}
+
+    // The component symbol as the host scope names it.  The kernel body
+    // may reach a component through an ExternalSymbol that only the
+    // kernel scope holds, which the host expression must not reference.
+    ASR::symbol_t* host_member_ref(ASR::symbol_t *m) {
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(m);
+        for (auto &item : orig_scope->get_scope()) {
+            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+            if (ASRUtils::symbol_get_past_external(item.second) == target) {
+                return item.second;
+            }
+        }
+        return m;
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        if (rewrite_array_size(x)) return;
+        ASR::BaseExprReplacer<GpuStructArrayMemberExtent>
+            ::replace_ArraySize(x);
+    }
+
+    bool rewrite_array_size(ASR::ArraySize_t *x) {
+        GpuStructArrayMemberExtentRef ref;
+        if (!match_gpu_struct_array_member_extent(
+                ASRUtils::EXPR((ASR::asr_t*)x), arg_names, ref)) {
+            return false;
+        }
+        ASR::ArrayItem_t *ai = ref.item;
+        ASR::StructInstanceMember_t *sim = ref.member;
+        int64_t d = ref.dim;
+        std::string arr_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+        ASR::symbol_t *host_arr = orig_scope->resolve_symbol(arr_name);
+        if (!host_arr) return false;
+        ASR::ttype_t *size_type = ASRUtils::extract_type(x->m_type);
+        const Location &loc = x->base.base.loc;
+
+        Vec<ASR::array_index_t> host_idx;
+        host_idx.reserve(al, ai->n_args);
+        std::string key = arr_name;
+        for (size_t k = 0; k < ai->n_args; k++) {
+            ASR::array_index_t &ix = ai->m_args[k];
+            ASR::expr_t *host_sub = nullptr;
+            std::string tag;
+            int64_t sub_val;
+            if (try_eval_int_constant(ix.m_right, sub_val)) {
+                host_sub = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    loc, sub_val, ASRUtils::expr_type(ix.m_right),
+                    ASR::integerbozType::Decimal));
+                tag = sub_val < 0 ? "m" + std::to_string(-sub_val)
+                                  : std::to_string(sub_val);
+            } else {
+                std::string sub_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(ix.m_right)->m_v);
+                ASR::symbol_t *host_sub_sym =
+                    orig_scope->resolve_symbol(sub_name);
+                if (!host_sub_sym) return false;
+                host_sub = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    host_sub_sym));
+                tag = sub_name;
+            }
+            ASR::array_index_t host_ix;
+            host_ix.loc = ix.loc;
+            host_ix.m_left = nullptr;
+            host_ix.m_step = nullptr;
+            host_ix.m_right = host_sub;
+            host_idx.push_back(al, host_ix);
+            key += "_" + tag;
+        }
+        std::string mem_name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(sim->m_m));
+        key += "_" + mem_name + "_" + std::to_string(d);
+
+        ASR::symbol_t *sym = nullptr;
+        auto it = by_key.find(key);
+        if (it != by_key.end()) {
+            sym = it->second;
+        } else {
+            std::string param_name = kernel_scope->get_unique_name(
+                "__memdim_" + key);
+            sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
+                    s2c(al, param_name), nullptr, 0,
+                    ASR::intentType::InOut, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, size_type),
+                    nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            kernel_scope->add_symbol(param_name, sym);
+            ASR::expr_t *host_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(
+                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, host_arr)),
+                host_idx.p, host_idx.n, ai->m_type, ai->m_storage_format,
+                nullptr));
+            ASR::expr_t *host_member = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc, host_item,
+                    host_member_ref(sim->m_m), sim->m_type, nullptr));
+            ASR::expr_t *host_dim = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, d, size_type,
+                    ASR::integerbozType::Decimal));
+            ASR::expr_t *host_size = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, loc, host_member, host_dim, size_type, nullptr));
+            added.push_back({sym, host_size});
+            by_key[key] = sym;
+        }
+        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        return true;
+    }
+};
+
+class GpuStructArrayMemberExtentVisitor :
+        public ASR::CallReplacerOnExpressionsVisitor<
+            GpuStructArrayMemberExtentVisitor> {
+public:
+    GpuStructArrayMemberExtent replacer;
+
+    GpuStructArrayMemberExtentVisitor(Allocator &al,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const std::vector<std::string> &arg_names,
+            std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added)
+        : replacer(al, orig_scope, kernel_scope, arg_names, added) {}
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    // A BLOCK is where the workspace temporaries live, and the generated
+    // visitor does not descend into one on its own.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+};
+
 // Counts how many times a given symbol is written to within a list of
 // statements. Used to distinguish a genuine ASSOCIATE selector temporary
 // (written exactly once, at its point of definition) from an ordinary
@@ -9746,6 +9911,40 @@ public:
             ASR::stmt_t *copy = body_dup.duplicate_stmt(x.m_body[i]);
             LCOMPILERS_ASSERT(copy);
             body_copy.push_back(al, copy);
+        }
+
+        // Turn every `size(a(i)%m, d)` in the copied body into a scalar
+        // kernel argument the host computes at launch time.  The extent
+        // of an allocatable component reached through a subscript into an
+        // array of derived types is otherwise available to neither side:
+        // the kernel is handed only that component's flattened data and
+        // its per-element total size.  A workspace sized by such an
+        // extent would be declined -- or, worse, sized by a guess -- so
+        // it is resolved here into a plain integer parameter.  This has
+        // to happen before the decomposition below rewrites the component
+        // access into a flat-array Var, and while the body still names
+        // the host symbols the launch site passes as actuals.
+        {
+            std::vector<std::string> kernel_arg_names;
+            for (size_t i = 0; i < kernel_args.n; i++) {
+                kernel_arg_names.push_back(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(kernel_args.p[i])->m_v));
+            }
+            std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>>
+                member_extent_args;
+            GpuStructArrayMemberExtentVisitor mev(al, orig_scope,
+                kernel_scope, kernel_arg_names, member_extent_args);
+            for (size_t i = 0; i < body_copy.n; i++) {
+                mev.visit_stmt(*body_copy.p[i]);
+            }
+            for (auto &pair : member_extent_args) {
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, pair.first)));
+                ASR::call_arg_t carg;
+                carg.loc = loc;
+                carg.m_value = pair.second;
+                call_args.push_back(al, carg);
+            }
         }
 
         // Replace StructInstanceMember references to decomposed

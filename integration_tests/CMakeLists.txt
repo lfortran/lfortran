@@ -5098,6 +5098,7 @@ RUN(NAME gpu_metal_248 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_249 LABELS gfortran llvm metal EXTRAFILES gpu_metal_249_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME gpu_metal_250 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_251 LABELS gfortran llvm metal EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_252 LABELS gfortran llvm metal)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
