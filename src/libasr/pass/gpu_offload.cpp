@@ -1833,6 +1833,82 @@ public:
     // inline_device_function_calls() afterwards.
     std::set<ASR::Function_t*> functions_to_inline;
 
+    // A submodule `module procedure` reaches its callers through the
+    // parent module's interface declaration, whose body is empty. Return
+    // the Implementation function that actually carries the body,
+    // loading the submodule from its `.smod` file when it is not already
+    // part of this translation unit (--separate-compilation). Returns
+    // `fn` unchanged when it already is an implementation, or when no
+    // implementation can be found.
+    ASR::Function_t* resolve_function_implementation(ASR::Function_t *fn) {
+        if (!fn) return nullptr;
+        ASR::FunctionType_t *fn_ft = ASR::down_cast<ASR::FunctionType_t>(
+            fn->m_function_signature);
+        if (fn_ft->m_deftype != ASR::deftypeType::Interface) return fn;
+        std::string pname = fn->m_name;
+        for (auto &tu_item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*tu_item.second)) continue;
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(
+                tu_item.second);
+            ASR::symbol_t *impl_sym = mod->m_symtab->get_symbol(pname);
+            if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) continue;
+            ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
+                impl_sym);
+            if (ASR::down_cast<ASR::FunctionType_t>(
+                    impl_func->m_function_signature)->m_deftype ==
+                    ASR::deftypeType::Implementation) {
+                return impl_func;
+            }
+        }
+        // Not in this translation unit: load the submodule from disk.
+        SymbolTable *parent_st = fn->m_symtab->parent;
+        if (!parent_st || !parent_st->asr_owner ||
+                parent_st->asr_owner->type != ASR::asrType::symbol) {
+            return fn;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            parent_st->asr_owner);
+        if (!ASR::is_a<ASR::Module_t>(*owner)) return fn;
+        std::string smod_prefix = std::string(
+            ASR::down_cast<ASR::Module_t>(owner)->m_name) + "@";
+        std::vector<std::filesystem::path> mod_dirs;
+        mod_dirs.push_back(pass_options.runtime_library_dir);
+        mod_dirs.push_back(pass_options.mod_files_dir);
+        mod_dirs.insert(mod_dirs.end(), pass_options.include_dirs.begin(),
+            pass_options.include_dirs.end());
+        for (auto &dir : mod_dirs) {
+            if (dir.empty()) dir = ".";
+            if (!std::filesystem::is_directory(dir)) continue;
+            for (auto &file : std::filesystem::directory_iterator(dir)) {
+                std::string fname = file.path().filename().string();
+                if (!startswith(fname, smod_prefix) ||
+                        !endswith(fname, ".smod")) continue;
+                std::string content;
+                if (!read_file(file.path().string(), content) ||
+                        content.empty()) continue;
+                LocationManager lm_tmp;
+                auto res = load_modfile(al, content, false, *tu.m_symtab,
+                    lm_tmp);
+                if (!res.ok) continue;
+                load_submodule_deps(*res.result);
+                fix_external_symbols(*res.result, *tu.m_symtab);
+                ASR::Module_t *submod = ASRUtils::extract_module(
+                    *res.result);
+                ASR::symbol_t *impl_sym = submod->m_symtab->get_symbol(
+                    pname);
+                if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                    continue;
+                }
+                ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
+                    impl_sym);
+                if (ASR::down_cast<ASR::FunctionType_t>(
+                        impl_func->m_function_signature)->m_deftype !=
+                        ASR::deftypeType::Implementation) continue;
+                return impl_func;
+            }
+        }
+        return fn;
+    }
     static ASR::Function_t* resolve_device_function(ASR::symbol_t *sym) {
         if (!sym) return nullptr;
         ASR::symbol_t *r = ASRUtils::symbol_get_past_external(sym);
@@ -7125,154 +7201,8 @@ public:
                             }
                         }
                         if (fn) {
-                            ASR::Function_t *fn_impl = fn;
-                            ASR::FunctionType_t *fn_ft =
-                                ASR::down_cast<ASR::FunctionType_t>(
-                                    fn->m_function_signature);
-                            if (fn_ft->m_deftype ==
-                                    ASR::deftypeType::Interface) {
-                                std::string pname = fn->m_name;
-                                bool found_impl = false;
-                                for (auto &tu_item :
-                                        tu.m_symtab->get_scope()) {
-                                    if (!ASR::is_a<ASR::Module_t>(
-                                            *tu_item.second)) continue;
-                                    ASR::Module_t *mod =
-                                        ASR::down_cast<ASR::Module_t>(
-                                            tu_item.second);
-                                    ASR::symbol_t *impl_sym =
-                                        mod->m_symtab->get_symbol(pname);
-                                    if (!impl_sym ||
-                                        !ASR::is_a<ASR::Function_t>(
-                                            *impl_sym)) continue;
-                                    ASR::Function_t *impl_func =
-                                        ASR::down_cast<ASR::Function_t>(
-                                            impl_sym);
-                                    ASR::FunctionType_t *impl_ft =
-                                        ASR::down_cast<ASR::FunctionType_t>(
-                                            impl_func
-                                                ->m_function_signature);
-                                    if (impl_ft->m_deftype ==
-                                            ASR::deftypeType::Implementation) {
-                                        fn_impl = impl_func;
-                                        found_impl = true;
-                                        break;
-                                    }
-                                }
-                                if (!found_impl) {
-                                    // Load submodule from .smod file
-                                    // on disk (--separate-compilation).
-                                    SymbolTable *parent_st =
-                                        fn->m_symtab->parent;
-                                    if (parent_st->asr_owner &&
-                                            parent_st->asr_owner->type ==
-                                                ASR::asrType::symbol &&
-                                            ASR::is_a<ASR::Module_t>(
-                                                *ASR::down_cast<
-                                                    ASR::symbol_t>(
-                                                    parent_st
-                                                        ->asr_owner))) {
-                                        std::string parent_mod =
-                                            ASR::down_cast<ASR::Module_t>(
-                                                ASR::down_cast<
-                                                    ASR::symbol_t>(
-                                                    parent_st
-                                                        ->asr_owner))
-                                                ->m_name;
-                                        std::string smod_prefix =
-                                            parent_mod + "@";
-                                        std::vector<
-                                            std::filesystem::path>
-                                                mod_dirs;
-                                        mod_dirs.push_back(
-                                            pass_options
-                                                .runtime_library_dir);
-                                        mod_dirs.push_back(
-                                            pass_options.mod_files_dir);
-                                        mod_dirs.insert(mod_dirs.end(),
-                                            pass_options.include_dirs
-                                                .begin(),
-                                            pass_options.include_dirs
-                                                .end());
-                                        for (auto &dir : mod_dirs) {
-                                            if (dir.empty())
-                                                dir = ".";
-                                            if (!std::filesystem::
-                                                    is_directory(dir))
-                                                continue;
-                                            for (auto &file :
-                                                    std::filesystem::
-                                                        directory_iterator(
-                                                            dir)) {
-                                                std::string fname =
-                                                    file.path()
-                                                        .filename()
-                                                        .string();
-                                                if (!startswith(fname,
-                                                        smod_prefix) ||
-                                                    !endswith(fname,
-                                                        ".smod"))
-                                                    continue;
-                                                std::string content;
-                                                if (!read_file(
-                                                        file.path()
-                                                            .string(),
-                                                        content) ||
-                                                    content.empty())
-                                                    continue;
-                                                LocationManager
-                                                    lm_tmp;
-                                                auto res =
-                                                    load_modfile(
-                                                        al, content,
-                                                        false,
-                                                        *tu.m_symtab,
-                                                        lm_tmp);
-                                                if (!res.ok) continue;
-                                                load_submodule_deps(
-                                                    *res.result);
-                                                fix_external_symbols(
-                                                    *res.result,
-                                                    *tu.m_symtab);
-                                                ASR::Module_t *submod =
-                                                    ASRUtils::
-                                                        extract_module(
-                                                            *res.result);
-                                                ASR::symbol_t
-                                                    *impl_sym =
-                                                    submod->m_symtab
-                                                        ->get_symbol(
-                                                            pname);
-                                                if (!impl_sym ||
-                                                    !ASR::is_a<
-                                                        ASR::Function_t
-                                                            >(*impl_sym))
-                                                    continue;
-                                                ASR::Function_t
-                                                    *impl_func =
-                                                    ASR::down_cast<
-                                                        ASR::Function_t>(
-                                                            impl_sym);
-                                                ASR::FunctionType_t
-                                                    *impl_ft =
-                                                    ASR::down_cast<
-                                                        ASR::FunctionType_t>(
-                                                        impl_func
-                                                        ->m_function_signature);
-                                                if (impl_ft->m_deftype
-                                                        != ASR::
-                                                        deftypeType::
-                                                        Implementation)
-                                                    continue;
-                                                fn_impl = impl_func;
-                                                found_impl = true;
-                                                break;
-                                            }
-                                            if (found_impl) break;
-                                        }
-                                    }
-                                }
-                            }
+                            ASR::Function_t *fn_impl =
+                                resolve_function_implementation(fn);
                             for (size_t i = 0; i < fn_impl->n_body; i++) {
                                 transitive_collector.visit_stmt(
                                     *fn_impl->m_body[i]);
