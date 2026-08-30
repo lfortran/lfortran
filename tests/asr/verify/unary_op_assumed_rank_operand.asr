@@ -20,6 +20,7 @@
                 )
                 []
                 :AssumedRankArray
+                :Global
               )
               nil
               :Source
@@ -84,6 +85,7 @@
                           )
                           []
                           :AssumedRankArray
+                          :Global
                         )
                         nil
                       )
@@ -111,6 +113,7 @@
               )
               []
               :AssumedRankArray
+              :Global
             )
             (Real
               8

@@ -894,7 +894,7 @@ public:
 
             ASR::ttype_t* arr_type = ASRUtils::TYPE(
                 ASR::make_Array_t(al, loc, int_type, dims.p, dims.n,
-                    ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             Vec<ASR::expr_t*> arr_args;
             arr_args.reserve(al, 0);
             empty_v_list = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(

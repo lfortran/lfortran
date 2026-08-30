@@ -728,7 +728,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             temp_dim->m_length = section_size;
             ASR::ttype_t* temp_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
                 al, loc, base_str_type, temp_dim, 1,
-                ASR::array_physical_typeType::DescriptorArray));
+                ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
             std::string tmp_name = current_scope->get_unique_name("__fw_temp_");
             ASR::expr_t* temp_var = b.Variable(current_scope, tmp_name,
                 temp_arr_type, ASR::intentType::Local);

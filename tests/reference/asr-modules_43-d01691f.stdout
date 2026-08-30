@@ -43,6 +43,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     5 srcfile_t
@@ -128,6 +129,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -158,6 +160,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -199,6 +202,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 srcfile_t
@@ -235,6 +239,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -290,6 +295,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -300,6 +306,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )]
@@ -321,6 +328,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 ()
@@ -344,6 +352,7 @@
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                                                 FixedSizeArray
+                                                                Global
                                                             )
                                                             ()
                                                         )
@@ -354,6 +363,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 10 (Integer 4) Decimal))]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )]
@@ -375,6 +385,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -395,6 +406,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                                 ColMajor

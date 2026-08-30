@@ -190,6 +190,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -223,6 +224,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]
@@ -453,6 +455,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -486,6 +489,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength DescriptorString)]

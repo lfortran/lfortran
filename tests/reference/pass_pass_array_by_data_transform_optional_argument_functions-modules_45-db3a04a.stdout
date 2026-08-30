@@ -189,6 +189,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -199,6 +200,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     7 profile_config_t
@@ -441,6 +443,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 1 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -604,6 +607,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -796,6 +800,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -1078,6 +1083,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                 )
                                                                 (Logical 4)]
@@ -1088,6 +1094,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 profile_config_t
@@ -1195,6 +1202,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     (Logical 4)]
@@ -1205,6 +1213,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Integer 4)
@@ -1356,6 +1365,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1493,6 +1503,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                 )
                                                 (Logical 4)]
@@ -1766,6 +1777,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 file_scope_flag
                                                     Source
@@ -1917,6 +1929,7 @@
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                         )
                                                         (Logical 4)]
@@ -1986,6 +1999,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Logical 4)
                                         (Logical 4)
@@ -2021,6 +2035,7 @@
                                                     [(()
                                                     ())]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                             )
                                             (Logical 4)]
@@ -2166,6 +2181,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 file_scope_flag
@@ -2341,6 +2357,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )
                                         (Logical 4)]

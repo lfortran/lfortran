@@ -101,6 +101,7 @@
               )
               ]
               :FixedSizeArray
+              :Global
               )
               nil
               :Source

@@ -605,6 +605,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -711,6 +712,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (TypeParameter
                                                             t
@@ -1085,6 +1087,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1180,6 +1183,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Integer 4)
                                                         Source
@@ -1289,6 +1293,7 @@
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1384,6 +1389,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Real 4)
                                                         Source
@@ -1488,6 +1494,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1517,6 +1524,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1928,6 +1936,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -1953,6 +1962,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]

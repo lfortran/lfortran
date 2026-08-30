@@ -174,6 +174,7 @@
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                             ColMajor
@@ -206,6 +207,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 string_t
@@ -325,6 +327,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     2 build_target_ptr
                                                     Source
@@ -415,6 +418,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (StructType
                                             []
@@ -718,6 +722,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 build_target_ptr

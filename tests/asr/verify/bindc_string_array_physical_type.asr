@@ -38,6 +38,7 @@
                         )
                       ]
                       :StringArraySinglePointer
+                      :Global
                     )
                     nil
                     :BindC
@@ -78,6 +79,7 @@
                       )
                     ]
                     :StringArraySinglePointer
+                    :Global
                   )
                 ]
                 nil

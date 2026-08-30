@@ -3057,7 +3057,7 @@ public:
                             ASR::ttype_t* element_type = replace_deferred_struct_type(array_t->m_type);
                             return ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
                                 element_type, array_t->m_dims, array_t->n_dims,
-                                array_t->m_physical_type));
+                                array_t->m_physical_type, array_t->m_memory_space));
                         }
                         if (ASR::is_a<ASR::Pointer_t>(*t)) {
                             ASR::Pointer_t* pointer_t = ASR::down_cast<ASR::Pointer_t>(t);

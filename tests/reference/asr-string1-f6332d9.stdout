@@ -388,6 +388,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -437,6 +438,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
