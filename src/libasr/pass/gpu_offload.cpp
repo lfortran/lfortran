@@ -2309,6 +2309,15 @@ public:
     // inline_device_function_calls() afterwards.
     std::set<ASR::Function_t*> functions_to_inline;
 
+    // The implementation already found for an interface declaration.
+    // Loading a submodule from disk builds a fresh copy of its symbol
+    // table every time, so without this the same `module procedure`
+    // would resolve to a different Function_t at every call. The
+    // inliner identifies a planned callee by pointer, so the plan and
+    // the splice would then disagree and the callee would silently stay
+    // an out-of-line device function.
+    std::map<ASR::Function_t*, ASR::Function_t*> function_implementations;
+
     // A submodule `module procedure` reaches its callers through the
     // parent module's interface declaration, whose body is empty. Return
     // the Implementation function that actually carries the body,
@@ -2321,6 +2330,16 @@ public:
         ASR::FunctionType_t *fn_ft = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         if (fn_ft->m_deftype != ASR::deftypeType::Interface) return fn;
+        auto cached = function_implementations.find(fn);
+        if (cached != function_implementations.end()) return cached->second;
+        ASR::Function_t *impl = find_function_implementation(fn);
+        function_implementations[fn] = impl;
+        return impl;
+    }
+
+    // The search behind resolve_function_implementation(), which caches
+    // its result.
+    ASR::Function_t* find_function_implementation(ASR::Function_t *fn) {
         std::string pname = fn->m_name;
         for (auto &tu_item : tu.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Module_t>(*tu_item.second)) continue;
