@@ -4478,6 +4478,27 @@ public:
                     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
                         loc, elementize_rhs(ib->m_left), ib->m_op,
                         elementize_rhs(ib->m_right), et, nullptr));
+                } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                    ASR::RealUnaryMinus_t *ru =
+                        ASR::down_cast<ASR::RealUnaryMinus_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al,
+                        loc, elementize_rhs(ru->m_arg), et, nullptr));
+                } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                    ASR::IntegerUnaryMinus_t *iu =
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al,
+                        loc, elementize_rhs(iu->m_arg), et, nullptr));
+                } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+                    ASR::LogicalNot_t *ln =
+                        ASR::down_cast<ASR::LogicalNot_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_LogicalNot_t(al,
+                        loc, elementize_rhs(ln->m_arg), et, nullptr));
                 } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
                     ASR::RealCompare_t *rc =
                         ASR::down_cast<ASR::RealCompare_t>(e);
