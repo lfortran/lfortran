@@ -736,23 +736,19 @@ public:
     }
 
     // Whether a scope belongs to code the host runs, which has one flat
-    // memory and so knows only the Global space.
+    // memory and so knows only the Global space. Everything device_partition
+    // did not take is host code, the clones the memory space pass makes for
+    // the device included.
     static bool is_host_only_scope(SymbolTable *symtab) {
         while (symtab) {
             ASR::asr_t *owner = symtab->asr_owner;
             if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
-                if (ASR::is_a<ASR::Function_t>(*sym) &&
-                        ASRUtils::get_FunctionType(
-                            ASR::down_cast<ASR::Function_t>(sym)
-                            )->m_exec_space != ASR::exec_spaceType::Host) {
-                    return false;
-                }
-                if (ASR::is_a<ASR::Program_t>(*sym)) return true;
+                if (ASRUtils::runs_on_device(sym)) return false;
             }
             symtab = symtab->parent;
         }
-        return false;
+        return true;
     }
 
     // The memory space of an array is part of a routine's interface, so the

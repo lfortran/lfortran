@@ -45,26 +45,6 @@ Dis-advantages:
 
 namespace LCompilers {
 
-// True when a procedure is part of the device code: either it runs on the
-// device itself, or it is nested inside a procedure that does. gpu_offload
-// copies every routine a kernel calls into the kernel's own scope, so such a
-// copy is reachable from nowhere but the kernel. Once a device call-graph
-// closure pass marks those copies as running on the device too, this becomes
-// a plain ASRUtils::is_device_function check.
-static bool runs_on_device(ASR::Function_t* x) {
-    for( SymbolTable* s = x->m_symtab; s != nullptr; s = s->parent ) {
-        if( s->asr_owner == nullptr ||
-            !ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
-            continue;
-        }
-        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
-        if( ASRUtils::runs_on_device(owner) ) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // After duplicating a function body and its symbol table, BlockCall statements
 // still reference the original Block symbols. This visitor remaps them to the
 // corresponding duplicated Blocks in the new symbol table.
@@ -350,7 +330,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
                     std::vector<size_t> arg_indices;
-                    if( runs_on_device(subrout) ) {
+                    if( ASRUtils::runs_on_device(*subrout) ) {
                         // Device code is emitted as Metal/CUDA source, where
                         // an array argument is a bare pointer that carries no
                         // extents, so it needs them as explicit arguments.
