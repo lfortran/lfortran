@@ -3018,7 +3018,11 @@ public:
                     return;
                 }
             }
+        }
 
+        // A statement no device can run keeps the loop on the CPU whichever
+        // backend is selected.
+        {
             GpuUnsupportedStatementFinder finder;
             for (size_t i = 0; i < x.n_body; i++) {
                 finder.visit_stmt(*x.m_body[i]);
@@ -3040,7 +3044,7 @@ public:
             }
             if (finder.reason != nullptr) {
                 report_not_offloaded(finder.loc,
-                    std::string("the Metal backend does not support ") +
+                    std::string("the gpu backend does not support ") +
                         finder.reason + in_routine);
                 return;
             }
