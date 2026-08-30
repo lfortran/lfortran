@@ -24,7 +24,7 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         void visit_Function(const ASR::Function_t& x) {
             bool in_device_copy = in_device;
-            if( device_only && ASRUtils::is_device_function(x) ) {
+            if( device_only && ASRUtils::runs_on_device(x) ) {
                 in_device = true;
             }
             ASR::CallReplacerOnExpressionsVisitor<
@@ -208,7 +208,7 @@ class PromoteAllocatableToNonAllocatable:
 
         void visit_Function(const ASR::Function_t& x) {
             bool in_device_copy = in_device;
-            if( device_only && ASRUtils::is_device_function(x) ) {
+            if( device_only && ASRUtils::runs_on_device(x) ) {
                 in_device = true;
             }
             ASR::CallReplacerOnExpressionsVisitor<
@@ -547,7 +547,7 @@ class DeviceImplicitAllocInserter:
         void visit_Function(const ASR::Function_t& x) {
             bool in_device_copy = in_device;
             std::set<ASR::symbol_t*> allocated_copy = explicitly_allocated;
-            if( ASRUtils::is_device_function(x) ) {
+            if( ASRUtils::runs_on_device(x) ) {
                 in_device = true;
             }
             if( in_device ) {

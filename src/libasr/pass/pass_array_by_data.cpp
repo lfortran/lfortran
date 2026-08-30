@@ -58,8 +58,7 @@ static bool runs_on_device(ASR::Function_t* x) {
             continue;
         }
         ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
-        if( ASR::is_a<ASR::Function_t>(*owner) &&
-            ASRUtils::is_device_function(*ASR::down_cast<ASR::Function_t>(owner)) ) {
+        if( ASRUtils::runs_on_device(owner) ) {
             return true;
         }
     }

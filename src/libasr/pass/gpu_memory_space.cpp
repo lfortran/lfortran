@@ -125,8 +125,7 @@ public:
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             ASR::Function_t *fn =
                 ASR::down_cast<ASR::Function_t>(item.second);
-            if (ASRUtils::get_FunctionType(fn)->m_exec_space
-                    != ASR::exec_spaceType::Device) {
+            if (!ASRUtils::is_device_kernel(item.second)) {
                 continue;
             }
             kernels.push_back(fn);

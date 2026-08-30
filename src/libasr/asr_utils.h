@@ -261,24 +261,52 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
 
-// The execution space a function runs in. A Device function is a GPU kernel
-// or a routine only reachable from one; a Host function runs on the CPU.
+// The execution space a function runs in. Host runs on the CPU only, Device
+// on the GPU only, HostDevice is compiled for both, and Kernel is the entry
+// point of a GPU kernel: it runs on the device and the host launches it.
 static inline ASR::exec_spaceType get_exec_space(const ASR::Function_t& x) {
     return ASRUtils::get_FunctionType(x)->m_exec_space;
 }
 
-static inline bool is_device_function(const ASR::Function_t& x) {
-    return ASRUtils::get_exec_space(x) == ASR::exec_spaceType::Device;
+// True when the function is compiled for the device, whether as a kernel, as
+// a routine the device call graph reaches, or as one compiled for both. The
+// device-preparation passes and the device code generators ask this.
+static inline bool runs_on_device(const ASR::Function_t& x) {
+    switch (ASRUtils::get_exec_space(x)) {
+        case ASR::exec_spaceType::Device:
+        case ASR::exec_spaceType::HostDevice:
+        case ASR::exec_spaceType::Kernel:
+            return true;
+        case ASR::exec_spaceType::Host:
+            return false;
+    }
+    return false;
 }
 
-// True when `s` is the entry point of a GPU kernel, i.e. a Device function
-// that the Metal/CUDA code generators emit and that a DeviceLaunch targets.
+static inline bool runs_on_device(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::runs_on_device(*ASR::down_cast<ASR::Function_t>(s));
+}
+
+// True when the function exists on the device only, so a host code generator
+// has nothing to emit for it.
+static inline bool is_device_only_function(const ASR::Function_t& x) {
+    ASR::exec_spaceType space = ASRUtils::get_exec_space(x);
+    return space == ASR::exec_spaceType::Device ||
+           space == ASR::exec_spaceType::Kernel;
+}
+
+// True when `s` is the entry point of a GPU kernel: the host launches it with
+// a GpuKernelLaunch, and the device code generators give it the kernel
+// qualifier, its buffer bindings and its registration.
 static inline bool is_device_kernel(const ASR::symbol_t* s) {
     if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
         return false;
     }
-    return ASRUtils::is_device_function(
-        *ASR::down_cast<ASR::Function_t>(s));
+    return ASRUtils::get_exec_space(*ASR::down_cast<ASR::Function_t>(s))
+        == ASR::exec_spaceType::Kernel;
 }
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {

@@ -8294,9 +8294,9 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (ASRUtils::is_device_function(x)) {
-            // Device functions are not lowered to LLVM IR. They are emitted
-            // as Metal/CUDA source by the device code generator.
+        if (ASRUtils::is_device_only_function(x)) {
+            // A routine that exists only on the device is not lowered to LLVM
+            // IR. The device code generator emits it as Metal/CUDA source.
             return;
         }
         if (ASRUtils::is_bare_implicit_interface(x)) {

@@ -551,7 +551,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::is_device_function(*f)) {
+                if (ASRUtils::is_device_kernel(item.second)) {
                     func_name.push_back(item.first);
                 } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
@@ -597,7 +597,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (ASRUtils::is_device_function(x)) {
+        if (ASRUtils::is_device_kernel(&x.base)) {
             visit_device_kernel(x);
             return;
         }
