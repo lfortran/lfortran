@@ -30,6 +30,15 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
+// One buffer parameter of a generated device kernel, in the order the host
+// runtime binds it. A dialect that has to unpack the runtime's argument array
+// again -- the CPU emulation of CUDA does -- reads the list back.
+struct GpuKernelParam {
+    std::string type;   // element type, or the struct name for a reference
+    std::string name;
+    bool is_reference;  // bound as a struct reference rather than a pointer
+};
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
