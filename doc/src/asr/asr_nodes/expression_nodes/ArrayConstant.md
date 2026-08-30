@@ -64,6 +64,7 @@ elements are not all constant. ASR text writes the bytes with the
       )
     ]
     :physical_type :FixedSizeArray
+    :memory_space :Global
   )
   :storage_format :ColMajor
 )

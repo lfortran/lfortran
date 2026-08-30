@@ -42,10 +42,10 @@ grid is `GpuBlockIndex * GpuBlockSize + GpuThreadIndex`.
 
 It comes from this complete ASR text document:
 
-```{literalinclude} ../../examples/gpukernelfunction.asr
+```{literalinclude} ../../examples/gpu_kernel.asr
 :language: clojure
 ```
 
 ## See Also
 
-[GpuKernelFunction](../symbol_nodes/GpuKernelFunction.md), [GpuKernelLaunch](../statement_nodes/GpuKernelLaunch.md), [GpuThreadIndex](GpuThreadIndex.md), [GpuBlockIndex](GpuBlockIndex.md), [GpuBlockSize](GpuBlockSize.md)
+[exec_space](../enum_nodes/exec_space.md), [GpuKernelLaunch](../statement_nodes/GpuKernelLaunch.md), [GpuThreadIndex](GpuThreadIndex.md), [GpuBlockIndex](GpuBlockIndex.md), [GpuBlockSize](GpuBlockSize.md)

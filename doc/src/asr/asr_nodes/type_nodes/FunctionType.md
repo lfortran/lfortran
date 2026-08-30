@@ -29,7 +29,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `static` | `true` when the procedure's local variables are allocated statically rather than on the stack. |
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
-| `exec_space` | where the procedure runs: `Host`, `Device`, `HostDevice`, or `Kernel`. |
+| `exec_space` | where the procedure runs; see [exec_space](../enum_nodes/exec_space.md). |
 
 ### Return values
 
@@ -81,6 +81,7 @@ arguments are not known here.
   :static false
   :restrictions []
   :is_restriction false
+  :exec_space :Host
 )
 ```
 
@@ -92,4 +93,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[Function](../symbol_nodes/Function.md), [FunctionCall](../expression_nodes/FunctionCall.md), [deftype](../enum_nodes/deftype.md), [abi](../enum_nodes/abi.md), [FunctionParam](../expression_nodes/FunctionParam.md)
+[Function](../symbol_nodes/Function.md), [FunctionCall](../expression_nodes/FunctionCall.md), [deftype](../enum_nodes/deftype.md), [abi](../enum_nodes/abi.md), [exec_space](../enum_nodes/exec_space.md), [FunctionParam](../expression_nodes/FunctionParam.md)

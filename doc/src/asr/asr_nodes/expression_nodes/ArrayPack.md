@@ -52,6 +52,7 @@ input, and its length is the number of true elements of the mask unless
       )
     ]
     :physical_type :DescriptorArray
+    :memory_space :Global
   )
   :value nil
 )
