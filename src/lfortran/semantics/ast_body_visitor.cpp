@@ -5772,6 +5772,84 @@ public:
         }
     }
 
+    // A subprogram with ENTRY points is lowered into one master procedure whose
+    // body holds several overlapping copies of the original body: one starting
+    // at the main entry point and one starting at each ENTRY.  A user statement
+    // label that lands in more than one copy would be defined more than once,
+    // while the backends create exactly one basic block per label id.  Keep the
+    // id in the first copy that defines it -- branches from anywhere else still
+    // reach that copy, which is what the backends did before -- and give the
+    // later copies fresh ids so that each of them branches within itself.
+    //
+    // `copies` lists, in body order, the half-open ranges each copy occupies in
+    // `stmts` and in `trailing_stmts`.
+    void renumber_repeated_entry_labels(std::vector<ASR::stmt_t*> &stmts,
+            std::vector<ASR::stmt_t*> &trailing_stmts,
+            const std::vector<std::pair<std::pair<size_t, size_t>,
+                                        std::pair<size_t, size_t>>> &copies) {
+        class LabelVisitor : public ASR::BaseWalkVisitor<LabelVisitor> {
+            public:
+            enum Mode { FindMax, CollectTargets, Rewrite };
+            Allocator &al;
+            Mode mode = FindMax;
+            int64_t next_label = 0;
+            std::set<int64_t> claimed;
+            std::map<int64_t, int64_t> remap;
+
+            LabelVisitor(Allocator &al_) : al(al_) {}
+
+            void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+                ASR::GoToTarget_t *t = const_cast<ASR::GoToTarget_t*>(&x);
+                if (mode == CollectTargets) {
+                    if (!claimed.insert(t->m_id).second
+                            && remap.find(t->m_id) == remap.end()) {
+                        remap[t->m_id] = ++next_label;
+                    }
+                } else {
+                    rewrite(t->m_id, t->m_name);
+                }
+            }
+
+            void visit_GoTo(const ASR::GoTo_t &x) {
+                ASR::GoTo_t *g = const_cast<ASR::GoTo_t*>(&x);
+                if (mode != CollectTargets) {
+                    rewrite(g->m_target_id, g->m_name);
+                }
+            }
+
+            void rewrite(int64_t &id, char *&name) {
+                if (mode == FindMax) {
+                    next_label = std::max(next_label, id);
+                    return;
+                }
+                auto it = remap.find(id);
+                if (it != remap.end()) {
+                    id = it->second;
+                    name = s2c(al, std::to_string(it->second));
+                }
+            }
+        };
+
+        LabelVisitor v(al);
+        for (auto &s: stmts) v.visit_stmt(*s);
+        for (auto &s: trailing_stmts) v.visit_stmt(*s);
+
+        for (auto &copy: copies) {
+            v.remap.clear();
+            for (LabelVisitor::Mode mode: {LabelVisitor::CollectTargets,
+                    LabelVisitor::Rewrite}) {
+                if (mode == LabelVisitor::Rewrite && v.remap.empty()) break;
+                v.mode = mode;
+                for (size_t i = copy.first.first; i < copy.first.second; i++) {
+                    v.visit_stmt(*stmts[i]);
+                }
+                for (size_t i = copy.second.first; i < copy.second.second; i++) {
+                    v.visit_stmt(*trailing_stmts[i]);
+                }
+            }
+        }
+    }
+
     template <typename T>
     void populate_master_function(const T& x, const Location &loc, std::string master_function_name) {
         // populate master function
@@ -5819,7 +5897,14 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
+        // Record where each copy of the body starts and ends, so that statement
+        // labels repeated across copies can be told apart afterwards.
+        std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
+        size_t stmt_start = stmt_vector.size();
+        size_t trailing_start = after_return_stmt_entry_function.size();
         visit_stmts_helper(subroutine_stmt_vector, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
+        copies.push_back({{stmt_start, stmt_vector.size()},
+            {trailing_start, after_return_stmt_entry_function.size()}});
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
@@ -5827,8 +5912,13 @@ public:
             stmt_vector.push_back(go_to_target_stmt); go_to_target++;
             // check if it is last entry function
             bool is_last = it.first == entry_functions[original_function_name].rbegin()->first;
+            stmt_start = stmt_vector.size();
+            trailing_start = after_return_stmt_entry_function.size();
             visit_stmts_helper(it.second, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
+            copies.push_back({{stmt_start, stmt_vector.size()},
+                {trailing_start, after_return_stmt_entry_function.size()}});
         }
+        renumber_repeated_entry_labels(stmt_vector, after_return_stmt_entry_function, copies);
         for (auto &it: stmt_vector) {
             master_function_body.push_back(al, it);
         }
