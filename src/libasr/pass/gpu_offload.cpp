@@ -1909,7 +1909,13 @@ public:
         }
         return fn;
     }
-    static ASR::Function_t* resolve_device_function(ASR::symbol_t *sym) {
+
+    // The function the inliner must reason about for a call: its
+    // implementation, never the interface declaration that stands in for
+    // a submodule `module procedure` at the call site. The interface has
+    // an empty body, so reasoning about it would silently conclude that
+    // the callee needs nothing.
+    ASR::Function_t* resolve_device_function(ASR::symbol_t *sym) {
         if (!sym) return nullptr;
         ASR::symbol_t *r = ASRUtils::symbol_get_past_external(sym);
         if (!r) return nullptr;
@@ -1918,7 +1924,8 @@ public:
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(r)->m_proc);
         }
         if (!r || !ASR::is_a<ASR::Function_t>(*r)) return nullptr;
-        return ASR::down_cast<ASR::Function_t>(r);
+        return resolve_function_implementation(
+            ASR::down_cast<ASR::Function_t>(r));
     }
 
     // Strip the physical-type casts wrapping an actual argument. The
