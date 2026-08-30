@@ -7,7 +7,6 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <cstdlib>
 #include <map>
 #include <string>
 #include <vector>
@@ -33,12 +32,16 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
 
-A launch whose argument shape is not handled yet is left untouched, and the
-LLVM backend expands it as before.
+The pass rejects an argument shape it does not lay out the same way as the
+device code generator, rather than building a launch that would read the
+wrong bytes.
 */
-static std::string launch_reason;
-static bool no(const char *why) { launch_reason = why; return false; }
-static bool no2(const char *why) { launch_reason = why; return false; }
+// Why the last rejected launch could not be expanded, for the error message.
+static std::string unsupported_reason;
+static bool unsupported(const char *why) {
+    unsupported_reason = why;
+    return false;
+}
 
 static bool is_plain_scalar(ASR::ttype_t *type) {
     return ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
@@ -81,21 +84,25 @@ static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
 // the layout through the struct symbol.
 static bool struct_is_plain(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
-    if (!st) return no2("struct-unknown");
-    if (st->m_parent) return no2("struct-parent");
+    if (!st) {
+        return unsupported("a derived type whose declaration is not known");
+    }
+    if (st->m_parent) return unsupported("an extended derived type");
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
         if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
-            return no2("struct-member");
+            return unsupported("a derived type with a non-data member");
         }
         if (is_decomposed_member(member)) continue;
         ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
         if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) {
-            return no2("struct-alloc-member");
+            return unsupported(
+                "a derived type with a pointer or scalar allocatable member");
         }
         if (ASRUtils::is_array(type) &&
                 ASRUtils::get_fixed_size_of_array(type) <= 0) {
-            return no2("struct-vla-member");
+            return unsupported(
+                "a derived type with an assumed shape array member");
         }
         ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::StructType_t>(*base)) {
@@ -106,7 +113,10 @@ static bool struct_is_plain(ASR::symbol_t *struct_sym) {
             }
             continue;
         }
-        if (!is_plain_scalar(base)) return no2("struct-member-type");
+        if (!is_plain_scalar(base)) {
+            return unsupported(
+                "a derived type with a member that is not a number");
+        }
     }
     return true;
 }
@@ -132,13 +142,14 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         for (size_t i = 0; i < st->n_members; i++) {
             if (is_decomposed_member(st->m_symtab->get_symbol(
                     st->m_members[i]))) {
-                return no2("struct-array-expr");
+                return unsupported(
+                    "an array of derived type that is not a plain variable");
             }
         }
         return true;
     }
     if (is_plain_scalar(base)) return true;
-    return no2("buffer-elem");
+    return unsupported("an array whose elements are not numbers");
 }
 
 static bool is_supported_scalar(ASR::ttype_t *type) {
@@ -158,19 +169,22 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
     ASR::GpuKernelFunction_t *kernel =
         ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
-    if (x.n_args != kernel->n_args) return no("arg-count");
-    // Packing many buffers into one, and workspaces for variable-length
-    // arrays, are not expanded here yet.
+    if (x.n_args != kernel->n_args) {
+        return unsupported("a kernel that takes a different number of "
+            "arguments");
+    }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
-            if (dim.is_struct_member_size) continue;
-            if (!dim.is_constant &&
-                    dim.call_arg_index >= x.n_args) return no("vla-dim");
+            if (dim.is_constant || dim.is_struct_member_size) continue;
+            if (dim.call_arg_index >= x.n_args) {
+                return unsupported("a variable length array sized outside "
+                    "the kernel arguments");
+            }
         }
     }
     for (size_t i = 0; i < x.n_args; i++) {
         ASR::expr_t *arg = x.m_args[i].m_value;
-        if (!arg) return no("null-arg");
+        if (!arg) return unsupported("a missing argument");
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
             ASRUtils::symbol_get_past_external(
@@ -180,9 +194,13 @@ static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
                     *ASRUtils::extract_type(arg_type))) {
             if (!is_supported_buffer(arg)) return false;
         } else {
-            if (!is_supported_scalar(arg_type)) return no("scalar-type");
+            if (!is_supported_scalar(arg_type)) {
+                return unsupported("a scalar that is not an integer or a "
+                    "real");
+            }
             if (!same_scalar_type(arg_type, kparam->m_type)) {
-                return no("scalar-kind-mismatch");
+                return unsupported("a scalar whose kind differs from the "
+                    "kernel parameter");
             }
         }
     }
@@ -211,17 +229,10 @@ class DeviceLaunchExpandVisitor :
                 ASR::TranslationUnit_t &unit_) :
             PassVisitor(al_, nullptr), unit(unit_) {}
 
-        // Number of launches whose argument shape this pass does not handle
-        // yet, and which are therefore left to the LLVM backend.
-        size_t n_not_expanded = 0;
-
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
             Vec<ASR::stmt_t*> stmts;
             stmts.reserve(al, 8);
-            if (!expand_launch(x, stmts)) {
-                n_not_expanded++;
-                return;
-            }
+            expand_launch(x, stmts);
             pass_result.reserve(al, stmts.size());
             for (size_t i = 0; i < stmts.size(); i++) {
                 pass_result.push_back(al, stmts[i]);
@@ -629,7 +640,7 @@ class DeviceLaunchExpandVisitor :
                 element_bytes);
         }
 
-        bool expand_launch(const ASR::GpuKernelLaunch_t &x,
+        void expand_launch(const ASR::GpuKernelLaunch_t &x,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
@@ -637,7 +648,6 @@ class DeviceLaunchExpandVisitor :
             ASR::GpuKernelFunction_t *kernel =
                 ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
             std::string kernel_name(kernel->m_name);
-            if (!launch_is_supported(x)) return false;
 
             std::vector<BufferArg> buffers;
             std::vector<std::pair<std::string, ASR::ttype_t*>> scalar_fields;
@@ -669,7 +679,6 @@ class DeviceLaunchExpandVisitor :
 
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::expr_t *arg = x.m_args[i].m_value;
-                if (!arg) return false;
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
                 ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
                     ASRUtils::symbol_get_past_external(
@@ -876,7 +885,6 @@ class DeviceLaunchExpandVisitor :
             for (ASR::expr_t *workspace : workspaces) {
                 out.push_back(al, b.Deallocate(workspace));
             }
-            return true;
         }
 
         void fill_geometry(const Location &loc, Vec<ASR::stmt_t*> &out,
@@ -899,12 +907,10 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     LaunchSupportVisitor support;
     support.visit_TranslationUnit(unit);
-    if (std::getenv("LFORTRAN_GPU_LAUNCH_REPORT")) {
-        std::fprintf(stderr, "device_launch_expand: %s\n",
-            support.all_supported ? "expanded"
-                : ("left to the llvm backend: " + launch_reason).c_str());
+    if (!support.all_supported) {
+        throw LCompilersException("cannot launch a gpu kernel with "
+            + unsupported_reason);
     }
-    if (!support.all_supported) return;
     DeviceLaunchExpandVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
