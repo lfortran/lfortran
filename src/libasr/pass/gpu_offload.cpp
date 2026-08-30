@@ -1065,6 +1065,189 @@ public:
     }
 };
 
+// Fortran requires the right-hand side of an array assignment to be
+// evaluated as if every element were read before any element of the
+// left-hand side is written. The GPU lowerings below turn an array
+// assignment into an ascending element-by-element copy, which breaks that
+// rule when both sides designate overlapping storage of the same array
+// (`a(:) = a(n:1:-1)`, `a(3:6) = a(2:5)`): the copy then reads elements
+// that the same statement has already overwritten. On the CPU path the
+// later `array_struct_temporary` pass materialises the temporary that
+// makes the copy safe; `gpu_offload` runs before it and lowers the loop
+// body itself, so it has to materialise that temporary here. The three
+// helpers below decide, conservatively, when that is needed.
+
+// The variable whose storage a designator ultimately refers to, or
+// nullptr for anything that is not a designator. A structure component
+// is identified by its member symbol, so that `x%a` and `x%b` are told
+// apart while `x%a` and `y%a` are (conservatively) not.
+static ASR::symbol_t *gpu_designator_base(ASR::expr_t *e) {
+    while (e) {
+        switch (e->type) {
+            case ASR::exprType::Var: {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+            }
+            case ASR::exprType::StructInstanceMember: {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+            }
+            case ASR::exprType::ArraySection: {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayPhysicalCast: {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                break;
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Strict structural equality of two subscript expressions. Anything not
+// understood here compares unequal, which makes the two designators
+// differ and so errs towards materialising a temporary.
+static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (!a || !b || a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::Var: {
+            return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(a)->m_v)
+                == ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(b)->m_v);
+        }
+        case ASR::exprType::IntegerConstant: {
+            return ASR::down_cast<ASR::IntegerConstant_t>(a)->m_n
+                == ASR::down_cast<ASR::IntegerConstant_t>(b)->m_n;
+        }
+        case ASR::exprType::IntegerUnaryMinus: {
+            return gpu_same_subscript(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)->m_arg,
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)->m_arg);
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+            ASR::IntegerBinOp_t *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+            return x->m_op == y->m_op
+                && gpu_same_subscript(x->m_left, y->m_left)
+                && gpu_same_subscript(x->m_right, y->m_right);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// True when two designators are provably the same storage in the same
+// element order, so an element-by-element copy between them reads only
+// what it has already written to the same element.
+static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (!a || !b || a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::Var: {
+            return gpu_same_subscript(a, b);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t *x = ASR::down_cast<ASR::ArraySection_t>(a);
+            ASR::ArraySection_t *y = ASR::down_cast<ASR::ArraySection_t>(b);
+            if (x->n_args != y->n_args) return false;
+            if (!gpu_same_designator(x->m_v, y->m_v)) return false;
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!gpu_same_subscript(x->m_args[i].m_left,
+                        y->m_args[i].m_left)
+                    || !gpu_same_subscript(x->m_args[i].m_right,
+                        y->m_args[i].m_right)
+                    || !gpu_same_subscript(x->m_args[i].m_step,
+                        y->m_args[i].m_step)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t *x = ASR::down_cast<ASR::ArrayItem_t>(a);
+            ASR::ArrayItem_t *y = ASR::down_cast<ASR::ArrayItem_t>(b);
+            if (x->n_args != y->n_args) return false;
+            if (!gpu_same_designator(x->m_v, y->m_v)) return false;
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!gpu_same_subscript(x->m_args[i].m_left,
+                        y->m_args[i].m_left)
+                    || !gpu_same_subscript(x->m_args[i].m_right,
+                        y->m_args[i].m_right)
+                    || !gpu_same_subscript(x->m_args[i].m_step,
+                        y->m_args[i].m_step)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// Reports whether an expression reads the storage of `base` through a
+// designator that is not element-for-element identical to `target`. Such
+// a read may see an element the assignment to `target` has already
+// overwritten, so the assignment needs a temporary.
+class GpuSelfAliasChecker : public ASR::BaseWalkVisitor<GpuSelfAliasChecker> {
+public:
+    ASR::symbol_t *base = nullptr;
+    ASR::expr_t *target = nullptr;
+    bool aliased = false;
+
+    void check_designator(ASR::expr_t *e) {
+        if (gpu_designator_base(e) != base) return;
+        if (!gpu_same_designator(target, e)) aliased = true;
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        check_designator(const_cast<ASR::expr_t*>(&x.base));
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
+        if (gpu_designator_base(e) == base) {
+            check_designator(e);
+            // The subscripts may themselves read the array, so keep
+            // walking them, but do not re-visit the base designator as a
+            // bare whole-array reference.
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_left) visit_expr(*x.m_args[i].m_left);
+                if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+                if (x.m_args[i].m_step) visit_expr(*x.m_args[i].m_step);
+            }
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuSelfAliasChecker>::visit_ArraySection(x);
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
+        if (gpu_designator_base(e) == base) {
+            check_designator(e);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_left) visit_expr(*x.m_args[i].m_left);
+                if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+                if (x.m_args[i].m_step) visit_expr(*x.m_args[i].m_step);
+            }
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuSelfAliasChecker>::visit_ArrayItem(x);
+    }
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -4526,6 +4709,334 @@ public:
     //   end do
     // This avoids complex lowered code (descriptor temps, ArrayBound)
     // that the Metal backend cannot handle inside GPU kernels.
+    // Evaluate an integer expression made up entirely of literals.
+    // `section_extent` builds its result unfolded (`(6 - 3) + 1`), and an
+    // unfolded extent would make the temporary below a descriptor array
+    // even though its size is known, so fold it here.
+    bool eval_int_literal(ASR::expr_t *e, int64_t &out) {
+        if (!e) return false;
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (v) e = v;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            out = ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+            return true;
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            int64_t a;
+            if (!eval_int_literal(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg, a)) {
+                return false;
+            }
+            out = -a;
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return eval_int_literal(
+                ASR::down_cast<ASR::Cast_t>(e)->m_arg, out);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            int64_t l, r;
+            if (!eval_int_literal(b->m_left, l)
+                    || !eval_int_literal(b->m_right, r)) {
+                return false;
+            }
+            switch (b->m_op) {
+                case ASR::binopType::Add: out = l + r; return true;
+                case ASR::binopType::Sub: out = l - r; return true;
+                case ASR::binopType::Mul: out = l * r; return true;
+                case ASR::binopType::Div: {
+                    if (r == 0) return false;
+                    out = l / r;
+                    return true;
+                }
+                default: return false;
+            }
+        }
+        return false;
+    }
+
+    // Declare a temporary array with `n_extents` dimensions of the given
+    // extents in `var_scope` and return a reference to it. A dimension
+    // whose extent is not a compile-time constant makes the temporary a
+    // descriptor array, exactly as the array-constructor hoisting above
+    // does, so the same run-time sizing machinery applies.
+    ASR::expr_t *declare_temp_array(const Location &loc,
+            SymbolTable *var_scope, ASR::ttype_t *elem_type,
+            ASR::expr_t **extents, size_t n_extents,
+            const std::string &prefix) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, n_extents);
+        bool all_const = true;
+        for (size_t i = 0; i < n_extents; i++) {
+            ASR::dimension_t d;
+            d.loc = loc;
+            d.m_start = int32_const(loc, 1);
+            d.m_length = extents[i];
+            int64_t n;
+            if (extents[i] && eval_int_literal(extents[i], n)) {
+                d.m_length = int32_const(loc, (int)n);
+            } else {
+                all_const = false;
+            }
+            dims.push_back(al, d);
+        }
+        ASR::ttype_t *tmp_type = ASRUtils::TYPE(
+            ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
+                all_const
+                    ? ASR::array_physical_typeType::FixedSizeArray
+                    : ASR::array_physical_typeType::DescriptorArray));
+        std::string name = var_scope->get_unique_name(prefix);
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                tmp_type, nullptr, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required,
+                false));
+        var_scope->add_symbol(name, sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
+    // The target of `asgn` when its value reads the target's storage
+    // through a designator that is not element-for-element identical to
+    // it, and nullptr otherwise. See the comment above
+    // gpu_designator_base for why such an assignment needs a temporary.
+    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn) {
+        ASR::expr_t *target = asgn->m_target;
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*target)) {
+            target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                target)->m_arg;
+        }
+        if (!ASRUtils::is_array(ASRUtils::expr_type(target))) {
+            return nullptr;
+        }
+        ASR::symbol_t *base = gpu_designator_base(target);
+        if (!base) return nullptr;
+        GpuSelfAliasChecker checker;
+        checker.base = base;
+        checker.target = target;
+        checker.visit_expr(*asgn->m_value);
+        return checker.aliased ? target : nullptr;
+    }
+
+    // Whether the temporary such an assignment needs can be given
+    // compile-time constant extents. Metal has no variable-length
+    // arrays, and a run-time sized kernel temporary would have to become
+    // a device buffer shared by every thread of the kernel, so a loop
+    // that would need one is not offloaded at all and runs on the host.
+    bool alias_temp_is_fixed_size(ASR::expr_t *target) {
+        const Location &loc = target->base.loc;
+        int64_t n;
+        if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+            ASR::ArraySection_t *as =
+                ASR::down_cast<ASR::ArraySection_t>(target);
+            size_t n_ranges = 0;
+            for (size_t i = 0; i < as->n_args; i++) {
+                if (as->m_args[i].m_left && as->m_args[i].m_right
+                        && as->m_args[i].m_step) {
+                    n_ranges++;
+                    if (!eval_int_literal(
+                            section_extent(loc, as->m_args[i]), n)) {
+                        return false;
+                    }
+                }
+            }
+            return n_ranges > 0;
+        }
+        ASR::ttype_t *tt = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(target)));
+        if (!ASR::is_a<ASR::Array_t>(*tt)) return false;
+        ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(tt);
+        for (size_t i = 0; i < at->n_dims; i++) {
+            if (!eval_int_literal(at->m_dims[i].m_length, n)) return false;
+        }
+        return at->n_dims > 0;
+    }
+
+    // Reports a self-aliasing array assignment whose temporary cannot be
+    // fixed-size. Called before any of the destructive inline_* helpers,
+    // so the loop can still be left on the host.
+    bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
+            size_t n_body) {
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                if (body_needs_unsupported_alias_temp(dl->m_body,
+                        dl->n_body)) return true;
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    if (body_needs_unsupported_alias_temp(blk->m_body,
+                            blk->n_body)) return true;
+                }
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            stmt)->m_m);
+                if (body_needs_unsupported_alias_temp(ab->m_body,
+                        ab->n_body)) return true;
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) continue;
+            ASR::expr_t *target = self_aliasing_target(
+                ASR::down_cast<ASR::Assignment_t>(stmt));
+            if (target && !alias_temp_is_fixed_size(target)) return true;
+        }
+        return false;
+    }
+
+    // Materialise a temporary for an array assignment whose target and
+    // value designate overlapping storage of the same array. See the
+    // comment above gpu_designator_base: without it the element loops
+    // built below read elements the same statement has already written.
+    //   a(:) = a(n:1:-1)
+    // becomes
+    //   __gpu_alias(1:n) = a(n:1:-1)
+    //   a(:)            = __gpu_alias(1:n)
+    // Both halves are alias-free, and the existing ArraySection and
+    // whole-array lowerings turn each of them into an element loop.
+    void materialize_aliased_assignments(ASR::DoConcurrentLoop_t &x) {
+        bool changed = false;
+        materialize_aliased_in_body(x.m_body, x.n_body, changed);
+    }
+
+    void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
+            bool &changed) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body * 2);
+        bool local_changed = false;
+
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                materialize_aliased_in_body(dl->m_body, dl->n_body, changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    materialize_aliased_in_body(blk->m_body, blk->n_body,
+                        changed);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            stmt)->m_m);
+                materialize_aliased_in_body(ab->m_body, ab->n_body,
+                    changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            ASR::expr_t *target = self_aliasing_target(asgn);
+            // A loop holding an assignment that needs a temporary this
+            // pass cannot size was already declined for offload, so the
+            // second test only guards the statements spliced in since.
+            if (!target || !alias_temp_is_fixed_size(target)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(target));
+
+            if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+                ASR::ArraySection_t *as =
+                    ASR::down_cast<ASR::ArraySection_t>(target);
+                Vec<ASR::expr_t*> extents;
+                extents.reserve(al, as->n_args);
+                for (size_t i = 0; i < as->n_args; i++) {
+                    if (as->m_args[i].m_left && as->m_args[i].m_right
+                            && as->m_args[i].m_step) {
+                        extents.push_back(al,
+                            section_extent(loc, as->m_args[i]));
+                    }
+                }
+                if (extents.n == 0) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                ASR::expr_t *tmp = declare_temp_array(loc, var_scope,
+                    elem_type, extents.p, extents.n, "__gpu_alias");
+                // A full 1:extent:1 section over the temporary, built
+                // twice so the two statements do not share nodes.
+                auto tmp_section = [&]() -> ASR::expr_t* {
+                    Vec<ASR::array_index_t> args;
+                    args.reserve(al, extents.n);
+                    for (size_t i = 0; i < extents.n; i++) {
+                        ASR::array_index_t idx;
+                        idx.loc = loc;
+                        idx.m_left = int32_const(loc, 1);
+                        idx.m_right = extents[i];
+                        idx.m_step = int32_const(loc, 1);
+                        args.push_back(al, idx);
+                    }
+                    return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+                        tmp, args.p, args.n,
+                        ASRUtils::expr_type(tmp), nullptr));
+                };
+                new_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, tmp_section(),
+                        asgn->m_value, nullptr, false, false)));
+                asgn->m_value = tmp_section();
+            } else {
+                Vec<ASR::expr_t*> extents;
+                ASR::ttype_t *tt = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(target)));
+                ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(tt);
+                extents.reserve(al, at->n_dims);
+                for (size_t i = 0; i < at->n_dims; i++) {
+                    extents.push_back(al, at->m_dims[i].m_length);
+                }
+                ASR::expr_t *tmp = declare_temp_array(loc, var_scope,
+                    elem_type, extents.p, extents.n, "__gpu_alias");
+                new_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, tmp, asgn->m_value,
+                        nullptr, false, false)));
+                asgn->m_value = tmp;
+            }
+            new_body.push_back(al, stmt);
+            local_changed = true;
+        }
+
+        if (local_changed) {
+            body = new_body.p;
+            n_body = new_body.n;
+            changed = true;
+        }
+    }
+
     void inline_array_section_assignment(ASR::DoConcurrentLoop_t &x) {
         bool changed = false;
         inline_array_section_in_body(x.m_body, x.n_body, changed);
@@ -6053,6 +6564,13 @@ public:
                 local_array_checker.visit_stmt(*x.m_body[i]);
             }
             if (local_array_checker.has_unsized_local_array) return;
+            // An array assignment whose two sides overlap the same array
+            // needs a temporary (see materialize_aliased_assignments).
+            // If that temporary cannot be fixed-size, decline here,
+            // while the body is still untouched.
+            if (body_needs_unsupported_alias_temp(x.m_body, x.n_body)) {
+                return;
+            }
             // A device function may need a run-time sized local -- an
             // array-constructor temporary sized from an assumed-shape
             // dummy, say -- which Metal cannot declare. Work out here
@@ -6155,6 +6673,12 @@ public:
 
         // Inline IntrinsicArrayFunction Transpose before kernel extraction
         inline_intrinsic_transpose(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Materialise temporaries for assignments whose target and value
+        // overlap the same array, before the element loops below are
+        // built from them.
+        materialize_aliased_assignments(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
