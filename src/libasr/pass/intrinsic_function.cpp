@@ -185,16 +185,19 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             in_ttype = in_ttype_copy;
         }
 
-        // The array_op pass leaves a GPU kernel's array operations alone,
-        // because the Metal and CUDA backends lower them directly. An
-        // elemental intrinsic there therefore still has its array
-        // arguments, and a helper instantiated from the element types
-        // would be handed the arrays it was written with.
-        void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& x) {
+        // TODO(stage-02b): remove this special case. The array_op pass leaves
+        // a GPU kernel's array operations alone, because the Metal and CUDA
+        // backends lower them directly. An elemental intrinsic there
+        // therefore still has its array arguments, and a helper instantiated
+        // from the element types would be handed the arrays it was written
+        // with.
+        void visit_Function(const ASR::Function_t& x) {
             bool in_gpu_kernel_copy = in_gpu_kernel;
-            in_gpu_kernel = true;
+            if (ASRUtils::is_device_function(x)) {
+                in_gpu_kernel = true;
+            }
             ASR::CallReplacerOnExpressionsVisitor<
-                ReplaceIntrinsicFunctionsVisitor>::visit_GpuKernelFunction(x);
+                ReplaceIntrinsicFunctionsVisitor>::visit_Function(x);
             in_gpu_kernel = in_gpu_kernel_copy;
         }
 

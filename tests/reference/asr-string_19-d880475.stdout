@@ -263,6 +263,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [len_string]
                                     [(Var 5 string)]
@@ -362,6 +363,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 string)]
@@ -549,6 +551,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 string)]
@@ -627,6 +630,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [compute_lps]
                                     [(Var 8 string)]
@@ -765,6 +769,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 string)]
@@ -924,6 +929,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 12 string)
@@ -1137,6 +1143,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 string)
@@ -1290,6 +1297,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 10 string)
@@ -1536,6 +1544,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [padl_char_pad_with]
                                     [(Var 11 string)

@@ -140,11 +140,11 @@ public:
         std::vector<std::string> kernel_names;
 
         for (auto &item : tu.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                ASR::GpuKernelFunction_t &kf =
-                    *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+            if (ASRUtils::is_device_kernel(item.second)) {
+                ASR::Function_t &kf =
+                    *ASR::down_cast<ASR::Function_t>(item.second);
                 kernel_names.push_back(std::string(kf.m_name));
-                visit_GpuKernelFunction(kf);
+                visit_device_kernel(kf);
             }
         }
 
@@ -185,7 +185,7 @@ public:
         src << "} _lfortran_cuda_reg;\n";
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+    void visit_device_kernel(const ASR::Function_t &x) {
         std::string name(x.m_name);
 
         struct ArgInfo {

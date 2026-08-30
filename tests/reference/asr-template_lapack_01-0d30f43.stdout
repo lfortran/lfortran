@@ -154,6 +154,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 arg)]
@@ -300,6 +301,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 9 arg)]
@@ -728,6 +730,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 8 transa)
@@ -1016,6 +1019,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_to_t
                                                     gemm]
@@ -1657,6 +1661,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 transa)
@@ -1812,6 +1817,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 a)]
@@ -1902,6 +1908,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 a)]
@@ -2168,6 +2175,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [my_cast_to_real
                                     my_gemm_real]
@@ -2740,6 +2748,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 transa)
@@ -3160,6 +3169,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 11 transa)
@@ -3259,6 +3269,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 18 arg)]
@@ -3687,6 +3698,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 17 transa)
@@ -3999,6 +4011,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_to_t
                                                     gemm]
@@ -4448,6 +4461,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_real
                                                     my_gemm_real]
@@ -4839,6 +4853,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_double
                                                     my_gemm_double]
@@ -5449,6 +5464,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_double
                                                     my_gemm_double]
@@ -5840,6 +5856,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_real
                                                     my_gemm_real]
@@ -5996,6 +6013,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []

@@ -35,7 +35,7 @@ struct GpuVlaWorkspace {
 // For struct array args with allocatable array members, counts 3 extra
 // buffers per member (data, offsets, sizes) as emitted by Metal codegen.
 inline std::pair<int, int> classify_gpu_kernel_args(
-        const ASR::GpuKernelFunction_t &kernel) {
+        const ASR::Function_t &kernel) {
     int n_buffer = 0, n_scalar = 0;
     for (size_t i = 0; i < kernel.n_args; i++) {
         ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
@@ -399,7 +399,7 @@ inline bool try_resolve_array_size_to_arg_var(
 // Find the first struct array kernel arg that has an allocatable array
 // member.  Returns "arr_name.member_name" or "" if none found.
 inline std::string find_struct_alloc_member_key(
-        const ASR::GpuKernelFunction_t &kernel) {
+        const ASR::Function_t &kernel) {
     for (size_t ai = 0; ai < kernel.n_args; ai++) {
         ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
         ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
@@ -431,7 +431,7 @@ inline std::string find_struct_alloc_member_key(
 
 // Scan kernel-scope Allocatable(Array) variables for VLA workspaces.
 inline void scan_kernel_scope_alloc_vlas(
-        const ASR::GpuKernelFunction_t &kernel,
+        const ASR::Function_t &kernel,
         const std::vector<std::string> &arg_names,
         int &buffer_idx,
         std::vector<GpuVlaWorkspace> &result) {
@@ -603,7 +603,7 @@ inline void scan_kernel_scope_alloc_vlas(
 }
 
 // Count VLA workspaces in a kernel without assigning buffer indices.
-inline int count_gpu_vla_workspaces(const ASR::GpuKernelFunction_t &kernel) {
+inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
     int count = 0;
     bool has_struct_alloc_member =
         !find_struct_alloc_member_key(kernel).empty();
@@ -692,7 +692,7 @@ static const int PACKED_BUFFER_ALIGN = 16;
 // Determine whether a kernel needs buffer packing because its total
 // buffer count exceeds Metal's 31-slot limit.
 inline bool gpu_kernel_needs_buffer_packing(
-        const ASR::GpuKernelFunction_t &kernel) {
+        const ASR::Function_t &kernel) {
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
     int n_vla = count_gpu_vla_workspaces(kernel);
     int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
@@ -702,7 +702,7 @@ inline bool gpu_kernel_needs_buffer_packing(
 // Compute the Metal buffer index where VLA workspace buffers start.
 // Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
 // Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
-inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
+inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
     if (gpu_kernel_needs_buffer_packing(kernel)) {
         return 2;
     }
@@ -714,7 +714,7 @@ inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
 // Returns workspace metadata for each VLA found, with buffer indices
 // assigned sequentially starting after the kernel's packed arguments.
 inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
-        const ASR::GpuKernelFunction_t &kernel) {
+        const ASR::Function_t &kernel) {
     // Build the kernel argument name list for mapping dim vars to arg indices
     std::vector<std::string> arg_names;
     for (size_t i = 0; i < kernel.n_args; i++) {
@@ -859,7 +859,7 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
 // "struct_name.member_name" to the per-element size (number of elements)
 // determined by the VLA workspace dimensions.
 inline std::map<std::string, int64_t> find_struct_member_vla_write_sizes(
-        const ASR::GpuKernelFunction_t &kernel,
+        const ASR::Function_t &kernel,
         const std::vector<GpuVlaWorkspace> &vla_workspaces) {
     std::map<std::string, int64_t> result;
     std::map<std::string, const GpuVlaWorkspace*> ws_by_name;
@@ -1046,7 +1046,7 @@ inline std::map<std::string, int64_t> find_struct_member_vla_write_sizes(
 // another struct array member (e.g., b(i)%v = x where x comes from a(i)%v).
 // Returns a map from target "struct.member" key to source "struct.member" key.
 inline std::map<std::string, std::string> find_struct_member_vla_runtime_sources(
-        const ASR::GpuKernelFunction_t &kernel) {
+        const ASR::Function_t &kernel) {
     std::map<std::string, std::string> result;
     for (size_t si = 0; si < kernel.n_body; si++) {
         ASR::stmt_t *stmt = kernel.m_body[si];

@@ -6993,13 +6993,17 @@ public:
                 nullptr, false, false, false, false, false, nullptr, 0, false,
                 ASR::exec_spaceType::Device));
 
-        // 6. Create GpuKernelFunction
-        ASR::asr_t *kernel_func = ASR::make_GpuKernelFunction_t(al, loc,
+        // 6. Create the kernel as a Device function. A kernel is
+        // subroutine-shaped, so it has no return variable, and `fn_sig` is
+        // built above rather than by `make_Function_t_util` because the
+        // argument types must not carry scope-bound dimension expressions.
+        ASR::asr_t *kernel_func = ASR::make_Function_t(al, loc,
             kernel_scope, s2c(al, kernel_name), fn_sig,
             nullptr, 0,
             kernel_args.p, kernel_args.n,
             kernel_body.p, kernel_body.n,
-            ASR::accessType::Public);
+            nullptr, ASR::accessType::Public, false, false,
+            nullptr, nullptr, nullptr);
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 

@@ -260,6 +260,26 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+
+// The execution space a function runs in. A Device function is a GPU kernel
+// or a routine only reachable from one; a Host function runs on the CPU.
+static inline ASR::exec_spaceType get_exec_space(const ASR::Function_t& x) {
+    return ASRUtils::get_FunctionType(x)->m_exec_space;
+}
+
+static inline bool is_device_function(const ASR::Function_t& x) {
+    return ASRUtils::get_exec_space(x) == ASR::exec_spaceType::Device;
+}
+
+// True when `s` is the entry point of a GPU kernel, i.e. a Device function
+// that the Metal/CUDA code generators emit and that a DeviceLaunch targets.
+static inline bool is_device_kernel(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::is_device_function(
+        *ASR::down_cast<ASR::Function_t>(s));
+}
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {
     public:
@@ -665,7 +685,6 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
         case ASR::symbolType::Namelist: return "Namelist";
-        case ASR::symbolType::GpuKernelFunction: return "GpuKernelFunction";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -1044,9 +1063,6 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
-        }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_name;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -1528,9 +1544,6 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
         }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab->parent;
-        }
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
@@ -1585,9 +1598,6 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
-        }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -5793,8 +5803,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
         while (struct_t_import_scope->asr_owner == nullptr
                || !(ASR::is_a<ASR::Module_t>(
                        *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)) ||
-                    ASR::is_a<ASR::GpuKernelFunction_t>(
-                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
+                    ASRUtils::is_device_kernel(
+                       ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
             struct_t_import_scope = struct_t_import_scope->parent;
             if (struct_t_import_scope->asr_owner != nullptr
                 && !ASR::is_a<ASR::symbol_t>(*struct_t_import_scope->asr_owner)) {

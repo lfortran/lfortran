@@ -314,6 +314,13 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             for( auto& item: xx.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
+                    // TODO(stage-02b): remove this skip. A device function is
+                    // emitted as Metal/CUDA source, where array arguments are
+                    // already plain buffers, so it must not be specialised
+                    // into a pass-array-by-data variant.
+                    if( ASRUtils::is_device_function(*subrout) ) {
+                        continue;
+                    }
                     pass_array_by_data_functions.push_back(subrout);
                     std::vector<size_t> arg_indices;
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
@@ -1488,7 +1495,6 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 if ( ASR::is_a<ASR::Module_t>(*item.second) ||
                     ASR::is_a<ASR::Program_t>(*item.second) ||
                     ASR::is_a<ASR::Function_t>(*item.second) ||
-                    ASR::is_a<ASR::GpuKernelFunction_t>(*item.second) ||
                     ASR::is_a<ASR::Struct_t>(*item.second) ||
                     ASR::is_a<ASR::Block_t>(*item.second) ||
                     ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -1588,10 +1594,6 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 
         void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
-            visit_Unit(x);
-        }
-
-        void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& x) {
             visit_Unit(x);
         }
 

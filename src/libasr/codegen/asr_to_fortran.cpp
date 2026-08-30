@@ -358,8 +358,7 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -464,8 +463,7 @@ public:
                         *down_cast<ASR::Function_t>(item.second))) {
                 continue;
             }
-            if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -553,7 +551,9 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                if (ASRUtils::is_device_function(*f)) {
+                    func_name.push_back(item.first);
+                } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
                     r += src;
                 } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
@@ -561,9 +561,6 @@ public:
                 } else {
                     func_name.push_back(item.first);
                 }
-            }
-            if (is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                func_name.push_back(item.first);
             }
         }
         for (size_t i = 0; i < interface_func_name.size(); i++) {
@@ -600,6 +597,10 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_device_function(x)) {
+            visit_device_kernel(x);
+            return;
+        }
         if (ASRUtils::is_bare_implicit_interface(x)) {
             // `integer, external :: f` — not an interface block and not a
             // bodiless implementation.
@@ -800,7 +801,10 @@ public:
         src = r;
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+    // A GPU kernel is subroutine-shaped and its arguments carry no intent
+    // or interface attributes, so it is printed directly rather than through
+    // the general function printer.
+    void visit_device_kernel(const ASR::Function_t &x) {
         std::string r = indent;
         r += "subroutine";
         r += " ";

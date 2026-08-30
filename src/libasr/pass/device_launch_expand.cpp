@@ -167,8 +167,8 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 
 // True when every argument of this launch has a shape the pass can expand.
 static bool launch_is_supported(const ASR::GpuKernelLaunch_t &x) {
-    ASR::GpuKernelFunction_t *kernel =
-        ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
+    ASR::Function_t *kernel =
+        ASR::down_cast<ASR::Function_t>(x.m_kernel);
     if (x.n_args != kernel->n_args) {
         return unsupported("a kernel that takes a different number of "
             "arguments");
@@ -471,7 +471,7 @@ class DeviceLaunchExpandVisitor :
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
-                const ASR::GpuKernelFunction_t &kernel) {
+                const ASR::Function_t &kernel) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::Struct_t *st = get_struct(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
@@ -645,8 +645,8 @@ class DeviceLaunchExpandVisitor :
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
-            ASR::GpuKernelFunction_t *kernel =
-                ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
+            ASR::Function_t *kernel =
+                ASR::down_cast<ASR::Function_t>(x.m_kernel);
             std::string kernel_name(kernel->m_name);
 
             std::vector<BufferArg> buffers;

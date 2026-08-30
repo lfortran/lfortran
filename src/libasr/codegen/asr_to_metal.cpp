@@ -604,7 +604,7 @@ public:
     // index is allocated and its compile-time size. Then scans
     // kernel body SubroutineCalls to map caller local variables
     // to those sizes, and propagates through assignments.
-    void prescan_alloc_sizes(const ASR::GpuKernelFunction_t &kf) {
+    void prescan_alloc_sizes(const ASR::Function_t &kf) {
         alloc_array_sizes.clear();
         alloc_array_size_exprs.clear();
         ptr_to_local_alloc.clear();
@@ -1899,7 +1899,7 @@ public:
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
         GpuMathHelperScanner scanner;
         for (auto &item : tu.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (ASRUtils::is_device_kernel(item.second)) {
                 scanner.visit_symbol(*item.second);
             }
         }
@@ -1944,9 +1944,9 @@ public:
         std::set<std::string> emitted_structs;
         std::vector<ASR::Struct_t*> ordered_structs;
         for (auto &item : tu.m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) continue;
-            ASR::GpuKernelFunction_t &kf =
-                *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second);
+            if (!ASRUtils::is_device_kernel(item.second)) continue;
+            ASR::Function_t &kf =
+                *ASR::down_cast<ASR::Function_t>(item.second);
             for (auto &kitem : kf.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Struct_t>(*kitem.second)) {
                     collect_structs_ordered(
@@ -1963,9 +1963,9 @@ public:
 
         emitted_funcs.clear();
         for (auto &item : tu.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                visit_GpuKernelFunction(
-                    *ASR::down_cast<ASR::GpuKernelFunction_t>(item.second));
+            if (ASRUtils::is_device_kernel(item.second)) {
+                visit_device_kernel(
+                    *ASR::down_cast<ASR::Function_t>(item.second));
             }
         }
     }
@@ -2546,7 +2546,7 @@ public:
         }
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+    void visit_device_kernel(const ASR::Function_t &x) {
         std::string name(x.m_name);
         local_alloc_arrays.clear();
         ptr_section_sizes.clear();

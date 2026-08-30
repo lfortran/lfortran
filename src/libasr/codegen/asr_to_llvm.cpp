@@ -2028,7 +2028,7 @@ public:
         if (compiler_options.gpu_metal_source.empty()) return;
         std::vector<std::string> kernel_names;
         for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (ASRUtils::is_device_kernel(item.second)) {
                 kernel_names.push_back(item.first);
             }
         }
@@ -8294,6 +8294,11 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_device_function(x)) {
+            // Device functions are not lowered to LLVM IR. They are emitted
+            // as Metal/CUDA source by the device code generator.
+            return;
+        }
         if (ASRUtils::is_bare_implicit_interface(x)) {
             // deftype ImplicitInterface: no signature to emit. Call sites
             // lower their own inferred interface.
@@ -22216,11 +22221,6 @@ public:
         // No-op: coarray sync memory is not yet supported at runtime
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t & /* x */) {
-        // GPU kernel functions are not lowered to LLVM IR.
-        // They are emitted as Metal/CUDA source by the device emitter.
-    }
-
     llvm::Function* get_gpu_runtime_func(const std::string &name,
             llvm::FunctionType *ftype) {
         llvm::Function *fn = module->getFunction(name);
@@ -26550,7 +26550,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // Uncomment for debugging the ASR after the transformation
     // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
 
-    // GPU Metal: generate Metal shader source after passes have created GpuKernelFunction nodes
+    // GPU Metal: generate Metal shader source after passes have created the kernel functions
     // Always regenerate for each translation unit so that separate compilation
     // picks up the correct kernel names for every file.
     if (co.gpu_backend == "metal") {
@@ -26561,7 +26561,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         }
     }
 
-    // GPU CUDA: generate CUDA kernel source after passes have created GpuKernelFunction nodes
+    // GPU CUDA: generate CUDA kernel source after passes have created the kernel functions
     if (co.gpu_backend == "cuda" && co.gpu_cuda_source.empty()) {
         diag::Diagnostics cuda_diag;
         Result<std::string> cuda_res = asr_to_cuda(al, asr, cuda_diag, co);

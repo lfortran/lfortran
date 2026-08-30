@@ -893,6 +893,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 input)
@@ -1121,6 +1122,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [fnv_1a_char]
                                     [(Var 5 input)
@@ -1464,6 +1466,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 line)]
@@ -1784,6 +1787,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 strings)

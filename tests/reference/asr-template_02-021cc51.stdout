@@ -202,6 +202,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [~neq_intrinsic1]
                                     [(Var 12 vec)]
@@ -608,6 +609,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [~neq_intrinsic]
                                     [(Var 10 vec)]
@@ -940,6 +942,7 @@
                                         .false.
                                         []
                                         .true.
+                                        Host
                                     )
                                     []
                                     [(Var 9 arg0)
@@ -1056,6 +1059,7 @@
                                         .false.
                                         []
                                         .true.
+                                        Host
                                     )
                                     []
                                     [(Var 11 arg0)
@@ -1384,6 +1388,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [ne]
                                                     [(Var 7 vec)]
@@ -1700,6 +1705,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 lhs)
@@ -1853,6 +1859,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 lhs)
