@@ -684,17 +684,16 @@ public:
         ASR::ArrayItem_t *ai = ref.item;
         ASR::StructInstanceMember_t *sim = ref.member;
         int64_t d = ref.dim;
-        std::string arr_name = ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
+        std::string arr_name = ASRUtils::symbol_name(ref.base->m_v);
         ASR::symbol_t *host_arr = orig_scope->resolve_symbol(arr_name);
         if (!host_arr) return false;
         ASR::ttype_t *size_type = ASRUtils::extract_type(x->m_type);
         const Location &loc = x->base.base.loc;
 
         Vec<ASR::array_index_t> host_idx;
-        host_idx.reserve(al, ai->n_args);
+        host_idx.reserve(al, ai ? ai->n_args : 0);
         std::string key = arr_name;
-        for (size_t k = 0; k < ai->n_args; k++) {
+        for (size_t k = 0; ai != nullptr && k < ai->n_args; k++) {
             ASR::array_index_t &ix = ai->m_args[k];
             ASR::expr_t *host_sub = nullptr;
             std::string tag;
@@ -744,10 +743,13 @@ public:
                     ASR::accessType::Public,
                     ASR::presenceType::Required, false));
             kernel_scope->add_symbol(param_name, sym);
-            ASR::expr_t *host_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(
-                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, host_arr)),
-                host_idx.p, host_idx.n, ai->m_type, ai->m_storage_format,
-                nullptr));
+            ASR::expr_t *host_item = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, host_arr));
+            if (ai != nullptr) {
+                host_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+                    host_item, host_idx.p, host_idx.n, ai->m_type,
+                    ai->m_storage_format, nullptr));
+            }
             ASR::expr_t *host_member = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc, host_item,
                     host_member_ref(sim->m_m), sim->m_type, nullptr));
