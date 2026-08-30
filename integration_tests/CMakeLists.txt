@@ -205,9 +205,13 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 OUTPUT_FILE ${c_file}
                 RESULT_VARIABLE convert_result
             )
+            # The header goes into this project's own binary directory: the
+            # source tree already holds the config.h of the compiler build, and
+            # overwriting it here would replace it with one configured from
+            # this project's (unset) variables.
             configure_file(
                 ${CMAKE_SOURCE_DIR}/../src/libasr/config.h.in
-                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h
+                ${CMAKE_BINARY_DIR}/generated/libasr/config.h
                 @ONLY
             )
             add_executable(${name}
@@ -216,6 +220,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 ${c_file}
             )
             target_include_directories(${name} PUBLIC
+                ${CMAKE_BINARY_DIR}/generated
                 ${CMAKE_SOURCE_DIR}/../src/
                 ${CMAKE_SOURCE_DIR}/../src/libasr/runtime
             )
