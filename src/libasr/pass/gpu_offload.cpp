@@ -451,6 +451,86 @@ public:
     }
 };
 
+// Counts how many times a given symbol is written to within a list of
+// statements. Used to distinguish a genuine ASSOCIATE selector temporary
+// (written exactly once, at its point of definition) from an ordinary
+// block-local variable such as the counter that array-constructor
+// lowering introduces, which is written repeatedly and therefore must
+// not be folded into a constant.
+class AssignmentTargetCounter :
+    public ASR::BaseWalkVisitor<AssignmentTargetCounter> {
+public:
+    ASR::symbol_t *target;
+    size_t count;
+
+    AssignmentTargetCounter(ASR::symbol_t *target_)
+        : target(target_), count(0) {}
+
+    void count_var(ASR::expr_t *e) {
+        if (e && ASR::is_a<ASR::Var_t>(*e) &&
+                ASR::down_cast<ASR::Var_t>(e)->m_v == target) {
+            count++;
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        count_var(x.m_target);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        count_var(x.m_target);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        count_var(x.m_head.m_v);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) {
+            count_var(x.m_head[i].m_v);
+        }
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        // Conservatively treat any appearance as an argument as a write
+        for (size_t i = 0; i < x.n_args; i++) {
+            count_var(x.m_args[i].m_value);
+        }
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// True if `sym` is written exactly once across `body` — the shape of a
+// single-assignment ASSOCIATE selector binding, which may safely be
+// folded into its value at every use site.
+static bool is_single_assignment_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    AssignmentTargetCounter counter(sym);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    return counter.count == 1;
+}
+
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
@@ -6170,7 +6250,9 @@ public:
                         if (ASR::is_a<ASR::Variable_t>(*sym) &&
                             ASR::down_cast<ASR::Variable_t>(sym)
                                 ->m_parent_symtab == ab->m_symtab &&
-                            assoc_map.find(sym) == assoc_map.end()) {
+                            assoc_map.find(sym) == assoc_map.end() &&
+                            is_single_assignment_binding(sym,
+                                ab->m_body, ab->n_body)) {
                             assoc_map[sym] = asgn->m_value;
                         } else {
                             resolved_stmts.push_back(al,
