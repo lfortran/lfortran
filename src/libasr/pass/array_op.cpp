@@ -645,7 +645,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Do nothing
     }
 
-    // TODO(stage-02b): remove this skip. GPU kernel functions are currently
+    // TODO(stage-02c): remove this skip. GPU kernel functions are currently
     // emitted by the Metal/CUDA codegen, which handles array operations
     // directly. The array_op pass must not transform functions inside them
     // (e.g. expanding elemental functions into array loops would produce

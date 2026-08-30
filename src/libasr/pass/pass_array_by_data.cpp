@@ -48,7 +48,9 @@ namespace LCompilers {
 // True when a procedure is part of the device code: either it runs on the
 // device itself, or it is nested inside a procedure that does. gpu_offload
 // copies every routine a kernel calls into the kernel's own scope, so such a
-// copy is reachable from nowhere but the kernel.
+// copy is reachable from nowhere but the kernel. Once a device call-graph
+// closure pass marks those copies as running on the device too, this becomes
+// a plain ASRUtils::is_device_function check.
 static bool runs_on_device(ASR::Function_t* x) {
     for( SymbolTable* s = x->m_symtab; s != nullptr; s = s->parent ) {
         if( s->asr_owner == nullptr ||

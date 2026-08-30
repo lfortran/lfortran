@@ -2248,7 +2248,7 @@ public:
         }
     }
 
-    // TODO(stage-02b): also verify that a Device function only calls Device
+    // TODO: also verify that a Device function only calls Device
     // or HostDevice functions. That invariant does not hold yet: a kernel body
     // is copied verbatim from the host loop, so it still calls Host functions
     // until the device call-graph closure pass exists.

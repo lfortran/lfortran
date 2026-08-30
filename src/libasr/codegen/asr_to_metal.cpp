@@ -1463,6 +1463,19 @@ public:
         return !array_extents_are_explicit(farg->m_type);
     }
 
+    // A bound the device code cannot read. An array reaches the device as a
+    // bare pointer, so a bound of it has to be an expression the device code
+    // can evaluate; when it is not, say so instead of writing a comment
+    // where the expression belongs.
+    void unresolved_upper_bound(const Location &loc,
+            const std::string &name) {
+        std::string what = name.empty()
+            ? std::string("an array")
+            : ("'" + name + "'");
+        throw CodeGenError("cannot determine the upper bound of " + what
+            + " on the gpu", loc);
+    }
+
     // Emit the total size of an array expression (product of dimensions).
     // Used at function call sites to pass array sizes for DescriptorArray
     // parameters that are represented as device pointers in Metal.
@@ -4648,7 +4661,7 @@ public:
                                                 if (sit != alloc_array_sizes.end()) {
                                                     src << sit->second;
                                                 } else {
-                                                    src << "/* unknown ubound for '" << vname << "' */";
+                                                    unresolved_upper_bound(ab->base.base.loc, vname);
                                                 }
                                             }
                                         }
@@ -4680,15 +4693,15 @@ public:
                                                 if (fpit != func_array_size_params.end()) {
                                                     src << fpit->second;
                                                 } else {
-                                                    src << "/* unknown ubound for cast('" << vname << "') */";
+                                                    unresolved_upper_bound(ab->base.base.loc, vname);
                                                 }
                                             }
                                         }
                                     } else {
-                                        src << "/* unknown ubound (cast non-var) */";
+                                        unresolved_upper_bound(ab->base.base.loc, "");
                                     }
                                 } else {
-                                    src << "/* unknown ubound */";
+                                    unresolved_upper_bound(ab->base.base.loc, "");
                                 }
                             }
                         } else {
