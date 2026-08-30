@@ -87,9 +87,8 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
 }
 
 lfortran_gpu_kernel* lfortran_gpu_load_kernel(
-    lfortran_gpu_ctx* ctx, const char* source, const char* entry_point)
+    lfortran_gpu_ctx* ctx, const char* entry_point)
 {
-    (void)source; // kernels are pre-compiled, source is unused
     if (!ctx || !entry_point) return NULL;
 
     lfortran_gpu_thunk_t func = NULL;

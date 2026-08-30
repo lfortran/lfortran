@@ -13,8 +13,10 @@ typedef struct lfortran_gpu_kernel lfortran_gpu_kernel;
 lfortran_gpu_ctx*    lfortran_gpu_init(void);
 void                 lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx);
 
+// The device source is registered by the device code generator, so a kernel
+// is looked up by name only.
 lfortran_gpu_kernel* lfortran_gpu_load_kernel(
-    lfortran_gpu_ctx* ctx, const char* source, const char* entry_point);
+    lfortran_gpu_ctx* ctx, const char* entry_point);
 void                 lfortran_gpu_release_kernel(lfortran_gpu_kernel* k);
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,

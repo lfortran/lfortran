@@ -2015,8 +2015,61 @@ public:
             }
         }
 
+        // Metal has no separate device object file, so the shader source this
+        // translation unit generated is embedded here and registered under
+        // every kernel name it defines. Loading a kernel is then a name
+        // lookup, exactly as with CUDA.
+        emit_gpu_metal_source_registration(x);
+
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
+    }
+
+    void emit_gpu_metal_source_registration(const ASR::TranslationUnit_t &x) {
+        if (compiler_options.gpu_metal_source.empty()) return;
+        std::vector<std::string> kernel_names;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+                kernel_names.push_back(item.first);
+            }
+        }
+        if (kernel_names.empty()) return;
+
+        llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
+            llvm::Type::getInt8Ty(context));
+        llvm::Type *void_type = llvm::Type::getVoidTy(context);
+        llvm::FunctionType *reg_ft = llvm::FunctionType::get(
+            void_type, {i8_ptr, i8_ptr}, false);
+        llvm::Function *reg_fn = get_gpu_runtime_func(
+            "lfortran_gpu_register_metal_source", reg_ft);
+
+        // Under separate compilation each object file carries its own shader
+        // source, so the registrar is named after the first kernel to keep it
+        // unique per translation unit.
+        llvm::FunctionType *ctor_ft = llvm::FunctionType::get(
+            void_type, {}, false);
+        llvm::Function *ctor_fn = llvm::Function::Create(ctor_ft,
+            llvm::Function::InternalLinkage,
+            "__lfortran_gpu_metal_registrar_" + kernel_names[0], module.get());
+        llvm::IRBuilder<> ctor_builder(
+            llvm::BasicBlock::Create(context, "entry", ctor_fn));
+#if LLVM_VERSION_MAJOR >= 20
+        llvm::Value *src = ctor_builder.CreateGlobalString(
+            compiler_options.gpu_metal_source, "__lfortran_gpu_metal_source");
+#else
+        llvm::Value *src = ctor_builder.CreateGlobalStringPtr(
+            compiler_options.gpu_metal_source, "__lfortran_gpu_metal_source");
+#endif
+        for (auto &kernel_name : kernel_names) {
+#if LLVM_VERSION_MAJOR >= 20
+            llvm::Value *name = ctor_builder.CreateGlobalString(kernel_name);
+#else
+            llvm::Value *name = ctor_builder.CreateGlobalStringPtr(kernel_name);
+#endif
+            ctor_builder.CreateCall(reg_fn, {name, src});
+        }
+        ctor_builder.CreateRetVoid();
+        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
     }
 
     template <typename T>
@@ -22191,46 +22244,23 @@ public:
         llvm::Function *init_fn = get_gpu_runtime_func("lfortran_gpu_init", init_ft);
         llvm::Value *gpu_ctx = builder->CreateCall(init_fn, {});
 
-        // 2. Get the GPU source string and kernel name
+        // 2. Get the kernel name
         ASR::GpuKernelFunction_t *kernel_func =
             ASR::down_cast<ASR::GpuKernelFunction_t>(x.m_kernel);
         std::string kernel_name(kernel_func->m_name);
 
-        // The GPU source is passed via compiler_options
-        std::string global_name = "__lfortran_gpu_source_" + kernel_name;
-        llvm::Value *gpu_src;
-        if (!compiler_options.gpu_metal_source.empty()) {
 #if LLVM_VERSION_MAJOR >= 20
-            gpu_src = builder->CreateGlobalString(
-                compiler_options.gpu_metal_source, global_name);
-#else
-            gpu_src = builder->CreateGlobalStringPtr(
-                compiler_options.gpu_metal_source, global_name);
-#endif
-        } else if (!compiler_options.gpu_cuda_source.empty()) {
-            // CUDA kernels are pre-compiled; pass empty string
-#if LLVM_VERSION_MAJOR >= 20
-            gpu_src = builder->CreateGlobalString("", global_name);
-        } else {
-            gpu_src = builder->CreateGlobalString("", global_name);
-        }
-
         llvm::Value *entry_name = builder->CreateGlobalString(kernel_name);
 #else
-            gpu_src = builder->CreateGlobalStringPtr("", global_name);
-        } else {
-            gpu_src = builder->CreateGlobalStringPtr("", global_name);
-        }
-
         llvm::Value *entry_name = builder->CreateGlobalStringPtr(kernel_name);
 #endif
 
-        // 3. lfortran_gpu_load_kernel(ctx, source, entry_point) -> kernel
+        // 3. lfortran_gpu_load_kernel(ctx, entry_point) -> kernel
         llvm::FunctionType *load_ft = llvm::FunctionType::get(
-            i8_ptr, {i8_ptr, i8_ptr, i8_ptr}, false);
+            i8_ptr, {i8_ptr, i8_ptr}, false);
         llvm::Function *load_fn = get_gpu_runtime_func("lfortran_gpu_load_kernel", load_ft);
         llvm::Value *gpu_kernel = builder->CreateCall(load_fn,
-            {gpu_ctx, gpu_src, entry_name});
+            {gpu_ctx, entry_name});
 
         // 4. Set arguments
         llvm::FunctionType *set_buffer_ft = llvm::FunctionType::get(
