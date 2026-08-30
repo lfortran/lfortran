@@ -491,6 +491,39 @@ inline ASR::expr_t* find_gpu_local_scalar_binding(ASR::symbol_t *sym,
     return counter.value;
 }
 
+// The extent expression of dimension `d` (0-based) of a kernel-local
+// array.  An automatic array carries its extents in its own `Array_t`;
+// an allocatable carries none of its own, so they come from the ALLOCATE
+// that sizes it in the same statement list.  Returns nullptr when the
+// dimension has no extent expression to be found there.
+inline ASR::expr_t* find_gpu_local_array_extent(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body, size_t d) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+    if (s == nullptr || !ASR::is_a<ASR::Variable_t>(*s)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(s);
+    ASR::ttype_t *inner =
+        ASRUtils::type_get_past_allocatable_pointer(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*inner)) return nullptr;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+    if (d < arr->n_dims && arr->m_dims[d].m_length) {
+        return arr->m_dims[d].m_length;
+    }
+    std::string vname(var->m_name);
+    ASR::Allocate_t *alloc = find_allocate_for_var(body, n_body, vname);
+    if (alloc == nullptr) return nullptr;
+    for (size_t ai = 0; ai < alloc->n_args; ai++) {
+        if (!alloc->m_args[ai].m_a) continue;
+        if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a)) continue;
+        if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
+                alloc->m_args[ai].m_a)->m_v) != vname) {
+            continue;
+        }
+        if (d >= alloc->m_args[ai].n_dims) return nullptr;
+        return alloc->m_args[ai].m_dims[d].m_length;
+    }
+    return nullptr;
+}
+
 // Build a host-evaluable expression tree for a workspace dimension.
 // Every leaf must be either an integer constant, a scalar kernel argument,
 // or a derived-type component chain rooted at a kernel argument; every
@@ -547,6 +580,87 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
             n_body, substituted, nodes);
         substituted.erase(sym);
         return root;
+    }
+    if (ASR::is_a<ASR::ArraySize_t>(*expr)) {
+        // `size(a)` of an array that is itself sized by the kernel
+        // arguments: a kernel-argument array, whose extents the host
+        // already passes as `__dim_<name>_<d>` scalars, or a kernel-local
+        // array whose own extent expression can be built here in turn.
+        // A whole-array `size(a)` is the product of every dimension.
+        ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
+        if (!as->m_v || !ASR::is_a<ASR::Var_t>(*as->m_v)) return -1;
+        ASR::symbol_t *arr_sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+        if (arr_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*arr_sym)) {
+            return -1;
+        }
+        ASR::Variable_t *arr_var =
+            ASR::down_cast<ASR::Variable_t>(arr_sym);
+        ASR::ttype_t *arr_type =
+            ASRUtils::type_get_past_allocatable_pointer(arr_var->m_type);
+        if (!ASR::is_a<ASR::Array_t>(*arr_type)) return -1;
+        size_t n_dims = ASR::down_cast<ASR::Array_t>(arr_type)->n_dims;
+        if (n_dims == 0) return -1;
+        size_t d_begin = 0;
+        size_t d_end = n_dims;
+        if (as->m_dim) {
+            int64_t dim_val;
+            if (!try_eval_int_constant(as->m_dim, dim_val)) return -1;
+            if (dim_val < 1 || (size_t)dim_val > n_dims) return -1;
+            d_begin = (size_t)dim_val - 1;
+            d_end = d_begin + 1;
+        }
+        std::string arr_name(arr_var->m_name);
+        bool is_kernel_arg = false;
+        for (size_t a = 0; a < arg_names.size(); a++) {
+            if (arg_names[a] == arr_name) {
+                is_kernel_arg = true;
+                break;
+            }
+        }
+        if (substituted.count(arr_sym)) return -1;
+        substituted.insert(arr_sym);
+        int64_t acc = -1;
+        for (size_t d = d_begin; d < d_end; d++) {
+            int64_t one = -1;
+            if (is_kernel_arg) {
+                std::string dim_arg = "__dim_" + arr_name + "_"
+                    + std::to_string(d);
+                for (size_t a = 0; a < arg_names.size(); a++) {
+                    if (arg_names[a] != dim_arg) continue;
+                    GpuVlaDimNode n;
+                    n.kind = GpuVlaDimNode::Kind::CallArg;
+                    n.call_arg_index = (int64_t)a;
+                    nodes.push_back(n);
+                    one = (int64_t)nodes.size() - 1;
+                    break;
+                }
+            } else {
+                ASR::expr_t *extent = find_gpu_local_array_extent(
+                    arr_sym, body, n_body, d);
+                if (extent) {
+                    one = build_gpu_vla_dim_expr(extent, arg_names, body,
+                        n_body, substituted, nodes);
+                }
+            }
+            if (one < 0) {
+                substituted.erase(arr_sym);
+                return -1;
+            }
+            if (acc < 0) {
+                acc = one;
+            } else {
+                GpuVlaDimNode n;
+                n.kind = GpuVlaDimNode::Kind::BinOp;
+                n.binop = ASR::binopType::Mul;
+                n.left = acc;
+                n.right = one;
+                nodes.push_back(n);
+                acc = (int64_t)nodes.size() - 1;
+            }
+        }
+        substituted.erase(arr_sym);
+        return acc;
     }
     if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
         size_t arg_index = 0;
