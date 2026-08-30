@@ -106,6 +106,96 @@ inline std::string gpu_dim_arg_name(const std::string &name, size_t d) {
     return "__dim_" + name + "_" + std::to_string(d);
 }
 
+// One allocatable array component of a kernel argument that is an array of
+// derived type.  Such a component is handed to the device as three buffers
+// -- the concatenated element data, the per-element offsets into it and the
+// per-element sizes.
+struct GpuStructMemberBuffer {
+    std::string name;
+    ASR::Variable_t *var = nullptr;
+    // Position of the component in the LLVM layout of the struct.  A type
+    // that extends another keeps the parent as field 0 and its own
+    // components follow it.
+    int field_index = -1;
+};
+
+// The derived type of a kernel argument that is an array of one, or nullptr
+// when the argument is not such an array.
+inline ASR::Struct_t* gpu_struct_array_arg_decl(ASR::expr_t *kernel_arg) {
+    if (!kernel_arg || !ASR::is_a<ASR::Var_t>(*kernel_arg)) return nullptr;
+    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(kernel_arg)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (!ASRUtils::is_array(var->m_type)) return nullptr;
+    if (!var->m_type_declaration) return nullptr;
+    ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(
+        var->m_type_declaration);
+    if (!ASR::is_a<ASR::Struct_t>(*decl)) return nullptr;
+    return ASR::down_cast<ASR::Struct_t>(decl);
+}
+
+// The allocatable array components that a kernel argument contributes as
+// device buffers, or an empty list when the argument is not an array of a
+// derived type that has any.
+//
+// The Metal kernel signature, the buffer accounting in
+// `classify_gpu_kernel_args` and the host launch code in the LLVM backend
+// all enumerate these components through this one function.  Were they to
+// disagree, every buffer index after the struct argument would shift and the
+// kernel would read uninitialized memory for the arguments that follow --
+// with no diagnostic at all.  The list is therefore derived from the kernel
+// parameter and never from the actual argument: the actual may be any
+// expression that yields the array (`s%points_`, say), while the parameter
+// is what the shader signature is written from.
+//
+// A component inherited from a parent type is not reachable by a single
+// field index into the struct, so the host cannot marshal it; a type with
+// such a component contributes no member buffers at all, which keeps the
+// three emitters in agreement instead of letting them drift.
+inline std::vector<GpuStructMemberBuffer> gpu_struct_member_buffers(
+        ASR::expr_t *kernel_arg) {
+    std::vector<GpuStructMemberBuffer> result;
+    ASR::Struct_t *st = gpu_struct_array_arg_decl(kernel_arg);
+    if (!st) return result;
+    int first_own_field = st->m_parent ? 1 : 0;
+    for (auto &member : ASRUtils::collect_allocatable_array_members(st)) {
+        GpuStructMemberBuffer entry;
+        entry.name = member.first;
+        entry.var = member.second;
+        for (size_t f = 0; f < st->n_members; f++) {
+            if (entry.name == st->m_members[f]) {
+                entry.field_index = first_own_field + (int)f;
+                break;
+            }
+        }
+        if (entry.field_index < 0) return {};
+        result.push_back(entry);
+    }
+    return result;
+}
+
+// Name of the flattened element-data buffer of component `member` of the
+// struct-array kernel argument `arg`.  The offsets and sizes buffers that
+// go with it are spelled by the two functions below.  All three are used by
+// the Metal code generator only, but they live here next to
+// `gpu_struct_member_buffers` so that the buffer group is described in one
+// place.
+inline std::string gpu_struct_member_data_name(const std::string &arg,
+        const std::string &member) {
+    return "__data_" + arg + "_" + member;
+}
+
+inline std::string gpu_struct_member_offsets_name(const std::string &arg,
+        const std::string &member) {
+    return "__offsets_" + arg + "_" + member;
+}
+
+inline std::string gpu_struct_member_sizes_name(const std::string &arg,
+        const std::string &member) {
+    return "__sizes_" + arg + "_" + member;
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
@@ -122,18 +212,10 @@ inline std::pair<int, int> classify_gpu_kernel_args(
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(type))) {
             n_buffer++;
-            if (ASRUtils::is_array(type) && var->m_type_declaration) {
-                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-                    var->m_type_declaration);
-                if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
-                    // Data, offsets and sizes buffers per allocatable
-                    // array component, inherited ones included
-                    n_buffer += 3 * (int)
-                        ASRUtils::collect_allocatable_array_members(
-                            st).size();
-                }
-            }
+            // Data, offsets and sizes buffers per allocatable array
+            // component of the argument's derived type
+            n_buffer += 3 * (int)
+                gpu_struct_member_buffers(kernel.m_args[i]).size();
         } else {
             n_scalar++;
         }

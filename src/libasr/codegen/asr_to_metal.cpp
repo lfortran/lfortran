@@ -2619,17 +2619,6 @@ public:
             *ASRUtils::extract_type(type));
     }
 
-    // Get the Struct_t for a variable that is either a struct or array-of-struct
-    ASR::Struct_t* get_struct_decl(ASR::Variable_t *var) {
-        if (!var->m_type_declaration) return nullptr;
-        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-            var->m_type_declaration);
-        if (ASR::is_a<ASR::Struct_t>(*s)) {
-            return ASR::down_cast<ASR::Struct_t>(s);
-        }
-        return nullptr;
-    }
-
     // Check if a Struct_t has any allocatable array members, including the
     // ones inherited from the types it extends
     bool struct_has_allocatable_members(ASR::Struct_t *st) {
@@ -3683,46 +3672,28 @@ public:
 
                 // For array-of-struct args with allocatable members,
                 // also pack the member data/offsets/sizes buffers
-                if (args[i].is_array && !args[i].struct_name.empty()) {
-                    ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(
-                        x.m_args[i]);
-                    ASR::Variable_t *var =
-                        ASR::down_cast<ASR::Variable_t>(
-                            ASRUtils::symbol_get_past_external(
-                                v->m_v));
-                    ASR::Struct_t *st = get_struct_decl(var);
-                    if (st) {
-                        for (auto &mem_entry :
-                                ASRUtils::collect_allocatable_array_members(st)) {
-                            const std::string &mem_name = mem_entry.first;
-                            ASR::Variable_t *mv = mem_entry.second;
-                            ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(mv->m_type);
-                            ASR::Array_t *mem_arr =
-                                ASR::down_cast<ASR::Array_t>(inner);
-                            std::string et;
-                            if (is_struct_type(mem_arr->m_type)) {
-                                et = get_struct_name(mv);
-                            } else {
-                                et = metal_type(mem_arr->m_type);
-                            }
-                            std::string data_name =
-                                "__data_" + args[i].name + "_"
-                                + mem_name;
-                            packed_arrays.push_back({
-                                data_name, et, false, "", 0, 0});
-                            std::string off_name =
-                                "__offsets_" + args[i].name + "_"
-                                + mem_name;
-                            packed_arrays.push_back({
-                                off_name, "int", false, "", 0, 0});
-                            std::string sizes_name =
-                                "__sizes_" + args[i].name + "_"
-                                + mem_name;
-                            packed_arrays.push_back({
-                                sizes_name, "int", false, "", 0, 0});
-                        }
+                for (auto &mem_entry :
+                        gpu_struct_member_buffers(x.m_args[i])) {
+                    ASR::Variable_t *mv = mem_entry.var;
+                    ASR::ttype_t *inner =
+                        ASRUtils::type_get_past_allocatable(mv->m_type);
+                    ASR::Array_t *mem_arr =
+                        ASR::down_cast<ASR::Array_t>(inner);
+                    std::string et;
+                    if (is_struct_type(mem_arr->m_type)) {
+                        et = get_struct_name(mv);
+                    } else {
+                        et = metal_type(mem_arr->m_type);
                     }
+                    packed_arrays.push_back({
+                        gpu_struct_member_data_name(args[i].name,
+                            mem_entry.name), et, false, "", 0, 0});
+                    packed_arrays.push_back({
+                        gpu_struct_member_offsets_name(args[i].name,
+                            mem_entry.name), "int", false, "", 0, 0});
+                    packed_arrays.push_back({
+                        gpu_struct_member_sizes_name(args[i].name,
+                            mem_entry.name), "int", false, "", 0, 0});
                 }
             }
         }
@@ -3769,49 +3740,31 @@ public:
                     has_prev = true;
                     // For array-of-struct args, emit additional buffers
                     // for allocatable array members' data and offsets
-                    if (!args[i].struct_name.empty()) {
-                        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(
-                            x.m_args[i]);
-                        ASR::Variable_t *var =
-                            ASR::down_cast<ASR::Variable_t>(
-                                ASRUtils::symbol_get_past_external(
-                                    v->m_v));
-                        ASR::Struct_t *st = get_struct_decl(var);
-                        if (st) {
-                            for (auto &mem_entry :
-                                    ASRUtils::collect_allocatable_array_members(st)) {
-                                const std::string &mem_name = mem_entry.first;
-                                ASR::Variable_t *mv = mem_entry.second;
-                                ASR::ttype_t *inner =
-                                    ASRUtils::type_get_past_allocatable(mv->m_type);
-                                ASR::Array_t *mem_arr =
-                                    ASR::down_cast<ASR::Array_t>(inner);
-                                std::string et;
-                                if (is_struct_type(mem_arr->m_type)) {
-                                    et = get_struct_name(mv);
-                                } else {
-                                    et = metal_type(mem_arr->m_type);
-                                }
-                                std::string data_name =
-                                    "__data_" + args[i].name + "_"
-                                    + mem_name;
-                                src << ",\n    device " << et << "* "
-                                    << data_name << " [[buffer("
-                                    << buffer_idx++ << ")]]";
-                                std::string off_name =
-                                    "__offsets_" + args[i].name + "_"
-                                    + mem_name;
-                                src << ",\n    device int* "
-                                    << off_name << " [[buffer("
-                                    << buffer_idx++ << ")]]";
-                                std::string sizes_name =
-                                    "__sizes_" + args[i].name + "_"
-                                    + mem_name;
-                                src << ",\n    device int* "
-                                    << sizes_name << " [[buffer("
-                                    << buffer_idx++ << ")]]";
-                            }
+                    for (auto &mem_entry :
+                            gpu_struct_member_buffers(x.m_args[i])) {
+                        ASR::Variable_t *mv = mem_entry.var;
+                        ASR::ttype_t *inner =
+                            ASRUtils::type_get_past_allocatable(mv->m_type);
+                        ASR::Array_t *mem_arr =
+                            ASR::down_cast<ASR::Array_t>(inner);
+                        std::string et;
+                        if (is_struct_type(mem_arr->m_type)) {
+                            et = get_struct_name(mv);
+                        } else {
+                            et = metal_type(mem_arr->m_type);
                         }
+                        src << ",\n    device " << et << "* "
+                            << gpu_struct_member_data_name(args[i].name,
+                                mem_entry.name)
+                            << " [[buffer(" << buffer_idx++ << ")]]";
+                        src << ",\n    device int* "
+                            << gpu_struct_member_offsets_name(
+                                args[i].name, mem_entry.name)
+                            << " [[buffer(" << buffer_idx++ << ")]]";
+                        src << ",\n    device int* "
+                            << gpu_struct_member_sizes_name(
+                                args[i].name, mem_entry.name)
+                            << " [[buffer(" << buffer_idx++ << ")]]";
                     }
                 } else if (args[i].is_struct) {
                     if (has_prev) src << ",\n";
@@ -3954,31 +3907,18 @@ public:
             }
             // For array-of-struct args, register data and offset params
             // for allocatable members accessed via array indexing
-            if (args[i].is_array && !args[i].struct_name.empty()) {
-                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_args[i]);
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(v->m_v));
-                ASR::Struct_t *st = get_struct_decl(var);
-                if (st) {
-                    for (auto &mem_entry :
-                            ASRUtils::collect_allocatable_array_members(st)) {
-                        const std::string &mem_name = mem_entry.first;
-                        std::string key = args[i].name + "."
-                            + mem_name;
-                        std::string data_name =
-                            "__data_" + args[i].name + "_"
-                            + mem_name;
-                        func_array_data_params[key] = data_name;
-                        std::string off_name =
-                            "__offsets_" + args[i].name + "_"
-                            + mem_name;
-                        struct_array_offset_params[key] = off_name;
-                        std::string sizes_name =
-                            "__sizes_" + args[i].name + "_"
-                            + mem_name;
-                        struct_array_sizes_params[key] = sizes_name;
-                    }
-                }
+            for (auto &mem_entry :
+                    gpu_struct_member_buffers(x.m_args[i])) {
+                std::string key = args[i].name + "." + mem_entry.name;
+                func_array_data_params[key] =
+                    gpu_struct_member_data_name(args[i].name,
+                        mem_entry.name);
+                struct_array_offset_params[key] =
+                    gpu_struct_member_offsets_name(args[i].name,
+                        mem_entry.name);
+                struct_array_sizes_params[key] =
+                    gpu_struct_member_sizes_name(args[i].name,
+                        mem_entry.name);
             }
         }
 
