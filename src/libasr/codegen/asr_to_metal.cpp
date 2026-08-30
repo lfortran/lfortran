@@ -1521,6 +1521,61 @@ public:
     // Emit the total size of an array expression (product of dimensions).
     // Used at function call sites to pass array sizes for DescriptorArray
     // parameters that are represented as device pointers in Metal.
+    // Render an expression into a string without touching the current
+    // output position.
+    std::string expr_to_string(ASR::expr_t *expr) {
+        std::stringstream saved;
+        saved.swap(src);
+        visit_expr(expr);
+        std::string out = src.str();
+        saved.swap(src);
+        return out;
+    }
+
+    std::string array_size_to_string(ASR::expr_t *expr) {
+        std::stringstream saved;
+        saved.swap(src);
+        emit_array_size_expr(expr);
+        std::string out = src.str();
+        saved.swap(src);
+        return out;
+    }
+
+    // Metal has no aggregate array assignment, so an array constructor on
+    // the right hand side is expanded into a sequence of element writes
+    // into the target. Scalar elements are written one at a time and
+    // array valued elements are copied with a loop; the destination
+    // offset is carried along as a C expression so that elements whose
+    // extent is only known at run time still land in the right place.
+    void emit_array_constructor_assignment(ASR::expr_t *target,
+            ASR::ArrayConstructor_t *ac) {
+        std::string base = expr_to_string(target);
+        std::string offset = "0";
+        for (size_t i = 0; i < ac->n_args; i++) {
+            if (i > 0) src << get_indent();
+            ASR::expr_t *arg = ac->m_args[i];
+            ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(arg));
+            if (ASR::is_a<ASR::Array_t>(*arg_type)) {
+                std::string size_str = array_size_to_string(arg);
+                src << "for (int __ac_i = 0; __ac_i < (" << size_str
+                    << "); __ac_i++) " << base << "[(" << offset
+                    << ") + __ac_i] = ";
+                visit_expr(arg);
+                src << "[__ac_i];\n";
+                offset = "(" + offset + ") + (" + size_str + ")";
+            } else {
+                src << base << "[" << offset << "] = ";
+                visit_expr(arg);
+                src << ";\n";
+                offset = "(" + offset + ") + 1";
+            }
+        }
+        if (ac->n_args == 0) {
+            src << ";\n";
+        }
+    }
+
     void emit_array_size_expr(ASR::expr_t *expr) {
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
             expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
@@ -1573,9 +1628,9 @@ public:
         } else if (ASR::is_a<ASR::Var_t>(*expr)) {
             std::string name = ASRUtils::symbol_name(
                 ASR::down_cast<ASR::Var_t>(expr)->m_v);
-            auto it = func_array_size_params.find(name);
-            if (it != func_array_size_params.end()) {
-                src << it->second;
+            std::string count = array_count_expr(name);
+            if (!count.empty()) {
+                src << count;
             } else {
                 src << "/* unknown array size */";
             }
@@ -3638,6 +3693,12 @@ public:
                 }
 
                 src << get_indent();
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*a->m_value)) {
+                    emit_array_constructor_assignment(a->m_target,
+                        ASR::down_cast<ASR::ArrayConstructor_t>(
+                            a->m_value));
+                    break;
+                }
                 // When assigning to an allocatable pointer param (e.g., r = val
                 // where r is thread T*), dereference it: *r = val.
                 // ArrayItem accesses (r[i] = val) are handled separately and
