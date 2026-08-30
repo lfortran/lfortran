@@ -3633,10 +3633,16 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
 
         bool is_dependent_only_on_argument;
         bool only_intent_in_args;
+        // A deferred-shape component of an argument has an extent only a
+        // runtime descriptor knows. Set this where that extent is readable
+        // where the expression is used, such as GPU device code, whose
+        // arrays carry their extents as arguments.
+        bool allow_deferred_shape_members;
 
         ExprDependentOnlyOnArguments():
             is_dependent_only_on_argument(false),
-            only_intent_in_args(false)
+            only_intent_in_args(false),
+            allow_deferred_shape_members(false)
         {}
 
         void visit_Var(const ASR::Var_t& x) {
@@ -3654,7 +3660,8 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
 
         void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
             ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments>::visit_StructInstanceMember(x);
-            if (ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) &&
+            if (!allow_deferred_shape_members &&
+                ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) &&
                 !ASRUtils::is_fixed_size_array(ASRUtils::symbol_type(x.m_m)) ) {
                 is_dependent_only_on_argument = false;
             }
@@ -3802,9 +3809,11 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     }
 };
 
-static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
+static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false,
+    bool allow_deferred_shape_members=false) {
     ExprDependentOnlyOnArguments visitor;
     visitor.only_intent_in_args = only_intent_in_args;
+    visitor.allow_deferred_shape_members = allow_deferred_shape_members;
     for( size_t i = 0; i < n_dims; i++ ) {
         visitor.is_dependent_only_on_argument = true;
         if( m_dims[i].m_length == nullptr ) {

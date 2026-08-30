@@ -27,6 +27,15 @@ public:
         called.insert(ASRUtils::symbol_name(x.m_name));
         ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_SubroutineCall(x);
     }
+    // A block is part of the routine that calls it.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (ASR::is_a<ASR::Block_t>(*x.m_m)) {
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+            for (size_t i = 0; i < block->n_body; i++) {
+                visit_stmt(*block->m_body[i]);
+            }
+        }
+    }
 };
 
 class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
@@ -322,9 +331,9 @@ public:
             } else {
                 elem_type = metal_type(arr->m_type);
             }
-            if (is_alloc) {
-                // Allocatable array: check if a VLA workspace buffer
-                // was allocated for this variable
+            {
+                // An array the device cannot size on entry is backed by a
+                // per-thread slice of a workspace buffer the host allocated.
                 std::string vname(var->m_name);
                 auto vla_it = std::find_if(
                     current_vla_infos.begin(), current_vla_infos.end(),
@@ -2164,11 +2173,15 @@ public:
     bool func_all_arrays_input_only(ASR::Function_t *fn) {
         bool has_array = false;
         for (size_t i = 0; i < fn->n_args; i++) {
-            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
-                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(arg_sym);
             if (is_array_type(arg->m_type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                    arg->m_type);
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        arg->m_type));
                 if (arr->m_physical_type
                         == ASR::array_physical_typeType::PointerArray
                     || arr->m_physical_type
@@ -2280,7 +2293,8 @@ public:
             if (!first) src << ", ";
             first = false;
             if (is_array_type(arg->m_type)) {
-                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arg->m_type);
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable_pointer(arg->m_type));
                 // FixedSizeArray and PointerArray out params (from
                 // subroutine_from_function) receive local thread-space
                 // temporaries.  For functions where ALL array params
@@ -2297,7 +2311,9 @@ public:
                         || all_arrays_input_only))
                     || (arr->m_physical_type
                     == ASR::array_physical_typeType::DescriptorArray
-                    && all_arrays_input_only);
+                    && (arg->m_intent == ASR::intentType::Out
+                        || arg->m_intent == ASR::intentType::InOut
+                        || all_arrays_input_only));
                 std::string addr_space = use_variable_addr
                     ? out_addr_space : "device";
                 std::string elem_type;
@@ -2584,11 +2600,15 @@ public:
     bool func_needs_device_overload(ASR::Function_t *fn) {
         bool all_input = func_all_arrays_input_only(fn);
         for (size_t i = 0; i < fn->n_args; i++) {
-            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(
-                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::Variable_t *arg = ASR::down_cast<ASR::Variable_t>(arg_sym);
             if (is_array_type(arg->m_type)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                    arg->m_type);
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        arg->m_type));
                 if ((arr->m_physical_type
                         == ASR::array_physical_typeType::FixedSizeArray)
                     || (arr->m_physical_type
@@ -2598,7 +2618,9 @@ public:
                             || all_input))
                     || (arr->m_physical_type
                         == ASR::array_physical_typeType::DescriptorArray
-                        && all_input)) {
+                        && (arg->m_intent == ASR::intentType::Out
+                            || arg->m_intent == ASR::intentType::InOut
+                            || all_input))) {
                     return true;
                 }
             } else if (ASRUtils::is_allocatable(arg->m_type)) {
@@ -2668,6 +2690,27 @@ public:
                 if (emitted_funcs.count(fn_name)) continue;
                 if (kernel_funcs.count(fn_name)) continue;
                 kernel_funcs[fn_name] = fn;
+            }
+            // A routine the kernel calls that an enclosing scope holds,
+            // such as an intrinsic the intrinsic_function pass lowered into
+            // a helper of the translation unit.
+            for (auto &callee : kernel_call_collector.called) {
+                if (kernel_funcs.count(callee)) continue;
+                if (emitted_funcs.count(callee)) continue;
+                if (is_metal_intercepted_intrinsic(callee)) continue;
+                SymbolTable *scope = x.m_symtab->parent;
+                while (scope) {
+                    ASR::symbol_t *sym = scope->get_symbol(callee);
+                    if (sym) {
+                        sym = ASRUtils::symbol_get_past_external(sym);
+                        if (ASR::is_a<ASR::Function_t>(*sym)) {
+                            kernel_funcs[callee] =
+                                ASR::down_cast<ASR::Function_t>(sym);
+                        }
+                        break;
+                    }
+                    scope = scope->parent;
+                }
             }
             // Discover functions from parent scopes (e.g. lowered
             // intrinsics like _lcompilers_Sum_* created at the
