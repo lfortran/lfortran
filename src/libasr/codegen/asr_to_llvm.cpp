@@ -22200,6 +22200,33 @@ public:
                     "determined from the kernel arguments",
                     x.base.base.loc);
             }
+            case GpuVlaDimNode::Kind::ArgArraySize: {
+                // The extent of a kernel-argument array that the host
+                // does not already pass as a scalar. It is about to hand
+                // the actual argument over, so `size(actual, d + 1)` is
+                // evaluated here on that expression.
+                if (node.call_arg_index < 0 ||
+                        (size_t)node.call_arg_index >= x.n_args ||
+                        x.m_args[node.call_arg_index].m_value == nullptr) {
+                    throw CodeGenError("gpu offload: the extent of the "
+                        "temporary array `" + ws_name + "` cannot be "
+                        "determined from the kernel arguments",
+                        x.base.base.loc);
+                }
+                const Location &loc = x.base.base.loc;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4));
+                ASR::expr_t *dim_index = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, loc,
+                        node.array_dim + 1, int_type,
+                        ASR::integerbozType::Decimal));
+                ASR::expr_t *size_expr = ASRUtils::EXPR(
+                    ASR::make_ArraySize_t(al, loc,
+                        x.m_args[node.call_arg_index].m_value, dim_index,
+                        int_type, nullptr));
+                this->visit_expr(*size_expr);
+                return builder->CreateIntCast(tmp, i64, true);
+            }
             case GpuVlaDimNode::Kind::BinOp: {
                 llvm::Value *left = eval_gpu_vla_dim_expr(dim, node.left,
                     x, call_arg_values, call_arg_struct_ptrs, ws_name);

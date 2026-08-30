@@ -1823,6 +1823,15 @@ public:
                 // wrong workspace stride.
                 return "";
             }
+            case GpuVlaDimNode::Kind::ArgArraySize: {
+                if (n.call_arg_index < 0 || (size_t)n.call_arg_index >=
+                        current_kernel_arg_names.size()) {
+                    return "";
+                }
+                return "__size_" + sanitize_metal_name(
+                        current_kernel_arg_names[n.call_arg_index])
+                    + "_dim" + std::to_string(n.array_dim + 1);
+            }
             case GpuVlaDimNode::Kind::BinOp: {
                 std::string l = vla_dim_node_str(dim, n.left);
                 std::string r = vla_dim_node_str(dim, n.right);

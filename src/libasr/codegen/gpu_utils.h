@@ -19,11 +19,14 @@ namespace LCompilers {
 // `GpuVlaDim::expr_nodes`, so the tree stays copyable.
 struct GpuVlaDimNode {
     enum class Kind { Constant, CallArg, StructMember,
-        StructArrayMemberDim, BinOp };
+        StructArrayMemberDim, ArgArraySize, BinOp };
     Kind kind = Kind::Constant;
     int64_t constant_value = 0;
-    // Kernel argument supplying the value (CallArg and StructMember).
+    // Kernel argument supplying the value (CallArg, StructMember and
+    // ArgArraySize).
     int64_t call_arg_index = -1;
+    // Zero-based dimension of that argument's array (ArgArraySize).
+    int64_t array_dim = -1;
     // Component chain arg%member_path[0]%member_path[1]%... (StructMember).
     std::vector<std::string> member_path;
     ASR::binopType binop = ASR::binopType::Add;
@@ -626,6 +629,61 @@ inline bool match_gpu_struct_array_member_extent(ASR::expr_t *expr,
     return true;
 }
 
+// The position of `name` in the kernel's argument list, or -1.
+inline int64_t arg_index_of(const std::string &name,
+        const std::vector<std::string> &arg_names) {
+    for (size_t a = 0; a < arg_names.size(); a++) {
+        if (arg_names[a] == name) return (int64_t)a;
+    }
+    return -1;
+}
+
+// `X` and the zero-based dimension of the shape query `expr` makes on
+// it, when `expr` is `lbound(X, d)` or `ubound(X, d)` on a plain array
+// variable.  Returns nullptr otherwise.
+inline ASR::symbol_t* gpu_array_bound_target(ASR::expr_t *expr,
+        ASR::arrayboundType want, int64_t &dim_index) {
+    if (!expr || !ASR::is_a<ASR::ArrayBound_t>(*expr)) return nullptr;
+    ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(expr);
+    if (ab->m_bound != want) return nullptr;
+    ASR::expr_t *arr_expr = ab->m_v;
+    while (arr_expr && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr_expr)) {
+        arr_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arr_expr)->m_arg;
+    }
+    if (!arr_expr || !ASR::is_a<ASR::Var_t>(*arr_expr)) return nullptr;
+    int64_t d = 1;
+    if (ab->m_dim && !try_eval_int_constant(ab->m_dim, d)) return nullptr;
+    if (d < 1) return nullptr;
+    dim_index = d - 1;
+    return ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(arr_expr)->m_v);
+}
+
+// A node for `size(sym, d + 1)` when `sym` is a kernel-argument array
+// whose extent is not passed as a `__dim_` scalar -- only a
+// deferred-shape argument gets those.  The host reads the extent off the
+// actual argument, and the shader has it as `__size_<name>_dim<d+1>`.
+// Returns -1 when neither can name it.
+inline int64_t gpu_arg_array_size_node(ASR::symbol_t *sym, size_t d,
+        const std::vector<std::string> &arg_names,
+        std::vector<GpuVlaDimNode> &nodes) {
+    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) return -1;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::ttype_t *arr_type =
+        ASRUtils::type_get_past_allocatable_pointer(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*arr_type)) return -1;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arr_type);
+    if (d >= arr->n_dims || arr->m_dims[d].m_length != nullptr) return -1;
+    int64_t arg_index = arg_index_of(std::string(var->m_name), arg_names);
+    if (arg_index < 0) return -1;
+    GpuVlaDimNode n;
+    n.kind = GpuVlaDimNode::Kind::ArgArraySize;
+    n.call_arg_index = arg_index;
+    n.array_dim = (int64_t)d;
+    nodes.push_back(n);
+    return (int64_t)nodes.size() - 1;
+}
+
 // Build a host-evaluable expression tree for a workspace dimension.
 // Every leaf must be either an integer constant, a scalar kernel argument,
 // or a derived-type component chain rooted at a kernel argument; every
@@ -702,9 +760,14 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
         // array whose own extent expression can be built here in turn.
         // A whole-array `size(a)` is the product of every dimension.
         ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
-        if (!as->m_v || !ASR::is_a<ASR::Var_t>(*as->m_v)) return -1;
+        ASR::expr_t *arr_expr = as->m_v;
+        while (arr_expr && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr_expr)) {
+            arr_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                arr_expr)->m_arg;
+        }
+        if (!arr_expr || !ASR::is_a<ASR::Var_t>(*arr_expr)) return -1;
         ASR::symbol_t *arr_sym = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+            ASR::down_cast<ASR::Var_t>(arr_expr)->m_v);
         if (arr_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*arr_sym)) {
             return -1;
         }
@@ -747,6 +810,10 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
                     nodes.push_back(n);
                     one = (int64_t)nodes.size() - 1;
                     break;
+                }
+                if (one < 0) {
+                    one = gpu_arg_array_size_node(arr_sym, d, arg_names,
+                        nodes);
                 }
             } else {
                 ASR::expr_t *extent = find_gpu_local_array_extent(
@@ -791,6 +858,35 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
     }
     if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
         ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+        // `ubound(a, d) - lbound(a, d)` is how a section extent is
+        // spelled; it is `size(a, d) - 1`, and only the size of the whole
+        // dimension is something the host and the shader can both name.
+        // A bound on its own stays unresolved.
+        {
+            int64_t ub_dim = -1, lb_dim = -1;
+            ASR::symbol_t *ub_sym = gpu_array_bound_target(op->m_left,
+                ASR::arrayboundType::UBound, ub_dim);
+            ASR::symbol_t *lb_sym = gpu_array_bound_target(op->m_right,
+                ASR::arrayboundType::LBound, lb_dim);
+            if (op->m_op == ASR::binopType::Sub && ub_sym &&
+                    ub_sym == lb_sym && ub_dim == lb_dim) {
+                int64_t size_node = gpu_arg_array_size_node(ub_sym,
+                    (size_t)ub_dim, arg_names, nodes);
+                if (size_node < 0) return -1;
+                GpuVlaDimNode one;
+                one.kind = GpuVlaDimNode::Kind::Constant;
+                one.constant_value = 1;
+                nodes.push_back(one);
+                int64_t one_node = (int64_t)nodes.size() - 1;
+                GpuVlaDimNode diff;
+                diff.kind = GpuVlaDimNode::Kind::BinOp;
+                diff.binop = ASR::binopType::Sub;
+                diff.left = size_node;
+                diff.right = one_node;
+                nodes.push_back(diff);
+                return (int64_t)nodes.size() - 1;
+            }
+        }
         switch (op->m_op) {
             case ASR::binopType::Add:
             case ASR::binopType::Sub:
