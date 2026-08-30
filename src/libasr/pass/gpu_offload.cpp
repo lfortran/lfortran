@@ -2561,6 +2561,51 @@ public:
     // With nested DoLoops that compute the matrix multiplication directly.
     // This avoids generating a call to _lcompilers_matmul which is not
     // available inside Metal GPU kernels.
+    // The MatMul shapes `inline_matmul_stmts` lowers on an Assignment:
+    // the matmul is either the whole right-hand side, or a direct operand
+    // of a RealBinOp on the right-hand side (`z = matmul(w, a) + b`). On a
+    // match of the second shape the other operand, the operator and the
+    // side of the matmul are reported back to the caller.
+    ASR::IntrinsicArrayFunction_t* match_statement_matmul(
+            ASR::expr_t *value, ASR::expr_t *&binop_other,
+            ASR::binopType &binop_op, bool &matmul_is_left) {
+        auto is_matmul = [](ASR::expr_t *e) -> ASR::IntrinsicArrayFunction_t* {
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*e)) return nullptr;
+            auto *f = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    f->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::MatMul) {
+                return nullptr;
+            }
+            return f;
+        };
+        if (!value) return nullptr;
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value)) {
+            return is_matmul(value);
+        }
+        if (!ASR::is_a<ASR::RealBinOp_t>(*value)) return nullptr;
+        ASR::RealBinOp_t *rbop = ASR::down_cast<ASR::RealBinOp_t>(value);
+        ASR::expr_t *left = rbop->m_left;
+        ASR::expr_t *right = rbop->m_right;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*left))
+            left = ASR::down_cast<ASR::ArrayPhysicalCast_t>(left)->m_arg;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*right))
+            right = ASR::down_cast<ASR::ArrayPhysicalCast_t>(right)->m_arg;
+        if (auto *f = is_matmul(left)) {
+            binop_other = rbop->m_right;
+            binop_op = rbop->m_op;
+            matmul_is_left = true;
+            return f;
+        }
+        if (auto *f = is_matmul(right)) {
+            binop_other = rbop->m_left;
+            binop_op = rbop->m_op;
+            matmul_is_left = false;
+            return f;
+        }
+        return nullptr;
+    }
+
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body) {
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, n_body * 4);
@@ -2596,62 +2641,12 @@ public:
             }
             ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
 
-            // Detect MatMul: either directly as the RHS, or inside a
-            // RealBinOp (e.g., z = matmul(w, a) + b).
-            ASR::IntrinsicArrayFunction_t *iaf = nullptr;
             ASR::expr_t *binop_other = nullptr;
             ASR::binopType binop_op = ASR::binopType::Add;
             bool matmul_is_left = true;
-
-            if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
-                iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
-                    asgn->m_value);
-            } else if (ASR::is_a<ASR::RealBinOp_t>(*asgn->m_value)) {
-                ASR::RealBinOp_t *rbop =
-                    ASR::down_cast<ASR::RealBinOp_t>(asgn->m_value);
-                ASR::expr_t *left = rbop->m_left;
-                ASR::expr_t *right = rbop->m_right;
-                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*left))
-                    left = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                        left)->m_arg;
-                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*right))
-                    right = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                        right)->m_arg;
-                if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*left)) {
-                    auto *f =
-                        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
-                            left);
-                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
-                            f->m_arr_intrinsic_id)
-                                == ASRUtils::IntrinsicArrayFunctions::
-                                    MatMul) {
-                        iaf = f;
-                        binop_other = rbop->m_right;
-                        binop_op = rbop->m_op;
-                        matmul_is_left = true;
-                    }
-                }
-                if (!iaf &&
-                        ASR::is_a<ASR::IntrinsicArrayFunction_t>(
-                            *right)) {
-                    auto *f =
-                        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
-                            right);
-                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
-                            f->m_arr_intrinsic_id)
-                                == ASRUtils::IntrinsicArrayFunctions::
-                                    MatMul) {
-                        iaf = f;
-                        binop_other = rbop->m_left;
-                        binop_op = rbop->m_op;
-                        matmul_is_left = false;
-                    }
-                }
-            }
-
-            if (!iaf || static_cast<ASRUtils::IntrinsicArrayFunctions>(
-                    iaf->m_arr_intrinsic_id)
-                        != ASRUtils::IntrinsicArrayFunctions::MatMul) {
+            ASR::IntrinsicArrayFunction_t *iaf = match_statement_matmul(
+                asgn->m_value, binop_other, binop_op, matmul_is_left);
+            if (!iaf) {
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -3081,16 +3076,16 @@ public:
         }
     }
 
-    // `r = [0.0, matmul(a, b)]` keeps the matmul nested inside the array
-    // constructor, where inline_intrinsic_matmul -- which matches a
-    // matmul that is the whole right-hand side -- cannot see it. It would
-    // then survive into the shader as a call to the host runtime helper
-    // `_lcompilers_matmul_*`, which does not exist on the device. Hoist
-    // each such element into its own temporary first, so the existing
-    // lowering applies and the constructor is left with a plain array
-    // variable element (a shape the Metal backend already handles).
-    void hoist_intrinsic_array_constructor_elements(
-            ASR::DoConcurrentLoop_t &x) {
+    // A matmul that `inline_matmul_stmts` does not match -- one nested
+    // inside a unary minus, inside another intrinsic, inside a call
+    // argument, inside an array constructor (`r = [0.0, matmul(a, b)]`)
+    // or as an argument of another matmul -- survives into the shader as
+    // a call to the host runtime helper `_lcompilers_matmul*`, which does
+    // not exist on the device. Hoist every such matmul into its own
+    // temporary first, so the existing whole-right-hand-side lowering
+    // applies to it and the enclosing expression is left with a plain
+    // array variable (a shape the Metal backend already handles).
+    void hoist_nested_matmuls(ASR::DoConcurrentLoop_t &x) {
         SymbolTable *var_scope = current_scope;
         while (var_scope && var_scope->asr_owner &&
                var_scope->asr_owner->type == ASR::asrType::symbol &&
@@ -3098,10 +3093,10 @@ public:
                    *ASR::down_cast<ASR::symbol_t>(var_scope->asr_owner))) {
             var_scope = var_scope->parent;
         }
-        hoist_ac_elements_in_body(x.m_body, x.n_body, var_scope);
+        hoist_nested_matmuls_in_body(x.m_body, x.n_body, var_scope);
     }
 
-    void hoist_ac_elements_in_body(ASR::stmt_t** &body, size_t &n_body,
+    void hoist_nested_matmuls_in_body(ASR::stmt_t** &body, size_t &n_body,
             SymbolTable *var_scope) {
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, n_body * 2);
@@ -3109,6 +3104,13 @@ public:
 
         for (size_t si = 0; si < n_body; si++) {
             ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                hoist_nested_matmuls_in_body(dl->m_body, dl->n_body,
+                    var_scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
             // A spliced-in device function body lives in its own BLOCK;
             // hoist inside it too, into that block's scope.
             if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
@@ -3116,9 +3118,18 @@ public:
                     ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                    hoist_ac_elements_in_body(blk->m_body, blk->n_body,
+                    hoist_nested_matmuls_in_body(blk->m_body, blk->n_body,
                         blk->m_symtab);
                 }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+                hoist_nested_matmuls_in_body(ab->m_body, ab->n_body,
+                    var_scope);
                 new_body.push_back(al, stmt);
                 continue;
             }
@@ -3126,74 +3137,84 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
-            ASR::expr_t *value = ASR::down_cast<ASR::Assignment_t>(
-                stmt)->m_value;
-            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
-                value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                    value)->m_arg;
-            }
-            if (!ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
-                new_body.push_back(al, stmt);
-                continue;
-            }
-            ASR::ArrayConstructor_t *ac =
-                ASR::down_cast<ASR::ArrayConstructor_t>(value);
-            Location loc = stmt->base.loc;
-            bool stmt_changed = false;
-            for (size_t ai = 0; ai < ac->n_args; ai++) {
-                ASR::expr_t *arg = ac->m_args[ai];
-                if (!arg) continue;
-                ASR::expr_t *bare = arg;
-                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*bare)) {
-                    bare = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
-                        bare)->m_arg;
-                }
-                if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*bare))
-                    continue;
-                if (!ASRUtils::is_array(ASRUtils::expr_type(bare)))
-                    continue;
-                Vec<ASR::dimension_t> dims;
-                if (!intrinsic_array_result_dims(bare, dims)) continue;
-                ASR::ttype_t *elem_type = ASRUtils::extract_type(
-                    ASRUtils::expr_type(bare));
-                bool all_const = true;
-                for (size_t d = 0; d < dims.n; d++) {
-                    if (!dims[d].m_length ||
-                            !ASRUtils::expr_value(dims[d].m_length)) {
-                        all_const = false;
-                    }
-                }
-                ASR::ttype_t *tmp_type = ASRUtils::TYPE(
-                    ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
-                        all_const
-                            ? ASR::array_physical_typeType::FixedSizeArray
-                            : ASR::array_physical_typeType::DescriptorArray));
-                std::string name = var_scope->get_unique_name(
-                    "__gpu_ac_elem");
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                        nullptr, nullptr, ASR::storage_typeType::Default,
-                        tmp_type, nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(name, sym);
-                ASR::expr_t *tmp_var = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, sym));
-                new_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, tmp_var, bare,
-                        nullptr, false, false)));
-                ac->m_args[ai] = tmp_var;
-                stmt_changed = true;
-            }
+            size_t before = new_body.size();
+            hoist_matmuls_from_assignment(
+                ASR::down_cast<ASR::Assignment_t>(stmt), new_body, var_scope);
             new_body.push_back(al, stmt);
-            if (stmt_changed) changed = true;
+            if (new_body.size() != before + 1) changed = true;
         }
 
         if (changed) {
             body = new_body.p;
             n_body = new_body.n;
         }
+    }
+
+    // Hoist every matmul in the value of `asgn` that the statement-level
+    // lowering cannot see into a temporary, appending the temporaries'
+    // assignments to `out`. The matmul the lowering does match is left in
+    // place; its arguments are still searched, so a nested matmul such as
+    // `matmul(a, matmul(a, b))` has its inner operand hoisted.
+    void hoist_matmuls_from_assignment(ASR::Assignment_t *asgn,
+            Vec<ASR::stmt_t*> &out, SymbolTable *var_scope) {
+        ASR::expr_t *binop_other = nullptr;
+        ASR::binopType binop_op = ASR::binopType::Add;
+        bool matmul_is_left = true;
+        ASR::IntrinsicArrayFunction_t *handled = match_statement_matmul(
+            asgn->m_value, binop_other, binop_op, matmul_is_left);
+        Location loc = asgn->base.base.loc;
+        while (true) {
+            ASR::IntrinsicArrayFunction_t *mm = find_array_intrinsic_in_expr(
+                asgn->m_value, ASRUtils::IntrinsicArrayFunctions::MatMul,
+                handled);
+            if (!mm) break;
+            ASR::expr_t *tmp_var = make_matmul_result_temp(mm, loc,
+                var_scope);
+            if (!tmp_var) break;
+            ASR::stmt_t *tmp_asgn = ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false));
+            if (!replace_array_intrinsic_in_expr(asgn->m_value, mm,
+                    tmp_var)) {
+                break;
+            }
+            hoist_matmuls_from_assignment(
+                ASR::down_cast<ASR::Assignment_t>(tmp_asgn), out, var_scope);
+            out.push_back(al, tmp_asgn);
+        }
+    }
+
+    // A local temporary holding the result of `mm`, or nullptr if the
+    // result shape cannot be determined from the operands.
+    ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
+            const Location &loc, SymbolTable *var_scope) {
+        ASR::expr_t *e = (ASR::expr_t*)mm;
+        if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return nullptr;
+        Vec<ASR::dimension_t> dims;
+        if (!intrinsic_array_result_dims(e, dims)) return nullptr;
+        ASR::ttype_t *elem_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(e));
+        bool all_const = true;
+        for (size_t d = 0; d < dims.n; d++) {
+            if (!dims[d].m_length ||
+                    !ASRUtils::expr_value(dims[d].m_length)) {
+                all_const = false;
+            }
+        }
+        ASR::ttype_t *tmp_type = ASRUtils::TYPE(
+            ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
+                all_const
+                    ? ASR::array_physical_typeType::FixedSizeArray
+                    : ASR::array_physical_typeType::DescriptorArray));
+        std::string name = var_scope->get_unique_name("__gpu_matmul_tmp");
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                tmp_type, nullptr, ASR::abiType::Source,
+                ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        var_scope->add_symbol(name, sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
     // Shape of an array-valued intrinsic's result, taken from its
@@ -3312,83 +3333,104 @@ public:
     //   results(i) = __gpu_sum_res
     // This avoids generating a call to _lcompilers_Sum which is not
     // available inside Metal GPU kernels.
-    // Search an expression tree for an IntrinsicArrayFunction Sum node.
-    ASR::IntrinsicArrayFunction_t* find_sum_in_expr(ASR::expr_t *expr) {
+    // Search an expression tree for an IntrinsicArrayFunction node of the
+    // given kind. `skip` names a node the caller already handles: it is
+    // not reported, but its arguments are still searched.
+    ASR::IntrinsicArrayFunction_t* find_array_intrinsic_in_expr(
+            ASR::expr_t *expr, ASRUtils::IntrinsicArrayFunctions which,
+            ASR::IntrinsicArrayFunction_t *skip = nullptr) {
         if (!expr) return nullptr;
         if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr)) {
             auto *iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr);
-            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
-                    iaf->m_arr_intrinsic_id)
-                        == ASRUtils::IntrinsicArrayFunctions::Sum) {
+            if (iaf != skip &&
+                    static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                        iaf->m_arr_intrinsic_id) == which) {
                 return iaf;
             }
+            for (size_t i = 0; i < iaf->n_args; i++) {
+                auto *found = find_array_intrinsic_in_expr(iaf->m_args[i],
+                    which, skip);
+                if (found) return found;
+            }
+            return nullptr;
         }
         if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
             auto *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
-            auto *found = find_sum_in_expr(op->m_left);
+            auto *found = find_array_intrinsic_in_expr(op->m_left, which,
+                skip);
             if (found) return found;
-            return find_sum_in_expr(op->m_right);
+            return find_array_intrinsic_in_expr(op->m_right, which, skip);
         }
         if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
             auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
-            auto *found = find_sum_in_expr(op->m_left);
+            auto *found = find_array_intrinsic_in_expr(op->m_left, which,
+                skip);
             if (found) return found;
-            return find_sum_in_expr(op->m_right);
+            return find_array_intrinsic_in_expr(op->m_right, which, skip);
         }
         if (ASR::is_a<ASR::RealUnaryMinus_t>(*expr)) {
-            return find_sum_in_expr(
-                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_value);
+            return find_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_arg, which,
+                skip);
         }
         if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
-            return find_sum_in_expr(
-                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_value);
+            return find_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg, which,
+                skip);
         }
         if (ASR::is_a<ASR::Cast_t>(*expr)) {
-            return find_sum_in_expr(
-                ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+            return find_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::Cast_t>(expr)->m_arg, which, skip);
         }
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
-            return find_sum_in_expr(
-                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+            return find_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg, which,
+                skip);
         }
         if (ASR::is_a<ASR::RealCompare_t>(*expr)) {
             auto *cmp = ASR::down_cast<ASR::RealCompare_t>(expr);
-            auto *found = find_sum_in_expr(cmp->m_left);
+            auto *found = find_array_intrinsic_in_expr(cmp->m_left, which,
+                skip);
             if (found) return found;
-            return find_sum_in_expr(cmp->m_right);
+            return find_array_intrinsic_in_expr(cmp->m_right, which, skip);
         }
         if (ASR::is_a<ASR::IntegerCompare_t>(*expr)) {
             auto *cmp = ASR::down_cast<ASR::IntegerCompare_t>(expr);
-            auto *found = find_sum_in_expr(cmp->m_left);
+            auto *found = find_array_intrinsic_in_expr(cmp->m_left, which,
+                skip);
             if (found) return found;
-            return find_sum_in_expr(cmp->m_right);
+            return find_array_intrinsic_in_expr(cmp->m_right, which, skip);
         }
         if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
             auto *ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
             for (size_t i = 0; i < ief->n_args; i++) {
-                auto *found = find_sum_in_expr(ief->m_args[i]);
+                auto *found = find_array_intrinsic_in_expr(ief->m_args[i],
+                    which, skip);
                 if (found) return found;
             }
         }
         if (ASR::is_a<ASR::FunctionCall_t>(*expr)) {
             auto *fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
             for (size_t i = 0; i < fc->n_args; i++) {
-                auto *found = find_sum_in_expr(fc->m_args[i].m_value);
+                auto *found = find_array_intrinsic_in_expr(
+                    fc->m_args[i].m_value, which, skip);
                 if (found) return found;
             }
         }
         if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
             auto *ac = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
             for (size_t i = 0; i < ac->n_args; i++) {
-                auto *found = find_sum_in_expr(ac->m_args[i]);
+                auto *found = find_array_intrinsic_in_expr(ac->m_args[i],
+                    which, skip);
                 if (found) return found;
             }
         }
         return nullptr;
     }
 
-    // Replace a specific Sum node in an expression tree with a replacement.
-    bool replace_sum_in_expr(ASR::expr_t* &expr,
+    // Replace a specific IntrinsicArrayFunction node in an expression tree
+    // with a replacement expression.
+    bool replace_array_intrinsic_in_expr(ASR::expr_t* &expr,
             ASR::IntrinsicArrayFunction_t *target,
             ASR::expr_t *replacement) {
         if (!expr) return false;
@@ -3396,69 +3438,93 @@ public:
             expr = replacement;
             return true;
         }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+            auto *c = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
+            if (c->m_arg == (ASR::expr_t*)target) {
+                c->m_arg = replacement;
+                c->m_old = ASRUtils::extract_physical_type(
+                    ASRUtils::expr_type(replacement));
+                return true;
+            }
+            return replace_array_intrinsic_in_expr(c->m_arg, target,
+                replacement);
+        }
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr)) {
+            auto *iaf = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr);
+            for (size_t i = 0; i < iaf->n_args; i++) {
+                if (replace_array_intrinsic_in_expr(iaf->m_args[i], target,
+                        replacement))
+                    return true;
+            }
+            return false;
+        }
         if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
             auto *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
-            if (replace_sum_in_expr(op->m_left, target, replacement))
+            if (replace_array_intrinsic_in_expr(op->m_left, target,
+                    replacement))
                 return true;
-            return replace_sum_in_expr(op->m_right, target, replacement);
+            return replace_array_intrinsic_in_expr(op->m_right, target,
+                replacement);
         }
         if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
             auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
-            if (replace_sum_in_expr(op->m_left, target, replacement))
+            if (replace_array_intrinsic_in_expr(op->m_left, target,
+                    replacement))
                 return true;
-            return replace_sum_in_expr(op->m_right, target, replacement);
+            return replace_array_intrinsic_in_expr(op->m_right, target,
+                replacement);
         }
         if (ASR::is_a<ASR::RealUnaryMinus_t>(*expr)) {
-            return replace_sum_in_expr(
-                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_value,
-                target, replacement);
+            return replace_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(expr)->m_arg, target,
+                replacement);
         }
         if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*expr)) {
-            return replace_sum_in_expr(
-                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_value,
-                target, replacement);
+            return replace_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg, target,
+                replacement);
         }
         if (ASR::is_a<ASR::Cast_t>(*expr)) {
-            return replace_sum_in_expr(
-                ASR::down_cast<ASR::Cast_t>(expr)->m_arg,
-                target, replacement);
-        }
-        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
-            return replace_sum_in_expr(
-                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg,
-                target, replacement);
+            return replace_array_intrinsic_in_expr(
+                ASR::down_cast<ASR::Cast_t>(expr)->m_arg, target, replacement);
         }
         if (ASR::is_a<ASR::RealCompare_t>(*expr)) {
             auto *cmp = ASR::down_cast<ASR::RealCompare_t>(expr);
-            if (replace_sum_in_expr(cmp->m_left, target, replacement))
+            if (replace_array_intrinsic_in_expr(cmp->m_left, target,
+                    replacement))
                 return true;
-            return replace_sum_in_expr(cmp->m_right, target, replacement);
+            return replace_array_intrinsic_in_expr(cmp->m_right, target,
+                replacement);
         }
         if (ASR::is_a<ASR::IntegerCompare_t>(*expr)) {
             auto *cmp = ASR::down_cast<ASR::IntegerCompare_t>(expr);
-            if (replace_sum_in_expr(cmp->m_left, target, replacement))
+            if (replace_array_intrinsic_in_expr(cmp->m_left, target,
+                    replacement))
                 return true;
-            return replace_sum_in_expr(cmp->m_right, target, replacement);
+            return replace_array_intrinsic_in_expr(cmp->m_right, target,
+                replacement);
         }
         if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*expr)) {
             auto *ief = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
             for (size_t i = 0; i < ief->n_args; i++) {
-                if (replace_sum_in_expr(ief->m_args[i], target, replacement))
+                if (replace_array_intrinsic_in_expr(ief->m_args[i], target,
+                        replacement))
                     return true;
             }
         }
         if (ASR::is_a<ASR::FunctionCall_t>(*expr)) {
             auto *fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
             for (size_t i = 0; i < fc->n_args; i++) {
-                if (replace_sum_in_expr(fc->m_args[i].m_value, target,
-                        replacement))
+                if (replace_array_intrinsic_in_expr(fc->m_args[i].m_value,
+                        target, replacement))
                     return true;
             }
         }
         if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
             auto *ac = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
             for (size_t i = 0; i < ac->n_args; i++) {
-                if (replace_sum_in_expr(ac->m_args[i], target, replacement))
+                if (replace_array_intrinsic_in_expr(ac->m_args[i], target,
+                        replacement))
                     return true;
             }
         }
@@ -3492,7 +3558,8 @@ public:
             }
 
             ASR::IntrinsicArrayFunction_t *sum_node =
-                find_sum_in_expr(asgn->m_value);
+                find_array_intrinsic_in_expr(asgn->m_value,
+                    ASRUtils::IntrinsicArrayFunctions::Sum);
             if (!sum_node) {
                 expanded.push_back(al, stmt);
                 continue;
@@ -3532,7 +3599,8 @@ public:
                     nullptr, false, false)));
 
             // Replace sum node in original expression with tmp_var
-            replace_sum_in_expr(asgn->m_value, sum_node, tmp_var);
+            replace_array_intrinsic_in_expr(asgn->m_value, sum_node,
+                tmp_var);
 
             // Add modified original assignment
             expanded.push_back(al, stmt);
@@ -6609,10 +6677,9 @@ public:
         all_reduction_targets.clear();
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
-        // Hoist array-valued intrinsics out of array constructors so the
-        // matmul lowering below can see them.
-        hoist_intrinsic_array_constructor_elements(
-            const_cast<ASR::DoConcurrentLoop_t&>(x));
+        // Hoist matmuls out of the expression positions the matmul
+        // lowering below cannot see them in.
+        hoist_nested_matmuls(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline IntrinsicArrayFunction MatMul before kernel extraction
         inline_intrinsic_matmul(const_cast<ASR::DoConcurrentLoop_t&>(x));
