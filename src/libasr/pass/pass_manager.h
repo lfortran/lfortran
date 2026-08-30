@@ -60,6 +60,7 @@
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -120,6 +121,7 @@ namespace LCompilers {
             {"openmp", &pass_replace_openmp},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_launch_expand", &pass_device_launch_expand},
+            {"gpu_memory_space", &pass_gpu_memory_space},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -285,6 +287,10 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A device routine's address spaces are settled here, once
+                // every array of device code has the type it is emitted
+                // with, and before the code generators read those types.
+                "gpu_memory_space",
                 // Expanding a kernel launch reads the kernel signature and
                 // body, so it has to run once both are in the shape the
                 // device code generators see: after pass_array_by_data has
