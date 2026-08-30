@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace LCompilers {
 
@@ -1077,20 +1078,49 @@ public:
 // body itself, so it has to materialise that temporary here. The three
 // helpers below decide, conservatively, when that is needed.
 
-// The variable whose storage a designator ultimately refers to, or
-// nullptr for anything that is not a designator. A structure component
-// is identified by its member symbol, so that `x%a` and `x%b` are told
-// apart while `x%a` and `y%a` are (conservatively) not.
-static ASR::symbol_t *gpu_designator_base(ASR::expr_t *e) {
+// The storage a designator ultimately refers to: the variable at the
+// root of the designator together with the structure members walked
+// through on the way down to it. Two designators name the same storage
+// only when the root variable and the whole member path agree, so that
+// `x%a` and `x%b` are told apart by the member and `x%a` and `y%a` by
+// the root. `root` stays null for anything that is not a designator
+// this walk understands, and such a base compares unequal to every
+// base, including another unknown one.
+struct GpuDesignatorBase {
+    ASR::symbol_t *root = nullptr;
+    // Innermost member last, i.e. `x%a%b` records {b, a}. The order is
+    // the walk's own and only ever compared against another path built
+    // the same way.
+    std::vector<ASR::symbol_t*> members;
+
+    bool is_known() const { return root != nullptr; }
+
+    bool operator==(const GpuDesignatorBase &other) const {
+        return root != nullptr && root == other.root
+            && members == other.members;
+    }
+
+    bool operator!=(const GpuDesignatorBase &other) const {
+        return !(*this == other);
+    }
+};
+
+static GpuDesignatorBase gpu_designator_base(ASR::expr_t *e) {
+    GpuDesignatorBase base;
     while (e) {
         switch (e->type) {
             case ASR::exprType::Var: {
-                return ASRUtils::symbol_get_past_external(
+                base.root = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(e)->m_v);
+                return base;
             }
             case ASR::exprType::StructInstanceMember: {
-                return ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+                ASR::StructInstanceMember_t *sm =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(e);
+                base.members.push_back(
+                    ASRUtils::symbol_get_past_external(sm->m_m));
+                e = sm->m_v;
+                break;
             }
             case ASR::exprType::ArraySection: {
                 e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
@@ -1105,11 +1135,11 @@ static ASR::symbol_t *gpu_designator_base(ASR::expr_t *e) {
                 break;
             }
             default: {
-                return nullptr;
+                return GpuDesignatorBase();
             }
         }
     }
-    return nullptr;
+    return GpuDesignatorBase();
 }
 
 // Strict structural equality of two subscript expressions. Anything not
@@ -1203,7 +1233,7 @@ static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
 // overwritten, so the assignment needs a temporary.
 class GpuSelfAliasChecker : public ASR::BaseWalkVisitor<GpuSelfAliasChecker> {
 public:
-    ASR::symbol_t *base = nullptr;
+    GpuDesignatorBase base;
     ASR::expr_t *target = nullptr;
     bool aliased = false;
 
@@ -4892,8 +4922,8 @@ public:
         if (!ASRUtils::is_array(ASRUtils::expr_type(target))) {
             return nullptr;
         }
-        ASR::symbol_t *base = gpu_designator_base(target);
-        if (!base) return nullptr;
+        GpuDesignatorBase base = gpu_designator_base(target);
+        if (!base.is_known()) return nullptr;
         GpuSelfAliasChecker checker;
         checker.base = base;
         checker.target = target;
