@@ -43,6 +43,14 @@ them, an `!$omp parallel do` are normalized into it by the
 for that one loop, so a program may mix serial, host-threaded and device
 loops.
 
+Once the device pipeline has taken the loops it offloads, a loop that is left
+for the host is rewritten back into an **OMPRegion** by the
+`parallel_loop_to_omp` pass, which carries `exec_target` over and adds
+[OMPIndependent](../omp_nodes/OMPIndependent.md) -- the assertion the loop
+made. The host lowering is written for a region, so this is what lets a
+`do concurrent` loop reach it. Only the outermost loop of a nest becomes a
+region; a concurrent loop left in the body runs its iterations in order.
+
 ## Examples
 
 An ASR text document that uses it:

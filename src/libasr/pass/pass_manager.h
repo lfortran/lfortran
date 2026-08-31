@@ -123,6 +123,7 @@ namespace LCompilers {
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"omp_to_parallel_loop", &pass_replace_omp_to_parallel_loop},
+            {"parallel_loop_to_omp", &pass_replace_parallel_loop_to_omp},
             {"parallel_dispatch", &pass_parallel_dispatch},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
@@ -275,6 +276,10 @@ namespace LCompilers {
                 // handed back as a host-thread loop, which the OpenMP pass
                 // below then picks up.
                 "gpu_offload",
+                // A concurrent loop the device did not take is one the host
+                // runs, and the host lowering below is written for a region,
+                // so the loop becomes one.
+                "parallel_loop_to_omp",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
                 // here, so it runs serially instead of reaching a code
@@ -349,6 +354,7 @@ namespace LCompilers {
                 // lets the C compiler lower them, so the passes that take
                 // them apart have nothing to do there.
                 "omp_to_parallel_loop",
+                "parallel_loop_to_omp",
                 "omp_region_flatten",
                 "replace_with_compile_time_values",
                 "pass_list_expr",

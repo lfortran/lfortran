@@ -111,8 +111,21 @@ public:
         StatementWalkVisitor(al), pass_options(pass_options_) {
     }
 
+    // A region that asserts its iterations are independent of one another
+    // computes the same result whatever runs them, one thread included, so
+    // unwrapping it is a lowering of the construct rather than a failure to
+    // lower it, and there is nothing to warn about.
+    static bool asserts_independence(const ASR::OMPRegion_t &x) {
+        for (size_t i = 0; i < x.n_clauses; i++) {
+            if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPIndependent) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        if (pass_options.diagnostics != nullptr) {
+        if (pass_options.diagnostics != nullptr && !asserts_independence(x)) {
             pass_options.diagnostics->message_label(
                 "openmp construct not supported, its statements run serially",
                 {x.base.base.loc}, "no lowering claimed this region",
@@ -366,9 +379,126 @@ public:
     }
 };
 
+/*
+ * Rewrites a `DoConcurrentLoop` the host runs into an `OMPRegion`.
+ *
+ * This is the reverse of the normalization above, and it runs where the two
+ * meet: the device pipeline has taken the loops it offloads and handed back
+ * the ones it declined, so every concurrent loop still standing is one the
+ * host runs. The host lowering of an `OMPRegion` -- outlining the body,
+ * partitioning the iteration space over the threads, and the reduction
+ * epilogue -- is the mature one, and this rewrite is what lets a
+ * `do concurrent` loop reach it.
+ *
+ * Converts:
+ *      do concurrent (i = 1:n, j = 1:m) shared(a) reduce(+: s)
+ *          s = s + a(i, j)
+ *      end do
+ *
+ * to:
+ *      !$omp parallel do collapse(2) shared(a) reduction(+: s)
+ *      do i = 1, n
+ *          do j = 1, m
+ *              s = s + a(i, j)
+ *          end do
+ *      end do
+ *
+ * The region says its iterations are independent, which is what the loop
+ * asserted and what an `!$omp parallel do` on its own does not. It keeps the
+ * execution target the dispatch pass wrote into the loop; nothing is decided
+ * again here. The indices stay where the lowering reads them -- in the heads
+ * of the loop nest -- and are not repeated in `private`.
+ */
+class ParallelLoopToOMPVisitor :
+    public ASR::StatementWalkVisitor<ParallelLoopToOMPVisitor>
+{
+public:
+    ParallelLoopToOMPVisitor(Allocator &al) : StatementWalkVisitor(al) {
+    }
+
+    // A concurrent loop names all of its indices at once. A region describes
+    // the same iteration space as the loop nest the source wrote, one loop
+    // per index, and says with `collapse` how many of them are partitioned.
+    ASR::stmt_t *build_loop_nest(const ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al, x.m_body[i]);
+        }
+        for (size_t i = x.n_head; i > 1; i--) {
+            ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+                x.base.base.loc, s2c(al, ""), x.m_head[i - 1],
+                body.p, body.n, nullptr, 0));
+            Vec<ASR::stmt_t*> outer;
+            outer.reserve(al, 1);
+            outer.push_back(al, inner);
+            body = outer;
+        }
+        return ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc,
+            s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0));
+    }
+
+    // Only the outermost loop of a nest of concurrent loops becomes a
+    // region. The host lowering partitions one iteration space over the
+    // threads, and a thread that opened a second partition inside the first
+    // would be dividing what it was already given; a concurrent loop left in
+    // the body simply runs its iterations in order inside that thread.
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        const Location &loc = x.base.base.loc;
+        Vec<ASR::omp_clause_t*> clauses;
+        clauses.reserve(al, 4 + x.n_reduction);
+
+        // What a `do concurrent` loop asserts and an `!$omp parallel do` does
+        // not: no iteration depends on another.
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPIndependent_t(al, loc)));
+        if (x.n_shared > 0) {
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPShared_t(al, loc, x.m_shared, x.n_shared)));
+        }
+        if (x.n_local > 0) {
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPPrivate_t(al, loc, x.m_local, x.n_local)));
+        }
+        // One clause per reduction, since each names its own operator.
+        for (size_t i = 0; i < x.n_reduction; i++) {
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, 1);
+            vars.push_back(al, x.m_reduction[i].m_arg);
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPReduction_t(al, loc, x.m_reduction[i].m_op,
+                    vars.p, vars.n)));
+        }
+        // Every index of the loop belongs to the one iteration space that is
+        // partitioned; without this only the outermost one would be.
+        if (x.n_head > 1) {
+            ASR::expr_t *count = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, (int64_t)x.n_head,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPCollapse_t(al, loc, count)));
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, build_loop_nest(x));
+
+        pass_result.reserve(al, 1);
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
+            ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
+            body.p, body.n, x.m_exec_target)));
+    }
+};
+
 void pass_replace_omp_to_parallel_loop(Allocator &al,
         ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
     OMPParallelLoopVisitor v(al, pass_options);
+    v.visit_TranslationUnit(unit);
+}
+
+void pass_replace_parallel_loop_to_omp(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
+    ParallelLoopToOMPVisitor v(al);
     v.visit_TranslationUnit(unit);
 }
 
