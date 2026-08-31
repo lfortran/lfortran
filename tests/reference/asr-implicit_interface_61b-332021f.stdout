@@ -1,0 +1,351 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            apply_op:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            k:
+                                (Variable
+                                    3
+                                    k
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            report_len:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            y:
+                                                (Variable
+                                                    4
+                                                    y
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    report_len
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    [(Var 4 x)
+                                    (Var 4 y)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    apply_op
+                    (FunctionType
+                        [(FunctionType
+                            [(Integer 4)
+                            (Integer 4)]
+                            ()
+                            Source
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                            .true.
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        .true.
+                    )
+                    []
+                    [(Var 3 report_len)
+                    (Var 3 k)]
+                    [(SubroutineCall
+                        3 report_len
+                        ()
+                        [((IntegerConstant 7 (Integer 4) Decimal))
+                        ((Var 3 k))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            double_it:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            x:
+                                (Variable
+                                    5
+                                    x
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            y:
+                                (Variable
+                                    5
+                                    y
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    double_it
+                    (FunctionType
+                        [(Integer 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        .true.
+                    )
+                    []
+                    [(Var 5 x)
+                    (Var 5 y)]
+                    [(Assignment
+                        (Var 5 y)
+                        (IntegerBinOp
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            Mul
+                            (Var 5 x)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                ),
+            report_len:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            msg:
+                                (Variable
+                                    2
+                                    msg
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (String 1 () AssumedLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    report_len
+                    (FunctionType
+                        [(String 1 () AssumedLength DescriptorString)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        .true.
+                    )
+                    []
+                    [(Var 2 msg)
+                    (Var 2 n)]
+                    [(Assignment
+                        (Var 2 n)
+                        (StringLen
+                            (Var 2 msg)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                )
+        })
+    []
+)
