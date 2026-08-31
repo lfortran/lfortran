@@ -2438,7 +2438,8 @@ public:
         // A module procedure is implemented in a submodule of the same build
         // and so is never separately linked against another compiler's
         // object; it therefore never uses the classic Fortran external ABI.
-        // See `declares_external_procedure` in the symbol-table visitor.
+        // See `declares_external_procedure` in the symbol-table visitor and
+        // the `external_abi` pass.
         //
         // Note that `m_abi == BindC` is deliberately *not* excluded here:
         // besides a user's `bind(c)` procedure it also marks the interfaces

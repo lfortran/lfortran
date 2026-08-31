@@ -67,6 +67,7 @@
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
+#include <libasr/pass/external_abi.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pickle.h>
@@ -137,7 +138,8 @@ namespace LCompilers {
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"conditional_expr", &pass_replace_conditional_expr},
             {"array_struct_temporary", &pass_array_struct_temporary},
-            {"coarray", &pass_replace_coarray}
+            {"coarray", &pass_replace_coarray},
+            {"external_abi", &pass_finalize_external_abi}
         };
 
         bool apply_default_passes;
@@ -264,6 +266,7 @@ namespace LCompilers {
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
             _passes = {
+                "external_abi",
                 "global_stmts",
                 "init_expr",
                 "function_call_in_declaration",

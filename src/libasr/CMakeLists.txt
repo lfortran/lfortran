@@ -86,6 +86,7 @@ set(SRC
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
     pass/coarray.cpp
+    pass/external_abi.cpp
 
     codegen/asr_to_metal.cpp
     codegen/asr_to_cuda.cpp
