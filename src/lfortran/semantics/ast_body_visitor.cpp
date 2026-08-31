@@ -3573,8 +3573,8 @@ public:
                     ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(array_stmt);
                     std::string fn_name = ASRUtils::symbol_name(
                         ASRUtils::symbol_get_past_external(fc->m_name));
-                    label_msg = "`" + fn_name + "` is not an allocatable or "
-                        "pointer array, so this resolves to a function call";
+                    label_msg = "`" + fn_name + "` is not an array variable, "
+                        "so this resolves to a function call";
                 }
                 diag.add(Diagnostic(
                     "An allocate-object must be a data pointer or an allocatable variable",
