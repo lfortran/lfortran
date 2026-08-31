@@ -176,5 +176,7 @@ install(
 file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cpu.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cuda_cpu_device.h
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)
