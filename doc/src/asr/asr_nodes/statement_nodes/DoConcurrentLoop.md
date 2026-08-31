@@ -8,7 +8,7 @@ A loop whose iterations may run in any order.
 
 ```text
 DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local,
-    reduction_expr* reduction, stmt* body, exec_target exec_target)
+    reduction_expr* reduction, stmt* body)
 ```
 
 ### Arguments
@@ -20,7 +20,6 @@ DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local,
 | `local` | the variables each iteration has its own copy of. |
 | `reduction` | the reductions, each a [reduction_expr](../helper_nodes/reduction_expr.md) pairing an operator with the variable it accumulates into. |
 | `body` | the statements of one iteration. |
-| `exec_target` | the [exec_target](../enum_nodes/exec_target.md) that says who runs the iterations. |
 
 ### Return values
 

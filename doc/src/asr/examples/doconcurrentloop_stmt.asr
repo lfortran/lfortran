@@ -184,7 +184,6 @@
                 :move_allocation false
               )
             ]
-            :exec_target :ExecAuto
           )
         ]
       )

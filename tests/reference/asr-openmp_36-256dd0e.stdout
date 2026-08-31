@@ -113,7 +113,6 @@
                             .false.
                             .false.
                         )]
-                        ExecAuto
                     )
                     (Print
                         (StringFormat

@@ -530,7 +530,7 @@ public:
         pass_result.push_back(al, make_canonical_region(al, x.base.base.loc,
             x.m_shared, x.n_shared, x.m_local, x.n_local,
             x.m_reduction, x.n_reduction, (int64_t)x.n_head, nullptr, 0,
-            false, build_loop_nest(x), x.m_exec_target));
+            false, build_loop_nest(x), ASR::exec_targetType::ExecAuto));
     }
 
     // Leaves a region the pass could not canonicalize exactly as it was, so

@@ -2724,7 +2724,7 @@ class ReplaceExprWithTemporaryVisitor:
         ASR::stmt_t *do_concurrent = ASRUtils::STMT(
             ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n,
                 nullptr, 0, nullptr, 0, nullptr, 0,
-                body.p, body.size(), ASR::exec_targetType::ExecAuto));
+                body.p, body.size()));
         ASR::DoConcurrentLoop_t& dc =
             *ASR::down_cast<ASR::DoConcurrentLoop_t>(do_concurrent);
         for (size_t i = 0; i < dc.n_head; i++) {
