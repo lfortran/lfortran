@@ -11,10 +11,20 @@ namespace LCompilers {
 
 // Describes one dimension of a VLA workspace buffer.
 struct GpuVlaDim {
-    bool is_constant;
-    int64_t constant_value;
-    size_t call_arg_index;
-    ASR::expr_t *dim_expr; // original ASR dimension expression
+    bool is_constant = false;
+    int64_t constant_value = 0;
+    // Index of the kernel argument that supplies this dimension's size.
+    // -1 means the size could not be mapped to a kernel argument; the
+    // host side must then report an error instead of silently reading
+    // argument 0.
+    int64_t call_arg_index = -1;
+    // When non-empty, the size is the derived-type component chain
+    // arg%member_path[0]%member_path[1]%... of kernel argument
+    // `call_arg_index`.  A struct is passed to the kernel as a buffer,
+    // so the host has to load the component from the struct at
+    // kernel-launch time to size the workspace.
+    std::vector<std::string> member_path;
+    ASR::expr_t *dim_expr = nullptr; // original ASR dimension expression
     // When true, size is read from a struct member's allocatable
     // array size, resolved at dispatch time from the struct array's
     // per-element sizes. struct_member_key is "arr_name.member_name".
@@ -294,6 +304,45 @@ inline bool find_arg_var_in_expr(ASR::expr_t *expr,
     return false;
 }
 
+// If `expr` is a derived-type component reference rooted at a kernel
+// argument (e.g. `s%m_`, or `s%inner%n`), record the argument index and
+// the component chain (outermost component first).  Structs are passed to
+// a GPU kernel as buffers rather than as materialized scalars, so the host
+// must load the component from the struct at kernel-launch time.
+inline bool find_struct_member_arg_in_expr(ASR::expr_t *expr,
+        const std::vector<std::string> &arg_names,
+        size_t &arg_index, std::vector<std::string> &member_path) {
+    if (!expr) return false;
+    if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return find_struct_member_arg_in_expr(
+            ASR::down_cast<ASR::Cast_t>(expr)->m_arg,
+            arg_names, arg_index, member_path);
+    }
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) return false;
+    ASR::StructInstanceMember_t *sim =
+        ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+    ASR::symbol_t *member = ASRUtils::symbol_get_past_external(sim->m_m);
+    if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
+    if (ASR::is_a<ASR::Var_t>(*sim->m_v)) {
+        std::string base_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(sim->m_v)->m_v);
+        for (size_t a = 0; a < arg_names.size(); a++) {
+            if (arg_names[a] == base_name) {
+                arg_index = a;
+                member_path.push_back(ASRUtils::symbol_name(member));
+                return true;
+            }
+        }
+        return false;
+    }
+    if (!find_struct_member_arg_in_expr(sim->m_v, arg_names,
+            arg_index, member_path)) {
+        return false;
+    }
+    member_path.push_back(ASRUtils::symbol_name(member));
+    return true;
+}
+
 // Try to resolve an ArraySize expression through Associate statements
 // to find a kernel argument that determines the dimension size.
 // Handles the pattern: ArraySize(temp, dim) where temp is associated
@@ -503,7 +552,6 @@ inline void scan_kernel_scope_alloc_vlas(
                     vd.constant_value =
                         ASR::down_cast<ASR::IntegerConstant_t>(
                             dim)->m_n;
-                    vd.call_arg_index = 0;
                 } else if (dim) {
                     int64_t const_val;
                     if (try_resolve_alloc_dim_constant(
@@ -511,13 +559,17 @@ inline void scan_kernel_scope_alloc_vlas(
                             const_val)) {
                         vd.is_constant = true;
                         vd.constant_value = const_val;
-                        vd.call_arg_index = 0;
                     } else {
                         vd.is_constant = false;
                         vd.constant_value = 0;
-                        vd.call_arg_index = 0;
                         size_t idx = 0;
-                        if (find_arg_var_in_expr(dim, arg_names, idx)) {
+                        std::vector<std::string> member_path;
+                        if (find_struct_member_arg_in_expr(
+                                dim, arg_names, idx, member_path)) {
+                            vd.call_arg_index = idx;
+                            vd.member_path = member_path;
+                        } else if (find_arg_var_in_expr(
+                                dim, arg_names, idx)) {
                             vd.call_arg_index = idx;
                         } else if (try_resolve_array_size_to_arg_var(
                                 dim, kernel.m_body, kernel.n_body,
@@ -528,7 +580,6 @@ inline void scan_kernel_scope_alloc_vlas(
                 } else {
                     vd.is_constant = true;
                     vd.constant_value = 1;
-                    vd.call_arg_index = 0;
                 }
                 ws.dims.push_back(vd);
             }
@@ -593,7 +644,6 @@ inline void scan_kernel_scope_alloc_vlas(
             vd.dim_expr = nullptr;
             vd.is_constant = false;
             vd.constant_value = 0;
-            vd.call_arg_index = 0;
             vd.is_struct_member_size = true;
             vd.struct_member_key = struct_key;
             ws.dims.push_back(vd);
@@ -775,27 +825,32 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
                 ASR::expr_t *dim = arr->m_dims[d].m_length;
                 GpuVlaDim vd;
                 vd.dim_expr = dim;
+                size_t sm_idx = 0;
+                std::vector<std::string> sm_path;
                 if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
                     vd.is_constant = true;
                     vd.constant_value =
                         ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
-                    vd.call_arg_index = 0;
                 } else if (dim && ASR::is_a<ASR::Var_t>(*dim)) {
                     std::string dim_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(dim)->m_v);
                     vd.is_constant = false;
                     vd.constant_value = 0;
-                    vd.call_arg_index = 0;
                     for (size_t a = 0; a < arg_names.size(); a++) {
                         if (arg_names[a] == dim_name) {
                             vd.call_arg_index = a;
                             break;
                         }
                     }
+                } else if (dim && find_struct_member_arg_in_expr(
+                        dim, arg_names, sm_idx, sm_path)) {
+                    vd.is_constant = false;
+                    vd.constant_value = 0;
+                    vd.call_arg_index = sm_idx;
+                    vd.member_path = sm_path;
                 } else {
                     vd.is_constant = true;
                     vd.constant_value = 1;
-                    vd.call_arg_index = 0;
                 }
                 ws.dims.push_back(vd);
             }
@@ -838,7 +893,6 @@ inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
             vd.dim_expr = nullptr;
             vd.is_constant = false;
             vd.constant_value = 0;
-            vd.call_arg_index = 0;
             vd.is_struct_member_size = true;
             vd.struct_member_key = struct_key;
             ws.dims.push_back(vd);

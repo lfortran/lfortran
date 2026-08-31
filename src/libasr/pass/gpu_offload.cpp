@@ -23,6 +23,43 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
+// Look up a member (component or type-bound procedure) by name in a
+// Struct's symbol table, walking the inheritance chain: a component
+// inherited from a parent type lives in the parent Struct's symtab, not
+// in the extending type's own scope.
+static ASR::symbol_t* get_struct_member_recursive(ASR::Struct_t *s,
+        const std::string &name) {
+    std::set<ASR::Struct_t*> seen;
+    while (s != nullptr) {
+        if (!seen.insert(s).second) break;
+        ASR::symbol_t *member = s->m_symtab->get_symbol(name);
+        if (member) return member;
+        if (!s->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            s->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        s = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return nullptr;
+}
+
+// Name of the Struct that owns `member`, used as the m_module_name of an
+// ExternalSymbol pointing at it. For an inherited member this is the
+// ancestor type, not the type the reference was written through.
+static std::string struct_member_owner_name(ASR::symbol_t *member,
+        const std::string &fallback) {
+    SymbolTable *owner_st = ASRUtils::symbol_parent_symtab(member);
+    if (owner_st && owner_st->asr_owner &&
+            owner_st->asr_owner->type == ASR::asrType::symbol) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            owner_st->asr_owner);
+        if (ASR::is_a<ASR::Struct_t>(*owner)) {
+            return std::string(ASRUtils::symbol_name(owner));
+        }
+    }
+    return fallback;
+}
+
 // Collects all symbols referenced in expressions/statements
 class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
 public:
@@ -101,6 +138,97 @@ public:
         }
     }
 };
+
+// Answers whether the Metal Shading Language can represent `t` with the
+// same in-memory width the host uses. MSL has no 64-bit floating point
+// type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no complex
+// type, so the Metal backend lowers all of those to a narrower (or bogus)
+// type. Offloading a `do concurrent` that touches such data would make the
+// kernel reinterpret the host buffers and the by-value scalar-argument
+// struct at the wrong element size, silently producing wrong results, so
+// such a loop has to stay on the CPU.
+//
+// Note: kind-8 integers are representable (MSL `long` is 8 bytes), but are
+// rejected here to preserve the pre-existing bail-out behaviour.
+static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
+    switch (base_t->type) {
+        case ASR::ttypeType::Real:
+            return ASR::down_cast<ASR::Real_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Integer:
+            return ASR::down_cast<ASR::Integer_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Logical:
+            return ASR::down_cast<ASR::Logical_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Complex:
+            return false;
+        default:
+            return true;
+    }
+}
+
+// A derived type is representable only when every one of its data members
+// is, because the Metal struct is laid out member by member: a single fp64
+// member anywhere in the type changes the element size the kernel would
+// have to stride by, while the host buffer keeps the wider layout. The
+// members inherited through `extends` live in the parent Struct (they are
+// reached at run time through the `__parent` member), so the parent chain
+// has to be walked as well. `visited` guards against self-referential
+// types such as `type(node), pointer :: next`, whose member graph is
+// cyclic.
+static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
+        // The derived type cannot be inspected, so it cannot be shown to
+        // be representable: keep the loop on the CPU.
+        return false;
+    }
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    if (!visited.insert(st).second) {
+        // Already on the walk stack; its members are checked there.
+        return true;
+    }
+    if (st->m_parent
+            && !is_metal_representable_struct(st->m_parent, visited)) {
+        return false;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!msym) continue;
+        msym = ASRUtils::symbol_get_past_external(msym);
+        if (!ASR::is_a<ASR::Variable_t>(*msym)) continue;
+        ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(msym);
+        ASR::ttype_t *mtype = ASRUtils::extract_type(mvar->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*mtype)) {
+            if (!mvar->m_type_declaration
+                    || !is_metal_representable_struct(
+                        mvar->m_type_declaration, visited)) {
+                return false;
+            }
+        } else if (!is_metal_representable_scalar_type(mtype)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Answers whether the Metal Shading Language can represent the type of `e`
+// with the same in-memory width the host uses. MSL has no 64-bit floating
+// point type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no
+// complex type, so the Metal backend lowers all of those to a narrower (or
+// bogus) type. Offloading a `do concurrent` that touches such data would
+// make the kernel reinterpret the host buffers and the by-value
+// scalar-argument struct at the wrong element size, silently producing
+// wrong results, so such a loop has to stay on the CPU.
+static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
+    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+    if (ASR::is_a<ASR::StructType_t>(*base_t)) {
+        if (!e) return false;
+        std::set<ASR::Struct_t*> visited;
+        return is_metal_representable_struct(
+            ASRUtils::get_struct_sym_from_struct_expr(e), visited);
+    }
+    return is_metal_representable_scalar_type(base_t);
+}
 
 // Checks whether an expression tree contains a FunctionCall node.
 class ContainsFunctionCall : public ASR::BaseWalkVisitor<ContainsFunctionCall> {
@@ -774,7 +902,7 @@ public:
         for (auto &item : kernel_scope->get_scope()) {
             if (!is_a<ASR::Struct_t>(*item.second)) continue;
             ASR::Struct_t *s = down_cast<ASR::Struct_t>(item.second);
-            if (s->m_symtab->get_symbol(member_name)) {
+            if (get_struct_member_recursive(s, member_name)) {
                 return item.second;
             }
         }
@@ -792,6 +920,23 @@ public:
         // If already imported, return existing
         ASR::symbol_t *existing = kernel_scope->get_symbol(struct_name);
         if (existing) return existing;
+
+        // Import the parent type first, so the extending type keeps its
+        // inheritance chain in the kernel scope. Members inherited from
+        // the parent are declared in the parent's symtab, so without this
+        // they would be lost entirely. The parent chain is acyclic, so
+        // this terminates; and since the parent is added to kernel_scope
+        // before this struct, the early-return guard above stays correct.
+        ASR::symbol_t *new_parent = nullptr;
+        if (orig_struct->m_parent) {
+            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                orig_struct->m_parent);
+            if (is_a<ASR::Struct_t>(*parent_sym)) {
+                new_parent = import_struct_def(
+                    down_cast<ASR::Struct_t>(parent_sym),
+                    orig_scope, kernel_scope, loc);
+            }
+        }
 
         // Deep-copy the Struct into kernel scope
         SymbolTable *new_st = al.make_new<SymbolTable>(kernel_scope);
@@ -852,7 +997,7 @@ public:
             orig_struct->m_abi, orig_struct->m_access,
             orig_struct->m_is_packed, orig_struct->m_is_abstract,
             orig_struct->m_is_sequence,
-            nullptr, 0, nullptr, nullptr, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0);
         ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
         kernel_scope->add_symbol(struct_name, kernel_struct);
 
@@ -882,19 +1027,25 @@ public:
                     ASR::symbol_t *es_struct_owner =
                         down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                     if (is_a<ASR::Struct_t>(*es_struct_owner) &&
-                            new_st->get_symbol(es->m_original_name)) {
+                            get_struct_member_recursive(
+                                down_cast<ASR::Struct_t>(kernel_struct),
+                                es->m_original_name)) {
                         is_member = true;
                     }
                 }
                 if (is_member) {
                     std::string es_name = item.first;
                     if (kernel_scope->get_symbol(es_name)) continue;
-                    ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
-                        es->m_original_name);
+                    ASR::symbol_t *new_member_in_struct =
+                        get_struct_member_recursive(
+                            down_cast<ASR::Struct_t>(kernel_struct),
+                            es->m_original_name);
                     if (!new_member_in_struct) continue;
+                    std::string owner_name = struct_member_owner_name(
+                        new_member_in_struct, struct_name);
                     ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
                         kernel_scope, s2c(al, es_name),
-                        new_member_in_struct, s2c(al, struct_name),
+                        new_member_in_struct, s2c(al, owner_name),
                         nullptr, 0, s2c(al, es->m_original_name),
                         es->m_access);
                     kernel_scope->add_symbol(es_name,
@@ -4109,6 +4260,46 @@ public:
         }
     }
 
+    // Collects every symbol the kernel would have to reference for `x`:
+    // the symbols appearing in the loop head and body, plus the symbols
+    // that only appear inside the array-dimension expressions of those
+    // symbols' types (e.g. `tmp(size(b))` pulls in `b`).
+    void collect_involved_syms(const ASR::DoConcurrentLoop_t &x,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms) {
+        GpuSymbolCollector collector(al, involved_syms,
+            enclosing_block_scopes);
+        collector.visit_DoConcurrentLoop(x);
+        bool added = true;
+        while (added) {
+            added = false;
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
+            GpuSymbolCollector type_collector(al, extra_syms,
+                enclosing_block_scopes);
+            for (auto &[sym_name, sym_info] : involved_syms) {
+                ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+                if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_start)
+                        type_collector.visit_expr(*arr->m_dims[d].m_start);
+                    if (arr->m_dims[d].m_length)
+                        type_collector.visit_expr(*arr->m_dims[d].m_length);
+                }
+            }
+            for (auto &[name, info] : extra_syms) {
+                if (involved_syms.find(name) == involved_syms.end()) {
+                    involved_syms[name] = info;
+                    added = true;
+                }
+            }
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
@@ -4311,6 +4502,51 @@ public:
                         }
                     }
                 }
+            }
+        }
+
+        // Detect if the do concurrent is inside a Block scope. If so,
+        // block-local variables need to be collected as kernel parameters
+        // rather than skipped. Walk up through AssociateBlock and Block
+        // parents to find ALL enclosing Block scopes (e.g., do concurrent
+        // inside a nested Block that accesses variables from outer Blocks).
+        std::set<SymbolTable*> enclosing_block_scopes;
+        {
+            SymbolTable *scope = current_scope;
+            while (scope && scope->asr_owner &&
+                   scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (is_a<ASR::Block_t>(*owner_sym)) {
+                    enclosing_block_scopes.insert(scope);
+                    scope = scope->parent;
+                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                    scope = scope->parent;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Decide whether this loop can be offloaded at all *before* any of
+        // the inline_* helpers below rewrite the loop body. Those helpers
+        // are destructive: they lower array-section and intrinsic-array
+        // assignments into explicit element loops, a half-lowered shape
+        // that only the kernel extractor understands. If we declined the
+        // offload after rewriting, the loop would stay on the host in a
+        // form the later array_op pass no longer normalizes, and codegen
+        // would fail. So: no mutation until the decision is made.
+        if (pass_options.gpu_offload_metal) {
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+                candidate_syms;
+            collect_involved_syms(x, enclosing_block_scopes, candidate_syms);
+            // Every symbol reaching the kernel — buffer parameters,
+            // by-value members of the __ScalarArgs struct and kernel-local
+            // temporaries alike — is collected here, so a single sweep
+            // covers all of them.
+            for (auto &sym : candidate_syms) {
+                if (!is_metal_representable_type(sym.second.first,
+                        sym.second.second)) return;
             }
         }
 
@@ -4606,77 +4842,9 @@ public:
             }
         }
 
-        // Detect if the do concurrent is inside a Block scope. If so,
-        // block-local variables need to be collected as kernel parameters
-        // rather than skipped. Walk up through AssociateBlock and Block
-        // parents to find ALL enclosing Block scopes (e.g., do concurrent
-        // inside a nested Block that accesses variables from outer Blocks).
-        std::set<SymbolTable*> enclosing_block_scopes;
-        {
-            SymbolTable *scope = current_scope;
-            while (scope && scope->asr_owner &&
-                   scope->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
-                    scope->asr_owner);
-                if (is_a<ASR::Block_t>(*owner_sym)) {
-                    enclosing_block_scopes.insert(scope);
-                    scope = scope->parent;
-                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                    scope = scope->parent;
-                } else {
-                    break;
-                }
-            }
-        }
-
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
-        GpuSymbolCollector collector(al, involved_syms, enclosing_block_scopes);
-        collector.visit_DoConcurrentLoop(x);
-
-        // Also collect symbols referenced in the type expressions (array
-        // dimensions) of already-collected symbols. For example, if
-        // `tmp(size(b))` is used in the body, `tmp` is collected but `b`
-        // only appears in tmp's type — we must also pull `b` into
-        // involved_syms so it becomes a kernel parameter.
-        {
-            bool added = true;
-            while (added) {
-                added = false;
-                std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
-                GpuSymbolCollector type_collector(al, extra_syms, enclosing_block_scopes);
-                for (auto &[sym_name, sym_info] : involved_syms) {
-                    ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
-                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
-                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
-                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
-                    for (size_t d = 0; d < arr->n_dims; d++) {
-                        if (arr->m_dims[d].m_start)
-                            type_collector.visit_expr(*arr->m_dims[d].m_start);
-                        if (arr->m_dims[d].m_length)
-                            type_collector.visit_expr(*arr->m_dims[d].m_length);
-                    }
-                }
-                for (auto &[name, info] : extra_syms) {
-                    if (involved_syms.find(name) == involved_syms.end()) {
-                        involved_syms[name] = info;
-                        added = true;
-                    }
-                }
-            }
-        }
-
-        if (pass_options.gpu_offload_metal) {
-            for (auto &sym : involved_syms) {
-                ASR::ttype_t *t = sym.second.first;
-                ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-                if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-                if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
-            }
-        }
+        collect_involved_syms(x, enclosing_block_scopes, involved_syms);
 
         // Collect loop variable names
         std::vector<std::string> loop_var_names;
@@ -5944,8 +6112,11 @@ public:
                                 ASR::Struct_t *ks =
                                     down_cast<ASR::Struct_t>(kernel_struct);
                                 ASR::symbol_t *kernel_method =
-                                    ks->m_symtab->get_symbol(orig_name);
+                                    get_struct_member_recursive(ks,
+                                        orig_name);
                                 if (kernel_method) {
+                                    struct_name = struct_member_owner_name(
+                                        kernel_method, struct_name);
                                     ASR::asr_t *new_es =
                                         ASR::make_ExternalSymbol_t(al, loc,
                                             kernel_scope,

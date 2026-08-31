@@ -6641,48 +6641,71 @@ class SymbolDuplicator {
                         associate_block->m_name, new_body.p, new_body.size()));
     }
 
-    // Recursively re-duplicate AssociateBlock bodies with scope
-    // awareness. duplicate_AssociateBlock uses a non-scoped duplicator,
-    // so Var references in the body still point to original symbols.
-    // This walks through all AssociateBlocks (including nested ones)
-    // and re-duplicates from the original bodies using a scoped
-    // duplicator that resolves symbols through the new scope chain.
-    void fixup_associate_block_bodies(SymbolTable *new_scope,
+    // Re-duplicate the statements of a Block/AssociateBlock body inside
+    // the new scope `new_symtab`, resolving every symbol reference
+    // through the new scope chain. Returns false (leaving `new_body`
+    // unusable) if any statement could not be duplicated.
+    bool reduplicate_body_in_scope(SymbolTable *new_symtab,
+            ASR::stmt_t **orig_body, size_t orig_n_body,
+            Vec<ASR::stmt_t*> &new_body) {
+        new_body.reserve(al, orig_n_body);
+        ASRUtils::ExprStmtWithScopeDuplicator body_dup(al, new_symtab);
+        body_dup.use_resolve_symbol = true;
+        body_dup.allow_procedure_calls = true;
+        body_dup.allow_reshape = true;
+        for (size_t i = 0; i < orig_n_body; i++) {
+            body_dup.success = true;
+            ASR::stmt_t* s = body_dup.duplicate_stmt(orig_body[i]);
+            if (!body_dup.success) return false;
+            new_body.push_back(al, s);
+        }
+        return true;
+    }
+
+    // Recursively re-duplicate AssociateBlock and Block bodies with
+    // scope awareness. duplicate_AssociateBlock and duplicate_Block use
+    // a non-scoped duplicator, so Var references in the body still
+    // point to original symbols. This walks through all AssociateBlocks
+    // and Blocks (including nested ones) and re-duplicates from the
+    // original bodies using a scoped duplicator that resolves symbols
+    // through the new scope chain.
+    void fixup_nested_block_bodies(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         for (auto &item : new_scope->get_scope()) {
-            if (!ASR::is_a<ASR::AssociateBlock_t>(*item.second))
-                continue;
-            ASR::AssociateBlock_t *new_ab =
-                ASR::down_cast<ASR::AssociateBlock_t>(item.second);
             ASR::symbol_t *orig_sym = orig_scope->get_symbol(
                 item.first);
-            if (!orig_sym ||
-                    !ASR::is_a<ASR::AssociateBlock_t>(*orig_sym))
-                continue;
-            ASR::AssociateBlock_t *orig_ab =
-                ASR::down_cast<ASR::AssociateBlock_t>(orig_sym);
-            // Recurse into nested AssociateBlocks first so their
-            // bodies are fixed before we re-duplicate this level.
-            fixup_associate_block_bodies(new_ab->m_symtab,
-                orig_ab->m_symtab);
-            Vec<ASR::stmt_t*> ab_body;
-            ab_body.reserve(al, orig_ab->n_body);
-            ASRUtils::ExprStmtWithScopeDuplicator ab_dup(
-                al, new_ab->m_symtab);
-            ab_dup.use_resolve_symbol = true;
-            ab_dup.allow_procedure_calls = true;
-            ab_dup.allow_reshape = true;
-            bool ab_ok = true;
-            for (size_t i = 0; i < orig_ab->n_body; i++) {
-                ab_dup.success = true;
-                ASR::stmt_t* s = ab_dup.duplicate_stmt(
-                    orig_ab->m_body[i]);
-                if (!ab_dup.success) { ab_ok = false; break; }
-                ab_body.push_back(al, s);
-            }
-            if (ab_ok) {
-                new_ab->m_body = ab_body.p;
-                new_ab->n_body = ab_body.n;
+            if (!orig_sym) continue;
+            if (ASR::is_a<ASR::AssociateBlock_t>(*item.second) &&
+                    ASR::is_a<ASR::AssociateBlock_t>(*orig_sym)) {
+                ASR::AssociateBlock_t *new_ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                ASR::AssociateBlock_t *orig_ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(orig_sym);
+                // Recurse into nested blocks first so their bodies are
+                // fixed before we re-duplicate this level.
+                fixup_nested_block_bodies(new_ab->m_symtab,
+                    orig_ab->m_symtab);
+                Vec<ASR::stmt_t*> ab_body;
+                if (reduplicate_body_in_scope(new_ab->m_symtab,
+                        orig_ab->m_body, orig_ab->n_body, ab_body)) {
+                    new_ab->m_body = ab_body.p;
+                    new_ab->n_body = ab_body.n;
+                }
+            } else if (ASR::is_a<ASR::Block_t>(*item.second) &&
+                    ASR::is_a<ASR::Block_t>(*orig_sym)) {
+                ASR::Block_t *new_block =
+                    ASR::down_cast<ASR::Block_t>(item.second);
+                ASR::Block_t *orig_block =
+                    ASR::down_cast<ASR::Block_t>(orig_sym);
+                fixup_nested_block_bodies(new_block->m_symtab,
+                    orig_block->m_symtab);
+                Vec<ASR::stmt_t*> block_body;
+                if (reduplicate_body_in_scope(new_block->m_symtab,
+                        orig_block->m_body, orig_block->n_body,
+                        block_body)) {
+                    new_block->m_body = block_body.p;
+                    new_block->n_body = block_body.n;
+                }
             }
         }
     }
@@ -6692,7 +6715,7 @@ class SymbolDuplicator {
         SymbolTable* function_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(function->m_symtab, function_symtab);
 
-        fixup_associate_block_bodies(function_symtab, function->m_symtab);
+        fixup_nested_block_bodies(function_symtab, function->m_symtab);
 
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);
