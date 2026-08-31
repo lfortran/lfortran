@@ -5517,7 +5517,9 @@ public:
                     ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
                     ftype->m_module, ftype->m_inline, ftype->m_static,
                     ftype->m_restrictions, ftype->n_restrictions,
-                    ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
+                    ftype->m_is_restriction, f->m_deterministic,
+                    f->m_side_effect_free, nullptr, nullptr, nullptr,
+                    ASR::exec_spaceType::Host, ftype->m_external_abi);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }
             default : {

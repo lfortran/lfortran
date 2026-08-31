@@ -164,6 +164,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [f]
                                                     [(Var 7 x)
@@ -297,6 +298,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 6 x)
@@ -455,6 +457,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 4 x)
@@ -597,6 +600,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [~add_intrinsic]
                                                     [(Var 10 x)
@@ -771,6 +775,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 9 arg0)
@@ -810,6 +815,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     []

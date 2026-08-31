@@ -192,6 +192,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [resize]
                                                     [(Var 6 de)
@@ -335,6 +336,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 7 stack)
@@ -367,6 +369,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 5 de)]

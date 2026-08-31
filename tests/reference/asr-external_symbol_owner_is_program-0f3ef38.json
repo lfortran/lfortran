@@ -2,12 +2,12 @@
     "basename": "asr-external_symbol_owner_is_program-0f3ef38",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/external_symbol_owner_is_program.asr",
-    "infile_hash": "04c27122abda1993bfe73bd7ae9235fae58837b6e4a5fa4dc914e0e4",
+    "infile_hash": "5f043371a92fdae3559ad20c77846775d9634fd096fb75c38593e392",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-external_symbol_owner_is_program-0f3ef38.stderr",
-    "stderr_hash": "a759b4c27ab98628f0f284d6525b8eb78d474e9f0e695af9128155bf",
+    "stderr_hash": "e1092dfc1c4cd16fb7b9c0522c4a07286fce763c5eb45f834ae7b6ea",
     "returncode": 2
 }

@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.call.actual_type_matches_formal]: Actual argument type i16 does not match formal argument type i32
-   --> tests/asr/verify/call_actual_type_mismatch.asr:108:18
+   --> tests/asr/verify/call_actual_type_mismatch.asr:109:18
     |
-108 |                 (Var
+109 |                 (Var
     |                  ^^^ failed here

@@ -143,6 +143,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [times
                                                     plus]
@@ -310,6 +311,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 6 a)
@@ -453,6 +455,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 7 a)
@@ -712,6 +715,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [~mul_intrinsic
                                                     ~add_intrinsic]
@@ -996,6 +1000,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 13 arg0)
@@ -1126,6 +1131,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 14 arg0)
@@ -1171,6 +1177,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     []
@@ -1472,6 +1479,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 10 a)
@@ -1686,6 +1694,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     [my_mul
                                     my_add]
@@ -1870,6 +1879,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 9 a)
@@ -2010,6 +2020,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 4 a)

@@ -4391,7 +4391,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
                 ft->m_static, ft->m_restrictions, ft->n_restrictions,
-                ft->m_is_restriction, ft->m_exec_space));
+                ft->m_is_restriction, ft->m_exec_space, ft->m_external_abi));
         }
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
@@ -6467,7 +6467,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     char* a_bindc_name, bool a_elemental, bool a_pure, bool a_module, bool a_inline,
     bool a_static,
     ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope,
-    ASR::exec_spaceType a_exec_space=ASR::exec_spaceType::Host) {
+    ASR::exec_spaceType a_exec_space=ASR::exec_spaceType::Host,
+    bool a_external_abi=false) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
@@ -6489,7 +6490,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
         al, a_loc, arg_types.p, arg_types.size(), return_var_type, a_abi, a_deftype,
         a_bindc_name, a_elemental, a_pure, a_module, a_inline,
         a_static, a_restrictions, n_restrictions,
-        a_is_restriction, a_exec_space);
+        a_is_restriction, a_exec_space, a_external_abi);
 }
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc,
@@ -6498,7 +6499,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
         ft->m_abi, ft->m_deftype, ft->m_bindc_name, ft->m_elemental,
         ft->m_pure, ft->m_module, ft->m_inline, ft->m_static,
         ft->m_restrictions,
-        ft->n_restrictions, ft->m_is_restriction, current_scope, ft->m_exec_space);
+        ft->n_restrictions, ft->m_is_restriction, current_scope, ft->m_exec_space,
+        ft->m_external_abi);
 }
 
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
@@ -6510,11 +6512,13 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
     Location* m_end_name = nullptr,
-    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host) {
+    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host,
+    bool m_external_abi = false) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
-        m_restrictions, n_restrictions, m_is_restriction, m_symtab, m_exec_space));
+        m_restrictions, n_restrictions, m_is_restriction, m_symtab, m_exec_space,
+        m_external_abi));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -6793,7 +6797,7 @@ class SymbolDuplicator {
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
             function->m_side_effect_free, nullptr, nullptr, nullptr,
-            function_type->m_exec_space));
+            function_type->m_exec_space, function_type->m_external_abi));
     }
 
     ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,

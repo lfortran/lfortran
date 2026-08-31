@@ -2,12 +2,12 @@
     "basename": "asr-implicit_interface_call_target-d881e70",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/implicit_interface_call_target.asr",
-    "infile_hash": "495184e8c488992911033bc649800f6772a3811fd178e16325892947",
+    "infile_hash": "507cde4af68969ae6a24d6618d086d43b328f63839a08ff412aeacc0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-implicit_interface_call_target-d881e70.stderr",
-    "stderr_hash": "9f301d446db63d988631b0082b0b79ce189aaad7eac6b3b1c6e1aa7f",
+    "stderr_hash": "1ae85ed5d2e85994326b0ae5309e9a66d8ca334db349a727daecdd47",
     "returncode": 2
 }

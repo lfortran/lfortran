@@ -52,6 +52,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 3 f_arg_0)]
@@ -103,6 +104,7 @@
                         []
                         .false.
                         Host
+                        .false.
                     )
                     []
                     [(Var 2 f)

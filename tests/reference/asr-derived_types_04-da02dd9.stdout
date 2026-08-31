@@ -149,6 +149,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 6 lhs)
@@ -424,6 +425,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 8 lhs)
@@ -917,6 +919,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 9 hour)
@@ -1247,6 +1250,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 7 lhs)

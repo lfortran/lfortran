@@ -10,7 +10,7 @@ The signature of a procedure.
 FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
     deftype deftype, string? bindc_name, bool elemental, bool pure,
     bool module, bool inline, bool static, symbol* restrictions,
-    bool is_restriction, exec_space exec_space)
+    bool is_restriction, exec_space exec_space, bool external_abi)
 ```
 
 ### Arguments
@@ -30,6 +30,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
 | `exec_space` | where the procedure runs; see [exec_space](../enum_nodes/exec_space.md). |
+| `external_abi` | `true` for a separately compiled external procedure, which uses the classic Fortran external ABI so that it interoperates with gfortran and flang. Nothing sets or reads the field yet; it is always `false`. |
 
 ### Return values
 
@@ -82,6 +83,7 @@ arguments are not known here.
   :restrictions []
   :is_restriction false
   :exec_space :Host
+  :external_abi false
 )
 ```
 

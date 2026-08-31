@@ -867,7 +867,7 @@ class PRIFInterface {
                 al, loc, cleanup_arg_types.p, cleanup_arg_types.n,
                 nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
                 nullptr, false, false, false, false, false, nullptr, 0, false,
-                ASR::exec_spaceType::Host));
+                ASR::exec_spaceType::Host, false));
             ASR::ttype_t *cleanup_ptr_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, cleanup_func_type));
             ASR::expr_t *final_proc = b.Variable(fn_symtab, "final_proc", cleanup_ptr_type,
@@ -1854,7 +1854,7 @@ class PRIFInterface {
                 al, loc, fp_arg_types.p, fp_arg_types.n,
                 nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
                 nullptr, false, false, false, false, false, nullptr, 0, false,
-                ASR::exec_spaceType::Host));
+                ASR::exec_spaceType::Host, false));
             ASR::expr_t *null_fptr = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
             

@@ -158,6 +158,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 13 lhs)
@@ -285,6 +286,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 12 lhs)
@@ -429,6 +431,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 7 lhs)
@@ -657,6 +660,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 9 lhs)
@@ -853,6 +857,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [lt
                                                     swp
@@ -1175,6 +1180,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 10 lhs)
@@ -1342,6 +1348,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 19 lhs)
@@ -1467,6 +1474,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 20 lhs)
@@ -1617,6 +1625,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 21 lhs)
@@ -1851,6 +1860,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [lt_integer
                                                     __asr_swp
@@ -2247,6 +2257,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [__asr_swp2
                                                     qsort_my_type]
@@ -2667,6 +2678,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [lt_real
                                                     __asr_swp1
@@ -2980,6 +2992,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     []
@@ -3310,6 +3323,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 4 lhs)

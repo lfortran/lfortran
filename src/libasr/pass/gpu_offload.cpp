@@ -5584,7 +5584,7 @@ public:
                 arg_types.p, arg_types.n, nullptr,
                 ASR::abiType::Source, ASR::deftypeType::Implementation,
                 nullptr, false, false, false, false, false, nullptr, 0, false,
-                ASR::exec_spaceType::Kernel));
+                ASR::exec_spaceType::Kernel, false));
 
         // 6. Create the kernel as a Kernel function. A kernel is
         // subroutine-shaped, so it has no return variable, and `fn_sig` is

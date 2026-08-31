@@ -2,12 +2,12 @@
     "basename": "asr-struct_parent_is_function-f4da41c",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_parent_is_function.asr",
-    "infile_hash": "d9a4e6a0aeaf6f584665cf806c25e11cb5830fc0319fa0561ff10f40",
+    "infile_hash": "bd1a73217e1401f25f5449ffb38320fe6b6a2f6a9cf95bea20815c61",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-struct_parent_is_function-f4da41c.stderr",
-    "stderr_hash": "5d59bbfdc75aead2b3b99e490ab5cd7a53bdcae28125e4155ae51214",
+    "stderr_hash": "375d9a8000021892953054f4868174b2271075bcaf7a3ce38cc4b103",
     "returncode": 2
 }
