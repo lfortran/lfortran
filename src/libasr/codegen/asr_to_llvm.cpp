@@ -22254,6 +22254,23 @@ public:
             "arguments", x.base.base.loc);
     }
 
+    // GEP indices that reach an allocatable array component of element
+    // `elem_index` of a kernel argument that is an array of derived type.
+    // A component the type declares itself is one field index, while an
+    // inherited one is reached through the parent field once per level of
+    // inheritance, so the whole path from `gpu_struct_member_buffers` is
+    // walked instead of a single index.
+    std::vector<llvm::Value*> gpu_struct_member_gep(llvm::Value *elem_index,
+            const std::vector<int> &field_path) {
+        std::vector<llvm::Value*> indices;
+        indices.push_back(elem_index);
+        for (int field : field_path) {
+            indices.push_back(llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), field));
+        }
+        return indices;
+    }
+
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
             llvm::Type::getInt8Ty(context));
@@ -22356,7 +22373,7 @@ public:
             llvm::Type *arr_llvm;
             llvm::Type *struct_llvm;
             llvm::Value *arg_val;
-            int field_idx;
+            std::vector<int> field_path;
         };
         std::vector<StructMemberWriteBack> struct_writebacks;
         // Map "arr.member" -> first element's size (LLVM value)
@@ -22642,7 +22659,8 @@ public:
                                 struct_llvm->getPointerTo());
                         for (auto &mem_entry : struct_member_bufs) {
                             ASR::Variable_t *mv = mem_entry.var;
-                            int field_idx = mem_entry.field_index;
+                            const std::vector<int> &field_path =
+                                mem_entry.field_path;
                             ASR::ttype_t *inner =
                                 ASRUtils::type_get_past_allocatable(
                                     mv->m_type);
@@ -22734,10 +22752,9 @@ public:
                                 llvm::Value *fp =
                                     builder->CreateGEP(
                                         struct_llvm, typed_data,
-                                        {llvm::ConstantInt::get(
-                                             i64, k),
-                                         llvm::ConstantInt::get(
-                                             i32, field_idx)});
+                                        gpu_struct_member_gep(
+                                            llvm::ConstantInt::get(
+                                                i64, k), field_path));
                                 llvm::Value *dp =
                                     llvm_utils->CreateLoad2(
                                         desc_type->getPointerTo(),
@@ -23129,7 +23146,7 @@ public:
                                      || runtime_sourced,
                                  desc_type, arr_llvm,
                                  struct_llvm, arg_val,
-                                 field_idx});
+                                 field_path});
                             // Save first element's size for VLA
                             // workspace allocation of function-call
                             // result temps that depend on this member.
@@ -23194,7 +23211,8 @@ public:
                             get_gpu_runtime_func("malloc", mft);
                         for (auto &mem_entry : struct_member_bufs) {
                             ASR::Variable_t *mv = mem_entry.var;
-                            int field_idx = mem_entry.field_index;
+                            const std::vector<int> &field_path =
+                                mem_entry.field_path;
                             ASR::ttype_t *inner =
                                 ASRUtils::type_get_past_allocatable(
                                     mv->m_type);
@@ -23322,8 +23340,8 @@ public:
                                 llvm::Value *fp =
                                     builder->CreateGEP(
                                         struct_llvm, typed_data,
-                                        {kv, llvm::ConstantInt::get(
-                                            i32, field_idx)});
+                                        gpu_struct_member_gep(kv,
+                                            field_path));
                                 llvm::Value *dp =
                                     llvm_utils->CreateLoad2(
                                         mem_desc_type
@@ -23463,8 +23481,8 @@ public:
                                 llvm::Value *fp =
                                     builder->CreateGEP(
                                         struct_llvm, typed_data,
-                                        {kv, llvm::ConstantInt::get(
-                                            i32, field_idx)});
+                                        gpu_struct_member_gep(kv,
+                                            field_path));
                                 llvm::Value *dp =
                                     llvm_utils->CreateLoad2(
                                         mem_desc_type

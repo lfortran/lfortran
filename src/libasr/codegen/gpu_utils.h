@@ -114,16 +114,51 @@ inline std::string gpu_dim_arg_name(const std::string &name, size_t d) {
 struct GpuStructMemberBuffer {
     std::string name;
     ASR::Variable_t *var = nullptr;
-    // Position of the component in the LLVM layout of the struct.  A type
-    // that extends another keeps the parent as field 0 and its own
-    // components follow it.
-    int field_index = -1;
+    // Position of the component in the LLVM layout of the struct, as the
+    // chain of field indices that reaches it.  A type that extends another
+    // keeps the parent as field 0 and its own components follow it, so a
+    // component the type declares itself is one index while a component it
+    // inherits is one 0 per level of inheritance followed by its index in
+    // the type that declares it.  Empty when the component cannot be
+    // reached at all.
+    std::vector<int> field_path;
     // Rank of the component.  A component of rank two or more needs its
     // extents on the device to linearize an index, so the sizes buffer
     // carries one entry per dimension per element; see
     // `gpu_struct_member_sizes_name`.
     size_t rank = 0;
 };
+
+// The chain of LLVM field indices that reaches component `member` of `st`,
+// or an empty chain when the component belongs to neither `st` nor any of
+// its ancestors.  `getStructType` lays a derived type out with the parent
+// as field 0 followed by the type's own components, so stepping up one
+// level of inheritance is a leading 0; the components are matched by
+// symbol identity rather than by name so that the path can never land on
+// a same-named component of a different type.
+inline std::vector<int> gpu_struct_member_field_path(ASR::Struct_t *st,
+        const ASR::Variable_t *member) {
+    std::vector<int> path;
+    std::set<ASR::Struct_t*> visited;
+    ASR::Struct_t *current = st;
+    while (current && visited.insert(current).second) {
+        int first_own_field = current->m_parent ? 1 : 0;
+        for (size_t f = 0; f < current->n_members; f++) {
+            if (current->m_symtab->get_symbol(current->m_members[f])
+                    == (const ASR::symbol_t*)&member->base) {
+                path.push_back(first_own_field + (int)f);
+                return path;
+            }
+        }
+        if (!current->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            current->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        path.push_back(0);
+        current = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return {};
+}
 
 // Rank of an allocatable array component of a kernel argument.
 inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
@@ -162,27 +197,22 @@ inline ASR::Struct_t* gpu_struct_array_arg_decl(ASR::expr_t *kernel_arg) {
 // expression that yields the array (`s%points_`, say), while the parameter
 // is what the shader signature is written from.
 //
-// A component inherited from a parent type is not reachable by a single
-// field index into the struct, so the host cannot marshal it; a type with
-// such a component contributes no member buffers at all, which keeps the
-// three emitters in agreement instead of letting them drift.
+// A component inherited from a parent type is reached through the parent
+// field rather than by a single index, so every component is described by
+// the whole field path; a component that no path reaches leaves the type
+// with no member buffers at all, which keeps the three emitters in
+// agreement instead of letting them drift.
 inline std::vector<GpuStructMemberBuffer> gpu_struct_member_buffers(
         ASR::expr_t *kernel_arg) {
     std::vector<GpuStructMemberBuffer> result;
     ASR::Struct_t *st = gpu_struct_array_arg_decl(kernel_arg);
     if (!st) return result;
-    int first_own_field = st->m_parent ? 1 : 0;
     for (auto &member : ASRUtils::collect_allocatable_array_members(st)) {
         GpuStructMemberBuffer entry;
         entry.name = member.first;
         entry.var = member.second;
-        for (size_t f = 0; f < st->n_members; f++) {
-            if (entry.name == st->m_members[f]) {
-                entry.field_index = first_own_field + (int)f;
-                break;
-            }
-        }
-        if (entry.field_index < 0) return {};
+        entry.field_path = gpu_struct_member_field_path(st, entry.var);
+        if (entry.field_path.empty()) return {};
         entry.rank = gpu_struct_member_rank(entry.var);
         result.push_back(entry);
     }
