@@ -10,13 +10,14 @@ implicit none
 real :: a(4), b(4)
 integer :: ia(4), ib(4)
 integer :: i
+integer :: j
 
 a = [1.0, 2.0, 3.0, 4.0]
 b = 0.0
 
 ! Array-constant selector, used indexed inside the loop.
 associate(c => [0.5, 0.25, 0.125])
-    do concurrent (integer :: j = 1:4)
+    do concurrent (j = 1:4)
         b(j) = c(2) * a(j)
     end do
 end associate
@@ -27,7 +28,7 @@ end do
 ! Two distinct uses of the same array-constant selector.
 b = 0.0
 associate(c => [0.5, 0.25, 0.125])
-    do concurrent (integer :: j = 1:4)
+    do concurrent (j = 1:4)
         b(j) = c(1) * a(j) + c(3)
     end do
 end associate
@@ -40,7 +41,7 @@ ia = [10, 20, 30, 40]
 ib = 0
 associate(k => [1, 2, 3, 4])
     associate(m => ia + k)
-        do concurrent (integer :: j = 1:4)
+        do concurrent (j = 1:4)
             ib(j) = m(j) + k(4)
         end do
     end associate

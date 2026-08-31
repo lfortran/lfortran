@@ -14,6 +14,7 @@ real, pointer :: w(:,:,:)
 real :: out1(4)
 real :: out3(2,3,4)
 integer :: i, j, k
+integer :: p, q, r
 
 allocate(a(4))
 do i = 1, 4
@@ -22,7 +23,7 @@ end do
 v => a
 
 out1 = 0.0
-do concurrent(integer :: p = 1:4) default(none) shared(out1, v)
+do concurrent(p = 1:4)
     out1(p) = 2.0*v(p)
 end do
 do i = 1, 4
@@ -41,7 +42,7 @@ end do
 w => b
 
 out3 = 0.0
-do concurrent(integer :: q = 1:4, r = 1:3) default(none) shared(out3, w)
+do concurrent(q = 1:4, r = 1:3)
     out3(1,r,q) = 3.0*w(1,r,q)
     out3(2,r,q) = 3.0*w(2,r,q)
 end do

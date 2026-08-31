@@ -49,12 +49,13 @@ use gpu_metal_211_mod
 implicit none
 real :: a(4), b(4)
 integer :: i
+integer :: j
 
 a = [1.0, 2.0, 3.0, 4.0]
 b = 0.0
 
 associate(interp => interp_t(order=[1,2,3], dx=[0.5,0.25,0.125]))
-    do concurrent (integer :: j = 1:4)
+    do concurrent (j = 1:4)
         b(j) = interp(2)%at(a(j))
     end do
 end associate
@@ -64,7 +65,7 @@ end do
 
 b = 0.0
 associate(interp => interp_t(order=[1,2,3], dx=[0.5,0.25,0.125]))
-    do concurrent (integer :: j = 1:4)
+    do concurrent (j = 1:4)
         b(j) = interp(1)%at(a(j)) + interp(3)%dx_
     end do
 end associate
