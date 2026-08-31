@@ -442,6 +442,7 @@
                                             .false.
                                             .false.
                                         )]
+                                        ExecAuto
                                     )]
                                     ()
                                     Public
@@ -536,6 +537,7 @@
                             .false.
                             .false.
                         )]
+                        ExecAuto
                     )
                     (SubroutineCall
                         2 triad

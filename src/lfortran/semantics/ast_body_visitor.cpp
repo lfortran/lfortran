@@ -9627,7 +9627,7 @@ public:
             }
         }
         tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size());
+                body.size(), ASR::exec_targetType::ExecAuto);
         all_loops_blocks_nesting -= 1;
         in_loop = in_loop_copy;
     }
@@ -9763,7 +9763,8 @@ public:
             body.reserve(al, x.n_body);
             transform_stmts(body, x.n_body, x.m_body);
             tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
-                nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
+                nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size(),
+                ASR::exec_targetType::ExecAuto);
         }
         all_loops_blocks_nesting -= 1;
     }

@@ -268,7 +268,8 @@ public:
 
         ASR::stmt_t *dcl = ASRUtils::STMT(ASR::make_DoConcurrentLoop_t(al,
             x.base.base.loc, heads.p, heads.n, shared.p, shared.n,
-            local.p, local.n, reduction.p, reduction.n, body, n_body));
+            local.p, local.n, reduction.p, reduction.n, body, n_body,
+            ASR::exec_targetType::ExecAuto));
         pass_result.reserve(al, 1);
         pass_result.push_back(al, dcl);
     }

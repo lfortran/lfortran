@@ -40,7 +40,7 @@ stmt
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
-    | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
+    | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body, exec_target exec_target)
     | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
@@ -247,6 +247,10 @@ presence = Required | Optional
 pass_attr = NotMethod | Pass | NoPass
 abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
 exec_space = Host | Device | HostDevice | Kernel
+-- How one parallel loop is lowered. `ExecAuto` is what the frontend and the
+-- passes that build a loop write; the dispatch pass replaces it with the one
+-- lowering that loop gets, so the choice is per loop and not per compilation.
+exec_target = ExecAuto | ExecSerial | ExecHostThreads | ExecDevice
 memory_space = Global | Shared | Constant | Thread
 dimension = (expr? start, expr? length)
 codimension = (expr? start, expr? end, codimension_type end_star)
