@@ -77,6 +77,7 @@ the folded form and ignore the expressions.
       )
     ]
     :physical_type :FixedSizeArray
+    :memory_space :Global
   )
   :value nil
   :storage_format :ColMajor

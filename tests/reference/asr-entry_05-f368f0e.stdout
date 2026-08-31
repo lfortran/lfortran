@@ -94,6 +94,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -192,6 +193,7 @@
                                     [(()
                                     ())]
                                     PointerArray
+                                    Global
                                 )
                             )
                             ()
@@ -296,6 +298,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -372,6 +375,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -608,6 +612,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 4 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -685,6 +690,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -760,6 +766,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ()
                             )
@@ -768,6 +775,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 4 n))]
                                 PointerArray
+                                Global
                             )
                             ()
                         )
@@ -830,6 +838,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -861,6 +870,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 PointerArray
+                                Global
                             )
                             ()
                         ))]

@@ -165,6 +165,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -194,6 +195,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -223,6 +225,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -246,18 +249,21 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )
                         (Array
                             (Real 8)
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Integer 4)
                         Source

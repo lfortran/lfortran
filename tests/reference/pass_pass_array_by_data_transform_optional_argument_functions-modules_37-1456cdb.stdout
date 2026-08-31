@@ -198,6 +198,7 @@
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                             ColMajor
@@ -230,6 +231,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 string_t
@@ -349,6 +351,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 13 __1targets))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     2 build_target_ptr
                                                     Source
@@ -443,6 +446,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (StructType
@@ -748,6 +752,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     2 build_target_ptr
@@ -813,6 +818,7 @@
                                                     [(()
                                                     ())]
                                                     PointerArray
+                                                    Global
                                                 )
                                             )
                                             ()

@@ -1706,6 +1706,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 27 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -1782,6 +1783,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         BindC
@@ -1825,6 +1827,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -1897,6 +1900,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         BindC
@@ -2465,6 +2469,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 26 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2541,6 +2546,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 4)
                                         BindC
@@ -2584,6 +2590,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2656,6 +2663,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Real 4)
                                         BindC
@@ -2699,6 +2707,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 25 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2775,6 +2784,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )]
                                         (Integer 4)
                                         BindC
@@ -2818,6 +2828,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -2890,6 +2901,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         (Integer 4)
                                         BindC
@@ -4404,6 +4416,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 42 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -4480,6 +4493,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Real 8)]
                                         ()
@@ -4953,6 +4967,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 41 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -5029,6 +5044,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Real 4)]
                                         ()
@@ -5074,6 +5090,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 40 n))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -5150,6 +5167,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()

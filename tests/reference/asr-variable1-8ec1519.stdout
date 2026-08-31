@@ -50,6 +50,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -103,6 +104,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -222,6 +224,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Array
@@ -229,6 +232,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )
                                         (Complex 4)
                                         (Complex 4)
@@ -396,6 +400,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 m))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -425,6 +430,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source

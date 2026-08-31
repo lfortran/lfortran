@@ -24,6 +24,7 @@
                       )
                       :dims []
                       :physical_type :AssumedRankArray
+                      :memory_space :Global
                     )
                     :type_declaration nil
                     :abi :Source
@@ -75,6 +76,7 @@
                     )
                     :dims []
                     :physical_type :AssumedRankArray
+                    :memory_space :Global
                   )
                 ]
                 :return_var_type nil

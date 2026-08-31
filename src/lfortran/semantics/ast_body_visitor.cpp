@@ -2472,7 +2472,7 @@ public:
                 dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
                 dims.push_back(al, dim);
                 ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type,
-                    dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray));
+                    dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                 Vec<ASR::expr_t*> arr_args;
                 arr_args.reserve(al, 0);
                 overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
@@ -4524,7 +4524,7 @@ public:
                     } else {
                         result = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, guard_type, arr->m_dims, arr->n_dims,
-                            ASR::array_physical_typeType::AssumedRankArray));
+                            ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     }
                 } else {
                     result = ASRUtils::make_Array_t_util(
@@ -5615,7 +5615,7 @@ public:
                         ASR::dimension_t dim; dim.loc = loc; dim.m_start = nullptr; dim.m_length = nullptr;
                         dims.push_back(al, dim);
                         ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc,
-                                                raw_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray));
+                                                raw_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
                         type = ASRUtils::TYPE(ASR::make_Pointer_t(al, type->base.loc, arr_type));
                         ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
                                                 entry_function->m_symtab, s2c(al, sym_name), nullptr, 0, ASR::intentType::Local,

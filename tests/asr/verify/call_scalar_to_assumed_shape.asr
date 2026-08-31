@@ -25,6 +25,7 @@
                   )
                 ]
                 :DescriptorArray
+                :Global
               )
               nil
               :Source
@@ -56,6 +57,7 @@
                 )
               ]
               :DescriptorArray
+              :Global
             )
           ]
           nil

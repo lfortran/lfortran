@@ -22,6 +22,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -53,6 +54,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -112,6 +114,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -136,6 +139,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         ()
                                         BindC
@@ -203,6 +207,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -227,6 +232,7 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         ()
                                         BindC
@@ -283,6 +289,7 @@
                                 [(()
                                 ())]
                                 PointerArray
+                                Global
                             )
                             ()
                         ))]
@@ -303,6 +310,7 @@
                                     [(()
                                     ())]
                                     PointerArray
+                                    Global
                                 )
                             )
                             ()

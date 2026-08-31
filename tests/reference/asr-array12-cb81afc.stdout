@@ -91,6 +91,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -204,6 +205,7 @@
                                                     [(()
                                                     ())]
                                                     StringArraySinglePointer
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -266,6 +268,7 @@
                                                         [(()
                                                         ())]
                                                         StringArraySinglePointer
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -337,6 +340,7 @@
                                             [(()
                                             ())]
                                             StringArraySinglePointer
+                                            Global
                                         )
                                         (Integer 4)]
                                         (CPtr)

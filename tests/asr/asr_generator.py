@@ -151,7 +151,7 @@ def array_type(element, lengths):
         for length in lengths)
     return (
         f"(Array :type {type_of(element)} :dims [{dimensions}] "
-        f":physical_type :FixedSizeArray)"
+        f":physical_type :FixedSizeArray :memory_space :Global)"
     )
 
 
@@ -160,7 +160,7 @@ def deferred_array_type(element, rank=1):
         "(dimension :start nil :length nil)" for _ in range(rank))
     return (
         f"(Array :type {type_of(element)} :dims [{dimensions}] "
-        f":physical_type :DescriptorArray)"
+        f":physical_type :DescriptorArray :memory_space :Global)"
     )
 
 
@@ -1701,7 +1701,7 @@ def invalid_array_constructor_element(_rng):
     element = f"(Array :type {integer_type(4)} " \
               f":dims [(dimension :start {integer_constant(1, 4)} " \
               f":length {integer_constant(2, 4)})] " \
-              f":physical_type :FixedSizeArray)"
+              f":physical_type :FixedSizeArray :memory_space :Global)"
     constructor = (
         f"(ArrayConstructor :args [{integer_constant(1, 4)} "
         f"{integer_constant(2, 8)}] :type {element} :value nil "

@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.call.actual_rank_matches_formal]: Actual argument type i32 does not match formal argument rank of type i32[:]
-   --> tests/asr/verify/call_scalar_to_assumed_shape.asr:126:18
+   --> tests/asr/verify/call_scalar_to_assumed_shape.asr:128:18
     |
-126 |                 (Var
+128 |                 (Var
     |                  ^^^ failed here
