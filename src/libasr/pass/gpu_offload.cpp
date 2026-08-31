@@ -790,6 +790,37 @@ public:
     }
 };
 
+// A section whose base is itself a section -- what splicing a device
+// function leaves behind when its assumed-shape dummy was already
+// referenced through a section and the actual is a section too.  The
+// Metal emitter renders a section's base with the ordinary expression
+// emitter, which has no address to give for an `ArraySection`, so a
+// kernel built from such a body compiles to a shader that does not
+// build.  The offload declines instead.
+class GpuNestedSectionFinder :
+        public ASR::BaseWalkVisitor<GpuNestedSectionFinder> {
+public:
+    bool found = false;
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(x.m_v);
+        if (base != nullptr && ASR::is_a<ASR::ArraySection_t>(*base)) {
+            found = true;
+        }
+        ASR::BaseWalkVisitor<GpuNestedSectionFinder>::visit_ArraySection(x);
+    }
+
+    // The generated walker stops at a BLOCK or ASSOCIATE call, and both
+    // are where a spliced device function body ends up.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+};
+
 // Counts how many times a given symbol is written to within a list of
 // statements. Used to distinguish a genuine ASSOCIATE selector temporary
 // (written exactly once, at its point of definition) from an ordinary
@@ -8544,6 +8575,16 @@ public:
                 GpuOffloadReport::set_detail("sym=" + unresolved_name);
                 GpuOffloadReport::emit(loc, report_proc,
                     "workspace-extent-unresolvable");
+                return;
+            }
+            GpuNestedSectionFinder nested_section;
+            for (size_t i = 0; i < x.n_body; i++) {
+                nested_section.visit_stmt(*x.m_body[i]);
+            }
+            if (nested_section.found) {
+                splice_snapshot.restore();
+                GpuOffloadReport::emit(loc, report_proc,
+                    "nested-section-cannot-be-addressed");
                 return;
             }
         }
