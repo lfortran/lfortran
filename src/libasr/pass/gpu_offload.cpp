@@ -1208,13 +1208,41 @@ public:
                 runtime_extent_syms.insert(sym);
             }
         }
+        std::set<ASR::symbol_t*> passed_in;
+        passed_in.insert(runtime_extent_syms.begin(),
+            runtime_extent_syms.end());
+        if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+            passed_in.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v));
+        }
         {
             RuntimeAllocCollector alloc_collector;
             for (size_t i = 0; i < fn->n_body; i++) {
                 alloc_collector.visit_stmt(*fn->m_body[i]);
             }
+            // A local array the callee sizes at run time is a
+            // variable-length array in the shader, and Metal has no
+            // declaration for one. This is how an array constructor
+            // already lowered to a temporary reaches here: the
+            // constructor is gone, and only the temporary is left.
+            // Splicing the callee into the kernel moves the temporary
+            // to a scope the per-thread workspace machinery can size.
+            for (ASR::symbol_t *v : alloc_collector.vars) {
+                if (!passed_in.count(v)) has_runtime_sized_temp = true;
+            }
             runtime_extent_syms.insert(alloc_collector.vars.begin(),
                 alloc_collector.vars.end());
+        }
+        for (auto &item : fn->m_symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            if (passed_in.count(sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_intent != ASR::intentType::Local) continue;
+            if (ASRUtils::is_allocatable(var->m_type)) continue;
+            if (has_runtime_extent(var->m_type)) {
+                has_runtime_sized_temp = true;
+            }
         }
         if (runtime_extent_syms.empty()) return;
         for (size_t i = 0; i < fn->n_body; i++) {
