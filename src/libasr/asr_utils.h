@@ -260,6 +260,54 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+
+// The execution space a function runs in. Host runs on the CPU only, Device
+// on the GPU only, HostDevice is compiled for both, and Kernel is the entry
+// point of a GPU kernel: it runs on the device and the host launches it.
+static inline ASR::exec_spaceType get_exec_space(const ASR::Function_t& x) {
+    return ASRUtils::get_FunctionType(x)->m_exec_space;
+}
+
+// True when the function is compiled for the device, whether as a kernel, as
+// a routine the device call graph reaches, or as one compiled for both. The
+// device-preparation passes and the device code generators ask this.
+static inline bool runs_on_device(const ASR::Function_t& x) {
+    switch (ASRUtils::get_exec_space(x)) {
+        case ASR::exec_spaceType::Device:
+        case ASR::exec_spaceType::HostDevice:
+        case ASR::exec_spaceType::Kernel:
+            return true;
+        case ASR::exec_spaceType::Host:
+            return false;
+    }
+    return false;
+}
+
+static inline bool runs_on_device(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::runs_on_device(*ASR::down_cast<ASR::Function_t>(s));
+}
+
+// True when the function exists on the device only, so a host code generator
+// has nothing to emit for it.
+static inline bool is_device_only_function(const ASR::Function_t& x) {
+    ASR::exec_spaceType space = ASRUtils::get_exec_space(x);
+    return space == ASR::exec_spaceType::Device ||
+           space == ASR::exec_spaceType::Kernel;
+}
+
+// True when `s` is the entry point of a GPU kernel: the host launches it with
+// a GpuKernelLaunch, and the device code generators give it the kernel
+// qualifier, its buffer bindings and its registration.
+static inline bool is_device_kernel(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::get_exec_space(*ASR::down_cast<ASR::Function_t>(s))
+        == ASR::exec_spaceType::Kernel;
+}
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {
     public:
@@ -4342,7 +4390,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
                 ft->m_static, ft->m_restrictions, ft->n_restrictions,
-                ft->m_is_restriction));
+                ft->m_is_restriction, ft->m_exec_space));
         }
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
@@ -6417,7 +6465,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
     char* a_bindc_name, bool a_elemental, bool a_pure, bool a_module, bool a_inline,
     bool a_static,
-    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope) {
+    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope,
+    ASR::exec_spaceType a_exec_space=ASR::exec_spaceType::Host) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
@@ -6439,7 +6488,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
         al, a_loc, arg_types.p, arg_types.size(), return_var_type, a_abi, a_deftype,
         a_bindc_name, a_elemental, a_pure, a_module, a_inline,
         a_static, a_restrictions, n_restrictions,
-        a_is_restriction);
+        a_is_restriction, a_exec_space);
 }
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc,
@@ -6448,7 +6497,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
         ft->m_abi, ft->m_deftype, ft->m_bindc_name, ft->m_elemental,
         ft->m_pure, ft->m_module, ft->m_inline, ft->m_static,
         ft->m_restrictions,
-        ft->n_restrictions, ft->m_is_restriction, current_scope);
+        ft->n_restrictions, ft->m_is_restriction, current_scope, ft->m_exec_space);
 }
 
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
@@ -6459,11 +6508,12 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
-    Location* m_end_name = nullptr) {
+    Location* m_end_name = nullptr,
+    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
-        m_restrictions, n_restrictions, m_is_restriction, m_symtab));
+        m_restrictions, n_restrictions, m_is_restriction, m_symtab, m_exec_space));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -6741,7 +6791,8 @@ class SymbolDuplicator {
             function_type->m_module, function_type->m_inline, function_type->m_static,
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
-            function->m_side_effect_free));
+            function->m_side_effect_free, nullptr, nullptr, nullptr,
+            function_type->m_exec_space));
     }
 
     ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,

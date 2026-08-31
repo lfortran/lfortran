@@ -17,6 +17,7 @@ cmpop
 codimension_type
 deftype
 enumtype
+exec_space
 integerboz
 intent
 logicalbinop
