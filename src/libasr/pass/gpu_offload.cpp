@@ -6990,26 +6990,58 @@ public:
             ASR::make_FunctionType_t(al, loc,
                 arg_types.p, arg_types.n, nullptr,
                 ASR::abiType::Source, ASR::deftypeType::Implementation,
-                nullptr, false, false, false, false, false, nullptr, 0, false));
+                nullptr, false, false, false, false, false, nullptr, 0, false,
+                ASR::exec_spaceType::Kernel));
 
-        // 6. Create GpuKernelFunction
-        ASR::asr_t *kernel_func = ASR::make_GpuKernelFunction_t(al, loc,
+        // 6. Create the kernel as a Kernel function. A kernel is
+        // subroutine-shaped, so it has no return variable, and `fn_sig` is
+        // built above rather than by `make_Function_t_util` because the
+        // argument types must not carry scope-bound dimension expressions.
+        ASR::asr_t *kernel_func = ASR::make_Function_t(al, loc,
             kernel_scope, s2c(al, kernel_name), fn_sig,
             nullptr, 0,
             kernel_args.p, kernel_args.n,
             kernel_body.p, kernel_body.n,
-            ASR::accessType::Public);
+            nullptr, ASR::accessType::Public, false, false,
+            nullptr, nullptr, nullptr);
+
+        // `device_launch_expand` builds the host side of the launch, laying
+        // every argument out exactly as the device code generator does. An
+        // argument shape it cannot lay out keeps the loop on the host, where
+        // ordinary Fortran semantics always apply. The kernel is checked
+        // before it enters the symbol table, so nothing is left behind.
+        {
+            std::string reason;
+            if (!gpu_launch_is_supported(
+                    ASR::down_cast<ASR::symbol_t>(kernel_func),
+                    call_args.p, call_args.n, reason)) {
+                report_not_offloaded(x.base.base.loc,
+                    "the gpu backend does not support " + reason);
+                return;
+            }
+        }
+
+        // The loop is offloaded from here on, so this is where a clause the
+        // launch cannot honour is reported: before this every exit still
+        // leaves the loop on the host, where the clause is honoured.
+        for (size_t i = 0; i < x.n_clauses; i++) {
+            std::string clause_name = unhonoured_clause(x.m_clauses[i]);
+            if (!clause_name.empty()) {
+                report_clause_ignored(x.m_clauses[i]->base.loc, clause_name);
+            }
+        }
+
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 
         // Pre-allocate host-side allocatable arrays that are assigned
-        // from a FunctionCall inside the do concurrent body. The GPU
+        // from a FunctionCall inside the loop body. The GPU
         // kernel receives the buffer pointer at launch time, so the
         // array must already be allocated on the host before dispatch.
         Vec<ASR::stmt_t*> pre_launch_stmts;
         pre_launch_stmts.reserve(al, 4);
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             // Unwrap BlockCall to inspect block body statements
             ASR::stmt_t **stmts_to_scan = &stmt;
             size_t n_stmts_to_scan = 1;
