@@ -1,0 +1,5 @@
+semantic error: An allocate-object must be a data pointer or an allocatable variable
+ --> tests/errors/allocate_object_01.f90:3:10
+  |
+3 | allocate(qbh(n))
+  |          ^^^^^^ `qbh` is not an allocatable or pointer array, so this resolves to a function call
