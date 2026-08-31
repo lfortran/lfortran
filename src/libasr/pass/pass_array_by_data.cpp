@@ -113,6 +113,20 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
         std::map< ASR::symbol_t*, std::pair<ASR::symbol_t*, std::vector<size_t>> > proc2newproc;
         std::set<ASR::symbol_t*> newprocs;
+        // A procedure transformed in place rather than specialised into a
+        // copy, and the argument list it had before the extents were added.
+        // A call site is still written against that list, so it is what the
+        // call site has to be matched against.
+        struct InPlaceProcedure {
+            std::vector<size_t> indices;
+            ASR::expr_t** args;
+            size_t n_args;
+        };
+        // A device procedure is transformed in place because there is no
+        // caller to redirect to a copy: a kernel is only ever named by a
+        // launch statement, and a routine it calls is reachable from nowhere
+        // but the device code.
+        std::map< ASR::symbol_t*, InPlaceProcedure > proc2inplace;
 
         PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
@@ -251,7 +265,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             return new_symbol;
         }
 
-        void edit_new_procedure_args(ASR::Function_t* x, std::vector<size_t>& indices) {
+        void edit_procedure_args(ASR::Function_t* x, std::vector<size_t>& indices) {
+            SymbolTable* enclosing_scope = x->m_symtab->parent;
             Vec<ASR::expr_t*> new_args;
             new_args.reserve(al, x->n_args);
             for( size_t i = 0; i < x->n_args; i++ ) {
@@ -300,7 +315,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*x);
             x->m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
-                al, func_type->base.base.loc, new_args.p, new_args.size(), x->m_return_var, func_type, current_scope));
+                al, func_type->base.base.loc, new_args.p, new_args.size(), x->m_return_var, func_type, enclosing_scope));
             x->m_args = new_args.p;
             x->n_args = new_args.size();
         }
@@ -314,13 +329,28 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             for( auto& item: xx.m_symtab->get_scope() ) {
                 if( ASR::is_a<ASR::Function_t>(*item.second) ) {
                     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(item.second);
-                    pass_array_by_data_functions.push_back(subrout);
                     std::vector<size_t> arg_indices;
+                    if( ASRUtils::runs_on_device(*subrout) ) {
+                        // Device code is emitted as Metal/CUDA source, where
+                        // an array argument is a bare pointer that carries no
+                        // extents, so it needs them as explicit arguments.
+                        // Transform it in place; a specialised copy would be
+                        // pointless because the only reference to it is
+                        // inside the device code.
+                        pass_array_by_data_functions.push_back(subrout);
+                        if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
+                            proc2inplace[item.second] = {arg_indices,
+                                subrout->m_args, subrout->n_args};
+                            edit_procedure_args(subrout, arg_indices);
+                        }
+                        continue;
+                    }
+                    pass_array_by_data_functions.push_back(subrout);
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* sym = insert_new_procedure(subrout, arg_indices);
                         if( sym != nullptr ) {
                             ASR::Function_t* new_subrout = ASR::down_cast<ASR::Function_t>(sym);
-                            edit_new_procedure_args(new_subrout, arg_indices);
+                            edit_procedure_args(new_subrout, arg_indices);
                         }
                     }
                 }
@@ -832,18 +862,28 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             }
         }
 
-        static inline int64_t get_expected_n_dims(ASR::symbol_t* subrout_sym, size_t arg_idx) {
+        int64_t get_expected_n_dims(ASR::symbol_t* subrout_sym, size_t arg_idx) {
             if( !ASR::is_a<ASR::Function_t>(*subrout_sym) ) {
                 return -1;
             }
             ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(subrout_sym);
-            if( arg_idx >= subrout->n_args ) {
+            ASR::expr_t** args = subrout->m_args;
+            size_t n_args = subrout->n_args;
+            auto inplace = v.proc2inplace.find(subrout_sym);
+            if( inplace != v.proc2inplace.end() ) {
+                // The procedure was transformed in place, so its own argument
+                // list already carries the extents. The call site does not
+                // yet, so match it against the list it was written for.
+                args = inplace->second.args;
+                n_args = inplace->second.n_args;
+            }
+            if( arg_idx >= n_args ) {
                 return -1;
             }
-            if( !ASR::is_a<ASR::Var_t>(*subrout->m_args[arg_idx]) ) {
+            if( !ASR::is_a<ASR::Var_t>(*args[arg_idx]) ) {
                 return -1;
             }
-            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(subrout->m_args[arg_idx]);
+            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(args[arg_idx]);
             ASR::dimension_t* dims = nullptr;
             return ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
         }
@@ -903,6 +943,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
         Vec<ASR::call_arg_t> construct_new_args(ASR::symbol_t* subrout_sym,
             size_t n_args, ASR::call_arg_t* orig_args, std::vector<size_t>& indices) {
+            // A device backend hands every array over as a bare pointer, so
+            // a physical cast has nothing to convert there; inserting one only
+            // puts a temporary pointer between the caller and the callee.
+            bool add_physical_cast =
+                v.proc2inplace.find(subrout_sym) == v.proc2inplace.end();
             Vec<ASR::call_arg_t> new_args;
             new_args.reserve(al, n_args);
             for( size_t i = 0; i < n_args; i++ ) {
@@ -926,7 +971,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     // call arg may be DescriptorArray (e.g. a temp created by
                     // subroutine_from_function). Add ArrayPhysicalCast.
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(orig_args[i].m_value);
-                    if (ASRUtils::is_array(arg_type)) {
+                    if (add_physical_cast && ASRUtils::is_array(arg_type)) {
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
                             ASRUtils::type_get_past_allocatable(
                                 ASRUtils::type_get_past_pointer(arg_type)));
@@ -958,7 +1003,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
                 ASR::expr_t* orig_arg_i = orig_args[i].m_value;
                 ASR::ttype_t* orig_arg_type = ASRUtils::expr_type(orig_arg_i);
-                if( ASRUtils::is_array(orig_arg_type) ) {
+                if( add_physical_cast && ASRUtils::is_array(orig_arg_type) ) {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_arg_type)));
                     if( array_t->m_physical_type != ASR::array_physical_typeType::PointerArray ) {
@@ -1133,6 +1178,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
 
+            auto inplace = v.proc2inplace.find(subrout_sym);
+            if( inplace != v.proc2inplace.end() ) {
+                // The callee kept its name and symbol, so only the arguments
+                // have to grow.
+                Vec<ASR::call_arg_t> new_args = construct_new_args(subrout_sym,
+                    x.n_args, x.m_args, inplace->second.indices);
+                xx.m_args = new_args.p;
+                xx.n_args = new_args.size();
+                return;
+            }
             if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name) ) {
                 not_to_be_erased.insert(subrout_sym);
@@ -1237,6 +1292,38 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 xx.m_name = resolve_new_proc(x.m_name);
                 xx.m_original_name = resolve_new_proc(x.m_name);
             }
+            xx.m_args = new_args.p;
+            xx.n_args = new_args.size();
+        }
+
+        // A GPU kernel is transformed in place, so the launch keeps
+        // pointing at the same symbol and only has to hand over the extents
+        // the kernel now takes as arguments.
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t& x) {
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_GpuKernelLaunch(x);
+            auto it = v.proc2inplace.find(x.m_kernel);
+            if( it == v.proc2inplace.end() ) {
+                return;
+            }
+            std::vector<size_t>& indices = it->second.indices;
+            Vec<ASR::call_arg_t> new_args;
+            new_args.reserve(al, x.n_args);
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                new_args.push_back(al, x.m_args[i]);
+                if( std::find(indices.begin(), indices.end(), i) == indices.end() ) {
+                    continue;
+                }
+                Vec<ASR::expr_t*> dim_vars;
+                dim_vars.reserve(al, 2);
+                get_dimensions(x.m_args[i].m_value, dim_vars, al);
+                for( size_t j = 0; j < dim_vars.size(); j++ ) {
+                    ASR::call_arg_t dim_arg;
+                    dim_arg.loc = dim_vars[j]->base.loc;
+                    dim_arg.m_value = dim_vars[j];
+                    new_args.push_back(al, dim_arg);
+                }
+            }
+            ASR::GpuKernelLaunch_t& xx = const_cast<ASR::GpuKernelLaunch_t&>(x);
             xx.m_args = new_args.p;
             xx.n_args = new_args.size();
         }

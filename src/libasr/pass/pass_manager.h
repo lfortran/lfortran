@@ -124,6 +124,7 @@ namespace LCompilers {
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"array_struct_temporary", &pass_array_struct_temporary},
             {"coarray", &pass_replace_coarray}
         };
@@ -257,6 +258,7 @@ namespace LCompilers {
                 "openmp",
                 "implied_do_loops",
                 "gpu_offload",
+                "gpu_device_allocatable",
                 "array_struct_temporary",
                 "coarray",
                 "transform_optional_argument_functions",
@@ -271,6 +273,9 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // A routine's array result becomes an argument here, so a
+                // device routine's result needs the shape of that argument.
+                "gpu_device_allocatable",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
