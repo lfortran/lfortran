@@ -3,7 +3,7 @@
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/pass/replace_openmp_target.h>
+#include <libasr/pass/replace_omp_to_parallel_loop.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 
 #include <set>
@@ -11,15 +11,15 @@
 namespace LCompilers {
 
 /*
- * Normalizes an `!$omp target` region into a `DoConcurrentLoop`.
+ * Normalizes an OpenMP parallel loop into a `DoConcurrentLoop`.
  *
- * A target region and a `do concurrent` loop describe the same thing: an
- * iteration space, the data it reads and writes, and the reductions it
- * performs. `DoConcurrentLoop` already carries all three, so a target region
- * is rewritten into one and the whole GPU offload pipeline below -- kernel
- * extraction, the device call graph, array extents, address spaces and the
- * host launch -- serves both constructs without knowing which one it came
- * from.
+ * An `!$omp target teams distribute parallel do` region, an `!$omp parallel
+ * do` region and a `do concurrent` loop describe the same thing: an iteration
+ * space, the data it reads and writes, and the reductions it performs.
+ * `DoConcurrentLoop` already carries all three, so a region is rewritten into
+ * one and every lowering below -- the serial loop, the host threads, and the
+ * whole GPU offload pipeline -- serves all three constructs without knowing
+ * which one the loop came from.
  *
  * Converts:
  *      !$omp target map(tofrom: a, b)
@@ -34,15 +34,26 @@ namespace LCompilers {
  *          a(i) = b(i)
  *      end do
  *
- * The pass only runs when a GPU backend is selected, so plain `--openmp`
- * keeps the behaviour it has always had.
+ * The loop is left `ExecAuto`; the dispatch pass that runs next decides who
+ * runs its iterations.
+ *
+ * A `target` region is always normalized, because no lowering below this pass
+ * knows what a target region is. A loop construct that does not mention a
+ * device is only normalized when the compiler was asked to offload those too,
+ * since `!$omp parallel do` asks for host threads and the OpenMP pass already
+ * lowers the full clause set onto them.
+ *
+ * A region this pass declines is left exactly as it was, so the OpenMP pass
+ * still gets its chance at it. `pass_flatten_omp_regions` below runs after
+ * that pass and unwraps whatever is left, so an unsupported construct runs
+ * serially rather than reaching a code generator that cannot lower it.
  */
 
-// The constructs that may sit between `target` and the loop it runs. `Teams`
-// and `Parallel` only open a data environment, so they are peeled but do not
-// on their own make the loop below them a parallel one; the rest distribute
-// the iterations and do.
-static bool is_target_nest_region(ASR::omp_region_typeType region) {
+// The constructs that may sit between the outermost region and the loop it
+// runs. `Teams` and `Parallel` only open a data environment, so they are
+// peeled but do not on their own make the loop below them a parallel one;
+// the rest distribute the iterations and do.
+static bool is_parallel_loop_region(ASR::omp_region_typeType region) {
     switch (region) {
         case ASR::omp_region_typeType::Teams:
         case ASR::omp_region_typeType::Parallel:
@@ -72,18 +83,41 @@ static bool distributes_iterations(ASR::omp_region_typeType region) {
     }
 }
 
+// Whether an OpenMP region is left anywhere under a statement. A region
+// inside the loop body -- a `critical` section, a `barrier` -- says the
+// iterations synchronize with each other, which is the opposite of what a
+// concurrent loop asserts, so such a loop is not normalized.
+class NestedRegionFinder : public ASR::BaseWalkVisitor<NestedRegionFinder>
+{
+public:
+    bool found = false;
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        found = true;
+        ASR::BaseWalkVisitor<NestedRegionFinder>::visit_OMPRegion(x);
+    }
+};
+
 // Unwraps every OpenMP region of a subtree, leaving the statements they
-// contained. The OpenMP pass has already run by the time a target region is
-// taken apart, so a region this pass declines to offload still holds the
-// constructs the OpenMP pass never descended into; without this they would
-// reach a code generator that has no lowering for them.
+// contained. This runs after the OpenMP pass, so a region reaching it is one
+// no lowering claimed; without this it would reach a code generator that has
+// no lowering for it either.
 class OMPRegionFlattener : public ASR::StatementWalkVisitor<OMPRegionFlattener>
 {
 public:
-    OMPRegionFlattener(Allocator &al) : StatementWalkVisitor(al) {
+    const PassOptions &pass_options;
+
+    OMPRegionFlattener(Allocator &al, const PassOptions &pass_options_) :
+        StatementWalkVisitor(al), pass_options(pass_options_) {
     }
 
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (pass_options.diagnostics != nullptr) {
+            pass_options.diagnostics->message_label(
+                "openmp construct not supported, its statements run serially",
+                {x.base.base.loc}, "no lowering claimed this region",
+                diag::Level::Warning, diag::Stage::ASRPass);
+        }
         ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
         if (xx.n_body == 0) {
@@ -97,21 +131,29 @@ public:
     }
 };
 
-class OMPTargetVisitor : public ASR::StatementWalkVisitor<OMPTargetVisitor>
+class OMPParallelLoopVisitor :
+    public ASR::StatementWalkVisitor<OMPParallelLoopVisitor>
 {
 public:
     const PassOptions &pass_options;
+    // Whether a loop construct that does not name a device may be turned
+    // into a concurrent loop as well.
+    bool offload_omp_loops;
 
-    OMPTargetVisitor(Allocator &al, const PassOptions &pass_options_) :
+    OMPParallelLoopVisitor(Allocator &al, const PassOptions &pass_options_) :
         StatementWalkVisitor(al), pass_options(pass_options_) {
+        bool gpu = pass_options.gpu_offload_metal || pass_options.gpu_offload_cuda;
+        offload_omp_loops = gpu && pass_options.gpu_offload_omp_loops;
     }
 
-    // An `!$omp target` that cannot be turned into a loop still has to run,
-    // so it is left on the host and the reason is reported.
+    // A region that cannot be turned into a loop still has to run, so it is
+    // left as it was and the reason it missed the device is reported. Only a
+    // compilation that asked for a device wanted to hear this.
     void report_not_offloaded(const Location &loc, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
+        if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
         pass_options.diagnostics->message_label(
-            "omp target region not offloaded to the GPU, "
+            "omp parallel loop not offloaded to the GPU, "
             "it runs on the CPU instead",
             {loc}, why,
             diag::Level::Warning, diag::Stage::ASRPass);
@@ -189,9 +231,38 @@ public:
         }
     }
 
+    // The index of a concurrent loop is named by its head, and a
+    // `do concurrent` loop may not repeat it in its locality list, so the
+    // `private(i)` an OpenMP loop writes for the same variable is dropped.
+    void drop_loop_indices(Vec<ASR::expr_t*> &local,
+            Vec<ASR::do_loop_head_t> &heads) {
+        std::set<ASR::symbol_t*> indices;
+        for (size_t i = 0; i < heads.n; i++) {
+            if (heads[i].m_v && ASR::is_a<ASR::Var_t>(*heads[i].m_v)) {
+                indices.insert(ASR::down_cast<ASR::Var_t>(heads[i].m_v)->m_v);
+            }
+        }
+        Vec<ASR::expr_t*> kept; kept.reserve(al, local.n);
+        for (size_t i = 0; i < local.n; i++) {
+            if (ASR::is_a<ASR::Var_t>(*local[i]) &&
+                    indices.count(ASR::down_cast<ASR::Var_t>(local[i])->m_v)) {
+                continue;
+            }
+            kept.push_back(al, local[i]);
+        }
+        local = kept;
+    }
+
+    // Whether this pass looks at a region at all. Everything below it knows
+    // what a `parallel do` is; nothing below it knows what a `target` is.
+    bool is_normalization_root(ASR::omp_region_typeType region) {
+        if (region == ASR::omp_region_typeType::Target) return true;
+        return offload_omp_loops && is_parallel_loop_region(region);
+    }
+
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        if (x.m_region != ASR::omp_region_typeType::Target) {
-            ASR::ASRPassBaseWalkVisitor<OMPTargetVisitor>::visit_OMPRegion(x);
+        if (!is_normalization_root(x.m_region)) {
+            ASR::ASRPassBaseWalkVisitor<OMPParallelLoopVisitor>::visit_OMPRegion(x);
             return;
         }
 
@@ -209,10 +280,10 @@ public:
         // data environment of every level, until the loop itself is reached.
         ASR::stmt_t **body = x.m_body;
         size_t n_body = x.n_body;
-        bool has_loop_construct = false;
+        bool has_loop_construct = distributes_iterations(x.m_region);
         while (n_body == 1 && ASR::is_a<ASR::OMPRegion_t>(*body[0])) {
             ASR::OMPRegion_t *inner = ASR::down_cast<ASR::OMPRegion_t>(body[0]);
-            if (!is_target_nest_region(inner->m_region)) break;
+            if (!is_parallel_loop_region(inner->m_region)) break;
             has_loop_construct |= distributes_iterations(inner->m_region);
             collect_clauses(inner->m_clauses, inner->n_clauses, shared, local,
                 reduction, seen_shared, collapse, has_private_copy);
@@ -222,21 +293,21 @@ public:
 
         if (!has_loop_construct) {
             report_not_offloaded(x.base.base.loc,
-                "the region does not distribute a loop over the device");
-            splice(x);
+                "the region does not distribute a loop over its threads");
+            decline(x);
             return;
         }
         if (has_private_copy) {
             report_not_offloaded(x.base.base.loc,
                 "a firstprivate or lastprivate variable has no equivalent "
                 "in a do concurrent loop");
-            splice(x);
+            decline(x);
             return;
         }
         if (n_body != 1 || !ASR::is_a<ASR::DoLoop_t>(*body[0])) {
             report_not_offloaded(x.base.base.loc,
                 "the region does not contain a single loop nest");
-            splice(x);
+            decline(x);
             return;
         }
 
@@ -248,7 +319,7 @@ public:
             if (!ASR::is_a<ASR::DoLoop_t>(*loop)) {
                 report_not_offloaded(x.base.base.loc,
                     "the loop nest is shallower than the collapse count");
-                splice(x);
+                decline(x);
                 return;
             }
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(loop);
@@ -259,12 +330,26 @@ public:
                 if (n_body != 1) {
                     report_not_offloaded(x.base.base.loc,
                         "the collapsed loops are not perfectly nested");
-                    splice(x);
+                    decline(x);
                     return;
                 }
                 loop = dl->m_body[0];
             }
         }
+
+        NestedRegionFinder finder;
+        for (size_t i = 0; i < n_body; i++) {
+            finder.visit_stmt(*body[i]);
+        }
+        if (finder.found) {
+            report_not_offloaded(x.base.base.loc,
+                "the iterations synchronize with each other through an "
+                "openmp construct in the loop body");
+            decline(x);
+            return;
+        }
+
+        drop_loop_indices(local, heads);
 
         ASR::stmt_t *dcl = ASRUtils::STMT(ASR::make_DoConcurrentLoop_t(al,
             x.base.base.loc, heads.p, heads.n, shared.p, shared.n,
@@ -274,31 +359,22 @@ public:
         pass_result.push_back(al, dcl);
     }
 
-    // Leaves the statements of a region behind in its place, running them on
-    // the host. Any OpenMP region still nested inside goes with it, since
-    // nothing below this pass knows how to lower one.
-    void splice(const ASR::OMPRegion_t &x) {
-        ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
-        OMPRegionFlattener flattener(al);
-        flattener.current_scope = current_scope;
-        flattener.transform_stmts(xx.m_body, xx.n_body);
-        // An empty region has to leave something behind, otherwise the
-        // original statement is kept and the region survives the pass.
-        if (xx.n_body == 0) {
-            remove_original_stmt = true;
-            return;
-        }
-        pass_result.reserve(al, xx.n_body);
-        for (size_t i = 0; i < xx.n_body; i++) {
-            pass_result.push_back(al, xx.m_body[i]);
-        }
+    // Leaves a region the pass could not normalize exactly as it was, so the
+    // OpenMP pass still sees the construct the user wrote.
+    void decline(const ASR::OMPRegion_t &x) {
+        ASR::ASRPassBaseWalkVisitor<OMPParallelLoopVisitor>::visit_OMPRegion(x);
     }
 };
 
-void pass_replace_openmp_target(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options) {
-    if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
-    OMPTargetVisitor v(al, pass_options);
+void pass_replace_omp_to_parallel_loop(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
+    OMPParallelLoopVisitor v(al, pass_options);
+    v.visit_TranslationUnit(unit);
+}
+
+void pass_flatten_omp_regions(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    OMPRegionFlattener v(al, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

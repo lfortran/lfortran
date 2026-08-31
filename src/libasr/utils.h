@@ -74,6 +74,9 @@ struct PassOptions {
     bool openmp = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
+    // `!$omp parallel do` asks for host threads. Offloading one onto a device
+    // is a choice the user has to make, so it is off unless asked for.
+    bool gpu_offload_omp_loops = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
