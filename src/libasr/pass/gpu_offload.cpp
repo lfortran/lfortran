@@ -2528,6 +2528,25 @@ public:
                     !nest.head(d).m_end) return;
         }
 
+        // The kernel maps a flat thread id onto `start + (flat % extent)`, which
+        // is only the loop's iteration set when the stride is one. A strided
+        // head would silently address the wrong elements, so it stays on the
+        // host until the index arithmetic carries the stride.
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::expr_t *step = nest.head(d).m_increment;
+            if (!step) continue;
+            ASR::expr_t *step_value = ASRUtils::expr_value(step);
+            int64_t step_constant = 0;
+            if (!step_value ||
+                    !ASRUtils::extract_value(step_value, step_constant) ||
+                    step_constant != 1) {
+                report_not_offloaded(loc,
+                    "the loop has a stride the gpu index arithmetic "
+                    "cannot express");
+                return;
+            }
+        }
+
         // Resolve associate variables to their original targets if this
         // loop is inside one or more nested AssociateBlocks.
         // The kernel function lives at the translation-unit level and
