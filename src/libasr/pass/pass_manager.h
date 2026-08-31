@@ -58,6 +58,8 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
@@ -120,6 +122,9 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
+            {"parallel_canonicalize", &pass_parallel_canonicalize},
+            {"parallel_dispatch", &pass_parallel_dispatch},
+            {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
@@ -260,9 +265,22 @@ namespace LCompilers {
                 "global_stmts",
                 "init_expr",
                 "function_call_in_declaration",
-                "openmp",
+                // Every parallel loop, however it was written, becomes one
+                // canonical `OMPRegion` before anything decides how to lower
+                // it, and the pass after that writes the decision into the
+                // region.
+                "parallel_canonicalize",
+                "parallel_dispatch",
                 "implied_do_loops",
+                // The device gets first refusal: a loop it declines is
+                // handed back as a host-thread loop, which the OpenMP pass
+                // below then picks up.
                 "gpu_offload",
+                "openmp",
+                // Whatever OpenMP construct no lowering claimed is unwrapped
+                // here, so it runs serially instead of reaching a code
+                // generator that cannot lower it.
+                "omp_region_flatten",
                 // Everything a kernel reaches is device code, and the
                 // passes below have to know which routines those are.
                 "device_partition",
@@ -328,6 +346,11 @@ namespace LCompilers {
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                // The C backend prints the OpenMP constructs as pragmas and
+                // lets the C compiler lower them, so the passes that take
+                // them apart have nothing to do there.
+                "parallel_canonicalize",
+                "omp_region_flatten",
                 "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",

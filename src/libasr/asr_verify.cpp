@@ -3260,6 +3260,51 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_DoConcurrentLoop(x);
     }
 
+    void visit_OMPRegion(const OMPRegion_t &x) {
+        for ( size_t i = 0; i < x.n_clauses; i++ ) {
+            ASR::expr_t **vars = nullptr;
+            size_t n_vars = 0;
+            switch (x.m_clauses[i]->type) {
+                case ASR::omp_clauseType::OMPPrivate: {
+                    ASR::OMPPrivate_t *c = ASR::down_cast<ASR::OMPPrivate_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPShared: {
+                    ASR::OMPShared_t *c = ASR::down_cast<ASR::OMPShared_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPFirstPrivate: {
+                    ASR::OMPFirstPrivate_t *c =
+                        ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPLastPrivate: {
+                    ASR::OMPLastPrivate_t *c =
+                        ASR::down_cast<ASR::OMPLastPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPReduction: {
+                    ASR::OMPReduction_t *c =
+                        ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                default: break;
+            }
+            for ( size_t j = 0; j < n_vars; j++ ) {
+                require(ASR::is_a<ASR::Var_t>(*vars[j]),
+                    "a variable named by an OMPRegion clause must be a Var");
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_OMPRegion(x);
+    }
+
 };
 
 

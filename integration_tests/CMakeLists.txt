@@ -4333,6 +4333,8 @@ RUN(NAME do_concurrent_12 LABELS llvm_omp llvm NO_FAST_MATH) # to not include is
 RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
 RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_concurrent_16 LABELS gfortran llvm llvm_omp)
+RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4516,11 +4518,15 @@ RUN(NAME openmp_66 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_67 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_68 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_69 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_70 LABELS target_offload)
-RUN(NAME openmp_71 LABELS target_offload)
-RUN(NAME openmp_72 LABELS target_offload)
+RUN(NAME openmp_70 LABELS metal cuda_cpu EXTRA_ARGS --openmp)
+RUN(NAME openmp_71 LABELS metal cuda_cpu EXTRA_ARGS --openmp)
+RUN(NAME openmp_72 LABELS metal cuda_cpu EXTRA_ARGS --openmp)
 RUN(NAME openmp_73 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_74 LABELS gfortran llvm)
+RUN(NAME openmp_75 LABELS gfortran metal cuda_cpu EXTRA_ARGS --openmp)
+RUN(NAME openmp_76 LABELS gfortran metal cuda_cpu EXTRA_ARGS --openmp --gpu-offload-omp-loops GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_77 LABELS llvm llvm_omp)
+RUN(NAME openmp_79 LABELS gfortran metal cuda_cpu llvm_omp EXTRA_ARGS --openmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -5068,6 +5074,7 @@ RUN(NAME gpu_metal_202 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_203 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)

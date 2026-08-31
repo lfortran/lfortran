@@ -35,6 +35,20 @@ The locality lists say what each iteration sees. A variable in `local` is
 private to an iteration, a variable in `shared` is not, and a variable in
 `reduction` is combined across iterations with the named operator.
 
+Every parallel loop is said one way before anything decides how to lower it,
+and that way is an **OMPRegion**: the `parallel_canonicalize` pass rewrites a
+`do concurrent` loop, an `!$omp target` region and, when the compiler is asked
+to offload them, an `!$omp parallel do` into one canonical region carrying
+[OMPIndependent](../omp_nodes/OMPIndependent.md) -- the assertion this loop
+makes. `exec_target` on that region then carries the lowering decision for
+that one loop, so a program may mix serial, host-threaded and device loops.
+
+Only the outermost loop of a nest becomes a region, so a concurrent loop left
+in the body keeps this node and runs its iterations in order inside the thread
+that reached it. Passes that run after the parallel pipeline, such as `forall`
+and `array_struct_temporary`, also build this node; `do_loops` lowers all of
+them into an ordinary loop nest.
+
 ## Examples
 
 An ASR text document that uses it:
@@ -45,4 +59,4 @@ An ASR text document that uses it:
 
 ## See Also
 
-[DoLoop](DoLoop.md), [OMPRegion](OMPRegion.md), [do_loop_head](../helper_nodes/do_loop_head.md), [reduction_expr](../helper_nodes/reduction_expr.md)
+[DoLoop](DoLoop.md), [OMPRegion](OMPRegion.md), [do_loop_head](../helper_nodes/do_loop_head.md), [reduction_expr](../helper_nodes/reduction_expr.md), [exec_target](../enum_nodes/exec_target.md)
