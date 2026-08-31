@@ -763,10 +763,72 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
-        if (result_var != nullptr &&
+        bool has_direct_target = result_var != nullptr &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
-            resultvar2value[result_var] == &(x->base)) {
+            resultvar2value[result_var] == &(x->base);
+        if (has_direct_target) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        // If this ArrayConstant is the value being assigned directly to a
+        // target (e.g. `arr = [1, 2, 3]`) and that target doesn't need to
+        // be (re)allocated here, there's no need to materialize a
+        // "_array_constant_" temporary in this pass -- array_op (and, for
+        // struct-array cases, array_struct_temporary right after this
+        // pass) already lower an ArrayConstant directly against an
+        // existing target. Creating a temp here duplicates that work and,
+        // more importantly, this replacer used to run unconditionally on
+        // every ArrayConstant encountered -- including ones that aren't
+        // part of an executable statement at all, e.g. inside a
+        // function's type signature -- which caused issue #12138.
+        //
+        // This is only safe when the target's array bounds all start at
+        // the default lower bound of 1: array_op's own
+        // replace_ArrayConstant indexes into the target using the
+        // ArrayConstant's own (always 1-based) dimensions, not the
+        // target's declared bounds. For a target with a non-default
+        // lower bound (e.g. `integer :: y(-1:1)`), that produces
+        // out-of-bounds indices, so in that case we still materialize a
+        // temp here (whose type carries the target's real bounds) and
+        // let the final whole-array copy `target = temp` handle the
+        // bound-shifted assignment correctly at runtime.
+        bool target_has_default_lower_bound = true;
+        if (has_direct_target) {
+            ASR::dimension_t* target_dims = nullptr;
+            size_t target_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(result_var), target_dims);
+            for (size_t i = 0; i < target_n_dims; i++) {
+                int64_t start_val = 0;
+                if (target_dims[i].m_start == nullptr ||
+                    !ASRUtils::extract_value(target_dims[i].m_start, start_val) ||
+                    start_val != 1) {
+                    target_has_default_lower_bound = false;
+                    break;
+                }
+            }
+        }
+        // Beyond matching bounds, the target's size must also be known
+        // at compile time and exactly match the ArrayConstant's size.
+        // Otherwise we lose the runtime "Array shape mismatch" check:
+        // when the target's size can only be known at runtime (e.g. a
+        // dummy array dimensioned by another argument, `y(x)`), the old
+        // behavior materialized a temp sized from the ArrayConstant's
+        // own (compile-time-known) size and then did a whole-array copy
+        // `target = temp`, which is where asr_to_llvm emits the runtime
+        // shape-mismatch check. array_op's elementwise lowering has no
+        // such check -- it would silently write only as many elements
+        // as the ArrayConstant has, regardless of the target's actual
+        // runtime size. See tests/errors/array_bounds_check_02.f90.
+        bool target_size_matches_constant = false;
+        if (has_direct_target && is_result_var_fixed_size) {
+            int64_t target_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(result_var));
+            int64_t constant_size = ASRUtils::get_fixed_size_of_array(x->m_type);
+            if (target_size >= 0 && constant_size >= 0 && target_size == constant_size) {
+                target_size_matches_constant = true;
+            }
+        }
+        if (has_direct_target && !(allocate_target && realloc_lhs) &&
+            target_has_default_lower_bound && target_size_matches_constant) {
+            return;
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
