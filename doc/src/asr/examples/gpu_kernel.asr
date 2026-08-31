@@ -6,7 +6,7 @@
         :symtab (SymbolTable
           :id 1
           :symbols {
-            "scale" (GpuKernelFunction
+            "scale" (Function
               :symtab (SymbolTable
                 :id 2
                 :symbols {
@@ -41,6 +41,7 @@
                         )
                       ]
                       :physical_type :FixedSizeArray
+                      :memory_space :Global
                     )
                     :type_declaration nil
                     :abi :Source
@@ -109,6 +110,7 @@
                       )
                     ]
                     :physical_type :FixedSizeArray
+                    :memory_space :Global
                   )
                 ]
                 :return_var_type nil
@@ -122,6 +124,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Kernel
               )
               :dependencies []
               :args [
@@ -219,7 +222,11 @@
                   :move_allocation false
                 )
               ]
+              :return_var nil
               :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
             )
           }
         )

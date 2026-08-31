@@ -37,6 +37,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :type_declaration nil
               :abi :Source
@@ -129,6 +130,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :value nil
               :storage_format :ColMajor

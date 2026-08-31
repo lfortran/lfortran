@@ -37,6 +37,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :type_declaration nil
               :abi :Source
@@ -291,8 +292,10 @@
                     :orelse []
                   )
                 ]
+                :exec_target :ExecAuto
               )
             ]
+            :exec_target :ExecAuto
           )
           (OMPRegion
             :region :Target
@@ -355,8 +358,10 @@
                     :move_allocation false
                   )
                 ]
+                :exec_target :ExecAuto
               )
             ]
+            :exec_target :ExecAuto
           )
         ]
       )
