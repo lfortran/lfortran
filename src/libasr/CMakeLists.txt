@@ -79,6 +79,7 @@ set(SRC
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
     pass/gpu_offload.cpp
+    pass/device_launch_expand.cpp
     pass/coarray.cpp
 
     codegen/asr_to_metal.cpp
