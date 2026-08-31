@@ -1783,6 +1783,40 @@ static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
     }
 }
 
+// True when `outer` designates storage inside `inner`, or `inner`
+// itself: the descent from `outer` towards its root passes through a
+// designator naming the very same element. `x%c_(k)%v_(:,j)` is within
+// `x%c_(k)`; `x%c_` is not, and neither is `x%c_(m)`.
+static bool gpu_designator_within(ASR::expr_t *outer, ASR::expr_t *inner) {
+    while (outer) {
+        if (gpu_same_designator(outer, inner)) return true;
+        switch (outer->type) {
+            case ASR::exprType::StructInstanceMember: {
+                outer = ASR::down_cast<ASR::StructInstanceMember_t>(
+                    outer)->m_v;
+                break;
+            }
+            case ASR::exprType::ArraySection: {
+                outer = ASR::down_cast<ASR::ArraySection_t>(outer)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                outer = ASR::down_cast<ASR::ArrayItem_t>(outer)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayPhysicalCast: {
+                outer = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    outer)->m_arg;
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
 // Reports whether an expression reads the storage of `base` through a
 // designator that is not element-for-element identical to `target`. Such
 // a read may see an element the assignment to `target` has already
@@ -1844,10 +1878,25 @@ class GpuWrittenRootCollector :
         public ASR::BaseWalkVisitor<GpuWrittenRootCollector> {
 public:
     std::set<ASR::symbol_t*> roots;
+    // Every designator that was written, kept alongside the roots so a
+    // caller can ask not just whether an object is written but where.
+    std::vector<ASR::expr_t*> targets;
+    // The roots among them that a callee writes through an actual
+    // argument, rather than the loop body writing them itself.
+    std::set<ASR::symbol_t*> call_roots;
 
     void note(ASR::expr_t *e) {
         GpuDesignatorBase b = gpu_designator_base(e);
-        if (b.is_known()) roots.insert(b.root);
+        if (b.is_known()) {
+            roots.insert(b.root);
+            targets.push_back(e);
+        }
+    }
+
+    void note_call_written(ASR::expr_t *e) {
+        GpuDesignatorBase b = gpu_designator_base(e);
+        if (b.is_known()) call_roots.insert(b.root);
+        note(e);
     }
 
     // The dummy at position `i` of `name`, or nullptr when the callee
@@ -1881,7 +1930,7 @@ public:
             if (!args[i].m_value) continue;
             ASR::Variable_t *d = dummy_of(name, i);
             if (d != nullptr && d->m_intent == ASR::intentType::In) continue;
-            note(args[i].m_value);
+            note_call_written(args[i].m_value);
         }
     }
 
@@ -2033,6 +2082,9 @@ public:
 struct GpuStructElementGather {
     ASR::expr_t *chain = nullptr;
     ASR::symbol_t *temp = nullptr;
+    // The loop writes into this element, so the temporary has to be
+    // copied back over it once the kernel has finished.
+    bool scatter = false;
 };
 
 // Replaces each collected designator with a reference to its temporary,
@@ -8301,11 +8353,21 @@ public:
     // the device can be told about, which is what the chain itself does
     // not.
     //
+    // An element the loop writes into is handled the same way, with a
+    // copy back over the original after the launch: because the gather
+    // brought the whole element in first, the bytes the kernel left
+    // alone still hold what was read, so the copy back is exact even
+    // when only part of the element was written.  It is only allowed
+    // when every write to the object lands inside that one element --
+    // a write anywhere else, `allocate` of the array the element comes
+    // from included, would be undone by the copy back.
+    //
     // `undo` records every slot that was overwritten and `temp_names`
     // every symbol that was added, so `GpuGatherGuard` can put the loop
     // back exactly as it was if the offload is declined further down.
     bool hoist_struct_element_gathers(const ASR::DoConcurrentLoop_t &x,
             Vec<ASR::stmt_t*> &gather_stmts,
+            Vec<ASR::stmt_t*> &scatter_stmts,
             std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
             std::vector<std::string> &temp_names) {
         GpuStructElementGatherCollector collector;
@@ -8331,9 +8393,27 @@ public:
             ASR::expr_t *chain = ASRUtils::EXPR((ASR::asr_t*)item);
             GpuDesignatorBase base = gpu_designator_base(chain);
             if (!base.is_known()) return false;
-            // Anything the loop may write to the object the chain hangs
-            // off makes the copy stale.
-            if (written.roots.count(base.root)) return false;
+            // A write to the object the chain hangs off makes a
+            // read-only copy stale. The copy can still stand in for the
+            // element when every such write lands inside that element,
+            // because it is then put back over the original after the
+            // launch. A write anywhere else in the object would be lost
+            // or, worse, undone by that copy back.
+            bool scatter = false;
+            if (written.roots.count(base.root)) {
+                // A callee that writes the object through one of its
+                // dummies is spliced into the kernel, and the pass does
+                // not build a kernel for that shape yet; the copy back
+                // would be over storage the launch never reached.
+                if (written.call_roots.count(base.root)) return false;
+                for (ASR::expr_t *target : written.targets) {
+                    if (gpu_designator_base(target).root != base.root) {
+                        continue;
+                    }
+                    if (!gpu_designator_within(target, chain)) return false;
+                }
+                scatter = true;
+            }
             if (!host_nameable(base.root)) return false;
             // The subscripts have to mean the same thing for every
             // iteration, and mean it in the scope the copy is made in.
@@ -8364,11 +8444,28 @@ public:
             GpuStructElementGather g;
             g.chain = chain;
             g.temp = nullptr;
+            g.scatter = scatter;
             gathers.push_back(g);
         }
         if (gathers.empty()) return true;
 
+        // Two elements of the same object can designate the same
+        // storage at run time -- `x%c_(i)` and `x%c_(k)` with `i == k`
+        // -- and then one copy back would silently undo the other. Take
+        // only a single element per written object.
+        for (const GpuStructElementGather &g : gathers) {
+            if (!g.scatter) continue;
+            ASR::symbol_t *root = gpu_designator_base(g.chain).root;
+            for (const GpuStructElementGather &other : gathers) {
+                if (&other == &g) continue;
+                if (gpu_designator_base(other.chain).root == root) {
+                    return false;
+                }
+            }
+        }
+
         gather_stmts.reserve(al, gathers.size());
+        scatter_stmts.reserve(al, gathers.size());
         for (GpuStructElementGather &g : gathers) {
             const Location &gloc = g.chain->base.loc;
             GpuDesignatorBase base = gpu_designator_base(g.chain);
@@ -8397,6 +8494,15 @@ public:
                 ASR::make_Assignment_t(al, gloc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, gloc, temp)),
                     rhs, nullptr, false, false)));
+            if (!g.scatter) continue;
+            ASRUtils::ExprStmtDuplicator back(al);
+            back.success = true;
+            ASR::expr_t *lhs = back.duplicate_expr(g.chain);
+            if (!lhs || !back.success) lhs = g.chain;
+            scatter_stmts.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, gloc, lhs,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, gloc, temp)),
+                    nullptr, false, false)));
         }
 
         GpuStructElementGatherVisitor sub(al, gathers, undo);
@@ -8686,15 +8792,18 @@ public:
         // the loop back untouched if any of them declines.
         Vec<ASR::stmt_t*> gather_stmts;
         gather_stmts.reserve(al, 1);
+        Vec<ASR::stmt_t*> scatter_stmts;
+        scatter_stmts.reserve(al, 1);
         std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> gather_undo;
         std::vector<std::string> gather_temp_names;
         GpuGatherGuard gather_guard(current_scope, gather_undo,
             gather_temp_names);
         if (pass_options.gpu_offload_metal
                 && !hoist_struct_element_gathers(x, gather_stmts,
-                    gather_undo, gather_temp_names)) {
+                    scatter_stmts, gather_undo, gather_temp_names)) {
             // The element could not be hoisted -- a subscript that moves
-            // with the loop, or an object the loop itself writes. Passing
+            // with the loop, or a write to the object that the copy back
+            // after the launch could not reproduce exactly. Passing
             // the chain on unchanged reaches the device as a component of
             // the wrong element, which is a wrong number and no
             // diagnostic, so decline the loop instead.
@@ -11556,7 +11665,8 @@ public:
         gather_guard.commit();
         Vec<ASR::stmt_t*> launch_stmts;
         launch_stmts.reserve(al, gather_stmts.n + pre_launch_stmts.n
-            + liveout_scalars.size() + 2 + liveout_scalars.size());
+            + scatter_stmts.n + liveout_scalars.size() + 2
+            + liveout_scalars.size());
         for (size_t gi = 0; gi < gather_stmts.n; gi++) {
             launch_stmts.push_back(al, gather_stmts.p[gi]);
         }
@@ -11635,6 +11745,12 @@ public:
 
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_GpuSync_t(al, loc)));
+
+        // Put every gathered element the kernel wrote into back over the
+        // original, before anything on the host can read it again.
+        for (size_t si = 0; si < scatter_stmts.n; si++) {
+            launch_stmts.push_back(al, scatter_stmts.p[si]);
+        }
 
         // Copy liveout scalar results back from the 1-element array
         // buffers after the kernel has completed
