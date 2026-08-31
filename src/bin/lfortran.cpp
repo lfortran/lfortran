@@ -1,7 +1,6 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
-#include <regex>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -1383,32 +1382,6 @@ int compile_src_to_object_file(const std::string &infile,
     time_opt = pipeline_result.optimization_time_us;
     time_llvm_to_bin = pipeline_result.object_time_us;
 
-    if(compiler_options.po.enable_gpu_offloading) {
-#ifdef HAVE_LFORTRAN_MLIR
-        for (auto &item : asr->m_symtab->get_scope()) {
-            if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second) &&
-                    item.first.find("_lcompilers_mlir_gpu_offloading")
-                    != std::string::npos) {
-                LCompilers::ASR::Module_t &mod = *LCompilers::ASR::down_cast
-                    <LCompilers::ASR::Module_t>(item.second);
-                LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-                    mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
-
-                std::cerr << diagnostics.render(lm, compiler_options);
-                if (mlir_res.ok) {
-                    mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
-                    std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
-                        .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
-                    fe.get_llvm_evaluator().save_object_file(
-                        *(mlir_res.result->llvm_m), mlir_tmp_o);
-                } else {
-                    LCOMPILERS_ASSERT(diagnostics.has_error())
-                    return 1;
-                }
-            }
-        }
-#endif
-    }
 
     if (time_report) {
         std::string message = "";
@@ -2038,7 +2011,6 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
-    std::vector<std::string> mlir_temp_object_files;
 
     size_t dot_index = outfile.find_last_of(".");
     std::string file_name = outfile.substr(0, dot_index);
@@ -2154,15 +2126,6 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
-                if (backend == Backend::llvm &&
-                        compiler_options.po.enable_gpu_offloading &&
-                        std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
-                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
-                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
-                        ".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o").string();
-                    compile_cmd += mlir_tmp_o + " ";
-                    mlir_temp_object_files.push_back(mlir_tmp_o);
-                }
             }
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
@@ -2475,10 +2438,6 @@ int link_executable(const std::vector<std::string> &infiles,
     if (time_report) {
         std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-    }
-
-    for (const std::string& filename : mlir_temp_object_files) {
-        std::remove(filename.c_str());
     }
 
     return 0;
@@ -2872,11 +2831,6 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
 
-    if(compiler_options.po.enable_gpu_offloading && !compiler_options.openmp) {
-        std::cerr << "The option `--mlir-gpu-offloading` requires openmp pass "
-            "to be applied. Rerun with `--openmp` option\n";
-        return 1;
-    }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
         std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;

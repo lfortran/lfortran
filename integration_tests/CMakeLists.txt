@@ -197,34 +197,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 ENVIRONMENT
                     "KMP_TEAMS_THREAD_LIMIT=32"
             )
-        elseif (LFORTRAN_BACKEND STREQUAL "target_offload")
-            set(c_file "${CURRENT_BINARY_DIR}/${file_name}.c")
-            execute_process(
-                COMMAND lfortran ${extra_args} --openmp --show-c --target-offload
-                        ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90
-                OUTPUT_FILE ${c_file}
-                RESULT_VARIABLE convert_result
-            )
-            configure_file(
-                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h.in
-                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h
-                @ONLY
-            )
-            add_executable(${name}
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/lfortran_intrinsics.c
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/cuda_cpu_runtime.c
-                ${c_file}
-            )
-            target_include_directories(${name} PUBLIC
-                ${CMAKE_SOURCE_DIR}/../src/
-                ${CMAKE_SOURCE_DIR}/../src/libasr/runtime
-            )
-            target_compile_options(${name} PUBLIC -fopenmp)
-            target_link_libraries(${name} PUBLIC m)
-            target_link_options(${name} PUBLIC -fopenmp)
-            target_link_options(${name} PUBLIC -L$ENV{CONDA_PREFIX}/lib ${extra_args})
-
-            add_test(NAME ${name} COMMAND ${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_submodule")
             set(object_files "")
             set(prev_file "")
@@ -247,18 +219,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "mlir")
             execute_process(COMMAND lfortran ${extra_args} --backend=mlir
-                ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "mlir_omp")
-            execute_process(COMMAND lfortran ${extra_args} --backend=mlir
-                --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib
-                --mlir-gpu-offloading
-                ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
-            add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "mlir_llvm_omp")
-            execute_process(COMMAND lfortran ${extra_args} --backend=llvm
-                --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib
-                --mlir-gpu-offloading
                 ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -o ${name})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "metal")
@@ -405,10 +365,7 @@ endmacro(COMPILE)
 # x86           --- compile to x86 binary directly
 # wasm          --- compile to WASM binary directly
 # mlir          --- generate mlir, convert to llvm ir and compile to binary
-# mlir_omp      --- generate mlir with OpenMP, convert to llvm ir and compile to binary
 # llvm_single_invocation --- compile all sources in a single LFortran invocation
-# mlir_llvm_omp --- generate mlir for a module with OpenMP, convert and link
-#                   it with the existing llvm ir and compile to binary
 
 # `reduce` is not supported by GFortran yet:
 # RUN(NAME doconcurrentloop_02 LABELS gfortran)
@@ -4318,7 +4275,7 @@ RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fort
 
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
-RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir mlir_omp mlir_llvm_omp)
+RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir)
 RUN(NAME do_concurrent_02 LABELS llvm_omp llvm)
 RUN(NAME do_concurrent_03 LABELS llvm_omp)
 RUN(NAME do_concurrent_04 LABELS llvm_omp)
