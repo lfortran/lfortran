@@ -3,7 +3,7 @@
 set -e
 set -x
 
-cmake \
+cmake -S . -B build/release \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
     -DWITH_LLVM=yes \
@@ -16,6 +16,6 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
-    -G Ninja \
-    .
-cmake --build . --target install
+    -G Ninja
+
+cmake --build build/release --target install

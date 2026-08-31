@@ -499,6 +499,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set LFortran version
+        shell: bash -e -l {0}
+        run: |
+          lfortran_version="$(git describe --tags --dirty)"
+          lfortran_version="${lfortran_version#v}"
+          if [[ -z "$lfortran_version" ]]; then
+            echo "::error::git describe returned an empty LFortran version"
+            exit 1
+          fi
+          echo "LFORTRAN_VERSION=$lfortran_version" >> "$GITHUB_ENV"
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           micromamba-version: '2.0.4-0'
@@ -510,9 +521,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
           ./build0.sh
-          lfortran_version=$(<version)
           pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
+          ci/create_source_tarball.sh "$LFORTRAN_VERSION"
 
       - name: Upload Tarball to Release
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
