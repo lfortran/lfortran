@@ -333,7 +333,6 @@ namespace LCompilers::CommandLineInterface {
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
-        app.add_flag("--target-offload", compiler_options.target_offload_enabled, "Enable Target Offloading")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
@@ -349,7 +348,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
-        app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);

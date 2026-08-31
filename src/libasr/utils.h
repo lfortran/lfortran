@@ -72,7 +72,6 @@ struct PassOptions {
     bool enable_cpython = false;
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
-    bool enable_gpu_offloading = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
     // `!$omp parallel do` asks for host threads. Offloading one onto a device
@@ -115,7 +114,6 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
-    bool target_offload_enabled = false;
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";

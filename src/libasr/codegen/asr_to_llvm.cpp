@@ -1964,7 +1964,6 @@ public:
         std::vector<std::string> build_order
             = determine_module_dependencies(x);
         for (auto &item : build_order) {
-            if (!item.compare("_lcompilers_mlir_gpu_offloading")) continue;
             ASR::symbol_t *mod = nullptr;
             SymbolTable *mod_scope = nullptr;
             for (SymbolTable *scope : cell_scopes) {
