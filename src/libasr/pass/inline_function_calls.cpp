@@ -260,6 +260,20 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         return true;
     }
 
+    // Only the arm of a conditional expression that is chosen is evaluated
+    // (Fortran 2023, 10.1.4 NOTE 3), while inlining appends the body of the
+    // called function to the enclosing statement list, which would run it
+    // whichever arm is taken. Clearing current_body makes
+    // check_inline_possibility decline every call inside the node. The
+    // condition is evaluated unconditionally and could still be inlined, but
+    // declining it too keeps this to one rule.
+    void replace_IfExp(ASR::IfExp_t* x) {
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = nullptr;
+        ASR::BaseExprReplacer<InlineFunctionCalls>::replace_IfExp(x);
+        current_body = current_body_copy;
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( !check_inline_possibility(x->m_name, x) ) {
             return ;
@@ -464,6 +478,15 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
         }
         transform_stmts(xx.m_body, xx.n_body);
         current_scope = current_scope_copy;
+    }
+
+    // See InlineFunctionCalls::replace_IfExp: an arm of a conditional
+    // expression has no statement list that a call in it may be inlined into.
+    void visit_IfExp(const ASR::IfExp_t& x) {
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = nullptr;
+        ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallsVisitor>::visit_IfExp(x);
+        current_body = current_body_copy;
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t& /*x*/) {
