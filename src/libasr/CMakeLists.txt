@@ -41,7 +41,7 @@ set(SRC
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
-    pass/omp_to_parallel_loop.cpp
+    pass/parallel_canonicalize.cpp
     pass/parallel_dispatch.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp

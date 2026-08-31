@@ -4483,6 +4483,7 @@ RUN(NAME openmp_75 LABELS gfortran metal cuda_cpu EXTRA_ARGS --openmp)
 RUN(NAME openmp_76 LABELS gfortran metal cuda_cpu EXTRA_ARGS --openmp --gpu-offload-omp-loops GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_77 LABELS llvm llvm_omp)
 RUN(NAME openmp_78 LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_79 LABELS gfortran metal cuda_cpu llvm_omp EXTRA_ARGS --openmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)

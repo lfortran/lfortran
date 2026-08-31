@@ -20,8 +20,8 @@ None.
 
 ## Description
 
-`!$omp target` is a request to execute a region on a device. Normalizing a
-target construct flattens the `target` / `teams` / `distribute` nest into a
+`!$omp target` is a request to execute a region on a device. Canonicalizing
+a target construct flattens the `target` / `teams` / `distribute` nest into a
 single **OMPRegion**, which would otherwise lose the fact that a device was
 asked for; this clause keeps it.
 

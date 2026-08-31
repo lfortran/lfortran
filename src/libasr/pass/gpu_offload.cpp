@@ -7,6 +7,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
@@ -78,7 +79,7 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         // Skip variables local to Block scopes, except those in
         // enclosing Block scopes (which need to become kernel parameters
-        // when a do concurrent is inside one or more nested Blocks)
+        // when a parallel loop is inside one or more nested Blocks)
         if (ASR::is_a<ASR::Variable_t>(*x.m_v)) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x.m_v);
             if (var->m_parent_symtab->asr_owner &&
@@ -202,7 +203,7 @@ public:
 };
 
 // Resolves associate variable references to their original targets.
-// When a DoConcurrentLoop is inside an AssociateBlock, variables like `nn`
+// When a parallel loop is inside an AssociateBlock, variables like `nn`
 // (associated with `n`) must be resolved to their associate value before
 // kernel extraction, because the kernel scope cannot access the
 // AssociateBlock's symbol table. The mapped expression may be a simple
@@ -245,7 +246,7 @@ public:
     }
 };
 
-// Collects local variables used in do concurrent body that are NOT
+// Collects local variables used in a parallel loop body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
 public:
@@ -327,7 +328,7 @@ public:
 };
 
 // Collects all Function symbols referenced by FunctionCall/SubroutineCall
-// nodes in the do concurrent body so they can be imported into the kernel.
+// nodes in the loop body so they can be imported into the kernel.
 class GpuFunctionCollector : public ASR::BaseWalkVisitor<GpuFunctionCollector> {
 public:
     std::map<std::string, ASR::symbol_t*> functions;
@@ -587,10 +588,10 @@ public:
 };
 
 // Collects StructInstanceMember references to allocatable array members
-// in the do concurrent body. Used to decompose struct-typed kernel
+// in the loop body. Used to decompose struct-typed kernel
 // parameters into separate flat array buffers for Metal.
 // Collects all variable names referenced (read) in a set of statements.
-// Used to determine which variables are live after a do concurrent loop.
+// Used to determine which variables are live after a parallel loop.
 class PostLoopVarCollector : public ASR::BaseWalkVisitor<PostLoopVarCollector> {
 public:
     std::set<std::string> &referenced_vars;
@@ -1001,7 +1002,7 @@ public:
         // Create ExternalSymbol entries in kernel scope for each member,
         // so that StructInstanceMember can reference them.
         // Search orig_scope and walk up through AssociateBlock/Block
-        // parent scopes, because when the do concurrent is inside an
+        // parent scopes, because when the loop is inside an
         // AssociateBlock the ExternalSymbol entries for struct members
         // live in the enclosing function scope, not in the
         // AssociateBlock's scope.
@@ -1073,8 +1074,8 @@ public:
         if (!type_decl) return nullptr;
         ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(type_decl);
         if (!is_a<ASR::Struct_t>(*struct_sym)) return nullptr;
-        // Use orig_scope (the do concurrent's enclosing scope) rather
-        // than var->m_parent_symtab. When the do concurrent is inside
+        // Use orig_scope (the loop's enclosing scope) rather
+        // than var->m_parent_symtab. When the loop is inside
         // an AssociateBlock, ExternalSymbol entries for struct members
         // (e.g., type-bound procedure references) are migrated from
         // inner associate scopes into orig_scope during associate
@@ -1501,7 +1502,7 @@ public:
         return e;
     }
 
-    // Inline IntrinsicArrayFunction All inside a DoConcurrentLoop body.
+    // Inline IntrinsicArrayFunction All inside a parallel loop body.
     // Replaces:
     //   eq(l) = all(a(:,l) == b(:,l))
     // or:
@@ -1509,13 +1510,13 @@ public:
     // With inlined loops that compute the All result into temporaries.
     // This avoids complex lowered code (Associate, Allocate, FunctionCall)
     // that the Metal backend cannot handle inside GPU kernels.
-    void inline_intrinsic_all(ASR::DoConcurrentLoop_t &x) {
+    void inline_intrinsic_all(ParallelLoopNest &nest) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 3);
+        new_body.reserve(al, nest.n_body * 3);
         bool changed = false;
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -1559,8 +1560,7 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            nest.set_body(new_body.p, new_body.n);
         }
     }
 
@@ -1622,7 +1622,7 @@ public:
             ASR::arraystorageType::ColMajor, nullptr));
     }
 
-    // Inline IntrinsicArrayFunction Sum inside a DoConcurrentLoop body.
+    // Inline IntrinsicArrayFunction Sum inside a parallel loop body.
     // Replaces:
     //   results(i) = sum(a)
     // With:
@@ -2440,38 +2440,92 @@ public:
         }
     }
 
-    void inline_intrinsic_sum(ASR::DoConcurrentLoop_t &x) {
-        inline_sum_in_stmts(x.m_body, x.n_body, current_scope);
+    void inline_intrinsic_sum(ParallelLoopNest &nest) {
+        ASR::stmt_t **body = nest.body;
+        size_t n_body = nest.n_body;
+        inline_sum_in_stmts(body, n_body, current_scope);
+        nest.set_body(body, n_body);
     }
 
-    // `do concurrent` is ordinary Fortran, so a loop that cannot be offloaded
-    // must still compile and run. Report why it was left on the host rather
-    // than build a kernel that would quietly do something else.
+    // A parallel loop is ordinary Fortran, so a loop that cannot be
+    // offloaded must still compile and run. Report why it was left on the
+    // host rather than build a kernel that would quietly do something else.
     void report_not_offloaded(const Location &where, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
         pass_options.diagnostics->message_label(
-            "do concurrent loop not offloaded to the GPU, "
+            "parallel loop not offloaded to the GPU, "
             "it runs on the CPU instead",
             {where}, why,
             diag::Level::Warning, diag::Stage::ASRPass);
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        // Only the loops the dispatch pass gave to the device. Every other
-        // exit of this function leaves the loop alone, and the loops still
-        // marked for the device once the pass is done are the ones it
-        // declined; they are handed back to the host below.
-        if (x.m_exec_target != ASR::exec_targetType::ExecDevice) return;
+    // A clause a kernel launch has no way to honour. The loop still runs on
+    // the device, which chooses its own layout, so say what was dropped
+    // rather than drop it in silence.
+    void report_clause_ignored(const Location &where, const std::string &name) {
+        if (pass_options.diagnostics == nullptr) return;
+        pass_options.diagnostics->message_label(
+            "the '" + name + "' clause is ignored on the gpu",
+            {where}, "the device decides how to run the iterations",
+            diag::Level::Warning, diag::Stage::ASRPass);
+    }
 
-        // Skip loops with reduce clause (let do_loops handle as regular loop)
-        if (x.n_reduction > 0) return;
+    // What a clause a launch cannot honour is called, or an empty name for
+    // one it can.
+    std::string unhonoured_clause(const ASR::omp_clause_t *clause) {
+        switch (clause->type) {
+            case ASR::omp_clauseType::OMPNumTeams: return "num_teams";
+            case ASR::omp_clauseType::OMPThreadLimit: return "thread_limit";
+            case ASR::omp_clauseType::OMPIf: return "if";
+            case ASR::omp_clauseType::OMPSchedule: return "schedule";
+            case ASR::omp_clauseType::OMPNumThreads: return "num_threads";
+            default: return "";
+        }
+    }
+
+    // A region this pass does not take is left exactly as it was, and is
+    // looked inside for the regions it can take.
+    void decline(const ASR::OMPRegion_t &x) {
+        ASR::ASRPassBaseWalkVisitor<GpuOffloadVisitor>::visit_OMPRegion(x);
+    }
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        // Only the regions the dispatch pass gave to the device. Every other
+        // exit of this function leaves the region alone, and the regions
+        // still marked for the device once the pass is done are the ones it
+        // declined; they are handed back to the host below.
+        if (x.m_exec_target != ASR::exec_targetType::ExecDevice) {
+            decline(x);
+            return;
+        }
+
+        // Only a canonical parallel loop is offloaded: one region, one
+        // perfectly nested loop nest, and the whole data environment in one
+        // clause list. The kernel is built out of the nest.
+        ParallelLoopNest nest;
+        if (!parallel_loop_nest(x, nest)) {
+            decline(x);
+            return;
+        }
 
         Location loc = x.base.base.loc;
-        size_t n_dims = x.n_head;
+        size_t n_dims = nest.n_heads();
+
+        // A reduction combines what the threads computed, which the launch
+        // does not do yet, so the loop stays where that already works.
+        for (size_t i = 0; i < x.n_clauses; i++) {
+            if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPReduction) {
+                report_not_offloaded(loc,
+                    "a reduction has no gpu lowering yet");
+                return;
+            }
+        }
+
         if (n_dims == 0 || n_dims > 3) return;
 
         for (size_t d = 0; d < n_dims; d++) {
-            if (!x.m_head[d].m_v || !x.m_head[d].m_start || !x.m_head[d].m_end) return;
+            if (!nest.head(d).m_v || !nest.head(d).m_start ||
+                    !nest.head(d).m_end) return;
         }
 
         // The kernel maps a flat thread id onto `start + (flat % extent)`, which
@@ -2479,7 +2533,7 @@ public:
         // head would silently address the wrong elements, so it stays on the
         // host until the index arithmetic carries the stride.
         for (size_t d = 0; d < n_dims; d++) {
-            ASR::expr_t *step = x.m_head[d].m_increment;
+            ASR::expr_t *step = nest.head(d).m_increment;
             if (!step) continue;
             ASR::expr_t *step_value = ASRUtils::expr_value(step);
             int64_t step_constant = 0;
@@ -2494,7 +2548,7 @@ public:
         }
 
         // Resolve associate variables to their original targets if this
-        // DoConcurrentLoop is inside one or more nested AssociateBlocks.
+        // loop is inside one or more nested AssociateBlocks.
         // The kernel function lives at the translation-unit level and
         // cannot reference symbols from any AssociateBlock's scope, so
         // we walk up through all enclosing AssociateBlock ancestors and
@@ -2554,25 +2608,24 @@ public:
             }
             if (!assoc_map.empty()) {
                 AssociateVarResolver resolver(al, assoc_map);
-                ASR::DoConcurrentLoop_t &xx =
-                    const_cast<ASR::DoConcurrentLoop_t&>(x);
                 for (size_t d = 0; d < n_dims; d++) {
-                    if (xx.m_head[d].m_start) {
-                        resolver.current_expr = &(xx.m_head[d].m_start);
-                        resolver.replace_expr(xx.m_head[d].m_start);
+                    ASR::do_loop_head_t &head = nest.head(d);
+                    if (head.m_start) {
+                        resolver.current_expr = &(head.m_start);
+                        resolver.replace_expr(head.m_start);
                     }
-                    if (xx.m_head[d].m_end) {
-                        resolver.current_expr = &(xx.m_head[d].m_end);
-                        resolver.replace_expr(xx.m_head[d].m_end);
+                    if (head.m_end) {
+                        resolver.current_expr = &(head.m_end);
+                        resolver.replace_expr(head.m_end);
                     }
-                    if (xx.m_head[d].m_increment) {
-                        resolver.current_expr = &(xx.m_head[d].m_increment);
-                        resolver.replace_expr(xx.m_head[d].m_increment);
+                    if (head.m_increment) {
+                        resolver.current_expr = &(head.m_increment);
+                        resolver.replace_expr(head.m_increment);
                     }
                 }
                 AssociateVarResolverVisitor resolver_visitor(al, assoc_map);
-                for (size_t i = 0; i < x.n_body; i++) {
-                    resolver_visitor.visit_stmt(*x.m_body[i]);
+                for (size_t i = 0; i < nest.n_body; i++) {
+                    resolver_visitor.visit_stmt(*nest.body[i]);
                 }
                 // The statement visitor above does not descend into
                 // BlockCall targets (Blocks have their own scope), so
@@ -2625,9 +2678,9 @@ public:
                         }
                     }
                 };
-                resolve_assoc_in_blocks(x.m_body, x.n_body);
+                resolve_assoc_in_blocks(nest.body, nest.n_body);
                 // Resolve associate aliases in enclosing Block scopes'
-                // variable type expressions. When a do concurrent is
+                // variable type expressions. When a parallel loop is
                 // inside a Block that is inside an AssociateBlock, the
                 // block-local arrays may use associate variables in
                 // their dimension expressions (e.g., `real r(size(n))`
@@ -2686,20 +2739,20 @@ public:
 
         // Inline IntrinsicArrayFunction All before kernel extraction
         all_reduction_targets.clear();
-        inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_all(nest);
 
         // Inline IntrinsicArrayFunction Sum before kernel extraction
-        inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_sum(nest);
 
         // Also inline Sum in helper functions called from the
-        // DoConcurrent body. This ensures that sum(f(x)) patterns
+        // loop body. This ensures that sum(f(x)) patterns
         // inside helper functions are expanded into loops before
         // kernel extraction, avoiding allocatable temporaries that
         // cannot be represented as VLAs in Metal shaders.
         {
             GpuFunctionCollector sum_fc;
-            for (size_t i = 0; i < x.n_body; i++) {
-                sum_fc.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < nest.n_body; i++) {
+                sum_fc.visit_stmt(*nest.body[i]);
             }
             bool sum_added = true;
             while (sum_added) {
@@ -2824,15 +2877,15 @@ public:
             }
         };
 
-        // Resolve AssociateBlocks inside the do concurrent body (e.g.,
+        // Resolve AssociateBlocks inside the loop body (e.g.,
         // block { associate(nh => n) ... } within the loop). GPU kernels
         // cannot use Pointer-based associate aliases, so we inline the
         // associate targets and replace the AssociateBlockCall with the
         // resolved statements.
-        for (size_t bi = 0; bi < x.n_body; bi++) {
-            if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[bi])) continue;
+        for (size_t bi = 0; bi < nest.n_body; bi++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*nest.body[bi])) continue;
             ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-                x.m_body[bi]);
+                nest.body[bi]);
             if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
             ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
             Vec<ASR::stmt_t*> new_block_body;
@@ -2896,24 +2949,24 @@ public:
         }
 
         // Resolve bare AssociateBlockCall statements directly in the
-        // do concurrent body (not wrapped in a BlockCall). GPU kernels
+        // loop body (not wrapped in a BlockCall). GPU kernels
         // cannot use Pointer-based associate aliases, so we inline the
         // associate targets and replace each AssociateBlockCall with
         // the resolved statements.
         {
             Vec<ASR::stmt_t*> new_dc_body;
-            new_dc_body.reserve(al, x.n_body);
+            new_dc_body.reserve(al, nest.n_body);
             bool dc_changed = false;
-            for (size_t bi = 0; bi < x.n_body; bi++) {
-                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*x.m_body[bi])) {
-                    new_dc_body.push_back(al, x.m_body[bi]);
+            for (size_t bi = 0; bi < nest.n_body; bi++) {
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*nest.body[bi])) {
+                    new_dc_body.push_back(al, nest.body[bi]);
                     continue;
                 }
                 ASR::AssociateBlockCall_t *abc =
                     ASR::down_cast<ASR::AssociateBlockCall_t>(
-                        x.m_body[bi]);
+                        nest.body[bi]);
                 if (!ASR::is_a<ASR::AssociateBlock_t>(*abc->m_m)) {
-                    new_dc_body.push_back(al, x.m_body[bi]);
+                    new_dc_body.push_back(al, nest.body[bi]);
                     continue;
                 }
                 ASR::AssociateBlock_t *ab =
@@ -2955,17 +3008,14 @@ public:
                 dc_changed = true;
             }
             if (dc_changed) {
-                ASR::DoConcurrentLoop_t &xx =
-                    const_cast<ASR::DoConcurrentLoop_t&>(x);
-                xx.m_body = new_dc_body.p;
-                xx.n_body = new_dc_body.n;
+                nest.set_body(new_dc_body.p, new_dc_body.n);
             }
         }
 
-        // Detect if the do concurrent is inside a Block scope. If so,
+        // Detect if the loop is inside a Block scope. If so,
         // block-local variables need to be collected as kernel parameters
         // rather than skipped. Walk up through AssociateBlock and Block
-        // parents to find ALL enclosing Block scopes (e.g., do concurrent
+        // parents to find ALL enclosing Block scopes (e.g., a loop
         // inside a nested Block that accesses variables from outer Blocks).
         std::set<SymbolTable*> enclosing_block_scopes;
         {
@@ -2988,7 +3038,7 @@ public:
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
         GpuSymbolCollector collector(al, involved_syms, enclosing_block_scopes);
-        collector.visit_DoConcurrentLoop(x);
+        collector.visit_OMPRegion(x);
 
         // Also collect symbols referenced in the type expressions (array
         // dimensions) of already-collected symbols. For example, if
@@ -3049,13 +3099,13 @@ public:
         // backend is selected.
         {
             GpuUnsupportedStatementFinder finder;
-            for (size_t i = 0; i < x.n_body; i++) {
-                finder.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < nest.n_body; i++) {
+                finder.visit_stmt(*nest.body[i]);
             }
             std::string in_routine;
             if (finder.reason == nullptr) {
-                for (ASR::Function_t *fn : reachable_routines(x.m_body,
-                        x.n_body)) {
+                for (ASR::Function_t *fn : reachable_routines(nest.body,
+                        nest.n_body)) {
                     GpuUnsupportedStatementFinder callee_finder;
                     for (size_t i = 0; i < fn->n_body; i++) {
                         callee_finder.visit_stmt(*fn->m_body[i]);
@@ -3078,15 +3128,15 @@ public:
         // Collect loop variable names
         std::vector<std::string> loop_var_names;
         for (size_t d = 0; d < n_dims; d++) {
-            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(nest.head(d).m_v);
             loop_var_names.push_back(ASRUtils::symbol_name(lv->m_v));
         }
 
         // Find local scalar temporaries (assigned but not arrays, not loop vars)
         std::set<std::string> local_vars, assigned_vars;
         GpuLocalVarCollector lv_collector(local_vars, assigned_vars, enclosing_block_scopes);
-        for (size_t i = 0; i < x.n_body; i++) {
-            lv_collector.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            lv_collector.visit_stmt(*nest.body[i]);
         }
 
         // Separate into kernel params vs local vars
@@ -3107,7 +3157,7 @@ public:
         // concurrent loop (liveout) — those need to be communicated back
         // to the host via 1-element array device buffers.
 
-        // Collect variables referenced in statements after this do concurrent
+        // Collect variables referenced in statements after this parallel loop
         // in the parent body, to identify liveout scalars.
         std::set<std::string> post_loop_vars;
         {
@@ -3176,7 +3226,7 @@ public:
         }
 
         // Collect optional variables from involved_syms. When an optional
-        // argument is used inside a do concurrent body guarded by present(),
+        // argument is used inside a loop body guarded by present(),
         // the kernel launch and all buffer setup must be skipped when the
         // argument is not present, otherwise the host will segfault trying
         // to read a null descriptor.
@@ -3266,8 +3316,8 @@ public:
         // kernel buffer parameter and replace StructInstanceMember
         // references in the body with the new flat-array Var.
         GpuAllocStructMemberCollector alloc_collector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            alloc_collector.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            alloc_collector.visit_stmt(*nest.body[i]);
         }
         // Also scan array dimension expressions of involved symbols for
         // StructInstanceMember accesses. VLA arrays sized by struct
@@ -3848,7 +3898,7 @@ public:
 
         // Create loop variables in kernel scope (local, not parameters)
         for (size_t d = 0; d < n_dims; d++) {
-            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(nest.head(d).m_v);
             ASR::ttype_t *loop_var_type = ASRUtils::symbol_type(lv->m_v);
             std::string lvn = loop_var_names[d];
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
@@ -3880,14 +3930,14 @@ public:
             kernel_scope->add_symbol(name, param);
         }
 
-        // Import functions/subroutines called in the do concurrent body
+        // Import functions/subroutines called in the loop body
         // into the kernel scope so FunctionCall/SubroutineCall nodes
         // can reference them after symbol remapping.
         // Collect transitively: if f() calls g(), both must be imported.
         {
             GpuFunctionCollector func_collector;
-            for (size_t i = 0; i < x.n_body; i++) {
-                func_collector.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < nest.n_body; i++) {
+                func_collector.visit_stmt(*nest.body[i]);
             }
             {
                 bool added = true;
@@ -4841,7 +4891,7 @@ public:
         };
         std::vector<DimInfo> dim_info;
         for (size_t d = 0; d < n_dims; d++) {
-            dim_info.push_back({x.m_head[d].m_start, x.m_head[d].m_end});
+            dim_info.push_back({nest.head(d).m_start, nest.head(d).m_end});
         }
 
         // Deep-copy the body statements so that in-place symbol remapping
@@ -4851,9 +4901,9 @@ public:
         ASRUtils::ExprStmtDuplicator body_dup(al);
         body_dup.success = true;
         Vec<ASR::stmt_t*> body_copy;
-        body_copy.reserve(al, x.n_body);
-        for (size_t i = 0; i < x.n_body; i++) {
-            ASR::stmt_t *copy = body_dup.duplicate_stmt(x.m_body[i]);
+        body_copy.reserve(al, nest.n_body);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            ASR::stmt_t *copy = body_dup.duplicate_stmt(nest.body[i]);
             LCOMPILERS_ASSERT(copy);
             body_copy.push_back(al, copy);
         }
@@ -4877,7 +4927,7 @@ public:
 
         // 4. Build kernel body
         Vec<ASR::stmt_t*> kernel_body;
-        kernel_body.reserve(al, x.n_body + 2 * n_dims + 1);
+        kernel_body.reserve(al, nest.n_body + 2 * n_dims + 1);
 
         ASR::ttype_t *int_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
@@ -4897,7 +4947,7 @@ public:
                 ASR::binopType::Add, thread_idx, int_type, nullptr));
 
         // For multi-dimensional: linearize index
-        // For do concurrent (i=1:m, j=1:n, k=1:p):
+        // For an iteration space (i=1:m, j=1:n, k=1:p):
         //   flat = flat_idx
         //   i = flat % m + 1;  flat = flat / m
         //   j = flat % n + 1;  flat = flat / n
@@ -5318,7 +5368,7 @@ public:
         };
         // Recursively find and move all BlockCall targets from any
         // nesting depth (e.g., BlockCall inside a DoLoop inside the
-        // do concurrent body) into the kernel scope.
+        // loop body) into the kernel scope.
         std::function<void(ASR::stmt_t**, size_t)>
             move_blocks_to_kernel = [&](ASR::stmt_t **stmts,
                                         size_t n_stmts) {
@@ -5418,17 +5468,27 @@ public:
             }
         }
 
+        // The loop is offloaded from here on, so this is where a clause the
+        // launch cannot honour is reported: before this every exit still
+        // leaves the loop on the host, where the clause is honoured.
+        for (size_t i = 0; i < x.n_clauses; i++) {
+            std::string clause_name = unhonoured_clause(x.m_clauses[i]);
+            if (!clause_name.empty()) {
+                report_clause_ignored(x.m_clauses[i]->base.loc, clause_name);
+            }
+        }
+
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
 
         // Pre-allocate host-side allocatable arrays that are assigned
-        // from a FunctionCall inside the do concurrent body. The GPU
+        // from a FunctionCall inside the loop body. The GPU
         // kernel receives the buffer pointer at launch time, so the
         // array must already be allocated on the host before dispatch.
         Vec<ASR::stmt_t*> pre_launch_stmts;
         pre_launch_stmts.reserve(al, 4);
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             // Unwrap BlockCall to inspect block body statements
             ASR::stmt_t **stmts_to_scan = &stmt;
             size_t n_stmts_to_scan = 1;
@@ -5541,7 +5601,7 @@ public:
             }
         }
 
-        // 7. Replace DoConcurrentLoop with GpuKernelLaunch + GpuSync
+        // 7. Replace the region with GpuKernelLaunch + GpuSync
         // Collect all launch-related statements into a temporary Vec.
         // If any involved variable is optional, wrap them in a
         // present() guard so the host never reads a null descriptor.
@@ -5706,12 +5766,12 @@ public:
         pass_options(pass_options_) {
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        ASR::DoConcurrentLoop_t &xx = const_cast<ASR::DoConcurrentLoop_t&>(x);
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
         if (xx.m_exec_target == ASR::exec_targetType::ExecDevice) {
             xx.m_exec_target = host_exec_target(pass_options);
         }
-        ASR::BaseWalkVisitor<DeclinedLoopVisitor>::visit_DoConcurrentLoop(x);
+        ASR::BaseWalkVisitor<DeclinedLoopVisitor>::visit_OMPRegion(x);
     }
 };
 

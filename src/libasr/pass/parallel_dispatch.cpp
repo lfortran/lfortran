@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -9,13 +10,17 @@ namespace LCompilers {
  * Decides, for each parallel loop, which of the three lowerings runs its
  * iterations.
  *
- * By the time this pass runs every parallel loop is a `DoConcurrentLoop`,
- * whether it was written as `do concurrent`, as an `!$omp target` region, or
- * as an `!$omp parallel do` the compiler was asked to offload. Each one is
- * still `ExecAuto`, and this pass replaces that with the one target it gets.
- * Every lowering below claims only the loops assigned to it, so the choice is
- * per loop: a program may hand one loop to the device and the next to the
- * host threads.
+ * By the time this pass runs every parallel loop is one canonical
+ * `OMPRegion`, whether it was written as `do concurrent`, as an `!$omp
+ * target` region, or as an `!$omp parallel do` the compiler was asked to
+ * offload. Each one is still `ExecAuto`, and this pass replaces that with the
+ * one target it gets. Every lowering below claims only the regions assigned
+ * to it, so the choice is per loop: a program may hand one loop to the device
+ * and the next to the host threads.
+ *
+ * A region that does not assert the independence of its iterations is not a
+ * parallel loop the canonicalization produced: it is the construct the source
+ * wrote, which only the OpenMP pass lowers, and there is nothing to choose.
  *
  * The policy reads the command line only. A device is preferred when one was
  * asked for, because that is the whole point of asking; the host threads come
@@ -39,15 +44,17 @@ public:
         pass_options(pass_options_) {
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        ASR::DoConcurrentLoop_t &xx = const_cast<ASR::DoConcurrentLoop_t&>(x);
-        if (xx.m_exec_target == ASR::exec_targetType::ExecAuto) {
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
+        if (xx.m_exec_target == ASR::exec_targetType::ExecAuto &&
+                omp_region_has_clause(x,
+                    ASR::omp_clauseType::OMPIndependent)) {
             bool gpu = pass_options.gpu_offload_metal ||
                        pass_options.gpu_offload_cuda;
             xx.m_exec_target = gpu ? ASR::exec_targetType::ExecDevice
                                    : host_exec_target(pass_options);
         }
-        ASR::BaseWalkVisitor<ParallelDispatchVisitor>::visit_DoConcurrentLoop(x);
+        ASR::BaseWalkVisitor<ParallelDispatchVisitor>::visit_OMPRegion(x);
     }
 };
 

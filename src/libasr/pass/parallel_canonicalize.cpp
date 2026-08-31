@@ -2,8 +2,8 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
+#include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/pass_utils.h>
-#include <libasr/pass/replace_omp_to_parallel_loop.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 
 #include <set>
@@ -11,15 +11,26 @@
 namespace LCompilers {
 
 /*
- * Normalizes an OpenMP parallel loop into a `DoConcurrentLoop`.
+ * Canonicalizes every parallel loop, however it was written, into one
+ * `OMPRegion`.
  *
  * An `!$omp target teams distribute parallel do` region, an `!$omp parallel
  * do` region and a `do concurrent` loop describe the same thing: an iteration
- * space, the data it reads and writes, and the reductions it performs.
- * `DoConcurrentLoop` already carries all three, so a region is rewritten into
- * one and every lowering below -- the serial loop, the host threads, and the
- * whole GPU offload pipeline -- serves all three constructs without knowing
- * which one the loop came from.
+ * space, the data it reads and writes, and the reductions it performs. This
+ * pass says all three the same way, so every lowering below it -- the device
+ * offload, the host threads, the single thread -- reads one construct and
+ * never asks which one the loop came from.
+ *
+ * The canonical form is a contract. Exactly one `OMPRegion`, of kind
+ * `ParallelDo`, whose clauses are the data environment of the whole
+ * construct, and whose body is one perfectly nested loop nest, as deep as
+ * `collapse` says. No `target`, `teams` or `distribute` wrapper survives, and
+ * a region that was one carries `OMPTargetRequested` instead, so a loop that
+ * misses the device can still say the source had asked for one. Every
+ * canonical region asserts `OMPIndependent`: that is what each of the three
+ * constructs says about its iterations, and it is what tells the passes below
+ * that this region, and no other, is a parallel loop they may choose a
+ * lowering for.
  *
  * Converts:
  *      !$omp target map(tofrom: a, b)
@@ -28,24 +39,30 @@ namespace LCompilers {
  *      do i = 1, n
  *          a(i) = b(i)
  *      end do
- *
- * to:
+ * and:
  *      do concurrent (i = 1:n) shared(a, b)
  *          a(i) = b(i)
  *      end do
  *
- * The loop is left `ExecAuto`; the dispatch pass that runs next decides who
+ * both to:
+ *      !$omp parallel do shared(a, b) independent
+ *      do i = 1, n
+ *          a(i) = b(i)
+ *      end do
+ *
+ * The region is left `ExecAuto`; the dispatch pass that runs next decides who
  * runs its iterations.
  *
- * A `target` region is always normalized, because no lowering below this pass
- * knows what a target region is. A loop construct that does not mention a
- * device is only normalized when the compiler was asked to offload those too,
- * since `!$omp parallel do` asks for host threads and the OpenMP pass already
- * lowers the full clause set onto them.
+ * A `target` region is always canonicalized, because no lowering below this
+ * pass knows what a target region is. A loop construct that does not mention
+ * a device is only canonicalized when the compiler was asked to offload those
+ * too, since `!$omp parallel do` asks for host threads and the OpenMP pass
+ * already lowers the full clause set onto them.
  *
  * A region this pass declines is left exactly as it was, so the OpenMP pass
- * still gets its chance at it. `pass_flatten_omp_regions` below runs after
- * that pass and unwraps whatever is left, so an unsupported construct runs
+ * still gets its chance at it, and no pass below mistakes it for a loop it
+ * may run somewhere else. `pass_flatten_omp_regions` below runs after that
+ * pass and unwraps whatever is left, so an unsupported construct runs
  * serially rather than reaching a code generator that cannot lower it.
  */
 
@@ -83,10 +100,130 @@ static bool distributes_iterations(ASR::omp_region_typeType region) {
     }
 }
 
+bool omp_region_has_clause(const ASR::OMPRegion_t &x,
+        ASR::omp_clauseType clause) {
+    for (size_t i = 0; i < x.n_clauses; i++) {
+        if (x.m_clauses[i]->type == clause) return true;
+    }
+    return false;
+}
+
+// How many of the loops below the region make up the one iteration space it
+// partitions. A region that says nothing partitions the outermost loop.
+static int64_t collapse_count(ASR::omp_clause_t **clauses, size_t n_clauses) {
+    int64_t collapse = 1;
+    for (size_t i = 0; i < n_clauses; i++) {
+        if (clauses[i]->type != ASR::omp_clauseType::OMPCollapse) continue;
+        ASR::OMPCollapse_t *c = ASR::down_cast<ASR::OMPCollapse_t>(clauses[i]);
+        int64_t n = 1;
+        if (ASRUtils::extract_value(ASRUtils::expr_value(c->m_count), n)) {
+            collapse = n;
+        }
+    }
+    return collapse;
+}
+
+// Walks `collapse` levels down a loop nest, collecting the loop of each
+// level and the statements the innermost one runs. The levels have to be
+// perfectly nested, since together they are one iteration space.
+static bool descend_loop_nest(ASR::stmt_t *loop, int64_t collapse,
+        ParallelLoopNest &nest, const char *&why) {
+    nest.loops.clear();
+    for (int64_t level = 0; level < collapse; level++) {
+        if (!ASR::is_a<ASR::DoLoop_t>(*loop)) {
+            why = "the loop nest is shallower than the collapse count";
+            return false;
+        }
+        ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(loop);
+        nest.loops.push_back(dl);
+        nest.body = dl->m_body;
+        nest.n_body = dl->n_body;
+        if (level + 1 < collapse) {
+            if (dl->n_body != 1) {
+                why = "the collapsed loops are not perfectly nested";
+                return false;
+            }
+            loop = dl->m_body[0];
+        }
+    }
+    return true;
+}
+
+bool parallel_loop_nest(const ASR::OMPRegion_t &x, ParallelLoopNest &nest) {
+    if (x.m_region != ASR::omp_region_typeType::ParallelDo) return false;
+    if (x.n_body != 1) return false;
+    const char *why = nullptr;
+    return descend_loop_nest(x.m_body[0],
+        collapse_count(x.m_clauses, x.n_clauses), nest, why);
+}
+
+// Builds the one region every lowering below reads. The data environment of
+// the whole construct arrives here already merged; what is left is to say it
+// in the clauses the canonical form is written in.
+static ASR::stmt_t *make_canonical_region(Allocator &al, const Location &loc,
+        ASR::expr_t **shared, size_t n_shared,
+        ASR::expr_t **local, size_t n_local,
+        ASR::reduction_expr_t *reduction, size_t n_reduction,
+        int64_t collapse, ASR::omp_clause_t **kept, size_t n_kept,
+        bool target_requested, ASR::stmt_t *loop,
+        ASR::exec_targetType exec_target) {
+    Vec<ASR::omp_clause_t*> clauses;
+    clauses.reserve(al, 5 + n_reduction + n_kept);
+
+    // What each of the three constructs asserts about its iterations, and
+    // what an `!$omp parallel do` on its own does not say: no iteration
+    // depends on another.
+    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+        ASR::make_OMPIndependent_t(al, loc)));
+    if (target_requested) {
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPTargetRequested_t(al, loc)));
+    }
+    if (n_shared > 0) {
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPShared_t(al, loc, shared, n_shared)));
+    }
+    if (n_local > 0) {
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPPrivate_t(al, loc, local, n_local)));
+    }
+    // One clause per reduction, since each names its own operator.
+    for (size_t i = 0; i < n_reduction; i++) {
+        Vec<ASR::expr_t*> vars;
+        vars.reserve(al, 1);
+        vars.push_back(al, reduction[i].m_arg);
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPReduction_t(al, loc, reduction[i].m_op,
+                vars.p, vars.n)));
+    }
+    // Every index of the iteration space that is partitioned is named here,
+    // or only the outermost loop would be.
+    if (collapse > 1) {
+        ASR::expr_t *count = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, collapse,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPCollapse_t(al, loc, count)));
+    }
+    // Everything the construct said that the canonical form does not
+    // rewrite -- how many threads to run it on, how to schedule it -- is
+    // carried over untouched, for whichever lowering can honour it.
+    for (size_t i = 0; i < n_kept; i++) {
+        clauses.push_back(al, kept[i]);
+    }
+
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, 1);
+    body.push_back(al, loop);
+    return ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
+        ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
+        body.p, body.n, exec_target));
+}
+
 // Whether an OpenMP region is left anywhere under a statement. A region
 // inside the loop body -- a `critical` section, a `barrier` -- says the
 // iterations synchronize with each other, which is the opposite of what a
-// concurrent loop asserts, so such a loop is not normalized.
+// parallel loop asserts, so such a loop is not canonicalized.
 class NestedRegionFinder : public ASR::BaseWalkVisitor<NestedRegionFinder>
 {
 public:
@@ -111,21 +248,14 @@ public:
         StatementWalkVisitor(al), pass_options(pass_options_) {
     }
 
-    // A region that asserts its iterations are independent of one another
-    // computes the same result whatever runs them, one thread included, so
-    // unwrapping it is a lowering of the construct rather than a failure to
-    // lower it, and there is nothing to warn about.
-    static bool asserts_independence(const ASR::OMPRegion_t &x) {
-        for (size_t i = 0; i < x.n_clauses; i++) {
-            if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPIndependent) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        if (pass_options.diagnostics != nullptr && !asserts_independence(x)) {
+        // A region that asserts its iterations are independent of one
+        // another computes the same result whatever runs them, one thread
+        // included, so unwrapping it is a lowering of the construct rather
+        // than a failure to lower it, and there is nothing to warn about.
+        if (pass_options.diagnostics != nullptr &&
+                !omp_region_has_clause(x,
+                    ASR::omp_clauseType::OMPIndependent)) {
             pass_options.diagnostics->message_label(
                 "openmp construct not supported, its statements run serially",
                 {x.base.base.loc}, "no lowering claimed this region",
@@ -144,23 +274,23 @@ public:
     }
 };
 
-class OMPParallelLoopVisitor :
-    public ASR::StatementWalkVisitor<OMPParallelLoopVisitor>
+class ParallelCanonicalizeVisitor :
+    public ASR::StatementWalkVisitor<ParallelCanonicalizeVisitor>
 {
 public:
     const PassOptions &pass_options;
-    // Whether a loop construct that does not name a device may be turned
-    // into a concurrent loop as well.
+    // Whether a loop construct that does not name a device may be
+    // canonicalized as well.
     bool offload_omp_loops;
 
-    OMPParallelLoopVisitor(Allocator &al, const PassOptions &pass_options_) :
+    ParallelCanonicalizeVisitor(Allocator &al, const PassOptions &pass_options_) :
         StatementWalkVisitor(al), pass_options(pass_options_) {
         bool gpu = pass_options.gpu_offload_metal || pass_options.gpu_offload_cuda;
         offload_omp_loops = gpu && pass_options.gpu_offload_omp_loops;
     }
 
-    // A region that cannot be turned into a loop still has to run, so it is
-    // left as it was and the reason it missed the device is reported. Only a
+    // A region that cannot be canonicalized still has to run, so it is left
+    // as it was and the reason it missed the device is reported. Only a
     // compilation that asked for a device wanted to hear this.
     void report_not_offloaded(const Location &loc, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
@@ -175,6 +305,7 @@ public:
     void collect_clauses(ASR::omp_clause_t **clauses, size_t n_clauses,
             Vec<ASR::expr_t*> &shared, Vec<ASR::expr_t*> &local,
             Vec<ASR::reduction_expr_t> &reduction,
+            Vec<ASR::omp_clause_t*> &kept,
             std::set<ASR::symbol_t*> &seen_shared, int64_t &collapse,
             bool &has_private_copy) {
         for (size_t i = 0; i < n_clauses; i++) {
@@ -210,8 +341,8 @@ public:
                     }
                     break;
                 }
-                // A `do concurrent` loop has no way to say that a variable
-                // starts each iteration at the value it had on the host, or
+                // A parallel loop has no way to say that a variable starts
+                // each iteration at the value it had outside the loop, or
                 // that the last iteration writes its value back.
                 case ASR::omp_clauseType::OMPFirstPrivate:
                 case ASR::omp_clauseType::OMPLastPrivate: {
@@ -227,7 +358,11 @@ public:
                     }
                     break;
                 }
+                // A clause the canonical form does not rewrite says
+                // something about the construct that a lowering may still
+                // honour, so it is carried over as it stands.
                 default:
+                    kept.push_back(al, clauses[i]);
                     break;
             }
         }
@@ -244,15 +379,16 @@ public:
         }
     }
 
-    // The index of a concurrent loop is named by its head, and a
-    // `do concurrent` loop may not repeat it in its locality list, so the
-    // `private(i)` an OpenMP loop writes for the same variable is dropped.
+    // The index of each partitioned loop is named by the head of that loop,
+    // so the `private(i)` an OpenMP loop writes for the same variable says
+    // nothing the canonical form does not already say.
     void drop_loop_indices(Vec<ASR::expr_t*> &local,
-            Vec<ASR::do_loop_head_t> &heads) {
+            const ParallelLoopNest &nest) {
         std::set<ASR::symbol_t*> indices;
-        for (size_t i = 0; i < heads.n; i++) {
-            if (heads[i].m_v && ASR::is_a<ASR::Var_t>(*heads[i].m_v)) {
-                indices.insert(ASR::down_cast<ASR::Var_t>(heads[i].m_v)->m_v);
+        for (size_t i = 0; i < nest.n_heads(); i++) {
+            ASR::expr_t *v = nest.head(i).m_v;
+            if (v && ASR::is_a<ASR::Var_t>(*v)) {
+                indices.insert(ASR::down_cast<ASR::Var_t>(v)->m_v);
             }
         }
         Vec<ASR::expr_t*> kept; kept.reserve(al, local.n);
@@ -268,26 +404,32 @@ public:
 
     // Whether this pass looks at a region at all. Everything below it knows
     // what a `parallel do` is; nothing below it knows what a `target` is.
-    bool is_normalization_root(ASR::omp_region_typeType region) {
+    bool is_canonicalization_root(ASR::omp_region_typeType region) {
         if (region == ASR::omp_region_typeType::Target) return true;
         return offload_omp_loops && is_parallel_loop_region(region);
     }
 
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        if (!is_normalization_root(x.m_region)) {
-            ASR::ASRPassBaseWalkVisitor<OMPParallelLoopVisitor>::visit_OMPRegion(x);
+        // A region that already asserts the independence of its iterations
+        // is one this pass produced, and canonicalizing a canonical region
+        // says nothing new about it.
+        if (!is_canonicalization_root(x.m_region) ||
+                omp_region_has_clause(x,
+                    ASR::omp_clauseType::OMPIndependent)) {
+            decline(x);
             return;
         }
 
         Vec<ASR::expr_t*> shared; shared.reserve(al, 4);
         Vec<ASR::expr_t*> local; local.reserve(al, 4);
         Vec<ASR::reduction_expr_t> reduction; reduction.reserve(al, 1);
+        Vec<ASR::omp_clause_t*> kept; kept.reserve(al, 4);
         std::set<ASR::symbol_t*> seen_shared;
         int64_t collapse = 1;
         bool has_private_copy = false;
 
         collect_clauses(x.m_clauses, x.n_clauses, shared, local, reduction,
-            seen_shared, collapse, has_private_copy);
+            kept, seen_shared, collapse, has_private_copy);
 
         // Peel the `teams` / `distribute` / `parallel do` nest, gathering the
         // data environment of every level, until the loop itself is reached.
@@ -299,7 +441,7 @@ public:
             if (!is_parallel_loop_region(inner->m_region)) break;
             has_loop_construct |= distributes_iterations(inner->m_region);
             collect_clauses(inner->m_clauses, inner->n_clauses, shared, local,
-                reduction, seen_shared, collapse, has_private_copy);
+                reduction, kept, seen_shared, collapse, has_private_copy);
             body = inner->m_body;
             n_body = inner->n_body;
         }
@@ -313,7 +455,7 @@ public:
         if (has_private_copy) {
             report_not_offloaded(x.base.base.loc,
                 "a firstprivate or lastprivate variable has no equivalent "
-                "in a do concurrent loop");
+                "in a canonical parallel loop");
             decline(x);
             return;
         }
@@ -324,35 +466,18 @@ public:
             return;
         }
 
-        // A collapsed nest becomes one multi-dimensional iteration space.
-        Vec<ASR::do_loop_head_t> heads;
-        heads.reserve(al, (size_t)collapse);
-        ASR::stmt_t *loop = body[0];
-        for (int64_t level = 0; level < collapse; level++) {
-            if (!ASR::is_a<ASR::DoLoop_t>(*loop)) {
-                report_not_offloaded(x.base.base.loc,
-                    "the loop nest is shallower than the collapse count");
-                decline(x);
-                return;
-            }
-            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(loop);
-            heads.push_back(al, dl->m_head);
-            body = dl->m_body;
-            n_body = dl->n_body;
-            if (level + 1 < collapse) {
-                if (n_body != 1) {
-                    report_not_offloaded(x.base.base.loc,
-                        "the collapsed loops are not perfectly nested");
-                    decline(x);
-                    return;
-                }
-                loop = dl->m_body[0];
-            }
+        // A collapsed nest is one multi-dimensional iteration space.
+        ParallelLoopNest nest;
+        const char *why = nullptr;
+        if (!descend_loop_nest(body[0], collapse, nest, why)) {
+            report_not_offloaded(x.base.base.loc, why);
+            decline(x);
+            return;
         }
 
         NestedRegionFinder finder;
-        for (size_t i = 0; i < n_body; i++) {
-            finder.visit_stmt(*body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            finder.visit_stmt(*nest.body[i]);
         }
         if (finder.found) {
             report_not_offloaded(x.base.base.loc,
@@ -362,63 +487,19 @@ public:
             return;
         }
 
-        drop_loop_indices(local, heads);
+        drop_loop_indices(local, nest);
 
-        ASR::stmt_t *dcl = ASRUtils::STMT(ASR::make_DoConcurrentLoop_t(al,
-            x.base.base.loc, heads.p, heads.n, shared.p, shared.n,
-            local.p, local.n, reduction.p, reduction.n, body, n_body,
-            ASR::exec_targetType::ExecAuto));
         pass_result.reserve(al, 1);
-        pass_result.push_back(al, dcl);
+        pass_result.push_back(al, make_canonical_region(al, x.base.base.loc,
+            shared.p, shared.n, local.p, local.n, reduction.p, reduction.n,
+            collapse, kept.p, kept.n,
+            x.m_region == ASR::omp_region_typeType::Target, body[0],
+            ASR::exec_targetType::ExecAuto));
     }
 
-    // Leaves a region the pass could not normalize exactly as it was, so the
-    // OpenMP pass still sees the construct the user wrote.
-    void decline(const ASR::OMPRegion_t &x) {
-        ASR::ASRPassBaseWalkVisitor<OMPParallelLoopVisitor>::visit_OMPRegion(x);
-    }
-};
-
-/*
- * Rewrites a `DoConcurrentLoop` the host runs into an `OMPRegion`.
- *
- * This is the reverse of the normalization above, and it runs where the two
- * meet: the device pipeline has taken the loops it offloads and handed back
- * the ones it declined, so every concurrent loop still standing is one the
- * host runs. The host lowering of an `OMPRegion` -- outlining the body,
- * partitioning the iteration space over the threads, and the reduction
- * epilogue -- is the mature one, and this rewrite is what lets a
- * `do concurrent` loop reach it.
- *
- * Converts:
- *      do concurrent (i = 1:n, j = 1:m) shared(a) reduce(+: s)
- *          s = s + a(i, j)
- *      end do
- *
- * to:
- *      !$omp parallel do collapse(2) shared(a) reduction(+: s)
- *      do i = 1, n
- *          do j = 1, m
- *              s = s + a(i, j)
- *          end do
- *      end do
- *
- * The region says its iterations are independent, which is what the loop
- * asserted and what an `!$omp parallel do` on its own does not. It keeps the
- * execution target the dispatch pass wrote into the loop; nothing is decided
- * again here. The indices stay where the lowering reads them -- in the heads
- * of the loop nest -- and are not repeated in `private`.
- */
-class ParallelLoopToOMPVisitor :
-    public ASR::StatementWalkVisitor<ParallelLoopToOMPVisitor>
-{
-public:
-    ParallelLoopToOMPVisitor(Allocator &al) : StatementWalkVisitor(al) {
-    }
-
-    // A concurrent loop names all of its indices at once. A region describes
-    // the same iteration space as the loop nest the source wrote, one loop
-    // per index, and says with `collapse` how many of them are partitioned.
+    // A concurrent loop names all of its indices at once. The canonical
+    // region describes the same iteration space as one loop per index, and
+    // says with `collapse` how many of them are partitioned.
     ASR::stmt_t *build_loop_nest(const ASR::DoConcurrentLoop_t &x) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
@@ -439,66 +520,30 @@ public:
     }
 
     // Only the outermost loop of a nest of concurrent loops becomes a
-    // region. The host lowering partitions one iteration space over the
-    // threads, and a thread that opened a second partition inside the first
-    // would be dividing what it was already given; a concurrent loop left in
-    // the body simply runs its iterations in order inside that thread.
+    // region. A lowering partitions one iteration space over the threads,
+    // and a thread that opened a second partition inside the first would be
+    // dividing what it was already given; a concurrent loop left in the body
+    // simply runs its iterations in order inside that thread.
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        const Location &loc = x.base.base.loc;
-        Vec<ASR::omp_clause_t*> clauses;
-        clauses.reserve(al, 4 + x.n_reduction);
-
-        // What a `do concurrent` loop asserts and an `!$omp parallel do` does
-        // not: no iteration depends on another.
-        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-            ASR::make_OMPIndependent_t(al, loc)));
-        if (x.n_shared > 0) {
-            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-                ASR::make_OMPShared_t(al, loc, x.m_shared, x.n_shared)));
-        }
-        if (x.n_local > 0) {
-            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-                ASR::make_OMPPrivate_t(al, loc, x.m_local, x.n_local)));
-        }
-        // One clause per reduction, since each names its own operator.
-        for (size_t i = 0; i < x.n_reduction; i++) {
-            Vec<ASR::expr_t*> vars;
-            vars.reserve(al, 1);
-            vars.push_back(al, x.m_reduction[i].m_arg);
-            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-                ASR::make_OMPReduction_t(al, loc, x.m_reduction[i].m_op,
-                    vars.p, vars.n)));
-        }
-        // Every index of the loop belongs to the one iteration space that is
-        // partitioned; without this only the outermost one would be.
-        if (x.n_head > 1) {
-            ASR::expr_t *count = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, loc, (int64_t)x.n_head,
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
-            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-                ASR::make_OMPCollapse_t(al, loc, count)));
-        }
-
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, 1);
-        body.push_back(al, build_loop_nest(x));
-
+        if (x.n_head == 0) return;
         pass_result.reserve(al, 1);
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
-            ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
-            body.p, body.n, x.m_exec_target)));
+        pass_result.push_back(al, make_canonical_region(al, x.base.base.loc,
+            x.m_shared, x.n_shared, x.m_local, x.n_local,
+            x.m_reduction, x.n_reduction, (int64_t)x.n_head, nullptr, 0,
+            false, build_loop_nest(x), x.m_exec_target));
+    }
+
+    // Leaves a region the pass could not canonicalize exactly as it was, so
+    // the OpenMP pass still sees the construct the user wrote, and looks
+    // inside it for the loops that can be.
+    void decline(const ASR::OMPRegion_t &x) {
+        ASR::ASRPassBaseWalkVisitor<ParallelCanonicalizeVisitor>::visit_OMPRegion(x);
     }
 };
 
-void pass_replace_omp_to_parallel_loop(Allocator &al,
+void pass_parallel_canonicalize(Allocator &al,
         ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
-    OMPParallelLoopVisitor v(al, pass_options);
-    v.visit_TranslationUnit(unit);
-}
-
-void pass_replace_parallel_loop_to_omp(Allocator &al,
-        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
-    ParallelLoopToOMPVisitor v(al);
+    ParallelCanonicalizeVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

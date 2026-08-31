@@ -58,7 +58,7 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
-#include <libasr/pass/replace_omp_to_parallel_loop.h>
+#include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
@@ -122,8 +122,7 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
-            {"omp_to_parallel_loop", &pass_replace_omp_to_parallel_loop},
-            {"parallel_loop_to_omp", &pass_replace_parallel_loop_to_omp},
+            {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
@@ -266,20 +265,17 @@ namespace LCompilers {
                 "global_stmts",
                 "init_expr",
                 "function_call_in_declaration",
-                // Every parallel loop, however it was written, becomes a
-                // `DoConcurrentLoop` before anything decides how to lower it,
-                // and the pass after that writes the decision into the loop.
-                "omp_to_parallel_loop",
+                // Every parallel loop, however it was written, becomes one
+                // canonical `OMPRegion` before anything decides how to lower
+                // it, and the pass after that writes the decision into the
+                // region.
+                "parallel_canonicalize",
                 "parallel_dispatch",
                 "implied_do_loops",
                 // The device gets first refusal: a loop it declines is
                 // handed back as a host-thread loop, which the OpenMP pass
                 // below then picks up.
                 "gpu_offload",
-                // A concurrent loop the device did not take is one the host
-                // runs, and the host lowering below is written for a region,
-                // so the loop becomes one.
-                "parallel_loop_to_omp",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
                 // here, so it runs serially instead of reaching a code
@@ -353,8 +349,7 @@ namespace LCompilers {
                 // The C backend prints the OpenMP constructs as pragmas and
                 // lets the C compiler lower them, so the passes that take
                 // them apart have nothing to do there.
-                "omp_to_parallel_loop",
-                "parallel_loop_to_omp",
+                "parallel_canonicalize",
                 "omp_region_flatten",
                 "replace_with_compile_time_values",
                 "pass_list_expr",

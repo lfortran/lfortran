@@ -36,20 +36,19 @@ The locality lists say what each iteration sees. A variable in `local` is
 private to an iteration, a variable in `shared` is not, and a variable in
 `reduction` is combined across iterations with the named operator.
 
-This is the one node every parallel loop becomes. `do concurrent` builds it
-directly; an `!$omp target` region and, when the compiler is asked to offload
-them, an `!$omp parallel do` are normalized into it by the
-`omp_to_parallel_loop` pass. `exec_target` then carries the lowering decision
-for that one loop, so a program may mix serial, host-threaded and device
-loops.
+Every parallel loop is said one way before anything decides how to lower it,
+and that way is an **OMPRegion**: the `parallel_canonicalize` pass rewrites a
+`do concurrent` loop, an `!$omp target` region and, when the compiler is asked
+to offload them, an `!$omp parallel do` into one canonical region carrying
+[OMPIndependent](../omp_nodes/OMPIndependent.md) -- the assertion this loop
+makes. `exec_target` on that region then carries the lowering decision for
+that one loop, so a program may mix serial, host-threaded and device loops.
 
-Once the device pipeline has taken the loops it offloads, a loop that is left
-for the host is rewritten back into an **OMPRegion** by the
-`parallel_loop_to_omp` pass, which carries `exec_target` over and adds
-[OMPIndependent](../omp_nodes/OMPIndependent.md) -- the assertion the loop
-made. The host lowering is written for a region, so this is what lets a
-`do concurrent` loop reach it. Only the outermost loop of a nest becomes a
-region; a concurrent loop left in the body runs its iterations in order.
+Only the outermost loop of a nest becomes a region, so a concurrent loop left
+in the body keeps this node and runs its iterations in order inside the thread
+that reached it. Passes that run after the parallel pipeline, such as `forall`
+and `array_struct_temporary`, also build this node; `do_loops` lowers all of
+them into an ordinary loop nest.
 
 ## Examples
 
