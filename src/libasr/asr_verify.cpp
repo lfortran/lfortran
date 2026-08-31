@@ -889,32 +889,6 @@ public:
         function_dependencies = function_dependencies_copy;
     }
 
-    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        require(x.m_symtab != nullptr,
-            "GpuKernelFunction::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == parent_symtab,
-            "GpuKernelFunction::m_symtab->parent is not the right parent");
-        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
-            "GpuKernelFunction::m_symtab::asr_owner must point to it");
-        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
-            "GpuKernelFunction::m_symtab->counter must be unique");
-        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        for (auto &a : x.m_symtab->get_scope()) {
-            LCOMPILERS_ASSERT(a.second);
-            this->visit_symbol(*a.second);
-        }
-        visit_ttype(*x.m_function_signature);
-        for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-        }
-        current_symtab = parent_symtab;
-    }
-
     template <typename T>
     void visit_UserDefinedType(const T &x) {
         SymbolTable *parent_symtab = current_symtab;
@@ -1452,7 +1426,6 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
-            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -1469,8 +1442,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -1483,9 +1455,6 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
-                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
-                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
-                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -1537,8 +1506,6 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
-            } else if( gkfm ) {
-                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -2279,6 +2246,19 @@ public:
             _processing_unbounded_pointer_array = _processing_unbounded_pointer_array_copy;
             _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
+    }
+
+    // TODO: also verify that a Device function only calls Device
+    // or HostDevice functions. That invariant does not hold yet: a kernel body
+    // is copied verbatim from the host loop, so it still calls Host functions
+    // until the device call-graph closure pass exists.
+    void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
+            "GpuKernelLaunch::m_kernel '" +
+                std::string(ASRUtils::symbol_name(x.m_kernel)) +
+                "' must be a function that runs on the device");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {

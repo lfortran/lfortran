@@ -140,7 +140,7 @@
               :side_effect_free false
               :module_file nil
             )
-            "zero" (GpuKernelFunction
+            "zero" (Function
               :symtab (SymbolTable
                 :id 3
                 :symbols {
@@ -233,6 +233,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Kernel
               )
               :dependencies []
               :args [
@@ -241,7 +242,11 @@
                 )
               ]
               :body []
+              :return_var nil
               :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
             )
           }
         )
