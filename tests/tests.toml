@@ -1625,6 +1625,10 @@ filename = "allocate_02.f90"
 llvm = true
 
 [[test]]
+filename = "allocatable_attr_implicit_none.f90"
+asr = true
+
+[[test]]
 filename = "errors/allocate_01.f90"
 run = true
 

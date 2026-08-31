@@ -6139,6 +6139,20 @@ public:
                                             }
                                         }
                                     } else {
+                                        // An allocatable-decl is `object-name [( array-spec )]`
+                                        // (F2018 8.6.1), and the statement may precede the
+                                        // entity's type declaration:
+                                        //     allocatable qbh(:)
+                                        //     integer qbh
+                                        // Record the array-spec as a typeless placeholder now,
+                                        // the same way a DIMENSION statement would; the type
+                                        // declaration later merges the element type into it.
+                                        // (Under implicit typing the entity is declared through
+                                        // a different path further down, which applies the
+                                        // array-spec itself.)
+                                        if (s.n_dim > 0 && !compiler_options.implicit_typing) {
+                                            dimension_variable(s, x.base.base.loc);
+                                        }
                                         assgnd_allocatable.insert(to_lower(sym));
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrTarget) {
@@ -7592,6 +7606,10 @@ public:
                 }
                 if (assgnd_allocatable.count(sym)) {
                     is_allocatable = true;
+                    // Consume the entry: this declaration owns the attribute
+                    // now, and a same-named variable in a sibling scope must
+                    // not inherit it.
+                    assgnd_allocatable.erase(sym);
                 }
                 if (assgnd_target.count(sym)) {
                     target_attr = true;
@@ -7673,7 +7691,10 @@ public:
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
                 Location dims_attr_loc;
-                is_allocatable = false;
+                // is_allocatable is NOT reset here: like is_pointer above, it
+                // may already carry the attribute from a standalone
+                // ALLOCATABLE statement (assgnd_allocatable); the loop below
+                // only adds the type declaration's own attributes on top.
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
@@ -8185,10 +8206,20 @@ public:
                                     symbol_variable->m_type = type;
                                 } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
-                                    if(ASRUtils::is_string_only(type)){
-                                        array_type->m_physical_type = ASR::PointerArray; // Making sure it's PointerArray
+                                    if ( ASR::is_a<ASR::Allocatable_t>(*type) ) {
+                                        // The placeholder's array-spec came from a standalone
+                                        // ALLOCATABLE (or DIMENSION) statement ahead of this
+                                        // type declaration; the wrapper belongs outside the
+                                        // array: Allocatable(Array(element)).
+                                        array_type->m_type = ASR::down_cast<ASR::Allocatable_t>(type)->m_type;
+                                        symbol_variable->m_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(
+                                            al, symbol_variable->base.base.loc, symbol_variable->m_type));
+                                    } else {
+                                        if(ASRUtils::is_string_only(type)){
+                                            array_type->m_physical_type = ASR::PointerArray; // Making sure it's PointerArray
+                                        }
+                                        array_type->m_type = type;
                                     }
-                                    array_type->m_type = type;
                                 } else {
                                     symbol_variable->m_type = type;
                                 }
@@ -9275,6 +9306,17 @@ public:
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
                                     array_type->m_type = type;
+                                } else if ( ASR::is_a<ASR::Allocatable_t>(*symbol_variable->m_type) &&
+                                            ASR::is_a<ASR::Allocatable_t>(*type) ) {
+                                    // The merge above already folded the ALLOCATABLE
+                                    // statement's array-spec into Allocatable(Array(element));
+                                    // refresh the element type instead of clobbering the
+                                    // wrapper and the dimensions.
+                                    ASR::ttype_t* established = ASR::down_cast<ASR::Allocatable_t>(symbol_variable->m_type)->m_type;
+                                    if ( ASR::is_a<ASR::Array_t>(*established) ) {
+                                        ASR::down_cast<ASR::Array_t>(established)->m_type =
+                                            ASR::down_cast<ASR::Allocatable_t>(type)->m_type;
+                                    }
                                 } else {
                                     symbol_variable->m_type = type;
                                 }
@@ -9282,6 +9324,11 @@ public:
                                 symbol_variable->m_type = type;
                             }
                             variable_added_to_symtab->m_type = symbol_variable->m_type;
+                            // The placeholder is consumed: this scope's type
+                            // declaration completed the symbol. A stale entry
+                            // would leak the symbol into a later same-named
+                            // declaration in a sibling scope.
+                            symbols_having_only_attributes_without_type.erase(sym);
                         } else {
                             variable_added_to_symtab->m_type = type;
                         }
