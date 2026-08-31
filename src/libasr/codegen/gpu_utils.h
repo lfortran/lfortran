@@ -1728,7 +1728,7 @@ inline ASR::expr_t* gpu_scope_array_shape_source(const ASR::Variable_t *var,
         return nullptr;
     }
     if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src))
-            != arr->n_dims) {
+            != static_cast<int>(arr->n_dims)) {
         return nullptr;
     }
     return src;
