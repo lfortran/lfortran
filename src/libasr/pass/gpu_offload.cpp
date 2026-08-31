@@ -3528,11 +3528,25 @@ public:
                         ASR::is_a<ASR::AssociateBlock_t>(*sym)) continue;
                 if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                // A named constant carries its value on the declaration
+                // rather than at every reference, so a clone that drops
+                // it leaves the name standing for nothing -- neither the
+                // shape resolver nor the backend can say what it is. A
+                // value that is not a self-contained constant would name
+                // the callee's own symbols, so only a folded one is
+                // carried over.
+                ASR::expr_t *param_value = nullptr;
+                if (v->m_storage == ASR::storage_typeType::Parameter &&
+                        v->m_value != nullptr &&
+                        ASRUtils::is_value_constant(v->m_value)) {
+                    ASRUtils::ExprStmtDuplicator value_dup(al);
+                    param_value = value_dup.duplicate_expr(v->m_value);
+                }
                 std::string name = block_scope->get_unique_name(v->m_name);
                 ASR::symbol_t *ns = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, block_scope,
                         s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                        nullptr, nullptr, v->m_storage,
+                        param_value, param_value, v->m_storage,
                         ASRUtils::duplicate_type(al, v->m_type),
                         v->m_type_declaration, ASR::abiType::Source,
                         ASR::accessType::Public, ASR::presenceType::Required,

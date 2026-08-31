@@ -298,6 +298,23 @@ inline bool try_eval_int_constant(ASR::expr_t *e, int64_t &val) {
     }
     ASR::expr_t *v = ASRUtils::expr_value(e);
     if (v && v != e) return try_eval_int_constant(v, val);
+    // A named constant carries its value on the declaration rather than
+    // on the reference, so `expr_value` of a `Var` naming one is empty.
+    // `integer, parameter :: end_point = 1` is a shape term like any
+    // other literal, and reads as one here.
+    if (ASR::is_a<ASR::Var_t>(*e)) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_storage != ASR::storage_typeType::Parameter ||
+                var->m_value == nullptr) {
+            return false;
+        }
+        return try_eval_int_constant(var->m_value, val);
+    }
     if (ASR::is_a<ASR::Cast_t>(*e)) {
         return try_eval_int_constant(
             ASR::down_cast<ASR::Cast_t>(e)->m_arg, val);
@@ -754,27 +771,6 @@ inline int64_t arg_index_of(const std::string &name,
     return -1;
 }
 
-// `X` and the zero-based dimension of the shape query `expr` makes on
-// it, when `expr` is `lbound(X, d)` or `ubound(X, d)` on a plain array
-// variable.  Returns nullptr otherwise.
-inline ASR::symbol_t* gpu_array_bound_target(ASR::expr_t *expr,
-        ASR::arrayboundType want, int64_t &dim_index) {
-    if (!expr || !ASR::is_a<ASR::ArrayBound_t>(*expr)) return nullptr;
-    ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(expr);
-    if (ab->m_bound != want) return nullptr;
-    ASR::expr_t *arr_expr = ab->m_v;
-    while (arr_expr && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arr_expr)) {
-        arr_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arr_expr)->m_arg;
-    }
-    if (!arr_expr || !ASR::is_a<ASR::Var_t>(*arr_expr)) return nullptr;
-    int64_t d = 1;
-    if (ab->m_dim && !try_eval_int_constant(ab->m_dim, d)) return nullptr;
-    if (d < 1) return nullptr;
-    dim_index = d - 1;
-    return ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(arr_expr)->m_v);
-}
-
 // A node for `size(sym, d + 1)` when `sym` is a kernel-argument array
 // whose extent is not passed as a `__dim_` scalar -- only a
 // deferred-shape argument gets those.  The host reads the extent off the
@@ -814,6 +810,126 @@ inline int64_t build_gpu_array_extent_node(ASR::expr_t *arr_expr,
         ASR::stmt_t **body, size_t n_body,
         std::set<ASR::symbol_t*> &substituted,
         std::vector<GpuVlaDimNode> &nodes);
+
+// The array expression `lbound(E, d)` or `ubound(E, d)` queries, with the
+// 1-based dimension it asks about.  A bound may be written on whatever
+// the array is designated by -- a derived-type component or an element
+// of an array of them included -- so the expression, not a symbol, is
+// what comes back.  Returns nullptr when `expr` is not the wanted bound,
+// or when the dimension is not a compile-time constant.
+inline ASR::expr_t* gpu_array_bound_operand(ASR::expr_t *expr,
+        ASR::arrayboundType want, int64_t &dim_index) {
+    if (!expr || !ASR::is_a<ASR::ArrayBound_t>(*expr)) return nullptr;
+    ASR::ArrayBound_t *ab = ASR::down_cast<ASR::ArrayBound_t>(expr);
+    if (ab->m_bound != want) return nullptr;
+    int64_t d = 1;
+    if (ab->m_dim && !try_eval_int_constant(ab->m_dim, d)) return nullptr;
+    if (d < 1) return nullptr;
+    dim_index = d;
+    return gpu_past_array_physical_cast(ab->m_v);
+}
+
+// Whether two expressions name one and the same array.  Deliberately
+// conservative: a variable, a derived-type component of one, and an
+// element of an array of them are recognised, and everything else
+// answers false.  A false negative only leaves a shape unresolved; a
+// false positive would let a wrong extent through.
+inline bool gpu_same_array_expr(ASR::expr_t *a, ASR::expr_t *b) {
+    a = gpu_past_array_physical_cast(a);
+    b = gpu_past_array_physical_cast(b);
+    if (!a || !b) return false;
+    if (a->type != b->type) return false;
+    if (ASR::is_a<ASR::Var_t>(*a)) {
+        return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(a)->m_v)
+            == ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(b)->m_v);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
+        ASR::StructInstanceMember_t *sa =
+            ASR::down_cast<ASR::StructInstanceMember_t>(a);
+        ASR::StructInstanceMember_t *sb =
+            ASR::down_cast<ASR::StructInstanceMember_t>(b);
+        if (ASRUtils::symbol_get_past_external(sa->m_m)
+                != ASRUtils::symbol_get_past_external(sb->m_m)) {
+            return false;
+        }
+        return gpu_same_array_expr(sa->m_v, sb->m_v);
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*a)) {
+        ASR::ArrayItem_t *ia = ASR::down_cast<ASR::ArrayItem_t>(a);
+        ASR::ArrayItem_t *ib = ASR::down_cast<ASR::ArrayItem_t>(b);
+        if (ia->n_args != ib->n_args) return false;
+        for (size_t k = 0; k < ia->n_args; k++) {
+            ASR::expr_t *ra = ia->m_args[k].m_right;
+            ASR::expr_t *rb = ib->m_args[k].m_right;
+            if (ia->m_args[k].m_left || ia->m_args[k].m_step) return false;
+            if (ib->m_args[k].m_left || ib->m_args[k].m_step) return false;
+            if (!ra || !rb) return false;
+            int64_t va, vb;
+            if (try_eval_int_constant(ra, va) &&
+                    try_eval_int_constant(rb, vb)) {
+                if (va != vb) return false;
+                continue;
+            }
+            if (!ASR::is_a<ASR::Var_t>(*ra) || !ASR::is_a<ASR::Var_t>(*rb)) {
+                return false;
+            }
+            if (ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(ra)->m_v)
+                    != ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(rb)->m_v)) {
+                return false;
+            }
+        }
+        return gpu_same_array_expr(ia->m_v, ib->m_v);
+    }
+    return false;
+}
+
+// The extent of one ranged subscript of an array section.  Only two
+// shapes are accepted.  A subscript spanning the whole of its dimension
+// -- `lbound(a, k) : ubound(a, k)` with unit stride, which is what `:`
+// becomes -- has the extent of that dimension of `a`, so the parent's
+// own shape answers it.  A range whose three bounds are all compile-time
+// constants is counted out directly.  Anything else stays unresolved:
+// a run-time range can come out empty or reversed, and a workspace sized
+// from a guess at it would be wrong.
+inline int64_t build_gpu_section_dim_node(ASR::ArraySection_t *sec,
+        size_t k, const std::vector<std::string> &arg_names,
+        ASR::stmt_t **body, size_t n_body,
+        std::set<ASR::symbol_t*> &substituted,
+        std::vector<GpuVlaDimNode> &nodes) {
+    ASR::array_index_t &ix = sec->m_args[k];
+    if (!ix.m_left || !ix.m_right) return -1;
+    int64_t step_val = 1;
+    if (ix.m_step && !try_eval_int_constant(ix.m_step, step_val)) {
+        return -1;
+    }
+    if (step_val == 1) {
+        int64_t lb_dim = -1, ub_dim = -1;
+        ASR::expr_t *lb_arr = gpu_array_bound_operand(ix.m_left,
+            ASR::arrayboundType::LBound, lb_dim);
+        ASR::expr_t *ub_arr = gpu_array_bound_operand(ix.m_right,
+            ASR::arrayboundType::UBound, ub_dim);
+        if (lb_arr && ub_arr && lb_dim == ub_dim &&
+                gpu_same_array_expr(lb_arr, ub_arr)) {
+            return build_gpu_array_extent_node(lb_arr, lb_dim, arg_names,
+                body, n_body, substituted, nodes);
+        }
+    }
+    int64_t lo, hi;
+    if (step_val == 0) return -1;
+    if (!try_eval_int_constant(ix.m_left, lo)) return -1;
+    if (!try_eval_int_constant(ix.m_right, hi)) return -1;
+    int64_t n = (hi - lo) / step_val + 1;
+    if (n <= 0) return -1;
+    GpuVlaDimNode nd;
+    nd.kind = GpuVlaDimNode::Kind::Constant;
+    nd.constant_value = n;
+    nodes.push_back(nd);
+    return (int64_t)nodes.size() - 1;
+}
 
 // `left * right` as a new node, or -1 when either operand is unresolved.
 inline int64_t gpu_vla_dim_mul_node(int64_t left, int64_t right,
@@ -920,6 +1036,33 @@ inline int64_t build_gpu_array_extent_node(ASR::expr_t *arr_expr,
             }
             return acc;
         }
+    }
+    // `a(l:u, j)`: a section's extents are those of its ranged
+    // subscripts, taken in order; a scalar subscript drops its dimension
+    // and contributes nothing.
+    if (ASR::is_a<ASR::ArraySection_t>(*base)) {
+        ASR::ArraySection_t *sec = ASR::down_cast<ASR::ArraySection_t>(base);
+        std::vector<size_t> ranged;
+        for (size_t k = 0; k < sec->n_args; k++) {
+            if (sec->m_args[k].m_step != nullptr) ranged.push_back(k);
+        }
+        if (ranged.empty()) return -1;
+        size_t d_begin = 0;
+        size_t d_end = ranged.size();
+        if (dim >= 1) {
+            if ((size_t)dim > ranged.size()) return -1;
+            d_begin = (size_t)dim - 1;
+            d_end = d_begin + 1;
+        }
+        int64_t acc = -1;
+        for (size_t d = d_begin; d < d_end; d++) {
+            int64_t one = build_gpu_section_dim_node(sec, ranged[d],
+                arg_names, body, n_body, substituted, nodes);
+            if (one < 0) return -1;
+            acc = (acc < 0) ? one : gpu_vla_dim_mul_node(acc, one, nodes);
+            if (acc < 0) return -1;
+        }
+        return acc;
     }
     // `a(i)%m` or `s%m`: the extent of an allocatable array component of
     // a kernel argument, which the host reaches the same way it does when
@@ -1113,14 +1256,15 @@ inline int64_t build_gpu_vla_dim_expr(ASR::expr_t *expr,
         // A bound on its own stays unresolved.
         {
             int64_t ub_dim = -1, lb_dim = -1;
-            ASR::symbol_t *ub_sym = gpu_array_bound_target(op->m_left,
+            ASR::expr_t *ub_arr = gpu_array_bound_operand(op->m_left,
                 ASR::arrayboundType::UBound, ub_dim);
-            ASR::symbol_t *lb_sym = gpu_array_bound_target(op->m_right,
+            ASR::expr_t *lb_arr = gpu_array_bound_operand(op->m_right,
                 ASR::arrayboundType::LBound, lb_dim);
-            if (op->m_op == ASR::binopType::Sub && ub_sym &&
-                    ub_sym == lb_sym && ub_dim == lb_dim) {
-                int64_t size_node = gpu_arg_array_size_node(ub_sym,
-                    (size_t)ub_dim, arg_names, nodes);
+            if (op->m_op == ASR::binopType::Sub && ub_arr && lb_arr &&
+                    ub_dim == lb_dim &&
+                    gpu_same_array_expr(ub_arr, lb_arr)) {
+                int64_t size_node = build_gpu_array_extent_node(ub_arr,
+                    ub_dim, arg_names, body, n_body, substituted, nodes);
                 if (size_node < 0) return -1;
                 GpuVlaDimNode one;
                 one.kind = GpuVlaDimNode::Kind::Constant;
