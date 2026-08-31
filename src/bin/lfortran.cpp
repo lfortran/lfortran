@@ -871,6 +871,7 @@ int verify_asr_input(const std::string &infile,
     Allocator al(64*1024*1024);
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
+    compiler_options.po.loc_manager = &lm;
 
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
