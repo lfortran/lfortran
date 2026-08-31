@@ -1720,6 +1720,11 @@ static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
 // True when two designators are provably the same storage in the same
 // element order, so an element-by-element copy between them reads only
 // what it has already written to the same element.
+//
+// A derived-type component chain has to be recognised here, not just a
+// bare variable: `self%points_(k)` written twice is two ASR nodes for
+// one object, and answering false for them makes every occurrence of
+// such a chain look like a different object.
 static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
     if (a == b) return true;
     if (!a || !b || a->type != b->type) return false;
@@ -1743,6 +1748,17 @@ static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
                 }
             }
             return true;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t *x =
+                ASR::down_cast<ASR::StructInstanceMember_t>(a);
+            ASR::StructInstanceMember_t *y =
+                ASR::down_cast<ASR::StructInstanceMember_t>(b);
+            if (ASRUtils::symbol_get_past_external(x->m_m)
+                    != ASRUtils::symbol_get_past_external(y->m_m)) {
+                return false;
+            }
+            return gpu_same_designator(x->m_v, y->m_v);
         }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t *x = ASR::down_cast<ASR::ArrayItem_t>(a);
@@ -5764,6 +5780,19 @@ public:
             if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 inline_dot_product_in_stmts(dl->m_body, dl->n_body, scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            // A `do concurrent` nested in the loop being offloaded runs
+            // serially inside the kernel, so its body is device code too
+            // and its dot products have to be expanded as well. It is
+            // still a DoConcurrentLoop at this point: a spliced callee's
+            // own loops are only sequentialized on the next round.
+            if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
+                ASR::DoConcurrentLoop_t *dcl =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+                inline_dot_product_in_stmts(dcl->m_body, dcl->n_body,
+                    scope);
                 new_body.push_back(al, stmt);
                 continue;
             }
