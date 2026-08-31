@@ -1107,11 +1107,42 @@ inline int64_t build_gpu_array_extent_node(ASR::expr_t *arr_expr,
             return (int64_t)nodes.size() - 1;
         }
     }
+    // `f(...)`: an expression that is not a designator still carries its
+    // own shape in its type. A function result declared `real :: r(n)`
+    // records `n` as the extent of its one dimension, and semantics has
+    // already rewritten that in terms of the actual arguments -- so the
+    // extent expression is written in symbols of the scope the call is
+    // made from, which is the scope the kernel arguments come from.
+    // Whether the host can actually reproduce it is then the same
+    // question as for any other extent, and is left to the builder.
+    if (!ASR::is_a<ASR::Var_t>(*base)) {
+        ASR::ttype_t *base_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(base));
+        if (!base_type || !ASR::is_a<ASR::Array_t>(*base_type)) return -1;
+        ASR::Array_t *base_arr = ASR::down_cast<ASR::Array_t>(base_type);
+        if (base_arr->n_dims == 0) return -1;
+        size_t b_begin = 0;
+        size_t b_end = base_arr->n_dims;
+        if (dim >= 1) {
+            if ((size_t)dim > base_arr->n_dims) return -1;
+            b_begin = (size_t)dim - 1;
+            b_end = b_begin + 1;
+        }
+        int64_t acc = -1;
+        for (size_t d = b_begin; d < b_end; d++) {
+            if (!base_arr->m_dims[d].m_length) return -1;
+            int64_t one = build_gpu_vla_dim_expr(base_arr->m_dims[d].m_length,
+                arg_names, body, n_body, substituted, nodes);
+            if (one < 0) return -1;
+            acc = (acc < 0) ? one : gpu_vla_dim_mul_node(acc, one, nodes);
+            if (acc < 0) return -1;
+        }
+        return acc;
+    }
     // `a`: an array that is itself sized by the kernel arguments -- a
     // kernel-argument array, whose extents the host already passes as
     // `__dim_<name>_<d>` scalars, or a kernel-local array whose own
     // extent expression can be built here in turn.
-    if (!ASR::is_a<ASR::Var_t>(*base)) return -1;
     ASR::symbol_t *arr_sym = ASRUtils::symbol_get_past_external(
         ASR::down_cast<ASR::Var_t>(base)->m_v);
     if (arr_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*arr_sym)) {
