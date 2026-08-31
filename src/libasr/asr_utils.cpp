@@ -606,6 +606,18 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(union_instance_member->m_m));
             return var->m_type_declaration;
         }
+        case ASR::exprType::IfExp: {
+            // Both arms of a conditional expression have the same declared
+            // type, so either of them names the derived type. The first arm
+            // that resolves to one wins, since an arm can be, say, a null
+            // pointer that carries no declaration of its own.
+            ASR::IfExp_t* if_exp = ASR::down_cast<ASR::IfExp_t>(expression);
+            ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(if_exp->m_body);
+            if (struct_sym == nullptr) {
+                struct_sym = get_struct_sym_from_struct_expr(if_exp->m_orelse);
+            }
+            return struct_sym;
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));

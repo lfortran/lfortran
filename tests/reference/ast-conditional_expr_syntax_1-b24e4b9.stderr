@@ -1,0 +1,23 @@
+syntax error: Token '?' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:13:16
+   |
+13 |     x = .true. ? 1 : 0  ! {Error} Token '?' is unexpected here
+   |                ^ 
+
+syntax error: Token '?' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:21:28
+   |
+21 |     x = ( .true. ? .false. ? 1 : 2 : 3 )  ! {Error} Token '?' is unexpected here
+   |                            ^ 
+
+syntax error: Token ')' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:28:22
+   |
+28 |     x = ( .true. ? 1 )  ! {Error} Token ')' is unexpected here
+   |                      ^ 
+
+syntax error: Token '?' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:34:11
+   |
+34 |     x = ( ? 1 : 0 )  ! {Error} Token '?' is unexpected here
+   |           ^ 

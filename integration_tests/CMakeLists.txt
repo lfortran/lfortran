@@ -467,6 +467,17 @@ RUN(NAME cond_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_06 LABELS gfortran llvm)
 
+# Fortran 2023 conditional expressions, `( cond ? a : b )` (10.1.2.3 R1002).
+# GFortran 16 implements these only for scalars of intrinsic type, so the
+# array (06) and derived type (07) tests cannot be run against it.
+RUN(NAME conditional_expr_01 LABELS gfortran llvm)
+RUN(NAME conditional_expr_02 LABELS gfortran llvm)
+RUN(NAME conditional_expr_03 LABELS gfortran llvm)
+RUN(NAME conditional_expr_04 LABELS gfortran llvm)
+RUN(NAME conditional_expr_05 LABELS gfortran llvm)
+RUN(NAME conditional_expr_06 LABELS llvm)
+RUN(NAME conditional_expr_07 LABELS llvm)
+
 RUN(NAME complex_cloc_01 LABELS gfortran llvm)
 RUN(NAME complex_solutions LABELS gfortran llvm)
 
