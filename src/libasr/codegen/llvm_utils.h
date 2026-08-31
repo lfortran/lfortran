@@ -270,14 +270,6 @@ class ASRToLLVMVisitor;
             CompilerOptions &compiler_options;
             std::map<uint64_t, llvm::Value*> &llvm_symtab; // llvm_symtab_value
 
-            // Names of the procedures whose address is taken anywhere in this
-            // translation unit. Such procedures keep the string-descriptor
-            // CHARACTER ABI so their pointers match the dummy procedures and
-            // procedure pointers they are bound to (see
-            // ASRUtils::function_uses_hidden_char_len_abi). Owned by the
-            // codegen visitor; nullptr until set.
-            const std::set<std::string>* descriptor_abi_names = nullptr;
-
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
             llvm::PointerType *character_type;

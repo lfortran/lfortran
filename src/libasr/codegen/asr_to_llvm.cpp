@@ -339,15 +339,6 @@ public:
 
     std::map<std::string, std::pair<llvm::Type*, llvm::Type*>> fname2arg_type;
 
-    // Names of the procedures whose address is taken anywhere in this
-    // translation unit (passed as an actual argument to a dummy procedure, or
-    // assigned to a procedure pointer). Populated once in visit_TranslationUnit
-    // and consulted via LLVMUtils::descriptor_abi_names and
-    // ASRUtils::function_uses_hidden_char_len_abi: such a procedure's pointer
-    // has to match the dummy procedure it is bound to, so it keeps the
-    // string-descriptor CHARACTER ABI even when declared external.
-    std::set<std::string> descriptor_abi_names;
-
     // Maps for containing information regarding derived types
     std::map<std::string, llvm::StructType*> name2dertype, name2dercontext;
     std::map<std::string, std::string> dertype2parent;
@@ -373,8 +364,7 @@ public:
     // descriptors by declare_args.
     bool enclosing_uses_hidden_char_len_abi() const {
         return parent_function != nullptr &&
-            ASRUtils::function_uses_hidden_char_len_abi(*parent_function,
-                &descriptor_abi_names);
+            ASRUtils::function_uses_hidden_char_len_abi(*parent_function);
     }
 
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
@@ -1846,26 +1836,6 @@ public:
         }
     }
 
-    // Collect every ASR Function whose address is taken in this translation
-    // unit: passed as an actual argument to a dummy procedure, or assigned to
-    // a procedure pointer. A Function referenced through an ASR `Var` is being
-    // used as a value rather than called (a direct call names the symbol in
-    // FunctionCall/SubroutineCall instead), so this walk finds exactly those
-    // uses.
-    class AddressTakenFunctionCollector :
-            public ASR::BaseWalkVisitor<AddressTakenFunctionCollector> {
-    public:
-        std::set<std::string>& names;
-        AddressTakenFunctionCollector(std::set<std::string>& names_)
-            : names(names_) {}
-        void visit_Var(const ASR::Var_t& x) {
-            ASR::symbol_t* s = ASRUtils::symbol_get_past_external(x.m_v);
-            if (s != nullptr && ASR::is_a<ASR::Function_t>(*s)) {
-                names.insert(std::string(ASRUtils::symbol_name(s)));
-            }
-        }
-    };
-
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
@@ -1903,17 +1873,6 @@ public:
             }
         }
         llvm_utils->set_module(module.get());
-
-        // Determine which functions have their address taken, so that they
-        // keep the string-descriptor CHARACTER ABI and stay compatible with
-        // the dummy procedures and procedure pointers they are bound to (see
-        // ASRUtils::function_uses_hidden_char_len_abi).
-        descriptor_abi_names.clear();
-        {
-            AddressTakenFunctionCollector collector(descriptor_abi_names);
-            collector.visit_TranslationUnit(x);
-        }
-        llvm_utils->descriptor_abi_names = &descriptor_abi_names;
 
         if (compiler_options.emit_debug_info) {
             DBuilder = std::make_unique<llvm::DIBuilder>(*module);
@@ -8119,8 +8078,7 @@ public:
         // dummies as a bare data pointer plus a hidden trailing length. We
         // record the data pointers here and rebuild the string descriptors
         // after the positional arguments, once the trailing lengths are known.
-        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x,
-            &descriptor_abi_names);
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x);
         std::vector<std::pair<ASR::Variable_t*, llvm::Value*>> charlen_dummies;
 
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
@@ -24978,8 +24936,7 @@ public:
             bool callee_uses_hidden_charlen_abi =
                 func_subrout->type == ASR::symbolType::Function &&
                 ASRUtils::function_uses_hidden_char_len_abi(
-                    *ASR::down_cast<ASR::Function_t>(func_subrout),
-                    &descriptor_abi_names);
+                    *ASR::down_cast<ASR::Function_t>(func_subrout));
             if (orig_arg && x_abi == ASR::abiType::BindC &&
                 !callee_uses_hidden_charlen_abi &&
                 ASRUtils::is_character(*orig_arg->m_type) &&
@@ -25423,8 +25380,7 @@ public:
                     !is_proc_ptr_call && x.m_dt == nullptr &&
                     func_subrout->type == ASR::symbolType::Function &&
                     ASRUtils::function_uses_hidden_char_len_abi(
-                        *ASR::down_cast<ASR::Function_t>(func_subrout),
-                        &descriptor_abi_names);
+                        *ASR::down_cast<ASR::Function_t>(func_subrout));
                 // Effective dummy type for the classic external CHARACTER ABI:
                 // prefer the real callee definition's dummy (when it is visible
                 // in this translation unit) over the per-call synthesized

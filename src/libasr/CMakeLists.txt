@@ -80,6 +80,7 @@ set(SRC
     pass/replace_with_compile_time_values.cpp
     pass/gpu_offload.cpp
     pass/coarray.cpp
+    pass/external_abi.cpp
 
     codegen/asr_to_metal.cpp
     codegen/asr_to_cuda.cpp

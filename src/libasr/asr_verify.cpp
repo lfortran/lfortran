@@ -2396,6 +2396,20 @@ public:
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 
+        // A module procedure is implemented in a submodule of the same build
+        // and so is never separately linked against another compiler's
+        // object; it therefore never uses the classic Fortran external ABI.
+        // See `declares_external_procedure` in the symbol-table visitor and
+        // the `external_abi` pass.
+        //
+        // Note that `m_abi == BindC` is deliberately *not* excluded here:
+        // besides a user's `bind(c)` procedure it also marks the interfaces
+        // LFortran synthesizes for a procedure referenced without an explicit
+        // one, and those do use the external ABI.
+        require_id(!x.m_external_abi || !x.m_module,
+            "asr.verify.function_type.external_abi_excludes_module",
+            "a module procedure cannot use the external Fortran ABI");
+
         _is_return_type_string = false;
         if (x.m_return_var_type) {
             _is_return_type_string = ASRUtils::is_character(*x.m_return_var_type);

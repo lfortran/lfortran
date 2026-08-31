@@ -7643,57 +7643,18 @@ static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
 //
 // This is the ABI LFortran commits to for separately compiled external
 // procedures, so that an LFortran caller and a gfortran-compiled definition
-// (or the reverse) agree. It is recorded explicitly by the frontend in
+// (or the reverse) agree.
+//
+// The answer is a plain ASR fact. The frontend records the declaration half in
 // `FunctionType::m_external_abi` -- see `declares_external_procedure` in the
-// symbol-table visitor -- rather than guessed here from ownership, deftype or
-// abi. Compiler-synthesized procedures (intrinsic instantiations, coarray
-// runtime declarations, pass-generated helpers) leave the field at its `false`
-// default and therefore keep LFortran's own string-descriptor conventions.
-//
-// Two structural exclusions remain, because they are properties of how the
-// symbol is *used* rather than of how it was declared:
-//
-//   * `fn` is a dummy procedure of its owner. Its interface body describes
-//     whatever procedure is bound to it, which is usually an ordinary module
-//     or contained procedure, so the call through it must use the ordinary
-//     ABI.
-//   * `fn`'s address is taken somewhere in this translation unit (it is passed
-//     as an actual argument or assigned to a procedure pointer). The resulting
-//     function pointer has to match the dummy procedure / procedure pointer it
-//     is bound to, which uses the ordinary ABI by the previous rule.
-//     `descriptor_abi_names` carries that set; when it is unavailable the
-//     declared ABI is used unchanged. It is keyed by procedure name because an
-//     interface body and the definition it describes are two ASR symbols for
-//     one linked procedure, and both have to reach the same decision.
-//
-// NOTE: the second exclusion is decided per translation unit, so an external
-// procedure whose address is taken in one unit and called directly from
-// another still disagrees with itself across that boundary. Making this sound
-// needs either a single uniform ABI or an ABI-adapting thunk at the point the
-// address is taken; see the PR discussion.
-static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn,
-        const std::set<std::string>* descriptor_abi_names = nullptr) {
-    if (!ASRUtils::get_FunctionType(&fn)->m_external_abi) {
-        return false;
-    }
-    ASR::symbol_t* fn_sym = (ASR::symbol_t*)&fn.base;
-    ASR::symbol_t* owner = get_asr_owner(fn_sym);
-    if (owner != nullptr && ASR::is_a<ASR::Function_t>(*owner)) {
-        ASR::Function_t* owner_fn = ASR::down_cast<ASR::Function_t>(owner);
-        for (size_t i = 0; i < owner_fn->n_args; i++) {
-            if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
-                    ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v
-                        == fn_sym) {
-                return false;
-            }
-        }
-    }
-    if (descriptor_abi_names != nullptr &&
-            descriptor_abi_names->find(std::string(fn.m_name))
-                != descriptor_abi_names->end()) {
-        return false;
-    }
-    return true;
+// symbol-table visitor -- and the `external_abi` pass clears it again for the
+// dummy procedures and the address-taken procedures, which are properties of
+// the whole translation unit. Nothing is re-derived here or in a backend.
+// Compiler-synthesized procedures (intrinsic instantiations, coarray runtime
+// declarations, pass-generated helpers) leave the field at its `false` default
+// and therefore keep LFortran's own string-descriptor conventions.
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn) {
+    return ASRUtils::get_FunctionType(&fn)->m_external_abi;
 }
 
 // Normalize the dummy type synthesized for an implicit-interface procedure
