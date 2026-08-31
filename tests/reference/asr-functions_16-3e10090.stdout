@@ -154,6 +154,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 lhs)
@@ -312,6 +313,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 lhs)
@@ -466,6 +468,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     2 compare_less
                                                     Source
@@ -617,6 +620,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )]
                                         ()
                                         Source
@@ -629,6 +633,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [swap
                                     quicksort]
@@ -979,6 +984,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     2 compare_less
                                                     Source
@@ -1250,6 +1256,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )]
                                         ()
                                         Source
@@ -1262,6 +1269,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [quicksort]
                                     [(Var 5 list)
@@ -1552,6 +1560,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 lhs)

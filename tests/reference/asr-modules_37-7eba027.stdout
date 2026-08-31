@@ -434,6 +434,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 targets)
@@ -753,6 +754,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [build_package]
                                     [(Var 10 settings)]

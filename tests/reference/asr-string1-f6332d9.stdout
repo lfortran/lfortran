@@ -119,6 +119,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 16 s)]
@@ -220,6 +221,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_string_cptr_n]
                                     [(Var 15 cptr)]
@@ -355,6 +357,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 17 cptr)
@@ -448,6 +451,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 c_string)]
