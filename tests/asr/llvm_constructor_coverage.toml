@@ -14,6 +14,7 @@
 "stmt.Assign" = "helper:legacy assigned goto"
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"
+"stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
 "stmt.ForAllSingle" = "lowered:for_all"
 "stmt.ForEach" = "helper:container iteration"
 "stmt.IfArithmetic" = "helper:branch lowering"

@@ -6,6 +6,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
