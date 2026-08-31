@@ -515,6 +515,107 @@ static bool expr_has_function_call(ASR::expr_t *expr) {
     return checker.found;
 }
 
+// `size(f(...))`: the extent of an array expression that is not a
+// designator.  Evaluating it on the host would mean calling `f` there,
+// with whatever the arguments happen to be outside the loop -- the loop
+// index has no value there at all.  The shape is already recorded in the
+// expression's own type, though: a result declared `real :: r(n)` carries
+// `n` as the length of its one dimension, written in the symbols of the
+// scope the call is made from.  Rewrite the ArraySize to that length, so
+// the host evaluates the extent without evaluating the call.  This is the
+// same shape `build_gpu_array_extent_node` reads when it decides the
+// extent is resolvable, so emitter and pre-flight agree.  Returns nullptr
+// when the type does not record the length, leaving the node alone.
+static ASR::expr_t *gpu_array_size_from_type(Allocator &al,
+        const ASR::ArraySize_t *sz) {
+    if (!sz->m_v || ASR::is_a<ASR::Var_t>(*sz->m_v)) return nullptr;
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(sz->m_v));
+    if (!t || !ASR::is_a<ASR::Array_t>(*t)) return nullptr;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    if (arr->n_dims == 0) return nullptr;
+    size_t begin = 0, end = arr->n_dims;
+    if (sz->m_dim) {
+        int64_t d;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(sz->m_dim), d)) {
+            return nullptr;
+        }
+        if (d < 1 || (size_t)d > arr->n_dims) return nullptr;
+        begin = (size_t)d - 1;
+        end = begin + 1;
+    }
+    ASR::ttype_t *int_t = ASRUtils::TYPE(ASR::make_Integer_t(al,
+        sz->base.base.loc, 4));
+    ASR::expr_t *acc = nullptr;
+    for (size_t d = begin; d < end; d++) {
+        ASR::expr_t *len = arr->m_dims[d].m_length;
+        if (!len) return nullptr;
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.success = true;
+        ASR::expr_t *one = dup.duplicate_expr(len);
+        if (!one || !dup.success) return nullptr;
+        acc = acc ? ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            sz->base.base.loc, acc, ASR::binopType::Mul, one, int_t,
+            nullptr)) : one;
+    }
+    return acc;
+}
+
+// Rewrites every `size(<non-designator>)` in an expression tree to the
+// extent recorded in that expression's own type.
+class GpuArraySizeFromTypeReplacer :
+        public ASR::BaseExprReplacer<GpuArraySizeFromTypeReplacer> {
+public:
+    Allocator &al;
+    GpuArraySizeFromTypeReplacer(Allocator &al_) : al(al_) {}
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        ASR::BaseExprReplacer<GpuArraySizeFromTypeReplacer>
+            ::replace_ArraySize(x);
+        ASR::expr_t *rep = gpu_array_size_from_type(al, x);
+        if (rep) *current_expr = rep;
+    }
+};
+
+static ASR::expr_t *gpu_simplify_array_sizes(Allocator &al,
+        ASR::expr_t *expr) {
+    if (!expr) return expr;
+    GpuArraySizeFromTypeReplacer r(al);
+    ASR::expr_t *root = expr;
+    r.current_expr = &root;
+    r.replace_expr(root);
+    return root;
+}
+
+// Collects the names every Var in an expression tree refers to.
+class GpuVarNameCollector : public ASR::BaseWalkVisitor<GpuVarNameCollector> {
+public:
+    std::set<std::string> names;
+    void visit_Var(const ASR::Var_t &x) {
+        names.insert(ASRUtils::symbol_name(x.m_v));
+    }
+};
+
+// A host-side expression may not name a loop index: the host evaluates it
+// before the launch, where the index has no value.  The workspace
+// pre-flight already declines such a loop, so reaching here means the
+// emitter and the pre-flight disagree -- a compiler bug, which must be a
+// clean failure rather than a plausible-but-wrong number read out of an
+// undefined variable.
+static void gpu_check_host_expr_index_free(ASR::expr_t *host_expr,
+        const std::set<std::string> &index_names, const std::string &what) {
+    if (!host_expr || index_names.empty()) return;
+    GpuVarNameCollector c;
+    c.visit_expr(*host_expr);
+    for (const std::string &n : c.names) {
+        if (index_names.count(n)) {
+            throw LCompilersException(
+                "GPU offload: the host expression for " + what +
+                " refers to the loop index '" + n + "', which has no "
+                "value outside the loop");
+        }
+    }
+}
+
 // Replaces all Var references in-place to point to the kernel scope symbols
 class GpuReplaceSymbols : public ASR::BaseExprReplacer<GpuReplaceSymbols> {
 public:
@@ -11515,6 +11616,13 @@ public:
             {
                 ASRUtils::ExprStmtDuplicator dim_dup(al);
                 dim_dup.success = true;
+                std::set<std::string> loop_index_names;
+                for (size_t d = 0; d < x.n_head; d++) {
+                    if (!x.m_head[d].m_v) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+                    loop_index_names.insert(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+                }
                 for (auto &item : block->m_symtab->get_scope()) {
                     if (!ASR::is_a<ASR::Variable_t>(*item.second))
                         continue;
@@ -11534,9 +11642,19 @@ public:
                                     *dim_ptrs[e]))
                                 continue;
                             ASR::expr_t *old_dim_expr = *dim_ptrs[e];
+                            // The host evaluates this expression before
+                            // it launches, where the loop index has no
+                            // value -- so a `size(f(i, ...))` must be
+                            // taken from the shape in its own type
+                            // rather than by calling `f` on the host.
                             ASR::expr_t *host_expr =
-                                dim_dup.duplicate_expr(
-                                    *dim_ptrs[e]);
+                                gpu_simplify_array_sizes(al,
+                                    dim_dup.duplicate_expr(
+                                        *dim_ptrs[e]));
+                            gpu_check_host_expr_index_free(host_expr,
+                                loop_index_names,
+                                "the extent of '" +
+                                    std::string(bvar->m_name) + "'");
                             std::string pname =
                                 kernel_scope->get_unique_name(
                                     "__lfortran_gpu_dim_", false);
