@@ -5091,3 +5091,24 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+# Formatted READ from interactive standard input over Emscripten must not
+# swallow the record-terminating newline (see #12108). The loader feeds one
+# complete record and keeps stdin open, like a browser prompt with no input
+# pending: an over-reading fgets then waits for input that never arrives and
+# the loader times out (or the program misreads it). It only makes
+# sense under the emscripten backend, hence the custom registration.
+if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+    find_program(WASM_EXEC_RUNTIME node)
+    add_executable(formatted_read_stdin_01 formatted_read_stdin_01.f90)
+    target_compile_options(formatted_read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+    target_link_options(formatted_read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+    add_test(NAME formatted_read_stdin_01
+        COMMAND ${WASM_EXEC_RUNTIME}
+            ${CMAKE_CURRENT_SOURCE_DIR}/formatted_read_stdin_01_loader.mjs
+            ${CMAKE_CURRENT_BINARY_DIR}/formatted_read_stdin_01)
+    set_tests_properties(formatted_read_stdin_01 PROPERTIES
+        LABELS "llvm_wasm_emcc")
+endif()

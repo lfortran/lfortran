@@ -10507,6 +10507,22 @@ LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_l
     return true;
 }
 
+// Emscripten's stdin is a character device whose read keeps filling the
+// caller's buffer (up to 1024 bytes), so a buffered stdio stream swallows
+// the newline that terminates the Fortran record: interactive READ(*,...)
+// statements then ask for more input and only finish at end of file.
+// Read stdin one character at a time instead.
+static void use_stdin_char_mode(void)
+{
+#if defined(__EMSCRIPTEN__)
+    static int done = 0;
+    if (!done) {
+        setvbuf(stdin, NULL, _IONBF, 0);
+        done = 1;
+    }
+#endif
+}
+
 typedef enum {
     INPUT_FILE,
     INPUT_STRING
@@ -11605,6 +11621,10 @@ LFORTRAN_API void _lfortran_formatted_read(
             exit(1);
         }
     } else {
+        // External formatted reads from stdin must not depend on stdio
+        // buffering: on some targets (see use_stdin_char_mode) a buffered
+        // read swallows the record-terminating newline.
+        use_stdin_char_mode();
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = stdin;
     }
