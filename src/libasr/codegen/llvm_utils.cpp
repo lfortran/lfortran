@@ -1195,6 +1195,11 @@ namespace LCompilers {
 
     std::vector<llvm::Type*> LLVMUtils::convert_args(const ASR::Function_t& x, llvm::Module* module) {
         std::vector<llvm::Type*> args;
+        // Separately compiled external procedures use the classic Fortran
+        // external ABI: a CHARACTER dummy is received as a bare data pointer
+        // and its per-element length as a hidden trailing argument.
+        bool charlen_abi = ASRUtils::function_uses_hidden_char_len_abi(x);
+        std::vector<llvm::Type*> hidden_char_lengths;
         for (size_t i=0; i<x.n_args; i++) {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -1266,6 +1271,15 @@ namespace LCompilers {
                         is_array_type = false;
                     }
                 }
+                if( charlen_abi && ASRUtils::is_hidden_charlen_string_dummy(arg->m_type) ) {
+                    // Receive the character data pointer directly at the
+                    // argument position, with the per-element length always
+                    // following as a hidden trailing argument (see
+                    // is_hidden_charlen_string_dummy).
+                    type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                    hidden_char_lengths.push_back(
+                        llvm::Type::getInt64Ty(context));
+                }
                 args.push_back(type);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
@@ -1281,6 +1295,7 @@ namespace LCompilers {
                 throw CodeGenError("Argument type not implemented");
             }
         }
+        args.insert(args.end(), hidden_char_lengths.begin(), hidden_char_lengths.end());
         return args;
     }
 

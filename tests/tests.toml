@@ -5357,6 +5357,11 @@ pass = "coarray"
 options = "--coarray=true"
 
 [[test]]
+filename = "coarray_prif_char_abi_01.f90"
+llvm = true
+options = "--coarray=true"
+
+[[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
 pass = "coarray"

@@ -7640,6 +7640,122 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// A CHARACTER dummy represented as a string descriptor ({data, len}). These
+// are the dummies affected by the classic Fortran hidden-length ABI used for
+// external procedures: the character data pointer is passed directly at the
+// argument position and the per-element length travels as a hidden trailing
+// argument (after all positional arguments), exactly as gfortran/flang do.
+//
+// The trailing length is passed uniformly for every such dummy -- scalar or
+// array, assumed/deferred or fixed length. This must be uniform because
+// separate compilation forces it to be: a caller reaching the procedure
+// through an implicit interface only sees the actual argument, never the
+// callee's dummy, so it cannot tell whether that dummy is a scalar
+// CHARACTER(len=*), an assumed-length array, or a fixed-length array. The only
+// ABI a separately compiled caller can reliably target -- and the only one the
+// separately compiled callee can rely on -- passes the character data pointer
+// at the argument position with the length always trailing. Omitting the
+// length for a fixed-length CHARACTER array actual (as an earlier scheme did)
+// corrupts a scalar CHARACTER(len=*) callee that expects the length: this was
+// the netcdf-fortran nf_get_var_text crash, where a CHARACTER array actual is
+// passed to an assumed-length scalar dummy.
+//
+// Covered:
+//   * scalar CHARACTER dummies, and
+//   * CHARACTER arrays represented as a single string descriptor, i.e.
+//     explicit-shape and assumed-size arrays (PointerArray /
+//     UnboundedPointerArray / FixedSizeArray / StringArraySinglePointer).
+//     For such arrays the descriptor holds the base data pointer and the
+//     per-element length, exactly the (data pointer, length) pair the ABI
+//     transmits.
+//
+// Excluded: allocatable/pointer CHARACTER dummies and CHARACTER arrays backed
+// by a full array descriptor (assumed-shape / assumed-rank), which require an
+// explicit interface and keep the descriptor ABI.
+static inline bool is_hidden_charlen_string_dummy(ASR::ttype_t* type) {
+    if (is_allocatable(type) || is_pointer(type)) return false;
+    ASR::ttype_t* bare = extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*bare)) return false;
+    if (ASR::down_cast<ASR::String_t>(bare)->m_physical_type
+            != ASR::string_physical_typeType::DescriptorString) return false;
+    if (is_array(type)) {
+        ASR::array_physical_typeType pt = extract_physical_type(type);
+        return pt == ASR::array_physical_typeType::PointerArray
+            || pt == ASR::array_physical_typeType::UnboundedPointerArray
+            || pt == ASR::array_physical_typeType::FixedSizeArray
+            || pt == ASR::array_physical_typeType::StringArraySinglePointer;
+    }
+    return true;
+}
+
+// True if `fn` uses the classic Fortran external ABI: the CHARACTER data
+// pointer is passed directly at the argument position and the per-element
+// length travels as a hidden trailing argument, after all positional
+// arguments, exactly as gfortran and flang do.
+//
+// This is the ABI LFortran commits to for separately compiled external
+// procedures, so that an LFortran caller and a gfortran-compiled definition
+// (or the reverse) agree.
+//
+// The answer is a plain ASR fact. The frontend records the declaration half in
+// `FunctionType::m_external_abi` -- see `declares_external_procedure` in the
+// symbol-table visitor -- and the `external_abi` pass clears it again for the
+// dummy procedures and the address-taken procedures, which are properties of
+// the whole translation unit. Nothing is re-derived here or in a backend.
+// Compiler-synthesized procedures (intrinsic instantiations, coarray runtime
+// declarations, pass-generated helpers) leave the field at its `false` default
+// and therefore keep LFortran's own string-descriptor conventions.
+static inline bool function_uses_hidden_char_len_abi(const ASR::Function_t& fn) {
+    return ASRUtils::get_FunctionType(&fn)->m_external_abi;
+}
+
+// Normalize the dummy type synthesized for an implicit-interface procedure
+// from an actual argument's type.
+//
+// Arrays: for arrays like A(n, m) we use A(*) in the implicit interface.
+// CHARACTER arrays included: an external procedure reached through an
+// implicit interface associates a character array actual by classic F77
+// storage association. Representing the dummy as a PointerArray (a single
+// string descriptor over the contiguous element storage) matches how the
+// separately compiled callee receives it. A DescriptorArray here would wrap
+// the array in an array descriptor whose bytes the callee then misreads as
+// string data. AssumedRankArray keeps its physical type.
+//
+// Scalars: an allocatable/pointer CHARACTER actual (e.g. a deferred-length
+// result such as trim(...)) is associated by classic F77 storage association:
+// the callee receives the character data pointer plus a hidden length, never
+// an allocatable descriptor. Synthesize a plain assumed-length dummy
+// (character(len=*)) so the hidden-length character ABI is used, matching
+// gfortran/flang and the separately compiled callee.
+//
+// Any other type is returned unchanged.
+static inline ASR::ttype_t* normalize_implicit_interface_character_dummy(
+        Allocator& al, ASR::ttype_t* var_type) {
+    if (is_array(var_type)) {
+        ASR::ttype_t* array_var_type = type_get_past_allocatable(
+            type_get_past_pointer(var_type));
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+        ASR::array_physical_typeType phys_type;
+        if (array_type->m_physical_type
+                == ASR::array_physical_typeType::AssumedRankArray) {
+            phys_type = array_type->m_physical_type;
+        } else {
+            phys_type = ASR::array_physical_typeType::PointerArray;
+        }
+        return duplicate_type_with_empty_dims(al, array_var_type, phys_type,
+            true);
+    }
+    if (is_character(*var_type) && is_allocatable_or_pointer(var_type)) {
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+            extract_type(var_type));
+        return TYPE(ASR::make_String_t(al,
+            var_type->base.loc, str->m_kind, nullptr,
+            ASR::string_length_kindType::AssumedLength,
+            str->m_physical_type));
+    }
+    return var_type;
+}
+
 static inline bool is_coarray(ASR::symbol_t* s) {
     s = symbol_get_past_external(s);
     if (ASR::is_a<ASR::Variable_t>(*s)) {

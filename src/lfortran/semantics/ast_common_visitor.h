@@ -10209,6 +10209,7 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                     ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
                                     ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
@@ -17001,19 +17002,10 @@ public:
                     }
                 }
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in implicit interface.
-                    ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var_type));
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    ASR::array_physical_typeType phys_type;
-                    if (ASRUtils::is_character(*array_type->m_type)) {
-                        phys_type = ASR::array_physical_typeType::DescriptorArray;
-                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-                        phys_type = array_type->m_physical_type;
-                    } else {
-                        phys_type = ASR::array_physical_typeType::PointerArray;
-                    }
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
+                    // For arrays like A(n, m) we use A(*) in implicit
+                    // interface (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -17029,6 +17021,12 @@ public:
                         ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(expected_arg_type);
                         var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
                     }
+                } else if (ASRUtils::is_character(*var_type) &&
+                        ASRUtils::is_allocatable_or_pointer(var_type)) {
+                    // Synthesize a plain assumed-length dummy for an
+                    // allocatable/deferred-length CHARACTER actual (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
