@@ -3759,6 +3759,9 @@ public:
 
             ASR::ttype_t *elem_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(asgn->m_target));
+            ASR::dimension_t *dims_c = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(asgn->m_target), dims_c);
 
             SymbolTable *var_scope = current_scope;
             while (var_scope && var_scope->asr_owner &&
@@ -3830,6 +3833,59 @@ public:
                 head.m_increment = nullptr;
                 return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
                     head, body.p, body.n, nullptr, 0));
+            };
+
+            // When an argument is an ArraySection, extract loop bounds
+            // from the section's range specs rather than from the type
+            // dimensions (which may be null for section result types).
+            auto get_loop_bounds = [&](ASR::expr_t *arg,
+                    ASR::dimension_t *dims,
+                    int dim_idx) -> std::pair<ASR::expr_t*, ASR::expr_t*> {
+                if (ASR::is_a<ASR::ArraySection_t>(*arg)) {
+                    ASR::ArraySection_t *sec =
+                        ASR::down_cast<ASR::ArraySection_t>(arg);
+                    int range_idx = 0;
+                    for (size_t d = 0; d < sec->n_args; d++) {
+                        if (sec->m_args[d].m_left != nullptr) {
+                            if (range_idx == dim_idx) {
+                                return {sec->m_args[d].m_left,
+                                        sec->m_args[d].m_right};
+                            }
+                            range_idx++;
+                        }
+                    }
+                }
+                return get_dim_bounds(al, arg->base.loc, dims,
+                    (size_t)dim_idx, arg);
+            };
+
+            // matmul pairs its operands by position: the k-th column of
+            // `a` multiplies the k-th element of `b` whatever lower bound
+            // either operand declares and wherever an operand that is an
+            // array section starts inside its parent array.  The loop
+            // variables run over the index space of one chosen operand,
+            // so a variable used to index a different operand is first
+            // rebased onto that operand's own first index.  When both
+            // spaces are known to start at the same index the variable is
+            // used as it is, which leaves the usual lower-bound-of-one
+            // case exactly as it was.
+            auto rebase_index = [&](ASR::expr_t *operand,
+                    ASR::dimension_t *operand_dims, int dim_idx,
+                    ASR::expr_t *var,
+                    ASR::expr_t *ref_start) -> ASR::expr_t* {
+                ASR::expr_t *start = get_loop_bounds(operand, operand_dims,
+                    dim_idx).first;
+                if (start == nullptr || ref_start == nullptr) return var;
+                if (start == ref_start) return var;
+                if (is_int_literal(start, 1) && is_int_literal(ref_start, 1))
+                    return var;
+                ASR::expr_t *offset = ASRUtils::EXPR(
+                    ASR::make_IntegerBinOp_t(al, loc, var,
+                        ASR::binopType::Sub, to_int32(loc, ref_start),
+                        int_type, nullptr));
+                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    to_int32(loc, start), ASR::binopType::Add, offset,
+                    int_type, nullptr));
             };
 
             // When an argument or target is an ArraySection (e.g. v(:,i)),
@@ -3910,7 +3966,8 @@ public:
             // array, so the wrapper is stripped before the rank is
             // checked.
             auto make_binop_other_item = [&](ASR::expr_t *other,
-                    std::vector<ASR::expr_t*> loop_vars) -> ASR::expr_t* {
+                    std::vector<ASR::expr_t*> loop_vars,
+                    std::vector<ASR::expr_t*> ref_starts) -> ASR::expr_t* {
                 while (true) {
                     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other)) {
                         other = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -3924,31 +3981,15 @@ public:
                 }
                 if (!ASRUtils::is_array(ASRUtils::expr_type(other)))
                     return other;
-                return make_section_item(other, loop_vars);
-            };
-
-            // When an argument is an ArraySection, extract loop bounds
-            // from the section's range specs rather than from the type
-            // dimensions (which may be null for section result types).
-            auto get_loop_bounds = [&](ASR::expr_t *arg,
-                    ASR::dimension_t *dims,
-                    int dim_idx) -> std::pair<ASR::expr_t*, ASR::expr_t*> {
-                if (ASR::is_a<ASR::ArraySection_t>(*arg)) {
-                    ASR::ArraySection_t *sec =
-                        ASR::down_cast<ASR::ArraySection_t>(arg);
-                    int range_idx = 0;
-                    for (size_t d = 0; d < sec->n_args; d++) {
-                        if (sec->m_args[d].m_left != nullptr) {
-                            if (range_idx == dim_idx) {
-                                return {sec->m_args[d].m_left,
-                                        sec->m_args[d].m_right};
-                            }
-                            range_idx++;
-                        }
-                    }
+                ASR::dimension_t *other_dims = nullptr;
+                ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(other), other_dims);
+                std::vector<ASR::expr_t*> idx;
+                for (size_t d = 0; d < loop_vars.size(); d++) {
+                    idx.push_back(rebase_index(other, other_dims, (int)d,
+                        loop_vars[d], ref_starts[d]));
                 }
-                return get_dim_bounds(al, arg->base.loc, dims,
-                    (size_t)dim_idx, arg);
+                return make_section_item(other, idx);
             };
 
             ASR::expr_t *zero;
@@ -3968,16 +4009,19 @@ public:
                 ASR::expr_t *var_i = make_loop_var("__gpu_mm_i");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
-                ASR::expr_t *c_i = make_section_item(asgn->m_target, {var_i});
-                ASR::expr_t *a_ik = transpose_a
-                    ? make_section_item(arg_a, {var_k, var_i})
-                    : make_section_item(arg_a, {var_i, var_k});
-                ASR::expr_t *b_k = make_section_item(arg_b, {var_k});
-
                 int i_dim = transpose_a ? 1 : 0;
                 int k_dim = transpose_a ? 0 : 1;
                 auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, k_dim);
                 auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, i_dim);
+
+                ASR::expr_t *c_i = make_section_item(asgn->m_target,
+                    {rebase_index(asgn->m_target, dims_c, 0, var_i,
+                        i_start)});
+                ASR::expr_t *a_ik = transpose_a
+                    ? make_section_item(arg_a, {var_k, var_i})
+                    : make_section_item(arg_a, {var_i, var_k});
+                ASR::expr_t *b_k = make_section_item(arg_b,
+                    {rebase_index(arg_b, dims_b, 0, var_k, k_start)});
 
                 // k-loop body: c(i) = c(i) + a(i,k) * b(k)
                 Vec<ASR::stmt_t*> k_body;
@@ -4003,7 +4047,7 @@ public:
 
                 if (binop_other) {
                     ASR::expr_t *other_i = make_binop_other_item(
-                        binop_other, {var_i});
+                        binop_other, {var_i}, {i_start});
                     ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
                     ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -4022,16 +4066,19 @@ public:
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
-                ASR::expr_t *c_j = make_section_item(asgn->m_target, {var_j});
-                ASR::expr_t *a_k = make_section_item(arg_a, {var_k});
-                ASR::expr_t *b_kj = transpose_b
-                    ? make_section_item(arg_b, {var_j, var_k})
-                    : make_section_item(arg_b, {var_k, var_j});
-
                 int k_dim = transpose_b ? 1 : 0;
                 int j_dim = transpose_b ? 0 : 1;
                 auto [k_start, k_end] = get_loop_bounds(arg_b, dims_b, k_dim);
                 auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, j_dim);
+
+                ASR::expr_t *c_j = make_section_item(asgn->m_target,
+                    {rebase_index(asgn->m_target, dims_c, 0, var_j,
+                        j_start)});
+                ASR::expr_t *a_k = make_section_item(arg_a,
+                    {rebase_index(arg_a, dims_a, 0, var_k, k_start)});
+                ASR::expr_t *b_kj = transpose_b
+                    ? make_section_item(arg_b, {var_j, var_k})
+                    : make_section_item(arg_b, {var_k, var_j});
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -4055,7 +4102,7 @@ public:
 
                 if (binop_other) {
                     ASR::expr_t *other_j = make_binop_other_item(
-                        binop_other, {var_j});
+                        binop_other, {var_j}, {j_start});
                     ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
                     ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
                     ASR::expr_t *combined = ASRUtils::EXPR(
@@ -4076,21 +4123,28 @@ public:
                 ASR::expr_t *var_j = make_loop_var("__gpu_mm_j");
                 ASR::expr_t *var_k = make_loop_var("__gpu_mm_k");
 
+                int a_k_dim = transpose_a ? 0 : 1;
+                int a_i_dim = transpose_a ? 1 : 0;
+                int b_j_dim = transpose_b ? 0 : 1;
+                int b_k_dim = transpose_b ? 1 : 0;
+                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, a_k_dim);
+                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, b_j_dim);
+                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, a_i_dim);
+
+                // `k` runs over `a`'s contraction dimension, so only
+                // `b`'s copy of it is rebased; `j` already runs over
+                // `b`'s own dimension.
+                ASR::expr_t *var_k_b = rebase_index(arg_b, dims_b, b_k_dim,
+                    var_k, k_start);
                 ASR::expr_t *c_ij = make_section_item(asgn->m_target,
-                    {var_i, var_j});
+                    {rebase_index(asgn->m_target, dims_c, 0, var_i, i_start),
+                     rebase_index(asgn->m_target, dims_c, 1, var_j, j_start)});
                 ASR::expr_t *a_ik = transpose_a
                     ? make_section_item(arg_a, {var_k, var_i})
                     : make_section_item(arg_a, {var_i, var_k});
                 ASR::expr_t *b_kj = transpose_b
-                    ? make_section_item(arg_b, {var_j, var_k})
-                    : make_section_item(arg_b, {var_k, var_j});
-
-                int a_k_dim = transpose_a ? 0 : 1;
-                int a_i_dim = transpose_a ? 1 : 0;
-                int b_j_dim = transpose_b ? 0 : 1;
-                auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, a_k_dim);
-                auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, b_j_dim);
-                auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, a_i_dim);
+                    ? make_section_item(arg_b, {var_j, var_k_b})
+                    : make_section_item(arg_b, {var_k_b, var_j});
 
                 Vec<ASR::stmt_t*> k_body;
                 k_body.reserve(al, 1);
@@ -4114,7 +4168,7 @@ public:
 
                 if (binop_other) {
                     ASR::expr_t *other_ij = make_binop_other_item(
-                        binop_other, {var_i, var_j});
+                        binop_other, {var_i, var_j}, {i_start, j_start});
                     ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
                     ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
                     ASR::expr_t *combined = ASRUtils::EXPR(
