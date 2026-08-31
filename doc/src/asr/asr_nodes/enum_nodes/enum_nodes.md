@@ -18,6 +18,7 @@ codimension_type
 deftype
 enumtype
 exec_space
+exec_target
 integerboz
 intent
 logicalbinop

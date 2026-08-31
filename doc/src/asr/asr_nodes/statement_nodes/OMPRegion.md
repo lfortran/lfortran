@@ -7,7 +7,7 @@ An OpenMP region: a directive, its clauses and the code it applies to.
 ### Syntax
 
 ```text
-OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
+OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)
 ```
 
 ### Arguments
@@ -17,6 +17,7 @@ OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
 | `region` | which directive this is; see [omp_region_type](../omp_nodes/omp_region_type.md). |
 | `clauses` | the clauses of the directive; see [omp_clause](../omp_nodes/omp_clauses.md). |
 | `body` | the statements the directive applies to. |
+| `exec_target` | which lowering runs the region; see [exec_target](../enum_nodes/exec_target.md). |
 
 ### Return values
 

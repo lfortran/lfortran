@@ -10579,7 +10579,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Parallel, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Parallel, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if ( to_lower(x.m_construct_name) == "do" ) {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10588,7 +10588,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Do, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Do, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "parallel do") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10597,7 +10597,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "sections") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10607,7 +10607,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Sections, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Sections, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "parallel sections") {
                 pragma_nesting_level_2++;
                 is_first_section = true;
@@ -10619,7 +10619,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelSections, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelSections, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "section") {
                 pragma_nesting_level_2++;
                 if(!is_first_section){
@@ -10632,7 +10632,7 @@ public:
                 // Add OMPRegion of Current Section
                 ASR::asr_t* section = ASR::make_OMPRegion_t(
                     al, x.base.base.loc, ASR::omp_region_typeType::Section,
-                    nullptr, 0, nullptr, 0);
+                    nullptr, 0, nullptr, 0, ASR::exec_targetType::ExecAuto);
                 omp_region_body.push_back(ASRUtils::STMT(section));
             } else if(to_lower(x.m_construct_name) == "single") {
                 pragma_nesting_level_2++;
@@ -10641,7 +10641,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Single, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Single, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             
             } else if(to_lower(x.m_construct_name) == "master") {
                 pragma_nesting_level_2++;
@@ -10650,7 +10650,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Master, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Master, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "task") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10658,7 +10658,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "critical") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10666,7 +10666,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Critical, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Critical, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "barrier") {
                 // pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10674,7 +10674,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Barrier, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Barrier, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "taskwait") {
                 // pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10682,7 +10682,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskwait, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskwait, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "taskloop") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10690,7 +10690,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskloop, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskloop, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "teams") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10698,7 +10698,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Teams, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Teams, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "distribute") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10706,7 +10706,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Distribute, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Distribute, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "teams distribute") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10714,7 +10714,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::TeamsDistribute, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::TeamsDistribute, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "atomic") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10722,7 +10722,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Atomic, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Atomic, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "target") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10730,7 +10730,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Target, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Target, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "distribute parallel do") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -10738,7 +10738,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             }else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
