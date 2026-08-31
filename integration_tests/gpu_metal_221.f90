@@ -27,10 +27,10 @@ s%own_ = 2.0
 ! Extents reached through a device function: own and inherited component.
 d = 0
 do concurrent (j = 1:4)
-    d(j) = extents(s)
+    d(j) = dim_extents(s)
 end do
 do j = 1, 4
-    if (d(j) /= 23456) error stop "extents"
+    if (d(j) /= 23456) error stop "dim_extents"
 end do
 
 ! Total size must still be the product of the extents.
@@ -47,7 +47,9 @@ print *, "ok"
 
 contains
 
-    pure function extents(self) result(r)
+    ! Not named `extents`: a device function keeps its Fortran name in the
+    ! generated shader, and `metal::extents` is in scope there.
+    pure function dim_extents(self) result(r)
         class(child_t), intent(in) :: self
         integer :: r
         ! 2, 3, 4, 5 -> 23456, none of which is the total (6 or 20)
