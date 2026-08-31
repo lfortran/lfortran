@@ -471,8 +471,20 @@ TEST_CASE("Tokenizer") {
     };
     CHECK(tokens(al, s) == ref);
 
-    s = "2*??";
-    CHECK_THROWS_AS(tokens(al, s), TokenizerError0);
+    // `?` is a token of its own since Fortran 2023 added conditional
+    // expressions (6.2.1, 10.1.2.3)
+    s = "(x ? 1 : 0)";
+    ref = {
+        tt::TK_LPAREN,
+        tt::TK_NAME,
+        tt::TK_QUESTION,
+        tt::TK_INTEGER,
+        tt::TK_COLON,
+        tt::TK_INTEGER,
+        tt::TK_RPAREN,
+        tt::END_OF_FILE,
+    };
+    CHECK(tokens(al, s) == ref);
 
     s = "2*@";
     CHECK_THROWS_AS(tokens(al, s), TokenizerError0);
