@@ -1753,8 +1753,19 @@ public:
 
     // The dummy at position `i` of `name`, or nullptr when the callee
     // is not a plain Function.
+    //
+    // A type-bound call names a StructMethodDeclaration rather than the
+    // procedure itself.  `insert_self_arg` has already put the passed
+    // object at its declared position, so the call's actual arguments
+    // stand in 1:1 correspondence with the bound procedure's dummies and
+    // the binding can simply be stepped through.  Without this every
+    // actual argument of every type-bound call reads as written.
     static ASR::Variable_t* dummy_of(ASR::symbol_t *name, size_t i) {
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
+        if (!s) return nullptr;
+        s = ASRUtils::symbol_get_past_StructMethodDeclaration(s);
+        if (!s) return nullptr;
+        s = ASRUtils::symbol_get_past_external(s);
         if (!s || !ASR::is_a<ASR::Function_t>(*s)) return nullptr;
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
         if (i >= fn->n_args) return nullptr;
