@@ -7,6 +7,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
@@ -2456,7 +2457,11 @@ public:
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
+        // Only the loops the dispatch pass gave to the device. Every other
+        // exit of this function leaves the loop alone, and the loops still
+        // marked for the device once the pass is done are the ones it
+        // declined; they are handed back to the host below.
+        if (x.m_exec_target != ASR::exec_targetType::ExecDevice) return;
 
         // Skip loops with reduce clause (let do_loops handle as regular loop)
         if (x.n_reduction > 0) return;
@@ -5671,6 +5676,26 @@ public:
     }
 };
 
+// A loop the offload pass turned down is still a parallel loop, so it goes
+// back to whoever else can run it rather than to a single thread by default.
+class DeclinedLoopVisitor : public ASR::BaseWalkVisitor<DeclinedLoopVisitor>
+{
+public:
+    const PassOptions &pass_options;
+
+    DeclinedLoopVisitor(const PassOptions &pass_options_) :
+        pass_options(pass_options_) {
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        ASR::DoConcurrentLoop_t &xx = const_cast<ASR::DoConcurrentLoop_t&>(x);
+        if (xx.m_exec_target == ASR::exec_targetType::ExecDevice) {
+            xx.m_exec_target = host_exec_target(pass_options);
+        }
+        ASR::BaseWalkVisitor<DeclinedLoopVisitor>::visit_DoConcurrentLoop(x);
+    }
+};
+
 void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
     if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
@@ -5680,6 +5705,8 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
         v.asr_changed = false;
         v.visit_TranslationUnit(unit);
     }
+    DeclinedLoopVisitor d(pass_options);
+    d.visit_TranslationUnit(unit);
     // Kernel extraction moves Block symbols out of their enclosing
     // function, which can leave stale entries in that function's
     // dependency list. Recompute all dependencies to fix this.

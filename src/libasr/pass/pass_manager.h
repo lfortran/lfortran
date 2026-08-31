@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/replace_omp_to_parallel_loop.h>
+#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
@@ -122,6 +123,7 @@ namespace LCompilers {
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
             {"omp_to_parallel_loop", &pass_replace_omp_to_parallel_loop},
+            {"parallel_dispatch", &pass_parallel_dispatch},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
@@ -264,11 +266,14 @@ namespace LCompilers {
                 "init_expr",
                 "function_call_in_declaration",
                 // Every parallel loop, however it was written, becomes a
-                // `DoConcurrentLoop` before anything decides how to lower it.
+                // `DoConcurrentLoop` before anything decides how to lower it,
+                // and the pass after that writes the decision into the loop.
                 "omp_to_parallel_loop",
+                "parallel_dispatch",
                 "implied_do_loops",
-                // The device gets first refusal: a loop it declines is left
-                // behind, and the OpenMP pass below then picks it up.
+                // The device gets first refusal: a loop it declines is
+                // handed back as a host-thread loop, which the OpenMP pass
+                // below then picks up.
                 "gpu_offload",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped

@@ -1582,6 +1582,10 @@ class ParallelRegionVisitor :
         }
 
         void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+            // Only the loops the dispatch pass gave to the host threads. A
+            // loop bound for the device, or one that stays on a single
+            // thread, is left for the pass that lowers it.
+            if (x.m_exec_target != ASR::exec_targetType::ExecHostThreads) return;
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_symbols;
 
             InvolvedSymbolsCollector c(al, involved_symbols);
