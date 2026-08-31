@@ -2199,21 +2199,25 @@ int link_executable(const std::vector<std::string> &infiles,
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
-                // Collect CUDA kernel source. In single-invocation mode
-                // it's in gpu_cuda_source; in separate compilation it's
-                // saved as a sidecar file next to each .o file.
-                std::string cuda_source = compiler_options.gpu_cuda_source;
-                if (cuda_source.empty()) {
-                    for (auto &s : infiles) {
-                        std::string sidecar = s + ".cuda.cu";
-                        std::ifstream f(sidecar);
-                        if (f.good()) {
-                            std::string content(
-                                (std::istreambuf_iterator<char>(f)),
-                                std::istreambuf_iterator<char>());
-                            cuda_source += content;
-                        }
+                // Collect CUDA kernel source. Every object file carries the
+                // device source of its own translation unit in a sidecar, so
+                // reading all of them is what picks up a kernel that lives in
+                // a module compiled separately. Only a link that finds no
+                // sidecar at all falls back to the source this invocation
+                // generated.
+                std::string cuda_source;
+                for (auto &s : infiles) {
+                    std::string sidecar = s + ".cuda.cu";
+                    std::ifstream f(sidecar);
+                    if (f.good()) {
+                        std::string content(
+                            (std::istreambuf_iterator<char>(f)),
+                            std::istreambuf_iterator<char>());
+                        cuda_source += content;
                     }
+                }
+                if (cuda_source.empty()) {
+                    cuda_source = compiler_options.gpu_cuda_source;
                 }
 
                 // Write CUDA kernel source to a temp .cu file
@@ -2226,10 +2230,21 @@ int link_executable(const std::vector<std::string> &infiles,
                     cu_out << cuda_source;
                     cu_out.close();
                 }
-                // Compile the kernel .cu with the device compiler
+                // Compile the kernel .cu with the device compiler. When
+                // emulating, the device code is ordinary host C++, and the
+                // language has to be named explicitly because no host
+                // compiler knows the .cu suffix. The emulation is built
+                // without OpenMP, so the threads of a block run one after
+                // another and a __syncthreads() reports that it cannot be
+                // honoured; the device code and the runtime below have to
+                // agree on that, so neither is given -fopenmp.
+                bool emulate_cpu = compiler_options.gpu_cpu_emulation;
+                std::string runtime_include = " -I" + runtime_library_dir
+                    + "/../libasr/runtime";
                 std::string device_cc = compiler_options.device_compiler;
-                std::string cuda_kernel_cmd = device_cc + " -c -O2 -o "
-                    + cuda_kernel_obj + " " + cuda_kernel_src;
+                std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                    + (emulate_cpu ? runtime_include + " -x c++" : "")
+                    + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
                 int cuda_err = system(cuda_kernel_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA kernel: "
@@ -2237,14 +2252,20 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // Compile CUDA runtime
+                // Compile the GPU runtime. The CPU emulation uses its own
+                // implementation of the same C API, and is C rather than C++,
+                // so the language is named explicitly for the C++ driver that
+                // compiled the kernel.
                 std::string cuda_runtime_src = runtime_library_dir
-                    + "/../libasr/runtime/lfortran_gpu_cuda.cu";
+                    + "/../libasr/runtime/"
+                    + (emulate_cpu ? "lfortran_gpu_cpu.c"
+                                   : "lfortran_gpu_cuda.cu");
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
                 std::string cuda_rt_cmd = device_cc + " -c -O2"
-                    " -I" + runtime_library_dir + "/../libasr/runtime"
-                    " -o " + cuda_runtime_obj
+                    + runtime_include
+                    + (emulate_cpu ? " -x c" : "")
+                    + " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
                 cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {
@@ -2253,16 +2274,35 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // The device compiler also drives the link, since it knows
-                // where its own device runtime lives.
-                compile_cmd = device_cc + " -o " + outfile + " ";
-                for (auto &s : infiles) {
-                    compile_cmd += s + " ";
+                if (emulate_cpu) {
+                    // Everything is host code, so the ordinary host linker
+                    // that was set up above does the link. That driver is a C
+                    // one, so the C++ standard library the device translation
+                    // unit was compiled against has to be named here, and the
+                    // libraries the two objects need have to follow them:
+                    // a linker that resolves in command line order looks no
+                    // further back than the object that asks.
+                    bool is_macos = compiler_options.platform
+                            == LCompilers::Platform::macOS_Intel
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_ARM
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_PowerPC;
+                    compile_cmd += " " + cuda_kernel_obj
+                        + " " + cuda_runtime_obj
+                        + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
+                } else {
+                    // The device compiler also drives the link, since it knows
+                    // where its own device runtime lives.
+                    compile_cmd = device_cc + " -o " + outfile + " ";
+                    for (auto &s : infiles) {
+                        compile_cmd += s + " ";
+                    }
+                    compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                    compile_cmd += " -L" + base_path
+                        + " -Xlinker -rpath -Xlinker " + base_path
+                        + " -l" + runtime_lib + " -lm";
                 }
-                compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
-                compile_cmd += " -L" + base_path
-                    + " -Xlinker -rpath -Xlinker " + base_path
-                    + " -l" + runtime_lib + " -lm";
             }
             run_cmd = "./" + outfile;
         }
