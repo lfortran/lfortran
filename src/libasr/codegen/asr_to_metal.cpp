@@ -5440,7 +5440,16 @@ public:
                                     visit_expr(arr->m_dims[dim_idx].m_length);
                                     src << " - 1)";
                                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ab->m_v)) {
-                                    emit_struct_member_array_size(ab->m_v);
+                                    // The upper bound of one dimension is
+                                    // that dimension's extent, not the
+                                    // element count of the whole
+                                    // component: a rank-2 member would
+                                    // otherwise bound every loop over it
+                                    // by rows*cols.
+                                    emit_struct_member_array_size_dim(
+                                        ab->m_v,
+                                        ab->m_dim ? (int64_t)(dim_idx + 1)
+                                                  : (int64_t)-1);
                                 } else if (ASR::is_a<ASR::Var_t>(*ab->m_v)) {
                                     std::string vname = ASRUtils::symbol_name(
                                         ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v);
