@@ -3,6 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/diagnostics.h>
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
@@ -373,6 +374,143 @@ public:
         }
     }
 };
+
+// A statement the device has no way to run. A kernel that held one would
+// simply not run it, so the effect the program asked for would go missing
+// with nothing to show for it.
+static const char* unsupported_on_device(const ASR::stmt_t &s) {
+    switch (s.type) {
+        case ASR::stmtType::Print:
+        case ASR::stmtType::FileWrite:
+        case ASR::stmtType::FileRead:
+        case ASR::stmtType::FileOpen:
+        case ASR::stmtType::FileClose:
+        case ASR::stmtType::FileInquire:
+        case ASR::stmtType::FileBackspace:
+        case ASR::stmtType::FileRewind:
+        case ASR::stmtType::FileEndfile:
+        case ASR::stmtType::Flush:
+            return "input or output";
+        case ASR::stmtType::Stop:
+        case ASR::stmtType::ErrorStop:
+            return "stop";
+        default:
+            return nullptr;
+    }
+}
+
+// The first statement of a body that the device cannot run, and where it is.
+class GpuUnsupportedStatementFinder
+        : public ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder> {
+public:
+    const char *reason;
+    Location loc;
+
+    GpuUnsupportedStatementFinder() : reason(nullptr) {}
+
+    void visit_stmt(const ASR::stmt_t &s) {
+        if (reason != nullptr) return;
+        const char *why = unsupported_on_device(s);
+        if (why != nullptr) {
+            reason = why;
+            loc = s.base.loc;
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder>::visit_stmt(s);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+};
+
+// The routines a body calls directly, past external symbols and type bound
+// procedure declarations.
+class GpuDirectCalleeCollector
+        : public ASR::BaseWalkVisitor<GpuDirectCalleeCollector> {
+public:
+    std::set<ASR::Function_t*> callees;
+
+    void add(ASR::symbol_t *sym) {
+        if (sym == nullptr) return;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr) return;
+        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
+        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
+            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        add(x.m_name);
+        ASR::BaseWalkVisitor<GpuDirectCalleeCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        add(x.m_name);
+        ASR::BaseWalkVisitor<GpuDirectCalleeCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
+        ASR::AssociateBlock_t *ab =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+};
+
+static std::set<ASR::Function_t*> direct_callees(ASR::stmt_t **body,
+        size_t n_body) {
+    GpuDirectCalleeCollector collector;
+    for (size_t i = 0; i < n_body; i++) {
+        collector.visit_stmt(*body[i]);
+    }
+    return collector.callees;
+}
+
+// Every routine a loop body reaches, however deep.
+static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
+        size_t n_body) {
+    std::vector<ASR::Function_t*> order;
+    std::set<ASR::Function_t*> seen;
+    std::deque<ASR::Function_t*> work;
+    for (ASR::Function_t *fn : direct_callees(body, n_body)) {
+        if (seen.insert(fn).second) work.push_back(fn);
+    }
+    while (!work.empty()) {
+        ASR::Function_t *fn = work.front();
+        work.pop_front();
+        order.push_back(fn);
+        for (ASR::Function_t *callee : direct_callees(fn->m_body,
+                fn->n_body)) {
+            if (seen.insert(callee).second) work.push_back(callee);
+        }
+    }
+    return order;
+}
 
 // Collects Var references in function bodies that point to symbols
 // not reachable through the function's scope chain. This happens when
@@ -2303,8 +2441,39 @@ public:
         inline_sum_in_stmts(x.m_body, x.n_body, current_scope);
     }
 
+    // A parallel loop is ordinary Fortran, so a loop that cannot be
+    // offloaded must still compile and run. Report why it was left on the
+    // host rather than build a kernel that would quietly do something else.
+    void report_not_offloaded(const Location &where, const std::string &why) {
+        if (pass_options.diagnostics == nullptr) return;
+        pass_options.diagnostics->message_label(
+            "parallel loop not offloaded to the GPU, "
+            "it runs on the CPU instead",
+            {where}, why,
+            diag::Level::Warning, diag::Stage::ASRPass);
+    }
 
+    // A clause a kernel launch has no way to honour. The loop still runs on
+    // the device, which chooses its own layout, so say what was dropped
+    // rather than drop it in silence.
+    void report_clause_ignored(const Location &where, const std::string &name) {
+        if (pass_options.diagnostics == nullptr) return;
+        pass_options.diagnostics->message_label(
+            "the '" + name + "' clause is ignored on the gpu",
+            {where}, "the device decides how to run the iterations",
+            diag::Level::Warning, diag::Stage::ASRPass);
+    }
 
+    // What a clause a launch cannot honour is called, or an empty name for
+    // one it can.
+    std::string unhonoured_clause(const ASR::omp_clause_t *clause) {
+        switch (clause->type) {
+            case ASR::omp_clauseType::OMPNumTeams: return "num_teams";
+            case ASR::omp_clauseType::OMPThreadLimit: return "thread_limit";
+            case ASR::omp_clauseType::OMPIf: return "if";
+            case ASR::omp_clauseType::OMPSchedule: return "schedule";
+            case ASR::omp_clauseType::OMPNumThreads: return "num_threads";
+            default: return "";
         }
     }
 
@@ -2865,10 +3034,51 @@ public:
             for (auto &sym : involved_syms) {
                 ASR::ttype_t *t = sym.second.first;
                 ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
+                std::string unsupported_kind;
                 if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-                if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
+                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) {
+                    unsupported_kind = "real(8)";
+                } else if (base_t->type == ASR::ttypeType::Integer &&
+                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) {
+                    unsupported_kind = "integer(8)";
+                }
+                if (!unsupported_kind.empty()) {
+                    report_not_offloaded(x.base.base.loc,
+                        "the Metal backend does not support " +
+                            unsupported_kind + ", used by '" +
+                            sym.first + "'");
+                    return;
+                }
+            }
+        }
+
+        // A statement no device can run keeps the loop on the CPU whichever
+        // backend is selected.
+        {
+            GpuUnsupportedStatementFinder finder;
+            for (size_t i = 0; i < nest.n_body; i++) {
+                finder.visit_stmt(*nest.body[i]);
+            }
+            std::string in_routine;
+            if (finder.reason == nullptr) {
+                for (ASR::Function_t *fn : reachable_routines(nest.body,
+                        nest.n_body)) {
+                    GpuUnsupportedStatementFinder callee_finder;
+                    for (size_t i = 0; i < fn->n_body; i++) {
+                        callee_finder.visit_stmt(*fn->m_body[i]);
+                    }
+                    if (callee_finder.reason != nullptr) {
+                        finder = callee_finder;
+                        in_routine = std::string(" in '") + fn->m_name + "'";
+                        break;
+                    }
+                }
+            }
+            if (finder.reason != nullptr) {
+                report_not_offloaded(finder.loc,
+                    std::string("the gpu backend does not support ") +
+                        finder.reason + in_routine);
+                return;
             }
         }
 
