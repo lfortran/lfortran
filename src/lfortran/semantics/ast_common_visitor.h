@@ -8307,6 +8307,20 @@ public:
                             if ( ASR::is_a<ASR::String_t>(*type)) {
                                 array_type->m_physical_type = ASRUtils::is_fixed_size_array(array_type->m_dims, array_type->n_dims) ? ASR::array_physical_typeType::PointerArray : ASR::array_physical_typeType::DescriptorArray;
                             }
+                        } else if ( ASR::is_a<ASR::Allocatable_t>(*symbol_variable->m_type) ) {
+                            // An earlier ALLOCATABLE statement declared the
+                            // entity (with its array-spec, F2018 8.6.1); this
+                            // later type declaration only refines the element
+                            // type and must not drop the wrapper or the dims:
+                            //     allocatable qbh(:)
+                            //     integer qbh
+                            ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(symbol_variable->m_type);
+                            if ( ASR::is_a<ASR::Array_t>(*alloc_type->m_type) ) {
+                                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(alloc_type->m_type);
+                                array_type->m_type = type;
+                            } else {
+                                alloc_type->m_type = type;
+                            }
                         } else {
                             symbol_variable->m_type = type;
                         }
@@ -9307,7 +9321,11 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     } else {
-                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type)) {
+                        // An Allocatable from an earlier ALLOCATABLE statement
+                        // already had its element type refined above; clobbering
+                        // it here would drop the wrapper and the array-spec.
+                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type) &&
+                            !ASR::is_a<ASR::Allocatable_t>(*variable_added_to_symtab->m_type)) {
                             variable_added_to_symtab->m_type = type;
                         }
                     }

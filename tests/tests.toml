@@ -1629,6 +1629,10 @@ filename = "allocatable_attr_dims_implicit.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "allocatable_attr_then_type_decl.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "allocate_02.f90"
 llvm = true
 
