@@ -23,6 +23,75 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
+// Look up a member (component or type-bound procedure) by name in a
+// Struct's symbol table, walking the inheritance chain: a component
+// inherited from a parent type lives in the parent Struct's symtab, not
+// in the extending type's own scope.
+// Fill in the `start`/`end` bounds of a synthesized `do` loop head for
+// dimension `d` of `arr_expr`. Descriptor arrays (allocatables, pointers,
+// assumed-shape dummies and the temporaries created for array-valued
+// `associate` selectors) carry no compile-time `dimension_t` entries, so
+// their `m_start`/`m_length` are null; fall back to the runtime bounds in
+// that case instead of emitting a loop head with null bounds.
+static std::pair<ASR::expr_t*, ASR::expr_t*> get_dim_bounds(Allocator &al,
+        const Location &loc, ASR::dimension_t *dims, size_t d,
+        ASR::expr_t *arr_expr) {
+    if (dims && dims[d].m_start && dims[d].m_length) {
+        return {dims[d].m_start, dims[d].m_length};
+    }
+    ASR::ttype_t *int_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, 4));
+    ASR::expr_t *dim_expr = ASRUtils::EXPR(
+        ASR::make_IntegerConstant_t(al, loc, (int64_t)d + 1, int_type,
+            ASR::integerbozType::Decimal));
+    return {ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arr_expr,
+                dim_expr, int_type, ASR::arrayboundType::LBound, nullptr)),
+            ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arr_expr,
+                dim_expr, int_type, ASR::arrayboundType::UBound, nullptr))};
+}
+
+static void set_loop_head_bounds(Allocator &al, const Location &loc,
+        ASR::do_loop_head_t &head, ASR::dimension_t *dims, size_t d,
+        ASR::expr_t *arr_expr) {
+    std::pair<ASR::expr_t*, ASR::expr_t*> bounds =
+        get_dim_bounds(al, loc, dims, d, arr_expr);
+    head.m_start = bounds.first;
+    head.m_end = bounds.second;
+}
+
+static ASR::symbol_t* get_struct_member_recursive(ASR::Struct_t *s,
+        const std::string &name) {
+    std::set<ASR::Struct_t*> seen;
+    while (s != nullptr) {
+        if (!seen.insert(s).second) break;
+        ASR::symbol_t *member = s->m_symtab->get_symbol(name);
+        if (member) return member;
+        if (!s->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            s->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        s = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return nullptr;
+}
+
+// Name of the Struct that owns `member`, used as the m_module_name of an
+// ExternalSymbol pointing at it. For an inherited member this is the
+// ancestor type, not the type the reference was written through.
+static std::string struct_member_owner_name(ASR::symbol_t *member,
+        const std::string &fallback) {
+    SymbolTable *owner_st = ASRUtils::symbol_parent_symtab(member);
+    if (owner_st && owner_st->asr_owner &&
+            owner_st->asr_owner->type == ASR::asrType::symbol) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            owner_st->asr_owner);
+        if (ASR::is_a<ASR::Struct_t>(*owner)) {
+            return std::string(ASRUtils::symbol_name(owner));
+        }
+    }
+    return fallback;
+}
+
 // Collects all symbols referenced in expressions/statements
 class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
 public:
@@ -71,33 +140,175 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
-        // Skip variables local to Block scopes, except those in
-        // enclosing Block scopes (which need to become kernel parameters
-        // when a do concurrent is inside one or more nested Blocks)
+        // A variable owned by a Block or AssociateBlock scope that is
+        // nested *inside* the loop travels with that scope into the
+        // kernel, so it must not become a kernel parameter. A variable
+        // owned by a Block or AssociateBlock that *encloses* the loop is
+        // left behind when the loop is extracted, so it does have to be
+        // passed in. `enclosing_scopes` holds exactly the latter.
         if (ASR::is_a<ASR::Variable_t>(*x.m_v)) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x.m_v);
             if (var->m_parent_symtab->asr_owner &&
-                ASR::is_a<ASR::Block_t>(
-                    *ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner))) {
-                if (enclosing_scopes.find(var->m_parent_symtab)
+                var->m_parent_symtab->asr_owner->type
+                    == ASR::asrType::symbol) {
+                ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                    var->m_parent_symtab->asr_owner);
+                if ((ASR::is_a<ASR::Block_t>(*owner) ||
+                     ASR::is_a<ASR::AssociateBlock_t>(*owner)) &&
+                    enclosing_scopes.find(var->m_parent_symtab)
                         == enclosing_scopes.end()) {
                     return;
                 }
-            }
-            // Skip variables local to AssociateBlock scopes — they are
-            // internal aliases that stay in the AssociateBlock's symtab
-            if (var->m_parent_symtab->asr_owner &&
-                ASR::is_a<ASR::AssociateBlock_t>(
-                    *ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner))) {
-                return;
             }
         }
         std::string name = ASRUtils::symbol_name(x.m_v);
         if (symbols.find(name) == symbols.end()) {
             symbols[name] = {ASRUtils::symbol_type(x.m_v),
                 ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v))};
+        }
+    }
+};
+
+// Answers whether the Metal Shading Language can represent `t` with the
+// same in-memory width the host uses. MSL has no 64-bit floating point
+// type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no complex
+// type, so the Metal backend lowers all of those to a narrower (or bogus)
+// type. Offloading a `do concurrent` that touches such data would make the
+// kernel reinterpret the host buffers and the by-value scalar-argument
+// struct at the wrong element size, silently producing wrong results, so
+// such a loop has to stay on the CPU.
+//
+// Note: kind-8 integers are representable (MSL `long` is 8 bytes), but are
+// rejected here to preserve the pre-existing bail-out behaviour.
+static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
+    switch (base_t->type) {
+        case ASR::ttypeType::Real:
+            return ASR::down_cast<ASR::Real_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Integer:
+            return ASR::down_cast<ASR::Integer_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Logical:
+            return ASR::down_cast<ASR::Logical_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Complex:
+            return false;
+        default:
+            return true;
+    }
+}
+
+// A derived type is representable only when every one of its data members
+// is, because the Metal struct is laid out member by member: a single fp64
+// member anywhere in the type changes the element size the kernel would
+// have to stride by, while the host buffer keeps the wider layout. The
+// members inherited through `extends` live in the parent Struct (they are
+// reached at run time through the `__parent` member), so the parent chain
+// has to be walked as well. `visited` guards against self-referential
+// types such as `type(node), pointer :: next`, whose member graph is
+// cyclic.
+static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
+        // The derived type cannot be inspected, so it cannot be shown to
+        // be representable: keep the loop on the CPU.
+        return false;
+    }
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    if (!visited.insert(st).second) {
+        // Already on the walk stack; its members are checked there.
+        return true;
+    }
+    if (st->m_parent
+            && !is_metal_representable_struct(st->m_parent, visited)) {
+        return false;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!msym) continue;
+        msym = ASRUtils::symbol_get_past_external(msym);
+        if (!ASR::is_a<ASR::Variable_t>(*msym)) continue;
+        ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(msym);
+        ASR::ttype_t *mtype = ASRUtils::extract_type(mvar->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*mtype)) {
+            if (!mvar->m_type_declaration
+                    || !is_metal_representable_struct(
+                        mvar->m_type_declaration, visited)) {
+                return false;
+            }
+        } else if (!is_metal_representable_scalar_type(mtype)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Answers whether the Metal Shading Language can represent the type of `e`
+// with the same in-memory width the host uses. MSL has no 64-bit floating
+// point type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no
+// complex type, so the Metal backend lowers all of those to a narrower (or
+// bogus) type. Offloading a `do concurrent` that touches such data would
+// make the kernel reinterpret the host buffers and the by-value
+// scalar-argument struct at the wrong element size, silently producing
+// wrong results, so such a loop has to stay on the CPU.
+static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
+    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+    if (ASR::is_a<ASR::StructType_t>(*base_t)) {
+        if (!e) return false;
+        std::set<ASR::Struct_t*> visited;
+        return is_metal_representable_struct(
+            ASRUtils::get_struct_sym_from_struct_expr(e), visited);
+    }
+    return is_metal_representable_scalar_type(base_t);
+}
+
+// A variable declared inside the `do concurrent` body by a BLOCK or an
+// ASSOCIATE construct is carried into the generated kernel as a
+// kernel-local declaration. The Metal Shading Language has no
+// variable-length arrays, so such a local can only be emitted when its
+// extent is a compile-time constant. A descriptor array -- an allocatable
+// local, or the temporary the frontend materialises for an array-valued
+// ASSOCIATE selector whose operand is an allocatable or an assumed-shape
+// dummy -- carries no static shape, so the kernel would declare it with a
+// bogus one-element extent and index out of bounds. Such a loop has to
+// stay on the CPU.
+class GpuLocalArrayChecker :
+        public ASR::BaseWalkVisitor<GpuLocalArrayChecker> {
+public:
+    bool has_unsized_local_array = false;
+
+    void check_scope(SymbolTable *symtab) {
+        if (!symtab) return;
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::ttype_t *t =
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_type);
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
+            if (rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank)) {
+                has_unsized_local_array = true;
+            }
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        check_scope(blk->m_symtab);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        check_scope(blk->m_symtab);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
         }
     }
 };
@@ -240,6 +451,86 @@ public:
     }
 };
 
+// Counts how many times a given symbol is written to within a list of
+// statements. Used to distinguish a genuine ASSOCIATE selector temporary
+// (written exactly once, at its point of definition) from an ordinary
+// block-local variable such as the counter that array-constructor
+// lowering introduces, which is written repeatedly and therefore must
+// not be folded into a constant.
+class AssignmentTargetCounter :
+    public ASR::BaseWalkVisitor<AssignmentTargetCounter> {
+public:
+    ASR::symbol_t *target;
+    size_t count;
+
+    AssignmentTargetCounter(ASR::symbol_t *target_)
+        : target(target_), count(0) {}
+
+    void count_var(ASR::expr_t *e) {
+        if (e && ASR::is_a<ASR::Var_t>(*e) &&
+                ASR::down_cast<ASR::Var_t>(e)->m_v == target) {
+            count++;
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        count_var(x.m_target);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        count_var(x.m_target);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        count_var(x.m_head.m_v);
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) {
+            count_var(x.m_head[i].m_v);
+        }
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        // Conservatively treat any appearance as an argument as a write
+        for (size_t i = 0; i < x.n_args; i++) {
+            count_var(x.m_args[i].m_value);
+        }
+        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// True if `sym` is written exactly once across `body` — the shape of a
+// single-assignment ASSOCIATE selector binding, which may safely be
+// folded into its value at every use site.
+static bool is_single_assignment_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    AssignmentTargetCounter counter(sym);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    return counter.count == 1;
+}
+
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
@@ -278,14 +569,12 @@ public:
                 if (var->m_parent_symtab->asr_owner) {
                     ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
                         var->m_parent_symtab->asr_owner);
-                    if (ASR::is_a<ASR::Block_t>(*owner)) {
+                    if (ASR::is_a<ASR::Block_t>(*owner) ||
+                        ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
                         if (enclosing_scopes.find(var->m_parent_symtab)
                                 == enclosing_scopes.end()) {
                             is_block_local = true;
                         }
-                    }
-                    if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                        is_block_local = true;
                     }
                 }
             }
@@ -370,6 +659,189 @@ public:
         for (size_t i = 0; i < ab->n_body; i++) {
             visit_stmt(*ab->m_body[i]);
         }
+    }
+};
+
+// Metal shaders have neither variable-length arrays nor a heap, so a
+// device function (an `inline` callee of a kernel) can only declare
+// locals whose extent the shader compiler can fold to a constant. An
+// array constructor whose elements are themselves array-valued
+// expressions is materialized by the later `array_struct_temporary`
+// pass into a temporary sized from those elements. An element sized
+// from an assumed-shape or deferred-shape dummy argument, or from a
+// local allocatable whose ALLOCATE bounds are themselves only known at
+// run time, would have to be a VLA inside the device function -- which
+// Metal cannot express. Detect that shape here so the loop can be
+// declined and run on the host instead. Elements sized from a local
+// allocatable with constant ALLOCATE bounds are fine: the Metal backend
+// resolves those extents from the ALLOCATE statement.
+class GpuDeviceFunctionArrayTempChecker :
+        public ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker> {
+private:
+
+    // Entities of the function being checked whose extent is not a
+    // compile-time constant: assumed-shape/deferred-shape dummy
+    // arguments, and local allocatables whose ALLOCATE bounds are only
+    // known at run time.
+    std::set<ASR::symbol_t*> runtime_extent_syms;
+
+    static bool has_runtime_extent(ASR::ttype_t *t) {
+        if (!t) return false;
+        ASR::dimension_t *dims = nullptr;
+        int rank = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(t), dims);
+        return rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank);
+    }
+
+    class VarRefCollector :
+            public ASR::BaseWalkVisitor<VarRefCollector> {
+    public:
+        std::set<ASR::symbol_t*> vars;
+
+        void visit_Var(const ASR::Var_t &x) {
+            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    };
+
+    // Collects the targets of ALLOCATE statements whose bounds are not
+    // compile-time constants, descending into BLOCK and ASSOCIATE
+    // scopes so an allocation nested there is seen too.
+    class RuntimeAllocCollector :
+            public ASR::BaseWalkVisitor<RuntimeAllocCollector> {
+    public:
+        std::set<ASR::symbol_t*> vars;
+
+        void visit_Allocate(const ASR::Allocate_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (!x.m_args[i].m_a ||
+                        !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_a)) continue;
+                bool all_const = true;
+                for (size_t d = 0; d < x.m_args[i].n_dims; d++) {
+                    ASR::expr_t *len = x.m_args[i].m_dims[d].m_length;
+                    if (!len || !ASRUtils::expr_value(len)) {
+                        all_const = false;
+                    }
+                }
+                if (all_const) continue;
+                vars.insert(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i].m_a)->m_v));
+            }
+        }
+
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            for (size_t i = 0; i < blk->n_body; i++) {
+                visit_stmt(*blk->m_body[i]);
+            }
+        }
+
+        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+            ASR::AssociateBlock_t *blk =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            for (size_t i = 0; i < blk->n_body; i++) {
+                visit_stmt(*blk->m_body[i]);
+            }
+        }
+    };
+
+public:
+    bool has_runtime_sized_temp = false;
+
+    void check_function(ASR::Function_t *fn) {
+        runtime_extent_syms.clear();
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t *bare = ASRUtils::extract_type(var->m_type);
+            // A struct dummy carries the extents of its allocatable
+            // components in run-time parameters too, so an element sized
+            // from one of its components is just as unrepresentable.
+            if (has_runtime_extent(var->m_type) ||
+                    ASR::is_a<ASR::StructType_t>(*bare) ||
+                    ASRUtils::is_class_type(bare)) {
+                runtime_extent_syms.insert(sym);
+            }
+        }
+        {
+            RuntimeAllocCollector alloc_collector;
+            for (size_t i = 0; i < fn->n_body; i++) {
+                alloc_collector.visit_stmt(*fn->m_body[i]);
+            }
+            runtime_extent_syms.insert(alloc_collector.vars.begin(),
+                alloc_collector.vars.end());
+        }
+        if (runtime_extent_syms.empty()) return;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            visit_stmt(*fn->m_body[i]);
+        }
+    }
+
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg = x.m_args[i];
+            if (!arg) continue;
+            if (!has_runtime_extent(ASRUtils::expr_type(arg))) continue;
+            VarRefCollector vc;
+            vc.visit_expr(*arg);
+            for (ASR::symbol_t *v : vc.vars) {
+                if (runtime_extent_syms.count(v)) {
+                    has_runtime_sized_temp = true;
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker>::
+            visit_ArrayConstructor(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// Counts Return statements so a device function with early returns --
+// control flow a straight-line splice cannot reproduce -- is rejected.
+class GpuReturnCounter : public ASR::BaseWalkVisitor<GpuReturnCounter> {
+public:
+    size_t count = 0;
+
+    void visit_Return(const ASR::Return_t & /*x*/) {
+        count++;
+    }
+};
+
+// Collects every FunctionCall in a statement, so the inliner can tell a
+// call in a spliceable position (the whole right-hand side of an
+// assignment) from one buried inside a larger expression.
+class GpuCallSiteCollector :
+        public ASR::BaseWalkVisitor<GpuCallSiteCollector> {
+public:
+    std::vector<const ASR::FunctionCall_t*> calls;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        calls.push_back(&x);
+        ASR::BaseWalkVisitor<GpuCallSiteCollector>::visit_FunctionCall(x);
     }
 };
 
@@ -471,6 +943,35 @@ public:
     }
 };
 
+// Collects the symbols targeted by Var nodes in a set of statements,
+// descending into nested Block and AssociateBlock bodies (which the base
+// walker does not enter on its own). Used to decide whether a scope is
+// still needed after its associate aliases have been inlined.
+class VarSymbolCollector : public ASR::BaseWalkVisitor<VarSymbolCollector> {
+public:
+    std::set<ASR::symbol_t*> &referenced_syms;
+    VarSymbolCollector(std::set<ASR::symbol_t*> &rs) : referenced_syms(rs) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        referenced_syms.insert(x.m_v);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        for (size_t i = 0; i < ab->n_body; i++) {
+            visit_stmt(*ab->m_body[i]);
+        }
+    }
+};
+
 class GpuAllocStructMemberCollector :
     public ASR::BaseWalkVisitor<GpuAllocStructMemberCollector> {
 public:
@@ -561,6 +1062,189 @@ public:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+};
+
+// Fortran requires the right-hand side of an array assignment to be
+// evaluated as if every element were read before any element of the
+// left-hand side is written. The GPU lowerings below turn an array
+// assignment into an ascending element-by-element copy, which breaks that
+// rule when both sides designate overlapping storage of the same array
+// (`a(:) = a(n:1:-1)`, `a(3:6) = a(2:5)`): the copy then reads elements
+// that the same statement has already overwritten. On the CPU path the
+// later `array_struct_temporary` pass materialises the temporary that
+// makes the copy safe; `gpu_offload` runs before it and lowers the loop
+// body itself, so it has to materialise that temporary here. The three
+// helpers below decide, conservatively, when that is needed.
+
+// The variable whose storage a designator ultimately refers to, or
+// nullptr for anything that is not a designator. A structure component
+// is identified by its member symbol, so that `x%a` and `x%b` are told
+// apart while `x%a` and `y%a` are (conservatively) not.
+static ASR::symbol_t *gpu_designator_base(ASR::expr_t *e) {
+    while (e) {
+        switch (e->type) {
+            case ASR::exprType::Var: {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+            }
+            case ASR::exprType::StructInstanceMember: {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+            }
+            case ASR::exprType::ArraySection: {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayPhysicalCast: {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                break;
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Strict structural equality of two subscript expressions. Anything not
+// understood here compares unequal, which makes the two designators
+// differ and so errs towards materialising a temporary.
+static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (!a || !b || a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::Var: {
+            return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(a)->m_v)
+                == ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(b)->m_v);
+        }
+        case ASR::exprType::IntegerConstant: {
+            return ASR::down_cast<ASR::IntegerConstant_t>(a)->m_n
+                == ASR::down_cast<ASR::IntegerConstant_t>(b)->m_n;
+        }
+        case ASR::exprType::IntegerUnaryMinus: {
+            return gpu_same_subscript(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)->m_arg,
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)->m_arg);
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+            ASR::IntegerBinOp_t *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+            return x->m_op == y->m_op
+                && gpu_same_subscript(x->m_left, y->m_left)
+                && gpu_same_subscript(x->m_right, y->m_right);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// True when two designators are provably the same storage in the same
+// element order, so an element-by-element copy between them reads only
+// what it has already written to the same element.
+static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (!a || !b || a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::Var: {
+            return gpu_same_subscript(a, b);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t *x = ASR::down_cast<ASR::ArraySection_t>(a);
+            ASR::ArraySection_t *y = ASR::down_cast<ASR::ArraySection_t>(b);
+            if (x->n_args != y->n_args) return false;
+            if (!gpu_same_designator(x->m_v, y->m_v)) return false;
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!gpu_same_subscript(x->m_args[i].m_left,
+                        y->m_args[i].m_left)
+                    || !gpu_same_subscript(x->m_args[i].m_right,
+                        y->m_args[i].m_right)
+                    || !gpu_same_subscript(x->m_args[i].m_step,
+                        y->m_args[i].m_step)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t *x = ASR::down_cast<ASR::ArrayItem_t>(a);
+            ASR::ArrayItem_t *y = ASR::down_cast<ASR::ArrayItem_t>(b);
+            if (x->n_args != y->n_args) return false;
+            if (!gpu_same_designator(x->m_v, y->m_v)) return false;
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!gpu_same_subscript(x->m_args[i].m_left,
+                        y->m_args[i].m_left)
+                    || !gpu_same_subscript(x->m_args[i].m_right,
+                        y->m_args[i].m_right)
+                    || !gpu_same_subscript(x->m_args[i].m_step,
+                        y->m_args[i].m_step)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
+// Reports whether an expression reads the storage of `base` through a
+// designator that is not element-for-element identical to `target`. Such
+// a read may see an element the assignment to `target` has already
+// overwritten, so the assignment needs a temporary.
+class GpuSelfAliasChecker : public ASR::BaseWalkVisitor<GpuSelfAliasChecker> {
+public:
+    ASR::symbol_t *base = nullptr;
+    ASR::expr_t *target = nullptr;
+    bool aliased = false;
+
+    void check_designator(ASR::expr_t *e) {
+        if (gpu_designator_base(e) != base) return;
+        if (!gpu_same_designator(target, e)) aliased = true;
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        check_designator(const_cast<ASR::expr_t*>(&x.base));
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
+        if (gpu_designator_base(e) == base) {
+            check_designator(e);
+            // The subscripts may themselves read the array, so keep
+            // walking them, but do not re-visit the base designator as a
+            // bare whole-array reference.
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_left) visit_expr(*x.m_args[i].m_left);
+                if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+                if (x.m_args[i].m_step) visit_expr(*x.m_args[i].m_step);
+            }
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuSelfAliasChecker>::visit_ArraySection(x);
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
+        if (gpu_designator_base(e) == base) {
+            check_designator(e);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_left) visit_expr(*x.m_args[i].m_left);
+                if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+                if (x.m_args[i].m_step) visit_expr(*x.m_args[i].m_step);
+            }
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuSelfAliasChecker>::visit_ArrayItem(x);
     }
 };
 
@@ -774,7 +1458,7 @@ public:
         for (auto &item : kernel_scope->get_scope()) {
             if (!is_a<ASR::Struct_t>(*item.second)) continue;
             ASR::Struct_t *s = down_cast<ASR::Struct_t>(item.second);
-            if (s->m_symtab->get_symbol(member_name)) {
+            if (get_struct_member_recursive(s, member_name)) {
                 return item.second;
             }
         }
@@ -792,6 +1476,23 @@ public:
         // If already imported, return existing
         ASR::symbol_t *existing = kernel_scope->get_symbol(struct_name);
         if (existing) return existing;
+
+        // Import the parent type first, so the extending type keeps its
+        // inheritance chain in the kernel scope. Members inherited from
+        // the parent are declared in the parent's symtab, so without this
+        // they would be lost entirely. The parent chain is acyclic, so
+        // this terminates; and since the parent is added to kernel_scope
+        // before this struct, the early-return guard above stays correct.
+        ASR::symbol_t *new_parent = nullptr;
+        if (orig_struct->m_parent) {
+            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                orig_struct->m_parent);
+            if (is_a<ASR::Struct_t>(*parent_sym)) {
+                new_parent = import_struct_def(
+                    down_cast<ASR::Struct_t>(parent_sym),
+                    orig_scope, kernel_scope, loc);
+            }
+        }
 
         // Deep-copy the Struct into kernel scope
         SymbolTable *new_st = al.make_new<SymbolTable>(kernel_scope);
@@ -852,7 +1553,7 @@ public:
             orig_struct->m_abi, orig_struct->m_access,
             orig_struct->m_is_packed, orig_struct->m_is_abstract,
             orig_struct->m_is_sequence,
-            nullptr, 0, nullptr, nullptr, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0);
         ASR::symbol_t *kernel_struct = down_cast<ASR::symbol_t>(new_struct);
         kernel_scope->add_symbol(struct_name, kernel_struct);
 
@@ -882,19 +1583,25 @@ public:
                     ASR::symbol_t *es_struct_owner =
                         down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                     if (is_a<ASR::Struct_t>(*es_struct_owner) &&
-                            new_st->get_symbol(es->m_original_name)) {
+                            get_struct_member_recursive(
+                                down_cast<ASR::Struct_t>(kernel_struct),
+                                es->m_original_name)) {
                         is_member = true;
                     }
                 }
                 if (is_member) {
                     std::string es_name = item.first;
                     if (kernel_scope->get_symbol(es_name)) continue;
-                    ASR::symbol_t *new_member_in_struct = new_st->get_symbol(
-                        es->m_original_name);
+                    ASR::symbol_t *new_member_in_struct =
+                        get_struct_member_recursive(
+                            down_cast<ASR::Struct_t>(kernel_struct),
+                            es->m_original_name);
                     if (!new_member_in_struct) continue;
+                    std::string owner_name = struct_member_owner_name(
+                        new_member_in_struct, struct_name);
                     ASR::asr_t *new_es = ASR::make_ExternalSymbol_t(al, loc,
                         kernel_scope, s2c(al, es_name),
-                        new_member_in_struct, s2c(al, struct_name),
+                        new_member_in_struct, s2c(al, owner_name),
                         nullptr, 0, s2c(al, es->m_original_name),
                         es->m_access);
                     kernel_scope->add_symbol(es_name,
@@ -1367,6 +2074,432 @@ public:
     // With inlined loops that compute the All result into temporaries.
     // This avoids complex lowered code (Associate, Allocate, FunctionCall)
     // that the Metal backend cannot handle inside GPU kernels.
+    // ---------------------------------------------------------------
+    // Inlining device functions into the kernel body
+    //
+    // Metal shaders have neither variable-length arrays nor a heap, so
+    // an `inline` device function cannot declare a local whose extent is
+    // only known at run time. A kernel *can* have one: the extent is
+    // evaluated on the host at launch and a device buffer is bound for
+    // it (`analyze_gpu_vla_workspaces`). So instead of teaching the
+    // device-function boundary to carry such a workspace through every
+    // address-space overload, splice the callee's body into the loop
+    // body: its locals become kernel-scope locals and the existing
+    // workspace machinery applies unchanged, while its dummy arguments
+    // are replaced by the actual arguments -- which often makes the
+    // extent a compile-time constant outright.
+    // ---------------------------------------------------------------
+
+    // Functions whose bodies must be spliced into the loop body for this
+    // loop to be offloadable. Filled by plan_device_function_inlining()
+    // during the (non-destructive) eligibility decision and consumed by
+    // inline_device_function_calls() afterwards.
+    std::set<ASR::Function_t*> functions_to_inline;
+
+    // A submodule `module procedure` reaches its callers through the
+    // parent module's interface declaration, whose body is empty. Return
+    // the Implementation function that actually carries the body,
+    // loading the submodule from its `.smod` file when it is not already
+    // part of this translation unit (--separate-compilation). Returns
+    // `fn` unchanged when it already is an implementation, or when no
+    // implementation can be found.
+    ASR::Function_t* resolve_function_implementation(ASR::Function_t *fn) {
+        if (!fn) return nullptr;
+        ASR::FunctionType_t *fn_ft = ASR::down_cast<ASR::FunctionType_t>(
+            fn->m_function_signature);
+        if (fn_ft->m_deftype != ASR::deftypeType::Interface) return fn;
+        std::string pname = fn->m_name;
+        for (auto &tu_item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*tu_item.second)) continue;
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(
+                tu_item.second);
+            ASR::symbol_t *impl_sym = mod->m_symtab->get_symbol(pname);
+            if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) continue;
+            ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
+                impl_sym);
+            if (ASR::down_cast<ASR::FunctionType_t>(
+                    impl_func->m_function_signature)->m_deftype ==
+                    ASR::deftypeType::Implementation) {
+                return impl_func;
+            }
+        }
+        // Not in this translation unit: load the submodule from disk.
+        SymbolTable *parent_st = fn->m_symtab->parent;
+        if (!parent_st || !parent_st->asr_owner ||
+                parent_st->asr_owner->type != ASR::asrType::symbol) {
+            return fn;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            parent_st->asr_owner);
+        if (!ASR::is_a<ASR::Module_t>(*owner)) return fn;
+        std::string smod_prefix = std::string(
+            ASR::down_cast<ASR::Module_t>(owner)->m_name) + "@";
+        std::vector<std::filesystem::path> mod_dirs;
+        mod_dirs.push_back(pass_options.runtime_library_dir);
+        mod_dirs.push_back(pass_options.mod_files_dir);
+        mod_dirs.insert(mod_dirs.end(), pass_options.include_dirs.begin(),
+            pass_options.include_dirs.end());
+        for (auto &dir : mod_dirs) {
+            if (dir.empty()) dir = ".";
+            if (!std::filesystem::is_directory(dir)) continue;
+            for (auto &file : std::filesystem::directory_iterator(dir)) {
+                std::string fname = file.path().filename().string();
+                if (!startswith(fname, smod_prefix) ||
+                        !endswith(fname, ".smod")) continue;
+                std::string content;
+                if (!read_file(file.path().string(), content) ||
+                        content.empty()) continue;
+                LocationManager lm_tmp;
+                auto res = load_modfile(al, content, false, *tu.m_symtab,
+                    lm_tmp);
+                if (!res.ok) continue;
+                load_submodule_deps(*res.result);
+                fix_external_symbols(*res.result, *tu.m_symtab);
+                ASR::Module_t *submod = ASRUtils::extract_module(
+                    *res.result);
+                ASR::symbol_t *impl_sym = submod->m_symtab->get_symbol(
+                    pname);
+                if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) {
+                    continue;
+                }
+                ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
+                    impl_sym);
+                if (ASR::down_cast<ASR::FunctionType_t>(
+                        impl_func->m_function_signature)->m_deftype !=
+                        ASR::deftypeType::Implementation) continue;
+                return impl_func;
+            }
+        }
+        return fn;
+    }
+
+    // The function the inliner must reason about for a call: its
+    // implementation, never the interface declaration that stands in for
+    // a submodule `module procedure` at the call site. The interface has
+    // an empty body, so reasoning about it would silently conclude that
+    // the callee needs nothing.
+    ASR::Function_t* resolve_device_function(ASR::symbol_t *sym) {
+        if (!sym) return nullptr;
+        ASR::symbol_t *r = ASRUtils::symbol_get_past_external(sym);
+        if (!r) return nullptr;
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*r)) {
+            r = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(r)->m_proc);
+        }
+        if (!r || !ASR::is_a<ASR::Function_t>(*r)) return nullptr;
+        return resolve_function_implementation(
+            ASR::down_cast<ASR::Function_t>(r));
+    }
+
+    // Strip the physical-type casts wrapping an actual argument. The
+    // uncast expression keeps its declared shape, which is what makes
+    // `size(dummy,1)` fold to a constant after substitution.
+    static ASR::expr_t* strip_array_casts(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        return e;
+    }
+
+    // The right-hand side of `target = f(...)` -- the only position a
+    // call can be spliced from without inventing a temporary.
+    static const ASR::FunctionCall_t* spliceable_call(ASR::stmt_t *stmt) {
+        if (!ASR::is_a<ASR::Assignment_t>(*stmt)) return nullptr;
+        ASR::expr_t *value = strip_array_casts(
+            ASR::down_cast<ASR::Assignment_t>(stmt)->m_value);
+        if (!value || !ASR::is_a<ASR::FunctionCall_t>(*value)) return nullptr;
+        return ASR::down_cast<ASR::FunctionCall_t>(value);
+    }
+
+    // Can this callee's body be spliced verbatim into the caller?
+    static bool can_inline_device_function(ASR::Function_t *fn,
+            const ASR::FunctionCall_t *fc) {
+        if (!fn || !fn->m_return_var || fn->n_body == 0) return false;
+        ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
+            fn->m_function_signature);
+        if (ft->m_abi != ASR::abiType::Source) return false;
+        if (ft->m_deftype != ASR::deftypeType::Implementation) return false;
+        if (fn->n_args != fc->n_args) return false;
+        for (size_t i = 0; i < fc->n_args; i++) {
+            // An absent optional actual has no expression to substitute.
+            if (!fc->m_args[i].m_value) return false;
+        }
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) return false;
+        }
+        // Only Variables: a nested scope (BLOCK, ASSOCIATE) or contained
+        // procedure would have to be re-homed into the caller's scope,
+        // which this splice does not do.
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) return false;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            // SAVE state must persist across calls; inlining would give
+            // every call site its own copy.
+            if (v->m_storage == ASR::storage_typeType::Save) return false;
+        }
+        // A `return` anywhere but as the final statement needs control
+        // flow the splice cannot express.
+        GpuReturnCounter rc;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            rc.visit_stmt(*fn->m_body[i]);
+        }
+        if (rc.count > 1) return false;
+        if (rc.count == 1 &&
+                !ASR::is_a<ASR::Return_t>(*fn->m_body[fn->n_body - 1])) {
+            return false;
+        }
+        return true;
+    }
+
+    // True when `fn` itself needs a run-time sized temporary, or reaches
+    // a function that does. Memoized; `visiting` breaks call cycles.
+    bool device_function_needs_inlining(ASR::Function_t *fn,
+            std::map<ASR::Function_t*, bool> &memo,
+            std::set<ASR::Function_t*> &visiting) {
+        auto it = memo.find(fn);
+        if (it != memo.end()) return it->second;
+        if (visiting.count(fn)) return false;
+        visiting.insert(fn);
+        GpuDeviceFunctionArrayTempChecker checker;
+        checker.check_function(fn);
+        bool result = checker.has_runtime_sized_temp;
+        if (!result) {
+            GpuFunctionCollector fc;
+            for (size_t i = 0; i < fn->n_body; i++) {
+                fc.visit_stmt(*fn->m_body[i]);
+            }
+            for (auto &[name, sym] : fc.functions) {
+                ASR::Function_t *callee = resolve_device_function(sym);
+                if (callee && callee != fn &&
+                        device_function_needs_inlining(callee, memo,
+                            visiting)) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+        visiting.erase(fn);
+        memo[fn] = result;
+        return result;
+    }
+
+    // Walk the statements that will become the kernel body and work out
+    // which callees have to be spliced in. Purely analytical: nothing is
+    // rewritten here, so the offload decision stays ahead of any
+    // destructive change. Returns false when some callee that must be
+    // inlined cannot be, in which case the loop is not offloaded.
+    bool plan_device_function_inlining(ASR::stmt_t **stmts, size_t n_stmts,
+            std::map<ASR::Function_t*, bool> &memo,
+            std::set<ASR::Function_t*> &on_stack) {
+        for (size_t si = 0; si < n_stmts; si++) {
+            ASR::stmt_t *stmt = stmts[si];
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    if (!plan_device_function_inlining(blk->m_body,
+                            blk->n_body, memo, on_stack)) return false;
+                }
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                    ASR::AssociateBlock_t *blk =
+                        ASR::down_cast<ASR::AssociateBlock_t>(b);
+                    if (!plan_device_function_inlining(blk->m_body,
+                            blk->n_body, memo, on_stack)) return false;
+                }
+                continue;
+            }
+            const ASR::FunctionCall_t *top = spliceable_call(stmt);
+            GpuCallSiteCollector csc;
+            csc.visit_stmt(*stmt);
+            for (const ASR::FunctionCall_t *call : csc.calls) {
+                ASR::Function_t *callee = resolve_device_function(
+                    call->m_name);
+                if (!callee) continue;
+                if (!device_function_needs_inlining(callee, memo,
+                        on_stack)) continue;
+                // Only a call that *is* the assignment's value can be
+                // spliced; one nested inside a larger expression would
+                // need a temporary the caller does not have.
+                if (call != top) return false;
+                if (on_stack.count(callee)) return false;
+                if (!can_inline_device_function(callee, call)) return false;
+                functions_to_inline.insert(callee);
+                on_stack.insert(callee);
+                bool ok = plan_device_function_inlining(callee->m_body,
+                    callee->n_body, memo, on_stack);
+                on_stack.erase(callee);
+                if (!ok) return false;
+            }
+        }
+        return true;
+    }
+
+    // Rewrite the dimension expressions of a cloned local's type through
+    // `subst`, so an extent written in terms of the callee's dummies is
+    // expressed in terms of the actual arguments instead.
+    void substitute_in_type(ASR::ttype_t *t,
+            std::map<ASR::symbol_t*, ASR::expr_t*> &subst) {
+        if (!t) return;
+        ASR::ttype_t *bare = ASRUtils::type_get_past_allocatable_pointer(t);
+        if (!bare || !ASR::is_a<ASR::Array_t>(*bare)) return;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(bare);
+        AssociateVarResolver resolver(al, subst);
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (arr->m_dims[d].m_start) {
+                resolver.current_expr = &(arr->m_dims[d].m_start);
+                resolver.replace_expr(arr->m_dims[d].m_start);
+            }
+            if (arr->m_dims[d].m_length) {
+                resolver.current_expr = &(arr->m_dims[d].m_length);
+                resolver.replace_expr(arr->m_dims[d].m_length);
+            }
+        }
+    }
+
+    // Splice `fn`'s body into a BLOCK, rewritten for this call site,
+    // and assign its result to `target` inside that block.
+    //
+    // The BLOCK is what makes this work: the callee's locals land in the
+    // block's own symbol table, so after kernel extraction they are
+    // block-scope locals of the kernel -- exactly where
+    // analyze_gpu_vla_workspaces() looks for run-time sized arrays and
+    // binds a device buffer for each. Putting them in the enclosing
+    // scope instead would make them kernel *arguments*, and an ALLOCATE
+    // of a kernel argument is not valid ASR.
+    ASR::stmt_t* splice_device_function(ASR::Function_t *fn,
+            const ASR::FunctionCall_t *fc, ASR::expr_t *target,
+            const Location &loc) {
+        SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
+
+        std::map<ASR::symbol_t*, ASR::expr_t*> subst;
+        std::set<ASR::symbol_t*> dummies;
+        for (size_t i = 0; i < fn->n_args; i++) {
+            ASR::symbol_t *d = ASR::down_cast<ASR::Var_t>(
+                fn->m_args[i])->m_v;
+            ASR::expr_t *actual = strip_array_casts(fc->m_args[i].m_value);
+            if (!actual) return nullptr;
+            subst[d] = actual;
+            dummies.insert(d);
+        }
+
+        // Clone the callee's locals (its result variable included) into
+        // the block. Two phases, so that an extent written in terms of
+        // another local is substituted too.
+        ASR::symbol_t *ret_sym = ASR::down_cast<ASR::Var_t>(
+            fn->m_return_var)->m_v;
+        std::vector<ASR::symbol_t*> cloned_locals;
+        for (auto &item : fn->m_symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (dummies.count(sym)) continue;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            std::string name = block_scope->get_unique_name(v->m_name);
+            ASR::symbol_t *ns = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, block_scope,
+                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                    nullptr, nullptr, v->m_storage,
+                    ASRUtils::duplicate_type(al, v->m_type),
+                    v->m_type_declaration, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required,
+                    false));
+            block_scope->add_symbol(name, ns);
+            subst[sym] = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ns));
+            cloned_locals.push_back(ns);
+        }
+        for (ASR::symbol_t *ns : cloned_locals) {
+            substitute_in_type(
+                ASR::down_cast<ASR::Variable_t>(ns)->m_type, subst);
+        }
+
+        ASRUtils::ExprStmtDuplicator dup(al);
+        Vec<ASR::stmt_t*> cloned;
+        cloned.reserve(al, fn->n_body + 1);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            if (ASR::is_a<ASR::Return_t>(*fn->m_body[i])) continue;
+            dup.success = true;
+            ASR::stmt_t *c = dup.duplicate_stmt(fn->m_body[i]);
+            if (!c || !dup.success) return nullptr;
+            cloned.push_back(al, c);
+        }
+        AssociateVarResolverVisitor resolver(al, subst);
+        for (size_t i = 0; i < cloned.n; i++) {
+            resolver.visit_stmt(*cloned[i]);
+        }
+
+        auto rit = subst.find(ret_sym);
+        if (rit == subst.end()) return nullptr;
+        cloned.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, target, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                ASR::down_cast<ASR::Var_t>(rit->second)->m_v)),
+            nullptr, false, false)));
+
+        std::string block_name = current_scope->get_unique_name(
+            "__gpu_inl_" + std::string(fn->m_name));
+        ASR::asr_t *block = ASR::make_Block_t(al, loc, block_scope,
+            s2c(al, block_name), cloned.p, cloned.n);
+        block_scope->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        current_scope->add_symbol(block_name, block_sym);
+        return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
+            block_sym));
+    }
+
+    // Splice every planned callee into `stmts`, repeating until no call
+    // is left to inline (a callee's own calls surface only once its body
+    // has been spliced in). The planner has already proved this
+    // terminates: it rejects any call cycle.
+    void inline_device_function_calls(ASR::stmt_t **&stmts,
+            size_t &n_stmts) {
+        if (functions_to_inline.empty()) return;
+        for (size_t round = 0; round < functions_to_inline.size() + 1;
+                round++) {
+            Vec<ASR::stmt_t*> new_body;
+            new_body.reserve(al, n_stmts * 4);
+            bool changed = false;
+            for (size_t si = 0; si < n_stmts; si++) {
+                ASR::stmt_t *stmt = stmts[si];
+                if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                    ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                    if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                        inline_device_function_calls(blk->m_body,
+                            blk->n_body);
+                    }
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                const ASR::FunctionCall_t *call = spliceable_call(stmt);
+                ASR::Function_t *callee = call
+                    ? resolve_device_function(call->m_name) : nullptr;
+                if (!callee || !functions_to_inline.count(callee)) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                ASR::Assignment_t *asgn =
+                    ASR::down_cast<ASR::Assignment_t>(stmt);
+                ASR::stmt_t *spliced = splice_device_function(callee,
+                    call, asgn->m_target, stmt->base.loc);
+                if (!spliced) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                new_body.push_back(al, spliced);
+                changed = true;
+            }
+            if (!changed) break;
+            stmts = new_body.p;
+            n_stmts = new_body.n;
+        }
+    }
+
     void inline_intrinsic_all(ASR::DoConcurrentLoop_t &x) {
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, x.n_body * 3);
@@ -1738,7 +2871,8 @@ public:
                         }
                     }
                 }
-                return {dims[dim_idx].m_start, dims[dim_idx].m_length};
+                return get_dim_bounds(al, arg->base.loc, dims,
+                    (size_t)dim_idx, arg);
             };
 
             ASR::expr_t *zero;
@@ -1945,6 +3079,164 @@ public:
             body = new_body.p;
             n_body = new_body.n;
         }
+    }
+
+    // `r = [0.0, matmul(a, b)]` keeps the matmul nested inside the array
+    // constructor, where inline_intrinsic_matmul -- which matches a
+    // matmul that is the whole right-hand side -- cannot see it. It would
+    // then survive into the shader as a call to the host runtime helper
+    // `_lcompilers_matmul_*`, which does not exist on the device. Hoist
+    // each such element into its own temporary first, so the existing
+    // lowering applies and the constructor is left with a plain array
+    // variable element (a shape the Metal backend already handles).
+    void hoist_intrinsic_array_constructor_elements(
+            ASR::DoConcurrentLoop_t &x) {
+        SymbolTable *var_scope = current_scope;
+        while (var_scope && var_scope->asr_owner &&
+               var_scope->asr_owner->type == ASR::asrType::symbol &&
+               ASR::is_a<ASR::AssociateBlock_t>(
+                   *ASR::down_cast<ASR::symbol_t>(var_scope->asr_owner))) {
+            var_scope = var_scope->parent;
+        }
+        hoist_ac_elements_in_body(x.m_body, x.n_body, var_scope);
+    }
+
+    void hoist_ac_elements_in_body(ASR::stmt_t** &body, size_t &n_body,
+            SymbolTable *var_scope) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body * 2);
+        bool changed = false;
+
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            // A spliced-in device function body lives in its own BLOCK;
+            // hoist inside it too, into that block's scope.
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    hoist_ac_elements_in_body(blk->m_body, blk->n_body,
+                        blk->m_symtab);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::expr_t *value = ASR::down_cast<ASR::Assignment_t>(
+                stmt)->m_value;
+            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
+                value = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    value)->m_arg;
+            }
+            if (!ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::ArrayConstructor_t *ac =
+                ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            Location loc = stmt->base.loc;
+            bool stmt_changed = false;
+            for (size_t ai = 0; ai < ac->n_args; ai++) {
+                ASR::expr_t *arg = ac->m_args[ai];
+                if (!arg) continue;
+                ASR::expr_t *bare = arg;
+                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*bare)) {
+                    bare = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                        bare)->m_arg;
+                }
+                if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*bare))
+                    continue;
+                if (!ASRUtils::is_array(ASRUtils::expr_type(bare)))
+                    continue;
+                Vec<ASR::dimension_t> dims;
+                if (!intrinsic_array_result_dims(bare, dims)) continue;
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(bare));
+                bool all_const = true;
+                for (size_t d = 0; d < dims.n; d++) {
+                    if (!dims[d].m_length ||
+                            !ASRUtils::expr_value(dims[d].m_length)) {
+                        all_const = false;
+                    }
+                }
+                ASR::ttype_t *tmp_type = ASRUtils::TYPE(
+                    ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
+                        all_const
+                            ? ASR::array_physical_typeType::FixedSizeArray
+                            : ASR::array_physical_typeType::DescriptorArray));
+                std::string name = var_scope->get_unique_name(
+                    "__gpu_ac_elem");
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                        nullptr, nullptr, ASR::storage_typeType::Default,
+                        tmp_type, nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(name, sym);
+                ASR::expr_t *tmp_var = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, sym));
+                new_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, tmp_var, bare,
+                        nullptr, false, false)));
+                ac->m_args[ai] = tmp_var;
+                stmt_changed = true;
+            }
+            new_body.push_back(al, stmt);
+            if (stmt_changed) changed = true;
+        }
+
+        if (changed) {
+            body = new_body.p;
+            n_body = new_body.n;
+        }
+    }
+
+    // Shape of an array-valued intrinsic's result, taken from its
+    // operands' declared dimensions.
+    bool intrinsic_array_result_dims(ASR::expr_t *e,
+            Vec<ASR::dimension_t> &dims) {
+        ASR::IntrinsicArrayFunction_t *iaf =
+            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
+        if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                iaf->m_arr_intrinsic_id)
+                    != ASRUtils::IntrinsicArrayFunctions::MatMul) {
+            return false;
+        }
+        if (iaf->n_args < 2) return false;
+        ASR::expr_t *a = iaf->m_args[0];
+        ASR::expr_t *b = iaf->m_args[1];
+        while (a && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a))
+            a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg;
+        while (b && ASR::is_a<ASR::ArrayPhysicalCast_t>(*b))
+            b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(b)->m_arg;
+        if (!a || !b) return false;
+        ASR::dimension_t *da = nullptr, *db = nullptr;
+        int ra = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(a)), da);
+        int rb = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(b)), db);
+        dims.reserve(al, 2);
+        if (ra == 2 && rb == 1) {
+            if (!da[0].m_length) return false;
+            dims.push_back(al, da[0]);
+        } else if (ra == 1 && rb == 2) {
+            if (!db[1].m_length) return false;
+            dims.push_back(al, db[1]);
+        } else if (ra == 2 && rb == 2) {
+            if (!da[0].m_length || !db[1].m_length) return false;
+            dims.push_back(al, da[0]);
+            dims.push_back(al, db[1]);
+        } else {
+            return false;
+        }
+        return true;
     }
 
     void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
@@ -2831,6 +4123,347 @@ public:
         inline_sum_in_stmts(x.m_body, x.n_body, current_scope);
     }
 
+    // Build the `k`-th element (k is 1-based within the dot_product) of a
+    // rank-1 dot_product argument. Returns nullptr when the argument's
+    // shape cannot be indexed directly.
+    ASR::expr_t* dot_product_operand_element(ASR::expr_t *arg,
+            ASR::expr_t *k, ASR::ttype_t *elem_type, const Location &loc) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        auto mk_int = [&](int64_t v) -> ASR::expr_t* {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
+                int_type, ASR::integerbozType::Decimal));
+        };
+        auto binop = [&](ASR::expr_t *l, ASR::binopType op,
+                ASR::expr_t *r) -> ASR::expr_t* {
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l, op, r,
+                int_type, nullptr));
+        };
+        // k - 1
+        ASR::expr_t *km1 = binop(k, ASR::binopType::Sub, mk_int(1));
+        if (ASR::is_a<ASR::ArraySection_t>(*arg)) {
+            ASR::ArraySection_t *sec =
+                ASR::down_cast<ASR::ArraySection_t>(arg);
+            int range_dim = -1;
+            for (size_t d = 0; d < sec->n_args; d++) {
+                if (sec->m_args[d].m_left != nullptr) {
+                    if (range_dim >= 0) return nullptr;
+                    range_dim = (int)d;
+                }
+            }
+            if (range_dim < 0) return nullptr;
+            Vec<ASR::array_index_t> idx;
+            idx.reserve(al, sec->n_args);
+            for (size_t d = 0; d < sec->n_args; d++) {
+                ASR::array_index_t ai;
+                ai.loc = loc;
+                ai.m_left = nullptr;
+                ai.m_step = nullptr;
+                if ((int)d == range_dim) {
+                    ASR::expr_t *delta = km1;
+                    if (sec->m_args[d].m_step != nullptr) {
+                        delta = binop(km1, ASR::binopType::Mul,
+                            sec->m_args[d].m_step);
+                    }
+                    ai.m_right = binop(sec->m_args[d].m_left,
+                        ASR::binopType::Add, delta);
+                } else {
+                    ai.m_right = sec->m_args[d].m_right;
+                }
+                idx.push_back(al, ai);
+            }
+            return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, sec->m_v,
+                idx.p, idx.n, elem_type, ASR::arraystorageType::ColMajor,
+                nullptr));
+        }
+        ASR::ttype_t *arr_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(arg));
+        ASR::dimension_t *dims = nullptr;
+        int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+        if (rank != 1) return nullptr;
+        ASR::expr_t *lbound = dims[0].m_start;
+        ASR::expr_t *index = nullptr;
+        if (lbound == nullptr) {
+            lbound = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arg,
+                mk_int(1), int_type, ASR::arrayboundType::LBound, nullptr));
+            index = binop(lbound, ASR::binopType::Add, km1);
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*lbound) &&
+                ASR::down_cast<ASR::IntegerConstant_t>(lbound)->m_n == 1) {
+            index = k;
+        } else {
+            index = binop(lbound, ASR::binopType::Add, km1);
+        }
+        Vec<ASR::array_index_t> idx;
+        idx.reserve(al, 1);
+        ASR::array_index_t ai;
+        ai.loc = loc;
+        ai.m_left = nullptr;
+        ai.m_step = nullptr;
+        ai.m_right = index;
+        idx.push_back(al, ai);
+        return index_array_expr(arg, idx.p, idx.n, elem_type, loc);
+    }
+
+    // Number of elements of a rank-1 dot_product argument. When
+    // `allow_bound` is false, only shapes whose extent is available from
+    // the type (or from an explicit section range) are accepted, so that
+    // an ArrayBound on an allocatable is used only as a last resort.
+    ASR::expr_t* dot_product_extent(ASR::expr_t *arg, const Location &loc,
+            bool allow_bound) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        auto mk_int = [&](int64_t v) -> ASR::expr_t* {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
+                int_type, ASR::integerbozType::Decimal));
+        };
+        auto binop = [&](ASR::expr_t *l, ASR::binopType op,
+                ASR::expr_t *r) -> ASR::expr_t* {
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l, op, r,
+                int_type, nullptr));
+        };
+        if (ASR::is_a<ASR::ArraySection_t>(*arg)) {
+            ASR::ArraySection_t *sec =
+                ASR::down_cast<ASR::ArraySection_t>(arg);
+            int range_dim = -1;
+            for (size_t d = 0; d < sec->n_args; d++) {
+                if (sec->m_args[d].m_left != nullptr) {
+                    if (range_dim >= 0) return nullptr;
+                    range_dim = (int)d;
+                }
+            }
+            if (range_dim < 0 || sec->m_args[range_dim].m_right == nullptr) {
+                return nullptr;
+            }
+            ASR::expr_t *span = binop(sec->m_args[range_dim].m_right,
+                ASR::binopType::Sub, sec->m_args[range_dim].m_left);
+            if (sec->m_args[range_dim].m_step != nullptr) {
+                span = binop(span, ASR::binopType::Div,
+                    sec->m_args[range_dim].m_step);
+            }
+            return binop(span, ASR::binopType::Add, mk_int(1));
+        }
+        ASR::ttype_t *arr_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(arg));
+        ASR::dimension_t *dims = nullptr;
+        int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+        if (rank != 1) return nullptr;
+        if (dims[0].m_length != nullptr) {
+            return dims[0].m_length;
+        }
+        if (!allow_bound) return nullptr;
+        ASR::expr_t *ub = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arg,
+            mk_int(1), int_type, ASR::arrayboundType::UBound, nullptr));
+        ASR::expr_t *lb = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, arg,
+            mk_int(1), int_type, ASR::arrayboundType::LBound, nullptr));
+        return binop(binop(ub, ASR::binopType::Sub, lb),
+            ASR::binopType::Add, mk_int(1));
+    }
+
+    // Inline IntrinsicArrayFunction DotProduct inside a DoConcurrentLoop
+    // body. Replaces:
+    //   r(i) = dot_product(a, b)
+    // With:
+    //   __gpu_dot_res = 0
+    //   do __gpu_dot_k = 1, n
+    //     __gpu_dot_res = __gpu_dot_res + a(...) * b(...)
+    //   end do
+    //   r(i) = __gpu_dot_res
+    // Unlike matmul, dot_product survives array lowering as a call to the
+    // generated helper `_lcompilers_dot_product_*`, whose definition is
+    // never emitted into the Metal shader. Expanding it here keeps the
+    // kernel self-contained.
+    void inline_dot_product_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
+                                     SymbolTable *scope) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_stmts * 4);
+        bool changed = false;
+
+        for (size_t si = 0; si < n_stmts; si++) {
+            ASR::stmt_t *stmt = stmts[si];
+
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                inline_dot_product_in_stmts(dl->m_body, dl->n_body, scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
+                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    inline_dot_product_in_stmts(block->m_body, block->n_body,
+                        block->m_symtab);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlockCall_t *abc =
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
+                inline_dot_product_in_stmts(ab->m_body, ab->n_body,
+                    ab->m_symtab);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::If_t>(*stmt)) {
+                ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(stmt);
+                inline_dot_product_in_stmts(if_stmt->m_body,
+                    if_stmt->n_body, scope);
+                inline_dot_product_in_stmts(if_stmt->m_orelse,
+                    if_stmt->n_orelse, scope);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::IntrinsicArrayFunction_t>(*asgn->m_value)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::IntrinsicArrayFunction_t *iaf =
+                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(asgn->m_value);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    iaf->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::DotProduct) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (iaf->n_args < 2) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            ASR::ttype_t *elem_type = iaf->m_type;
+            // complex dot_product conjugates its first argument and the
+            // logical form is a masked any(); neither is handled here.
+            if (!ASR::is_a<ASR::Real_t>(*elem_type) &&
+                    !ASR::is_a<ASR::Integer_t>(*elem_type)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            ASR::expr_t *n_elems = dot_product_extent(iaf->m_args[0], loc,
+                false);
+            if (n_elems == nullptr) {
+                n_elems = dot_product_extent(iaf->m_args[1], loc, false);
+            }
+            if (n_elems == nullptr) {
+                n_elems = dot_product_extent(iaf->m_args[0], loc, true);
+            }
+            if (n_elems == nullptr) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            SymbolTable *var_scope = scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+
+            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            auto make_var = [&](const std::string &prefix,
+                    ASR::ttype_t *type) -> ASR::expr_t* {
+                std::string name = var_scope->get_unique_name(prefix);
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                        s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, type),
+                        nullptr, ASR::abiType::Source,
+                        ASR::accessType::Public,
+                        ASR::presenceType::Required, false));
+                var_scope->add_symbol(name, sym);
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+            };
+
+            ASR::expr_t *k_var = make_var("__gpu_dot_k", int_type);
+            ASR::expr_t *lhs_elem = dot_product_operand_element(
+                iaf->m_args[0], k_var, elem_type, loc);
+            ASR::expr_t *rhs_elem = dot_product_operand_element(
+                iaf->m_args[1], k_var, elem_type, loc);
+            if (lhs_elem == nullptr || rhs_elem == nullptr) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            ASR::expr_t *res_var = make_var("__gpu_dot_res", elem_type);
+            ASR::expr_t *zero;
+            if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                zero = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
+                    0.0, elem_type));
+            } else {
+                zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    0, elem_type, ASR::integerbozType::Decimal));
+            }
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var, zero,
+                    nullptr, false, false)));
+
+            ASR::expr_t *prod, *acc;
+            if (ASR::is_a<ASR::Real_t>(*elem_type)) {
+                prod = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                    lhs_elem, ASR::binopType::Mul, rhs_elem, elem_type,
+                    nullptr));
+                acc = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
+                    res_var, ASR::binopType::Add, prod, elem_type, nullptr));
+            } else {
+                prod = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    lhs_elem, ASR::binopType::Mul, rhs_elem, elem_type,
+                    nullptr));
+                acc = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    res_var, ASR::binopType::Add, prod, elem_type, nullptr));
+            }
+            Vec<ASR::stmt_t*> loop_body;
+            loop_body.reserve(al, 1);
+            loop_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, res_var, acc,
+                    nullptr, false, false)));
+
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = k_var;
+            head.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                1, int_type, ASR::integerbozType::Decimal));
+            head.m_end = n_elems;
+            head.m_increment = nullptr;
+            new_body.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                nullptr, head, loop_body.p, loop_body.n, nullptr, 0)));
+
+            new_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, asgn->m_target, res_var,
+                    nullptr, false, false)));
+            changed = true;
+        }
+
+        if (changed) {
+            stmts = new_body.p;
+            n_stmts = new_body.n;
+        }
+    }
+
+    void inline_intrinsic_dot_product(ASR::DoConcurrentLoop_t &x) {
+        inline_dot_product_in_stmts(x.m_body, x.n_body, current_scope);
+    }
+
     // Inline IntrinsicArrayFunction Transpose inside a DoConcurrentLoop body.
     // Replaces:
     //   b = transpose(a)
@@ -2958,16 +4591,10 @@ public:
             // j loops over columns of b = rows of a (dim 0 of result)
             // a(m, n): dims[0] = m, dims[1] = n
             // b(n, m): i = 1..n, j = 1..m
-            ASR::expr_t *i_start = dims[1].m_start;
-            ASR::expr_t *i_end = dims[1].m_length;
-            ASR::expr_t *j_start = dims[0].m_start;
-            ASR::expr_t *j_end = dims[0].m_length;
-
             ASR::do_loop_head_t inner_head;
             inner_head.loc = loc;
             inner_head.m_v = var_i;
-            inner_head.m_start = i_start;
-            inner_head.m_end = i_end;
+            set_loop_head_bounds(al, loc, inner_head, dims, 1, arr_arg);
             inner_head.m_increment = nullptr;
             ASR::stmt_t *inner_loop = ASRUtils::STMT(
                 ASR::make_DoLoop_t(al, loc, nullptr, inner_head,
@@ -2980,8 +4607,7 @@ public:
             ASR::do_loop_head_t outer_head;
             outer_head.loc = loc;
             outer_head.m_v = var_j;
-            outer_head.m_start = j_start;
-            outer_head.m_end = j_end;
+            set_loop_head_bounds(al, loc, outer_head, dims, 0, arr_arg);
             outer_head.m_increment = nullptr;
             ASR::stmt_t *outer_loop = ASRUtils::STMT(
                 ASR::make_DoLoop_t(al, loc, nullptr, outer_head,
@@ -2997,6 +4623,83 @@ public:
         }
     }
 
+    // Is `e` the integer literal `value`?
+    static bool is_int_literal(ASR::expr_t *e, int64_t value) {
+        if (!e) return false;
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (!v) v = e;
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*v)) return false;
+        return ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n == value;
+    }
+
+    ASR::expr_t *int32_const(const Location &loc, int64_t n) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n,
+            int_type, ASR::integerbozType::Decimal));
+    }
+
+    // The loop counters generated below are integer(4); a section bound
+    // of another integer kind has to be converted before it can be
+    // combined with them.
+    ASR::expr_t *to_int32(const Location &loc, ASR::expr_t *e) {
+        ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(e));
+        if (ASR::is_a<ASR::Integer_t>(*t)
+                && ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4) {
+            return e;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
+            ASR::cast_kindType::IntegerToInteger, int_type, nullptr,
+            nullptr));
+    }
+
+    // Number of elements of a section dimension `lo:hi:step`, which is
+    // (hi - lo)/step + 1. Truncating integer division gives the right
+    // answer for a negative step too, since numerator and denominator
+    // then have the same sign.
+    ASR::expr_t *section_extent(const Location &loc,
+            const ASR::array_index_t &d) {
+        if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
+            return d.m_right;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            loc, to_int32(loc, d.m_right), ASR::binopType::Sub,
+            to_int32(loc, d.m_left), int_type, nullptr));
+        if (!is_int_literal(d.m_step, 1)) {
+            span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
+                ASR::binopType::Div, to_int32(loc, d.m_step), int_type,
+                nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
+            ASR::binopType::Add, int32_const(loc, 1), int_type, nullptr));
+    }
+
+    // Array index of the `counter`-th element (counter = 1..extent) of a
+    // section dimension `lo:hi:step`, which is lo + (counter - 1)*step.
+    ASR::expr_t *section_index(const Location &loc,
+            const ASR::array_index_t &d, ASR::expr_t *counter) {
+        if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
+            return counter;
+        }
+        ASR::ttype_t *int_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            loc, counter, ASR::binopType::Sub, int32_const(loc, 1),
+            int_type, nullptr));
+        if (!is_int_literal(d.m_step, 1)) {
+            offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                offset, ASR::binopType::Mul, to_int32(loc, d.m_step),
+                int_type, nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            to_int32(loc, d.m_left), ASR::binopType::Add, offset,
+            int_type, nullptr));
+    }
+
     // Inline ArraySection assignments inside a DoConcurrentLoop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
@@ -3006,6 +4709,334 @@ public:
     //   end do
     // This avoids complex lowered code (descriptor temps, ArrayBound)
     // that the Metal backend cannot handle inside GPU kernels.
+    // Evaluate an integer expression made up entirely of literals.
+    // `section_extent` builds its result unfolded (`(6 - 3) + 1`), and an
+    // unfolded extent would make the temporary below a descriptor array
+    // even though its size is known, so fold it here.
+    bool eval_int_literal(ASR::expr_t *e, int64_t &out) {
+        if (!e) return false;
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (v) e = v;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            out = ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+            return true;
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            int64_t a;
+            if (!eval_int_literal(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg, a)) {
+                return false;
+            }
+            out = -a;
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return eval_int_literal(
+                ASR::down_cast<ASR::Cast_t>(e)->m_arg, out);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            int64_t l, r;
+            if (!eval_int_literal(b->m_left, l)
+                    || !eval_int_literal(b->m_right, r)) {
+                return false;
+            }
+            switch (b->m_op) {
+                case ASR::binopType::Add: out = l + r; return true;
+                case ASR::binopType::Sub: out = l - r; return true;
+                case ASR::binopType::Mul: out = l * r; return true;
+                case ASR::binopType::Div: {
+                    if (r == 0) return false;
+                    out = l / r;
+                    return true;
+                }
+                default: return false;
+            }
+        }
+        return false;
+    }
+
+    // Declare a temporary array with `n_extents` dimensions of the given
+    // extents in `var_scope` and return a reference to it. A dimension
+    // whose extent is not a compile-time constant makes the temporary a
+    // descriptor array, exactly as the array-constructor hoisting above
+    // does, so the same run-time sizing machinery applies.
+    ASR::expr_t *declare_temp_array(const Location &loc,
+            SymbolTable *var_scope, ASR::ttype_t *elem_type,
+            ASR::expr_t **extents, size_t n_extents,
+            const std::string &prefix) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, n_extents);
+        bool all_const = true;
+        for (size_t i = 0; i < n_extents; i++) {
+            ASR::dimension_t d;
+            d.loc = loc;
+            d.m_start = int32_const(loc, 1);
+            d.m_length = extents[i];
+            int64_t n;
+            if (extents[i] && eval_int_literal(extents[i], n)) {
+                d.m_length = int32_const(loc, (int)n);
+            } else {
+                all_const = false;
+            }
+            dims.push_back(al, d);
+        }
+        ASR::ttype_t *tmp_type = ASRUtils::TYPE(
+            ASR::make_Array_t(al, loc, elem_type, dims.p, dims.n,
+                all_const
+                    ? ASR::array_physical_typeType::FixedSizeArray
+                    : ASR::array_physical_typeType::DescriptorArray));
+        std::string name = var_scope->get_unique_name(prefix);
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, var_scope,
+                s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                tmp_type, nullptr, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required,
+                false));
+        var_scope->add_symbol(name, sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
+    // The target of `asgn` when its value reads the target's storage
+    // through a designator that is not element-for-element identical to
+    // it, and nullptr otherwise. See the comment above
+    // gpu_designator_base for why such an assignment needs a temporary.
+    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn) {
+        ASR::expr_t *target = asgn->m_target;
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*target)) {
+            target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                target)->m_arg;
+        }
+        if (!ASRUtils::is_array(ASRUtils::expr_type(target))) {
+            return nullptr;
+        }
+        ASR::symbol_t *base = gpu_designator_base(target);
+        if (!base) return nullptr;
+        GpuSelfAliasChecker checker;
+        checker.base = base;
+        checker.target = target;
+        checker.visit_expr(*asgn->m_value);
+        return checker.aliased ? target : nullptr;
+    }
+
+    // Whether the temporary such an assignment needs can be given
+    // compile-time constant extents. Metal has no variable-length
+    // arrays, and a run-time sized kernel temporary would have to become
+    // a device buffer shared by every thread of the kernel, so a loop
+    // that would need one is not offloaded at all and runs on the host.
+    bool alias_temp_is_fixed_size(ASR::expr_t *target) {
+        const Location &loc = target->base.loc;
+        int64_t n;
+        if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+            ASR::ArraySection_t *as =
+                ASR::down_cast<ASR::ArraySection_t>(target);
+            size_t n_ranges = 0;
+            for (size_t i = 0; i < as->n_args; i++) {
+                if (as->m_args[i].m_left && as->m_args[i].m_right
+                        && as->m_args[i].m_step) {
+                    n_ranges++;
+                    if (!eval_int_literal(
+                            section_extent(loc, as->m_args[i]), n)) {
+                        return false;
+                    }
+                }
+            }
+            return n_ranges > 0;
+        }
+        ASR::ttype_t *tt = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(target)));
+        if (!ASR::is_a<ASR::Array_t>(*tt)) return false;
+        ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(tt);
+        for (size_t i = 0; i < at->n_dims; i++) {
+            if (!eval_int_literal(at->m_dims[i].m_length, n)) return false;
+        }
+        return at->n_dims > 0;
+    }
+
+    // Reports a self-aliasing array assignment whose temporary cannot be
+    // fixed-size. Called before any of the destructive inline_* helpers,
+    // so the loop can still be left on the host.
+    bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
+            size_t n_body) {
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                if (body_needs_unsupported_alias_temp(dl->m_body,
+                        dl->n_body)) return true;
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    if (body_needs_unsupported_alias_temp(blk->m_body,
+                            blk->n_body)) return true;
+                }
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            stmt)->m_m);
+                if (body_needs_unsupported_alias_temp(ab->m_body,
+                        ab->n_body)) return true;
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) continue;
+            ASR::expr_t *target = self_aliasing_target(
+                ASR::down_cast<ASR::Assignment_t>(stmt));
+            if (target && !alias_temp_is_fixed_size(target)) return true;
+        }
+        return false;
+    }
+
+    // Materialise a temporary for an array assignment whose target and
+    // value designate overlapping storage of the same array. See the
+    // comment above gpu_designator_base: without it the element loops
+    // built below read elements the same statement has already written.
+    //   a(:) = a(n:1:-1)
+    // becomes
+    //   __gpu_alias(1:n) = a(n:1:-1)
+    //   a(:)            = __gpu_alias(1:n)
+    // Both halves are alias-free, and the existing ArraySection and
+    // whole-array lowerings turn each of them into an element loop.
+    void materialize_aliased_assignments(ASR::DoConcurrentLoop_t &x) {
+        bool changed = false;
+        materialize_aliased_in_body(x.m_body, x.n_body, changed);
+    }
+
+    void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
+            bool &changed) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, n_body * 2);
+        bool local_changed = false;
+
+        for (size_t si = 0; si < n_body; si++) {
+            ASR::stmt_t *stmt = body[si];
+            if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                materialize_aliased_in_body(dl->m_body, dl->n_body, changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    materialize_aliased_in_body(blk->m_body, blk->n_body,
+                        changed);
+                }
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            stmt)->m_m);
+                materialize_aliased_in_body(ab->m_body, ab->n_body,
+                    changed);
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            ASR::expr_t *target = self_aliasing_target(asgn);
+            // A loop holding an assignment that needs a temporary this
+            // pass cannot size was already declined for offload, so the
+            // second test only guards the statements spliced in since.
+            if (!target || !alias_temp_is_fixed_size(target)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+
+            Location loc = stmt->base.loc;
+            SymbolTable *var_scope = current_scope;
+            while (var_scope && var_scope->asr_owner &&
+                   var_scope->asr_owner->type == ASR::asrType::symbol &&
+                   ASR::is_a<ASR::AssociateBlock_t>(
+                       *ASR::down_cast<ASR::symbol_t>(
+                           var_scope->asr_owner))) {
+                var_scope = var_scope->parent;
+            }
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(target));
+
+            if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+                ASR::ArraySection_t *as =
+                    ASR::down_cast<ASR::ArraySection_t>(target);
+                Vec<ASR::expr_t*> extents;
+                extents.reserve(al, as->n_args);
+                for (size_t i = 0; i < as->n_args; i++) {
+                    if (as->m_args[i].m_left && as->m_args[i].m_right
+                            && as->m_args[i].m_step) {
+                        extents.push_back(al,
+                            section_extent(loc, as->m_args[i]));
+                    }
+                }
+                if (extents.n == 0) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+                ASR::expr_t *tmp = declare_temp_array(loc, var_scope,
+                    elem_type, extents.p, extents.n, "__gpu_alias");
+                // A full 1:extent:1 section over the temporary, built
+                // twice so the two statements do not share nodes.
+                auto tmp_section = [&]() -> ASR::expr_t* {
+                    Vec<ASR::array_index_t> args;
+                    args.reserve(al, extents.n);
+                    for (size_t i = 0; i < extents.n; i++) {
+                        ASR::array_index_t idx;
+                        idx.loc = loc;
+                        idx.m_left = int32_const(loc, 1);
+                        idx.m_right = extents[i];
+                        idx.m_step = int32_const(loc, 1);
+                        args.push_back(al, idx);
+                    }
+                    return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+                        tmp, args.p, args.n,
+                        ASRUtils::expr_type(tmp), nullptr));
+                };
+                new_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, tmp_section(),
+                        asgn->m_value, nullptr, false, false)));
+                asgn->m_value = tmp_section();
+            } else {
+                Vec<ASR::expr_t*> extents;
+                ASR::ttype_t *tt = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(target)));
+                ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(tt);
+                extents.reserve(al, at->n_dims);
+                for (size_t i = 0; i < at->n_dims; i++) {
+                    extents.push_back(al, at->m_dims[i].m_length);
+                }
+                ASR::expr_t *tmp = declare_temp_array(loc, var_scope,
+                    elem_type, extents.p, extents.n, "__gpu_alias");
+                new_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, tmp, asgn->m_value,
+                        nullptr, false, false)));
+                asgn->m_value = tmp;
+            }
+            new_body.push_back(al, stmt);
+            local_changed = true;
+        }
+
+        if (local_changed) {
+            body = new_body.p;
+            n_body = new_body.n;
+            changed = true;
+        }
+    }
+
     void inline_array_section_assignment(ASR::DoConcurrentLoop_t &x) {
         bool changed = false;
         inline_array_section_in_body(x.m_body, x.n_body, changed);
@@ -3122,7 +5153,8 @@ public:
                 for (size_t ri = 0; ri < range_dims.size(); ri++) {
                     if ((int)i == range_dims[ri]) {
                         idx.m_left = nullptr;
-                        idx.m_right = loop_vars[ri];
+                        idx.m_right = section_index(loc, as->m_args[i],
+                            loop_vars[ri]);
                         idx.m_step = nullptr;
                         is_range = true;
                         break;
@@ -3160,7 +5192,8 @@ public:
                                 rhs_as->m_args[i].m_step) {
                             if (rv_idx < loop_vars.size()) {
                                 idx.m_left = nullptr;
-                                idx.m_right = loop_vars[rv_idx];
+                                idx.m_right = section_index(loc,
+                                    rhs_as->m_args[i], loop_vars[rv_idx]);
                                 idx.m_step = nullptr;
                                 rv_idx++;
                             } else {
@@ -3198,6 +5231,27 @@ public:
                     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
                         loc, elementize_rhs(ib->m_left), ib->m_op,
                         elementize_rhs(ib->m_right), et, nullptr));
+                } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                    ASR::RealUnaryMinus_t *ru =
+                        ASR::down_cast<ASR::RealUnaryMinus_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al,
+                        loc, elementize_rhs(ru->m_arg), et, nullptr));
+                } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                    ASR::IntegerUnaryMinus_t *iu =
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al,
+                        loc, elementize_rhs(iu->m_arg), et, nullptr));
+                } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+                    ASR::LogicalNot_t *ln =
+                        ASR::down_cast<ASR::LogicalNot_t>(e);
+                    ASR::ttype_t *et = ASRUtils::extract_type(
+                        ASRUtils::expr_type(e));
+                    return ASRUtils::EXPR(ASR::make_LogicalNot_t(al,
+                        loc, elementize_rhs(ln->m_arg), et, nullptr));
                 } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
                     ASR::RealCompare_t *rc =
                         ASR::down_cast<ASR::RealCompare_t>(e);
@@ -3367,8 +5421,8 @@ public:
                 ASR::do_loop_head_t head;
                 head.loc = loc;
                 head.m_v = loop_vars[ri];
-                head.m_start = as->m_args[dim].m_left;
-                head.m_end = as->m_args[dim].m_right;
+                head.m_start = int32_const(loc, 1);
+                head.m_end = section_extent(loc, as->m_args[dim]);
                 head.m_increment = nullptr;
 
                 Vec<ASR::stmt_t*> body;
@@ -3450,6 +5504,24 @@ public:
                 continue;
             }
             ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+
+            // An array constructor is not an elementwise expression: its
+            // i-th element does not come from the i-th element of each
+            // operand. Rewriting `r = [a, b]` as `r(i) = [a, b]` would
+            // make the backend emit a whole constructor per element. The
+            // Metal backend already expands a whole-array constructor
+            // assignment into element writes, so leave it alone.
+            {
+                ASR::expr_t *rhs = asgn->m_value;
+                while (rhs && ASR::is_a<ASR::ArrayPhysicalCast_t>(*rhs)) {
+                    rhs = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                        rhs)->m_arg;
+                }
+                if (rhs && ASR::is_a<ASR::ArrayConstructor_t>(*rhs)) {
+                    new_body.push_back(al, stmt);
+                    continue;
+                }
+            }
 
             // Only handle Var targets with array type
             if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -3605,8 +5677,8 @@ public:
                         ASR::do_loop_head_t head;
                         head.loc = loc;
                         head.m_v = loop_vars[d];
-                        head.m_start = dims[d].m_start;
-                        head.m_end = dims[d].m_length;
+                        set_loop_head_bounds(al, loc, head, dims, (size_t)d,
+                            asgn->m_target);
                         head.m_increment = nullptr;
                         if (loop_nest == nullptr) {
                             loop_nest = ASRUtils::STMT(
@@ -3884,8 +5956,8 @@ public:
                     ASR::do_loop_head_t head;
                     head.loc = loc;
                     head.m_v = loop_vars[d];
-                    head.m_start = dims[d].m_start;
-                    head.m_end = dims[d].m_length;
+                    set_loop_head_bounds(al, loc, head, dims, (size_t)d,
+                        asgn->m_target);
                     head.m_increment = nullptr;
                     if (loop_nest == nullptr) {
                         loop_nest = ASRUtils::STMT(
@@ -3928,8 +6000,9 @@ public:
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
 
-            ASR::expr_t *loop_start = first_as->m_args[range_dim].m_left;
-            ASR::expr_t *loop_end = first_as->m_args[range_dim].m_right;
+            ASR::expr_t *loop_start = int32_const(loc, 1);
+            ASR::expr_t *loop_end = section_extent(loc,
+                first_as->m_args[range_dim]);
 
             // Create loop variable in the containing function/program scope
             SymbolTable *var_scope = current_scope;
@@ -3970,7 +6043,8 @@ public:
                         if (as->m_args[i].m_left && as->m_args[i].m_right
                                 && as->m_args[i].m_step) {
                             idx.m_left = nullptr;
-                            idx.m_right = loop_var;
+                            idx.m_right = section_index(loc,
+                                as->m_args[i], loop_var);
                             idx.m_step = nullptr;
                         } else {
                             idx.m_left = as->m_args[i].m_left;
@@ -4109,6 +6183,121 @@ public:
         }
     }
 
+    // Collects every symbol the kernel would have to reference for `x`:
+    // the symbols appearing in the loop head and body, plus the symbols
+    // that only appear inside the array-dimension expressions of those
+    // symbols' types (e.g. `tmp(size(b))` pulls in `b`).
+    void collect_involved_syms(const ASR::DoConcurrentLoop_t &x,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms) {
+        GpuSymbolCollector collector(al, involved_syms,
+            enclosing_block_scopes);
+        collector.visit_DoConcurrentLoop(x);
+        bool added = true;
+        while (added) {
+            added = false;
+            std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
+            GpuSymbolCollector type_collector(al, extra_syms,
+                enclosing_block_scopes);
+            for (auto &[sym_name, sym_info] : involved_syms) {
+                ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
+                if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_start)
+                        type_collector.visit_expr(*arr->m_dims[d].m_start);
+                    if (arr->m_dims[d].m_length)
+                        type_collector.visit_expr(*arr->m_dims[d].m_length);
+                }
+            }
+            for (auto &[name, info] : extra_syms) {
+                if (involved_syms.find(name) == involved_syms.end()) {
+                    involved_syms[name] = info;
+                    added = true;
+                }
+            }
+        }
+    }
+
+    // An AssociateBlock nested inside a do concurrent body is normally
+    // inlined away by substituting each associate name with its selector
+    // expression. An array-valued selector, however, is materialised into
+    // a temporary variable owned by the AssociateBlock's own symbol table,
+    // and that temporary is still referenced by the inlined statements.
+    // It has to stay private to each loop iteration, so the scope cannot
+    // simply be dropped. Rebuild it as an equivalent Block over the same
+    // symbol table, which the kernel extraction already knows how to carry
+    // into the generated kernel, and return the BlockCall replacing the
+    // AssociateBlockCall. Returns nullptr when no symbol of the
+    // AssociateBlock survives, in which case the caller inlines the
+    // statements directly as before.
+    ASR::stmt_t* wrap_assoc_scope_in_block(ASR::AssociateBlock_t *ab,
+            Vec<ASR::stmt_t*> &resolved_stmts, SymbolTable *parent_scope) {
+        std::set<ASR::symbol_t*> referenced_syms;
+        VarSymbolCollector collector(referenced_syms);
+        for (size_t i = 0; i < resolved_stmts.n; i++) {
+            collector.visit_stmt(*resolved_stmts.p[i]);
+        }
+        bool scope_needed = false;
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                    referenced_syms.find(item.second)
+                        != referenced_syms.end()) {
+                scope_needed = true;
+                break;
+            }
+        }
+        if (!scope_needed) return nullptr;
+        std::string block_name = parent_scope->get_unique_name(
+            std::string(ab->m_name) + "_scope");
+        ab->m_symtab->parent = parent_scope;
+        ASR::asr_t *block = ASR::make_Block_t(al, ab->base.base.loc,
+            ab->m_symtab, s2c(al, block_name), resolved_stmts.p,
+            resolved_stmts.n);
+        ab->m_symtab->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        parent_scope->add_symbol(block_name, block_sym);
+        return ASRUtils::STMT(ASR::make_BlockCall_t(al, ab->base.base.loc,
+            -1, block_sym));
+    }
+
+    // Move the symbols of an inlined AssociateBlock that are still
+    // reachable from the resolved statements into the scope that now owns
+    // those statements. ExternalSymbol entries (e.g. type-bound procedure
+    // references) remain referenced by call nodes, and a Block scope may
+    // have been created for a nested AssociateBlock.
+    void migrate_inlined_assoc_symbols(ASR::AssociateBlock_t *ab,
+            SymbolTable *parent_scope) {
+        std::vector<std::pair<std::string, ASR::symbol_t*>> to_move;
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ||
+                    ASR::is_a<ASR::Block_t>(*item.second)) {
+                to_move.push_back({item.first, item.second});
+            }
+        }
+        for (auto &item : to_move) {
+            std::string name = item.first;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                if (parent_scope->get_symbol(name)) continue;
+                ASR::down_cast<ASR::ExternalSymbol_t>(item.second)
+                    ->m_parent_symtab = parent_scope;
+            } else {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    item.second);
+                if (parent_scope->get_symbol(name)) {
+                    name = parent_scope->get_unique_name(name);
+                    block->m_name = s2c(al, name);
+                }
+                block->m_symtab->parent = parent_scope;
+            }
+            parent_scope->add_symbol(name, item.second);
+        }
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
@@ -4166,6 +6355,18 @@ public:
                         // regular assignment like `v = 0.`, whose RHS
                         // may reference `v` itself and cause infinite
                         // recursion during resolution.
+                        // Only scalar selectors are inlined. An
+                        // array-valued selector is materialized by the
+                        // compiler into a temporary that lives in this
+                        // AssociateBlock's symtab, and its defining
+                        // expression may itself reference further
+                        // AssociateBlock-local symbols (the array
+                        // constant buffer, the resolved specific
+                        // procedure of a generic constructor, ...).
+                        // Inlining it would drag those unreachable
+                        // symbols into the kernel. The associate name is
+                        // backed by real storage here, so it is passed
+                        // into the kernel as an ordinary buffer instead.
                         ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
                             ab->m_body[i]);
                         if (is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -4174,6 +6375,8 @@ public:
                             if (is_a<ASR::Variable_t>(*sym) &&
                                 down_cast<ASR::Variable_t>(sym)->m_parent_symtab
                                     == ab->m_symtab &&
+                                !ASRUtils::is_array(
+                                    down_cast<ASR::Variable_t>(sym)->m_type) &&
                                 assoc_map.find(sym) == assoc_map.end()) {
                                 assoc_map[sym] = asgn->m_value;
                             }
@@ -4314,12 +6517,109 @@ public:
             }
         }
 
+        // Detect if the do concurrent is inside a Block scope. If so,
+        // block-local variables need to be collected as kernel parameters
+        // rather than skipped. Walk up through AssociateBlock and Block
+        // parents to find ALL enclosing Block scopes (e.g., do concurrent
+        // inside a nested Block that accesses variables from outer Blocks).
+        std::set<SymbolTable*> enclosing_block_scopes;
+        {
+            SymbolTable *scope = current_scope;
+            while (scope && scope->asr_owner &&
+                   scope->asr_owner->type == ASR::asrType::symbol) {
+                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (is_a<ASR::Block_t>(*owner_sym) ||
+                    is_a<ASR::AssociateBlock_t>(*owner_sym)) {
+                    enclosing_block_scopes.insert(scope);
+                    scope = scope->parent;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Decide whether this loop can be offloaded at all *before* any of
+        // the inline_* helpers below rewrite the loop body. Those helpers
+        // are destructive: they lower array-section and intrinsic-array
+        // assignments into explicit element loops, a half-lowered shape
+        // that only the kernel extractor understands. If we declined the
+        // offload after rewriting, the loop would stay on the host in a
+        // form the later array_op pass no longer normalizes, and codegen
+        // would fail. So: no mutation until the decision is made.
+        if (pass_options.gpu_offload_metal) {
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+                candidate_syms;
+            collect_involved_syms(x, enclosing_block_scopes, candidate_syms);
+            // Every symbol reaching the kernel — buffer parameters,
+            // by-value members of the __ScalarArgs struct and kernel-local
+            // temporaries alike — is collected here, so a single sweep
+            // covers all of them.
+            for (auto &sym : candidate_syms) {
+                if (!is_metal_representable_type(sym.second.first,
+                        sym.second.second)) return;
+            }
+            GpuLocalArrayChecker local_array_checker;
+            for (size_t i = 0; i < x.n_body; i++) {
+                local_array_checker.visit_stmt(*x.m_body[i]);
+            }
+            if (local_array_checker.has_unsized_local_array) return;
+            // An array assignment whose two sides overlap the same array
+            // needs a temporary (see materialize_aliased_assignments).
+            // If that temporary cannot be fixed-size, decline here,
+            // while the body is still untouched.
+            if (body_needs_unsupported_alias_temp(x.m_body, x.n_body)) {
+                return;
+            }
+            // A device function may need a run-time sized local -- an
+            // array-constructor temporary sized from an assumed-shape
+            // dummy, say -- which Metal cannot declare. Work out here
+            // which callees have to be spliced into the kernel body to
+            // move those locals to kernel scope, where the VLA workspace
+            // machinery applies. This is analysis only; the splice
+            // itself happens below, after the offload decision.
+            functions_to_inline.clear();
+            {
+                std::map<ASR::Function_t*, bool> needs_inline_memo;
+                std::set<ASR::Function_t*> on_stack;
+                if (!plan_device_function_inlining(x.m_body, x.n_body,
+                        needs_inline_memo, on_stack)) {
+                    // Some callee that must be inlined cannot be
+                    // (recursive, early `return`, nested scopes, or
+                    // called from a position with nowhere to put the
+                    // result). Emitting a shader that cannot compile
+                    // would be worse than not offloading at all.
+                    functions_to_inline.clear();
+                    return;
+                }
+            }
+        }
+
+        // Splice the planned device functions into the loop body. This
+        // must come first among the rewrites below: the intrinsic and
+        // array-section inliners then see the spliced-in statements too.
+        {
+            ASR::DoConcurrentLoop_t &xx =
+                const_cast<ASR::DoConcurrentLoop_t&>(x);
+            inline_device_function_calls(xx.m_body, xx.n_body);
+            functions_to_inline.clear();
+        }
+
         // Inline IntrinsicArrayFunction All before kernel extraction
         all_reduction_targets.clear();
         inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
+        // Hoist array-valued intrinsics out of array constructors so the
+        // matmul lowering below can see them.
+        hoist_intrinsic_array_constructor_elements(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
+
         // Inline IntrinsicArrayFunction MatMul before kernel extraction
         inline_intrinsic_matmul(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Inline IntrinsicArrayFunction DotProduct before kernel
+        // extraction
+        inline_intrinsic_dot_product(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline IntrinsicArrayFunction Sum before kernel extraction
         inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
@@ -4363,6 +6663,8 @@ public:
                 if (ASR::is_a<ASR::Function_t>(*resolved)) {
                     ASR::Function_t *fn =
                         ASR::down_cast<ASR::Function_t>(resolved);
+                    inline_dot_product_in_stmts(fn->m_body, fn->n_body,
+                        fn->m_symtab);
                     inline_sum_in_stmts(fn->m_body, fn->n_body,
                         fn->m_symtab);
                 }
@@ -4371,6 +6673,12 @@ public:
 
         // Inline IntrinsicArrayFunction Transpose before kernel extraction
         inline_intrinsic_transpose(const_cast<ASR::DoConcurrentLoop_t&>(x));
+
+        // Materialise temporaries for assignments whose target and value
+        // overlap the same array, before the element loops below are
+        // built from them.
+        materialize_aliased_assignments(
+            const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
@@ -4420,20 +6728,33 @@ public:
                         ASR::AssociateBlock_t *inner_ab =
                             ASR::down_cast<ASR::AssociateBlock_t>(
                                 inner_abc->m_m);
+                        Vec<ASR::stmt_t*> inner_stmts;
+                        inner_stmts.reserve(al, inner_ab->n_body);
                         inline_assoc_body(inner_ab, assoc_map,
-                            resolved_stmts);
-                        for (auto &es_item :
-                                 inner_ab->m_symtab->get_scope()) {
-                            if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                                    *es_item.second)) continue;
-                            if (!current_scope->get_symbol(
-                                    es_item.first)) {
-                                ASR::down_cast<ASR::ExternalSymbol_t>(
-                                    es_item.second)->m_parent_symtab =
-                                        current_scope;
-                                current_scope->add_symbol(
-                                    es_item.first, es_item.second);
+                            inner_stmts);
+                        // Resolve the inner statements now: once they are
+                        // wrapped in a Block below the caller's resolver
+                        // no longer reaches them.
+                        if (!assoc_map.empty()) {
+                            AssociateVarResolverVisitor inner_resolver(
+                                al, assoc_map);
+                            for (size_t ii = 0; ii < inner_stmts.n; ii++) {
+                                inner_resolver.visit_stmt(
+                                    *inner_stmts.p[ii]);
                             }
+                        }
+                        ASR::stmt_t *inner_call =
+                            wrap_assoc_scope_in_block(inner_ab,
+                                inner_stmts, ab->m_symtab);
+                        if (inner_call) {
+                            resolved_stmts.push_back(al, inner_call);
+                        } else {
+                            for (size_t ii = 0; ii < inner_stmts.n; ii++) {
+                                resolved_stmts.push_back(al,
+                                    inner_stmts.p[ii]);
+                            }
+                            migrate_inlined_assoc_symbols(inner_ab,
+                                ab->m_symtab);
                         }
                         std::string inner_name = inner_ab->m_name;
                         ab->m_symtab->erase_symbol(inner_name);
@@ -4453,7 +6774,9 @@ public:
                         if (ASR::is_a<ASR::Variable_t>(*sym) &&
                             ASR::down_cast<ASR::Variable_t>(sym)
                                 ->m_parent_symtab == ab->m_symtab &&
-                            assoc_map.find(sym) == assoc_map.end()) {
+                            assoc_map.find(sym) == assoc_map.end() &&
+                            is_single_assignment_binding(sym,
+                                ab->m_body, ab->n_body)) {
                             assoc_map[sym] = asgn->m_value;
                         } else {
                             resolved_stmts.push_back(al,
@@ -4508,26 +6831,26 @@ public:
                         resolver.visit_stmt(*resolved_stmts.p[ri]);
                     }
                 }
-                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
-                    new_block_body.push_back(al, resolved_stmts.p[ri]);
-                }
-                // Migrate ExternalSymbol entries (e.g., type-bound
-                // procedure references like `1_t_f`) from the
-                // AssociateBlock's symtab to the enclosing scope
-                // before erasing it. These symbols are still
-                // referenced by FunctionCall/SubroutineCall nodes
-                // in the resolved statements and must remain
-                // reachable for import_struct_def.
-                for (auto &es_item : ab->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                            *es_item.second)) continue;
-                    if (!current_scope->get_symbol(es_item.first)) {
-                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                            es_item.second)->m_parent_symtab =
-                                current_scope;
-                        current_scope->add_symbol(es_item.first,
-                            es_item.second);
+                // If the AssociateBlock still owns variables referenced by
+                // the resolved statements (an array-valued selector
+                // temporary), keep the scope alive as a Block instead of
+                // dropping it.
+                ASR::stmt_t *block_call = wrap_assoc_scope_in_block(
+                    ab, resolved_stmts, block->m_symtab);
+                if (block_call) {
+                    new_block_body.push_back(al, block_call);
+                } else {
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        new_block_body.push_back(al, resolved_stmts.p[ri]);
                     }
+                    // Migrate ExternalSymbol entries (e.g., type-bound
+                    // procedure references like `1_t_f`) from the
+                    // AssociateBlock's symtab to the enclosing scope
+                    // before erasing it. These symbols are still
+                    // referenced by FunctionCall/SubroutineCall nodes
+                    // in the resolved statements and must remain
+                    // reachable for import_struct_def.
+                    migrate_inlined_assoc_symbols(ab, current_scope);
                 }
                 std::string ab_name = ab->m_name;
                 block->m_symtab->erase_symbol(ab_name);
@@ -4577,22 +6900,20 @@ public:
                         resolver.visit_stmt(*resolved_stmts.p[ri]);
                     }
                 }
-                for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
-                    new_dc_body.push_back(al, resolved_stmts.p[ri]);
-                }
-                // Migrate ExternalSymbol entries from the
-                // AssociateBlock's symtab to the enclosing scope
-                // before erasing it (same as above for BlockCall).
-                for (auto &es_item : ab->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::ExternalSymbol_t>(
-                            *es_item.second)) continue;
-                    if (!current_scope->get_symbol(es_item.first)) {
-                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                            es_item.second)->m_parent_symtab =
-                                current_scope;
-                        current_scope->add_symbol(es_item.first,
-                            es_item.second);
+                // Keep the scope alive as a Block when it still owns
+                // variables referenced by the resolved statements.
+                ASR::stmt_t *block_call = wrap_assoc_scope_in_block(
+                    ab, resolved_stmts, current_scope);
+                if (block_call) {
+                    new_dc_body.push_back(al, block_call);
+                } else {
+                    for (size_t ri = 0; ri < resolved_stmts.n; ri++) {
+                        new_dc_body.push_back(al, resolved_stmts.p[ri]);
                     }
+                    // Migrate ExternalSymbol entries from the
+                    // AssociateBlock's symtab to the enclosing scope
+                    // before erasing it (same as above for BlockCall).
+                    migrate_inlined_assoc_symbols(ab, current_scope);
                 }
                 std::string ab_name = ab->m_name;
                 current_scope->erase_symbol(ab_name);
@@ -4606,77 +6927,9 @@ public:
             }
         }
 
-        // Detect if the do concurrent is inside a Block scope. If so,
-        // block-local variables need to be collected as kernel parameters
-        // rather than skipped. Walk up through AssociateBlock and Block
-        // parents to find ALL enclosing Block scopes (e.g., do concurrent
-        // inside a nested Block that accesses variables from outer Blocks).
-        std::set<SymbolTable*> enclosing_block_scopes;
-        {
-            SymbolTable *scope = current_scope;
-            while (scope && scope->asr_owner &&
-                   scope->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *owner_sym = down_cast<ASR::symbol_t>(
-                    scope->asr_owner);
-                if (is_a<ASR::Block_t>(*owner_sym)) {
-                    enclosing_block_scopes.insert(scope);
-                    scope = scope->parent;
-                } else if (is_a<ASR::AssociateBlock_t>(*owner_sym)) {
-                    scope = scope->parent;
-                } else {
-                    break;
-                }
-            }
-        }
-
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
-        GpuSymbolCollector collector(al, involved_syms, enclosing_block_scopes);
-        collector.visit_DoConcurrentLoop(x);
-
-        // Also collect symbols referenced in the type expressions (array
-        // dimensions) of already-collected symbols. For example, if
-        // `tmp(size(b))` is used in the body, `tmp` is collected but `b`
-        // only appears in tmp's type — we must also pull `b` into
-        // involved_syms so it becomes a kernel parameter.
-        {
-            bool added = true;
-            while (added) {
-                added = false;
-                std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> extra_syms;
-                GpuSymbolCollector type_collector(al, extra_syms, enclosing_block_scopes);
-                for (auto &[sym_name, sym_info] : involved_syms) {
-                    ASR::symbol_t *sym = current_scope->resolve_symbol(sym_name);
-                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
-                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
-                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
-                    for (size_t d = 0; d < arr->n_dims; d++) {
-                        if (arr->m_dims[d].m_start)
-                            type_collector.visit_expr(*arr->m_dims[d].m_start);
-                        if (arr->m_dims[d].m_length)
-                            type_collector.visit_expr(*arr->m_dims[d].m_length);
-                    }
-                }
-                for (auto &[name, info] : extra_syms) {
-                    if (involved_syms.find(name) == involved_syms.end()) {
-                        involved_syms[name] = info;
-                        added = true;
-                    }
-                }
-            }
-        }
-
-        if (pass_options.gpu_offload_metal) {
-            for (auto &sym : involved_syms) {
-                ASR::ttype_t *t = sym.second.first;
-                ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-                if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) return;
-                if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) return;
-            }
-        }
+        collect_involved_syms(x, enclosing_block_scopes, involved_syms);
 
         // Collect loop variable names
         std::vector<std::string> loop_var_names;
@@ -4975,10 +7228,10 @@ public:
                 }
             }
 
-            // Strip Allocatable wrapper: GPU kernel parameters receive
-            // raw array data, not allocatable descriptors
+            // Strip Allocatable/Pointer wrapper: GPU kernel parameters
+            // receive raw array data, not array descriptors
             ASR::ttype_t *dup_type = ASRUtils::duplicate_type(al,
-                ASRUtils::type_get_past_allocatable(type));
+                ASRUtils::type_get_past_allocatable_pointer(type));
 
             // Recompute dependencies from the type alone (symbolic_value
             // and value are nullptr for kernel parameters)
@@ -5176,8 +7429,13 @@ public:
         }
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *orig_type = sym_info.first;
-            if (!ASRUtils::is_allocatable(orig_type)) continue;
-            ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(orig_type);
+            // Allocatable and pointer arrays are both deferred-shape:
+            // their extents and lower bounds are only known at run time
+            // and must be passed to the kernel as extra scalar
+            // arguments so it can compute strides.
+            if (!ASRUtils::is_allocatable_or_pointer(orig_type)) continue;
+            ASR::ttype_t *inner =
+                ASRUtils::type_get_past_allocatable_pointer(orig_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
 
             // Locate the kernel-scope Variable whose type we must update
@@ -5185,8 +7443,12 @@ public:
             LCOMPILERS_ASSERT(k_sym);
             ASR::Variable_t *k_var = ASR::down_cast<ASR::Variable_t>(k_sym);
             ASR::ttype_t *k_type = k_var->m_type;
+            if (!ASR::is_a<ASR::Array_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(k_type))) {
+                continue;
+            }
             ASR::Array_t *k_arr = ASR::down_cast<ASR::Array_t>(
-                ASRUtils::type_get_past_allocatable(k_type));
+                ASRUtils::type_get_past_allocatable_pointer(k_type));
 
             ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
             ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
@@ -5283,19 +7545,13 @@ public:
             ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
             ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *mem_sym =
-                    st->m_symtab->get_symbol(st->m_members[m]);
-                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
-                    continue;
-                ASR::Variable_t *mv =
-                    down_cast<ASR::Variable_t>(mem_sym);
-                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
-                ASR::ttype_t *mem_inner =
-                    ASRUtils::type_get_past_allocatable(mv->m_type);
-                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
+            for (auto &mem_entry :
+                    ASRUtils::collect_allocatable_array_members(st)) {
+                const std::string &mem_name = mem_entry.first;
+                ASR::Variable_t *mv = mem_entry.second;
+                ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 std::string size_name = "__size_" + sym_name + "_"
-                    + std::string(st->m_members[m]);
+                    + mem_name;
                 ASR::symbol_t *size_sym =
                     ASR::down_cast<ASR::symbol_t>(
                         ASRUtils::make_Variable_t_util(al, loc,
@@ -5346,6 +7602,53 @@ public:
                 carg.loc = loc;
                 carg.m_value = host_size;
                 call_args.push_back(al, carg);
+
+                // For a component of rank > 1 the total size is not the
+                // extent of any single dimension, so also pass each
+                // per-dimension extent; size(struct%member, dim) in the
+                // kernel reads these.
+                ASR::ttype_t *mem_inner =
+                    ASRUtils::type_get_past_allocatable(mv->m_type);
+                size_t rank = ASR::down_cast<ASR::Array_t>(
+                    mem_inner)->n_dims;
+                if (rank <= 1) continue;
+                for (size_t d = 0; d < rank; d++) {
+                    std::string dim_size_name = size_name + "_dim"
+                        + std::to_string(d + 1);
+                    ASR::symbol_t *dim_size_sym =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(al, loc,
+                                kernel_scope, s2c(al, dim_size_name),
+                                nullptr, 0,
+                                ASR::intentType::InOut, nullptr,
+                                nullptr,
+                                ASR::storage_typeType::Default,
+                                ASRUtils::duplicate_type(al,
+                                    int_type_sz),
+                                nullptr, ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required, false));
+                    kernel_scope->add_symbol(dim_size_name,
+                        dim_size_sym);
+                    kernel_args.push_back(al,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            dim_size_sym)));
+                    ASR::expr_t *dim_expr = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc,
+                            (int64_t)(d + 1), int_type_sz,
+                            ASR::integerbozType::Decimal));
+                    ASR::expr_t *dim_member = ASRUtils::EXPR(
+                        ASR::make_StructInstanceMember_t(al, loc,
+                            ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                                orig_sym)),
+                            orig_mem_ref, mv->m_type, nullptr));
+                    ASR::call_arg_t dim_carg;
+                    dim_carg.loc = loc;
+                    dim_carg.m_value = ASRUtils::EXPR(
+                        ASR::make_ArraySize_t(al, loc, dim_member,
+                            dim_expr, int_type_sz, nullptr));
+                    call_args.push_back(al, dim_carg);
+                }
             }
         }
 
@@ -5372,19 +7675,15 @@ public:
                     orig_var->m_type_declaration);
             if (!is_a<ASR::Struct_t>(*struct_sym)) continue;
             ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *mem_sym =
-                    st->m_symtab->get_symbol(st->m_members[m]);
-                if (!mem_sym || !is_a<ASR::Variable_t>(*mem_sym))
-                    continue;
-                ASR::Variable_t *mv =
-                    down_cast<ASR::Variable_t>(mem_sym);
-                if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+            for (auto &mem_entry :
+                    ASRUtils::collect_allocatable_array_members(st)) {
+                const std::string &mem_name = mem_entry.first;
+                ASR::Variable_t *mv = mem_entry.second;
+                ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 ASR::ttype_t *mem_inner =
                     ASRUtils::type_get_past_allocatable(mv->m_type);
-                if (!ASR::is_a<ASR::Array_t>(*mem_inner)) continue;
                 std::string data_name = "__data_" + sym_name + "_"
-                    + std::string(st->m_members[m]);
+                    + mem_name;
                 ASR::ttype_t *data_type =
                     ASRUtils::duplicate_type(al, mem_inner);
                 ASR::symbol_t *data_type_decl = nullptr;
@@ -5515,154 +7814,8 @@ public:
                             }
                         }
                         if (fn) {
-                            ASR::Function_t *fn_impl = fn;
-                            ASR::FunctionType_t *fn_ft =
-                                ASR::down_cast<ASR::FunctionType_t>(
-                                    fn->m_function_signature);
-                            if (fn_ft->m_deftype ==
-                                    ASR::deftypeType::Interface) {
-                                std::string pname = fn->m_name;
-                                bool found_impl = false;
-                                for (auto &tu_item :
-                                        tu.m_symtab->get_scope()) {
-                                    if (!ASR::is_a<ASR::Module_t>(
-                                            *tu_item.second)) continue;
-                                    ASR::Module_t *mod =
-                                        ASR::down_cast<ASR::Module_t>(
-                                            tu_item.second);
-                                    ASR::symbol_t *impl_sym =
-                                        mod->m_symtab->get_symbol(pname);
-                                    if (!impl_sym ||
-                                        !ASR::is_a<ASR::Function_t>(
-                                            *impl_sym)) continue;
-                                    ASR::Function_t *impl_func =
-                                        ASR::down_cast<ASR::Function_t>(
-                                            impl_sym);
-                                    ASR::FunctionType_t *impl_ft =
-                                        ASR::down_cast<ASR::FunctionType_t>(
-                                            impl_func
-                                                ->m_function_signature);
-                                    if (impl_ft->m_deftype ==
-                                            ASR::deftypeType::Implementation) {
-                                        fn_impl = impl_func;
-                                        found_impl = true;
-                                        break;
-                                    }
-                                }
-                                if (!found_impl) {
-                                    // Load submodule from .smod file
-                                    // on disk (--separate-compilation).
-                                    SymbolTable *parent_st =
-                                        fn->m_symtab->parent;
-                                    if (parent_st->asr_owner &&
-                                            parent_st->asr_owner->type ==
-                                                ASR::asrType::symbol &&
-                                            ASR::is_a<ASR::Module_t>(
-                                                *ASR::down_cast<
-                                                    ASR::symbol_t>(
-                                                    parent_st
-                                                        ->asr_owner))) {
-                                        std::string parent_mod =
-                                            ASR::down_cast<ASR::Module_t>(
-                                                ASR::down_cast<
-                                                    ASR::symbol_t>(
-                                                    parent_st
-                                                        ->asr_owner))
-                                                ->m_name;
-                                        std::string smod_prefix =
-                                            parent_mod + "@";
-                                        std::vector<
-                                            std::filesystem::path>
-                                                mod_dirs;
-                                        mod_dirs.push_back(
-                                            pass_options
-                                                .runtime_library_dir);
-                                        mod_dirs.push_back(
-                                            pass_options.mod_files_dir);
-                                        mod_dirs.insert(mod_dirs.end(),
-                                            pass_options.include_dirs
-                                                .begin(),
-                                            pass_options.include_dirs
-                                                .end());
-                                        for (auto &dir : mod_dirs) {
-                                            if (dir.empty())
-                                                dir = ".";
-                                            if (!std::filesystem::
-                                                    is_directory(dir))
-                                                continue;
-                                            for (auto &file :
-                                                    std::filesystem::
-                                                        directory_iterator(
-                                                            dir)) {
-                                                std::string fname =
-                                                    file.path()
-                                                        .filename()
-                                                        .string();
-                                                if (!startswith(fname,
-                                                        smod_prefix) ||
-                                                    !endswith(fname,
-                                                        ".smod"))
-                                                    continue;
-                                                std::string content;
-                                                if (!read_file(
-                                                        file.path()
-                                                            .string(),
-                                                        content) ||
-                                                    content.empty())
-                                                    continue;
-                                                LocationManager
-                                                    lm_tmp;
-                                                auto res =
-                                                    load_modfile(
-                                                        al, content,
-                                                        false,
-                                                        *tu.m_symtab,
-                                                        lm_tmp);
-                                                if (!res.ok) continue;
-                                                load_submodule_deps(
-                                                    *res.result);
-                                                fix_external_symbols(
-                                                    *res.result,
-                                                    *tu.m_symtab);
-                                                ASR::Module_t *submod =
-                                                    ASRUtils::
-                                                        extract_module(
-                                                            *res.result);
-                                                ASR::symbol_t
-                                                    *impl_sym =
-                                                    submod->m_symtab
-                                                        ->get_symbol(
-                                                            pname);
-                                                if (!impl_sym ||
-                                                    !ASR::is_a<
-                                                        ASR::Function_t
-                                                            >(*impl_sym))
-                                                    continue;
-                                                ASR::Function_t
-                                                    *impl_func =
-                                                    ASR::down_cast<
-                                                        ASR::Function_t>(
-                                                            impl_sym);
-                                                ASR::FunctionType_t
-                                                    *impl_ft =
-                                                    ASR::down_cast<
-                                                        ASR::FunctionType_t>(
-                                                        impl_func
-                                                        ->m_function_signature);
-                                                if (impl_ft->m_deftype
-                                                        != ASR::
-                                                        deftypeType::
-                                                        Implementation)
-                                                    continue;
-                                                fn_impl = impl_func;
-                                                found_impl = true;
-                                                break;
-                                            }
-                                            if (found_impl) break;
-                                        }
-                                    }
-                                }
-                            }
+                            ASR::Function_t *fn_impl =
+                                resolve_function_implementation(fn);
                             for (size_t i = 0; i < fn_impl->n_body; i++) {
                                 transitive_collector.visit_stmt(
                                     *fn_impl->m_body[i]);
@@ -5944,8 +8097,11 @@ public:
                                 ASR::Struct_t *ks =
                                     down_cast<ASR::Struct_t>(kernel_struct);
                                 ASR::symbol_t *kernel_method =
-                                    ks->m_symtab->get_symbol(orig_name);
+                                    get_struct_member_recursive(ks,
+                                        orig_name);
                                 if (kernel_method) {
+                                    struct_name = struct_member_owner_name(
+                                        kernel_method, struct_name);
                                     ASR::asr_t *new_es =
                                         ASR::make_ExternalSymbol_t(al, loc,
                                             kernel_scope,

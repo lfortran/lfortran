@@ -22179,6 +22179,138 @@ public:
         return fn;
     }
 
+    // Load a scalar derived-type component chain (e.g. `s%m_`) of a GPU
+    // kernel argument on the host, so that a VLA workspace buffer sized by
+    // that component can be allocated before the kernel is launched.  The
+    // struct itself is handed to the kernel as a buffer, so its components
+    // are not materialized as scalar kernel arguments.
+    llvm::Value* load_gpu_struct_member_extent(ASR::expr_t *base_expr,
+            llvm::Value *struct_ptr,
+            const std::vector<std::string> &member_path,
+            const std::string &ws_name, const Location &loc) {
+        if (base_expr == nullptr || struct_ptr == nullptr) {
+            throw CodeGenError("gpu offload: the extent of the temporary "
+                "array `" + ws_name + "` cannot be determined from the "
+                "kernel arguments", loc);
+        }
+        llvm::Value *ptr = struct_ptr;
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(base_expr));
+        for (size_t m = 0; m < member_path.size(); m++) {
+            if (struct_sym == nullptr ||
+                    !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                throw CodeGenError("gpu offload: the extent of the "
+                    "temporary array `" + ws_name + "` cannot be "
+                    "determined from component `" + member_path[m] + "`",
+                    loc);
+            }
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            std::string type_key = get_type_key(struct_sym);
+            ASR::symbol_t *member_sym = st->m_symtab->get_symbol(
+                member_path[m]);
+            if (member_sym == nullptr ||
+                    name2dertype.find(type_key) == name2dertype.end() ||
+                    name2memidx[type_key].find(member_path[m]) ==
+                        name2memidx[type_key].end()) {
+                throw CodeGenError("gpu offload: the extent of the "
+                    "temporary array `" + ws_name + "` cannot be "
+                    "determined from component `" + member_path[m] + "`",
+                    loc);
+            }
+            ASR::Variable_t *member_var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(member_sym));
+            ptr = llvm_utils->create_gep2(name2dertype[type_key], ptr,
+                name2memidx[type_key][member_path[m]]);
+            if (m + 1 == member_path.size()) {
+                llvm::Type *member_type =
+                    llvm_utils->get_type_from_ttype_t_util(
+                        member_var->m_type, member_var->m_type_declaration,
+                        module.get());
+                return llvm_utils->CreateLoad2(member_type, ptr);
+            }
+            struct_sym = ASRUtils::symbol_get_past_external(
+                member_var->m_type_declaration);
+        }
+        throw CodeGenError("gpu offload: the extent of the temporary array "
+            "`" + ws_name + "` cannot be determined from the kernel "
+            "arguments", loc);
+    }
+
+    // Evaluate a workspace-extent expression tree on the host.  Leaves are
+    // resolved to either a scalar kernel-argument value or a derived-type
+    // component loaded out of the struct that is handed to the kernel as a
+    // buffer; interior nodes reproduce the original integer arithmetic, so
+    // an extent like `s%m_ + 1` is sized exactly.
+    llvm::Value* eval_gpu_vla_dim_expr(const GpuVlaDim &dim,
+            int64_t node_index, const ASR::GpuKernelLaunch_t &x,
+            const std::vector<llvm::Value*> &call_arg_values,
+            const std::vector<llvm::Value*> &call_arg_struct_ptrs,
+            const std::string &ws_name) {
+        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        if (node_index < 0 ||
+                (size_t)node_index >= dim.expr_nodes.size()) {
+            throw CodeGenError("gpu offload: the extent of the temporary "
+                "array `" + ws_name + "` cannot be determined from the "
+                "kernel arguments", x.base.base.loc);
+        }
+        const GpuVlaDimNode &node = dim.expr_nodes[node_index];
+        switch (node.kind) {
+            case GpuVlaDimNode::Kind::Constant: {
+                return llvm::ConstantInt::get(i64, node.constant_value);
+            }
+            case GpuVlaDimNode::Kind::CallArg: {
+                if (node.call_arg_index < 0 ||
+                        (size_t)node.call_arg_index >= x.n_args ||
+                        call_arg_values[node.call_arg_index] == nullptr) {
+                    throw CodeGenError("gpu offload: the extent of the "
+                        "temporary array `" + ws_name + "` cannot be "
+                        "determined from the kernel arguments",
+                        x.base.base.loc);
+                }
+                return builder->CreateIntCast(
+                    call_arg_values[node.call_arg_index], i64, true);
+            }
+            case GpuVlaDimNode::Kind::StructMember: {
+                if (node.call_arg_index < 0 ||
+                        (size_t)node.call_arg_index >= x.n_args) {
+                    throw CodeGenError("gpu offload: the extent of the "
+                        "temporary array `" + ws_name + "` cannot be "
+                        "determined from the kernel arguments",
+                        x.base.base.loc);
+                }
+                llvm::Value *member = load_gpu_struct_member_extent(
+                    x.m_args[node.call_arg_index].m_value,
+                    call_arg_struct_ptrs[node.call_arg_index],
+                    node.member_path, ws_name, x.base.base.loc);
+                return builder->CreateIntCast(member, i64, true);
+            }
+            case GpuVlaDimNode::Kind::BinOp: {
+                llvm::Value *left = eval_gpu_vla_dim_expr(dim, node.left,
+                    x, call_arg_values, call_arg_struct_ptrs, ws_name);
+                llvm::Value *right = eval_gpu_vla_dim_expr(dim, node.right,
+                    x, call_arg_values, call_arg_struct_ptrs, ws_name);
+                switch (node.binop) {
+                    case ASR::binopType::Add:
+                        return builder->CreateAdd(left, right);
+                    case ASR::binopType::Sub:
+                        return builder->CreateSub(left, right);
+                    case ASR::binopType::Mul:
+                        return builder->CreateMul(left, right);
+                    case ASR::binopType::Div:
+                        return builder->CreateSDiv(left, right);
+                    default:
+                        throw CodeGenError("gpu offload: the extent of the "
+                            "temporary array `" + ws_name + "` cannot be "
+                            "determined from the kernel arguments",
+                            x.base.base.loc);
+                }
+            }
+        }
+        throw CodeGenError("gpu offload: the extent of the temporary array "
+            "`" + ws_name + "` cannot be determined from the kernel "
+            "arguments", x.base.base.loc);
+    }
+
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         llvm::Type *i8_ptr = llvm::PointerType::getUnqual(
             llvm::Type::getInt8Ty(context));
@@ -22245,6 +22377,11 @@ public:
 
         // Save scalar arg LLVM values for VLA workspace size computation
         std::vector<llvm::Value*> call_arg_values(x.n_args, nullptr);
+        // Save struct arg pointers so that a VLA workspace whose extent is
+        // a derived-type component (e.g. `s%m_`) can load that component
+        // here on the host: a struct is passed to the kernel as a buffer,
+        // so it never appears in `call_arg_values`.
+        std::vector<llvm::Value*> call_arg_struct_ptrs(x.n_args, nullptr);
 
         // Track scalar args to pack into a single struct buffer
         struct ScalarArgInfo {
@@ -22295,21 +22432,31 @@ public:
         std::map<std::string, std::string> struct_member_runtime_sources =
             find_struct_member_vla_runtime_sources(*kernel_func);
 
+        // Array descriptors of the call arguments that have one, keyed by
+        // argument index. They are captured while the device buffers are
+        // set up (the descriptor pointer of a struct member needs an extra
+        // load) and reused below to read the per-dimension strides.
+        std::map<size_t, std::pair<llvm::Value*, llvm::Type*>> arg_descriptors;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *arg_expr = x.m_args[i].m_value;
             if (!arg_expr) continue;
 
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
-            bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(*arg_type)
+            // Allocatable and pointer arrays are both represented by an
+            // array descriptor, so they are marshalled the same way: the
+            // descriptor pointer is obtained with ptr_loads = 1 and the
+            // data pointer / size are read out of the descriptor.
+            bool is_alloc_ptr_array = (ASR::is_a<ASR::Allocatable_t>(*arg_type)
+                    || ASR::is_a<ASR::Pointer_t>(*arg_type))
                 && ASRUtils::is_array(arg_type);
-            bool is_struct_member_alloc = is_allocatable_array
+            bool is_struct_member_alloc = is_alloc_ptr_array
                 && ASR::is_a<ASR::StructInstanceMember_t>(*arg_expr);
 
             // Check for assumed-shape (descriptor) arrays with null dims
             bool is_descriptor_array = false;
-            if (ASRUtils::is_array(arg_type) && !is_allocatable_array) {
+            if (ASRUtils::is_array(arg_type) && !is_alloc_ptr_array) {
                 ASR::ttype_t *past_alloc =
-                    ASRUtils::type_get_past_allocatable(arg_type);
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type);
                 if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
                     ASR::Array_t *arr_early =
                         ASR::down_cast<ASR::Array_t>(past_alloc);
@@ -22329,7 +22476,7 @@ public:
             // allocatable member field (T**); we load once afterward
             // to get T* (the descriptor pointer).
             int64_t ptr_loads_copy = ptr_loads;
-            if (is_allocatable_array || is_descriptor_array) {
+            if (is_alloc_ptr_array || is_descriptor_array) {
                 ptr_loads = 1;
             }
             this->visit_expr(*arg_expr);
@@ -22342,7 +22489,7 @@ public:
             // descriptor pointer that get_pointer_to_data expects.
             if (is_struct_member_alloc) {
                 ASR::ttype_t *desc_asr_type =
-                    ASRUtils::type_get_past_allocatable(arg_type);
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type);
                 llvm::Type *desc_type =
                     llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, desc_asr_type, module.get());
@@ -22354,12 +22501,13 @@ public:
                 // For allocatable/descriptor arrays, extract data pointer
                 // from the descriptor
                 llvm::Value *data_ptr;
-                if (is_allocatable_array || is_descriptor_array) {
+                if (is_alloc_ptr_array || is_descriptor_array) {
                     ASR::ttype_t *desc_asr_type =
-                        ASRUtils::type_get_past_allocatable(arg_type);
+                        ASRUtils::type_get_past_allocatable_pointer(arg_type);
                     llvm::Type *desc_type =
                         llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, desc_asr_type, module.get());
+                    arg_descriptors[i] = {arg_val, desc_type};
                     llvm::Value *data_ptr_ptr =
                         arr_descr->get_pointer_to_data(desc_type, arg_val);
                     data_ptr = llvm_utils->CreateLoad2(
@@ -22370,7 +22518,7 @@ public:
                 }
                 // Compute size
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
-                    ASRUtils::type_get_past_allocatable(arg_type));
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type));
                 int elem_size = 4; // default float/int
                 if (arr->m_type->type == ASR::ttypeType::Real) {
                     int kind = ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
@@ -22416,11 +22564,11 @@ public:
                 if (all_constant) {
                     byte_size = llvm::ConstantInt::get(i64, total_elements * elem_size);
                 } else if (has_null_dim &&
-                        (is_allocatable_array || is_descriptor_array)) {
+                        (is_alloc_ptr_array || is_descriptor_array)) {
                     // Allocatable/descriptor arrays: get size from the
                     // descriptor
                     ASR::ttype_t *desc_asr_type =
-                        ASRUtils::type_get_past_allocatable(arg_type);
+                        ASRUtils::type_get_past_allocatable_pointer(arg_type);
                     llvm::Type *desc_type =
                         llvm_utils->get_type_from_ttype_t_util(
                             arg_expr, desc_asr_type, module.get());
@@ -22428,7 +22576,46 @@ public:
                         desc_type, arg_val, nullptr, 4);
                     llvm::Value *n_elems_64 =
                         builder->CreateSExtOrTrunc(n_elems, i64);
-                    byte_size = builder->CreateMul(n_elems_64,
+                    // The descriptor may describe a non-contiguous
+                    // section, in which case the elements span
+                    // 1 + sum_d (extent_d - 1) * stride_d slots of the
+                    // underlying storage rather than just their count.
+                    // The buffer handed to the GPU has to cover that
+                    // whole span, since the kernel indexes it with the
+                    // descriptor strides.
+                    llvm::Value *dim_des_arr =
+                        arr_descr
+                        ->get_pointer_to_dimension_descriptor_array(
+                            desc_type, arg_val);
+                    llvm::Value *span = llvm::ConstantInt::get(i64, 1);
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        llvm::Value *dim_desc =
+                            arr_descr
+                            ->get_pointer_to_dimension_descriptor(
+                                dim_des_arr,
+                                llvm::ConstantInt::get(i32, d));
+                        llvm::Value *extent =
+                            builder->CreateSExtOrTrunc(
+                                arr_descr->get_array_size(desc_type,
+                                    arg_val,
+                                    llvm::ConstantInt::get(i32, d + 1),
+                                    4),
+                                i64);
+                        llvm::Value *stride_d =
+                            builder->CreateSExtOrTrunc(
+                                arr_descr->get_stride(dim_desc), i64);
+                        span = builder->CreateAdd(span,
+                            builder->CreateMul(
+                                builder->CreateSub(extent,
+                                    llvm::ConstantInt::get(i64, 1)),
+                                stride_d));
+                    }
+                    // Guard against descending strides, which would make
+                    // the span smaller than the element count.
+                    span = builder->CreateSelect(
+                        builder->CreateICmpSGT(span, n_elems_64),
+                        span, n_elems_64);
+                    byte_size = builder->CreateMul(span,
                         llvm::ConstantInt::get(i64, elem_size));
                 } else {
                     // Compute array size at runtime from dimension expressions
@@ -22992,10 +23179,10 @@ public:
                             // the descriptor; otherwise, derive from
                             // byte_size / elem_size.
                             llvm::Value *n_elems_64;
-                            if (is_allocatable_array ||
+                            if (is_alloc_ptr_array ||
                                     is_descriptor_array) {
                                 ASR::ttype_t *alloc_desc_asr =
-                                    ASRUtils::type_get_past_allocatable(
+                                    ASRUtils::type_get_past_allocatable_pointer(
                                         arg_type);
                                 llvm::Type *alloc_desc_llvm =
                                     llvm_utils->get_type_from_ttype_t_util(
@@ -23347,7 +23534,39 @@ public:
                 // and results are copied back to the host
                 llvm::Value *struct_ptr;
                 llvm::Type *struct_type;
-                if (arg_val->getType()->isPointerTy()) {
+                // A polymorphic (`class(...)`) argument is represented as the
+                // class container `{vtable*, struct*}`.  The kernel is
+                // generated against the underlying struct, so unwrap the
+                // container here: both the buffer handed to the kernel and
+                // any workspace extent read out of a component must refer to
+                // the underlying struct, not to the container.
+                ASR::symbol_t *arg_class_sym = nullptr;
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))
+                        && !ASRUtils::is_unlimited_polymorphic_type(arg_type)
+                        && !LLVM::is_llvm_pointer(*arg_type)
+                        && arg_val->getType()->isPointerTy()) {
+                    arg_class_sym = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(arg_expr));
+                    if (arg_class_sym != nullptr &&
+                            !ASR::is_a<ASR::Struct_t>(*arg_class_sym)) {
+                        arg_class_sym = nullptr;
+                    }
+                }
+                if (arg_class_sym != nullptr) {
+                    ASR::Struct_t *class_st = ASR::down_cast<ASR::Struct_t>(
+                        arg_class_sym);
+                    llvm::Value *underlying = llvm_utils->CreateLoad2(
+                        llvm_utils->getStructType(class_st, module.get(),
+                            true),
+                        llvm_utils->create_gep2(
+                            llvm_utils->getClassType(class_st), arg_val, 1));
+                    call_arg_struct_ptrs[i] = underlying;
+                    struct_ptr = builder->CreatePointerCast(underlying,
+                        i8_ptr);
+                    struct_type = llvm_utils->getStructType(class_st,
+                        module.get());
+                } else if (arg_val->getType()->isPointerTy()) {
+                    call_arg_struct_ptrs[i] = arg_val;
                     struct_ptr = builder->CreatePointerCast(arg_val, i8_ptr);
                     struct_type = llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, arg_type, module.get());
@@ -23358,6 +23577,7 @@ public:
                     llvm::AllocaInst *struct_alloca =
                         llvm_utils->CreateAlloca(struct_type);
                     builder->CreateStore(arg_val, struct_alloca);
+                    call_arg_struct_ptrs[i] = struct_alloca;
                     struct_ptr = builder->CreatePointerCast(struct_alloca, i8_ptr);
                 }
                 uint64_t sz = module->getDataLayout().getTypeAllocSize(struct_type);
@@ -23474,6 +23694,73 @@ public:
                         {dim_size, llvm::Type::getInt32Ty(context)});
                 }
                 ptr_loads = ptr_loads_copy;
+            }
+        }
+
+        // Add per-dimension element strides for kernel arguments that are
+        // reached through an array descriptor, matching the Metal codegen's
+        // scalar struct layout. The actual argument may be a non-contiguous
+        // section (for example a(3,:)), whose elements are strided in the
+        // flat device buffer; the kernel cannot derive that stride from the
+        // extents, so it is read out of the descriptor here.
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg_expr = x.m_args[i].m_value;
+            if (!arg_expr) continue;
+            ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(kernel_func->m_args[i])->m_v);
+            if (!gpu_arg_is_descriptor_array(kparam)) continue;
+            ASR::Array_t *kparam_arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(kparam->m_type));
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg_expr);
+            ASR::ttype_t *past_alloc3 =
+                ASRUtils::type_get_past_allocatable_pointer(arg_type);
+            llvm::Value *dim_des_arr = nullptr;
+            auto desc_it = arg_descriptors.find(i);
+            if (desc_it != arg_descriptors.end()) {
+                dim_des_arr =
+                    arr_descr->get_pointer_to_dimension_descriptor_array(
+                        desc_it->second.second, desc_it->second.first);
+            }
+            for (size_t d = 0; d < kparam_arr->n_dims; d++) {
+                llvm::Value *stride_val;
+                if (dim_des_arr) {
+                    llvm::Value *dim_desc =
+                        arr_descr->get_pointer_to_dimension_descriptor(
+                            dim_des_arr,
+                            llvm::ConstantInt::get(i32, d));
+                    stride_val = builder->CreateSExtOrTrunc(
+                        arr_descr->get_stride(dim_desc),
+                        llvm::Type::getInt32Ty(context));
+                } else {
+                    // No descriptor available: the flat buffer is
+                    // contiguous, so the stride is the product of the
+                    // preceding extents, which is what the kernel would
+                    // have assumed anyway.
+                    stride_val = llvm::ConstantInt::get(
+                        llvm::Type::getInt32Ty(context), 1);
+                    ASR::Array_t *call_arr =
+                        ASR::is_a<ASR::Array_t>(*past_alloc3)
+                        ? ASR::down_cast<ASR::Array_t>(past_alloc3)
+                        : nullptr;
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2;
+                    for (size_t e = 0; e < d; e++) {
+                        if (!call_arr || e >= call_arr->n_dims
+                                || !call_arr->m_dims[e].m_length) continue;
+                        this->visit_expr(*call_arr->m_dims[e].m_length);
+                        llvm::Value *dim_len = tmp;
+                        if (dim_len->getType()->isPointerTy()) {
+                            dim_len = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt32Ty(context), dim_len);
+                        }
+                        stride_val = builder->CreateMul(stride_val,
+                            builder->CreateSExtOrTrunc(dim_len,
+                                llvm::Type::getInt32Ty(context)));
+                    }
+                    ptr_loads = ptr_loads_copy;
+                }
+                scalar_arg_infos.push_back(
+                    {stride_val, llvm::Type::getInt32Ty(context)});
             }
         }
 
@@ -23616,10 +23903,36 @@ public:
                                 builder->CreateIntCast(
                                     sit->second, i64, true));
                         }
+                    } else if (!dim.expr_nodes.empty()) {
+                        per_thread_elems = builder->CreateMul(
+                            per_thread_elems,
+                            eval_gpu_vla_dim_expr(dim, dim.expr_root, x,
+                                call_arg_values, call_arg_struct_ptrs,
+                                ws.var_name));
                     } else {
-                        llvm::Value *dim_val =
-                            call_arg_values[dim.call_arg_index];
-                        LCOMPILERS_ASSERT(dim_val != nullptr);
+                        if (dim.call_arg_index < 0 ||
+                                (size_t)dim.call_arg_index >= x.n_args) {
+                            throw CodeGenError("gpu offload: the extent of "
+                                "the temporary array `" + ws.var_name +
+                                "` cannot be determined from the kernel "
+                                "arguments", x.base.base.loc);
+                        }
+                        llvm::Value *dim_val = nullptr;
+                        if (!dim.member_path.empty()) {
+                            dim_val = load_gpu_struct_member_extent(
+                                x.m_args[dim.call_arg_index].m_value,
+                                call_arg_struct_ptrs[dim.call_arg_index],
+                                dim.member_path, ws.var_name,
+                                x.base.base.loc);
+                        } else {
+                            dim_val = call_arg_values[dim.call_arg_index];
+                        }
+                        if (dim_val == nullptr) {
+                            throw CodeGenError("gpu offload: the extent of "
+                                "the temporary array `" + ws.var_name +
+                                "` cannot be determined from the kernel "
+                                "arguments", x.base.base.loc);
+                        }
                         per_thread_elems = builder->CreateMul(
                             per_thread_elems,
                             builder->CreateIntCast(dim_val, i64, true));
