@@ -726,6 +726,57 @@ public:
         }
     }
 
+    static ASR::memory_spaceType array_memory_space(ASR::ttype_t *type) {
+        ASR::ttype_t *base =
+            ASRUtils::type_get_past_allocatable_pointer(type);
+        if (ASR::is_a<ASR::Array_t>(*base)) {
+            return ASR::down_cast<ASR::Array_t>(base)->m_memory_space;
+        }
+        return ASR::memory_spaceType::Global;
+    }
+
+    // Whether a scope belongs to code the host runs, which has one flat
+    // memory and so knows only the Global space. Everything device_partition
+    // did not take is host code, the clones the memory space pass makes for
+    // the device included.
+    static bool is_host_only_scope(SymbolTable *symtab) {
+        while (symtab) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
+                if (ASRUtils::runs_on_device(sym)) return false;
+            }
+            symtab = symtab->parent;
+        }
+        return true;
+    }
+
+    // The memory space of an array is part of a routine's interface, so the
+    // signature and the dummy it describes have to name the same one. A code
+    // generator that qualifies a parameter from one and indexes it from the
+    // other would otherwise read the wrong memory.
+    void verify_argument_memory_spaces(const Function_t &x) {
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+        for (size_t i = 0; i < x.n_args && i < ftype->n_arg_types; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+            if (!arg_sym || !ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::ttype_t *declared =
+                ASR::down_cast<ASR::Variable_t>(arg_sym)->m_type;
+            if (!declared || !ftype->m_arg_types[i]) continue;
+            if (!ASRUtils::is_array(declared) ||
+                    !ASRUtils::is_array(ftype->m_arg_types[i])) {
+                continue;
+            }
+            require(array_memory_space(declared)
+                        == array_memory_space(ftype->m_arg_types[i]),
+                "Argument " + std::to_string(i + 1) + " of `"
+                    + std::string(x.m_name) + "` is declared in a different "
+                    "memory space than its signature gives it");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -770,6 +821,7 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
+        verify_argument_memory_spaces(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
@@ -1193,6 +1245,13 @@ public:
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
+        if (x.m_type && ASRUtils::is_array(x.m_type)) {
+            require(array_memory_space(x.m_type)
+                        == ASR::memory_spaceType::Global
+                    || !is_host_only_scope(symtab),
+                "Variable '" + std::string(x.m_name) + "' is host code, so "
+                "its array cannot live in a device memory space");
+        }
 
         ASR::asr_t* asr_owner = symtab->asr_owner;
         bool is_module = false, is_struct = false;
