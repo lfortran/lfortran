@@ -3491,7 +3491,7 @@ class ParallelRegionVisitor :
 
             // Create a new OMPRegion_t for the task
             ASR::stmt_t* task_region = ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, task_clauses.p, task_clauses.n,
-                task_body.p, task_body.n));
+                task_body.p, task_body.n, ASR::exec_targetType::ExecAuto));
 
             // Create DoLoop to wrap the task
             std::vector<ASR::stmt_t*> loop_body={};

@@ -21,6 +21,7 @@ OMPCollapse
 OMPDevice
 OMPFirstPrivate
 OMPIf
+OMPIndependent
 OMPLastPrivate
 OMPMap
 OMPNowait
@@ -30,6 +31,7 @@ OMPPrivate
 OMPReduction
 OMPSchedule
 OMPShared
+OMPTargetRequested
 OMPThreadLimit
 schedule_type
 ```

@@ -3485,6 +3485,7 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3496,6 +3497,7 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3507,7 +3509,9 @@
                                 ()
                                 .false.
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )]
                 ),
             openmp_45_parallel_sections:

@@ -41,7 +41,7 @@ stmt
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body, exec_target exec_target)
-    | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
+    | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)
@@ -297,6 +297,8 @@ omp_clause
   | OMPThreadLimit(expr thread_limit)
   | OMPDevice(expr device)
   | OMPMap(map_type type, expr* vars)
+  | OMPIndependent()
+  | OMPTargetRequested()
 
 map_type 
     = To | From | ToFrom | Alloc | Release | Delete

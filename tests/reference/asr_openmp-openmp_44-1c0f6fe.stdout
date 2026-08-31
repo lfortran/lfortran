@@ -3523,6 +3523,7 @@
                                     ()
                                 )
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3569,6 +3570,7 @@
                                     ()
                                 )
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3615,7 +3617,9 @@
                                     ()
                                 )
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )
                     (Print
                         (StringFormat
