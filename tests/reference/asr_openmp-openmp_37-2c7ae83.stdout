@@ -3635,6 +3635,7 @@
                                     )]
                                     []
                                 )]
+                                ExecAuto
                             )
                             (OMPRegion
                                 ParallelDo
@@ -3675,9 +3676,11 @@
                                     )]
                                     []
                                 )]
+                                ExecAuto
                             )]
                             []
                         )]
+                        ExecAuto
                     )]
                 )
         })

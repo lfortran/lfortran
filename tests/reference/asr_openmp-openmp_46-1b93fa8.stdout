@@ -3608,9 +3608,11 @@
                                             ()
                                         )
                                     )]
+                                    ExecAuto
                                 )]
                                 []
                             )]
+                            ExecAuto
                         )
                         (OMPRegion
                             Section
@@ -3621,7 +3623,9 @@
                                     (String 1 (IntegerConstant 44 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )
                     (Print
                         (StringConstant

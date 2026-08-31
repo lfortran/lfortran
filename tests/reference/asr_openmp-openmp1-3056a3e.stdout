@@ -157,7 +157,9 @@
                                 )]
                                 []
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )
                     (Assignment
                         (Var 2 ctr)
