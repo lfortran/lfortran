@@ -96,7 +96,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     []
                     [(Var 2 z)
@@ -218,7 +218,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     []
                     [(Var 3 z)

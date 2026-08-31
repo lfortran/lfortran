@@ -173,7 +173,7 @@
                                                         []
                                                         .false.
                                                         Host
-                                                        .false.
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 4 x)]
@@ -249,7 +249,7 @@
                                             []
                                             .false.
                                             Host
-                                            .false.
+                                            .true.
                                         )
                                         (Integer 4)]
                                         (Integer 4)

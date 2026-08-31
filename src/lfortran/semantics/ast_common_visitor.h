@@ -5198,7 +5198,9 @@ public:
                 ASR::abiType::BindC, ext_access,
                 ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
-                false, false, false);
+                false, false, false, nullptr, nullptr, nullptr,
+                /* m_exec_space */ ASR::exec_spaceType::Host,
+                /* m_external_abi */ true);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
         } else {
@@ -17129,7 +17131,9 @@ public:
             /* a_return_var */ to_return,
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            false, false, false, nullptr, nullptr, nullptr,
+            /* m_exec_space */ ASR::exec_spaceType::Host,
+            /* m_external_abi */ true);
         ASR::symbol_t* new_fn = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::symbol_t* existing = sym_scope->get_symbol(sym_name);
         // First inference (or replacing a bare ImplicitInterface declaration):

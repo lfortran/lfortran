@@ -88,7 +88,7 @@
                                         []
                                         .false.
                                         Host
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 6 w)]
@@ -274,7 +274,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     [mvndfn_main__lcompilers]
                     [(Var 2 w)]

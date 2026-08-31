@@ -30,7 +30,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
 | `exec_space` | where the procedure runs; see [exec_space](../enum_nodes/exec_space.md). |
-| `external_abi` | `true` for a separately compiled external procedure, which uses the classic Fortran external ABI so that it interoperates with gfortran and flang. Nothing sets or reads the field yet; it is always `false`. |
+| `external_abi` | `true` for a separately compiled external procedure: a subprogram defined at the top level, an interface body in a plain (non-abstract, non-module) interface block, or an interface synthesized for a procedure referenced without an explicit one. Such procedures use the classic Fortran external ABI, in which a CHARACTER dummy is passed as a data pointer with its length as a hidden trailing argument, so that they interoperate with gfortran and flang. Compiler-synthesized procedures leave this `false`. |
 
 ### Return values
 

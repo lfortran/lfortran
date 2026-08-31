@@ -78,7 +78,7 @@
                                             []
                                             .false.
                                             Host
-                                            .false.
+                                            .true.
                                         )]
                                         ()
                                         BindC
@@ -92,7 +92,7 @@
                                         []
                                         .false.
                                         Host
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 2 f)]
@@ -172,7 +172,7 @@
                                         []
                                         .false.
                                         Host
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 6 f_arg_0)]
@@ -224,7 +224,7 @@
                             []
                             .false.
                             Host
-                            .false.
+                            .true.
                         )]
                         ()
                         Source
@@ -238,7 +238,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     []
                     [(Var 2 f)]

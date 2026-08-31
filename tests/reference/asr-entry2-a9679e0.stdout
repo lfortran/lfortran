@@ -63,7 +63,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     [prini_main__lcompilers]
                     []
@@ -131,7 +131,7 @@
                                         []
                                         .false.
                                         Host
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     []

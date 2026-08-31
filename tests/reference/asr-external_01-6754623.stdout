@@ -124,7 +124,7 @@
                                         []
                                         .false.
                                         Host
-                                        .false.
+                                        .true.
                                     )
                                     []
                                     [(Var 5 f_arg_0)]
@@ -154,7 +154,7 @@
                             []
                             .false.
                             Host
-                            .false.
+                            .true.
                         )]
                         ()
                         Source
@@ -168,7 +168,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     []
                     [(Var 2 a)

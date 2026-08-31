@@ -114,7 +114,7 @@
                         []
                         .false.
                         Host
-                        .false.
+                        .true.
                     )
                     [x_main__lcompilers]
                     [(Var 2 dummy)]
