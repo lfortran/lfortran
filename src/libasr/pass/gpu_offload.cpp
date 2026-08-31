@@ -101,6 +101,13 @@ std::string GpuOffloadReport::detail;
 // statements: an orphaned Block is still a symbol of the enclosing scope,
 // so the pass would walk into it on its next round, offload the loops it
 // holds, splice once more and never reach a fixed point.
+// The type a scope-local array carried before the pass replaced it, so
+// that a declined offload leaves the variable exactly as it found it.
+struct ScopeArrayDims {
+    ASR::Variable_t *var;
+    ASR::ttype_t *type;
+};
+
 class GpuLoopBodySnapshot {
 public:
     void record(ASR::DoConcurrentLoop_t &loop, SymbolTable *scope) {
@@ -456,6 +463,14 @@ public:
                 ASR::alloc_arg_t *aa = find_alloc_arg_for_var(body, n_body,
                     std::string(var->m_name));
                 if (aa && dims_have_lengths(aa->m_dims, aa->n_dims)) {
+                    continue;
+                }
+                // No shape anywhere, but the expression assigned to it
+                // has one: size_scope_array_temporaries() writes that
+                // shape into the temporary's own type before the kernel
+                // is built, and the workspace pre-flight then decides
+                // whether the host can evaluate it.
+                if (gpu_scope_array_shape_source(var, body, n_body)) {
                     continue;
                 }
             }
@@ -6409,17 +6424,58 @@ public:
         return at->n_dims > 0;
     }
 
-    // Reports a self-aliasing array assignment whose temporary cannot be
-    // fixed-size. Called before any of the destructive inline_* helpers,
-    // so the loop can still be left on the host.
+    // The extents of the temporary an aliased assignment to `target`
+    // needs, one per dimension, in order. False when the shape is not
+    // written anywhere the temporary could be sized from, so nothing
+    // could give the temporary the right extent.
+    bool alias_temp_extents(ASR::expr_t *target,
+            Vec<ASR::expr_t*> &extents) {
+        const Location &loc = target->base.loc;
+        if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+            ASR::ArraySection_t *as =
+                ASR::down_cast<ASR::ArraySection_t>(target);
+            extents.reserve(al, as->n_args);
+            for (size_t i = 0; i < as->n_args; i++) {
+                if (as->m_args[i].m_left && as->m_args[i].m_right
+                        && as->m_args[i].m_step) {
+                    extents.push_back(al,
+                        section_extent(loc, as->m_args[i]));
+                }
+            }
+            return extents.n > 0;
+        }
+        ASR::ttype_t *tt = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(target)));
+        if (!ASR::is_a<ASR::Array_t>(*tt)) return false;
+        ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(tt);
+        if (at->n_dims == 0) return false;
+        extents.reserve(al, at->n_dims);
+        for (size_t i = 0; i < at->n_dims; i++) {
+            if (!at->m_dims[i].m_length) return false;
+            extents.push_back(al, at->m_dims[i].m_length);
+        }
+        return true;
+    }
+
+    // Reports a self-aliasing array assignment whose temporary this pass
+    // cannot give a per-thread home. Called before any of the destructive
+    // inline_* helpers, so the loop can still be left on the host.
+    //
+    // A fixed-size temporary is a kernel-scope stack array, private to
+    // the thread by construction. A run-time sized one has to be a
+    // BLOCK local instead, so that the workspace machinery binds it to a
+    // per-thread slice of a device buffer -- and only a BLOCK at the top
+    // level of the loop body is scanned for those, so only a top-level
+    // assignment can have one. Whether the host can then evaluate the
+    // extents is settled by the workspace pre-flight further down.
     bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
-            size_t n_body) {
+            size_t n_body, bool top_level) {
         for (size_t si = 0; si < n_body; si++) {
             ASR::stmt_t *stmt = body[si];
             if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 if (body_needs_unsupported_alias_temp(dl->m_body,
-                        dl->n_body)) return true;
+                        dl->n_body, false)) return true;
                 continue;
             }
             if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
@@ -6428,7 +6484,7 @@ public:
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                     if (body_needs_unsupported_alias_temp(blk->m_body,
-                            blk->n_body)) return true;
+                            blk->n_body, false)) return true;
                 }
                 continue;
             }
@@ -6438,15 +6494,189 @@ public:
                         ASR::down_cast<ASR::AssociateBlockCall_t>(
                             stmt)->m_m);
                 if (body_needs_unsupported_alias_temp(ab->m_body,
-                        ab->n_body)) return true;
+                        ab->n_body, false)) return true;
                 continue;
             }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) continue;
             ASR::expr_t *target = self_aliasing_target(
                 ASR::down_cast<ASR::Assignment_t>(stmt));
-            if (target && !alias_temp_is_fixed_size(target)) return true;
+            if (!target) continue;
+            if (alias_temp_is_fixed_size(target)) continue;
+            Vec<ASR::expr_t*> extents;
+            if (top_level && alias_temp_extents(target, extents)) continue;
+            return true;
         }
         return false;
+    }
+
+    // Give a materialised ASSOCIATE array temporary the shape of its
+    // selector, in its own type.
+    //
+    // `associate(r => sqrt((x-x0)**2 + (y(j)-y0)**2))` over an
+    // assumed-shape `x` becomes an allocatable local of the ASSOCIATE's
+    // symbol table with deferred extents and no ALLOCATE; the shape lives
+    // only in the expression assigned to it. In a kernel that local
+    // becomes a per-thread workspace, which has to be sized -- and the
+    // rewrites further down lower the whole-array assignment into an
+    // element loop bounded by `ubound(r)`, after which the shape is gone.
+    // So write it into the type here, while the assignment it can be read
+    // from is still whole-array. Every replaced dimension list is
+    // recorded in `undo` so the loop can still be left untouched if a
+    // later check declines the offload.
+    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body,
+            std::vector<ScopeArrayDims> &undo) {
+        for (size_t si = 0; si < n_body; si++) {
+            SymbolTable *symtab = nullptr;
+            ASR::stmt_t **inner_body = nullptr;
+            size_t inner_n_body = 0;
+            if (ASR::is_a<ASR::BlockCall_t>(*body[si])) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(body[si])->m_m);
+                if (!b || !ASR::is_a<ASR::Block_t>(*b)) continue;
+                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                symtab = blk->m_symtab;
+                inner_body = blk->m_body;
+                inner_n_body = blk->n_body;
+            } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*body[si])) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(
+                        body[si])->m_m);
+                if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) continue;
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(b);
+                symtab = ab->m_symtab;
+                inner_body = ab->m_body;
+                inner_n_body = ab->n_body;
+            } else if (ASR::is_a<ASR::DoLoop_t>(*body[si])) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(body[si]);
+                size_scope_array_temporaries(dl->m_body, dl->n_body, undo);
+                continue;
+            } else {
+                continue;
+            }
+            for (auto &item : symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::expr_t *shape_src = gpu_scope_array_shape_source(
+                    var, inner_body, inner_n_body);
+                if (!shape_src) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                    ASRUtils::type_get_past_allocatable(var->m_type));
+                const Location &vloc = var->base.base.loc;
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, arr->n_dims);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    ASR::dimension_t dim;
+                    dim.loc = vloc;
+                    dim.m_start = int32_const(vloc, 1);
+                    dim.m_length = ASRUtils::get_size(shape_src,
+                        (int)d + 1, al);
+                    dims.push_back(al, dim);
+                }
+                // An allocatable must keep deferred extents, so the
+                // temporary becomes an automatic array of the same
+                // shape -- which is what the workspace machinery binds.
+                undo.push_back({var, var->m_type});
+                var->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, vloc,
+                    arr->m_type, dims.p, dims.n,
+                    ASR::array_physical_typeType::DescriptorArray));
+            }
+            size_scope_array_temporaries(inner_body, inner_n_body, undo);
+        }
+    }
+
+    // Give the temporary of a run-time sized aliased assignment a BLOCK
+    // of its own, at the top level of the loop body.
+    //
+    //   a(:,c) = a(n:1:-1,c)
+    // becomes
+    //   block
+    //     real :: __gpu_alias(n)
+    //     __gpu_alias(1:n) = a(n:1:-1,c)
+    //     a(:,c)           = __gpu_alias(1:n)
+    //   end block
+    //
+    // The BLOCK is what makes the temporary safe: a run-time sized
+    // kernel-scope local becomes one device buffer shared by every
+    // thread, and every thread would write it -- a race. A BLOCK local is
+    // bound to a per-thread slice of a workspace buffer instead
+    // (analyze_gpu_vla_workspaces), which is private to the iteration.
+    // Only a top-level BLOCK of the kernel body is scanned for
+    // workspaces, which is why only a top-level assignment is rewritten
+    // here; body_needs_unsupported_alias_temp has already declined the
+    // rest.
+    void materialize_runtime_alias_blocks(ASR::DoConcurrentLoop_t &x) {
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, x.n_body);
+        bool changed = false;
+        for (size_t si = 0; si < x.n_body; si++) {
+            ASR::stmt_t *stmt = x.m_body[si];
+            if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            ASR::Assignment_t *asgn =
+                ASR::down_cast<ASR::Assignment_t>(stmt);
+            ASR::expr_t *target = self_aliasing_target(asgn);
+            if (!target || alias_temp_is_fixed_size(target)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            Vec<ASR::expr_t*> extents;
+            if (!alias_temp_extents(target, extents)) {
+                new_body.push_back(al, stmt);
+                continue;
+            }
+            Location loc = stmt->base.loc;
+            SymbolTable *block_scope =
+                al.make_new<SymbolTable>(current_scope);
+            ASR::ttype_t *elem_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(target));
+            ASR::expr_t *tmp = declare_temp_array(loc, block_scope,
+                elem_type, extents.p, extents.n, "__gpu_alias");
+            bool sectioned = ASR::is_a<ASR::ArraySection_t>(*target);
+            // A full 1:extent:1 section over the temporary, built once
+            // per use so the two statements do not share nodes.
+            auto tmp_ref = [&]() -> ASR::expr_t* {
+                if (!sectioned) return tmp;
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, extents.n);
+                for (size_t i = 0; i < extents.n; i++) {
+                    ASR::array_index_t idx;
+                    idx.loc = loc;
+                    idx.m_left = int32_const(loc, 1);
+                    idx.m_right = extents[i];
+                    idx.m_step = int32_const(loc, 1);
+                    args.push_back(al, idx);
+                }
+                return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+                    tmp, args.p, args.n, ASRUtils::expr_type(tmp),
+                    nullptr));
+            };
+            Vec<ASR::stmt_t*> block_body;
+            block_body.reserve(al, 2);
+            block_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, tmp_ref(),
+                    asgn->m_value, nullptr, false, false)));
+            asgn->m_value = tmp_ref();
+            block_body.push_back(al, stmt);
+            std::string block_name = current_scope->get_unique_name(
+                "__gpu_alias_scope");
+            ASR::asr_t *block = ASR::make_Block_t(al, loc, block_scope,
+                s2c(al, block_name), block_body.p, block_body.n);
+            block_scope->asr_owner = block;
+            ASR::symbol_t *block_sym =
+                ASR::down_cast<ASR::symbol_t>(block);
+            current_scope->add_symbol(block_name, block_sym);
+            new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+                al, loc, -1, block_sym)));
+            changed = true;
+        }
+        if (changed) {
+            x.m_body = new_body.p;
+            x.n_body = new_body.n;
+        }
     }
 
     // Materialise a temporary for an array assignment whose target and
@@ -8852,7 +9082,8 @@ public:
             // needs a temporary (see materialize_aliased_assignments).
             // If that temporary cannot be fixed-size, decline here,
             // while the body is still untouched.
-            if (body_needs_unsupported_alias_temp(x.m_body, x.n_body)) {
+            if (body_needs_unsupported_alias_temp(x.m_body, x.n_body,
+                    true)) {
                 GpuOffloadReport::emit(loc, report_proc,
                     "runtime-sized-alias-temp");
                 return;
@@ -8899,12 +9130,27 @@ public:
         // pre-flight right below needs the spliced shape, but must still
         // be able to leave the loop untouched when it declines.
         GpuLoopBodySnapshot splice_snapshot;
+        std::vector<ScopeArrayDims> scope_dims_undo;
+        auto restore_loop = [&]() {
+            for (auto it = scope_dims_undo.rbegin();
+                    it != scope_dims_undo.rend(); ++it) {
+                it->var->m_type = it->type;
+            }
+            scope_dims_undo.clear();
+            splice_snapshot.restore();
+        };
         {
             ASR::DoConcurrentLoop_t &xx =
                 const_cast<ASR::DoConcurrentLoop_t&>(x);
             splice_snapshot.record(xx, current_scope);
             inline_device_function_calls(xx.m_body, xx.n_body);
             functions_to_inline.clear();
+            // Run-time sized alias temporaries become BLOCK locals here,
+            // ahead of the workspace pre-flight below, so that the
+            // pre-flight sizes them too and can still decline the loop.
+            materialize_runtime_alias_blocks(xx);
+            size_scope_array_temporaries(xx.m_body, xx.n_body,
+                scope_dims_undo);
         }
 
         // Each run-time sized local of a kernel BLOCK becomes a per-thread
@@ -8923,7 +9169,7 @@ public:
             std::string unresolved_name;
             if (!gpu_block_workspace_extents_resolvable(al, x.m_body,
                     x.n_body, kernel_arg_names, unresolved_name)) {
-                splice_snapshot.restore();
+                restore_loop();
                 GpuOffloadReport::set_detail("sym=" + unresolved_name);
                 GpuOffloadReport::emit(loc, report_proc,
                     "workspace-extent-unresolvable");
@@ -8934,7 +9180,7 @@ public:
                 nested_section.visit_stmt(*x.m_body[i]);
             }
             if (nested_section.found) {
-                splice_snapshot.restore();
+                restore_loop();
                 GpuOffloadReport::emit(loc, report_proc,
                     "nested-section-cannot-be-addressed");
                 return;

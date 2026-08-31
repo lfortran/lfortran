@@ -1033,6 +1033,86 @@ inline bool gpu_array_intrinsic_result_shape(ASR::expr_t *expr,
     return false;
 }
 
+// An array-valued operand of the elementwise expression `e`, or nullptr
+// when `e` is not built elementwise or has no array operand of its own.
+//
+// `sqrt((x-x0)**2 + (y(j)-y0)**2)` carries no dimensions in its type --
+// an elementwise result is a descriptor with empty extents -- but every
+// array operand of an elementwise expression is conformable with the
+// result, so any one of them has the result's shape.  A broadcast operand
+// is skipped: it is a scalar given a shape borrowed from elsewhere, so it
+// is never the operand that fixes the shape.
+inline ASR::expr_t* gpu_elemental_shape_source(ASR::expr_t *e) {
+    if (!e) return nullptr;
+    ASR::expr_t *operands[2] = {nullptr, nullptr};
+    size_t n_operands = 0;
+    switch (e->type) {
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *o =
+                ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            operands[0] = o->m_left; operands[1] = o->m_right;
+            n_operands = 2; break;
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t *o = ASR::down_cast<ASR::RealBinOp_t>(e);
+            operands[0] = o->m_left; operands[1] = o->m_right;
+            n_operands = 2; break;
+        }
+        case ASR::exprType::ComplexBinOp: {
+            ASR::ComplexBinOp_t *o =
+                ASR::down_cast<ASR::ComplexBinOp_t>(e);
+            operands[0] = o->m_left; operands[1] = o->m_right;
+            n_operands = 2; break;
+        }
+        case ASR::exprType::LogicalBinOp: {
+            ASR::LogicalBinOp_t *o =
+                ASR::down_cast<ASR::LogicalBinOp_t>(e);
+            operands[0] = o->m_left; operands[1] = o->m_right;
+            n_operands = 2; break;
+        }
+        case ASR::exprType::IntegerUnaryMinus: {
+            operands[0] =
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg;
+            n_operands = 1; break;
+        }
+        case ASR::exprType::RealUnaryMinus: {
+            operands[0] = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
+            n_operands = 1; break;
+        }
+        case ASR::exprType::ComplexUnaryMinus: {
+            operands[0] =
+                ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg;
+            n_operands = 1; break;
+        }
+        case ASR::exprType::LogicalNot: {
+            operands[0] = ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg;
+            n_operands = 1; break;
+        }
+        case ASR::exprType::Cast: {
+            operands[0] = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+            n_operands = 1; break;
+        }
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t *f =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+            for (size_t i = 0; i < f->n_args; i++) {
+                ASR::expr_t *a =
+                    gpu_past_array_physical_cast(f->m_args[i]);
+                if (!a || ASR::is_a<ASR::ArrayBroadcast_t>(*a)) continue;
+                if (ASRUtils::is_array(ASRUtils::expr_type(a))) return a;
+            }
+            return nullptr;
+        }
+        default: return nullptr;
+    }
+    for (size_t i = 0; i < n_operands; i++) {
+        ASR::expr_t *a = gpu_past_array_physical_cast(operands[i]);
+        if (!a || ASR::is_a<ASR::ArrayBroadcast_t>(*a)) continue;
+        if (ASRUtils::is_array(ASRUtils::expr_type(a))) return a;
+    }
+    return nullptr;
+}
+
 // The extent of dimension `dim` (1-based) of the array-valued expression
 // `arr_expr`, or, when `dim` is 0, the product of all of its extents --
 // what a whole-array `size(arr_expr)` means.  Returns the index of the
@@ -1587,6 +1667,73 @@ inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::stmt_t **body,
     return nullptr;
 }
 
+// An extent that nothing could resolve: not a compile-time constant, no
+// host-evaluable expression tree, no kernel argument and not tied to a
+// struct member's allocatable size.  `resolve_gpu_workspace_dim` leaves
+// this shape behind on purpose -- guessing an extent would silently size
+// the workspace wrongly -- and the host has to refuse it.
+inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
+    return !dim.is_constant && !dim.is_struct_member_size
+        && dim.expr_nodes.empty() && dim.call_arg_index < 0;
+}
+
+// The value of the first whole-array assignment to `var_name` in `body`,
+// or nullptr.  A local that carries no shape anywhere else is sized by
+// what is assigned to it.
+inline ASR::expr_t* find_gpu_first_assigned_value(ASR::stmt_t **body,
+        size_t n_body, const std::string &var_name) {
+    for (size_t i = 0; i < n_body; i++) {
+        if (!ASR::is_a<ASR::Assignment_t>(*body[i])) continue;
+        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(body[i]);
+        if (!ASR::is_a<ASR::Var_t>(*a->m_target)) continue;
+        std::string tname = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+        if (tname != var_name) continue;
+        return a->m_value;
+    }
+    return nullptr;
+}
+
+// The designator whose shape is the shape of the local array `var` of a
+// BLOCK or ASSOCIATE scope, or nullptr when the shape is nowhere to be
+// found.
+//
+// The temporary the frontend materialises for an array-valued ASSOCIATE
+// selector -- `associate(r => sqrt((x-x0)**2 + ...))` -- is an allocatable
+// with deferred extents and no ALLOCATE: the only place its shape is
+// written is the expression assigned to it, and that expression is
+// elementwise, so its shape in turn is that of one of its array operands.
+// Follow the chain down to the designator that actually has extents.
+inline ASR::expr_t* gpu_scope_array_shape_source(const ASR::Variable_t *var,
+        ASR::stmt_t **body, size_t n_body) {
+    if (!ASRUtils::is_allocatable(var->m_type)) return nullptr;
+    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*inner)) return nullptr;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+    if (arr->n_dims == 0) return nullptr;
+    for (size_t d = 0; d < arr->n_dims; d++) {
+        if (arr->m_dims[d].m_length) return nullptr;
+    }
+    std::string vname(var->m_name);
+    if (find_allocate_for_var(body, n_body, vname)) return nullptr;
+    ASR::expr_t *value = find_gpu_first_assigned_value(body, n_body, vname);
+    if (!value) return nullptr;
+    ASR::expr_t *src = gpu_past_array_physical_cast(value);
+    while (src) {
+        ASR::expr_t *next = gpu_elemental_shape_source(src);
+        if (!next) break;
+        src = next;
+    }
+    if (!src || !ASRUtils::is_array(ASRUtils::expr_type(src))) {
+        return nullptr;
+    }
+    if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src))
+            != arr->n_dims) {
+        return nullptr;
+    }
+    return src;
+}
+
 // Scan one scope (the kernel itself or a BLOCK inside it) for local
 // arrays that need a per-thread device workspace buffer.
 //
@@ -1733,16 +1880,6 @@ inline int count_gpu_vla_workspaces(const ASR::GpuKernelFunction_t &kernel) {
     return (int)result.size();
 }
 
-// An extent that nothing could resolve: not a compile-time constant, no
-// host-evaluable expression tree, no kernel argument and not tied to a
-// struct member's allocatable size.  `resolve_gpu_workspace_dim` leaves
-// this shape behind on purpose -- guessing an extent would silently size
-// the workspace wrongly -- and the host has to refuse it.
-inline bool gpu_vla_dim_is_unresolvable(const GpuVlaDim &dim) {
-    return !dim.is_constant && !dim.is_struct_member_size
-        && dim.expr_nodes.empty() && dim.call_arg_index < 0;
-}
-
 // An array constructor together with the statement list of the scope it
 // belongs to.  The extent of the temporary it becomes has to be resolved
 // against that list -- the names it is written in terms of are bound
@@ -1841,12 +1978,31 @@ inline bool gpu_block_workspace_extents_resolvable(Allocator &al,
     std::vector<GpuVlaWorkspace> workspaces;
     int buffer_idx = 0;
     for (size_t i = 0; i < n_body; i++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*body[i])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(body[i]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
-        scan_gpu_scope_vlas(nullptr, block->m_symtab, block->m_body,
-            block->n_body, arg_names, true, buffer_idx, workspaces);
+        if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+            ASR::BlockCall_t *bc =
+                ASR::down_cast<ASR::BlockCall_t>(body[i]);
+            if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+            scan_gpu_scope_vlas(nullptr, block->m_symtab, block->m_body,
+                block->n_body, arg_names, true, buffer_idx, workspaces);
+            continue;
+        }
+        // An ASSOCIATE construct whose symbol table holds a materialised
+        // array temporary is rebuilt as an equivalent BLOCK by the
+        // offload pass before the kernel is extracted, so its locals
+        // become workspaces exactly as a BLOCK's do and have to be
+        // pre-flighted the same way.
+        if (ASR::is_a<ASR::AssociateBlockCall_t>(*body[i])) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(body[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                continue;
+            }
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            scan_gpu_scope_vlas(nullptr, ab->m_symtab, ab->m_body,
+                ab->n_body, arg_names, true, buffer_idx, workspaces);
+        }
     }
     for (auto &ws : workspaces) {
         for (auto &dim : ws.dims) {
@@ -1876,13 +2032,60 @@ inline bool gpu_block_workspace_extents_resolvable(Allocator &al,
 static const int MAX_METAL_BUFFERS = 31;
 static const int PACKED_BUFFER_ALIGN = 16;
 
+// Whether the kernel signature carries the packed scalar-argument struct.
+//
+// A kernel with no scalar argument of its own can still need it: the
+// backend synthesises a scalar for every extent of an assumed-shape array
+// argument, and one for every element stride of an argument reached
+// through a descriptor.  The buffer that struct occupies sits between the
+// argument buffers and the workspace buffers, so the workspace accounting
+// and the emitted signature have to answer this question the same way --
+// which is why both go through here.
+inline bool gpu_kernel_has_scalar_struct(
+        const ASR::GpuKernelFunction_t &kernel) {
+    for (size_t i = 0; i < kernel.n_args; i++) {
+        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(v->m_v));
+        ASR::ttype_t *type = var->m_type;
+        bool is_arr = ASR::is_a<ASR::Array_t>(*type)
+            || (ASR::is_a<ASR::Pointer_t>(*type)
+                && ASR::is_a<ASR::Array_t>(
+                    *ASR::down_cast<ASR::Pointer_t>(type)->m_type));
+        bool is_st = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(type));
+        if (!is_arr && !is_st) return true;
+        std::string arg_name(var->m_name);
+        if (is_arr && !(arg_name.size() >= 2 && arg_name[0] == '_'
+                && arg_name[1] == '_')) {
+            ASR::ttype_t *past_alloc =
+                ASRUtils::type_get_past_allocatable(type);
+            if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
+                ASR::Array_t *arr =
+                    ASR::down_cast<ASR::Array_t>(past_alloc);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (!arr->m_dims[d].m_length) return true;
+                }
+            }
+        }
+        if (gpu_arg_is_descriptor_array(var)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(type));
+            if (arr->n_dims > 0) return true;
+        }
+    }
+    return false;
+}
+
 // Determine whether a kernel needs buffer packing because its total
 // buffer count exceeds Metal's 31-slot limit.
 inline bool gpu_kernel_needs_buffer_packing(
         const ASR::GpuKernelFunction_t &kernel) {
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
+    (void)n_scalar;
     int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
+    int total = n_buffer + (gpu_kernel_has_scalar_struct(kernel) ? 1 : 0)
+        + n_vla;
     return total > MAX_METAL_BUFFERS;
 }
 
@@ -1894,7 +2097,8 @@ inline int gpu_vla_buffer_start(const ASR::GpuKernelFunction_t &kernel) {
         return 2;
     }
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    return n_buffer + (n_scalar > 0 ? 1 : 0);
+    (void)n_scalar;
+    return n_buffer + (gpu_kernel_has_scalar_struct(kernel) ? 1 : 0);
 }
 
 // Analyze a GPU kernel function for variable-length arrays in blocks.

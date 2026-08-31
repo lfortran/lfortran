@@ -3850,7 +3850,7 @@ public:
 
         // Emit scalar args struct definition (before kernel) if needed
         std::string scalar_struct_name = "__ScalarArgs_" + name;
-        bool has_scalar_struct = !scalar_args.empty() ||
+        bool has_scalar_struct = gpu_kernel_has_scalar_struct(x) ||
             (packed_mode && !packed_arrays.empty());
 
         if (has_scalar_struct) {
