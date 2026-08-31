@@ -6,6 +6,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
@@ -2211,6 +2212,21 @@ public:
         }
     }
 
+    // A submodule read back from its `.smod` file carries the array
+    // constructors it was written with: the implied-do lowering ran over
+    // this translation unit before this pass, so it never saw this body.
+    // Splicing it into a kernel as it stands would carry an implied-do
+    // into everything downstream -- the temporary extraction that runs
+    // after this pass hoists a loop-variant element out of one, which
+    // evaluates it once instead of once per iteration, and the Metal code
+    // generator has no rendering for what is left. Lower them here, so a
+    // body loaded from disk is in the same shape as one compiled
+    // alongside its caller. Run only once the external symbols of the
+    // loaded unit are resolved, since the lowering reads their types.
+    void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu) {
+        pass_replace_implied_do_loops(al, sub_tu, pass_options);
+    }
+
     // Duplicate an expression, remapping all Var references to point to the
     // given scope. Used to create kernel-scope copies of head expressions.
     ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope) {
@@ -3049,6 +3065,7 @@ public:
                 if (!res.ok) continue;
                 load_submodule_deps(*res.result);
                 fix_external_symbols(*res.result, *tu.m_symtab);
+                lower_loaded_implied_do_loops(*res.result);
                 ASR::Module_t *submod = ASRUtils::extract_module(
                     *res.result);
                 ASR::symbol_t *impl_sym = submod->m_symtab->get_symbol(
@@ -10131,6 +10148,8 @@ public:
                                         fix_external_symbols(
                                             *res.result,
                                             *tu.m_symtab);
+                                        lower_loaded_implied_do_loops(
+                                            *res.result);
                                         ASR::Module_t *submod =
                                             ASRUtils::extract_module(
                                                 *res.result);
@@ -10459,6 +10478,8 @@ public:
                                                 fix_external_symbols(
                                                     *res.result,
                                                     *tu.m_symtab);
+                                                lower_loaded_implied_do_loops(
+                                                    *res.result);
                                                 ASR::Module_t *submod =
                                                     ASRUtils::
                                                         extract_module(
