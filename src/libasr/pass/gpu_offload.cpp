@@ -821,6 +821,60 @@ public:
     }
 };
 
+// True when a statement list takes a section of `dummy` -- `c(1:k)` for a
+// dummy `c`.  Splicing the callee substitutes the actual argument for the
+// dummy, so such a section over a sectioned actual becomes a section of a
+// section, which no device pointer can express.
+class GpuDummySectionFinder :
+        public ASR::BaseWalkVisitor<GpuDummySectionFinder> {
+public:
+    ASR::symbol_t *dummy;
+    bool found = false;
+
+    GpuDummySectionFinder(ASR::symbol_t *dummy_) : dummy(dummy_) {}
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(x.m_v);
+        if (base != nullptr && ASR::is_a<ASR::Var_t>(*base) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(base)->m_v) == dummy) {
+            found = true;
+        }
+        ASR::BaseWalkVisitor<GpuDummySectionFinder>::visit_ArraySection(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+};
+
+// True when a statement list holds an implied-do. The array-constructor
+// lowering leaves one standing as a whole element of the constructor, and
+// the Metal code generator has no rendering for it, so a kernel built from
+// such a body reaches the driver as a shader that will not compile.
+class GpuImpliedDoFinder :
+        public ASR::BaseWalkVisitor<GpuImpliedDoFinder> {
+public:
+    bool found = false;
+
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+        found = true;
+        ASR::BaseWalkVisitor<GpuImpliedDoFinder>::visit_ImpliedDoLoop(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+};
+
 // Counts how many times a given symbol is written to within a list of
 // statements. Used to distinguish a genuine ASSOCIATE selector temporary
 // (written exactly once, at its point of definition) from an ordinary
@@ -3461,6 +3515,82 @@ public:
         return true;
     }
 
+    // Copy a sectioned actual argument into a contiguous array owned by
+    // the spliced block, and return that array; nullptr when the actual is
+    // not a section, when the callee never sections the dummy, or when the
+    // section is not one the copy loops can walk.
+    //
+    // The callee's own sections of the dummy are what force this: splicing
+    // substitutes the actual for the dummy, so `c(1:k)` over an actual
+    // `a(:,j)` becomes a section of a section.  A device pointer carries a
+    // base and a count and nothing else, so the inner section's stride
+    // would simply be dropped.  Copying first leaves the dummy standing for
+    // an ordinary contiguous array, which the callee may section freely.
+    //
+    // The array lives in the spliced block, so kernel extraction gives it a
+    // per-thread workspace buffer rather than one buffer shared by every
+    // thread; an extent the host cannot work out is caught by the workspace
+    // pre-flight, which declines the loop.
+    ASR::expr_t* gather_section_actual(const Location &loc,
+            SymbolTable *block_scope, ASR::Function_t *fn,
+            ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
+            std::vector<ASR::stmt_t*> &gathers,
+            std::vector<ASR::stmt_t*> &scatters) {
+        if (!actual || !ASR::is_a<ASR::ArraySection_t>(*actual)) {
+            return nullptr;
+        }
+        ASR::ArraySection_t *as =
+            ASR::down_cast<ASR::ArraySection_t>(actual);
+        // The copy loops index the base as a designator, so it has to be
+        // one they can write down.
+        if (!ASR::is_a<ASR::Var_t>(*as->m_v)
+                && !ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
+            return nullptr;
+        }
+        std::vector<int> range_dims;
+        for (size_t d = 0; d < as->n_args; d++) {
+            if (as->m_args[d].m_left && as->m_args[d].m_right
+                    && as->m_args[d].m_step) {
+                range_dims.push_back((int)d);
+            }
+        }
+        if (range_dims.empty()) return nullptr;
+        GpuDummySectionFinder finder(dummy);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            finder.visit_stmt(*fn->m_body[i]);
+        }
+        if (!finder.found) return nullptr;
+        // Gathering is what lets this callee be spliced at all, so it is
+        // also where the shader has to be judged buildable. A callee that
+        // holds an implied-do reaches the Metal code generator with no
+        // rendering for it, and the driver is handed a shader that will
+        // not compile -- worse than leaving the loop on the host. Declining
+        // to gather leaves the nested section standing, and the loop is
+        // then declined further down exactly as before.
+        GpuImpliedDoFinder implied_do;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            implied_do.visit_stmt(*fn->m_body[i]);
+        }
+        if (implied_do.found) return nullptr;
+
+        Vec<ASR::expr_t*> extents;
+        extents.reserve(al, range_dims.size());
+        for (int d : range_dims) {
+            extents.push_back(al, section_extent(loc, as->m_args[d]));
+        }
+        ASR::ttype_t *elem_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(as->m_v));
+        ASR::expr_t *tmp = declare_temp_array(loc, block_scope, elem_type,
+            extents.p, extents.n, "__gpu_arg");
+        gathers.push_back(build_section_copy_loops(loc, block_scope, as,
+            range_dims, tmp, true));
+        if (writable) {
+            scatters.push_back(build_section_copy_loops(loc, block_scope,
+                as, range_dims, tmp, false));
+        }
+        return tmp;
+    }
+
     // Splice `fn`'s body into a BLOCK, rewritten for this call site,
     // and assign its result to `target` inside that block.
     //
@@ -3484,12 +3614,20 @@ public:
 
         std::map<ASR::symbol_t*, ASR::expr_t*> subst;
         std::set<ASR::symbol_t*> dummies;
+        std::vector<ASR::stmt_t*> arg_gathers, arg_scatters;
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::symbol_t *d = ASR::down_cast<ASR::Var_t>(
                 fn->m_args[i])->m_v;
             ASR::expr_t *actual = strip_array_casts(fc->m_args[i].m_value);
             if (!actual) return nullptr;
-            subst[d] = actual;
+            // A sectioned actual whose dummy the callee sections in turn
+            // would leave a section of a section behind, which no device
+            // pointer can express. Copy it into a contiguous array of the
+            // spliced block first and let the dummy stand for that.
+            ASR::expr_t *gathered = gather_section_actual(loc, block_scope,
+                fn, d, actual, dummy_is_written(fn, i), arg_gathers,
+                arg_scatters);
+            subst[d] = gathered ? gathered : actual;
             dummies.insert(d);
         }
 
@@ -3563,15 +3701,21 @@ public:
 
         ASRUtils::ExprStmtDuplicator dup(al);
         Vec<ASR::stmt_t*> cloned;
-        cloned.reserve(al, fn->n_body + 1);
+        cloned.reserve(al, fn->n_body + arg_gathers.size()
+            + arg_scatters.size() + 1);
+        // The gathers read the caller's own expressions, so they are not
+        // subject to the dummy substitution and go in ahead of it.
+        for (ASR::stmt_t *g : arg_gathers) cloned.push_back(al, g);
+        size_t body_start = cloned.n;
         if (!flatten_device_function_body(fn->m_body, fn->n_body, dup,
                 cloned)) {
             return nullptr;
         }
         AssociateVarResolverVisitor resolver(al, subst);
-        for (size_t i = 0; i < cloned.n; i++) {
+        for (size_t i = body_start; i < cloned.n; i++) {
             resolver.visit_stmt(*cloned[i]);
         }
+        for (ASR::stmt_t *sc : arg_scatters) cloned.push_back(al, sc);
 
         auto rit = subst.find(ret_sym);
         if (rit == subst.end()) return nullptr;
