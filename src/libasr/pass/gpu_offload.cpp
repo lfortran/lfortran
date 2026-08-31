@@ -1704,6 +1704,282 @@ public:
     }
 };
 
+// Every symbol whose storage a statement list may modify, identified by
+// the root of the designator written to.  A gather may only be hoisted
+// out of a loop when nothing in the loop can change what it copied, so
+// this errs towards reporting a write: an actual argument bound to a
+// dummy that is not `intent(in)`, or to a callee that cannot be
+// resolved, counts as written.
+class GpuWrittenRootCollector :
+        public ASR::BaseWalkVisitor<GpuWrittenRootCollector> {
+public:
+    std::set<ASR::symbol_t*> roots;
+
+    void note(ASR::expr_t *e) {
+        GpuDesignatorBase b = gpu_designator_base(e);
+        if (b.is_known()) roots.insert(b.root);
+    }
+
+    // The dummy at position `i` of `name`, or nullptr when the callee
+    // is not a plain Function.
+    static ASR::Variable_t* dummy_of(ASR::symbol_t *name, size_t i) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
+        if (!s || !ASR::is_a<ASR::Function_t>(*s)) return nullptr;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        if (i >= fn->n_args) return nullptr;
+        if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) return nullptr;
+        ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        if (!d || !ASR::is_a<ASR::Variable_t>(*d)) return nullptr;
+        return ASR::down_cast<ASR::Variable_t>(d);
+    }
+
+    void note_call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (!args[i].m_value) continue;
+            ASR::Variable_t *d = dummy_of(name, i);
+            if (d != nullptr && d->m_intent == ASR::intentType::In) continue;
+            note(args[i].m_value);
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        note(x.m_target);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        note(x.m_target);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_Associate(x);
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) note(x.m_args[i].m_a);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_Allocate(x);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) note(x.m_args[i].m_a);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_ReAlloc(x);
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) note(x.m_vars[i]);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>
+            ::visit_ExplicitDeallocate(x);
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) note(x.m_vars[i]);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>
+            ::visit_ImplicitDeallocate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        note(x.m_head.m_v);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) note(x.m_head[i].m_v);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>
+            ::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+};
+
+// `x%c_(k)`: one element of an array of derived type that is itself a
+// component of something the kernel is handed.  A Metal kernel receives
+// such a component as flat data plus per-element offsets and extents,
+// and nothing on the device carries the extents of the array components
+// hanging off the element that was selected -- so an expression as
+// ordinary as `size(x%c_(k)%upper_, 1)` cannot be evaluated there and
+// the loop is declined.
+//
+// Copying the element into a temporary on the host before the launch
+// removes the whole difficulty: the temporary is an ordinary derived-type
+// kernel argument, and `size(t%upper_, 1)` is the shape the existing
+// per-component extent machinery already resolves.
+//
+// An element reached directly from a variable, `c(k)`, is deliberately
+// not collected: that shape is marshalled correctly today.
+class GpuStructElementGatherCollector :
+        public ASR::BaseWalkVisitor<GpuStructElementGatherCollector> {
+public:
+    std::vector<ASR::ArrayItem_t*> found;
+
+    static bool is_gatherable(const ASR::ArrayItem_t &x) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            const_cast<ASR::ttype_t*>(x.m_type));
+        if (!t || ASR::is_a<ASR::Array_t>(*t)) return false;
+        if (!ASR::is_a<ASR::StructType_t>(*t)) return false;
+        // A polymorphic element carries a dynamic type the copy would
+        // not reproduce.
+        if (ASRUtils::is_class_type(t)) return false;
+        ASR::expr_t *base = gpu_past_array_physical_cast(x.m_v);
+        if (!base || !ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+            return false;
+        }
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_left || x.m_args[i].m_step) return false;
+            if (!x.m_args[i].m_right) return false;
+        }
+        return gpu_designator_base(x.m_v).is_known();
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        if (is_gatherable(x)) {
+            found.push_back(const_cast<ASR::ArrayItem_t*>(&x));
+        }
+        ASR::BaseWalkVisitor<GpuStructElementGatherCollector>
+            ::visit_ArrayItem(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+};
+
+// Every symbol an expression mentions.
+class GpuExprSymbolCollector :
+        public ASR::BaseWalkVisitor<GpuExprSymbolCollector> {
+public:
+    std::set<ASR::symbol_t*> syms;
+
+    void visit_Var(const ASR::Var_t &x) {
+        syms.insert(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+};
+
+// One gathered element: the designator that was copied and the host
+// temporary that now stands for it.
+struct GpuStructElementGather {
+    ASR::expr_t *chain = nullptr;
+    ASR::symbol_t *temp = nullptr;
+};
+
+// Replaces each collected designator with a reference to its temporary,
+// recording every slot it overwrites so the substitution can be undone
+// when the loop turns out not to be offloadable after all.
+class GpuStructElementGatherReplacer :
+        public ASR::BaseExprReplacer<GpuStructElementGatherReplacer> {
+public:
+    Allocator &al;
+    const std::vector<GpuStructElementGather> &gathers;
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo;
+
+    GpuStructElementGatherReplacer(Allocator &al_,
+            const std::vector<GpuStructElementGather> &gathers_,
+            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo_)
+        : al(al_), gathers(gathers_), undo(undo_) {}
+
+    void replace_ArrayItem(ASR::ArrayItem_t *x) {
+        ASR::expr_t *e = ASRUtils::EXPR((ASR::asr_t*)x);
+        for (const GpuStructElementGather &g : gathers) {
+            if (!gpu_same_designator(g.chain, e)) continue;
+            undo.push_back({current_expr, *current_expr});
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                x->base.base.loc, g.temp));
+            return;
+        }
+        ASR::BaseExprReplacer<GpuStructElementGatherReplacer>
+            ::replace_ArrayItem(x);
+    }
+};
+
+class GpuStructElementGatherVisitor :
+        public ASR::CallReplacerOnExpressionsVisitor<
+            GpuStructElementGatherVisitor> {
+public:
+    GpuStructElementGatherReplacer replacer;
+
+    GpuStructElementGatherVisitor(Allocator &al,
+            const std::vector<GpuStructElementGather> &gathers,
+            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo)
+        : replacer(al, gathers, undo) {}
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        this->visit_symbol(*x.m_m);
+    }
+};
+
+// Undoes the gather substitution when the loop turns out not to be
+// offloadable.  The pass must leave a declined loop exactly as it found
+// it, and the substitution is made before the eligibility checks so that
+// they judge the shape the kernel would actually be built from.
+class GpuGatherGuard {
+public:
+    GpuGatherGuard(SymbolTable *scope,
+            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
+            std::vector<std::string> &names)
+        : scope_(scope), undo_(undo), names_(names) {}
+
+    ~GpuGatherGuard() {
+        if (committed_) return;
+        for (size_t i = undo_.size(); i > 0; i--) {
+            *undo_[i - 1].first = undo_[i - 1].second;
+        }
+        undo_.clear();
+        for (const std::string &n : names_) {
+            if (scope_ != nullptr) scope_->erase_symbol(n);
+        }
+        names_.clear();
+    }
+
+    void commit() { committed_ = true; }
+
+private:
+    SymbolTable *scope_;
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo_;
+    std::vector<std::string> &names_;
+    bool committed_ = false;
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -7688,6 +7964,131 @@ public:
         }
     }
 
+    // Copy every loop-invariant, read-only element of an array of
+    // derived type that the loop reaches through a component --
+    // `x%c_(k)` -- into a temporary of the enclosing scope, and let the
+    // loop body name the temporary instead.  The copy runs once, on the
+    // host, before the launch; the temporary is then an ordinary
+    // derived-type kernel argument whose own components have extents
+    // the device can be told about, which is what the chain itself does
+    // not.
+    //
+    // `undo` records every slot that was overwritten and `temp_names`
+    // every symbol that was added, so `GpuGatherGuard` can put the loop
+    // back exactly as it was if the offload is declined further down.
+    bool hoist_struct_element_gathers(const ASR::DoConcurrentLoop_t &x,
+            Vec<ASR::stmt_t*> &gather_stmts,
+            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
+            std::vector<std::string> &temp_names) {
+        GpuStructElementGatherCollector collector;
+        for (size_t i = 0; i < x.n_body; i++) {
+            collector.visit_stmt(*x.m_body[i]);
+        }
+        if (collector.found.empty()) return true;
+
+        GpuWrittenRootCollector written;
+        for (size_t i = 0; i < x.n_body; i++) {
+            written.visit_stmt(*x.m_body[i]);
+        }
+        std::set<ASR::symbol_t*> loop_indices;
+        for (size_t d = 0; d < x.n_head; d++) {
+            if (!x.m_head[d].m_v) continue;
+            if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+            loop_indices.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+        }
+
+        std::vector<GpuStructElementGather> gathers;
+        for (ASR::ArrayItem_t *item : collector.found) {
+            ASR::expr_t *chain = ASRUtils::EXPR((ASR::asr_t*)item);
+            GpuDesignatorBase base = gpu_designator_base(chain);
+            if (!base.is_known()) return false;
+            // Anything the loop may write to the object the chain hangs
+            // off makes the copy stale.
+            if (written.roots.count(base.root)) return false;
+            if (!host_nameable(base.root)) return false;
+            // The subscripts have to mean the same thing for every
+            // iteration, and mean it in the scope the copy is made in.
+            bool invariant = true;
+            for (size_t k = 0; k < item->n_args && invariant; k++) {
+                GpuExprSymbolCollector sc;
+                sc.visit_expr(*item->m_args[k].m_right);
+                for (ASR::symbol_t *sym : sc.syms) {
+                    if (loop_indices.count(sym) || written.roots.count(sym)
+                            || !host_nameable(sym)) {
+                        invariant = false;
+                        break;
+                    }
+                }
+            }
+            if (!invariant) return false;
+            bool seen = false;
+            for (const GpuStructElementGather &g : gathers) {
+                if (gpu_same_designator(g.chain, chain)) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (seen) continue;
+            ASR::symbol_t *struct_sym =
+                ASRUtils::get_struct_sym_from_struct_expr(chain);
+            if (struct_sym == nullptr) return false;
+            GpuStructElementGather g;
+            g.chain = chain;
+            g.temp = nullptr;
+            gathers.push_back(g);
+        }
+        if (gathers.empty()) return true;
+
+        gather_stmts.reserve(al, gathers.size());
+        for (GpuStructElementGather &g : gathers) {
+            const Location &gloc = g.chain->base.loc;
+            GpuDesignatorBase base = gpu_designator_base(g.chain);
+            std::string stem = base.members.empty()
+                ? std::string("elem")
+                : std::string(ASRUtils::symbol_name(base.members.front()));
+            std::string name = current_scope->get_unique_name(
+                "__gpu_gather_" + stem);
+            ASR::symbol_t *temp = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, gloc, current_scope,
+                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al,
+                        ASRUtils::expr_type(g.chain)),
+                    ASRUtils::get_struct_sym_from_struct_expr(g.chain),
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(name, temp);
+            temp_names.push_back(name);
+            g.temp = temp;
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.success = true;
+            ASR::expr_t *rhs = dup.duplicate_expr(g.chain);
+            if (!rhs || !dup.success) rhs = g.chain;
+            gather_stmts.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, gloc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, gloc, temp)),
+                    rhs, nullptr, false, false)));
+        }
+
+        GpuStructElementGatherVisitor sub(al, gathers, undo);
+        for (size_t i = 0; i < x.n_body; i++) {
+            sub.visit_stmt(*x.m_body[i]);
+        }
+        return true;
+    }
+
+    // True when `sym` is the very symbol the enclosing scope resolves its
+    // name to, so an expression written in terms of it can be repeated
+    // outside the loop.
+    bool host_nameable(ASR::symbol_t *sym) {
+        if (sym == nullptr) return false;
+        ASR::symbol_t *found = current_scope->resolve_symbol(
+            ASRUtils::symbol_name(sym));
+        return found != nullptr
+            && ASRUtils::symbol_get_past_external(found) == sym;
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
 
@@ -7947,6 +8348,31 @@ public:
                     break;
                 }
             }
+        }
+
+        // An element of an array of derived type reached through a
+        // component -- `x%c_(k)` -- is copied to a temporary of this
+        // scope before the launch, and the loop body reads the temporary.
+        // This runs ahead of the checks below on purpose: they must judge
+        // the shape the kernel would really be built from. The guard puts
+        // the loop back untouched if any of them declines.
+        Vec<ASR::stmt_t*> gather_stmts;
+        gather_stmts.reserve(al, 1);
+        std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> gather_undo;
+        std::vector<std::string> gather_temp_names;
+        GpuGatherGuard gather_guard(current_scope, gather_undo,
+            gather_temp_names);
+        if (pass_options.gpu_offload_metal
+                && !hoist_struct_element_gathers(x, gather_stmts,
+                    gather_undo, gather_temp_names)) {
+            // The element could not be hoisted -- a subscript that moves
+            // with the loop, or an object the loop itself writes. Passing
+            // the chain on unchanged reaches the device as a component of
+            // the wrong element, which is a wrong number and no
+            // diagnostic, so decline the loop instead.
+            GpuOffloadReport::emit(loc, report_proc,
+                "struct-element-cannot-be-gathered");
+            return;
         }
 
         // Decide whether this loop can be offloaded at all *before* any of
@@ -10785,9 +11211,13 @@ public:
         // Collect all launch-related statements into a temporary Vec.
         // If any involved variable is optional, wrap them in a
         // present() guard so the host never reads a null descriptor.
+        gather_guard.commit();
         Vec<ASR::stmt_t*> launch_stmts;
-        launch_stmts.reserve(al,
-            pre_launch_stmts.n + liveout_scalars.size() + 2 + liveout_scalars.size());
+        launch_stmts.reserve(al, gather_stmts.n + pre_launch_stmts.n
+            + liveout_scalars.size() + 2 + liveout_scalars.size());
+        for (size_t gi = 0; gi < gather_stmts.n; gi++) {
+            launch_stmts.push_back(al, gather_stmts.p[gi]);
+        }
         for (size_t pi = 0; pi < pre_launch_stmts.n; pi++) {
             launch_stmts.push_back(al, pre_launch_stmts.p[pi]);
         }
