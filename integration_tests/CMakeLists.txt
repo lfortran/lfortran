@@ -5091,3 +5091,42 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+# Compiles with GFortran only; the llvm_wasm_emcc check below runs it with
+# LFortran and an emcc link (see #12603).
+RUN(NAME emscripten_modularize_01 LABELS gfortran)
+
+# Emscripten -s settings are forwarded to the emcc link (see #12603):
+# -sMODULARIZE -sEXPORT_ES6 turns the output into an ES module exporting a
+# factory; the loader runs it under node to verify main() executed.
+# The -s flags come before the source file on purpose: that is the argument
+# order from the issue, which a greedy option parser could silently break.
+# -s=STACK_SIZE=64mb covers the `-s=KEY=VALUE` spelling (raw emcc silently
+# ignores it at link time unless the driver normalizes it); the loader then
+# checks the baked value differs from the 50mb default.
+if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+    find_program(WASM_EXEC_RUNTIME node)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/emscripten_modularize_01.mjs
+        COMMAND ${CMAKE_Fortran_COMPILER} --target=wasm32-unknown-emscripten
+            -sMODULARIZE -sEXPORT_ES6 -s=STACK_SIZE=64mb
+            ${CMAKE_CURRENT_SOURCE_DIR}/emscripten_modularize_01.f90
+            -o ${CMAKE_CURRENT_BINARY_DIR}/emscripten_modularize_01.mjs
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/emscripten_modularize_01.f90
+    )
+    # The target must keep the test's name: `run_tests.py -t <name>` runs
+    # `make <name>`. The RUN(gfortran) registration above never creates a
+    # target under this backend, so the name is free here.
+    add_custom_target(emscripten_modularize_01 ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/emscripten_modularize_01.mjs)
+    if (WASM_EXEC_RUNTIME)
+        add_test(NAME emscripten_modularize_01
+            COMMAND ${WASM_EXEC_RUNTIME}
+                ${CMAKE_CURRENT_SOURCE_DIR}/emscripten_modularize_01_loader.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/emscripten_modularize_01.mjs)
+        set_tests_properties(emscripten_modularize_01 PROPERTIES
+            LABELS "llvm_wasm_emcc")
+    else()
+        message(WARNING "node not found: emscripten_modularize_01 will be "
+            "compiled but not run")
+    endif()
+endif()
