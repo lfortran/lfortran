@@ -4841,7 +4841,7 @@ public:
                     ASR::make_Array_t(al, loc,
                         ASRUtils::duplicate_type(al, scalar_type),
                         dims_vec.p, 1,
-                        ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
 
                 std::string buf_name = current_scope->get_unique_name(
                     "__gpu_buf_" + name);
@@ -6982,7 +6982,7 @@ public:
                 }
                 t = ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
                     arr->m_type, new_dims, arr->n_dims,
-                    arr->m_physical_type));
+                    arr->m_physical_type, arr->m_memory_space));
             }
             arg_types.push_back(al, t);
         }

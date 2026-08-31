@@ -3714,7 +3714,7 @@ public:
                     ASR::ttype_t* shape_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, x.base.base.loc, int_type,
                             shape_dims.p, shape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray));
+                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     ASR::expr_t* shape = ASRUtils::EXPR(
                         ASR::make_IntrinsicArrayFunction_t(al,
                             x.base.base.loc,
@@ -3737,7 +3737,7 @@ public:
                         ASR::make_Array_t(al, x.base.base.loc,
                             array_type->m_type, reshape_dims.p,
                             reshape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray));
+                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
                         al, x.base.base.loc, arr_const, shape, nullptr,
                         nullptr, reshape_type, nullptr));
@@ -4821,7 +4821,7 @@ public:
                 new_dims.push_back(al, dim);
             }
             ASR::ttype_t* inner_type = evaluate_type_bounds(al, arr->m_type, loc);
-            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc, inner_type, new_dims.p, new_dims.size(), arr->m_physical_type));
+            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc, inner_type, new_dims.p, new_dims.size(), arr->m_physical_type, arr->m_memory_space));
         } else if (ASRUtils::is_character(*type)) {
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
             if (str->m_len) {
@@ -5476,7 +5476,7 @@ public:
                 : ASR::array_physical_typeType::FixedSizeArray;
         ASR::ttype_t* new_arr_type = ASRUtils::TYPE(
             ASR::make_Array_t(al, loc, element_type,
-                dims.p, dims.n, phys_type));
+                dims.p, dims.n, phys_type, ASR::memory_spaceType::Global));
         return ASRUtils::EXPR(
             ASR::make_ArrayConstant_t(al, loc, n_data, new_data,
                 new_arr_type, ASR::arraystorageType::ColMajor));
@@ -6395,7 +6395,7 @@ public:
                         Vec<ASR::dimension_t> d1 = make_dim_one(loc, one);
                         ASR::ttype_t* sat = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, int_type, d1.p, d1.size(),
-                            ASR::array_physical_typeType::PointerArray));
+                            ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                         return ASRUtils::make_ArrayConstructor_t_util(
                             al, loc, shape.p, shape.size(),
                             sat, ASR::arraystorageType::ColMajor);
@@ -6878,7 +6878,7 @@ public:
                                                 args_shape2.reserve(al, 1);
                                                 args_shape2.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq2->base.loc, size2, int_type)));
 
-                                                ASR::ttype_t* array_type_shape2 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq2->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::ttype_t* array_type_shape2 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq2->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant2 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq2->base.loc, args_shape2.p, args_shape2.size(), array_type_shape2, ASR::arraystorageType::ColMajor);
                                                 // Create var reference for ia2 (var2__ is already Variable_t*, cast to symbol_t*)
                                                 ASR::expr_t* var2_ref = ASRUtils::EXPR(ASR::make_Var_t(al, asr_eq2->base.loc, (ASR::symbol_t*)var2__));
@@ -6915,7 +6915,7 @@ public:
                                                 args_shape1.reserve(al, 1);
                                                 args_shape1.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, size1, int_type)));
 
-                                                ASR::ttype_t* array_type_shape1 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::ttype_t* array_type_shape1 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant1 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args_shape1.p, args_shape1.size(), array_type_shape1, ASR::arraystorageType::ColMajor);
                                                 emit_cptr_to_pointer(asr_eq1->base.loc, pointer_to_cptr1, asr_eq1, array_constant1);
                                             } else {
@@ -6939,7 +6939,7 @@ public:
 
                                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
                                                     al, asr_eq1->base.loc, int_type, dim.p, dim.size(),
-                                                    ASR::array_physical_typeType::PointerArray));
+                                                    ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(
                                                     al, asr_eq1->base.loc, args_shape.p, args_shape.size(),
                                                     array_type, ASR::arraystorageType::ColMajor);
@@ -7228,7 +7228,7 @@ public:
                                                 }
                                                 ASR::ttype_t* shape_array_type = ASRUtils::TYPE(ASR::make_Array_t(
                                                     al, alias_expr->base.loc, int_type, dim_one.p, dim_one.size(),
-                                                    ASR::array_physical_typeType::PointerArray));
+                                                    ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* shape_constant = ASRUtils::make_ArrayConstructor_t_util(
                                                     al, alias_expr->base.loc, shape_args.p, shape_args.size(),
                                                     shape_array_type, ASR::arraystorageType::ColMajor);
@@ -9971,7 +9971,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9983,7 +9983,7 @@ public:
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -10003,7 +10003,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -10039,7 +10039,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -10052,7 +10052,7 @@ public:
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -10161,7 +10161,7 @@ public:
             if (is_assumed_rank) {
                 type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type,
                     nullptr, 0,
-                    ASR::array_physical_typeType::AssumedRankArray));
+                    ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
@@ -10225,7 +10225,7 @@ public:
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                     if (is_assumed_rank) {
-                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10439,7 +10439,7 @@ public:
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 }
                 if (is_assumed_rank) {
-                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                 } else {
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10531,7 +10531,7 @@ public:
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                     if (is_assumed_rank) {
-                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10561,7 +10561,7 @@ public:
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                 }
                 if (is_assumed_rank) {
-                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                 } else {
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -12802,7 +12802,7 @@ public:
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
                                                         ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
                                                         array_t->m_dims, array_t->n_dims,
-                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr));
+                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr), ASR::memory_spaceType::Global);
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
@@ -14390,7 +14390,7 @@ public:
         ASR::ttype_t* arr_element_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
 
         ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
-                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
 
         size_t n_dims_array_reshape = ASRUtils::extract_n_dims_from_ttype(reshape_ttype);
 
@@ -14459,7 +14459,7 @@ public:
                         size_t curr_idx = elements.size();
                         ASR::ttype_t* new_type = ASRUtils::TYPE(
                             ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
-                                            a_type_->m_physical_type)
+                                            a_type_->m_physical_type, a_type_->m_memory_space)
                         );
                         void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
                         int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
@@ -14540,7 +14540,7 @@ public:
                     size_t curr_idx = elements_.size();
                     ASR::ttype_t* new_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
-                                        a_type_->m_physical_type)
+                                        a_type_->m_physical_type, a_type_->m_memory_space)
                     );
                     void *data = ASRUtils::set_ArrayConstant_data(elements_.p, curr_idx, a_type_->m_type);
                     int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
@@ -17612,7 +17612,7 @@ public:
                     physical_type = ASR::array_physical_typeType::PointerArray;
                 }
                 ASR::ttype_t* base_type = ASRUtils::extract_type(type);
-                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, base_type, dims.p, dims.n, physical_type));
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, base_type, dims.p, dims.n, physical_type, ASR::memory_spaceType::Global));
                 int64_t n_data = itr * ASRUtils::extract_kind_from_ttype_t(base_type);
                 if (ASRUtils::is_character(*base_type)) {
                     int len;
@@ -21241,7 +21241,7 @@ public:
                 array_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, array_section->base.base.loc,
                     tmp2->m_type, dims.p, dims.size(),
-                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
+                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }

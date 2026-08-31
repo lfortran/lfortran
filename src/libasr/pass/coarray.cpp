@@ -1492,7 +1492,7 @@ class PRIFInterface {
                 global_scope->add_symbol(derived_type_name, type_declaration);
             }
             ASR::ttype_t * assumed_type = ASRUtils::make_StructType_t_util(al, loc, type_declaration, false);
-            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
 
             ASR::symbol_t *a_sym = declare_variable(
                 fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, type_declaration,
@@ -1540,7 +1540,7 @@ class PRIFInterface {
                 ASR::string_physical_typeType::DescriptorString));
             ASR::ttype_t *a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(
                 al, loc, a_char_type, nullptr, 0,
-                ASR::array_physical_typeType::AssumedRankArray));
+                ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
 
             ASR::symbol_t *a_sym = declare_variable(
                 fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, nullptr,
