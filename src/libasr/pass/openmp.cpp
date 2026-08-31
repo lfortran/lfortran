@@ -1822,6 +1822,7 @@ class ParallelRegionVisitor :
 
                 case ASR::omp_region_typeType::Atomic:
                 visit_OMPAtomic(x);
+                break;
 
                 default:
                     // for now give error for constructs which we do not support
@@ -2019,12 +2020,18 @@ class ParallelRegionVisitor :
                     }
                 }
             }
+            // A combined `parallel do` reaches this point with its clauses already
+            // in the hierarchy, so the block above skipped them. Read the collapse
+            // count for every region kind, or a `parallel do collapse(n)` would
+            // partition only the outermost loop.
             for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
                 if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPSchedule) {
                     ASR::OMPSchedule_t* schedule_clause = ASR::down_cast<ASR::OMPSchedule_t>(clauses_heirarchial[nesting_lvl][j]);
                     schedule_kind = schedule_clause->m_kind;
                     chunk_size = schedule_clause->m_chunk_size;
                     has_schedule_clause = true;
+                } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
+                    collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
                 }
             }
             // Step 2: Initialize reduction variables (if any)
