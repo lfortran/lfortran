@@ -166,6 +166,7 @@ struct CompilerOptions {
     bool time_report = false;
     int32_t fpe_traps = 0; // Bitmask of LCOMPILERS_FE_* flags
     std::string emcc_embed;
+    std::vector<std::string> emcc_settings; // -s Emscripten settings
     std::vector<std::string> import_paths;
     Platform platform;
     bool detect_leaks = false;
