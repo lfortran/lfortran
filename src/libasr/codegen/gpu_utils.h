@@ -25,6 +25,11 @@ struct GpuVlaDim {
     // `call_arg_index`. A struct is handed to the kernel as a buffer, so
     // the host reads the component out of it to size the workspace.
     std::vector<std::string> member_path;
+    // When true, the size is the whole of `dim_expr`, which is arithmetic
+    // over the kernel's parameters and nothing else. The launch rebuilds
+    // it over the actual arguments rather than collapsing it onto one of
+    // them -- `op%m_ + 1` is not `op%m_`.
+    bool is_host_expr = false;
 };
 
 // Describes a VLA workspace buffer required by a GPU kernel.
@@ -378,6 +383,14 @@ inline bool resolve_extent_to_arg_member(ASR::expr_t *e,
     return false;
 }
 
+// Whether the host could evaluate `e` itself, given that it can read every
+// kernel parameter. Arithmetic over integer literals, scalar parameters,
+// scalar components of parameters and the extents of array parameters is
+// evaluable; anything else -- a call, a subscript that only exists on the
+// device -- is not.
+inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names);
+
 // The kernel argument supplying that extent. An array parameter's extents
 // are handed to the kernel as scalar parameters of their own, so an extent
 // written over the array itself is read on the host from the same
@@ -392,6 +405,46 @@ inline bool resolve_extent_to_dim_arg(ASR::expr_t *e,
         if (arg_names[a] == want) {
             arg_index = a;
             return true;
+        }
+    }
+    return false;
+}
+
+inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names) {
+    if (e == nullptr) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    if (ASR::is_a<ASR::Cast_t>(*v)) {
+        return gpu_extent_is_host_evaluable(
+            ASR::down_cast<ASR::Cast_t>(v)->m_arg, arg_names);
+    }
+    if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return true;
+    size_t idx = 0;
+    std::vector<std::string> path;
+    if (resolve_extent_to_dim_arg(v, arg_names, idx)) return true;
+    if (resolve_extent_to_arg_member(v, arg_names, idx, path)) return true;
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
+        ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(v);
+        switch (op->m_op) {
+            case ASR::binopType::Add:
+            case ASR::binopType::Sub:
+            case ASR::binopType::Mul:
+            case ASR::binopType::Div:
+                break;
+            default: return false;
+        }
+        return gpu_extent_is_host_evaluable(op->m_left, arg_names)
+            && gpu_extent_is_host_evaluable(op->m_right, arg_names);
+    }
+    if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
+        return gpu_extent_is_host_evaluable(
+            ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg, arg_names);
+    }
+    if (ASR::is_a<ASR::Var_t>(*v)) {
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+        for (const std::string &a : arg_names) {
+            if (a == name) return true;
         }
     }
     return false;
@@ -681,6 +734,8 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 } else if (try_resolve_array_size_to_arg_var(dim, body,
                         n_body, arg_names, idx)) {
                     vd.call_arg_index = idx;
+                } else if (gpu_extent_is_host_evaluable(dim, arg_names)) {
+                    vd.is_host_expr = true;
                 } else if (dim_expr_struct_member_key(dim, member_key)) {
                     vd.is_struct_member_size = true;
                     vd.struct_member_key = member_key;
@@ -739,6 +794,8 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
                 vd.call_arg_index = idx;
             } else if (find_arg_var_in_expr(dim, arg_names, idx)) {
                 vd.call_arg_index = idx;
+            } else if (gpu_extent_is_host_evaluable(dim, arg_names)) {
+                vd.is_host_expr = true;
             } else if (dim_expr_struct_member_key(dim, member_key)) {
                 vd.is_struct_member_size = true;
                 vd.struct_member_key = member_key;
