@@ -2300,6 +2300,8 @@ static GpuDesignatorBase gpu_designator_base(ASR::expr_t *e) {
     return GpuDesignatorBase();
 }
 
+static bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b);
+
 // Strict structural equality of two subscript expressions. Anything not
 // understood here compares unequal, which makes the two designators
 // differ and so errs towards materialising a temporary.
@@ -2328,6 +2330,28 @@ static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
             return x->m_op == y->m_op
                 && gpu_same_subscript(x->m_left, y->m_left)
                 && gpu_same_subscript(x->m_right, y->m_right);
+        }
+        // A whole-dimension `:` over an array whose extents are not known
+        // until run time is lowered to `lbound(a,d):ubound(a,d):1`, so
+        // two spellings of one section differ only by these nodes. Without
+        // them `a(:,i) = a(:,i)` reads as an aliasing assignment and is
+        // given a temporary it does not need.
+        case ASR::exprType::ArrayBound: {
+            ASR::ArrayBound_t *x = ASR::down_cast<ASR::ArrayBound_t>(a);
+            ASR::ArrayBound_t *y = ASR::down_cast<ASR::ArrayBound_t>(b);
+            return x->m_bound == y->m_bound
+                && gpu_same_subscript(x->m_dim, y->m_dim)
+                && gpu_same_designator(x->m_v, y->m_v);
+        }
+        case ASR::exprType::ArraySize: {
+            ASR::ArraySize_t *x = ASR::down_cast<ASR::ArraySize_t>(a);
+            ASR::ArraySize_t *y = ASR::down_cast<ASR::ArraySize_t>(b);
+            if ((x->m_dim == nullptr) != (y->m_dim == nullptr)) {
+                return false;
+            }
+            return (x->m_dim == nullptr
+                    || gpu_same_subscript(x->m_dim, y->m_dim))
+                && gpu_same_designator(x->m_v, y->m_v);
         }
         default: {
             return false;
@@ -2483,6 +2507,19 @@ public:
             return;
         }
         ASR::BaseWalkVisitor<GpuSelfAliasChecker>::visit_ArrayItem(x);
+    }
+
+    // A bound or a size reads the array's shape, never its elements, so
+    // the array named in one cannot alias what the assignment writes.
+    // `a(:,i)` on an array whose extents are not known until run time is
+    // lowered to `a(lbound(a,1):ubound(a,1):1, i)`, so without this every
+    // such section reports itself as aliasing its own subscripts.
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
     }
 };
 
@@ -7073,14 +7110,44 @@ public:
     // level of the loop body is scanned for those, so only a top-level
     // assignment can have one. Whether the host can then evaluate the
     // extents is settled by the workspace pre-flight further down.
+    // Whether the backend could size the temporary an aliased assignment
+    // needs. It is a run-time sized BLOCK local, so it becomes a workspace,
+    // and the backend describes one with declared_shape_to_vla_workspace.
+    // An extent that function cannot resolve is a code-generation error
+    // later, so it is a decline here.
+    bool alias_temp_extents_resolvable(ASR::expr_t *target,
+            ASR::expr_t **extents, size_t n_extents,
+            const std::vector<std::string> &arg_names) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, n_extents);
+        for (size_t i = 0; i < n_extents; i++) {
+            ASR::dimension_t d;
+            d.loc = extents[i]->base.loc;
+            d.m_start = int32_const(extents[i]->base.loc, 1);
+            d.m_length = extents[i];
+            dims.push_back(al, d);
+        }
+        ASR::ttype_t *elem_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(target));
+        ASR::ttype_t *arr_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+            target->base.loc, elem_type, dims.p, dims.n,
+            ASR::array_physical_typeType::FixedSizeArray,
+            ASR::memory_spaceType::Global));
+        GpuVlaWorkspace ws;
+        return declared_shape_to_vla_workspace(
+            ASR::down_cast<ASR::Array_t>(arr_type), "__gpu_alias",
+            arg_names, ws);
+    }
+
     bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
-            size_t n_body, bool top_level) {
+            size_t n_body, bool top_level,
+            const std::vector<std::string> &arg_names) {
         for (size_t si = 0; si < n_body; si++) {
             ASR::stmt_t *stmt = body[si];
             if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 if (body_needs_unsupported_alias_temp(dl->m_body,
-                        dl->n_body, false)) return true;
+                        dl->n_body, false, arg_names)) return true;
                 continue;
             }
             if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
@@ -7089,7 +7156,7 @@ public:
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                     if (body_needs_unsupported_alias_temp(blk->m_body,
-                            blk->n_body, false)) return true;
+                            blk->n_body, false, arg_names)) return true;
                 }
                 continue;
             }
@@ -7099,7 +7166,7 @@ public:
                         ASR::down_cast<ASR::AssociateBlockCall_t>(
                             stmt)->m_m);
                 if (body_needs_unsupported_alias_temp(ab->m_body,
-                        ab->n_body, false)) return true;
+                        ab->n_body, false, arg_names)) return true;
                 continue;
             }
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) continue;
@@ -7108,7 +7175,11 @@ public:
             if (!target) continue;
             if (alias_temp_is_fixed_size(target)) continue;
             Vec<ASR::expr_t*> extents;
-            if (top_level && alias_temp_extents(target, extents)) continue;
+            if (top_level && alias_temp_extents(target, extents)
+                    && alias_temp_extents_resolvable(target, extents.p,
+                        extents.n, arg_names)) {
+                continue;
+            }
             return true;
         }
         return false;
@@ -9802,8 +9873,11 @@ public:
             // needs a temporary (see materialize_aliased_assignments).
             // If that temporary cannot be fixed-size, decline here,
             // while the body is still untouched.
+            std::vector<std::string> alias_arg_names;
+            collect_kernel_arg_names(x, enclosing_block_scopes,
+                alias_arg_names);
             if (body_needs_unsupported_alias_temp(x.m_body, x.n_body,
-                    true)) {
+                    true, alias_arg_names)) {
                 GpuOffloadReport::emit(loc, report_proc,
                     "runtime-sized-alias-temp");
                 return;
