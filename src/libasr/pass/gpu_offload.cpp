@@ -127,14 +127,24 @@ class GpuReplaceSymbols : public ASR::BaseExprReplacer<GpuReplaceSymbols> {
 public:
     SymbolTable &kernel_scope;
     std::set<SymbolTable*> skip_scopes;
+    // Snapshot restore walks nested Block tables whose parent is the outer
+    // snapshot, not the host. Look up through that chain so an inner Var of
+    // an outer-block local is retargeted at the copy, not left pointing at
+    // the original Block that the kernel path is about to move.
+    bool resolve_through_parents = false;
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
+
+    ASR::symbol_t *lookup_symbol(const std::string &name) {
+        return resolve_through_parents ? kernel_scope.resolve_symbol(name)
+                                       : kernel_scope.get_symbol(name);
+    }
 
     void replace_Var(ASR::Var_t *x) {
         std::string name = ASRUtils::symbol_name(x->m_v);
         for (auto *ss : skip_scopes) {
             if (ss->get_symbol(name)) return;
         }
-        ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
+        ASR::symbol_t *new_sym = lookup_symbol(name);
         if (new_sym) {
             x->m_v = new_sym;
         }
@@ -148,7 +158,7 @@ public:
         current_expr = current_expr_copy;
         // Replace the member symbol to point to kernel scope's ExternalSymbol
         std::string mem_name = ASRUtils::symbol_name(x->m_m);
-        ASR::symbol_t *new_mem = kernel_scope.get_symbol(mem_name);
+        ASR::symbol_t *new_mem = lookup_symbol(mem_name);
         if (new_mem) {
             x->m_m = new_mem;
         }
@@ -157,7 +167,7 @@ public:
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
         // Remap m_name to kernel scope symbol
         std::string name = ASRUtils::symbol_name(x->m_name);
-        ASR::symbol_t *new_sym = kernel_scope.get_symbol(name);
+        ASR::symbol_t *new_sym = lookup_symbol(name);
         if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name)) {
             // Try sanitized ExternalSymbol name (handles disambiguated
             // functions where different modules define same-named functions)
@@ -165,14 +175,14 @@ public:
             for (char &c : sanitized) {
                 if (c == '~' || c == '@') c = '_';
             }
-            new_sym = kernel_scope.get_symbol(sanitized);
+            new_sym = lookup_symbol(sanitized);
             if (!new_sym) {
                 // ExternalSymbol name differs from resolved function name;
                 // try the underlying function's name (e.g., "construct"
                 // instead of "~mytype_t@construct").
                 std::string resolved_name = ASRUtils::symbol_name(
                     ASRUtils::symbol_get_past_external(x->m_name));
-                new_sym = kernel_scope.get_symbol(resolved_name);
+                new_sym = lookup_symbol(resolved_name);
             }
         }
         if (new_sym) {
@@ -180,7 +190,7 @@ public:
         }
         if (x->m_original_name) {
             std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
-            ASR::symbol_t *new_orig = kernel_scope.get_symbol(orig_name);
+            ASR::symbol_t *new_orig = lookup_symbol(orig_name);
             if (new_orig) {
                 x->m_original_name = new_orig;
             }
@@ -5164,13 +5174,18 @@ public:
 
         // duplicate_Block copies the symbol table but leaves Var nodes in the
         // body pointing at the original Variables. Point them at the copies
-        // so the kernel owns a self-contained block.
+        // so the restored host block is self-contained. Nested blocks resolve
+        // through the snapshot parent chain: an inner use of an outer-block
+        // local must find the outer copy, not the original that the kernel
+        // path is about to move.
         remap_block_to_own_scope = [&](ASR::Block_t *block) {
             GpuReplaceSymbolsVisitor body_v(*block->m_symtab);
+            body_v.replacer.resolve_through_parents = true;
             for (size_t j = 0; j < block->n_body; j++) {
                 body_v.visit_stmt(*block->m_body[j]);
             }
             GpuReplaceSymbols type_replacer(*block->m_symtab);
+            type_replacer.resolve_through_parents = true;
             for (auto &item : block->m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Block_t>(*item.second)) {
                     remap_block_to_own_scope(
