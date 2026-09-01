@@ -20297,9 +20297,21 @@ public:
 
                 if (ASR::is_a<ASR::String_t>(*var_type_base)) {
                     ASR::String_t *s = ASR::down_cast<ASR::String_t>(var_type_base);
-                    this->visit_expr_wrapper(s->m_len, true);
-                    elem_size = builder->CreateZExtOrTrunc(
-                        tmp, llvm::Type::getInt64Ty(context));
+                    if (s->m_len) {
+                        this->visit_expr_wrapper(s->m_len, true);
+                        elem_size = builder->CreateZExtOrTrunc(
+                            tmp, llvm::Type::getInt64Ty(context));
+                    } else {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(size_expr, false);
+                        ptr_loads = ptr_copy;
+                        
+                        llvm::Value *str_data, *str_len;
+                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(s, tmp);
+                        elem_size = builder->CreateZExtOrTrunc(
+                            str_len, llvm::Type::getInt64Ty(context));
+                    }
                 } else {
                     int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
                     if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {
