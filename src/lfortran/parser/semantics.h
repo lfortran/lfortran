@@ -1167,6 +1167,9 @@ ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
 
 #define PAREN(x, l) parenthesis(p.m_a, l, EXPR(x))
 
+// Fortran 2023 conditional expression (R1002): ( test ? body : orelse )
+#define COND_EXPR(c, a, b, l) make_ConditionalExpr_t(p.m_a, l, EXPR(c), EXPR(a), EXPR(b))
+
 #define STRCONCAT(x, y, l) make_StrOp_t(p.m_a, l, EXPR(x), stroperatorType::Concat, EXPR(y))
 
 #define EQ(x, y, l)  make_Compare_t(p.m_a, l, EXPR(x), cmpopType::Eq, EXPR(y))

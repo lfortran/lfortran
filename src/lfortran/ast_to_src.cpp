@@ -3731,6 +3731,33 @@ public:
         last_expr_precedence = 13;
     }
 
+    void visit_ConditionalExpr(const ConditionalExpr_t &x) {
+        // Fortran 2023 R1002. The parentheses are part of the syntax, so they
+        // are always printed. A conditional expression in the `orelse`
+        // position is printed flat, as the repeating group of R1002:
+        //     ( c1 ? a : c2 ? b : d )
+        std::string r = "(";
+        const ConditionalExpr_t *e = &x;
+        while (true) {
+            this->visit_expr(*e->m_test);
+            r.append(s);
+            r += " ? ";
+            this->visit_expr(*e->m_body);
+            r.append(s);
+            r += " : ";
+            if (is_a<ConditionalExpr_t>(*e->m_orelse)) {
+                e = down_cast<ConditionalExpr_t>(e->m_orelse);
+            } else {
+                this->visit_expr(*e->m_orelse);
+                r.append(s);
+                break;
+            }
+        }
+        r += ")";
+        s = r;
+        last_expr_precedence = 13;
+    }
+
     void visit_Real(const Real_t &x) {
         s = syn(gr::Real);
         s += x.m_n;

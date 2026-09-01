@@ -467,6 +467,21 @@ RUN(NAME cond_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_06 LABELS gfortran llvm)
 
+# Fortran 2023 conditional expressions, `( cond ? a : b )` (10.1.2.3 R1002).
+# These carry no `gfortran` label: CI compiles the gfortran pass with the
+# system /usr/bin/gfortran, which is GNU 13.3.0 and predates the feature, so
+# it reports "Expected a right parenthesis in expression" at the `?`. GFortran
+# grew conditional expressions in GCC 15, and even GCC 16 supports them only
+# for scalars of intrinsic type, so the array (06) and derived type (07) tests
+# could not be labelled `gfortran` in any case.
+RUN(NAME conditional_expr_01 LABELS llvm)
+RUN(NAME conditional_expr_02 LABELS llvm)
+RUN(NAME conditional_expr_03 LABELS llvm)
+RUN(NAME conditional_expr_04 LABELS llvm)
+RUN(NAME conditional_expr_05 LABELS llvm)
+RUN(NAME conditional_expr_06 LABELS llvm)
+RUN(NAME conditional_expr_07 LABELS llvm)
+
 RUN(NAME complex_cloc_01 LABELS gfortran llvm)
 RUN(NAME complex_solutions LABELS gfortran llvm)
 

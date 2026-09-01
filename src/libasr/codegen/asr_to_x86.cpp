@@ -54,6 +54,11 @@ public:
 
     ASRToX86Visitor(Allocator &al) : m_al{al}, m_a{al, false} {}
 
+    void visit_IfExp(const ASR::IfExp_t & /* x */) {
+        throw CodeGenError("conditional expressions are not supported by the "
+            "x86 backend");
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:

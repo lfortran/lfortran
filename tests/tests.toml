@@ -3374,6 +3374,18 @@ filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/conditional_expr_syntax_1.f90"
+syntax_only_cc = true
+
+# Pins the dedicated AST and ASR nodes for a conditional expression: a
+# ConditionalExpr in the AST and a nested IfExp in the ASR, not a rewrite into
+# `merge`, which would evaluate both arms.
+[[test]]
+filename = "../integration_tests/conditional_expr_01.f90"
+ast = true
+asr = true
+
+[[test]]
 filename = "errors/continue_compilation_2.f90"
 semantics_only_cc = true
 

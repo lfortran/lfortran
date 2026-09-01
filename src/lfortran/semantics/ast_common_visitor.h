@@ -2183,6 +2183,41 @@ public:
     bool in_Subroutine = false;
     bool _processing_dimensions = false;
     bool _processing_char_len = false;
+
+    // Fortran 2023 10.1.11 and 10.1.12 are closed lists of the primaries that
+    // a specification expression and a constant expression may contain. A
+    // conditional expression (R1002) is a primary, but it is in neither list,
+    // so the contexts that require one have to reject it even though the
+    // syntax is fine. This records which such context is being processed, so
+    // that the diagnostic can name the constraint that requires it.
+    enum class RestrictedExprContext {
+        None,
+        KindParameter,    // C701, a constant expression
+        InitExpr,         // C1012, a constant expression
+        CharacterLength,  // C704, a specification expression
+        ArrayBound,       // a specification expression
+    };
+    RestrictedExprContext restricted_expr_context = RestrictedExprContext::None;
+
+    // Restores the previous context even when the visit throws SemanticAbort,
+    // which would otherwise leave the flag set for the rest of the run under
+    // --continue-compilation.
+    struct RestrictedExprScope {
+        CommonVisitor &v;
+        RestrictedExprContext previous;
+        RestrictedExprScope(CommonVisitor &v_, RestrictedExprContext context)
+                : v{v_}, previous{v_.restricted_expr_context} {
+            v.restricted_expr_context = context;
+        }
+        ~RestrictedExprScope() {
+            v.restricted_expr_context = previous;
+        }
+    };
+
+    void visit_restricted_expr(AST::expr_t &e, RestrictedExprContext context) {
+        RestrictedExprScope restricted_scope(*this, context);
+        this->visit_expr(e);
+    }
     bool _declaring_variable = false;
     bool _processing_common_block_object = false;
     bool is_implicit_interface = false;
@@ -3041,6 +3076,8 @@ public:
         bool is_char_type, bool is_argument, char* var_name) {  
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
+        RestrictedExprScope restricted_scope(*this,
+            RestrictedExprContext::ArrayBound);
         _processing_dimensions = true;
 	    dims.reserve(al, n_dim);
 	    for (size_t i=0; i<n_dim; i++) {
@@ -8686,7 +8723,8 @@ public:
                         }
                     }
                     try {
-                        this->visit_expr(*s.m_initializer);
+                        visit_restricted_expr(*s.m_initializer,
+                            RestrictedExprContext::InitExpr);
                     } catch (const SemanticAbort &) {
                         // If parameter initialization fails, remove the variable to prevent
                         // creating a parameter without symbolic_value
@@ -9946,7 +9984,8 @@ public:
             sym_type->m_kind != nullptr
         ) {
             if (sym_type->m_kind->m_value) {
-                this->visit_expr(*sym_type->m_kind->m_value);
+                visit_restricted_expr(*sym_type->m_kind->m_value,
+                    RestrictedExprContext::KindParameter);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, sym_type->m_kind->loc, diag);
             }
@@ -20069,6 +20108,202 @@ public:
         this->visit_expr(*x.m_operand);
     }
 
+    // A conditional expression is a primary (R1001), but 10.1.11 and 10.1.12
+    // enumerate the primaries a specification expression and a constant
+    // expression may contain, and a conditional expression is in neither
+    // list. The parenthesized alternative in those lists is the R1001 form
+    // `( expr )`, which is a different alternative of primary from R1002.
+    void reject_conditional_expr_in_restricted_context(const Location &loc) {
+        if (restricted_expr_context == RestrictedExprContext::None) {
+            return;
+        }
+        std::string clause, requirement;
+        switch (restricted_expr_context) {
+            case RestrictedExprContext::KindParameter: {
+                clause = "constant";
+                requirement = "a kind type parameter shall be a constant "
+                    "expression (Fortran 2023 C701)";
+                break;
+            }
+            case RestrictedExprContext::InitExpr: {
+                clause = "constant";
+                requirement = "an initialization expression shall be a "
+                    "constant expression (Fortran 2023 C1012)";
+                break;
+            }
+            case RestrictedExprContext::CharacterLength: {
+                clause = "specification";
+                requirement = "a type parameter value shall be a "
+                    "specification expression (Fortran 2023 C704)";
+                break;
+            }
+            case RestrictedExprContext::ArrayBound: {
+                clause = "specification";
+                requirement = "an array bound shall be a specification "
+                    "expression";
+                break;
+            }
+            default: {
+                return;
+            }
+        }
+        std::string listing = (clause == "constant") ? "10.1.12" : "10.1.11";
+        diag.add(Diagnostic(
+            "a conditional expression is not allowed in a " + clause
+                + " expression",
+            Level::Error, Stage::Semantic, {
+                Label(requirement, {loc}),
+                Label("help: Fortran 2023 " + listing + " does not list a "
+                    "conditional expression among the permitted primaries; "
+                    "use `merge`, which is permitted here", {loc}, false)}));
+        throw SemanticAbort();
+    }
+
+    // Renders the types of the two arms of a conditional expression for a
+    // diagnostic. type_to_str_with_kind spells out the kind for the numeric
+    // types but not for logical or character, where a kind mismatch would
+    // otherwise print the same text on both sides.
+    void conditional_arm_type_strs(ASR::expr_t *body, ASR::expr_t *orelse,
+            std::string &body_str, std::string &orelse_str) {
+        ASR::ttype_t *body_type = ASRUtils::expr_type(body);
+        ASR::ttype_t *orelse_type = ASRUtils::expr_type(orelse);
+        body_str = ASRUtils::type_to_str_with_kind(body_type, body);
+        orelse_str = ASRUtils::type_to_str_with_kind(orelse_type, orelse);
+        if (body_str == orelse_str) {
+            body_str += "(kind=" + std::to_string(
+                ASRUtils::extract_kind_from_ttype_t(body_type)) + ")";
+            orelse_str += "(kind=" + std::to_string(
+                ASRUtils::extract_kind_from_ttype_t(orelse_type)) + ")";
+        }
+    }
+
+    // Fortran 2023 conditional expression, 10.1.2.3 R1002:
+    //     ( scalar-logical-expr ? expr [ : scalar-logical-expr ? expr ]... : expr )
+    // The parser nests the repeating group, so each node here has exactly one
+    // condition and two arms, and maps directly onto ASR::IfExp, which the
+    // backends lower with real branches. Only the chosen arm is evaluated
+    // (10.1.4 NOTE 3), so this must never be rewritten into `merge`.
+    void visit_ConditionalExpr(const AST::ConditionalExpr_t &x) {
+        reject_conditional_expr_in_restricted_context(x.base.base.loc);
+        this->visit_expr(*x.m_test);
+        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_body);
+        ASR::expr_t *body = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_orelse);
+        ASR::expr_t *orelse = ASRUtils::EXPR(tmp);
+        ensure_not_assumed_rank(test, "Conditional expression", x.base.base.loc);
+        ensure_not_assumed_rank(body, "Conditional expression", x.base.base.loc);
+        ensure_not_assumed_rank(orelse, "Conditional expression", x.base.base.loc);
+
+        ASR::ttype_t *test_type = ASRUtils::expr_type(test);
+        if (!ASRUtils::is_logical(*test_type)) {
+            diag.add(Diagnostic(
+                "the condition of a conditional expression must be logical",
+                Level::Error, Stage::Semantic, {Label(
+                    "this condition is " + ASRUtils::type_to_str_with_kind(
+                        test_type, test), {test->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (ASRUtils::extract_n_dims_from_ttype(test_type) != 0) {
+            diag.add(Diagnostic(
+                "the condition of a conditional expression must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("this condition is " +
+                        ASRUtils::type_to_str_with_kind(test_type, test),
+                        {test->base.loc}),
+                    Label("help: use `merge` to select elementwise with an "
+                        "array mask", {test->base.loc}, false)}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t *body_type = ASRUtils::expr_type(body);
+        ASR::ttype_t *orelse_type = ASRUtils::expr_type(orelse);
+        // C1004: the arms must agree in declared type and kind type parameters.
+        // They need not agree in length type parameters or in shape, so no
+        // implicit conversion is inserted between them here.
+        if (!ASRUtils::check_equal_type(body_type, orelse_type, body, orelse)) {
+            std::string body_str, orelse_str;
+            conditional_arm_type_strs(body, orelse, body_str, orelse_str);
+            diag.add(Diagnostic(
+                "the arms of a conditional expression must have the same type "
+                "and kind",
+                Level::Error, Stage::Semantic, {Label(
+                    "type mismatch (" + body_str + " and " + orelse_str + ")",
+                    {body->base.loc, orelse->base.loc})}));
+            throw SemanticAbort();
+        }
+        // check_equal_type accepts a parent type and an extension of it,
+        // because they are compatible in an assignment. C1004 is stricter: the
+        // arms must have the same declared type, so compare the derived types
+        // themselves.
+        if (ASRUtils::is_struct(*ASRUtils::extract_type(body_type))
+                && ASRUtils::is_struct(*ASRUtils::extract_type(orelse_type))) {
+            ASR::symbol_t *body_struct = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(body));
+            ASR::symbol_t *orelse_struct = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(orelse));
+            if (body_struct != orelse_struct) {
+                diag.add(Diagnostic(
+                    "the arms of a conditional expression must have the same "
+                    "declared type",
+                    Level::Error, Stage::Semantic, {Label(
+                        "type mismatch (" + ASRUtils::type_to_str_fortran_expr(
+                            body_type, body) + " and " +
+                        ASRUtils::type_to_str_fortran_expr(orelse_type, orelse)
+                        + ")", {body->base.loc, orelse->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        size_t body_rank = ASRUtils::extract_n_dims_from_ttype(body_type);
+        size_t orelse_rank = ASRUtils::extract_n_dims_from_ttype(orelse_type);
+        if (body_rank != orelse_rank) {
+            diag.add(Diagnostic(
+                "the arms of a conditional expression must have the same rank",
+                Level::Error, Stage::Semantic, {Label(
+                    "rank mismatch (" + std::to_string(body_rank) + " and " +
+                    std::to_string(orelse_rank) + ")",
+                    {body->base.loc, orelse->base.loc})}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t *type = body_type;
+        // 10.1.4 p23: the result is polymorphic if either arm is
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(orelse_type)) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(body_type))) {
+            type = orelse_type;
+        }
+        // 10.1.4 p22: the shape and the length type parameters of the result
+        // are those of the arm that is chosen, and the arms only have to agree
+        // in rank and kind. Neither is therefore known before an arm has been
+        // chosen, so an array result has deferred extents, a character result
+        // has a deferred length, and both are allocatable. The `merge`
+        // intrinsic returns a deferred length string for the same reason.
+        if (ASRUtils::is_array(type) || ASRUtils::is_character(*type)) {
+            ASR::ttype_t *element = ASRUtils::extract_type(type);
+            if (ASR::is_a<ASR::String_t>(*element)) {
+                ASR::String_t *str = ASR::down_cast<ASR::String_t>(element);
+                element = ASRUtils::TYPE(ASR::make_String_t(al,
+                    x.base.base.loc, str->m_kind, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString));
+            }
+            if (ASRUtils::is_array(type)) {
+                element = ASRUtils::create_array_type_with_empty_dims(al,
+                    ASRUtils::extract_n_dims_from_ttype(type), element);
+            }
+            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                x.base.base.loc, element));
+        }
+
+        // The compile time value is deliberately left empty. 10.1.12 does not
+        // list a conditional expression among the forms of a constant
+        // expression, and an expression without a compile time value is
+        // already rejected wherever one is required, such as a `parameter`
+        // initializer or a kind parameter.
+        tmp = ASR::make_IfExp_t(al, x.base.base.loc, test, body, orelse, type,
+            nullptr);
+    }
+
     void visit_Logical(const AST::Logical_t &x) {
         int ikind = compiler_options.po.default_integer_kind;
         if (x.m_kind) {
@@ -21350,7 +21585,8 @@ public:
                     str->m_physical_type = ASR::DescriptorString;
                 }
             } else {
-                this->visit_expr(*kind_item->m_value);
+                visit_restricted_expr(*kind_item->m_value,
+                    RestrictedExprContext::KindParameter);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 str->m_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, kind_item->loc, diag);
                 if (!ASRUtils::is_supported_character_kind(str->m_kind)) {
@@ -21377,7 +21613,8 @@ public:
                         len_item->m_value, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
                     } else { // Evaluate normally
                         _processing_char_len = true;
-                        this->visit_expr(*len_item->m_value);
+                        visit_restricted_expr(*len_item->m_value,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
@@ -21445,7 +21682,8 @@ public:
                         var_sym->m_length, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
                     } else { // Evaluate normally
                         _processing_char_len = true;
-                        this->visit_expr(*var_sym->m_length);
+                        visit_restricted_expr(*var_sym->m_length,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
                         _processing_char_len = false;
