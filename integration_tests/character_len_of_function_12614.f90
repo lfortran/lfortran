@@ -1,4 +1,4 @@
-module m_system
+module character_len_of_function_12614_m
    implicit none
 contains
 
@@ -18,8 +18,8 @@ contains
 
    end function myfunc
 
-end module m_system
+end module character_len_of_function_12614_m
 program character_len_of_function_12614
-use m_system, only : myfunc
+use character_len_of_function_12614_m, only : myfunc
    write(*,*)myfunc(),myfunc(3)
-end program testit
+end program character_len_of_function_12614
