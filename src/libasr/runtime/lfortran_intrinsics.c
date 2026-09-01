@@ -12025,7 +12025,26 @@ static void common_formatted_read(InputSource *inputSource,
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values) {
+    // Empty READ with the default ADVANCE='yes'.
+    _lfortran_empty_read_advance(unit_num, iostat, no_values, "yes", 3);
+}
+
+LFORTRAN_API void _lfortran_empty_read_advance(int32_t unit_num, int32_t* iostat, int32_t no_values, char* advance, int64_t advance_length) {
     if (iostat) *iostat = 0;
+    // ADVANCE='no' leaves the record open: skip nothing.  Reads with values
+    // also come here (this call is what finalizes a record); list-directed
+    // reads reject ADVANCE=, so only format-directed ones can pass 'no'.
+    // Trailing blanks compare equal, so 'no ' must mean 'no' as well;
+    // other invalid values are treated as 'yes' (a pre-existing leniency).
+    bool advance_no = advance && advance_length >= 2 &&
+        (advance[0] == 'n' || advance[0] == 'N') &&
+        (advance[1] == 'o' || advance[1] == 'O');
+    for (int64_t i = 2; advance_no && i < advance_length; i++) {
+        advance_no = advance[i] == ' ';
+    }
+    if (advance_no) {
+        return;
+    }
     if (unit_num == -1) {
         return;
     } else if (unit_num == -2) {

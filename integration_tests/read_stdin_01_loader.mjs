@@ -30,6 +30,7 @@ const scenarios = [
     { mode: "array", prompts: [[/ARR\?/, "1 2 3\n"]], expect: ["GOTA:6"] },
     { mode: "real", prompts: [[/REAL\?/, "1.5\n"]], expect: ["GOTR:1.5"] },
     { mode: "logical", prompts: [[/LOG\?/, ".true.\n"]], expect: ["GOTL:T"] },
+    { mode: "advmix", feed: "eager", records: ["42\n"], expect: ["GOTN:42"] },
     { mode: "list2", feed: "eager", records: ["42\n", "43\n"],
       expect: ["GOTN:42", "GOTN2:43"] },
     { mode: "multi", feed: "eager", records: ["A\n", "A\n", "A\n"],

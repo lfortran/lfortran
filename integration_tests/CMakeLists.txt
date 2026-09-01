@@ -5091,6 +5091,7 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+RUN(NAME read_advance_01 LABELS gfortran llvm llvm_wasm_emcc)
 
 # Interactive reads from standard input over Emscripten must not swallow
 # the record-terminating newline (see #12108). The loader drives the program

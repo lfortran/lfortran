@@ -3,7 +3,8 @@ program read_stdin_01
     ! terminates each record (#12108).  The loader selects one kind of
     ! read per process so that a guarded first read cannot mask another
     ! kind's buffering bug: "formatted", "list", "unit5", "array", "real",
-    ! "logical", "list2" (two records) and "multi" (three formatted records).
+    ! "logical", "list2" (two records), "advmix" (ADVANCE='no', #12656
+    ! stack) and "multi" (three formatted records).
     implicit none
     character(len=16) :: mode
     character(len=1) :: c
@@ -55,6 +56,11 @@ program read_stdin_01
         read (*, *, iostat=ios) n
         if (ios /= 0 .or. n /= 43) error stop "second list read failed"
         print '(a,i0)', 'GOTN2:', n
+    else if (trim(mode) == "advmix") then
+        read (*, '(a)', advance='no')     ! must not skip the record
+        read (*, *, iostat=ios) n
+        if (ios /= 0 .or. n /= 42) error stop "advance=no read failed"
+        print '(a,i0)', 'GOTN:', n
     else if (trim(mode) == "multi") then
         do i = 1, 3
             print '(a)', 'LINE?'
