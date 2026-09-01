@@ -126,49 +126,6 @@ public:
     ~NestBodyWriteBack() { nest.set_body(body, n_body); }
 };
 
-// Copies a loop nest so that the pass can rewrite it without touching the
-// loop the host would run if the offload is declined. A BLOCK is a scope
-// the kernel takes over rather than a copy of, so a call to one is carried
-// across as it stands.
-class GpuLoopNestCopier {
-public:
-    Allocator &al;
-    ASRUtils::ExprStmtDuplicator dup;
-
-    GpuLoopNestCopier(Allocator &al_) : al(al_), dup(al_) {
-        dup.allow_procedure_calls = true;
-        dup.allow_reshape = true;
-    }
-
-    ASR::stmt_t* copy(ASR::stmt_t *stmt) {
-        if (stmt == nullptr) return nullptr;
-        if (ASR::is_a<ASR::BlockCall_t>(*stmt) ||
-                ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
-            return stmt;
-        }
-        if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
-            // Only the nest itself is rebuilt, so that each level keeps a
-            // body of its own to rewrite; the statements inside are copied
-            // by the same rules.
-            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-            Vec<ASR::stmt_t*> body;
-            body.reserve(al, dl->n_body);
-            for (size_t i = 0; i < dl->n_body; i++) {
-                ASR::stmt_t *c = copy(dl->m_body[i]);
-                if (c == nullptr) return nullptr;
-                body.push_back(al, c);
-            }
-            return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
-                dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
-                dl->n_orelse));
-        }
-        dup.success = true;
-        ASR::stmt_t *c = dup.duplicate_stmt(stmt);
-        if (c == nullptr || !dup.success) return nullptr;
-        return c;
-    }
-};
-
 // Reports the region on the way out of the decision if nothing else did,
 // so that a report with no line for a loop means the loop was never
 // offered to the pass -- not that some exit forgot to say why.
@@ -9699,6 +9656,178 @@ public:
             && ASRUtils::symbol_get_past_external(found) == sym;
     }
 
+    // The blocks the kernel was given copies of, so that a declined
+    // offload can drop them again.
+    std::vector<std::string> kernel_block_names;
+
+    // Copies a loop nest so that the pass can rewrite it without touching
+    // the loop the host would run if the offload is declined.
+    //
+    // A BLOCK is copied along with it. The kernel takes the copy and the
+    // host keeps its own, so no rewrite on the way to a kernel can reach
+    // the host, and a decline has nothing to put back.
+    ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
+            ASRUtils::ExprStmtDuplicator &dup) {
+        if (stmt == nullptr) return nullptr;
+        if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+            ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(bc->m_m);
+            if (sym == nullptr || !ASR::is_a<ASR::Block_t>(*sym)) return stmt;
+            ASR::Block_t *orig = ASR::down_cast<ASR::Block_t>(sym);
+            ASRUtils::SymbolDuplicator sym_dup(al);
+            ASR::symbol_t *copy = sym_dup.duplicate_Block(orig,
+                current_scope);
+            if (copy == nullptr) return nullptr;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(copy);
+            retarget_block_calls_in(blk);
+            remap_block_to_own_scope(blk);
+            std::string name = current_scope->get_unique_name(
+                std::string(orig->m_name) + "_gpu");
+            blk->m_name = s2c(al, name);
+            current_scope->add_symbol(name, copy);
+            kernel_block_names.push_back(name);
+            return ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                stmt->base.loc, bc->m_label, copy));
+        }
+        if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+            // An ASSOCIATE is inlined away before the kernel is built, so
+            // it is carried across as it stands.
+            return stmt;
+        }
+        if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+            // Only the nest itself is rebuilt, so that each level keeps a
+            // body of its own to rewrite; the statements inside are copied
+            // by the same rules.
+            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, dl->n_body);
+            for (size_t i = 0; i < dl->n_body; i++) {
+                ASR::stmt_t *c = copy_loop_stmt(dl->m_body[i], dup);
+                if (c == nullptr) return nullptr;
+                body.push_back(al, c);
+            }
+            return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
+                dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
+                dl->n_orelse));
+        }
+        dup.success = true;
+        ASR::stmt_t *c = dup.duplicate_stmt(stmt);
+        if (c == nullptr || !dup.success) return nullptr;
+        return c;
+    }
+
+    // duplicate_Block copies the symbol table but leaves Var nodes in the
+    // body pointing at the original Variables. Point them at the copies so
+    // the copied block is self-contained. Nested blocks resolve through the
+    // copy's parent chain: an inner use of an outer-block local must find
+    // the outer copy, not the original the host keeps.
+    void remap_block_to_own_scope(ASR::Block_t *block) {
+        GpuReplaceSymbolsVisitor body_v(*block->m_symtab);
+        body_v.replacer.resolve_through_parents = true;
+        for (size_t j = 0; j < block->n_body; j++) {
+            body_v.visit_stmt(*block->m_body[j]);
+        }
+        GpuReplaceSymbols type_replacer(*block->m_symtab);
+        type_replacer.resolve_through_parents = true;
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                remap_block_to_own_scope(
+                    ASR::down_cast<ASR::Block_t>(item.second));
+                continue;
+            }
+            if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                // Through the ASSOCIATE's own table: the names it binds
+                // live there, and resolving them against the block's would
+                // leave them pointing at the original's.
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                GpuReplaceSymbolsVisitor assoc_v(*ab->m_symtab);
+                assoc_v.replacer.resolve_through_parents = true;
+                for (size_t j = 0; j < ab->n_body; j++) {
+                    assoc_v.visit_stmt(*ab->m_body[j]);
+                }
+                continue;
+            }
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var =
+                ASR::down_cast<ASR::Variable_t>(item.second);
+            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_start) {
+                    type_replacer.current_expr = &(arr->m_dims[d].m_start);
+                    type_replacer.replace_expr(arr->m_dims[d].m_start);
+                }
+                if (arr->m_dims[d].m_length) {
+                    type_replacer.current_expr = &(arr->m_dims[d].m_length);
+                    type_replacer.replace_expr(arr->m_dims[d].m_length);
+                }
+            }
+        }
+    }
+
+    // A call to a nested block inside `block` names the original; point it
+    // at the copy that `block`'s own table holds.
+    void retarget_block_calls_in(ASR::Block_t *block) {
+        std::function<void(ASR::stmt_t**, size_t)> walk =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+            for (size_t i = 0; i < n_stmts; i++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+                    ASR::BlockCall_t *bc =
+                        ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
+                    if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+                    ASR::Block_t *inner =
+                        ASR::down_cast<ASR::Block_t>(bc->m_m);
+                    ASR::symbol_t *local =
+                        block->m_symtab->get_symbol(inner->m_name);
+                    if (local && ASR::is_a<ASR::Block_t>(*local)
+                            && local != (ASR::symbol_t*)block) {
+                        bc->m_m = local;
+                        retarget_block_calls_in(
+                            ASR::down_cast<ASR::Block_t>(local));
+                    }
+                    continue;
+                }
+                if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmts[i])) {
+                    // An ASSOCIATE inside the block is copied with it, and
+                    // the call has to name the copy for the same reason a
+                    // nested block's does.
+                    ASR::AssociateBlockCall_t *abc =
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(stmts[i]);
+                    ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                        abc->m_m);
+                    if (inner == nullptr
+                            || !ASR::is_a<ASR::AssociateBlock_t>(*inner)) {
+                        continue;
+                    }
+                    ASR::symbol_t *local = block->m_symtab->get_symbol(
+                        ASRUtils::symbol_name(inner));
+                    if (local && ASR::is_a<ASR::AssociateBlock_t>(*local)) {
+                        abc->m_m = local;
+                        ASR::AssociateBlock_t *ab =
+                            ASR::down_cast<ASR::AssociateBlock_t>(local);
+                        walk(ab->m_body, ab->n_body);
+                    }
+                    continue;
+                }
+                if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
+                    ASR::DoLoop_t *dl =
+                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                    walk(dl->m_body, dl->n_body);
+                } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                    ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+                    walk(ifs->m_body, ifs->n_body);
+                    walk(ifs->m_orelse, ifs->n_orelse);
+                } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
+                    ASR::WhileLoop_t *wl =
+                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                    walk(wl->m_body, wl->n_body);
+                }
+            }
+        };
+        walk(block->m_body, block->n_body);
+    }
+
     // A region this pass does not take is left exactly as it was, and is
     // looked inside for the regions it can take.
     void decline(const ASR::OMPRegion_t &x) {
@@ -9807,13 +9936,22 @@ public:
         // scope itself rather than a copy of it. The snapshot further down
         // is what keeps the host's blocks intact if the launch is declined.
         ParallelLoopNest work;
+        kernel_block_names.clear();
         {
-            GpuLoopNestCopier copier(al);
-            ASR::stmt_t *loop_copy = copier.copy(region.m_body[0]);
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.allow_procedure_calls = true;
+            dup.allow_reshape = true;
+            ASR::stmt_t *loop_copy = copy_loop_stmt(region.m_body[0], dup);
             if (loop_copy == nullptr ||
                     !parallel_loop_nest_of(loop_copy,
                         parallel_collapse_count(region), work)) {
                 // Nothing here can be rewritten safely.
+                for (const std::string &name : kernel_block_names) {
+                    if (current_scope->get_symbol(name) != nullptr) {
+                        current_scope->erase_symbol(name);
+                    }
+                }
+                kernel_block_names.clear();
                 decline(region);
                 return;
             }
@@ -12575,112 +12713,7 @@ public:
         // The kernel mutates Block symbols in place (VLA host capture
         // depends on that). Snapshot a pristine copy first so a declined
         // launch can put the host loop back.
-        struct BlockBackup {
-            ASR::Block_t *orig;
-            ASR::symbol_t *pristine;
-            std::string name;
-        };
-        std::vector<BlockBackup> block_backups;
-        std::function<void(ASR::Block_t*)> retarget_block_calls_in;
-        std::function<void(ASR::Block_t*)> remap_block_to_own_scope;
 
-        // duplicate_Block copies the symbol table but leaves Var nodes in the
-        // body pointing at the original Variables. Point them at the copies
-        // so the restored host block is self-contained. Nested blocks resolve
-        // through the snapshot parent chain: an inner use of an outer-block
-        // local must find the outer copy, not the original that the kernel
-        // path is about to move.
-        remap_block_to_own_scope = [&](ASR::Block_t *block) {
-            GpuReplaceSymbolsVisitor body_v(*block->m_symtab);
-            body_v.replacer.resolve_through_parents = true;
-            for (size_t j = 0; j < block->n_body; j++) {
-                body_v.visit_stmt(*block->m_body[j]);
-            }
-            GpuReplaceSymbols type_replacer(*block->m_symtab);
-            type_replacer.resolve_through_parents = true;
-            for (auto &item : block->m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Block_t>(*item.second)) {
-                    remap_block_to_own_scope(
-                        ASR::down_cast<ASR::Block_t>(item.second));
-                    continue;
-                }
-                if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-                    ASR::AssociateBlock_t *ab =
-                        ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                    for (size_t j = 0; j < ab->n_body; j++) {
-                        body_v.visit_stmt(*ab->m_body[j]);
-                    }
-                    continue;
-                }
-                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-                ASR::Variable_t *var =
-                    ASR::down_cast<ASR::Variable_t>(item.second);
-                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
-                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
-                for (size_t d = 0; d < arr->n_dims; d++) {
-                    if (arr->m_dims[d].m_start) {
-                        type_replacer.current_expr = &(arr->m_dims[d].m_start);
-                        type_replacer.replace_expr(arr->m_dims[d].m_start);
-                    }
-                    if (arr->m_dims[d].m_length) {
-                        type_replacer.current_expr = &(arr->m_dims[d].m_length);
-                        type_replacer.replace_expr(arr->m_dims[d].m_length);
-                    }
-                }
-            }
-        };
-
-        retarget_block_calls_in = [&](ASR::Block_t *block) {
-            std::function<void(ASR::stmt_t**, size_t)> walk =
-                [&](ASR::stmt_t **stmts, size_t n_stmts) {
-                for (size_t i = 0; i < n_stmts; i++) {
-                    if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                        ASR::BlockCall_t *bc =
-                            ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
-                        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-                        ASR::Block_t *inner =
-                            ASR::down_cast<ASR::Block_t>(bc->m_m);
-                        ASR::symbol_t *local =
-                            block->m_symtab->get_symbol(inner->m_name);
-                        if (local && ASR::is_a<ASR::Block_t>(*local)
-                                && local != (ASR::symbol_t*)block) {
-                            bc->m_m = local;
-                            retarget_block_calls_in(
-                                ASR::down_cast<ASR::Block_t>(local));
-                        }
-                        continue;
-                    }
-                    if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                        ASR::DoLoop_t *dl =
-                            ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                        walk(dl->m_body, dl->n_body);
-                    } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                        ASR::If_t *ifs =
-                            ASR::down_cast<ASR::If_t>(stmts[i]);
-                        walk(ifs->m_body, ifs->n_body);
-                        walk(ifs->m_orelse, ifs->n_orelse);
-                    } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
-                        ASR::WhileLoop_t *wl =
-                            ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
-                        walk(wl->m_body, wl->n_body);
-                    }
-                }
-            };
-            walk(block->m_body, block->n_body);
-        };
-
-        auto snapshot_block = [&](ASR::Block_t *orig) {
-            for (const BlockBackup &b : block_backups) {
-                if (b.orig == orig) return;
-            }
-            ASRUtils::SymbolDuplicator dup(al);
-            ASR::symbol_t *pristine = dup.duplicate_Block(orig, orig_scope);
-            if (pristine == nullptr) return;
-            ASR::Block_t *p = ASR::down_cast<ASR::Block_t>(pristine);
-            retarget_block_calls_in(p);
-            remap_block_to_own_scope(p);
-            block_backups.push_back({orig, pristine, orig->m_name});
-        };
 
         // This helper processes a block and recursively handles any nested
         // BlockCall statements, since GpuReplaceSymbolsVisitor does not
@@ -12952,33 +12985,6 @@ public:
                 }
             }
         };
-        std::function<void(ASR::stmt_t**, size_t)> snapshot_blocks =
-            [&](ASR::stmt_t **stmts, size_t n_stmts) {
-            for (size_t i = 0; i < n_stmts; i++) {
-                if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                    ASR::BlockCall_t *bc =
-                        ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
-                    if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
-                        snapshot_block(
-                            ASR::down_cast<ASR::Block_t>(bc->m_m));
-                    }
-                } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                    ASR::DoLoop_t *dl =
-                        ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                    snapshot_blocks(dl->m_body, dl->n_body);
-                } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                    ASR::If_t *ifs =
-                        ASR::down_cast<ASR::If_t>(stmts[i]);
-                    snapshot_blocks(ifs->m_body, ifs->n_body);
-                    snapshot_blocks(ifs->m_orelse, ifs->n_orelse);
-                } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
-                    ASR::WhileLoop_t *wl =
-                        ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
-                    snapshot_blocks(wl->m_body, wl->n_body);
-                }
-            }
-        };
-        snapshot_blocks(work.body, work.n_body);
         move_blocks_to_kernel(body_copy.p, body_copy.n);
 
         {
@@ -13063,45 +13069,20 @@ public:
                     call_args.p, call_args.n, reason)) {
                 report_not_offloaded(loc,
                     "the gpu backend does not support " + reason);
-                std::function<void(ASR::stmt_t**, size_t)> restore =
-                    [&](ASR::stmt_t **stmts, size_t n_stmts) {
-                    for (size_t i = 0; i < n_stmts; i++) {
-                        if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                            ASR::BlockCall_t *bc =
-                                ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
-                            for (const BlockBackup &b : block_backups) {
-                                if (bc->m_m == (ASR::symbol_t*)b.orig) {
-                                    bc->m_m = b.pristine;
-                                    break;
-                                }
-                            }
-                        } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                            ASR::DoLoop_t *dl =
-                                ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                            restore(dl->m_body, dl->n_body);
-                        } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                            ASR::If_t *ifs =
-                                ASR::down_cast<ASR::If_t>(stmts[i]);
-                            restore(ifs->m_body, ifs->n_body);
-                            restore(ifs->m_orelse, ifs->n_orelse);
-                        } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
-                            ASR::WhileLoop_t *wl =
-                                ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
-                            restore(wl->m_body, wl->n_body);
-                        }
-                    }
-                };
                 for (auto it = member_extent_undo.rbegin();
                         it != member_extent_undo.rend(); ++it) {
                     *it->first = it->second;
                 }
                 member_extent_undo.clear();
-                restore(work.body, work.n_body);
-                for (const BlockBackup &b : block_backups) {
-                    if (!orig_scope->get_symbol(b.name)) {
-                        orig_scope->add_symbol(b.name, b.pristine);
+                // The host's own blocks were never touched: the kernel was
+                // given copies. Drop the copies, which nothing else names.
+                for (const std::string &name : kernel_block_names) {
+                    // One already moved into the kernel goes with it.
+                    if (orig_scope->get_symbol(name) != nullptr) {
+                        orig_scope->erase_symbol(name);
                     }
                 }
+                kernel_block_names.clear();
                 return;
             }
         }
