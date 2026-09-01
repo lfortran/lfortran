@@ -3380,6 +3380,9 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/continue_compilation_3.f90"
 semantics_only_cc = true
+[[test]]
+filename = "errors/continue_compilation_operator_interface.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_coarrays.f90"

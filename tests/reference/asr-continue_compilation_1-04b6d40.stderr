@@ -575,10 +575,10 @@ semantic error: Derived type 't_recovery' not declared
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
- --> tests/errors/continue_compilation_1.f90:1:2
-  |
-1 | ! If you need a function, put it into the module below and remove the same
-  |  ^ 
+   --> tests/errors/continue_compilation_1.f90:288:9
+    |
+288 |         module procedure bad_op
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
