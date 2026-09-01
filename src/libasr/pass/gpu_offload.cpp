@@ -11015,14 +11015,33 @@ public:
         }
         for (auto &[sym_name, sym_info] : involved_syms) {
             ASR::ttype_t *orig_type = sym_info.first;
-            // Allocatable and pointer arrays are both deferred-shape:
-            // their extents and lower bounds are only known at run time
-            // and must be passed to the kernel as extra scalar
-            // arguments so it can compute strides.
-            if (!ASRUtils::is_allocatable_or_pointer(orig_type)) continue;
+            // Any array whose shape is not known until run time: a
+            // deferred-shape allocatable or pointer, and an automatic
+            // array like `z(size(x), 3)` just the same. The kernel
+            // computes strides from those extents, so it has to be given
+            // them; without them it linearizes with a zero stride and
+            // writes every column over the first.
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable_pointer(orig_type);
             if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+            ASR::Array_t *orig_arr = ASR::down_cast<ASR::Array_t>(inner);
+            // An explicit-shape array says what it can at compile time, so
+            // only the dimensions it cannot are passed; a deferred-shape
+            // one says nothing, and passes them all.
+            bool shape_from_type =
+                !ASRUtils::is_allocatable_or_pointer(orig_type);
+            if (shape_from_type) {
+                bool runtime_shape = false;
+                for (size_t d = 0; d < orig_arr->n_dims; d++) {
+                    ASR::expr_t *len = orig_arr->m_dims[d].m_length;
+                    if (len == nullptr ||
+                            ASRUtils::expr_value(len) == nullptr) {
+                        runtime_shape = true;
+                        break;
+                    }
+                }
+                if (!runtime_shape) continue;
+            }
 
             // Locate the kernel-scope Variable whose type we must update
             ASR::symbol_t *k_sym = kernel_scope->get_symbol(sym_name);
@@ -11041,6 +11060,12 @@ public:
                 ASR::make_Integer_t(al, loc, 4));
 
             for (size_t d = 0; d < k_arr->n_dims; d++) {
+                if (shape_from_type && d < orig_arr->n_dims
+                        && orig_arr->m_dims[d].m_length != nullptr
+                        && ASRUtils::expr_value(
+                            orig_arr->m_dims[d].m_length) != nullptr) {
+                    continue;
+                }
                 std::string dim_name = gpu_dim_arg_name(sym_name, d);
                 ASR::symbol_t *dim_sym = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
