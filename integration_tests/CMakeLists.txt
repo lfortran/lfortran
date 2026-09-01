@@ -2961,6 +2961,7 @@ RUN(NAME nested_25 LABELS gfortran llvm)
 RUN(NAME nested_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_27 LABELS gfortran llvm)
 RUN(NAME nested_28 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME implied_do_len_trim_12666 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
