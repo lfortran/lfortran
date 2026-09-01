@@ -792,6 +792,58 @@ class DeviceLaunchExpandVisitor :
             out.push_back(al, body[0]);
         }
 
+        // A polymorphic argument reaches the device as the class container
+        // it is represented by -- a type descriptor beside the data -- and
+        // the kernel is generated against the declared type, so reading a
+        // component of it would read the descriptor. Copy the declared
+        // type's own components into a plain local and hand that over.
+        ASR::expr_t* plain_struct_argument(const Location &loc,
+                Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
+                ASR::Variable_t *kparam,
+                std::vector<ASR::stmt_t*> &writebacks) {
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            if (ASRUtils::is_array(arg_type)) return arg;
+            ASR::ttype_t *bare = ASRUtils::extract_type(arg_type);
+            if (!ASR::is_a<ASR::StructType_t>(*bare)) return arg;
+            if (!ASRUtils::is_class_type(bare)) return arg;
+            if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) return arg;
+            ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(arg));
+            if (struct_sym == nullptr
+                    || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+                return arg;
+            }
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+            ASR::ttype_t *plain_type = ASRUtils::make_StructType_t_util(al,
+                loc, struct_sym, true);
+            ASR::expr_t *tmp = declare_local(loc, "gpu_plain_arg",
+                plain_type, struct_sym);
+            std::vector<ASR::stmt_t*> back;
+            for (size_t m = 0; m < st->n_members; m++) {
+                ASR::symbol_t *member = st->m_symtab->get_symbol(
+                    st->m_members[m]);
+                if (member == nullptr
+                        || !ASR::is_a<ASR::Variable_t>(*member)) {
+                    return arg;
+                }
+                ASR::ttype_t *mt = ASRUtils::symbol_type(member);
+                if (ASRUtils::is_allocatable_or_pointer(mt)) return arg;
+                ASR::expr_t *from = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc, arg, member,
+                        mt, nullptr));
+                ASR::expr_t *to = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc, tmp, member,
+                        mt, nullptr));
+                out.push_back(al, b.Assignment(to, from));
+                back.push_back(b.Assignment(from, to));
+            }
+            if (kparam->m_intent != ASR::intentType::In) {
+                for (ASR::stmt_t *stmt : back) writebacks.push_back(stmt);
+            }
+            return tmp;
+        }
+
         // `arg` itself when the device can read it as it stands, or a
         // contiguous copy of it when it cannot.
         ASR::expr_t* contiguous_argument(const Location &loc,
@@ -924,8 +976,10 @@ class DeviceLaunchExpandVisitor :
                     // bytes, so such an argument is copied into a
                     // contiguous temporary first, and copied back after
                     // when the kernel writes it.
-                    ASR::expr_t *buffer_arg = contiguous_argument(loc, out,
-                        arg, kparam, writebacks);
+                    ASR::expr_t *buffer_arg = plain_struct_argument(loc,
+                        out, arg, kparam, writebacks);
+                    buffer_arg = contiguous_argument(loc, out,
+                        buffer_arg, kparam, writebacks);
                     buffers.push_back({buffer_arg,
                         address_of(loc, buffer_arg),
                         buffer_byte_size(loc, buffer_arg)});
