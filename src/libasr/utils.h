@@ -25,6 +25,10 @@ std::string get_unique_ID();
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
 std::string generate_visualize_html(std::string &astr_data_json);
 
+namespace diag {
+    struct Diagnostics;
+}
+
 struct PassOptions {
     std::filesystem::path mod_files_dir;
     std::vector<std::filesystem::path> include_dirs;
@@ -68,9 +72,11 @@ struct PassOptions {
     bool enable_cpython = false;
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
-    bool enable_gpu_offloading = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
+    // `!$omp parallel do` asks for host threads. Offloading one onto a device
+    // is a choice the user has to make, so it is off unless asked for.
+    bool gpu_offload_omp_loops = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
@@ -81,6 +87,9 @@ struct PassOptions {
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;
+    // Set by the pass manager so that a pass can report a diagnostic. It is
+    // null when the passes are run outside the pass manager.
+    diag::Diagnostics *diagnostics = nullptr;
 };
 
 struct CompilerOptions {
@@ -105,10 +114,12 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
-    bool target_offload_enabled = false;
     std::string gpu_backend = "";
     std::string gpu_metal_source = "";
     std::string gpu_cuda_source = "";
+    // Compile the generated device code as ordinary host code and run the
+    // kernels on the CPU, so the GPU path is testable without a GPU.
+    bool gpu_cpu_emulation = false;
     // Toolchain driver used to compile and link GPU device code.
     std::string device_compiler = "nvcc";
     std::string openmp_lib_dir = "";

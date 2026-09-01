@@ -14,6 +14,13 @@ filename = "asr/compile/procedure_declaration_interface.asr"
 asr_clojure = true
 llvm = true
 
+# The LLVM reference of a fixture is tied to the LLVM version that printed it,
+# so this one stores only the ASR. The registered `test_asr_compile_` and
+# `test_asr_object_` CTests still build and link it on every LLVM version.
+[[test]]
+filename = "asr/compile/enum_constructor_external_symbol.asr"
+asr_clojure = true
+
 [[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
@@ -206,14 +213,6 @@ asr_openmp = true
 [[test]]
 filename = "../integration_tests/openmp_70.f90"
 c_target_omp = true
-
-[[test]]
-filename = "../integration_tests/openmp_71.f90"
-c_target_cuda = true
-
-[[test]]
-filename = "../integration_tests/openmp_72.f90"
-c_target_cuda = true
 
 [[test]]
 filename = "subroutine2.f90"
@@ -1903,11 +1902,6 @@ ast_f90 = true
 [[test]]
 filename = "../integration_tests/doconcurrentloop_01.f90"
 ast_f90 = true
-
-[[test]]
-filename = "../integration_tests/do_concurrent_01.f90"
-pass = "openmp"
-options = "--mlir-gpu-offloading --openmp"
 
 [[test]]
 filename = "subroutine9.f90"
@@ -4438,6 +4432,11 @@ filename = "char1.f90"
 fortran = true
 
 [[test]]
+filename = "implicit_interface_external_decl.f90"
+fortran = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "integer_to_real_cast_in_comparison.f90"
 fortran = true
 
@@ -4683,6 +4682,12 @@ asr = true
 [[test]]
 filename = "errors/incorrect_number_args_subroutine.f90"
 asr = true
+
+[[test]]
+filename = "errors/implicit_interface_explicit_zero_arg.f90"
+asr = true
+options = "--implicit-interface"
+extrafiles = "errors/implicit_interface_explicit_zero_arg_mod.f90"
 
 [[test]]
 filename = "optional_argument_subroutine_in_type.f90"
@@ -5602,4 +5607,8 @@ asr = true
 
 [[test]]
 filename = "asr/verify/bindc_string_array_physical_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/implicit_interface_call_target.asr"
 asr = true

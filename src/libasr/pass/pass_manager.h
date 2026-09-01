@@ -58,7 +58,12 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/replace_openmp.h>
+#include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/replace_gpu_offload.h>
+#include <libasr/pass/device_partition.h>
+#include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -117,11 +122,18 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"openmp", &pass_replace_openmp},
+            {"parallel_canonicalize", &pass_parallel_canonicalize},
+            {"parallel_dispatch", &pass_parallel_dispatch},
+            {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
+            {"device_partition", &pass_device_partition},
+            {"device_launch_expand", &pass_device_launch_expand},
+            {"gpu_memory_space", &pass_gpu_memory_space},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
+            {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"array_struct_temporary", &pass_array_struct_temporary},
             {"coarray", &pass_replace_coarray}
         };
@@ -135,8 +147,9 @@ namespace LCompilers {
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
-                           [[maybe_unused]] diag::Diagnostics &diagnostics,
+                           diag::Diagnostics &diagnostics,
                            double &cummulative_time_taken_by_passes_in_microseconds) {
+            pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
                 std::vector<std::string> _with_optimization_passes;
                 _with_optimization_passes.insert(
@@ -252,9 +265,26 @@ namespace LCompilers {
                 "global_stmts",
                 "init_expr",
                 "function_call_in_declaration",
-                "openmp",
+                // Every parallel loop, however it was written, becomes one
+                // canonical `OMPRegion` before anything decides how to lower
+                // it, and the pass after that writes the decision into the
+                // region.
+                "parallel_canonicalize",
+                "parallel_dispatch",
                 "implied_do_loops",
+                // The device gets first refusal: a loop it declines is
+                // handed back as a host-thread loop, which the OpenMP pass
+                // below then picks up.
                 "gpu_offload",
+                "openmp",
+                // Whatever OpenMP construct no lowering claimed is unwrapped
+                // here, so it runs serially instead of reaching a code
+                // generator that cannot lower it.
+                "omp_region_flatten",
+                // Everything a kernel reaches is device code, and the
+                // passes below have to know which routines those are.
+                "device_partition",
+                "gpu_device_allocatable",
                 "array_struct_temporary",
                 "coarray",
                 "transform_optional_argument_functions",
@@ -269,6 +299,13 @@ namespace LCompilers {
                 "intrinsic_function",
                 "intrinsic_subroutine",
                 "subroutine_from_function",
+                // A pass above can add a routine of its own, such as the
+                // shared lowering of an intrinsic, so the partition is
+                // taken again before the device passes below read it.
+                "device_partition",
+                // A routine's array result becomes an argument here, so a
+                // device routine's result needs the shape of that argument.
+                "gpu_device_allocatable",
                 "array_op",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
@@ -277,6 +314,17 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A device routine's address spaces are settled here, once
+                // every array of device code has the type it is emitted
+                // with, and before the code generators read those types.
+                "gpu_memory_space",
+                // Expanding a kernel launch reads the kernel signature and
+                // body, so it has to run once both are in the shape the
+                // device code generators see: after pass_array_by_data has
+                // turned array extents into explicit kernel arguments, and
+                // after array_dim_intrinsics_update has rewritten the size
+                // intrinsics that read them.
+                "device_launch_expand",
                 "do_loops",
                 "while_else",
                 "unused_functions",
@@ -298,6 +346,11 @@ namespace LCompilers {
             // These are re-write passes which are already handled
             // appropriately in C backend.
             _c_skip_passes = {
+                // The C backend prints the OpenMP constructs as pragmas and
+                // lets the C compiler lower them, so the passes that take
+                // them apart have nothing to do there.
+                "parallel_canonicalize",
+                "omp_region_flatten",
                 "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",

@@ -1,89 +1,66 @@
 # TypeInquiry
 
-An **expr** node, which is used to represent the `Inquiry` intrinsic function
-whose value is computed based on the argument type.
+A question about a type rather than about a value.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-TypeInquiry(int inquiry_id, ttype arg_type, expr? arg, ttype type, expr value)
+```text
+TypeInquiry(int inquiry_id, ttype arg_type, expr? arg, ttype type,
+    expr value)
 ```
 
 ### Arguments
 
+| Argument | Description |
+|----------|-------------|
+| `inquiry_id` | which inquiry this is, as the integer id of the inquiry registry. |
+| `arg_type` | the type being asked about. |
+| `arg` | the expression the type was taken from, when there was one; it is not evaluated. |
+| `type` | the type of the result. |
+| `value` | the answer. It is always known at compile time, so unlike most expressions this member is required. |
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `inquiry_id`  | Function unique ID   |
-| `arg_type`    | argument type        |
-| `arg`         | argument passed      |
-| `type`        | output type          |
-| `value`       | compile time value   |
+### Return values
 
-### Return value
-
-The return value is the expression that the TypeInquiry represents.
+The value of the expression.
 
 ## Description
 
-**TypeInquiry** is used to represent the `Inquiry` function. This node accepts
-exactly one `ttype` as it's only argument (`arg_type`), and it returns a value
-depending on `inquiry_id` of `ttype` `type`. Since the type `arg_type` is known
-at compile time, also the compile time value is always present in `value`.
-There is an optional argument `arg` that specifies the variable used in the
-frontend language (used in LFortran, but not present in LPython/NumPy).
-
-Here a list of inquiry_id that we support so far
-
-| Inquiry function |          Output          | Output type |
-|------------------|--------------------------|-------------|
-| `Epsilon`        | smallest number E        | `arg_type`  |
-| `Huge`           | largest number           | `arg_type`  |
-| `Precision`      | decimal precision        | `int32`     |
-| `Radix`          | base of a numeric model  | `int32`     |
-| `Range`          | decimal exponent range   | `int32`     |
-| `Rank`           | rank of a data object    | `int32`     |
-| `Tiny`           | smallest positive number | `arg_type`  |
-
-> Note: All the functions output are computed based on the `arg_type`
-
-## Types
-
-The `arg_type` and `type` vary for each inquiry_id signature. The output is
-either the default integer or the same as the argument type.
+`kind(x)`, `huge(x)`, `epsilon(x)` and the rest ask about the type of their
+argument, not about its value. The argument is kept in `arg` for diagnostics
+and unparsing, but it is not evaluated, and the answer is already in `value`.
 
 ## Examples
 
-The following example code creates `TypeInquiry` ASR node:
-
-```fortran
-print *, tiny(5.0)
+```clojure
+(TypeInquiry
+  :inquiry_id 1
+  :arg_type (Real
+    :kind 4
+  )
+  :arg (Var
+    :v (SymbolRef 1 "x")
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value (IntegerConstant
+    :n 4
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```clojure
-(Print
-    [(TypeInquiry
-        Tiny
-        (Real 4)
-        (RealConstant
-            5.000000
-            (Real 4)
-        )
-        (Real 4)
-        (RealConstant
-            0.000000
-            (Real 4)
-        )
-    )]
-    ()
-    ()
-)
+```{literalinclude} ../../examples/intrinsic_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntrinsicFunction](IntrinsicFunction.md)
+[IntrinsicElementalFunction](IntrinsicElementalFunction.md), [SizeOfType](SizeOfType.md), kinds

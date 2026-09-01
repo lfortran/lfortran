@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-implicit_interface_external_decl-dbafb92",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/implicit_interface_external_decl.f90",
+    "infile_hash": "4ce1868f37e26db1ddcc13c9383a5028f1df467ebc4f48796655613c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-implicit_interface_external_decl-dbafb92.f90",
+    "stdout_hash": "18602aa381db64ab54e081dd63ca9bb7819d9ecd8bbd1bc020864833",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -260,6 +260,54 @@ static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t* x) {
 static inline ASR::FunctionType_t* get_FunctionType(const ASR::Function_t& x) {
     return ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature);
 }
+
+// The execution space a function runs in. Host runs on the CPU only, Device
+// on the GPU only, HostDevice is compiled for both, and Kernel is the entry
+// point of a GPU kernel: it runs on the device and the host launches it.
+static inline ASR::exec_spaceType get_exec_space(const ASR::Function_t& x) {
+    return ASRUtils::get_FunctionType(x)->m_exec_space;
+}
+
+// True when the function is compiled for the device, whether as a kernel, as
+// a routine the device call graph reaches, or as one compiled for both. The
+// device-preparation passes and the device code generators ask this.
+static inline bool runs_on_device(const ASR::Function_t& x) {
+    switch (ASRUtils::get_exec_space(x)) {
+        case ASR::exec_spaceType::Device:
+        case ASR::exec_spaceType::HostDevice:
+        case ASR::exec_spaceType::Kernel:
+            return true;
+        case ASR::exec_spaceType::Host:
+            return false;
+    }
+    return false;
+}
+
+static inline bool runs_on_device(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::runs_on_device(*ASR::down_cast<ASR::Function_t>(s));
+}
+
+// True when the function exists on the device only, so a host code generator
+// has nothing to emit for it.
+static inline bool is_device_only_function(const ASR::Function_t& x) {
+    ASR::exec_spaceType space = ASRUtils::get_exec_space(x);
+    return space == ASR::exec_spaceType::Device ||
+           space == ASR::exec_spaceType::Kernel;
+}
+
+// True when `s` is the entry point of a GPU kernel: the host launches it with
+// a GpuKernelLaunch, and the device code generators give it the kernel
+// qualifier, its buffer bindings and its registration.
+static inline bool is_device_kernel(const ASR::symbol_t* s) {
+    if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+        return false;
+    }
+    return ASRUtils::get_exec_space(*ASR::down_cast<ASR::Function_t>(s))
+        == ASR::exec_spaceType::Kernel;
+}
 class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 {
     public:
@@ -665,7 +713,6 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Requirement: return "Requirement";
         case ASR::symbolType::Template: return "Template";
         case ASR::symbolType::Namelist: return "Namelist";
-        case ASR::symbolType::GpuKernelFunction: return "GpuKernelFunction";
         default: {
             LCOMPILERS_ASSERT(false);
         }
@@ -924,7 +971,8 @@ static inline ASR::ttype_t* get_contained_type(ASR::ttype_t* asr_type, int overl
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_asr = ASR::down_cast<ASR::EnumType_t>(asr_type);
-            ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_asr->m_enum_type);
+            ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(
+                ASRUtils::symbol_get_past_external(enum_asr->m_enum_type));
             return enum_type->m_type;
         }
         case ASR::ttypeType::Pointer: {
@@ -1043,9 +1091,6 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_group_name;
-        }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_name;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -1527,9 +1572,6 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Namelist: {
             return ASR::down_cast<ASR::Namelist_t>(f)->m_parent_symtab;
         }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab->parent;
-        }
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
@@ -1584,9 +1626,6 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab;
-        }
-        case ASR::symbolType::GpuKernelFunction: {
-            return ASR::down_cast<ASR::GpuKernelFunction_t>(f)->m_symtab;
         }
         default : throw LCompilersException("Not implemented");
     }
@@ -2507,6 +2546,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             }
             break;
         }
+        case ASR::ttypeType::EnumType: {
+            ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
+            res = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(enum_type->m_enum_type));
+            break;
+        }
         case ASR::ttypeType::UnionType: {
             if ( expr != nullptr ) {
                 ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr));
@@ -2995,6 +3040,40 @@ std::vector<std::string> determine_variable_declaration_order(
 void extract_module_python(const ASR::TranslationUnit_t &m,
         std::vector<std::pair<std::string, ASR::Module_t*>>& children_modules,
         std::string module_name);
+
+// True if the procedure is declared rather than defined: it has no body, so
+// the backend only emits a declaration for it. Includes both a real explicit
+// interface and an interface-less external (ImplicitInterface).
+static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
+    return deftype == ASR::deftypeType::Interface
+        || deftype == ASR::deftypeType::ImplicitInterface;
+}
+
+// True if `x` has deftype ImplicitInterface: declared (e.g. `integer, external
+// :: f`) with no interface. ASR states that the argument list is unknown. It
+// is never a call target and never code-generated; every reference
+// synthesizes a concrete Interface from the actuals at that reference. Once
+// an interface is inferred (including from a dummy/procedure-pointer use),
+// deftype becomes Interface and this returns false.
+static inline bool is_bare_implicit_interface(const ASR::FunctionType_t &x) {
+    return x.m_deftype == ASR::deftypeType::ImplicitInterface;
+}
+
+static inline bool is_bare_implicit_interface(const ASR::Function_t &x) {
+    return is_bare_implicit_interface(
+        *ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature));
+}
+
+static inline bool is_bare_implicit_interface(ASR::symbol_t *v) {
+    if (!v) {
+        return false;
+    }
+    ASR::symbol_t *f2 = symbol_get_past_external(v);
+    if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) {
+        return false;
+    }
+    return is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(f2));
+}
 
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
     if (!ASR::is_a<ASR::Function_t>(*original_sym) || !ASR::is_a<ASR::Function_t>(*external_sym)) {
@@ -3582,10 +3661,16 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
 
         bool is_dependent_only_on_argument;
         bool only_intent_in_args;
+        // A deferred-shape component of an argument has an extent only a
+        // runtime descriptor knows. Set this where that extent is readable
+        // where the expression is used, such as GPU device code, whose
+        // arrays carry their extents as arguments.
+        bool allow_deferred_shape_members;
 
         ExprDependentOnlyOnArguments():
             is_dependent_only_on_argument(false),
-            only_intent_in_args(false)
+            only_intent_in_args(false),
+            allow_deferred_shape_members(false)
         {}
 
         void visit_Var(const ASR::Var_t& x) {
@@ -3603,7 +3688,8 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
 
         void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
             ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments>::visit_StructInstanceMember(x);
-            if (ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) &&
+            if (!allow_deferred_shape_members &&
+                ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) &&
                 !ASRUtils::is_fixed_size_array(ASRUtils::symbol_type(x.m_m)) ) {
                 is_dependent_only_on_argument = false;
             }
@@ -3751,9 +3837,11 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
     }
 };
 
-static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
+static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false,
+    bool allow_deferred_shape_members=false) {
     ExprDependentOnlyOnArguments visitor;
     visitor.only_intent_in_args = only_intent_in_args;
+    visitor.allow_deferred_shape_members = allow_deferred_shape_members;
     for( size_t i = 0; i < n_dims; i++ ) {
         visitor.is_dependent_only_on_argument = true;
         if( m_dims[i].m_length == nullptr ) {
@@ -3989,7 +4077,8 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::ttype_t* type, ASR::dimension_t* m_dims, size_t n_dims,
     ASR::abiType abi=ASR::abiType::Source, bool is_argument=false,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
-    bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true) {
+    bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true,
+    ASR::memory_spaceType memory_space=ASR::memory_spaceType::Global) {
     if( n_dims == 0 ) {
         return type;
     }
@@ -4049,7 +4138,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     }
 
     return ASRUtils::TYPE(ASR::make_Array_t(
-        al, loc, type, m_dims, n_dims, physical_type));
+        al, loc, type, m_dims, n_dims, physical_type, memory_space));
 }
 
 ASR::ttype_t* make_StructType_t_util(Allocator& al,
@@ -4301,7 +4390,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 arg_types.p, arg_types.size(), ft->m_return_var_type, ft->m_abi,
                 ft->m_deftype, ft->m_bindc_name, ft->m_elemental, ft->m_pure, ft->m_module, ft->m_inline,
                 ft->m_static, ft->m_restrictions, ft->n_restrictions,
-                ft->m_is_restriction));
+                ft->m_is_restriction, ft->m_exec_space));
         }
         case ASR::ttypeType::SymbolicExpression: {
             return ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, t->base.loc));
@@ -5421,12 +5510,14 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_ex
     y_underlying = nullptr;
     if( ASR::is_a<ASR::EnumType_t>(*x) ) {
         ASR::EnumType_t *x_enum = ASR::down_cast<ASR::EnumType_t>(x);
-        ASR::Enum_t *x_enum_type = ASR::down_cast<ASR::Enum_t>(x_enum->m_enum_type);
+        ASR::Enum_t *x_enum_type = ASR::down_cast<ASR::Enum_t>(
+            ASRUtils::symbol_get_past_external(x_enum->m_enum_type));
         x_underlying = x_enum_type->m_type;
     }
     if( ASR::is_a<ASR::EnumType_t>(*y) ) {
         ASR::EnumType_t *y_enum = ASR::down_cast<ASR::EnumType_t>(y);
-        ASR::Enum_t *y_enum_type = ASR::down_cast<ASR::Enum_t>(y_enum->m_enum_type);
+        ASR::Enum_t *y_enum_type = ASR::down_cast<ASR::Enum_t>(
+            ASRUtils::symbol_get_past_external(y_enum->m_enum_type));
         y_underlying = y_enum_type->m_type;
     }
     if( x_underlying || y_underlying ) {
@@ -5750,8 +5841,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
         while (struct_t_import_scope->asr_owner == nullptr
                || !(ASR::is_a<ASR::Module_t>(
                        *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)) ||
-                    ASR::is_a<ASR::GpuKernelFunction_t>(
-                       *ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
+                    ASRUtils::is_device_kernel(
+                       ASR::down_cast<ASR::symbol_t>(struct_t_import_scope->asr_owner)))) {
             struct_t_import_scope = struct_t_import_scope->parent;
             if (struct_t_import_scope->asr_owner != nullptr
                 && !ASR::is_a<ASR::symbol_t>(*struct_t_import_scope->asr_owner)) {
@@ -6374,7 +6465,8 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     ASR::expr_t* a_return_var, ASR::abiType a_abi, ASR::deftypeType a_deftype,
     char* a_bindc_name, bool a_elemental, bool a_pure, bool a_module, bool a_inline,
     bool a_static,
-    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope) {
+    ASR::symbol_t** a_restrictions, size_t n_restrictions, bool a_is_restriction, SymbolTable* current_scope,
+    ASR::exec_spaceType a_exec_space=ASR::exec_spaceType::Host) {
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
@@ -6396,7 +6488,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
         al, a_loc, arg_types.p, arg_types.size(), return_var_type, a_abi, a_deftype,
         a_bindc_name, a_elemental, a_pure, a_module, a_inline,
         a_static, a_restrictions, n_restrictions,
-        a_is_restriction);
+        a_is_restriction, a_exec_space);
 }
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc,
@@ -6405,7 +6497,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al, const Location &a_loc
         ft->m_abi, ft->m_deftype, ft->m_bindc_name, ft->m_elemental,
         ft->m_pure, ft->m_module, ft->m_inline, ft->m_static,
         ft->m_restrictions,
-        ft->n_restrictions, ft->m_is_restriction, current_scope);
+        ft->n_restrictions, ft->m_is_restriction, current_scope, ft->m_exec_space);
 }
 
 inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
@@ -6416,11 +6508,12 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
-    Location* m_end_name = nullptr) {
+    Location* m_end_name = nullptr,
+    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
-        m_restrictions, n_restrictions, m_is_restriction, m_symtab));
+        m_restrictions, n_restrictions, m_is_restriction, m_symtab, m_exec_space));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
@@ -6698,7 +6791,8 @@ class SymbolDuplicator {
             function_type->m_module, function_type->m_inline, function_type->m_static,
             function_type->m_restrictions, function_type->n_restrictions,
             function_type->m_is_restriction, function->m_deterministic,
-            function->m_side_effect_free));
+            function->m_side_effect_free, nullptr, nullptr, nullptr,
+            function_type->m_exec_space));
     }
 
     ASR::symbol_t* duplicate_Module(ASR::Module_t* module_t,
@@ -7097,7 +7191,7 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     // need to be tracked which by default pass arrays by using descriptors.
     if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
          || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
-        && (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface
+        && (ASRUtils::is_declaration_deftype(ASRUtils::get_FunctionType(x)->m_deftype)
             || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
     }
@@ -8230,7 +8324,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                         ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4))));
         dims.push_back(al, dim);
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
-            dims.p, dims.n, a_type_->m_physical_type));
+            dims.p, dims.n, a_type_->m_physical_type, a_type_->m_memory_space));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
         // data is always allocated to n_data bytes
         int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
@@ -8307,7 +8401,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
                     dims.push_back(al, dim);
                     arr_ctor->m_type = ASRUtils::TYPE(ASR::make_Array_t(
                         al, a_loc, ctor_arr->m_type, dims.p, dims.size(),
-                        ctor_arr->m_physical_type));
+                        ctor_arr->m_physical_type, ctor_arr->m_memory_space));
                 }
             }
         }
@@ -8551,7 +8645,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             dim_.loc = arg->base.loc;
                             dim.push_back(al, dim_);
                             arg_array_t = (ASR::Array_t*) ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                            dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray);
+                            dim.p, dim.size(), ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global);
                         }
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
@@ -8596,7 +8690,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dim_.loc = arg->base.loc;
                         dim.push_back(al, dim_);
 
-                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+                        ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg->base.loc, int32_type, dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, arg->base.loc, args_.p, args_.size(), array_type, ASR::arraystorageType::ColMajor);
 
                         ASR::asr_t* cptr_to_pointer = ASR::make_CPtrToPointer_t(al, arg->base.loc, ASRUtils::EXPR(pointer_to_cptr), cast_expr, ASRUtils::EXPR(array_constant), nullptr);
@@ -8613,7 +8707,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
-                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray);
+                        dims.p, dims.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
                                                         ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
@@ -8995,7 +9089,7 @@ static inline ASR::asr_t* make_IntrinsicElementalFunction_t_util(
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type)));
                 a_type = TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type,
-                                    e->m_dims, e->n_dims, e->m_physical_type));
+                                    e->m_dims, e->n_dims, e->m_physical_type, e->m_memory_space));
             }
         }
     }

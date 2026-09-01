@@ -823,6 +823,14 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             // associated with it, so we return nullptr.
             return nullptr;
         }
+        case ASR::exprType::FunctionPointerCast: {
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionPointerCast_t>(expr)->m_to);
+            if (to && ASR::is_a<ASR::Function_t>(*to)) {
+                return ASR::down_cast<ASR::Function_t>(to);
+            }
+            return nullptr;
+        }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
                                 + std::to_string(expr->type));
@@ -3039,14 +3047,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     }
                 }
 
-                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
-                // If it is, it is compatible with any explicit interface formal argument.
-                // Similarly, if formal argument is an implicit interface, it accepts an explicit interface actual argument.
+                // A procedure declared `external` with no interface (e.g.
+                // `external :: f`) has an unknown signature, so it matches any
+                // explicit interface formal argument, and vice versa.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
                     ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
-                    if ((arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
-                        (arg2_func_type->n_arg_types == 0 && arg2_func_type->m_deftype == ASR::deftypeType::Interface)) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type) ||
+                        ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
                         continue;
                     }
                 }
@@ -3095,11 +3103,12 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
 
-                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
-                // If it is, it is compatible with any explicit interface formal argument.
+                // A procedure declared `external` with no interface (e.g.
+                // `external :: f`) has an unknown signature, so it matches any
+                // explicit interface formal argument.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
                         continue;
                     }
                 }
@@ -3487,7 +3496,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dims.push_back(al, dim);
     ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -3514,7 +3523,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {

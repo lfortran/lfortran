@@ -251,7 +251,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
         app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
@@ -333,7 +333,6 @@ namespace LCompilers::CommandLineInterface {
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
-        app.add_flag("--target-offload", compiler_options.target_offload_enabled, "Enable Target Offloading")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
@@ -349,9 +348,9 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
-        app.add_flag("--mlir-gpu-offloading", compiler_options.po.enable_gpu_offloading, "Enables gpu offloading using MLIR backend")->group(group_backend_codegen_options);
-        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -504,16 +503,29 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.gpu_offload_metal = true;
         } else if (compiler_options.gpu_backend == "cuda") {
             compiler_options.po.gpu_offload_cuda = true;
+        } else if (compiler_options.gpu_backend == "cuda_cpu") {
+            // Same ASR pass and same device code generation as cuda; only the
+            // toolchain that compiles and runs the device code differs.
+            compiler_options.gpu_backend = "cuda";
+            compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.gpu_cpu_emulation = true;
+            if (compiler_options.device_compiler == "nvcc") {
+                // Not overridden by --device-compiler, so use a host
+                // compiler. The generated device code is C++, so the driver
+                // has to be the C++ one: `cc` is a C compiler on some
+                // toolchains and then has no C++ front end to call at all.
+                compiler_options.device_compiler = "c++";
+            }
         } else if (!compiler_options.gpu_backend.empty()) {
             throw lc::LCompilersException(
                 "The GPU backend `" + compiler_options.gpu_backend
-                + "` is not supported; supported values: metal, cuda"
+                + "` is not supported; supported values: metal, cuda, cuda_cpu"
             );
         }
 
         for (auto &f_flag : opts.f_flags) {
-            if (f_flag == "PIC") {
-                // Position Independent Code
+            if (f_flag == "PIC" || f_flag == "PIE") {
+                // Position Independent Code / Position Independent Executable
                 // We do this by default, so we ignore for now
             } else if (f_flag == "default-integer-8") {
                 compiler_options.po.default_integer_kind = 8;
