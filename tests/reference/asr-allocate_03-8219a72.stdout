@@ -26,6 +26,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -66,6 +67,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -95,6 +97,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -108,6 +111,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 c)]
@@ -202,6 +206,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -231,6 +236,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         (Integer 4)
@@ -244,6 +250,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f]
                                     [(Var 4 x)]
@@ -418,6 +425,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -447,6 +455,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                         )]
                                         ()
@@ -460,6 +469,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f]
                                     [(Var 5 c)]

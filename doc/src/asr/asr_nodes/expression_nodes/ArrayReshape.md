@@ -82,6 +82,7 @@ result holds the same values in the same sequence with different extents.
       )
     ]
     :physical_type :FixedSizeArray
+    :memory_space :Global
   )
   :value nil
 )

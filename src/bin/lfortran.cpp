@@ -1,7 +1,6 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
-#include <regex>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -1383,32 +1382,6 @@ int compile_src_to_object_file(const std::string &infile,
     time_opt = pipeline_result.optimization_time_us;
     time_llvm_to_bin = pipeline_result.object_time_us;
 
-    if(compiler_options.po.enable_gpu_offloading) {
-#ifdef HAVE_LFORTRAN_MLIR
-        for (auto &item : asr->m_symtab->get_scope()) {
-            if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second) &&
-                    item.first.find("_lcompilers_mlir_gpu_offloading")
-                    != std::string::npos) {
-                LCompilers::ASR::Module_t &mod = *LCompilers::ASR::down_cast
-                    <LCompilers::ASR::Module_t>(item.second);
-                LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
-                    mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
-
-                std::cerr << diagnostics.render(lm, compiler_options);
-                if (mlir_res.ok) {
-                    mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
-                    std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
-                        .filename().replace_extension(".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
-                    fe.get_llvm_evaluator().save_object_file(
-                        *(mlir_res.result->llvm_m), mlir_tmp_o);
-                } else {
-                    LCOMPILERS_ASSERT(diagnostics.has_error())
-                    return 1;
-                }
-            }
-        }
-#endif
-    }
 
     if (time_report) {
         std::string message = "";
@@ -2038,7 +2011,6 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
-    std::vector<std::string> mlir_temp_object_files;
 
     size_t dot_index = outfile.find_last_of(".");
     std::string file_name = outfile.substr(0, dot_index);
@@ -2154,15 +2126,6 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
-                if (backend == Backend::llvm &&
-                        compiler_options.po.enable_gpu_offloading &&
-                        std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
-                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
-                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
-                        ".mlir.tmp_" + LCOMPILERS_UNIQUE_ID + ".o").string();
-                    compile_cmd += mlir_tmp_o + " ";
-                    mlir_temp_object_files.push_back(mlir_tmp_o);
-                }
             }
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
@@ -2199,21 +2162,25 @@ int link_executable(const std::vector<std::string> &infiles,
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
-                // Collect CUDA kernel source. In single-invocation mode
-                // it's in gpu_cuda_source; in separate compilation it's
-                // saved as a sidecar file next to each .o file.
-                std::string cuda_source = compiler_options.gpu_cuda_source;
-                if (cuda_source.empty()) {
-                    for (auto &s : infiles) {
-                        std::string sidecar = s + ".cuda.cu";
-                        std::ifstream f(sidecar);
-                        if (f.good()) {
-                            std::string content(
-                                (std::istreambuf_iterator<char>(f)),
-                                std::istreambuf_iterator<char>());
-                            cuda_source += content;
-                        }
+                // Collect CUDA kernel source. Every object file carries the
+                // device source of its own translation unit in a sidecar, so
+                // reading all of them is what picks up a kernel that lives in
+                // a module compiled separately. Only a link that finds no
+                // sidecar at all falls back to the source this invocation
+                // generated.
+                std::string cuda_source;
+                for (auto &s : infiles) {
+                    std::string sidecar = s + ".cuda.cu";
+                    std::ifstream f(sidecar);
+                    if (f.good()) {
+                        std::string content(
+                            (std::istreambuf_iterator<char>(f)),
+                            std::istreambuf_iterator<char>());
+                        cuda_source += content;
                     }
+                }
+                if (cuda_source.empty()) {
+                    cuda_source = compiler_options.gpu_cuda_source;
                 }
 
                 // Write CUDA kernel source to a temp .cu file
@@ -2226,10 +2193,21 @@ int link_executable(const std::vector<std::string> &infiles,
                     cu_out << cuda_source;
                     cu_out.close();
                 }
-                // Compile the kernel .cu with the device compiler
+                // Compile the kernel .cu with the device compiler. When
+                // emulating, the device code is ordinary host C++, and the
+                // language has to be named explicitly because no host
+                // compiler knows the .cu suffix. The emulation is built
+                // without OpenMP, so the threads of a block run one after
+                // another and a __syncthreads() reports that it cannot be
+                // honoured; the device code and the runtime below have to
+                // agree on that, so neither is given -fopenmp.
+                bool emulate_cpu = compiler_options.gpu_cpu_emulation;
+                std::string runtime_include = " -I" + runtime_library_dir
+                    + "/../libasr/runtime";
                 std::string device_cc = compiler_options.device_compiler;
-                std::string cuda_kernel_cmd = device_cc + " -c -O2 -o "
-                    + cuda_kernel_obj + " " + cuda_kernel_src;
+                std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                    + (emulate_cpu ? runtime_include + " -x c++" : "")
+                    + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
                 int cuda_err = system(cuda_kernel_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA kernel: "
@@ -2237,14 +2215,20 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // Compile CUDA runtime
+                // Compile the GPU runtime. The CPU emulation uses its own
+                // implementation of the same C API, and is C rather than C++,
+                // so the language is named explicitly for the C++ driver that
+                // compiled the kernel.
                 std::string cuda_runtime_src = runtime_library_dir
-                    + "/../libasr/runtime/lfortran_gpu_cuda.cu";
+                    + "/../libasr/runtime/"
+                    + (emulate_cpu ? "lfortran_gpu_cpu.c"
+                                   : "lfortran_gpu_cuda.cu");
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
                 std::string cuda_rt_cmd = device_cc + " -c -O2"
-                    " -I" + runtime_library_dir + "/../libasr/runtime"
-                    " -o " + cuda_runtime_obj
+                    + runtime_include
+                    + (emulate_cpu ? " -x c" : "")
+                    + " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
                 cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {
@@ -2253,16 +2237,35 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 10;
                 }
 
-                // The device compiler also drives the link, since it knows
-                // where its own device runtime lives.
-                compile_cmd = device_cc + " -o " + outfile + " ";
-                for (auto &s : infiles) {
-                    compile_cmd += s + " ";
+                if (emulate_cpu) {
+                    // Everything is host code, so the ordinary host linker
+                    // that was set up above does the link. That driver is a C
+                    // one, so the C++ standard library the device translation
+                    // unit was compiled against has to be named here, and the
+                    // libraries the two objects need have to follow them:
+                    // a linker that resolves in command line order looks no
+                    // further back than the object that asks.
+                    bool is_macos = compiler_options.platform
+                            == LCompilers::Platform::macOS_Intel
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_ARM
+                        || compiler_options.platform
+                            == LCompilers::Platform::macOS_PowerPC;
+                    compile_cmd += " " + cuda_kernel_obj
+                        + " " + cuda_runtime_obj
+                        + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
+                } else {
+                    // The device compiler also drives the link, since it knows
+                    // where its own device runtime lives.
+                    compile_cmd = device_cc + " -o " + outfile + " ";
+                    for (auto &s : infiles) {
+                        compile_cmd += s + " ";
+                    }
+                    compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                    compile_cmd += " -L" + base_path
+                        + " -Xlinker -rpath -Xlinker " + base_path
+                        + " -l" + runtime_lib + " -lm";
                 }
-                compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
-                compile_cmd += " -L" + base_path
-                    + " -Xlinker -rpath -Xlinker " + base_path
-                    + " -l" + runtime_lib + " -lm";
             }
             run_cmd = "./" + outfile;
         }
@@ -2435,10 +2438,6 @@ int link_executable(const std::vector<std::string> &infiles,
     if (time_report) {
         std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
         compiler_options.po.vector_of_time_report.push_back(message);
-    }
-
-    for (const std::string& filename : mlir_temp_object_files) {
-        std::remove(filename.c_str());
     }
 
     return 0;
@@ -2832,11 +2831,6 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
 
-    if(compiler_options.po.enable_gpu_offloading && !compiler_options.openmp) {
-        std::cerr << "The option `--mlir-gpu-offloading` requires openmp pass "
-            "to be applied. Rerun with `--openmp` option\n";
-        return 1;
-    }
 
     if (CLI::NonexistentPath(opts.arg_file).empty()) {
         std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;

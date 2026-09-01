@@ -171,7 +171,7 @@ class ASRBuilder {
                 al, loc,
                 type,
                 arr_dimensions.p, arr_dimensions.n,
-                ASR::UnboundedPointerArray));
+                ASR::UnboundedPointerArray, ASR::memory_spaceType::Global));
         return array_type;
     }
 

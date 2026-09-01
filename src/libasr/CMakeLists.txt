@@ -41,6 +41,8 @@ set(SRC
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
+    pass/parallel_canonicalize.cpp
+    pass/parallel_dispatch.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
     pass/for_all.cpp
@@ -79,6 +81,9 @@ set(SRC
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/replace_with_compile_time_values.cpp
     pass/gpu_offload.cpp
+    pass/device_partition.cpp
+    pass/device_launch_expand.cpp
+    pass/gpu_memory_space.cpp
     pass/coarray.cpp
 
     codegen/asr_to_metal.cpp
@@ -173,5 +178,7 @@ install(
 file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cpu.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cuda_cpu_device.h
     ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)

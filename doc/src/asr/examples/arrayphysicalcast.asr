@@ -37,6 +37,7 @@
                   )
                 ]
                 :physical_type :FixedSizeArray
+                :memory_space :Global
               )
               :type_declaration nil
               :abi :Source
@@ -75,6 +76,7 @@
                         )
                       ]
                       :physical_type :DescriptorArray
+                      :memory_space :Global
                     )
                     :type_declaration nil
                     :abi :Source
@@ -106,6 +108,7 @@
                       )
                     ]
                     :physical_type :DescriptorArray
+                    :memory_space :Global
                   )
                 ]
                 :return_var_type nil
@@ -119,6 +122,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Host
               )
               :dependencies []
               :args [
@@ -172,6 +176,7 @@
                       )
                     ]
                     :physical_type :DescriptorArray
+                    :memory_space :Global
                   )
                   :value nil
                 )

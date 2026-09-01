@@ -69,6 +69,7 @@ is where that happens. The new physical type appears both in `new` and in the
       )
     ]
     :physical_type :DescriptorArray
+    :memory_space :Global
   )
   :value nil
 )
