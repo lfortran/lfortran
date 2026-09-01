@@ -9167,7 +9167,19 @@ public:
         std::map<std::string,
             std::pair<ASR::ttype_t*, ASR::expr_t*>> syms;
         collect_involved_syms(x, enclosing_block_scopes, syms);
+        // A loop index is not one of them: the kernel works it out from the
+        // thread id. Counting it would tell the workspace pre-flight that
+        // the host can read `n(l)`, which it cannot -- `l` only exists once
+        // the kernel is running.
+        std::set<std::string> indices;
+        for (size_t d = 0; d < x.n_head; d++) {
+            if (!x.m_head[d].m_v) continue;
+            if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+            indices.insert(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+        }
         for (auto &sym : syms) {
+            if (indices.count(sym.first)) continue;
             arg_names.push_back(sym.first);
             if (sym.second.first == nullptr) continue;
             ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
@@ -9570,10 +9582,48 @@ public:
         for (size_t d = 0; d < n_dims; d++) {
             nest_heads.push_back(al, nest.head(d));
         }
+        // The body is duplicated into it. Everything below rewrites the
+        // loop as it goes -- inlining an intrinsic, splicing a callee,
+        // gathering an argument -- and several of those rewrites change a
+        // statement in place. A rewrite must not reach the loop the host
+        // would run, because the offload can still be declined further
+        // down, so it is a copy that is rewritten and the original that is
+        // left standing until the launch replaces it.
+        Vec<ASR::stmt_t*> nest_body;
+        nest_body.reserve(al, nest.n_body);
+        {
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.allow_procedure_calls = true;
+            dup.allow_reshape = true;
+            for (size_t i = 0; i < nest.n_body; i++) {
+                // A BLOCK is not copied: it is a scope, and the kernel
+                // takes the scope itself rather than a copy of it. The
+                // snapshot further down is what keeps the host's blocks
+                // intact if the launch is declined.
+                if (ASR::is_a<ASR::BlockCall_t>(*nest.body[i]) ||
+                        ASR::is_a<ASR::AssociateBlockCall_t>(
+                            *nest.body[i])) {
+                    nest_body.push_back(al, nest.body[i]);
+                    continue;
+                }
+                dup.success = true;
+                ASR::stmt_t *copy = dup.duplicate_stmt(nest.body[i]);
+                if (!copy || !dup.success) {
+                    nest_body.n = 0;
+                    break;
+                }
+                nest_body.push_back(al, copy);
+            }
+            if (nest_body.n != nest.n_body) {
+                // Nothing here can be rewritten safely.
+                decline(region);
+                return;
+            }
+        }
         ASR::DoConcurrentLoop_t &x = *ASR::down_cast<ASR::DoConcurrentLoop_t>(
             ASRUtils::STMT(ASR::make_DoConcurrentLoop_t(al, loc,
                 nest_heads.p, nest_heads.n, nullptr, 0, nullptr, 0,
-                nullptr, 0, nest.body, nest.n_body)));
+                nullptr, 0, nest_body.p, nest_body.n)));
 
         // Resolve associate variables to their original targets if this
         // loop is inside one or more nested AssociateBlocks.
