@@ -1303,6 +1303,10 @@ int compile_src_to_object_file(const std::string &infile,
 
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
+    // The passes report diagnostics of their own -- the GPU offload report
+    // is one -- and a report that can name the line it is about is worth
+    // more than one that can only give a byte offset.
+    compiler_options.po.loc_manager = &lm;
 
     if (!from_asr) {
         LCompilers::LocationManager::FileLocations fl;
