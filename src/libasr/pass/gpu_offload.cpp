@@ -109,6 +109,66 @@ struct GpuOffloadReport {
     }
 };
 
+// Hands a body rewrite the loop's statements and writes whatever it made
+// of them back into the loop. The rewrites report their result by moving
+// the pointers they were given, and a nest holds those pointers twice --
+// once as its own view and once in the loop it reads from -- so the two
+// would otherwise drift apart.
+class NestBodyWriteBack {
+public:
+    ParallelLoopNest &nest;
+    ASR::stmt_t **body;
+    size_t n_body;
+
+    NestBodyWriteBack(ParallelLoopNest &nest_)
+        : nest(nest_), body(nest_.body), n_body(nest_.n_body) {}
+
+    ~NestBodyWriteBack() { nest.set_body(body, n_body); }
+};
+
+// Copies a loop nest so that the pass can rewrite it without touching the
+// loop the host would run if the offload is declined. A BLOCK is a scope
+// the kernel takes over rather than a copy of, so a call to one is carried
+// across as it stands.
+class GpuLoopNestCopier {
+public:
+    Allocator &al;
+    ASRUtils::ExprStmtDuplicator dup;
+
+    GpuLoopNestCopier(Allocator &al_) : al(al_), dup(al_) {
+        dup.allow_procedure_calls = true;
+        dup.allow_reshape = true;
+    }
+
+    ASR::stmt_t* copy(ASR::stmt_t *stmt) {
+        if (stmt == nullptr) return nullptr;
+        if (ASR::is_a<ASR::BlockCall_t>(*stmt) ||
+                ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+            return stmt;
+        }
+        if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+            // Only the nest itself is rebuilt, so that each level keeps a
+            // body of its own to rewrite; the statements inside are copied
+            // by the same rules.
+            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, dl->n_body);
+            for (size_t i = 0; i < dl->n_body; i++) {
+                ASR::stmt_t *c = copy(dl->m_body[i]);
+                if (c == nullptr) return nullptr;
+                body.push_back(al, c);
+            }
+            return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
+                dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
+                dl->n_orelse));
+        }
+        dup.success = true;
+        ASR::stmt_t *c = dup.duplicate_stmt(stmt);
+        if (c == nullptr || !dup.success) return nullptr;
+        return c;
+    }
+};
+
 // Reports the region on the way out of the decision if nothing else did,
 // so that a report with no line for a loop means the loop was never
 // offered to the pass -- not that some exit forgot to say why.
@@ -159,23 +219,22 @@ struct ScopeArrayDims {
 
 class GpuLoopBodySnapshot {
 public:
-    void record(ASR::DoConcurrentLoop_t &loop, SymbolTable *scope) {
-        loop_ = &loop;
-        loop_body_ = loop.m_body;
-        loop_n_body_ = loop.n_body;
+    void record(ParallelLoopNest &nest, SymbolTable *scope) {
+        nest_ = &nest;
+        loop_body_ = nest.body;
+        loop_n_body_ = nest.n_body;
         scope_ = scope;
         if (scope_ != nullptr) {
             for (auto &item : scope_->get_scope()) {
                 scope_symbols_.insert(item.first);
             }
         }
-        record_blocks(loop.m_body, loop.n_body);
+        record_blocks(nest.body, nest.n_body);
     }
 
     void restore() {
-        if (loop_ == nullptr) return;
-        loop_->m_body = loop_body_;
-        loop_->n_body = loop_n_body_;
+        if (nest_ == nullptr) return;
+        nest_->set_body(loop_body_, loop_n_body_);
         for (auto &saved : blocks_) {
             saved.block->m_body = saved.body;
             saved.block->n_body = saved.n_body;
@@ -211,7 +270,7 @@ private:
         }
     }
 
-    ASR::DoConcurrentLoop_t *loop_ = nullptr;
+    ParallelLoopNest *nest_ = nullptr;
     ASR::stmt_t **loop_body_ = nullptr;
     size_t loop_n_body_ = 0;
     std::vector<SavedBlock> blocks_;
@@ -1439,12 +1498,6 @@ public:
         ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoLoop(x);
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        for (size_t i = 0; i < x.n_head; i++) {
-            count_var(x.m_head[i].m_v);
-        }
-        ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_DoConcurrentLoop(x);
-    }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         // Conservatively treat any appearance as an argument as a write
@@ -1750,7 +1803,7 @@ static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
     return order;
 }
 
-// Collects every DoConcurrentLoop reached from the statements walked,
+// Collects every parallel region reached from the statements walked,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is
 // seen too.
 class GpuDoConcurrentCollector :
@@ -1785,7 +1838,7 @@ public:
     }
 };
 
-// Rewrites the listed DoConcurrentLoops into ordinary sequential
+// Hands the listed parallel regions to the target that runs them
 // DoLoops. `do concurrent` only permits the iterations to run in any
 // order, so running them in order is always correct; inside device code
 // it is the only thing that can be done.
@@ -2668,11 +2721,6 @@ public:
         ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_DoLoop(x);
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        for (size_t i = 0; i < x.n_head; i++) note(x.m_head[i].m_v);
-        ASR::BaseWalkVisitor<GpuWrittenRootCollector>
-            ::visit_DoConcurrentLoop(x);
-    }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         note_call_args(x.m_name, x.m_args, x.n_args);
@@ -4564,13 +4612,13 @@ public:
     // With inlined loops that compute the All result into temporaries.
     // This avoids complex lowered code (Associate, Allocate, FunctionCall)
     // that the Metal backend cannot handle inside GPU kernels.
-    void inline_intrinsic_all(ASR::DoConcurrentLoop_t &x) {
+    void inline_intrinsic_all(ParallelLoopNest &nest) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 3);
+        new_body.reserve(al, nest.n_body * 3);
         bool changed = false;
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -4614,12 +4662,13 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            // Through set_body, so the loop the nest reads from carries
+            // the rewrite too and not just the view of it.
+            nest.set_body(new_body.p, new_body.n);
         }
     }
 
-    // Inline IntrinsicArrayFunction MatMul inside a DoConcurrentLoop body.
+    // Inline IntrinsicArrayFunction MatMul inside a parallel loop body.
     // Replaces:
     //   c = matmul(a, b)
     // With nested DoLoops that compute the matrix multiplication directly.
@@ -5245,7 +5294,7 @@ public:
     // temporary first, so the existing whole-right-hand-side lowering
     // applies to it and the enclosing expression is left with a plain
     // array variable (a shape the Metal backend already handles).
-    void hoist_nested_matmuls(ASR::DoConcurrentLoop_t &x) {
+    void hoist_nested_matmuls(ParallelLoopNest &nest) {
         SymbolTable *var_scope = current_scope;
         while (var_scope && var_scope->asr_owner &&
                var_scope->asr_owner->type == ASR::asrType::symbol &&
@@ -5253,7 +5302,8 @@ public:
                    *ASR::down_cast<ASR::symbol_t>(var_scope->asr_owner))) {
             var_scope = var_scope->parent;
         }
-        hoist_nested_matmuls_in_body(x.m_body, x.n_body, var_scope,
+        NestBodyWriteBack back(nest);
+        hoist_nested_matmuls_in_body(back.body, back.n_body, var_scope,
             false, true);
     }
 
@@ -5538,8 +5588,9 @@ public:
         return res;
     }
 
-    void inline_intrinsic_matmul(ASR::DoConcurrentLoop_t &x) {
-        inline_matmul_stmts(x.m_body, x.n_body);
+    void inline_intrinsic_matmul(ParallelLoopNest &nest) {
+        NestBodyWriteBack back(nest);
+        inline_matmul_stmts(back.body, back.n_body);
     }
 
     // Distribute ArrayItem indexing through an array expression tree
@@ -6465,8 +6516,9 @@ public:
         }
     }
 
-    void inline_intrinsic_sum(ASR::DoConcurrentLoop_t &x) {
-        inline_sum_in_stmts(x.m_body, x.n_body, current_scope);
+    void inline_intrinsic_sum(ParallelLoopNest &nest) {
+        NestBodyWriteBack back(nest);
+        inline_sum_in_stmts(back.body, back.n_body, current_scope);
     }
 
     // Build the `k`-th element (k is 1-based within the dot_product) of a
@@ -6611,7 +6663,7 @@ public:
             ASR::binopType::Add, mk_int(1));
     }
 
-    // Inline IntrinsicArrayFunction DotProduct inside a DoConcurrentLoop
+    // Inline IntrinsicArrayFunction DotProduct inside a parallel loop
     // body. Replaces:
     //   r(i) = dot_product(a, b)
     // With:
@@ -6639,15 +6691,13 @@ public:
                 new_body.push_back(al, stmt);
                 continue;
             }
-            // A `do concurrent` nested in the loop being offloaded runs
+            // A parallel loop nested in the loop being offloaded runs
             // serially inside the kernel, so its body is device code too
-            // and its dot products have to be expanded as well. It is
-            // still a DoConcurrentLoop at this point: a spliced callee's
-            // own loops are only sequentialized on the next round.
-            if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
-                ASR::DoConcurrentLoop_t *dcl =
-                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
-                inline_dot_product_in_stmts(dcl->m_body, dcl->n_body,
+            // and its dot products have to be expanded as well.
+            if (ASR::is_a<ASR::OMPRegion_t>(*stmt)) {
+                ASR::OMPRegion_t *inner =
+                    ASR::down_cast<ASR::OMPRegion_t>(stmt);
+                inline_dot_product_in_stmts(inner->m_body, inner->n_body,
                     scope);
                 new_body.push_back(al, stmt);
                 continue;
@@ -6819,11 +6869,12 @@ public:
         }
     }
 
-    void inline_intrinsic_dot_product(ASR::DoConcurrentLoop_t &x) {
-        inline_dot_product_in_stmts(x.m_body, x.n_body, current_scope);
+    void inline_intrinsic_dot_product(ParallelLoopNest &nest) {
+        NestBodyWriteBack back(nest);
+        inline_dot_product_in_stmts(back.body, back.n_body, current_scope);
     }
 
-    // Inline IntrinsicArrayFunction Transpose inside a DoConcurrentLoop body.
+    // Inline IntrinsicArrayFunction Transpose inside a parallel loop body.
     // Replaces:
     //   b = transpose(a)
     // With:
@@ -6834,13 +6885,13 @@ public:
     //   end do
     // This avoids generating a call to _lcompilers_transpose which is not
     // available inside Metal GPU kernels.
-    void inline_intrinsic_transpose(ASR::DoConcurrentLoop_t &x) {
+    void inline_intrinsic_transpose(ParallelLoopNest &nest) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body * 4);
+        new_body.reserve(al, nest.n_body * 4);
         bool changed = false;
 
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -6977,8 +7028,9 @@ public:
         }
 
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            // Through set_body, so the loop the nest reads from carries
+            // the rewrite too and not just the view of it.
+            nest.set_body(new_body.p, new_body.n);
         }
     }
 
@@ -7059,7 +7111,7 @@ public:
             int_type, nullptr));
     }
 
-    // Inline ArraySection assignments inside a DoConcurrentLoop body.
+    // Inline ArraySection assignments inside a parallel loop body.
     // Replaces:
     //   b(1:n(l), l) = 1.0   (ArraySection = ArrayBroadcast)
     // With:
@@ -7431,12 +7483,12 @@ public:
     // workspaces, which is why only a top-level assignment is rewritten
     // here; body_needs_unsupported_alias_temp has already declined the
     // rest.
-    void materialize_runtime_alias_blocks(ASR::DoConcurrentLoop_t &x) {
+    void materialize_runtime_alias_blocks(ParallelLoopNest &nest) {
         Vec<ASR::stmt_t*> new_body;
-        new_body.reserve(al, x.n_body);
+        new_body.reserve(al, nest.n_body);
         bool changed = false;
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < nest.n_body; si++) {
+            ASR::stmt_t *stmt = nest.body[si];
             if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
                 new_body.push_back(al, stmt);
                 continue;
@@ -7499,8 +7551,9 @@ public:
             changed = true;
         }
         if (changed) {
-            x.m_body = new_body.p;
-            x.n_body = new_body.n;
+            // Through set_body, so the loop the nest reads from carries
+            // the rewrite too and not just the view of it.
+            nest.set_body(new_body.p, new_body.n);
         }
     }
 
@@ -7514,9 +7567,10 @@ public:
     //   a(:)            = __gpu_alias(1:n)
     // Both halves are alias-free, and the existing ArraySection and
     // whole-array lowerings turn each of them into an element loop.
-    void materialize_aliased_assignments(ASR::DoConcurrentLoop_t &x) {
+    void materialize_aliased_assignments(ParallelLoopNest &nest) {
         bool changed = false;
-        materialize_aliased_in_body(x.m_body, x.n_body, changed);
+        NestBodyWriteBack back(nest);
+        materialize_aliased_in_body(back.body, back.n_body, changed);
     }
 
     void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
@@ -7647,9 +7701,10 @@ public:
         }
     }
 
-    void inline_array_section_assignment(ASR::DoConcurrentLoop_t &x) {
+    void inline_array_section_assignment(ParallelLoopNest &nest) {
         bool changed = false;
-        inline_array_section_in_body(x.m_body, x.n_body, changed);
+        NestBodyWriteBack back(nest);
+        inline_array_section_in_body(back.body, back.n_body, changed);
     }
 
     void inline_array_section_in_body(ASR::stmt_t** &body, size_t &n_body,
@@ -8444,8 +8499,10 @@ public:
         return false;
     }
 
-    void gather_strided_section_arguments(ASR::DoConcurrentLoop_t &x) {
-        gather_strided_sections_in_body(x.m_body, x.n_body, current_scope);
+    void gather_strided_section_arguments(ParallelLoopNest &nest) {
+        NestBodyWriteBack back(nest);
+        gather_strided_sections_in_body(back.body, back.n_body,
+            current_scope);
     }
 
     // `scope` owns the statements in `body`: the new BLOCK has to be
@@ -8533,9 +8590,10 @@ public:
     //   do __gpu_elem_i = lbound(a,1), ubound(a,1)
     //     b(__gpu_elem_i) = abs(a(__gpu_elem_i, l))
     //   end do
-    void inline_elemental_array_var_assignment(ASR::DoConcurrentLoop_t &x) {
+    void inline_elemental_array_var_assignment(ParallelLoopNest &nest) {
         bool changed = false;
-        inline_elemental_array_var_in_body(x.m_body, x.n_body, changed);
+        NestBodyWriteBack back(nest);
+        inline_elemental_array_var_in_body(back.body, back.n_body, changed);
     }
 
     void inline_elemental_array_var_in_body(ASR::stmt_t** &body,
@@ -9317,22 +9375,22 @@ public:
     // workspace extent resolver expects: every symbol the loop involves,
     // plus the synthetic per-dimension extent scalar the kernel
     // extraction adds for each dimension of an array argument.
-    void collect_kernel_arg_names(const ASR::DoConcurrentLoop_t &x,
+    void collect_kernel_arg_names(const ParallelLoopNest &nest,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             std::vector<std::string> &arg_names) {
         std::map<std::string,
             std::pair<ASR::ttype_t*, ASR::expr_t*>> syms;
-        collect_involved_syms(x, enclosing_block_scopes, syms);
+        collect_involved_syms(nest, enclosing_block_scopes, syms);
         // A loop index is not one of them: the kernel works it out from the
         // thread id. Counting it would tell the workspace pre-flight that
         // the host can read `n(l)`, which it cannot -- `l` only exists once
         // the kernel is running.
         std::set<std::string> indices;
-        for (size_t d = 0; d < x.n_head; d++) {
-            if (!x.m_head[d].m_v) continue;
-            if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+        for (size_t d = 0; d < nest.n_heads(); d++) {
+            if (!nest.head(d).m_v) continue;
+            if (!ASR::is_a<ASR::Var_t>(*nest.head(d).m_v)) continue;
             indices.insert(ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+                ASR::down_cast<ASR::Var_t>(nest.head(d).m_v)->m_v));
         }
         for (auto &sym : syms) {
             if (indices.count(sym.first)) continue;
@@ -9348,13 +9406,17 @@ public:
         }
     }
 
-    void collect_involved_syms(const ASR::DoConcurrentLoop_t &x,
+    void collect_involved_syms(const ParallelLoopNest &nest,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             std::map<std::string,
                 std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms) {
         GpuSymbolCollector collector(al, involved_syms,
             enclosing_block_scopes);
-        collector.visit_DoConcurrentLoop(x);
+        // The whole nest: the loop heads name symbols too, and an index of
+        // an outer level is read by the levels inside it.
+        for (ASR::DoLoop_t *level : nest.loops) {
+            collector.visit_stmt(*ASRUtils::STMT((ASR::asr_t*)level));
+        }
         bool added = true;
         while (added) {
             added = false;
@@ -9480,27 +9542,27 @@ public:
     // `undo` records every slot that was overwritten and `temp_names`
     // every symbol that was added, so `GpuGatherGuard` can put the loop
     // back exactly as it was if the offload is declined further down.
-    bool hoist_struct_element_gathers(const ASR::DoConcurrentLoop_t &x,
+    bool hoist_struct_element_gathers(const ParallelLoopNest &nest,
             Vec<ASR::stmt_t*> &gather_stmts,
             Vec<ASR::stmt_t*> &scatter_stmts,
             std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
             std::vector<std::string> &temp_names) {
         GpuStructElementGatherCollector collector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            collector.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            collector.visit_stmt(*nest.body[i]);
         }
         if (collector.found.empty()) return true;
 
         GpuWrittenRootCollector written;
-        for (size_t i = 0; i < x.n_body; i++) {
-            written.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            written.visit_stmt(*nest.body[i]);
         }
         std::set<ASR::symbol_t*> loop_indices;
-        for (size_t d = 0; d < x.n_head; d++) {
-            if (!x.m_head[d].m_v) continue;
-            if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+        for (size_t d = 0; d < nest.n_heads(); d++) {
+            if (!nest.head(d).m_v) continue;
+            if (!ASR::is_a<ASR::Var_t>(*nest.head(d).m_v)) continue;
             loop_indices.insert(ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+                ASR::down_cast<ASR::Var_t>(nest.head(d).m_v)->m_v));
         }
 
         std::vector<GpuStructElementGather> gathers;
@@ -9621,8 +9683,8 @@ public:
         }
 
         GpuStructElementGatherVisitor sub(al, gathers, undo);
-        for (size_t i = 0; i < x.n_body; i++) {
-            sub.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < nest.n_body; i++) {
+            sub.visit_stmt(*nest.body[i]);
         }
         return true;
     }
@@ -9734,60 +9796,29 @@ public:
             }
         }
 
-        // What follows was written against the `do concurrent` node the
-        // front end used to hand this pass, and a canonical region carries
-        // the same information: the loop nest it partitions and the body its
-        // innermost loop runs. Present the nest as one and go on reading it
-        // that way. Nothing is written back through it -- a region that is
-        // offloaded is replaced by its launch, and one that is declined is
-        // left exactly as it was found.
-        Vec<ASR::do_loop_head_t> nest_heads;
-        nest_heads.reserve(al, n_dims);
-        for (size_t d = 0; d < n_dims; d++) {
-            nest_heads.push_back(al, nest.head(d));
-        }
-        // The body is duplicated into it. Everything below rewrites the
-        // loop as it goes -- inlining an intrinsic, splicing a callee,
-        // gathering an argument -- and several of those rewrites change a
-        // statement in place. A rewrite must not reach the loop the host
-        // would run, because the offload can still be declined further
-        // down, so it is a copy that is rewritten and the original that is
-        // left standing until the launch replaces it.
-        Vec<ASR::stmt_t*> nest_body;
-        nest_body.reserve(al, nest.n_body);
+        // Everything below rewrites the loop as it goes -- inlining an
+        // intrinsic, splicing a callee, gathering an argument -- and
+        // several of those rewrites change a statement in place. A rewrite
+        // must not reach the loop the host would run, because the offload
+        // can still be declined further down. So the region's loop nest is
+        // copied and it is the copy that is rewritten, the original
+        // standing until the launch replaces it.
+        //
+        // A BLOCK is left uncopied: it is a scope, and the kernel takes the
+        // scope itself rather than a copy of it. The snapshot further down
+        // is what keeps the host's blocks intact if the launch is declined.
+        ParallelLoopNest work;
         {
-            ASRUtils::ExprStmtDuplicator dup(al);
-            dup.allow_procedure_calls = true;
-            dup.allow_reshape = true;
-            for (size_t i = 0; i < nest.n_body; i++) {
-                // A BLOCK is not copied: it is a scope, and the kernel
-                // takes the scope itself rather than a copy of it. The
-                // snapshot further down is what keeps the host's blocks
-                // intact if the launch is declined.
-                if (ASR::is_a<ASR::BlockCall_t>(*nest.body[i]) ||
-                        ASR::is_a<ASR::AssociateBlockCall_t>(
-                            *nest.body[i])) {
-                    nest_body.push_back(al, nest.body[i]);
-                    continue;
-                }
-                dup.success = true;
-                ASR::stmt_t *copy = dup.duplicate_stmt(nest.body[i]);
-                if (!copy || !dup.success) {
-                    nest_body.n = 0;
-                    break;
-                }
-                nest_body.push_back(al, copy);
-            }
-            if (nest_body.n != nest.n_body) {
+            GpuLoopNestCopier copier(al);
+            ASR::stmt_t *loop_copy = copier.copy(region.m_body[0]);
+            if (loop_copy == nullptr ||
+                    !parallel_loop_nest_of(loop_copy,
+                        parallel_collapse_count(region), work)) {
                 // Nothing here can be rewritten safely.
                 decline(region);
                 return;
             }
         }
-        ASR::DoConcurrentLoop_t &x = *ASR::down_cast<ASR::DoConcurrentLoop_t>(
-            ASRUtils::STMT(ASR::make_DoConcurrentLoop_t(al, loc,
-                nest_heads.p, nest_heads.n, nullptr, 0, nullptr, 0,
-                nullptr, 0, nest_body.p, nest_body.n)));
 
         // Resolve associate variables to their original targets if this
         // loop is inside one or more nested AssociateBlocks.
@@ -9865,7 +9896,7 @@ public:
             if (!assoc_map.empty()) {
                 AssociateVarResolver resolver(al, assoc_map);
                 for (size_t d = 0; d < n_dims; d++) {
-                    ASR::do_loop_head_t &head = x.m_head[d];
+                    ASR::do_loop_head_t &head = work.head(d);
                     if (head.m_start) {
                         resolver.current_expr = &(head.m_start);
                         resolver.replace_expr(head.m_start);
@@ -9880,8 +9911,8 @@ public:
                     }
                 }
                 AssociateVarResolverVisitor resolver_visitor(al, assoc_map);
-                for (size_t i = 0; i < x.n_body; i++) {
-                    resolver_visitor.visit_stmt(*x.m_body[i]);
+                for (size_t i = 0; i < work.n_body; i++) {
+                    resolver_visitor.visit_stmt(*work.body[i]);
                 }
                 // The statement visitor above does not descend into
                 // BlockCall targets (Blocks have their own scope), so
@@ -9934,7 +9965,7 @@ public:
                         }
                     }
                 };
-                resolve_assoc_in_blocks(x.m_body, x.n_body);
+                resolve_assoc_in_blocks(work.body, work.n_body);
                 // Resolve associate aliases in enclosing Block scopes'
                 // variable type expressions. When a parallel loop is
                 // inside a Block that is inside an AssociateBlock, the
@@ -10030,7 +10061,7 @@ public:
         GpuGatherGuard gather_guard(current_scope, gather_undo,
             gather_temp_names);
         if (pass_options.gpu_offload_metal
-                && !hoist_struct_element_gathers(x, gather_stmts,
+                && !hoist_struct_element_gathers(work, gather_stmts,
                     scatter_stmts, gather_undo, gather_temp_names)) {
             // The element could not be hoisted -- a subscript that moves
             // with the loop, or a write to the object that the copy back
@@ -10054,7 +10085,7 @@ public:
         if (pass_options.gpu_offload_metal) {
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
                 candidate_syms;
-            collect_involved_syms(x, enclosing_block_scopes, candidate_syms);
+            collect_involved_syms(work, enclosing_block_scopes, candidate_syms);
             // Every symbol reaching the kernel — buffer parameters,
             // by-value members of the __ScalarArgs struct and kernel-local
             // temporaries alike — is collected here, so a single sweep
@@ -10069,8 +10100,8 @@ public:
                 }
             }
             GpuLocalArrayChecker local_array_checker;
-            for (size_t i = 0; i < x.n_body; i++) {
-                local_array_checker.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < work.n_body; i++) {
+                local_array_checker.visit_stmt(*work.body[i]);
             }
             if (local_array_checker.has_unsized_local_array) {
                 GpuOffloadReport::set_detail(
@@ -10084,9 +10115,9 @@ public:
             // If that temporary cannot be fixed-size, decline here,
             // while the body is still untouched.
             std::vector<std::string> alias_arg_names;
-            collect_kernel_arg_names(x, enclosing_block_scopes,
+            collect_kernel_arg_names(work, enclosing_block_scopes,
                 alias_arg_names);
-            if (body_needs_unsupported_alias_temp(x.m_body, x.n_body,
+            if (body_needs_unsupported_alias_temp(work.body, work.n_body,
                     true, alias_arg_names)) {
                 GpuOffloadReport::emit(loc, report_proc,
                     "runtime-sized-alias-temp");
@@ -10096,7 +10127,7 @@ public:
             // contiguous kernel-local temporary below. When that temporary
             // cannot be sized at compile time the gather is impossible,
             // and passing the section on would silently drop its stride.
-            if (body_has_ungatherable_strided_section(x.m_body, x.n_body)) {
+            if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
                 GpuOffloadReport::emit(loc, report_proc,
                     "strided-section-cannot-be-gathered");
                 return;
@@ -10112,7 +10143,7 @@ public:
             {
                 std::map<ASR::Function_t*, bool> needs_inline_memo;
                 std::set<ASR::Function_t*> on_stack;
-                if (!plan_device_function_inlining(x.m_body, x.n_body,
+                if (!plan_device_function_inlining(work.body, work.n_body,
                         needs_inline_memo, on_stack)) {
                     // Some callee that must be inlined cannot be
                     // (recursive, early `return`, nested scopes, or
@@ -10146,16 +10177,14 @@ public:
             splice_snapshot.restore();
         };
         {
-            ASR::DoConcurrentLoop_t &xx =
-                const_cast<ASR::DoConcurrentLoop_t&>(x);
-            splice_snapshot.record(xx, current_scope);
-            inline_device_function_calls(xx.m_body, xx.n_body);
+            splice_snapshot.record(work, current_scope);
+            inline_device_function_calls(work.body, work.n_body);
             functions_to_inline.clear();
             // Run-time sized alias temporaries become BLOCK locals here,
             // ahead of the workspace pre-flight below, so that the
             // pre-flight sizes them too and can still decline the loop.
-            materialize_runtime_alias_blocks(xx);
-            size_scope_array_temporaries(xx.m_body, xx.n_body,
+            materialize_runtime_alias_blocks(work);
+            size_scope_array_temporaries(work.body, work.n_body,
                 scope_dims_undo);
         }
 
@@ -10170,11 +10199,11 @@ public:
         // spliced in, and the rewrites below are not reversible.
         if (pass_options.gpu_offload_metal) {
             std::vector<std::string> kernel_arg_names;
-            collect_kernel_arg_names(x, enclosing_block_scopes,
+            collect_kernel_arg_names(work, enclosing_block_scopes,
                 kernel_arg_names);
             std::string unresolved_name;
-            if (!gpu_block_workspace_extents_resolvable(al, x.m_body,
-                    x.n_body, kernel_arg_names, unresolved_name)) {
+            if (!gpu_block_workspace_extents_resolvable(al, work.body,
+                    work.n_body, kernel_arg_names, unresolved_name)) {
                 restore_loop();
                 GpuOffloadReport::set_detail("sym=" + unresolved_name);
                 GpuOffloadReport::emit(loc, report_proc,
@@ -10182,8 +10211,8 @@ public:
                 return;
             }
             GpuNestedSectionFinder nested_section;
-            for (size_t i = 0; i < x.n_body; i++) {
-                nested_section.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < work.n_body; i++) {
+                nested_section.visit_stmt(*work.body[i]);
             }
             if (nested_section.found) {
                 restore_loop();
@@ -10195,21 +10224,21 @@ public:
 
         // Inline IntrinsicArrayFunction All before kernel extraction
         all_reduction_targets.clear();
-        inline_intrinsic_all(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_all(work);
 
         // Hoist matmuls out of the expression positions the matmul
         // lowering below cannot see them in.
-        hoist_nested_matmuls(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        hoist_nested_matmuls(work);
 
         // Inline IntrinsicArrayFunction MatMul before kernel extraction
-        inline_intrinsic_matmul(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_matmul(work);
 
         // Inline IntrinsicArrayFunction DotProduct before kernel
         // extraction
-        inline_intrinsic_dot_product(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_dot_product(work);
 
         // Inline IntrinsicArrayFunction Sum before kernel extraction
-        inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_sum(work);
 
         // Also inline Sum in helper functions called from the
         // loop body. This ensures that sum(f(x)) patterns
@@ -10218,8 +10247,8 @@ public:
         // cannot be represented as VLAs in Metal shaders.
         {
             GpuFunctionCollector sum_fc;
-            for (size_t i = 0; i < x.n_body; i++) {
-                sum_fc.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < work.n_body; i++) {
+                sum_fc.visit_stmt(*work.body[i]);
             }
             bool sum_added = true;
             while (sum_added) {
@@ -10259,21 +10288,21 @@ public:
         }
 
         // Inline IntrinsicArrayFunction Transpose before kernel extraction
-        inline_intrinsic_transpose(const_cast<ASR::DoConcurrentLoop_t&>(x));
+        inline_intrinsic_transpose(work);
 
         // Materialise temporaries for assignments whose target and value
         // overlap the same array, before the element loops below are
         // built from them.
         materialize_aliased_assignments(
-            const_cast<ASR::DoConcurrentLoop_t&>(x));
+            work);
 
         // Inline ArraySection assignments before kernel extraction
         inline_array_section_assignment(
-            const_cast<ASR::DoConcurrentLoop_t&>(x));
+            work);
 
         // Inline whole-array elemental assignments (e.g., b = abs(a(:,l)))
         inline_elemental_array_var_assignment(
-            const_cast<ASR::DoConcurrentLoop_t&>(x));
+            work);
 
         // Recursive helper to inline an AssociateBlock's body.
         // Collects Associate mappings into assoc_map and non-Associate
@@ -10383,10 +10412,10 @@ public:
         // cannot use Pointer-based associate aliases, so we inline the
         // associate targets and replace the AssociateBlockCall with the
         // resolved statements.
-        for (size_t bi = 0; bi < x.n_body; bi++) {
-            if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[bi])) continue;
+        for (size_t bi = 0; bi < work.n_body; bi++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*work.body[bi])) continue;
             ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-                x.m_body[bi]);
+                work.body[bi]);
             if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
             ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
             Vec<ASR::stmt_t*> new_block_body;
@@ -10456,18 +10485,18 @@ public:
         // the resolved statements.
         {
             Vec<ASR::stmt_t*> new_dc_body;
-            new_dc_body.reserve(al, x.n_body);
+            new_dc_body.reserve(al, work.n_body);
             bool dc_changed = false;
-            for (size_t bi = 0; bi < x.n_body; bi++) {
-                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*x.m_body[bi])) {
-                    new_dc_body.push_back(al, x.m_body[bi]);
+            for (size_t bi = 0; bi < work.n_body; bi++) {
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*work.body[bi])) {
+                    new_dc_body.push_back(al, work.body[bi]);
                     continue;
                 }
                 ASR::AssociateBlockCall_t *abc =
                     ASR::down_cast<ASR::AssociateBlockCall_t>(
-                        x.m_body[bi]);
+                        work.body[bi]);
                 if (!ASR::is_a<ASR::AssociateBlock_t>(*abc->m_m)) {
-                    new_dc_body.push_back(al, x.m_body[bi]);
+                    new_dc_body.push_back(al, work.body[bi]);
                     continue;
                 }
                 ASR::AssociateBlock_t *ab =
@@ -10507,8 +10536,8 @@ public:
                 dc_changed = true;
             }
             if (dc_changed) {
-                x.m_body = new_dc_body.p;
-                x.n_body = new_dc_body.n;
+                work.body = new_dc_body.p;
+                work.n_body = new_dc_body.n;
             }
         }
 
@@ -10518,11 +10547,11 @@ public:
         // been inlined, so a section whose bounds come from an associate
         // name is gathered with the selector substituted in.
         gather_strided_section_arguments(
-            const_cast<ASR::DoConcurrentLoop_t&>(x));
+            work);
 
         // 1. Collect all symbols from body AND head expressions
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
-        collect_involved_syms(x, enclosing_block_scopes, involved_syms);
+        collect_involved_syms(work, enclosing_block_scopes, involved_syms);
 
         if (pass_options.gpu_offload_metal) {
             for (auto &sym : involved_syms) {
@@ -10537,7 +10566,7 @@ public:
                     unsupported_kind = "integer(8)";
                 }
                 if (!unsupported_kind.empty()) {
-                    report_not_offloaded(x.base.base.loc,
+                    report_not_offloaded(loc,
                         "the Metal backend does not support " +
                             unsupported_kind + ", used by '" +
                             sym.first + "'");
@@ -10550,13 +10579,13 @@ public:
         // backend is selected.
         {
             GpuUnsupportedStatementFinder finder;
-            for (size_t i = 0; i < x.n_body; i++) {
-                finder.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < work.n_body; i++) {
+                finder.visit_stmt(*work.body[i]);
             }
             std::string in_routine;
             if (finder.reason == nullptr) {
-                for (ASR::Function_t *fn : reachable_routines(x.m_body,
-                        x.n_body)) {
+                for (ASR::Function_t *fn : reachable_routines(work.body,
+                        work.n_body)) {
                     GpuUnsupportedStatementFinder callee_finder;
                     for (size_t i = 0; i < fn->n_body; i++) {
                         callee_finder.visit_stmt(*fn->m_body[i]);
@@ -10579,15 +10608,15 @@ public:
         // Collect loop variable names
         std::vector<std::string> loop_var_names;
         for (size_t d = 0; d < n_dims; d++) {
-            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(work.head(d).m_v);
             loop_var_names.push_back(ASRUtils::symbol_name(lv->m_v));
         }
 
         // Find local scalar temporaries (assigned but not arrays, not loop vars)
         std::set<std::string> local_vars, assigned_vars;
         GpuLocalVarCollector lv_collector(local_vars, assigned_vars, enclosing_block_scopes);
-        for (size_t i = 0; i < x.n_body; i++) {
-            lv_collector.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < work.n_body; i++) {
+            lv_collector.visit_stmt(*work.body[i]);
         }
 
         // Separate into kernel params vs local vars
@@ -10767,8 +10796,8 @@ public:
         // kernel buffer parameter and replace StructInstanceMember
         // references in the body with the new flat-array Var.
         GpuAllocStructMemberCollector alloc_collector;
-        for (size_t i = 0; i < x.n_body; i++) {
-            alloc_collector.visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < work.n_body; i++) {
+            alloc_collector.visit_stmt(*work.body[i]);
         }
         // Also scan array dimension expressions of involved symbols for
         // StructInstanceMember accesses. VLA arrays sized by struct
@@ -11419,7 +11448,7 @@ public:
 
         // Create loop variables in kernel scope (local, not parameters)
         for (size_t d = 0; d < n_dims; d++) {
-            ASR::Var_t *lv = down_cast<ASR::Var_t>(x.m_head[d].m_v);
+            ASR::Var_t *lv = down_cast<ASR::Var_t>(work.head(d).m_v);
             ASR::ttype_t *loop_var_type = ASRUtils::symbol_type(lv->m_v);
             std::string lvn = loop_var_names[d];
             ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
@@ -11457,8 +11486,8 @@ public:
         // Collect transitively: if f() calls g(), both must be imported.
         {
             GpuFunctionCollector func_collector;
-            for (size_t i = 0; i < x.n_body; i++) {
-                func_collector.visit_stmt(*x.m_body[i]);
+            for (size_t i = 0; i < work.n_body; i++) {
+                func_collector.visit_stmt(*work.body[i]);
             }
             {
                 bool added = true;
@@ -12273,7 +12302,7 @@ public:
         };
         std::vector<DimInfo> dim_info;
         for (size_t d = 0; d < n_dims; d++) {
-            dim_info.push_back({x.m_head[d].m_start, x.m_head[d].m_end});
+            dim_info.push_back({work.head(d).m_start, work.head(d).m_end});
         }
 
         // Deep-copy the body statements so that in-place symbol remapping
@@ -12283,9 +12312,9 @@ public:
         ASRUtils::ExprStmtDuplicator body_dup(al);
         body_dup.success = true;
         Vec<ASR::stmt_t*> body_copy;
-        body_copy.reserve(al, x.n_body);
-        for (size_t i = 0; i < x.n_body; i++) {
-            ASR::stmt_t *copy = body_dup.duplicate_stmt(x.m_body[i]);
+        body_copy.reserve(al, work.n_body);
+        for (size_t i = 0; i < work.n_body; i++) {
+            ASR::stmt_t *copy = body_dup.duplicate_stmt(work.body[i]);
             LCOMPILERS_ASSERT(copy);
             body_copy.push_back(al, copy);
         }
@@ -12321,7 +12350,7 @@ public:
 
         // 4. Build kernel body
         Vec<ASR::stmt_t*> kernel_body;
-        kernel_body.reserve(al, x.n_body + 2 * n_dims + 1);
+        kernel_body.reserve(al, work.n_body + 2 * n_dims + 1);
 
         ASR::ttype_t *int_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
@@ -12684,11 +12713,11 @@ public:
                 ASRUtils::ExprStmtDuplicator dim_dup(al);
                 dim_dup.success = true;
                 std::set<std::string> loop_index_names;
-                for (size_t d = 0; d < x.n_head; d++) {
-                    if (!x.m_head[d].m_v) continue;
-                    if (!ASR::is_a<ASR::Var_t>(*x.m_head[d].m_v)) continue;
+                for (size_t d = 0; d < work.n_heads(); d++) {
+                    if (!work.head(d).m_v) continue;
+                    if (!ASR::is_a<ASR::Var_t>(*work.head(d).m_v)) continue;
                     loop_index_names.insert(ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(x.m_head[d].m_v)->m_v));
+                        ASR::down_cast<ASR::Var_t>(work.head(d).m_v)->m_v));
                 }
                 for (auto &item : block->m_symtab->get_scope()) {
                     if (!ASR::is_a<ASR::Variable_t>(*item.second))
@@ -12950,7 +12979,7 @@ public:
                 }
             }
         };
-        snapshot_blocks(x.m_body, x.n_body);
+        snapshot_blocks(work.body, work.n_body);
         move_blocks_to_kernel(body_copy.p, body_copy.n);
 
         {
@@ -13033,7 +13062,7 @@ public:
             if (!gpu_launch_is_supported(
                     ASR::down_cast<ASR::symbol_t>(kernel_func),
                     call_args.p, call_args.n, reason)) {
-                report_not_offloaded(x.base.base.loc,
+                report_not_offloaded(loc,
                     "the gpu backend does not support " + reason);
                 std::function<void(ASR::stmt_t**, size_t)> restore =
                     [&](ASR::stmt_t **stmts, size_t n_stmts) {
@@ -13068,7 +13097,7 @@ public:
                     *it->first = it->second;
                 }
                 member_extent_undo.clear();
-                restore(x.m_body, x.n_body);
+                restore(work.body, work.n_body);
                 for (const BlockBackup &b : block_backups) {
                     if (!orig_scope->get_symbol(b.name)) {
                         orig_scope->add_symbol(b.name, b.pristine);
@@ -13101,8 +13130,8 @@ public:
         // array must already be allocated on the host before dispatch.
         Vec<ASR::stmt_t*> pre_launch_stmts;
         pre_launch_stmts.reserve(al, 4);
-        for (size_t si = 0; si < x.n_body; si++) {
-            ASR::stmt_t *stmt = x.m_body[si];
+        for (size_t si = 0; si < work.n_body; si++) {
+            ASR::stmt_t *stmt = work.body[si];
             // Unwrap BlockCall to inspect block body statements
             ASR::stmt_t **stmts_to_scan = &stmt;
             size_t n_stmts_to_scan = 1;
