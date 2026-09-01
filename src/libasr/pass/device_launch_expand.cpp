@@ -184,6 +184,7 @@ static bool launch_is_supported(ASR::symbol_t *kernel_sym,
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
             if (dim.is_constant || dim.is_struct_member_size) continue;
+            if (dim.is_host_expr) continue;
             if (dim.call_arg_index >= n_call_args) {
                 return unsupported("a variable length array sized outside "
                     "the kernel arguments");
@@ -619,6 +620,90 @@ class DeviceLaunchExpandVisitor :
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
         }
 
+        // The extent expression of a workspace, rebuilt over the actual
+        // arguments of this launch. The kernel writes an extent in terms of
+        // its own parameters -- `op%m_ + 1` -- and the host has to compute
+        // the same number before it dispatches, so every parameter the
+        // expression names is replaced by the argument bound to it.
+        // Returns nullptr when some part of it has no host counterpart.
+        ASR::expr_t* host_extent(const Location &loc,
+                const ASR::GpuKernelLaunch_t &x,
+                const ASR::Function_t *kernel, ASR::expr_t *e) {
+            if (e == nullptr) return nullptr;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+            if (ASR::is_a<ASR::Cast_t>(*v)) {
+                return host_extent(loc, x, kernel,
+                    ASR::down_cast<ASR::Cast_t>(v)->m_arg);
+            }
+            if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return v;
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
+                ASR::IntegerBinOp_t *op =
+                    ASR::down_cast<ASR::IntegerBinOp_t>(v);
+                ASR::expr_t *l = host_extent(loc, x, kernel, op->m_left);
+                ASR::expr_t *r = host_extent(loc, x, kernel, op->m_right);
+                if (!l || !r) return nullptr;
+                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
+                    op->m_op, r, ASRUtils::expr_type(l), nullptr));
+            }
+            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
+                ASR::expr_t *a = host_extent(loc, x, kernel,
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg);
+                if (!a) return nullptr;
+                return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
+                    a, ASRUtils::expr_type(a), nullptr));
+            }
+            std::vector<std::string> arg_names;
+            for (size_t i = 0; i < kernel->n_args; i++) {
+                arg_names.push_back(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
+            }
+            // An extent of an array parameter: the actual argument has the
+            // same shape, so ask it.
+            std::string arr_name;
+            size_t d = 0;
+            if (gpu_extent_of_array_dim(v, arr_name, d)) {
+                for (size_t i = 0; i < arg_names.size(); i++) {
+                    if (arg_names[i] != arr_name) continue;
+                    if (i >= x.n_args || !x.m_args[i].m_value) break;
+                    return b.ArraySize(x.m_args[i].m_value,
+                        b.i32((int)d + 1), int32);
+                }
+            }
+            size_t idx = 0;
+            std::vector<std::string> path;
+            if (resolve_extent_to_arg_member(v, arg_names, idx, path)) {
+                if (idx >= x.n_args || !x.m_args[idx].m_value) {
+                    return nullptr;
+                }
+                ASR::expr_t *out = x.m_args[idx].m_value;
+                for (const std::string &m : path) {
+                    ASR::symbol_t *st =
+                        ASRUtils::get_struct_sym_from_struct_expr(out);
+                    ASR::symbol_t *member = st
+                        ? ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(st))
+                                ->m_symtab->get_symbol(m)
+                        : nullptr;
+                    if (member == nullptr) return nullptr;
+                    out = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                        al, loc, out, member,
+                        ASRUtils::symbol_type(member), nullptr));
+                }
+                return out;
+            }
+            if (ASR::is_a<ASR::Var_t>(*v)) {
+                std::string name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(v)->m_v);
+                for (size_t i = 0; i < arg_names.size(); i++) {
+                    if (arg_names[i] != name) continue;
+                    if (i >= x.n_args) break;
+                    return x.m_args[i].m_value;
+                }
+            }
+            return nullptr;
+        }
+
         ASR::expr_t* struct_member(const Location &loc, ASR::expr_t *arg,
                 ASR::expr_t *index, ASR::symbol_t *member) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -842,6 +927,11 @@ class DeviceLaunchExpandVisitor :
                             dim.struct_member_key);
                         if (first == member_first_sizes.end()) continue;
                         extent = b.i2i_t(first->second, int64);
+                    } else if (dim.is_host_expr) {
+                        ASR::expr_t *host = host_extent(loc, x, kernel,
+                            dim.dim_expr);
+                        if (host == nullptr) continue;
+                        extent = b.i2i_t(host, int64);
                     } else if (!dim.member_path.empty()) {
                         // A scalar component of a struct argument. The
                         // struct reaches the kernel as a buffer, so the
