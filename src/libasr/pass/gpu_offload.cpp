@@ -221,8 +221,8 @@ class GpuLoopBodySnapshot {
 public:
     void record(ParallelLoopNest &nest, SymbolTable *scope) {
         nest_ = &nest;
-        loop_body_ = nest.body;
-        loop_n_body_ = nest.n_body;
+        body_ = nest.body;
+        n_body_ = nest.n_body;
         scope_ = scope;
         if (scope_ != nullptr) {
             for (auto &item : scope_->get_scope()) {
@@ -234,7 +234,7 @@ public:
 
     void restore() {
         if (nest_ == nullptr) return;
-        nest_->set_body(loop_body_, loop_n_body_);
+        nest_->set_body(body_, n_body_);
         for (auto &saved : blocks_) {
             saved.block->m_body = saved.body;
             saved.block->n_body = saved.n_body;
@@ -271,8 +271,8 @@ private:
     }
 
     ParallelLoopNest *nest_ = nullptr;
-    ASR::stmt_t **loop_body_ = nullptr;
-    size_t loop_n_body_ = 0;
+    ASR::stmt_t **body_ = nullptr;
+    size_t n_body_ = 0;
     std::vector<SavedBlock> blocks_;
     SymbolTable *scope_ = nullptr;
     std::set<std::string> scope_symbols_;
@@ -1806,8 +1806,8 @@ static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
 // Collects every parallel region reached from the statements walked,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is
 // seen too.
-class GpuDoConcurrentCollector :
-        public ASR::BaseWalkVisitor<GpuDoConcurrentCollector> {
+class GpuParallelRegionCollector :
+        public ASR::BaseWalkVisitor<GpuParallelRegionCollector> {
 public:
     std::set<ASR::OMPRegion_t*> loops;
 
@@ -1815,7 +1815,7 @@ public:
         if (omp_region_has_clause(x, ASR::omp_clauseType::OMPIndependent)) {
             loops.insert(const_cast<ASR::OMPRegion_t*>(&x));
         }
-        ASR::BaseWalkVisitor<GpuDoConcurrentCollector>::visit_OMPRegion(x);
+        ASR::BaseWalkVisitor<GpuParallelRegionCollector>::visit_OMPRegion(x);
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
@@ -1838,14 +1838,13 @@ public:
     }
 };
 
-// Hands the listed parallel regions to the target that runs them
+// A parallel loop that device code has to run cannot become a launch of
+// its own, so it is marked to run serially -- which is what one thread of
+// the enclosing kernel does with it.
 // DoLoops. `do concurrent` only permits the iterations to run in any
 // order, so running them in order is always correct; inside device code
 // it is the only thing that can be done.
-// A parallel loop that device code has to run cannot become a launch of
-// its own: the device has no way to launch anything. It runs serially
-// instead, which is what one thread of the enclosing kernel does with it.
-class GpuHostOnlyLoopSequentializer {
+class GpuSerialRegionMarker {
 public:
     static void run(const std::set<ASR::OMPRegion_t*> &loops) {
         for (ASR::OMPRegion_t *region : loops) {
@@ -3919,11 +3918,11 @@ public:
     // The procedure the region being decided belongs to, for the report.
     std::string report_proc_name;
 
-    std::set<ASR::OMPRegion_t*> host_only_loops;
+    std::set<ASR::OMPRegion_t*> serial_regions;
     std::set<ASR::Function_t*> device_reachable_functions;
 
-    void collect_host_only_loops() {
-        GpuDoConcurrentCollector all_loops;
+    void mark_regions_device_code_runs() {
+        GpuParallelRegionCollector all_loops;
         all_loops.visit_TranslationUnit(tu);
         std::vector<ASR::Function_t*> pending;
         auto add_callees = [&](ASR::stmt_t **body, size_t n_body) {
@@ -3940,10 +3939,10 @@ public:
                 }
             }
         };
-        GpuDoConcurrentCollector blocked;
+        GpuParallelRegionCollector blocked;
         // Owner of each blocked loop, for --gpu-offload-report only.
         std::map<const ASR::OMPRegion_t*, std::string> blocked_owner;
-        auto note_owner = [&](const GpuDoConcurrentCollector &c,
+        auto note_owner = [&](const GpuParallelRegionCollector &c,
                 const std::string &owner) {
             if (!GpuOffloadReport::enabled) return;
             for (const ASR::OMPRegion_t *loop : c.loops) {
@@ -3955,7 +3954,7 @@ public:
             ASR::Function_t *k =
                 ASR::down_cast<ASR::Function_t>(item.second);
             add_callees(k->m_body, k->n_body);
-            GpuDoConcurrentCollector in_kernel;
+            GpuParallelRegionCollector in_kernel;
             for (size_t i = 0; i < k->n_body; i++) {
                 in_kernel.visit_stmt(*k->m_body[i]);
             }
@@ -3978,7 +3977,7 @@ public:
             add_callees(fn->m_body, fn->n_body);
         }
         for (ASR::Function_t *fn : device_reachable_functions) {
-            GpuDoConcurrentCollector in_fn;
+            GpuParallelRegionCollector in_fn;
             for (size_t i = 0; i < fn->n_body; i++) {
                 in_fn.visit_stmt(*fn->m_body[i]);
             }
@@ -3986,13 +3985,13 @@ public:
             blocked.loops.insert(in_fn.loops.begin(), in_fn.loops.end());
         }
         for (ASR::OMPRegion_t *loop : blocked.loops) {
-            if (!host_only_loops.insert(loop).second) continue;
+            if (!serial_regions.insert(loop).second) continue;
             auto owner = blocked_owner.find(loop);
             GpuOffloadReport::emit(loop->base.base.loc,
                 owner == blocked_owner.end() ? "<unknown>" : owner->second,
                 "sequentialized-for-device", true);
         }
-        GpuHostOnlyLoopSequentializer::run(host_only_loops);
+        GpuSerialRegionMarker::run(serial_regions);
     }
 
     // Strip the physical-type casts wrapping an actual argument. The
@@ -9721,7 +9720,7 @@ public:
         // A region device code has to run was already reported when it was
         // handed to the device to run serially. Reaching it again here is
         // that same decision arriving, not a second one to report.
-        if (host_only_loops.count(const_cast<ASR::OMPRegion_t*>(&region))) {
+        if (serial_regions.count(const_cast<ASR::OMPRegion_t*>(&region))) {
             GpuOffloadReport::reported = true;
         }
 
@@ -13436,7 +13435,7 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
     v.asr_changed = true;
     while (v.asr_changed) {
         v.asr_changed = false;
-        v.collect_host_only_loops();
+        v.mark_regions_device_code_runs();
         v.visit_TranslationUnit(unit);
     }
     DeclinedLoopVisitor d(pass_options);
