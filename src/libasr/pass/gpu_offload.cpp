@@ -9656,6 +9656,12 @@ public:
         if (GpuOffloadReport::enabled) report_proc = report_enclosing_proc();
         report_proc_name = report_proc;
         GpuRegionReportGuard report_guard(region.base.base.loc, report_proc);
+        // A region device code has to run was already reported when it was
+        // handed to the device to run serially. Reaching it again here is
+        // that same decision arriving, not a second one to report.
+        if (host_only_loops.count(const_cast<ASR::OMPRegion_t*>(&region))) {
+            GpuOffloadReport::reported = true;
+        }
 
         // Only the regions the dispatch pass gave to the device. Every other
         // exit of this function leaves the region alone, and the regions
