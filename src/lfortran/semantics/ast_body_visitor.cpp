@@ -7916,7 +7916,60 @@ public:
         visit_Assignment(assignment);
     }
 
+    // A conditional argument (R1526) of a subroutine reference. Unlike a name
+    // followed by a parenthesized list in an expression, a `call` statement is
+    // always a procedure reference, so an actual argument of the form
+    // `( cond ? a : b )` is always a conditional argument here.
+    //
+    // The chosen consequent *is* the actual argument (15.5.2.3), so the
+    // reference is duplicated into the arms of an If statement, one copy per
+    // consequent. A variable consequent is then associated by reference and
+    // stays definable, and `.nil.` leaves the dummy argument not present.
+    // Visiting a copy expands the next conditional argument of the reference,
+    // and the nested `: cond ? consequent` arms of this one.
+    bool handle_conditional_arg_subroutine(const AST::SubroutineCall_t &x) {
+        int64_t idx = first_conditional_arg(x.m_args, x.n_args, x.m_keywords,
+            x.n_keywords);
+        if (idx < 0) {
+            return false;
+        }
+        AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(
+            conditional_arg_at(x.m_args, x.n_args, x.m_keywords, idx));
+        check_conditional_arg(c);
+        check_conditional_arg_consequents(c);
+        {
+            ASR::symbol_t *s = current_scope->resolve_symbol(
+                to_lower(x.m_name));
+            if (s != nullptr && ASR::is_a<ASR::GenericProcedure_t>(
+                    *ASRUtils::symbol_get_past_external(s))) {
+                check_conditional_arg_generic(c);
+            }
+        }
+        AST::expr_t *arms[2] = {c->m_body, c->m_orelse};
+        AST::decl_stmt_t *calls[2];
+        for (int i = 0; i < 2; i++) {
+            AST::fnarg_t *new_args;
+            AST::keyword_t *new_kwargs;
+            copy_args_with_consequent(x.m_args, x.n_args, x.m_keywords,
+                x.n_keywords, idx, arms[i], new_args, new_kwargs);
+            calls[i] = AST::down_cast<AST::decl_stmt_t>(
+                AST::make_SubroutineCall_t(al, x.base.base.loc, 0, x.m_name,
+                    x.m_member, x.n_member, new_args, x.n_args, new_kwargs,
+                    x.n_keywords, x.m_temp_args, x.n_temp_args, nullptr));
+        }
+        // The label of the reference belongs to the selection that replaces
+        // it, so that a branch to it still reaches the whole thing.
+        AST::If_t *selection = AST::down_cast2<AST::If_t>(AST::make_If_t(al,
+            x.base.base.loc, x.m_label, nullptr, c->m_test, &calls[0], 1,
+            &calls[1], 1, nullptr, nullptr, nullptr));
+        this->visit_If(*selection);
+        return true;
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+        if (handle_conditional_arg_subroutine(x)) {
+            return;
+        }
         std::string sub_name = to_lower(x.m_name);
         // Only treat as intrinsic if no user-defined callable procedure
         // with this name exists in scope (user procedures shadow intrinsics)

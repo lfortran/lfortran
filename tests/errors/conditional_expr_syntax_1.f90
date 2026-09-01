@@ -33,3 +33,12 @@ subroutine stray_question_mark()
     integer :: x
     x = ( ? 1 : 0 )  ! {Error} Token '?' is unexpected here
 end subroutine
+
+! `.NIL.` is a consequent (R1527), never a condition: the condition of R1526 is
+! a scalar-logical-expr, so `.NIL.` in that position is not even syntax.
+subroutine nil_as_a_condition()
+    implicit none
+    integer :: a, x
+    a = 1
+    x = ( .nil. ? a : a )  ! {Error} Token '.nil.' is unexpected here
+end subroutine

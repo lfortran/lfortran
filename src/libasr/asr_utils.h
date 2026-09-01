@@ -8437,6 +8437,28 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
 
+        // An argument with no value is a dummy argument that is not present.
+        // `.nil.`, the consequent of a conditional argument that leaves it
+        // absent, is the only way to write one (15.5.2.3), and C1540 allows
+        // it only when the dummy argument is optional.
+        if (!passed_arg_expr && i < f->n_args
+                && ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*sym)
+                    && ASR::down_cast<ASR::Variable_t>(sym)->m_presence
+                        != ASR::presenceType::Optional) {
+                diag.add(diag::Diagnostic(
+                    "`.nil.` is not allowed for the dummy argument `"
+                    + std::string(ASRUtils::symbol_name(sym))
+                    + "`, which is not optional",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("a consequent may be `.nil.` only when "
+                            "the dummy argument is optional "
+                            "(Fortran 2023 C1540)", {args[i].loc})}));
+                throw SemanticAbort();
+            }
+        }
+
         if (passed_arg_expr && i < f->n_args) {
             if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;

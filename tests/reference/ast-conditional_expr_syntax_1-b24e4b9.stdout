@@ -118,7 +118,17 @@
         []
         []
         ()
-        ()
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment
+                "! `.NIL.` is a consequent (R1527), never a condition: the condition of R1526 is"
+            )
+            (Comment
+                "! a scalar-logical-expr, so `.NIL.` in that position is not even syntax."
+            )]
+        )
         [(ImplicitNone
             []
             ()
@@ -139,6 +149,50 @@
             ()
             None
             ())]
+            ()
+        )]
+        []
+        []
+    )
+    (Subroutine
+        nil_as_a_condition
+        []
+        []
+        ()
+        ()
+        [(ImplicitNone
+            []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (x
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Assignment
+            0
+            a
+            1
             ()
         )]
         []

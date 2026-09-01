@@ -2,12 +2,12 @@
     "basename": "ast-conditional_expr_syntax_1-b24e4b9",
     "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
     "infile": "tests/errors/conditional_expr_syntax_1.f90",
-    "infile_hash": "74a28dfaefbc08f938f40a019eb72009389522d49c9e257f7d2894cd",
+    "infile_hash": "423820e75cff993b6509fdb1dd818f4c8de62405aa636fe003286b6e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-conditional_expr_syntax_1-b24e4b9.stdout",
-    "stdout_hash": "1b8e039f4b242bf1b322c3cbcb15229efb6347926621375a074bc668",
+    "stdout_hash": "da4e501ac1d939f677e581f4b2c8f43ebb4ad4f320915898f471ed59",
     "stderr": "ast-conditional_expr_syntax_1-b24e4b9.stderr",
-    "stderr_hash": "77fd5bc48d4a151d4c6e27386d6a4d5c367a7e60bbdfec6fe73bdfca",
+    "stderr_hash": "415e831c0d2f2fe623194e62520594b80ccb9e03af0554590e66abf9",
     "returncode": 1
 }

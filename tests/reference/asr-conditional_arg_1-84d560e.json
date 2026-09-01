@@ -1,0 +1,13 @@
+{
+    "basename": "asr-conditional_arg_1-84d560e",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/conditional_arg_1.f90",
+    "infile_hash": "54943df278814919377b5234e48cc7fef5306a952a8d88bb440e5abe",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-conditional_arg_1-84d560e.stderr",
+    "stderr_hash": "50bb09ab56e9712d5324763c84a43f61e1a0c3751ee294694f88b30d",
+    "returncode": 1
+}

@@ -1,0 +1,47 @@
+semantic error: `.nil.` is not allowed for the dummy argument `x`, which is not optional
+  --> tests/errors/conditional_arg_1.f90:48:39
+   |
+48 |         call required( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is not allowed for the dummy argument `x`, which is not optional
+   |                                       ^^^^^ a consequent may be `.nil.` only when the dummy argument is optional (Fortran 2023 C1540)
+
+semantic error: every consequent of this conditional argument is `.nil.`
+  --> tests/errors/conditional_arg_1.f90:55:28
+   |
+55 |         call optional_arg( ( .true. ? .nil. : .nil. ) )  ! {Error} every consequent of this conditional argument is `.nil.`
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^ at least one consequent shall be an argument (Fortran 2023 C1540)
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/conditional_arg_1.f90:63:38
+   |
+63 |         call defined( ( .true. ? a : 1 ) )  ! {Error} Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   |                                      ^ 
+
+semantic error: the consequents of a conditional argument must have the same rank
+  --> tests/errors/conditional_arg_1.f90:71:35
+   |
+71 |         call required( ( .true. ? a : b ) )  ! {Error} the consequents of a conditional argument must have the same rank
+   |                                   ^   ^ rank mismatch (0 and 1) (Fortran 2023 C1539)
+
+semantic error: the consequents of a conditional argument must have the same type and kind
+  --> tests/errors/conditional_arg_1.f90:82:35
+   |
+82 |         call required( ( .true. ? a : b ) )  ! {Error} the consequents of a conditional argument must have the same type and kind
+   |                                   ^   ^ type mismatch (integer and real) (Fortran 2023 C1538)
+
+semantic error: the consequents of a conditional argument to a generic procedure must have the same `allocatable` and `pointer` attributes
+  --> tests/errors/conditional_arg_1.f90:93:30
+   |
+93 |         call gen( ( .true. ? a : p ) )  ! {Error} the consequents of a conditional argument to a generic procedure must have the same `allocatable` and `pointer` attributes
+   |                              ^   ^ this consequent is allocatable, this one is a pointer (Fortran 2023 C1545)
+
+semantic error: `.nil.` is only allowed as a consequent of a conditional argument
+   --> tests/errors/conditional_arg_1.f90:103:28
+    |
+103 |         x = ( .true. ? a : .nil. )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+    |                            ^^^^^ a conditional argument is an actual argument of the form `( cond ? a : .nil. )` (Fortran 2023 R1527)
+
+semantic error: `.nil.` is only allowed as a consequent of a conditional argument
+   --> tests/errors/conditional_arg_1.f90:104:29
+    |
+104 |         print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+    |                             ^^^^^ a conditional argument is an actual argument of the form `( cond ? a : .nil. )` (Fortran 2023 R1527)
