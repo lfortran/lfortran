@@ -663,11 +663,21 @@ class DeviceLaunchExpandVisitor :
             std::string arr_name;
             size_t d = 0;
             if (gpu_extent_of_array_dim(v, arr_name, d)) {
+                bool is_arg = false;
                 for (size_t i = 0; i < arg_names.size(); i++) {
                     if (arg_names[i] != arr_name) continue;
+                    is_arg = true;
                     if (i >= x.n_args || !x.m_args[i].m_value) break;
                     return b.ArraySize(x.m_args[i].m_value,
                         b.i32((int)d + 1), int32);
+                }
+                if (!is_arg) {
+                    // A local of the kernel, whose own extent is written
+                    // over the parameters. `size(t) + 1` is resolved by
+                    // carrying on through `t`'s extent.
+                    return host_extent(loc, x, kernel,
+                        gpu_local_array_extent(kernel->m_symtab,
+                            kernel->m_body, kernel->n_body, arr_name, d));
                 }
             }
             size_t idx = 0;
@@ -691,6 +701,27 @@ class DeviceLaunchExpandVisitor :
                         ASRUtils::symbol_type(member), nullptr));
                 }
                 return out;
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+                ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(
+                    item->m_v);
+                if (!ASR::is_a<ASR::Var_t>(*base)) return nullptr;
+                std::string name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(base)->m_v);
+                for (size_t i = 0; i < arg_names.size(); i++) {
+                    if (arg_names[i] != name) continue;
+                    if (i >= x.n_args || !x.m_args[i].m_value) break;
+                    std::vector<ASR::expr_t*> subs;
+                    for (size_t k = 0; k < item->n_args; k++) {
+                        ASR::expr_t *sub = host_extent(loc, x, kernel,
+                            item->m_args[k].m_right);
+                        if (sub == nullptr) return nullptr;
+                        subs.push_back(sub);
+                    }
+                    return b.ArrayItem_01(x.m_args[i].m_value, subs);
+                }
+                return nullptr;
             }
             if (ASR::is_a<ASR::Var_t>(*v)) {
                 std::string name = ASRUtils::symbol_name(
