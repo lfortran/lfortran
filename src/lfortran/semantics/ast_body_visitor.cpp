@@ -2997,6 +2997,17 @@ public:
                     ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
             }
         }
+        // A conditional expression produces a value, not an object, so it is
+        // neither a target nor a pointer and cannot be associated with one.
+        if (ASR::is_a<ASR::IfExp_t>(*value)) {
+            diag.add(Diagnostic(
+                "a conditional expression cannot be a pointer assignment "
+                "target",
+                Level::Error, Stage::Semantic, {
+                    Label("this is a value, not a target or a pointer",
+                        {value->base.loc})}));
+            throw SemanticAbort();
+        }
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);

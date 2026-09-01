@@ -467,6 +467,21 @@ RUN(NAME cond_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_06 LABELS gfortran llvm)
 
+# Fortran 2023 conditional expressions, `( cond ? a : b )` (10.1.2.3 R1002).
+# These carry no `gfortran` label: CI compiles the gfortran pass with the
+# system /usr/bin/gfortran, which is GNU 13.3.0 and predates the feature, so
+# it reports "Expected a right parenthesis in expression" at the `?`. GFortran
+# grew conditional expressions in GCC 15, and even GCC 16 supports them only
+# for scalars of intrinsic type, so the array (06) and derived type (07) tests
+# could not be labelled `gfortran` in any case.
+RUN(NAME conditional_expr_01 LABELS llvm)
+RUN(NAME conditional_expr_02 LABELS llvm)
+RUN(NAME conditional_expr_03 LABELS llvm)
+RUN(NAME conditional_expr_04 LABELS llvm)
+RUN(NAME conditional_expr_05 LABELS llvm)
+RUN(NAME conditional_expr_06 LABELS llvm)
+RUN(NAME conditional_expr_07 LABELS llvm)
+
 RUN(NAME complex_cloc_01 LABELS gfortran llvm)
 RUN(NAME complex_solutions LABELS gfortran llvm)
 
@@ -812,6 +827,7 @@ RUN(NAME arrays_reshape_42 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_43 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_44 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_45 LABELS llvm) # gfortran segfaults on reshape () of polymorphic allocatable array
+RUN(NAME arrays_reshape_46 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
@@ -3087,6 +3103,7 @@ RUN(NAME inquire_14 LABELS llvm EXTRA_ARGS --cpp)
 RUN(NAME inquire_15 LABELS gfortran llvm)
 RUN(NAME inquire_16 LABELS gfortran llvm)
 RUN(NAME inquire_unit_exist LABELS gfortran llvm)
+RUN(NAME inquire_iolength_string LABELS gfortran llvm)
 RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
@@ -5035,6 +5052,8 @@ RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_208 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_209 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)

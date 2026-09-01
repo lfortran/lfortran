@@ -117,6 +117,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_RBRACKET_OLD "/)"
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
+%token TK_QUESTION "?"
 
 %token <str_prefix> TK_STRING
 %token <string> TK_COMMENT
@@ -391,6 +392,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> signed_numeric_constant
 %type <ast> expr
 %type <ast> def_unary_operand
+%type <ast> cond_expr_tail
 %type <vec_ast> expr_list
 %type <vec_ast> expr_list_opt
 %type <ast> id
@@ -2471,6 +2473,7 @@ def_unary_operand
     | ".true."          { $$ = TRUE($1, @$); }
     | ".false."         { $$ = FALSE($1, @$); }
     | "(" expr ")"      { $$ = PAREN($2, @$); }
+    | "(" expr "?" expr ":" cond_expr_tail ")" { $$ = COND_EXPR($2, $4, $6, @$); }
     | "[" expr_list_opt rbracket { $$ = ARRAY_IN1($2, @$); }
     | "[" var_type "::" expr_list_opt rbracket { $$ = ARRAY_IN2($2, $4, @$); }
     | "[" id "::" expr_list_opt rbracket { $$ = ARRAY_IN3($2, $4, @$); }
@@ -2489,6 +2492,7 @@ expr
     | ".true."  { $$ = TRUE($1, @$); }
     | ".false." { $$ = FALSE($1, @$); }
     | "(" expr ")" { $$ = PAREN($2, @$); }
+    | "(" expr "?" expr ":" cond_expr_tail ")" { $$ = COND_EXPR($2, $4, $6, @$); }
     | "(" expr "," expr ")" { $$ = COMPLEX($2, $4, @$); }
     | "(" expr "," id "=" expr "," expr ")" {
             $$ = IMPLIED_DO_LOOP1($2, $4, $6, $8, @$); }
@@ -2534,6 +2538,15 @@ expr
     | expr ".eqv." expr { $$ = EQV($1, $3, @$); }
     | expr ".neqv." expr { $$ = NEQV($1, $3, @$); }
     | expr TK_DEF_OP expr { $$ = DEFOP($1, $2, $3, @$); }
+    ;
+
+// The tail of a Fortran 2023 conditional expression (R1002):
+//     ( scalar-logical-expr ? expr [ : scalar-logical-expr ? expr ]... : expr )
+// Right recursion keeps the decision after `expr` to a single lookahead token:
+// `?` shifts into another arm, anything else reduces to the default arm.
+cond_expr_tail
+    : expr { $$ = $1; }
+    | expr "?" expr ":" cond_expr_tail { $$ = COND_EXPR($1, $3, $5, @$); }
     ;
 
 struct_member_star

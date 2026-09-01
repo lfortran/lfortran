@@ -4931,7 +4931,8 @@ public:
             case ASR::PointerArray: {
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
                     ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
-                if (result_ptype == ASR::array_physical_typeType::DescriptorArray &&
+                if ((result_ptype == ASR::array_physical_typeType::DescriptorArray ||
+                     x.m_order != nullptr) &&
                     !ASRUtils::is_character(*x_m_array_type)) {
                     ASR::ttype_t* desc_input_type = ASRUtils::duplicate_type(al, x_m_array_type,
                         nullptr, ASR::array_physical_typeType::DescriptorArray, true);
@@ -4964,6 +4965,13 @@ public:
                         shape_type, shape, asr_shape_type, module.get(),
                         const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
                         result_desc_type, order, x.m_order);
+                    // If the result type is not a descriptor, extract the data
+                    // pointer from the descriptor, since the consumer expects
+                    // a raw pointer.
+                    if (result_ptype != ASR::array_physical_typeType::DescriptorArray) {
+                        llvm::Value* data_ptr = arr_descr->get_pointer_to_data(result_desc_type, tmp);
+                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), data_ptr);
+                    }
                     break;
                 }
                 llvm::Type* type_of_array = llvm_utils->get_type_from_ttype_t_util(
@@ -14740,8 +14748,15 @@ public:
 
     void visit_IfExp(const ASR::IfExp_t &x) {
         // IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
+        // Fortran 2023 requires that only the chosen arm is evaluated
+        // (10.1.4 NOTE 3), so this must stay a real branch and must never be
+        // turned into a select over both arms.
         this->visit_expr_wrapper(x.m_test, true);
         llvm::Value *cond = tmp;
+        if (ASRUtils::is_character(*x.m_type)) {
+            visit_IfExp_string(x, cond);
+            return;
+        }
         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(x.m_test, x.m_type, module.get());
         llvm::Value* ifexp_res = llvm_utils->CreateAlloca(_type, nullptr, "");
         llvm_utils->create_if_else(cond, [&]() {
@@ -14752,6 +14767,33 @@ public:
             builder->CreateStore(tmp, ifexp_res);
         });
         tmp = llvm_utils->CreateLoad2(_type, ifexp_res);
+    }
+
+    // A character result is a string descriptor, and its length comes from
+    // the arm that is chosen, so the result is a deferred length string that
+    // the taken arm copies into.
+    void visit_IfExp_string(const ASR::IfExp_t &x, llvm::Value *cond) {
+        ASR::String_t *res_str = ASRUtils::get_string_type(x.m_type);
+        llvm::Value *res = llvm_utils->create_empty_string_descriptor("ifexp_string");
+        auto emit_arm = [&](ASR::expr_t *arm) {
+            // String temporaries created while evaluating this arm must be
+            // freed here rather than at the end of the enclosing statement:
+            // that free runs on the unconditional path after the merge block,
+            // where values created inside this block do not dominate. The
+            // copy into `res` happens first, so the data survives the free.
+            size_t strings_n_before_arm = strings_to_be_deallocated.n;
+            this->visit_expr_wrapper(arm, true);
+            llvm_utils->lfortran_str_copy(res, tmp, res_str,
+                ASRUtils::get_string_type(ASRUtils::expr_type(arm)), true);
+            free_strings_to_be_deallocated(strings_n_before_arm);
+        };
+        llvm_utils->create_if_else(cond, [&]() {
+            emit_arm(x.m_body);
+        }, [&]() {
+            emit_arm(x.m_orelse);
+        });
+        strings_to_be_deallocated.push_back(al, res);
+        tmp = res;
     }
 
     // TODO: Implement visit_DooLoop
@@ -20297,9 +20339,21 @@ public:
 
                 if (ASR::is_a<ASR::String_t>(*var_type_base)) {
                     ASR::String_t *s = ASR::down_cast<ASR::String_t>(var_type_base);
-                    this->visit_expr_wrapper(s->m_len, true);
-                    elem_size = builder->CreateZExtOrTrunc(
-                        tmp, llvm::Type::getInt64Ty(context));
+                    if (s->m_len) {
+                        this->visit_expr_wrapper(s->m_len, true);
+                        elem_size = builder->CreateZExtOrTrunc(
+                            tmp, llvm::Type::getInt64Ty(context));
+                    } else {
+                        int ptr_copy = ptr_loads;
+                        ptr_loads = 0;
+                        this->visit_expr_wrapper(size_expr, false);
+                        ptr_loads = ptr_copy;
+                        
+                        llvm::Value *str_data, *str_len;
+                        std::tie(str_data, str_len) = llvm_utils->get_string_length_data(s, tmp);
+                        elem_size = builder->CreateZExtOrTrunc(
+                            str_len, llvm::Type::getInt64Ty(context));
+                    }
                 } else {
                     int64_t kind = ASRUtils::extract_kind_from_ttype_t(var_type_base);
                     if (ASR::is_a<ASR::Complex_t>(*var_type_base)) {

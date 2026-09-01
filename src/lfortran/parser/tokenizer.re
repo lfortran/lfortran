@@ -580,6 +580,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             "," { RET(TK_COMMA) }
             "*" { RET(TK_STAR) }
             "|" { RET(TK_VBAR) }
+            "?" { RET(TK_QUESTION) }
 
             // Multiple character symbols
             ".." { RET(TK_DBL_DOT) }
