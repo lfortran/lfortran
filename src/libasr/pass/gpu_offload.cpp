@@ -2355,6 +2355,21 @@ static bool gpu_same_subscript(ASR::expr_t *a, ASR::expr_t *b) {
     }
 }
 
+// Whether any designator inside an expression hangs off a given root.
+class GpuDesignatorBaseFinder :
+        public ASR::BaseWalkVisitor<GpuDesignatorBaseFinder> {
+public:
+    GpuDesignatorBase wanted;
+    bool found = false;
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (gpu_designator_base(
+                const_cast<ASR::expr_t*>(&x.base)) == wanted) {
+            found = true;
+        }
+    }
+};
+
 // True when two designators are provably the same storage in the same
 // element order, so an element-by-element copy between them reads only
 // what it has already written to the same element.
@@ -4671,6 +4686,35 @@ public:
                 continue;
             }
 
+            // A matmul is not elementwise: it reads the whole of an
+            // operand for every element it writes. Lowering `v = matmul(w,
+            // v)` into loops over `v` would read elements it has already
+            // overwritten, so the result goes to a temporary first and is
+            // copied over the target afterwards.
+            if (matmul_operand_aliases_target(iaf, asgn->m_target)) {
+                ASR::expr_t *tmp = make_matmul_result_temp(iaf, stmt->base.loc,
+                    current_scope, false, asgn->m_target);
+                if (tmp != nullptr) {
+                    Vec<ASR::stmt_t*> two;
+                    two.reserve(al, 2);
+                    two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, stmt->base.loc, tmp, asgn->m_value, nullptr,
+                        false, false)));
+                    two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                        al, stmt->base.loc, asgn->m_target,
+                        matmul_temp_section(tmp, asgn->m_target), nullptr,
+                        false, false)));
+                    ASR::stmt_t **two_body = two.p;
+                    size_t two_n = two.n;
+                    inline_matmul_stmts(two_body, two_n);
+                    for (size_t k = 0; k < two_n; k++) {
+                        new_body.push_back(al, two_body[k]);
+                    }
+                    changed = true;
+                    continue;
+                }
+            }
+
             Location loc = stmt->base.loc;
             ASR::ttype_t *int_type = ASRUtils::TYPE(
                 ASR::make_Integer_t(al, loc, 4));
@@ -5281,11 +5325,77 @@ public:
         }
     }
 
+    // Whether an operand of `mm` reads the storage the assignment writes.
+    bool matmul_operand_aliases_target(ASR::IntrinsicArrayFunction_t *mm,
+            ASR::expr_t *target) {
+        GpuDesignatorBase base = gpu_designator_base(target);
+        if (!base.is_known()) return false;
+        GpuWrittenRootCollector unused;
+        (void)unused;
+        for (size_t i = 0; i < mm->n_args; i++) {
+            if (!mm->m_args[i]) continue;
+            GpuDesignatorBaseFinder finder;
+            finder.wanted = base;
+            finder.visit_expr(*mm->m_args[i]);
+            if (finder.found) return true;
+        }
+        return false;
+    }
+
+    // The whole of `tmp`, shaped like `target` so the copy back covers
+    // exactly what the assignment was going to write.
+    ASR::expr_t* matmul_temp_section(ASR::expr_t *tmp, ASR::expr_t *target) {
+        ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(target);
+        if (!ASR::is_a<ASR::ArraySection_t>(*v)) return tmp;
+        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(v);
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, as->n_args);
+        const Location &loc = tmp->base.loc;
+        for (size_t i = 0; i < as->n_args; i++) {
+            ASR::array_index_t idx;
+            idx.loc = loc;
+            if (as->m_args[i].m_left && as->m_args[i].m_right) {
+                idx.m_left = int32_const(loc, 1);
+                idx.m_right = section_extent(loc, as->m_args[i]);
+                idx.m_step = int32_const(loc, 1);
+            } else {
+                idx.m_left = nullptr;
+                idx.m_right = as->m_args[i].m_right;
+                idx.m_step = nullptr;
+            }
+            args.push_back(al, idx);
+        }
+        return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, tmp,
+            args.p, args.n, ASRUtils::expr_type(tmp), nullptr));
+    }
+
+    // The compile-time extents an expression is declared with, if it has
+    // them. A section of such an array is bounded by them too.
+    bool declared_constant_dims(ASR::expr_t *e, Vec<ASR::dimension_t> &out) {
+        ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+        if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+            v = ASR::down_cast<ASR::ArraySection_t>(v)->m_v;
+        }
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(v));
+        if (!t || !ASR::is_a<ASR::Array_t>(*t)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+        out.reserve(al, arr->n_dims);
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (!arr->m_dims[d].m_length ||
+                    !ASRUtils::expr_value(arr->m_dims[d].m_length)) {
+                return false;
+            }
+            out.push_back(al, arr->m_dims[d]);
+        }
+        return out.n > 0;
+    }
+
     // A local temporary holding the result of `mm`, or nullptr if the
     // result shape cannot be determined from the operands.
     ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
             const Location &loc, SymbolTable *var_scope,
-            bool scope_has_workspaces) {
+            bool scope_has_workspaces, ASR::expr_t *target = nullptr) {
         ASR::expr_t *e = (ASR::expr_t*)mm;
         if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return nullptr;
         Vec<ASR::dimension_t> dims;
@@ -5297,6 +5407,19 @@ public:
             if (!dims[d].m_length ||
                     !ASRUtils::expr_value(dims[d].m_length)) {
                 all_const = false;
+            }
+        }
+        // The result never outgrows what it is assigned to, so a target
+        // declared with compile-time extents bounds the temporary even
+        // when the result's own extents are only known at run time. That
+        // buys a thread-local temporary where a run-time sized one would
+        // have to be a workspace, or nothing at all.
+        if (!all_const && target != nullptr) {
+            Vec<ASR::dimension_t> target_dims;
+            if (declared_constant_dims(target, target_dims)
+                    && target_dims.n == dims.n) {
+                dims = target_dims;
+                all_const = true;
             }
         }
         // A run-time sized temporary is only correct where each thread
