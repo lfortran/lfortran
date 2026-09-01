@@ -759,6 +759,119 @@ class DeviceLaunchExpandVisitor :
                 element_bytes);
         }
 
+        // Copy every element between a strided array and its contiguous
+        // stand-in, one at a time. A whole-array assignment would do, but
+        // this pass runs after the one that lowers those, so what it wrote
+        // would reach the backend as a block copy -- which is exactly the
+        // assumption the copy is here to avoid.
+        void copy_elementwise(const Location &loc, Vec<ASR::stmt_t*> &out,
+                ASR::expr_t *tmp, ASR::expr_t *arg, int rank,
+                bool back) {
+            ASRUtils::ASRBuilder b(al, loc);
+            std::vector<ASR::expr_t*> idx;
+            for (int d = 0; d < rank; d++) {
+                idx.push_back(declare_local(loc,
+                    "gpu_copy_i" + std::to_string(d), int32));
+            }
+            std::vector<ASR::expr_t*> arg_subs;
+            for (int d = 0; d < rank; d++) {
+                // The stand-in is 1-based; the argument keeps its own
+                // lower bound.
+                arg_subs.push_back(b.Add(b.Sub(idx[d], b.i32(1)),
+                    b.ArrayLBound(arg, d + 1)));
+            }
+            ASR::expr_t *tmp_el = b.ArrayItem_01(tmp, idx);
+            ASR::expr_t *arg_el = b.ArrayItem_01(arg, arg_subs);
+            std::vector<ASR::stmt_t*> body;
+            body.push_back(back ? b.Assignment(arg_el, tmp_el)
+                                : b.Assignment(tmp_el, arg_el));
+            for (int d = 0; d < rank; d++) {
+                body = {b.DoLoop(idx[d], b.i32(1),
+                    b.ArraySize(arg, b.i32(d + 1), int32), body)};
+            }
+            out.push_back(al, body[0]);
+        }
+
+        // `arg` itself when the device can read it as it stands, or a
+        // contiguous copy of it when it cannot.
+        ASR::expr_t* contiguous_argument(const Location &loc,
+                Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
+                ASR::Variable_t *kparam,
+                std::vector<ASR::stmt_t*> &writebacks) {
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            if (!ASRUtils::is_array(arg_type)) return arg;
+            if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(arg_type))) {
+                return arg;
+            }
+            if (!may_be_strided(arg)) return arg;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::type_get_past_allocatable_pointer(arg_type), dims);
+            if (rank <= 0) return arg;
+            std::vector<int64_t> deferred((size_t)rank, -1);
+            ASR::expr_t *tmp = declare_local(loc, "gpu_contiguous_arg",
+                b.allocatable(b.Array(deferred,
+                    ASRUtils::extract_type(arg_type))));
+            Vec<ASR::dimension_t> alloc_dims;
+            alloc_dims.reserve(al, rank);
+            for (int d = 0; d < rank; d++) {
+                ASR::dimension_t dd;
+                dd.loc = loc;
+                dd.m_start = b.i32(1);
+                dd.m_length = b.ArraySize(arg, b.i32(d + 1), int32);
+                alloc_dims.push_back(al, dd);
+            }
+            out.push_back(al, b.Allocate(tmp, alloc_dims.p, alloc_dims.n));
+            copy_elementwise(loc, out, tmp, arg, rank, false);
+            // Copied back only when the kernel writes it and the caller's
+            // own argument can be written: the copy stands in for the
+            // argument, it is not a licence to assign to something the
+            // caller may not.
+            bool arg_is_writable = true;
+            if (ASR::is_a<ASR::Var_t>(*arg)) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    arg_is_writable = ASR::down_cast<ASR::Variable_t>(sym)
+                        ->m_intent != ASR::intentType::In;
+                }
+            }
+            if (kparam->m_intent != ASR::intentType::In && arg_is_writable) {
+                Vec<ASR::stmt_t*> back;
+                back.reserve(al, 1);
+                copy_elementwise(loc, back, tmp, arg, rank, true);
+                for (size_t k = 0; k < back.n; k++) {
+                    writebacks.push_back(back.p[k]);
+                }
+            }
+            return tmp;
+        }
+
+        // Whether the elements of `arg` may not be laid out end to end.
+        // Only an array the caller reaches through a descriptor can be: a
+        // dummy declared assumed-shape, or a pointer, either of which may
+        // be bound to a section of something larger.
+        static bool may_be_strided(ASR::expr_t *arg) {
+            if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::is_pointer(var->m_type)) return true;
+            if (var->m_intent == ASR::intentType::Local) return false;
+            ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+                var->m_type);
+            if (!ASR::is_a<ASR::Array_t>(*t)) return false;
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+            // Assumed shape: no extent of its own to lay out.
+            for (size_t d = 0; d < arr->n_dims; d++) {
+                if (arr->m_dims[d].m_length == nullptr) return true;
+            }
+            return false;
+        }
+
         void expand_launch(const ASR::GpuKernelLaunch_t &x,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
@@ -805,8 +918,17 @@ class DeviceLaunchExpandVisitor :
                 if (ASRUtils::is_array(arg_type) ||
                         ASR::is_a<ASR::StructType_t>(
                             *ASRUtils::extract_type(arg_type))) {
-                    buffers.push_back({arg, address_of(loc, arg),
-                        buffer_byte_size(loc, arg)});
+                    // An array the caller only knows through a descriptor
+                    // may be a section of something larger, with a stride
+                    // between its elements. The device is handed a block of
+                    // bytes, so such an argument is copied into a
+                    // contiguous temporary first, and copied back after
+                    // when the kernel writes it.
+                    ASR::expr_t *buffer_arg = contiguous_argument(loc, out,
+                        arg, kparam, writebacks);
+                    buffers.push_back({buffer_arg,
+                        address_of(loc, buffer_arg),
+                        buffer_byte_size(loc, buffer_arg)});
                     if (ASRUtils::is_array(arg_type) &&
                             ASR::is_a<ASR::Var_t>(*arg)) {
                         decompose_struct_members(loc, out, arg, buffers,
