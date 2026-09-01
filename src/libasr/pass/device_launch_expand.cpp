@@ -842,6 +842,29 @@ class DeviceLaunchExpandVisitor :
                             dim.struct_member_key);
                         if (first == member_first_sizes.end()) continue;
                         extent = b.i2i_t(first->second, int64);
+                    } else if (!dim.member_path.empty()) {
+                        // A scalar component of a struct argument. The
+                        // struct reaches the kernel as a buffer, so the
+                        // host reads the component here instead.
+                        ASR::expr_t *e =
+                            x.m_args[dim.call_arg_index].m_value;
+                        bool ok = true;
+                        for (const std::string &m : dim.member_path) {
+                            ASR::symbol_t *st =
+                                ASRUtils::get_struct_sym_from_struct_expr(e);
+                            ASR::symbol_t *member = st
+                                ? ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(st))
+                                        ->m_symtab->get_symbol(m)
+                                : nullptr;
+                            if (member == nullptr) { ok = false; break; }
+                            e = ASRUtils::EXPR(
+                                ASR::make_StructInstanceMember_t(al, loc, e,
+                                    member, ASRUtils::symbol_type(member),
+                                    nullptr));
+                        }
+                        if (!ok) continue;
+                        extent = b.i2i_t(e, int64);
                     } else {
                         extent = b.i2i_t(
                             x.m_args[dim.call_arg_index].m_value, int64);
