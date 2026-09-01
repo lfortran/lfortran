@@ -19,7 +19,7 @@ contains
    end function myfunc
 
 end module m_system
-program testit
+program character_len_of_function_12614
 use m_system, only : myfunc
    write(*,*)myfunc(),myfunc(3)
 end program testit
