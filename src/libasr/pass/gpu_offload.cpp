@@ -9050,13 +9050,6 @@ public:
     // workspace extent resolver expects: every symbol the loop involves,
     // plus the synthetic per-dimension extent scalar the kernel
     // extraction adds for each dimension of an array argument.
-    void inline_intrinsic_sum(ParallelLoopNest &nest) {
-        ASR::stmt_t **body = nest.body;
-        size_t n_body = nest.n_body;
-        inline_sum_in_stmts(body, n_body, current_scope);
-        nest.set_body(body, n_body);
-    }
-
     // A parallel loop is ordinary Fortran, so a loop that cannot be
     // offloaded must still compile and run. Report why it was left on the
     // host rather than build a kernel that would quietly do something else.
@@ -9930,7 +9923,7 @@ public:
         inline_intrinsic_dot_product(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Inline IntrinsicArrayFunction Sum before kernel extraction
-        inline_intrinsic_sum(nest);
+        inline_intrinsic_sum(const_cast<ASR::DoConcurrentLoop_t&>(x));
 
         // Also inline Sum in helper functions called from the
         // loop body. This ensures that sum(f(x)) patterns
