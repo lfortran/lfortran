@@ -1124,6 +1124,10 @@ public:
     // Kernel parameter and the host expression that supplies its value,
     // in the order the parameters were created.
     std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added;
+    // Every slot overwritten, so the loop can be put back as it was. The
+    // rewrite reaches the types of a BLOCK's locals, and a BLOCK is shared
+    // with the host rather than copied for the kernel.
+    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> undo;
     std::map<std::string, ASR::symbol_t*> by_key;
 
     GpuStructArrayMemberExtent(Allocator &al_, SymbolTable *orig_scope_,
@@ -1239,6 +1243,7 @@ public:
             added.push_back({sym, host_size});
             by_key[key] = sym;
         }
+        undo.push_back({current_expr, *current_expr});
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         return true;
     }
@@ -10094,6 +10099,8 @@ public:
         // be able to leave the loop untouched when it declines.
         GpuLoopBodySnapshot splice_snapshot;
         std::vector<ScopeArrayDims> scope_dims_undo;
+        std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>>
+            member_extent_undo;
         auto restore_loop = [&]() {
             for (auto it = scope_dims_undo.rbegin();
                     it != scope_dims_undo.rend(); ++it) {
@@ -12233,28 +12240,6 @@ public:
         // to happen before the decomposition below rewrites the component
         // access into a flat-array Var, and while the body still names
         // the host symbols the launch site passes as actuals.
-        {
-            std::vector<std::string> kernel_arg_names;
-            for (size_t i = 0; i < kernel_args.n; i++) {
-                kernel_arg_names.push_back(ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(kernel_args.p[i])->m_v));
-            }
-            std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>>
-                member_extent_args;
-            GpuStructArrayMemberExtentVisitor mev(al, orig_scope,
-                kernel_scope, kernel_arg_names, member_extent_args);
-            for (size_t i = 0; i < body_copy.n; i++) {
-                mev.visit_stmt(*body_copy.p[i]);
-            }
-            for (auto &pair : member_extent_args) {
-                kernel_args.push_back(al,
-                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, pair.first)));
-                ASR::call_arg_t carg;
-                carg.loc = loc;
-                carg.m_value = pair.second;
-                call_args.push_back(al, carg);
-            }
-        }
 
         // Replace StructInstanceMember references to decomposed
         // allocatable members with Var references to the new
@@ -12907,6 +12892,30 @@ public:
         snapshot_blocks(x.m_body, x.n_body);
         move_blocks_to_kernel(body_copy.p, body_copy.n);
 
+        {
+            std::vector<std::string> kernel_arg_names;
+            for (size_t i = 0; i < kernel_args.n; i++) {
+                kernel_arg_names.push_back(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(kernel_args.p[i])->m_v));
+            }
+            std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>>
+                member_extent_args;
+            GpuStructArrayMemberExtentVisitor mev(al, orig_scope,
+                kernel_scope, kernel_arg_names, member_extent_args);
+            for (size_t i = 0; i < body_copy.n; i++) {
+                mev.visit_stmt(*body_copy.p[i]);
+            }
+            member_extent_undo = mev.replacer.undo;
+            for (auto &pair : member_extent_args) {
+                kernel_args.push_back(al,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, pair.first)));
+                ASR::call_arg_t carg;
+                carg.loc = loc;
+                carg.m_value = pair.second;
+                call_args.push_back(al, carg);
+            }
+        }
+
         // Add copied loop body (already remapped)
         for (size_t i = 0; i < body_copy.n; i++) {
             kernel_body.push_back(al, body_copy.p[i]);
@@ -12993,6 +13002,11 @@ public:
                         }
                     }
                 };
+                for (auto it = member_extent_undo.rbegin();
+                        it != member_extent_undo.rend(); ++it) {
+                    *it->first = it->second;
+                }
+                member_extent_undo.clear();
                 restore(x.m_body, x.n_body);
                 for (const BlockBackup &b : block_backups) {
                     if (!orig_scope->get_symbol(b.name)) {
