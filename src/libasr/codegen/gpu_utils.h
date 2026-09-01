@@ -141,6 +141,14 @@ inline ASR::Allocate_t* find_allocate_for_var(
             r = find_allocate_for_var(if_s->m_orelse, if_s->n_orelse,
                 var_name);
             if (r) return r;
+        } else if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(stmts[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            auto *r = find_allocate_for_var(blk->m_body, blk->n_body,
+                var_name);
+            if (r) return r;
         }
     }
     return nullptr;
@@ -383,13 +391,44 @@ inline bool resolve_extent_to_arg_member(ASR::expr_t *e,
     return false;
 }
 
+// The extent expression of one dimension of a local array of `symtab`,
+// taken from the array's own type or from the `allocate` that gives it a
+// shape. An extent written over another local -- `size(t) + 1` -- is
+// resolved by asking this and carrying on through the answer.
+inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
+        const std::string &var_name);
+
+inline ASR::expr_t* gpu_local_array_extent(SymbolTable *symtab,
+        ASR::stmt_t **body, size_t n_body, const std::string &name,
+        size_t dim) {
+    if (symtab == nullptr) return nullptr;
+    ASR::symbol_t *sym = symtab->resolve_symbol(name);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_allocatable(var->m_type)) {
+        ASR::Allocate_t *alloc = find_allocate_for_var(body, n_body, name);
+        if (alloc == nullptr) return nullptr;
+        ASR::alloc_arg_t *arg = find_alloc_arg_for_var(alloc, name);
+        if (arg == nullptr || dim >= arg->n_dims) return nullptr;
+        return arg->m_dims[dim].m_length;
+    }
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*t)) return nullptr;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    if (dim >= arr->n_dims) return nullptr;
+    return arr->m_dims[dim].m_length;
+}
+
 // Whether the host could evaluate `e` itself, given that it can read every
 // kernel parameter. Arithmetic over integer literals, scalar parameters,
 // scalar components of parameters and the extents of array parameters is
 // evaluable; anything else -- a call, a subscript that only exists on the
 // device -- is not.
 inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
-        const std::vector<std::string> &arg_names);
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab = nullptr, ASR::stmt_t **body = nullptr,
+        size_t n_body = 0, int depth = 0);
 
 // The kernel argument supplying that extent. An array parameter's extents
 // are handed to the kernel as scalar parameters of their own, so an extent
@@ -411,12 +450,16 @@ inline bool resolve_extent_to_dim_arg(ASR::expr_t *e,
 }
 
 inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
-        const std::vector<std::string> &arg_names) {
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab, ASR::stmt_t **body, size_t n_body,
+        int depth) {
     if (e == nullptr) return false;
+    if (depth > 8) return false;
     ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
     if (ASR::is_a<ASR::Cast_t>(*v)) {
         return gpu_extent_is_host_evaluable(
-            ASR::down_cast<ASR::Cast_t>(v)->m_arg, arg_names);
+            ASR::down_cast<ASR::Cast_t>(v)->m_arg, arg_names, symtab,
+            body, n_body, depth);
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return true;
     size_t idx = 0;
@@ -433,12 +476,55 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
                 break;
             default: return false;
         }
-        return gpu_extent_is_host_evaluable(op->m_left, arg_names)
-            && gpu_extent_is_host_evaluable(op->m_right, arg_names);
+        return gpu_extent_is_host_evaluable(op->m_left, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(op->m_right, arg_names, symtab,
+                body, n_body, depth);
     }
     if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
         return gpu_extent_is_host_evaluable(
-            ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg, arg_names);
+            ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg, arg_names,
+            symtab, body, n_body, depth);
+    }
+    // An element of an array parameter, at a subscript the host can work
+    // out too. The loop index is not a parameter, so an element the
+    // iteration picks is correctly not evaluable here.
+    if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(
+            item->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*base)) return false;
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(base)->m_v);
+        bool is_arg = false;
+        for (const std::string &a : arg_names) {
+            if (a == name) { is_arg = true; break; }
+        }
+        if (!is_arg) return false;
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step) {
+                return false;
+            }
+            if (!gpu_extent_is_host_evaluable(item->m_args[i].m_right,
+                    arg_names, symtab, body, n_body, depth)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    std::string local_name;
+    size_t local_dim = 0;
+    if (gpu_extent_of_array_dim(v, local_name, local_dim)) {
+        bool is_arg = false;
+        for (const std::string &a : arg_names) {
+            if (a == local_name) { is_arg = true; break; }
+        }
+        if (!is_arg) {
+            return gpu_extent_is_host_evaluable(
+                gpu_local_array_extent(symtab, body, n_body, local_name,
+                    local_dim),
+                arg_names, symtab, body, n_body, depth + 1);
+        }
     }
     if (ASR::is_a<ASR::Var_t>(*v)) {
         std::string name = ASRUtils::symbol_name(
@@ -691,7 +777,7 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
         ASR::Array_t *arr, const std::string &var_name,
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
-        GpuVlaWorkspace &ws) {
+        GpuVlaWorkspace &ws, SymbolTable *symtab = nullptr) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < alloc_arg.n_dims; d++) {
         if (alloc_arg.m_dims[d].m_length &&
@@ -729,13 +815,14 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
                         vd.member_path)) {
                     vd.call_arg_index = idx;
+                } else if (gpu_extent_is_host_evaluable(dim, arg_names,
+                        symtab, body, n_body)) {
+                    vd.is_host_expr = true;
                 } else if (find_arg_var_in_expr(dim, arg_names, idx)) {
                     vd.call_arg_index = idx;
                 } else if (try_resolve_array_size_to_arg_var(dim, body,
                         n_body, arg_names, idx)) {
                     vd.call_arg_index = idx;
-                } else if (gpu_extent_is_host_evaluable(dim, arg_names)) {
-                    vd.is_host_expr = true;
                 } else if (dim_expr_struct_member_key(dim, member_key)) {
                     vd.is_struct_member_size = true;
                     vd.struct_member_key = member_key;
@@ -759,7 +846,8 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
 inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
         const std::string &var_name,
         const std::vector<std::string> &arg_names,
-        GpuVlaWorkspace &ws) {
+        GpuVlaWorkspace &ws, SymbolTable *symtab = nullptr,
+        ASR::stmt_t **body = nullptr, size_t n_body = 0) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < arr->n_dims; d++) {
         if (arr->m_dims[d].m_length &&
@@ -792,10 +880,11 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
                     vd.member_path)) {
                 vd.call_arg_index = idx;
+            } else if (gpu_extent_is_host_evaluable(dim, arg_names,
+                    symtab, body, n_body)) {
+                vd.is_host_expr = true;
             } else if (find_arg_var_in_expr(dim, arg_names, idx)) {
                 vd.call_arg_index = idx;
-            } else if (gpu_extent_is_host_evaluable(dim, arg_names)) {
-                vd.is_host_expr = true;
             } else if (dim_expr_struct_member_key(dim, member_key)) {
                 vd.is_struct_member_size = true;
                 vd.struct_member_key = member_key;
@@ -857,7 +946,8 @@ inline void scan_kernel_scope_alloc_vlas(
         if (!ASRUtils::is_allocatable(var->m_type)) {
             // An array declared with extents the device cannot evaluate
             // when it enters the kernel.
-            have = declared_shape_to_vla_workspace(arr, vname, arg_names, ws);
+            have = declared_shape_to_vla_workspace(arr, vname, arg_names,
+                ws, kernel.m_symtab, kernel.m_body, kernel.n_body);
             if (!have) continue;
             ws.buffer_index = buffer_idx++;
             result.push_back(std::move(ws));
@@ -870,7 +960,8 @@ inline void scan_kernel_scope_alloc_vlas(
                 alloc, vname);
             if (!target_arg) continue;
             have = alloc_shape_to_vla_workspace(*target_arg, arr, vname,
-                kernel.m_body, kernel.n_body, arg_names, ws);
+                kernel.m_body, kernel.n_body, arg_names, ws,
+                kernel.m_symtab);
         } else {
             // No Allocate: this is a function-call result temporary whose
             // size depends on a struct member's allocatable array.
@@ -898,12 +989,37 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
 
     std::vector<GpuVlaWorkspace> result;
 
-    for (size_t i = 0; i < kernel.n_body; i++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            kernel.m_body[i]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+    // Every BLOCK the kernel body opens, at whatever depth: a block inside
+    // a serial loop of the kernel is entered by each thread just as a
+    // top-level one is, so its locals need the same per-thread home.
+    std::vector<ASR::Block_t*> blocks;
+    std::function<void(ASR::stmt_t**, size_t)> collect_blocks =
+        [&](ASR::stmt_t **stmts, size_t n_stmts) {
+        for (size_t i = 0; i < n_stmts; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+                ASR::BlockCall_t *bc =
+                    ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
+                if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
+                ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(bc->m_m);
+                blocks.push_back(b);
+                collect_blocks(b->m_body, b->n_body);
+            } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                collect_blocks(dl->m_body, dl->n_body);
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
+                ASR::WhileLoop_t *wl =
+                    ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+                collect_blocks(wl->m_body, wl->n_body);
+            } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+                collect_blocks(ifs->m_body, ifs->n_body);
+                collect_blocks(ifs->m_orelse, ifs->n_orelse);
+            }
+        }
+    };
+    collect_blocks(kernel.m_body, kernel.n_body);
+
+    for (ASR::Block_t *block : blocks) {
 
         // An automatic array of the block, whose extents the device cannot
         // declare because they are not compile-time constants.
@@ -916,7 +1032,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
 
             GpuVlaWorkspace ws;
             if (!declared_shape_to_vla_workspace(arr, var->m_name,
-                    arg_names, ws)) {
+                    arg_names, ws, block->m_symtab, block->m_body,
+                    block->n_body)) {
                 continue;
             }
             ws.buffer_index = buffer_idx++;
@@ -951,7 +1068,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                     alloc, vname);
                 if (target_arg) {
                     have = alloc_shape_to_vla_workspace(*target_arg, arr2,
-                        vname, block->m_body, block->n_body, arg_names, ws);
+                        vname, block->m_body, block->n_body, arg_names, ws,
+                        block->m_symtab);
                 }
             }
             if (!have) {
