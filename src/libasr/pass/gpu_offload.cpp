@@ -521,10 +521,6 @@ static bool gpu_block_workspace_extents_resolvable(Allocator &/*al*/,
     return true;
 }
 
-static std::string gpu_dim_arg_name(const std::string &name, size_t d) {
-    return "__dim_" + name + "_" + std::to_string(d);
-}
-
 // Look up a member (component or type-bound procedure) by name in a
 // Struct's symbol table, walking the inheritance chain: a component
 // inherited from a parent type lives in the parent Struct's symtab, not
