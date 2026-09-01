@@ -280,10 +280,29 @@ inline std::pair<int, int> classify_gpu_kernel_args(
                 ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::extract_type(type))) {
             n_buffer++;
-            // Data, offsets and sizes buffers per allocatable array
-            // component of the argument's derived type
-            n_buffer += 3 * (int)
-                gpu_struct_member_buffers(kernel.m_args[i]).size();
+            if (ASRUtils::is_array(type) && var->m_type_declaration) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                    for (size_t m = 0; m < st->n_members; m++) {
+                        ASR::symbol_t *mem =
+                            st->m_symtab->get_symbol(st->m_members[m]);
+                        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem))
+                            continue;
+                        ASR::Variable_t *mv =
+                            ASR::down_cast<ASR::Variable_t>(mem);
+                        if (!ASRUtils::is_allocatable(mv->m_type))
+                            continue;
+                        ASR::ttype_t *inner =
+                            ASRUtils::type_get_past_allocatable(
+                                mv->m_type);
+                        if (!ASR::is_a<ASR::Array_t>(*inner))
+                            continue;
+                        n_buffer += 3;
+                    }
+                }
+            }
         } else {
             n_scalar++;
         }
@@ -2106,10 +2125,8 @@ inline bool gpu_kernel_has_scalar_struct(
 inline bool gpu_kernel_needs_buffer_packing(
         const ASR::Function_t &kernel) {
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    (void)n_scalar;
     int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (gpu_kernel_has_scalar_struct(kernel) ? 1 : 0)
-        + n_vla;
+    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
     return total > MAX_METAL_BUFFERS;
 }
 
@@ -2121,8 +2138,7 @@ inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
         return 2;
     }
     auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    (void)n_scalar;
-    return n_buffer + (gpu_kernel_has_scalar_struct(kernel) ? 1 : 0);
+    return n_buffer + (n_scalar > 0 ? 1 : 0);
 }
 
 // Analyze a GPU kernel function for variable-length arrays in blocks.
