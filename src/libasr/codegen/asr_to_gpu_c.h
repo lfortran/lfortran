@@ -120,6 +120,33 @@ public:
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
 
+    // The extent of one dimension of an array backed by a workspace, as the
+    // shader spells it, or "" when the array has no workspace.
+    std::string workspace_dim_str(const std::string &name, size_t d) {
+        for (const GpuVlaWorkspace &ws : current_vla_infos) {
+            if (ws.var_name != name) continue;
+            if (d >= ws.dims.size()) return "";
+            const GpuVlaDim &dim = ws.dims[d];
+            if (dim.is_constant) return std::to_string(dim.constant_value);
+            if (dim.is_struct_member_size) {
+                std::string key = dim.struct_member_key;
+                auto dot = key.find('.');
+                return "__sizes_" + key.substr(0, dot) + "_"
+                    + key.substr(dot + 1) + "[0]";
+            }
+            if (dim.dim_expr == nullptr) return "";
+            std::stringstream save;
+            save << src.str();
+            src.str("");
+            visit_expr(dim.dim_expr);
+            std::string out = src.str();
+            src.str("");
+            src << save.str();
+            return out;
+        }
+        return "";
+    }
+
     // Maps array parameter names to their synthesized size parameter
     // names within the current function being emitted. Populated by
     // emit_function_def for DescriptorArray parameters and consumed
@@ -1433,8 +1460,16 @@ public:
                         src << save.str();
                     }
                 } else if (!arr_name.empty()) {
-                    len_str = "__size_" + arr_name + "_dim"
-                        + std::to_string(d + 1);
+                    // An array bound to a workspace has no extents in its
+                    // own type -- they live on the workspace, which is what
+                    // the host sized the buffer from. Index it by the same
+                    // extent, or the stride here and the buffer there
+                    // disagree.
+                    len_str = workspace_dim_str(arr_name, d);
+                    if (len_str.empty()) {
+                        len_str = "__size_" + arr_name + "_dim"
+                            + std::to_string(d + 1);
+                    }
                 }
                 if (stride == "1") {
                     stride = len_str;
@@ -5353,8 +5388,11 @@ public:
                             && d < sit->second.size()) {
                         len_str = sit->second[d];
                     } else {
-                        len_str = "__size_" + arr_var_name + "_dim"
-                            + std::to_string(d + 1);
+                        len_str = workspace_dim_str(arr_var_name, d);
+                        if (len_str.empty()) {
+                            len_str = "__size_" + arr_var_name + "_dim"
+                                + std::to_string(d + 1);
+                        }
                     }
                 }
                 if (stride == "1") {
