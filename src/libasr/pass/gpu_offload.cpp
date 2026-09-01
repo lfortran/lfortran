@@ -1712,12 +1712,13 @@ static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
 class GpuDoConcurrentCollector :
         public ASR::BaseWalkVisitor<GpuDoConcurrentCollector> {
 public:
-    std::set<const ASR::DoConcurrentLoop_t*> loops;
+    std::set<ASR::OMPRegion_t*> loops;
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        loops.insert(&x);
-        ASR::BaseWalkVisitor<GpuDoConcurrentCollector>::
-            visit_DoConcurrentLoop(x);
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (omp_region_has_clause(x, ASR::omp_clauseType::OMPIndependent)) {
+            loops.insert(const_cast<ASR::OMPRegion_t*>(&x));
+        }
+        ASR::BaseWalkVisitor<GpuDoConcurrentCollector>::visit_OMPRegion(x);
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
@@ -1744,34 +1745,15 @@ public:
 // DoLoops. `do concurrent` only permits the iterations to run in any
 // order, so running them in order is always correct; inside device code
 // it is the only thing that can be done.
-class GpuHostOnlyLoopSequentializer :
-        public ASR::StatementWalkVisitor<GpuHostOnlyLoopSequentializer> {
+// A parallel loop that device code has to run cannot become a launch of
+// its own: the device has no way to launch anything. It runs serially
+// instead, which is what one thread of the enclosing kernel does with it.
+class GpuHostOnlyLoopSequentializer {
 public:
-    const std::set<const ASR::DoConcurrentLoop_t*> &sequential_loops;
-
-    GpuHostOnlyLoopSequentializer(Allocator &al_,
-            const std::set<const ASR::DoConcurrentLoop_t*> &loops)
-        : StatementWalkVisitor(al_), sequential_loops(loops) {}
-
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        if (!sequential_loops.count(&x)) return;
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        for (size_t i = 0; i < x.n_body; i++) {
-            body.push_back(al, x.m_body[i]);
+    static void run(const std::set<ASR::OMPRegion_t*> &loops) {
+        for (ASR::OMPRegion_t *region : loops) {
+            region->m_exec_target = ASR::exec_targetType::ExecSerial;
         }
-        for (size_t i = x.n_head; i-- > 1; ) {
-            ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_DoLoop_t(al,
-                x.base.base.loc, s2c(al, ""), x.m_head[i], body.p, body.n,
-                nullptr, 0));
-            body.reserve(al, 1);
-            body.n = 0;
-            body.push_back(al, inner);
-        }
-        pass_result.reserve(al, 1);
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(al,
-            x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n,
-            nullptr, 0)));
     }
 };
 
@@ -3842,7 +3824,7 @@ public:
     // memory. The same holds for a loop already lifted into a kernel.
     // Both are sequentialized here, before this round rewrites anything,
     // so the decision is made on intact ASR.
-    std::set<const ASR::DoConcurrentLoop_t*> host_only_loops;
+    std::set<ASR::OMPRegion_t*> host_only_loops;
     std::set<ASR::Function_t*> device_reachable_functions;
 
     void collect_host_only_loops() {
@@ -3865,11 +3847,11 @@ public:
         };
         GpuDoConcurrentCollector blocked;
         // Owner of each blocked loop, for --gpu-offload-report only.
-        std::map<const ASR::DoConcurrentLoop_t*, std::string> blocked_owner;
+        std::map<const ASR::OMPRegion_t*, std::string> blocked_owner;
         auto note_owner = [&](const GpuDoConcurrentCollector &c,
                 const std::string &owner) {
             if (!GpuOffloadReport::enabled) return;
-            for (const ASR::DoConcurrentLoop_t *loop : c.loops) {
+            for (const ASR::OMPRegion_t *loop : c.loops) {
                 blocked_owner.emplace(loop, owner);
             }
         };
@@ -3886,7 +3868,7 @@ public:
             blocked.loops.insert(in_kernel.loops.begin(),
                 in_kernel.loops.end());
         }
-        for (const ASR::DoConcurrentLoop_t *loop : all_loops.loops) {
+        for (ASR::OMPRegion_t *loop : all_loops.loops) {
             add_callees(loop->m_body, loop->n_body);
         }
         // A procedure stays device-reachable once its caller's loop has
@@ -3908,19 +3890,14 @@ public:
             note_owner(in_fn, fn->m_name);
             blocked.loops.insert(in_fn.loops.begin(), in_fn.loops.end());
         }
-        for (const ASR::DoConcurrentLoop_t *loop : blocked.loops) {
+        for (ASR::OMPRegion_t *loop : blocked.loops) {
             if (!host_only_loops.insert(loop).second) continue;
             auto owner = blocked_owner.find(loop);
             GpuOffloadReport::emit(loop->base.base.loc,
                 owner == blocked_owner.end() ? "<unknown>" : owner->second,
                 "sequentialized-for-device", true);
         }
-        GpuHostOnlyLoopSequentializer seq(al, host_only_loops);
-        seq.asr_changed = true;
-        while (seq.asr_changed) {
-            seq.asr_changed = false;
-            seq.visit_TranslationUnit(tu);
-        }
+        GpuHostOnlyLoopSequentializer::run(host_only_loops);
     }
 
     // Strip the physical-type casts wrapping an actual argument. The
