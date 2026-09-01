@@ -5105,10 +5105,17 @@ if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
         --backend=llvm --target=wasm32-unknown-emscripten)
     target_link_options(read_stdin_01 PUBLIC
         --backend=llvm --target=wasm32-unknown-emscripten)
-    add_test(NAME read_stdin_01
-        COMMAND ${WASM_EXEC_RUNTIME}
-            ${CMAKE_CURRENT_SOURCE_DIR}/read_stdin_01_loader.mjs
-            ${CMAKE_CURRENT_BINARY_DIR}/read_stdin_01)
-    set_tests_properties(read_stdin_01 PROPERTIES
-        LABELS "llvm_wasm_emcc")
+    if (WASM_EXEC_RUNTIME)
+        add_test(NAME read_stdin_01
+            COMMAND ${WASM_EXEC_RUNTIME}
+                ${CMAKE_CURRENT_SOURCE_DIR}/read_stdin_01_loader.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/read_stdin_01)
+        # the loader's own per-scenario timeout is 10s, for 7 scenarios;
+        # give ctest a generous backstop
+        set_tests_properties(read_stdin_01 PROPERTIES
+            LABELS "llvm_wasm_emcc" TIMEOUT 300)
+    else()
+        message(WARNING "node not found: read_stdin_01 will be "
+            "compiled but not run")
+    endif()
 endif()

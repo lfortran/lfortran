@@ -6172,12 +6172,16 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
 
 // Emscripten's stdin is a character device whose read() keeps filling the
 // caller's buffer (up to 1024 bytes), so a buffered stdio stream swallows
-// the newline that terminates the Fortran record: interactive READ
-// statements then ask for more input and only finish at end of file (a
-// browser then re-prompts forever).  Line buffering does not fix it: for an
-// input stream it still fills the whole buffer before returning.  Read
-// stdin one character at a time instead.  Every standard-input read path
-// must call this before touching stdin.
+// the newline that terminates the Fortran record: any stdio operation on
+// stdin (fgets, fgetc, scanf) pays for it, interactive READ statements
+// then ask for more input and only finish at end of file (a browser then
+// re-prompts forever).  Line buffering does not fix it: for an input
+// stream it still fills the whole buffer before returning.  Read stdin
+// one character at a time instead.  Every standard-input read path must
+// call this before touching stdin.  The call sites are lazy on purpose:
+// a runtime-startup hook would also work, but it would force character
+// mode on every program, including those that never do an interactive
+// read and could otherwise keep bulk reads buffered.
 static void use_stdin_char_mode(void)
 {
 #if defined(__EMSCRIPTEN__)
