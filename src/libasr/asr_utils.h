@@ -4264,7 +4264,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             }
             return ASRUtils::make_Array_t_util(al, tnew->base.base.loc,
                 duplicated_element_type, dimsp, dimsn, ASR::abiType::Source,
-                false, physical_type, override_physical_type);
+                false, physical_type, override_physical_type, false, true,
+                tnew->m_memory_space);
         }
         case ASR::ttypeType::Integer: {
             ASR::Integer_t* tnew = ASR::down_cast<ASR::Integer_t>(t);
