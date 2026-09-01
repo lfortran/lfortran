@@ -420,6 +420,16 @@ inline ASR::expr_t* gpu_local_array_extent(SymbolTable *symtab,
     return arr->m_dims[dim].m_length;
 }
 
+// Whether the host can read the designator `e`: a kernel parameter, or a
+// component or element reached from one, with every subscript something the
+// host can work out too. `self%points_(1,1,1,1)%values_` is such a
+// designator; `a(i)` for a loop index `i` is not, the index existing only
+// once the kernel runs.
+inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab = nullptr, ASR::stmt_t **body = nullptr,
+        size_t n_body = 0);
+
 // Whether the host could evaluate `e` itself, given that it can read every
 // kernel parameter. Arithmetic over integer literals, scalar parameters,
 // scalar components of parameters and the extents of array parameters is
@@ -512,6 +522,24 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
         }
         return true;
     }
+    // `size(<designator>, d)` where the host can read the designator.
+    if (ASR::is_a<ASR::ArraySize_t>(*v)) {
+        ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
+        if (gpu_designator_is_host_readable(sz->m_v, arg_names, symtab,
+                body, n_body)) {
+            return sz->m_dim == nullptr
+                || gpu_extent_is_host_evaluable(sz->m_dim, arg_names,
+                    symtab, body, n_body, depth);
+        }
+    }
+    if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
+        ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
+        if (gpu_designator_is_host_readable(bd->m_v, arg_names, symtab,
+                body, n_body)) {
+            return gpu_extent_is_host_evaluable(bd->m_dim, arg_names,
+                symtab, body, n_body, depth);
+        }
+    }
     std::string local_name;
     size_t local_dim = 0;
     if (gpu_extent_of_array_dim(v, local_name, local_dim)) {
@@ -532,6 +560,39 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
         for (const std::string &a : arg_names) {
             if (a == name) return true;
         }
+    }
+    return false;
+}
+
+inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab, ASR::stmt_t **body, size_t n_body) {
+    if (e == nullptr) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    if (ASR::is_a<ASR::Var_t>(*v)) {
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+        for (const std::string &a : arg_names) {
+            if (a == name) return true;
+        }
+        return false;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+        return gpu_designator_is_host_readable(
+            ASR::down_cast<ASR::StructInstanceMember_t>(v)->m_v, arg_names,
+            symtab, body, n_body);
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step) return false;
+            if (!gpu_extent_is_host_evaluable(item->m_args[i].m_right,
+                    arg_names, symtab, body, n_body, 0)) {
+                return false;
+            }
+        }
+        return gpu_designator_is_host_readable(item->m_v, arg_names, symtab,
+            body, n_body);
     }
     return false;
 }

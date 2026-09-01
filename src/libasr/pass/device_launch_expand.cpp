@@ -620,6 +620,62 @@ class DeviceLaunchExpandVisitor :
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
         }
 
+        // A designator the kernel writes in terms of its parameters, built
+        // again over the actual arguments of this launch so the host can
+        // read the same object: `self%points_(1,1,1,1)%values_` names one
+        // array whichever side asks for it.
+        ASR::expr_t* host_designator(const Location &loc,
+                const ASR::GpuKernelLaunch_t &x,
+                const ASR::Function_t *kernel, ASR::expr_t *e) {
+            if (e == nullptr) return nullptr;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+            if (ASR::is_a<ASR::Var_t>(*v)) {
+                std::string name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(v)->m_v);
+                for (size_t i = 0; i < kernel->n_args; i++) {
+                    std::string pname = ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v);
+                    if (pname != name) continue;
+                    if (i >= x.n_args) break;
+                    return x.m_args[i].m_value;
+                }
+                return nullptr;
+            }
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+                ASR::StructInstanceMember_t *sm =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(v);
+                ASR::expr_t *base = host_designator(loc, x, kernel, sm->m_v);
+                if (base == nullptr) return nullptr;
+                ASR::symbol_t *st =
+                    ASRUtils::get_struct_sym_from_struct_expr(base);
+                if (st == nullptr) return nullptr;
+                ASR::symbol_t *member = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(st))->m_symtab
+                        ->get_symbol(ASRUtils::symbol_name(
+                            ASRUtils::symbol_get_past_external(sm->m_m)));
+                if (member == nullptr) return nullptr;
+                return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                    loc, base, member, ASRUtils::symbol_type(member),
+                    nullptr));
+            }
+            if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+                ASR::expr_t *base = host_designator(loc, x, kernel,
+                    item->m_v);
+                if (base == nullptr) return nullptr;
+                std::vector<ASR::expr_t*> subs;
+                for (size_t i = 0; i < item->n_args; i++) {
+                    ASR::expr_t *sub = host_extent(loc, x, kernel,
+                        item->m_args[i].m_right);
+                    if (sub == nullptr) return nullptr;
+                    subs.push_back(sub);
+                }
+                return b.ArrayItem_01(base, subs);
+            }
+            return nullptr;
+        }
+
         // The extent expression of a workspace, rebuilt over the actual
         // arguments of this launch. The kernel writes an extent in terms of
         // its own parameters -- `op%m_ + 1` -- and the host has to compute
@@ -701,6 +757,30 @@ class DeviceLaunchExpandVisitor :
                         ASRUtils::symbol_type(member), nullptr));
                 }
                 return out;
+            }
+            // `size(<designator>, d)` where the host can read the
+            // designator: rebuild the designator over the actual and ask
+            // its shape.
+            if (ASR::is_a<ASR::ArraySize_t>(*v)) {
+                ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
+                ASR::expr_t *host = host_designator(loc, x, kernel, sz->m_v);
+                if (host != nullptr) {
+                    ASR::expr_t *dim = sz->m_dim
+                        ? host_extent(loc, x, kernel, sz->m_dim) : nullptr;
+                    if (sz->m_dim == nullptr || dim != nullptr) {
+                        return b.ArraySize(host, dim, int32);
+                    }
+                }
+            }
+            if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
+                ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
+                ASR::expr_t *host = host_designator(loc, x, kernel, bd->m_v);
+                ASR::expr_t *dim = host
+                    ? host_extent(loc, x, kernel, bd->m_dim) : nullptr;
+                if (host != nullptr && dim != nullptr) {
+                    return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                        host, dim, int32, bd->m_bound, nullptr));
+                }
             }
             if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
                 ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
