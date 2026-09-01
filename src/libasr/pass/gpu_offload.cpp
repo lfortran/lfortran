@@ -53,6 +53,10 @@ struct GpuOffloadReport {
         detail.clear();
     }
 
+    // Whether the region being decided has already had its line. The
+    // guard below turns this into the promise that every region gets one.
+    static bool reported;
+
     static void set_detail(const std::string &d) {
         if (enabled) detail = d;
     }
@@ -61,34 +65,74 @@ struct GpuOffloadReport {
         detail.clear();
     }
 
-    // `on_device` distinguishes a loop the device runs serially from one
-    // that falls back to the host altogether.
-    static void emit(const Location &loc, const std::string &proc,
-            const std::string &reason, bool on_device = false) {
-        if (!enabled) return;
-        std::string where;
+    // Where a loop is, as the source spells it.
+    static std::string site(const Location &loc) {
         if (lm != nullptr && !lm->files.empty()) {
             uint32_t line = 0, col = 0;
             std::string filename;
             lm->pos_to_linecol(lm->output_to_input_pos(loc.first, false),
                 line, col, filename);
-            where = filename + ":" + std::to_string(line) + ":"
+            return filename + ":" + std::to_string(line) + ":"
                 + std::to_string(col);
-        } else {
-            where = "<offset " + std::to_string(loc.first) + ">";
         }
-        std::cerr << "gpu-offload-report: " << where << ": do concurrent"
+        return "<offset " + std::to_string(loc.first) + ">";
+    }
+
+    // One line for a loop the device runs as a kernel of its own. Every
+    // parallel loop the pass sees is reported, whichever way it went, so
+    // the report answers "was anything left behind?" on its own rather
+    // than by being compared against a count of the source.
+    static void emit_offloaded(const Location &loc, const std::string &proc,
+            const std::string &kernel) {
+        if (!enabled) return;
+        std::cerr << "gpu-offload-report: " << site(loc)
+                  << ": do concurrent status=device"
+                  << " proc=" << proc << " kernel=" << kernel << std::endl;
+        reported = true;
+        detail.clear();
+    }
+
+    // `on_device` distinguishes a loop the device runs serially from one
+    // that falls back to the host altogether.
+    static void emit(const Location &loc, const std::string &proc,
+            const std::string &reason, bool on_device = false) {
+        if (!enabled) return;
+        std::cerr << "gpu-offload-report: " << site(loc) << ": do concurrent"
                   << " status=" << (on_device ? "device-serial" : "host")
                   << " proc=" << proc << " reason=" << reason;
         if (!detail.empty()) {
             std::cerr << " " << detail;
         }
         std::cerr << std::endl;
+        reported = true;
         detail.clear();
     }
 };
 
+// Reports the region on the way out of the decision if nothing else did,
+// so that a report with no line for a loop means the loop was never
+// offered to the pass -- not that some exit forgot to say why.
+class GpuRegionReportGuard {
+public:
+    Location loc;
+    std::string proc;
+    bool saved;
+
+    GpuRegionReportGuard(const Location &loc_, const std::string &proc_)
+        : loc(loc_), proc(proc_), saved(GpuOffloadReport::reported) {
+        GpuOffloadReport::reported = false;
+    }
+
+    ~GpuRegionReportGuard() {
+        if (!GpuOffloadReport::reported) {
+            GpuOffloadReport::emit(loc, proc, "not offloaded");
+        }
+        GpuOffloadReport::reported = saved;
+    }
+};
+
 bool GpuOffloadReport::enabled = false;
+bool GpuOffloadReport::reported = false;
 const LocationManager *GpuOffloadReport::lm = nullptr;
 std::string GpuOffloadReport::detail;
 
@@ -3824,6 +3868,9 @@ public:
     // memory. The same holds for a loop already lifted into a kernel.
     // Both are sequentialized here, before this round rewrites anything,
     // so the decision is made on intact ASR.
+    // The procedure the region being decided belongs to, for the report.
+    std::string report_proc_name;
+
     std::set<ASR::OMPRegion_t*> host_only_loops;
     std::set<ASR::Function_t*> device_reachable_functions;
 
@@ -9226,6 +9273,10 @@ public:
     // offloaded must still compile and run. Report why it was left on the
     // host rather than build a kernel that would quietly do something else.
     void report_not_offloaded(const Location &where, const std::string &why) {
+        // The audit line and the warning say the same thing, so they are
+        // said together: a reason good enough for the user is the reason
+        // the report should carry too.
+        GpuOffloadReport::emit(where, report_proc_name, why);
         if (pass_options.diagnostics == nullptr) return;
         pass_options.diagnostics->message_label(
             "parallel loop not offloaded to the GPU, "
@@ -9603,6 +9654,8 @@ public:
         GpuOffloadReport::clear_detail();
         std::string report_proc;
         if (GpuOffloadReport::enabled) report_proc = report_enclosing_proc();
+        report_proc_name = report_proc;
+        GpuRegionReportGuard report_guard(region.base.base.loc, report_proc);
 
         // Only the regions the dispatch pass gave to the device. Every other
         // exit of this function leaves the region alone, and the regions
@@ -13032,6 +13085,9 @@ public:
 
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
+        // The loop is a kernel from here on, so this is where the report
+        // says so: every exit above leaves it on the host and has said why.
+        GpuOffloadReport::emit_offloaded(loc, report_proc, kernel_name);
 
         // Pre-allocate host-side allocatable arrays that are assigned
         // from a FunctionCall inside the loop body. The GPU
