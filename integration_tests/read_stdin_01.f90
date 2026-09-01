@@ -3,8 +3,8 @@ program read_stdin_01
     ! terminates each record (#12108).  The loader selects one kind of
     ! read per process so that a guarded first read cannot mask another
     ! kind's buffering bug: "formatted", "list", "unit5", "array", "real",
-    ! "logical", "list2" (two records), "advmix" (ADVANCE='no', #12656
-    ! stack) and "multi" (three formatted records).
+    ! "logical", "list2", "mixed" (list then formatted, #12656), "bare",
+    ! "u5mix", "advmix" and "multi" (three formatted records).
     implicit none
     character(len=16) :: mode
     character(len=1) :: c
@@ -56,6 +56,30 @@ program read_stdin_01
         read (*, *, iostat=ios) n
         if (ios /= 0 .or. n /= 43) error stop "second list read failed"
         print '(a,i0)', 'GOTN2:', n
+    else if (trim(mode) == "mixed") then
+        ! Issue #12656: list-directed reads leave the record terminator in
+        ! the stream.  The subsequent formatted read must not misinterpret
+        ! it as an empty record.
+        print '(a)', 'LIST?'
+        read (*, *, iostat=ios) n
+        if (ios /= 0 .or. n /= 42) error stop "mixed list read failed"
+        print '(a,i0)', 'GOTN:', n
+        print '(a)', 'INPUT?'
+        read (*, '(A1)', iostat=ios) c
+        if (ios /= 0 .or. c /= 'A') error stop "mixed formatted read failed"
+        print '(2a)', 'GOTC:', c
+    else if (trim(mode) == "bare") then
+        read (*,*)                        ! empty READ skips one record
+        read (*, *, iostat=ios) n
+        if (ios /= 0 .or. n /= 42) error stop "bare read failed"
+        print '(a,i0)', 'GOTN:', n
+    else if (trim(mode) == "u5mix") then
+        read (5, *, iostat=ios) n
+        if (ios /= 0 .or. n /= 42) error stop "unit 5 list read failed"
+        print '(a,i0)', 'GOTN:', n
+        read (5, '(A1)', iostat=ios) c
+        if (ios /= 0 .or. c /= 'A') error stop "unit 5 formatted read failed"
+        print '(2a)', 'GOTC:', c
     else if (trim(mode) == "advmix") then
         read (*, '(a)', advance='no')     ! must not skip the record
         read (*, *, iostat=ios) n

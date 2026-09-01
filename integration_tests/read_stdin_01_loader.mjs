@@ -1,5 +1,6 @@
-// Run a LFortran wasm32-unknown-emscripten program under node while
-// emulating an interactive terminal.  Each scenario spawns a fresh
+// Drive a read_stdin_01 program (Emscripten wasm under node, or a native
+// binary fed through a pipe) while emulating an interactive terminal.
+// Each scenario spawns a fresh
 // process (one read kind each, so a guarded first read cannot mask
 // another kind's buffering bug).  Lazy scenarios answer every prompt the
 // program prints with its queued record and never close stdin -- exactly
@@ -13,14 +14,19 @@
 // about); they guard the record boundaries between several reads of one
 // process.  "multi" additionally closes stdin after the final record,
 // covering the end-of-file abort that the issue reported.
-// Usage: node read_stdin_01_loader.mjs <prog>
+// Usage: node read_stdin_01_loader.mjs <prog> [wasm|native]
 import { spawn } from "node:child_process";
 
 const prog = process.argv[2];
 if (!prog) {
-    console.error("usage: node read_stdin_01_loader.mjs <prog>");
+    console.error("usage: node read_stdin_01_loader.mjs <prog> [wasm|native]");
     process.exit(2);
 }
+
+// "wasm" is an Emscripten JS driver and must be launched through node;
+// "native" (the default) is spawned directly, so that
+// get_command_argument(1) receives the scenario mode.
+const jsDriver = process.argv[3] === "wasm";
 
 // prompts: [pattern, record] or [pattern, record, times]
 const scenarios = [
@@ -30,6 +36,14 @@ const scenarios = [
     { mode: "array", prompts: [[/ARR\?/, "1 2 3\n"]], expect: ["GOTA:6"] },
     { mode: "real", prompts: [[/REAL\?/, "1.5\n"]], expect: ["GOTR:1.5"] },
     { mode: "logical", prompts: [[/LOG\?/, ".true.\n"]], expect: ["GOTL:T"] },
+    // list then formatted in one process (#12656's adjacency bug): eager,
+    // both records buffered, so these guard record advancement, not prompts
+    { mode: "mixed", feed: "eager", records: ["42\n", "A\n"],
+      expect: ["GOTN:42", "GOTC:A"] },
+    { mode: "u5mix", feed: "eager", records: ["42\n", "A\n"],
+      expect: ["GOTN:42", "GOTC:A"] },
+    { mode: "bare", feed: "eager", records: ["junk\n", "42\n"],
+      expect: ["GOTN:42"] },
     { mode: "advmix", feed: "eager", records: ["42\n"], expect: ["GOTN:42"] },
     { mode: "list2", feed: "eager", records: ["42\n", "43\n"],
       expect: ["GOTN:42", "GOTN2:43"] },
@@ -39,9 +53,13 @@ const scenarios = [
 
 async function run(scenario) {
     return new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, [prog, scenario.mode], {
-            stdio: ["pipe", "pipe", "inherit"],
-        });
+        // argv for a node-run JS driver repeats the script path as argv[0];
+        // a native binary is spawned as `<prog> <mode>`.
+        const child = jsDriver
+            ? spawn(process.execPath, [prog, scenario.mode],
+                    {stdio: ["pipe", "pipe", "inherit"]})
+            : spawn(prog, [scenario.mode],
+                    {stdio: ["pipe", "pipe", "inherit"]});
         const queue = scenario.prompts
             ? scenario.prompts.map(([re, data, times]) =>
                 ({ re, data, times: times ?? 1, fed: 0 }))

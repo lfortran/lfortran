@@ -12045,10 +12045,11 @@ LFORTRAN_API void _lfortran_empty_read_advance(int32_t unit_num, int32_t* iostat
     if (advance_no) {
         return;
     }
-    if (unit_num == -1) {
-        return;
-    } else if (unit_num == -2) {
-        // Read from stdin
+    if (unit_num == -1 || unit_num == -2) {
+        // -1: default input unit (`read(*, ...)`), -2: explicit stdin
+        // (read()/read(5)).  Skip the rest of the current record so the
+        // next read starts on the next one.
+        use_stdin_char_mode();
         int inp = 0;
         do {
             inp = fgetc(stdin);
