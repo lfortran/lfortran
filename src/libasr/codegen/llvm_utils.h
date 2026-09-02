@@ -2183,6 +2183,39 @@ class ASRToLLVMVisitor;
         }
 
         /// Check if the nature of the variable can't be finalized
+        // Recursively checks whether a struct (or any of its parents/members)
+        // owns an allocatable component. Used to decide whether a program-scope
+        // PARAMETER struct actually needs scope-exit finalization -- plain
+        // (non-allocatable) members, including arrays, are always compile-time
+        // constant data and must never be freed.
+        static bool struct_has_allocatable_member(ASR::Struct_t* const struct_sym){
+            if (!struct_sym) return false;
+            if (struct_sym->m_parent) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym->m_parent));
+                if (struct_has_allocatable_member(parent_struct)) {
+                    return true;
+                }
+            }
+            for (size_t i = 0; i < struct_sym->n_members; i++) {
+                ASR::symbol_t* member_sym = struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]);
+                if (!member_sym || !ASR::is_a<ASR::Variable_t>(*member_sym)) continue;
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+                if (ASRUtils::is_allocatable(member_var->m_type)) return true;
+                if (member_var->m_type_declaration) {
+                    ASR::symbol_t* member_decl = ASRUtils::symbol_get_past_external(
+                        member_var->m_type_declaration);
+                    if (ASR::is_a<ASR::Struct_t>(*member_decl)) {
+                        if (struct_has_allocatable_member(
+                                ASR::down_cast<ASR::Struct_t>(member_decl))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             /* TODO :: Handle non local + `Value` attribute. */
             if (v->m_intent != ASR::Local) {
@@ -2211,15 +2244,27 @@ class ASRToLLVMVisitor;
             }
             if (v->m_storage == ASR::Parameter) {
                 // Keep most PARAMETER symbols non-finalizable. A narrow
-                // exception is program-scope parameter structs whose runtime
-                // construction can allocate member storage (for example,
-                // fixed-length character members initialized from constructors).
-                // Those need scope-exit finalization to avoid leaks.
+                // exception is program-scope parameter structs that actually
+                // own allocatable member storage (for example, deferred-length
+                // character members initialized from constructors) -- those
+                // need scope-exit finalization to avoid leaks. Struct members
+                // that are plain (non-allocatable) arrays -- including
+                // character arrays -- are always compile-time constant data
+                // (global constants or memcpy'd literals), never heap
+                // allocations, and must never be finalized here.
                 ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
                     v->m_parent_symtab->asr_owner);
                 if (ASR::is_a<ASR::Program_t>(*owner)) {
                     ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
-                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                    ASR::Struct_t* struct_sym = nullptr;
+                    if (v->m_type_declaration) {
+                        ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+                        if (ASR::is_a<ASR::Struct_t>(*decl)) {
+                            struct_sym = ASR::down_cast<ASR::Struct_t>(decl);
+                        }
+                    }
+                    if (ASR::is_a<ASR::StructType_t>(*t) && struct_sym &&
+                            struct_has_allocatable_member(struct_sym)) {
                         return false;
                     }
                 }
