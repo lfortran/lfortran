@@ -4232,6 +4232,22 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
 
+// Fortran array-valued complex part designators (%re, %im) have default
+// lower bound 1; preserve each dimension's length from the base array.
+static inline Vec<ASR::dimension_t> make_complex_dimensions_bounds(Allocator& al,
+        const Location &loc, ASR::dimension_t* m_dims, int n_dims) {
+    Vec<ASR::dimension_t> dim_vec;
+    dim_vec.reserve(al, n_dims);
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    for (int i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+        dim.m_length = m_dims[i].m_length;
+        dim_vec.push_back(al, dim);
+    }
+    return dim_vec;
+}
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     Vec<ASR::dimension_t>* dims=nullptr,
