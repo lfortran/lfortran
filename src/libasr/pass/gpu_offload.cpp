@@ -10232,9 +10232,10 @@ public:
         std::vector<std::string> gather_temp_names;
         GpuGatherGuard gather_guard(current_scope, gather_undo,
             gather_temp_names);
-        if (pass_options.gpu_offload_metal
-                && !hoist_struct_element_gathers(work, gather_stmts,
-                    scatter_stmts, gather_undo, gather_temp_names)) {
+        // The gather is a copy the host makes before it launches, so this
+        // holds for every dialect.
+        if (!hoist_struct_element_gathers(work, gather_stmts,
+                scatter_stmts, gather_undo, gather_temp_names)) {
             // The element could not be hoisted -- a subscript that moves
             // with the loop, or a write to the object that the copy back
             // after the launch could not reproduce exactly. Passing

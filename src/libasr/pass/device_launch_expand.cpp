@@ -215,21 +215,6 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         ASR::symbol_t *struct_sym =
             ASRUtils::get_struct_sym_from_struct_expr(arg);
         if (!struct_is_plain(struct_sym)) return false;
-        // Only an array of structs is decomposed; a scalar struct is passed
-        // as it stands, with the members the kernel needs handed over as
-        // separate arguments. Decomposing means walking the array element by
-        // element, which needs a plain variable to subscript.
-        if (!ASRUtils::is_array(arg_type) || ASR::is_a<ASR::Var_t>(*arg)) {
-            return true;
-        }
-        ASR::Struct_t *st = get_struct(struct_sym);
-        for (auto &member :
-                ASRUtils::collect_allocatable_array_members(st)) {
-            if (is_decomposed_member(&member.second->base)) {
-                return unsupported(
-                    "an array of derived type that is not a plain variable");
-            }
-        }
         return true;
     }
     if (is_plain_scalar(base)) return true;
@@ -550,6 +535,7 @@ class DeviceLaunchExpandVisitor :
         // may have written to it.
         void decompose_struct_members(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
+                const std::string &arg_name,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
                 const ASR::Function_t &kernel) {
@@ -557,8 +543,6 @@ class DeviceLaunchExpandVisitor :
             ASR::Struct_t *st = get_struct(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
-            std::string arg_name = ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(arg)->m_v);
             std::map<std::string, int64_t> write_sizes =
                 find_struct_member_vla_write_sizes(kernel,
                     analyze_gpu_vla_workspaces(kernel));
@@ -1197,10 +1181,13 @@ class DeviceLaunchExpandVisitor :
                     buffers.push_back({buffer_arg,
                         address_of(loc, buffer_arg),
                         buffer_byte_size(loc, buffer_arg)});
-                    if (ASRUtils::is_array(arg_type) &&
-                            ASR::is_a<ASR::Var_t>(*arg)) {
-                        decompose_struct_members(loc, out, arg, buffers,
-                            writebacks, *kernel);
+                    if (ASRUtils::is_array(arg_type)) {
+                        // The buffers the device reads a component through
+                        // are named after the kernel's own parameter, so
+                        // the actual need not be a plain variable: a
+                        // component chain names one array just as well.
+                        decompose_struct_members(loc, out, arg,
+                            kparam->m_name, buffers, writebacks, *kernel);
                     }
                 } else {
                     scalar_fields.push_back({std::string(kparam->m_name),
