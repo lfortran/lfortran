@@ -203,6 +203,29 @@ contains
 
 end module
 
+! Program units placed after `program continue_compilation_1` below are not
+! reached by the body visitor: the program itself fails semantic analysis, and
+! that stops the body visitor from descending into the units that follow it.
+! Any module whose expected errors are raised while visiting bodies (as opposed
+! to while building the symbol table) must therefore be placed here, ahead of
+! the program, or its `! {Error}` annotations become dead.
+
+! An arm of a conditional expression is an ordinary expression, so a call in
+! it is still a call made by the enclosing procedure (15.7).
+module conditional_expr_purity_1
+    implicit none
+contains
+    integer function conditional_expr_impure()
+        print *, "side effect"
+        conditional_expr_impure = 1
+    end function
+
+    pure integer function conditional_expr_pure(c)
+        logical, intent(in) :: c
+        conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+    end function
+end module
+
 
 ! Only put declarations and statements here, no subroutines (those go above).
 program continue_compilation_1
@@ -1142,20 +1165,4 @@ contains
       real, intent(in) :: x(:)
       real :: res(size(x))
     end function foo
-end module
-
-! An arm of a conditional expression is an ordinary expression, so a call in
-! it is still a call made by the enclosing procedure (15.7).
-module conditional_expr_purity_1
-    implicit none
-contains
-    integer function conditional_expr_impure()
-        print *, "side effect"
-        conditional_expr_impure = 1
-    end function
-
-    pure integer function conditional_expr_pure(c)
-        logical, intent(in) :: c
-        conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
-    end function
 end module
