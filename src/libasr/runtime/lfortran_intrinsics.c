@@ -5865,17 +5865,43 @@ LFORTRAN_API int64_t _lfortran_int64_rand_num() {
 }
 
 static int32_t _lfortran_seed_buffer[8] = {0};
+static bool _lfortran_seed_initialized = false;
 
 static void _lfortran_seed_buffer_init_repeatable(void) {
     for (int i = 0; i < 8; i++) {
         _lfortran_seed_buffer[i] = 0;
     }
+    _lfortran_seed_initialized = true;
 }
 
 static void _lfortran_seed_buffer_init_random(void) {
     for (int i = 0; i < 8; i++) {
         _lfortran_seed_buffer[i] = rand();
     }
+    _lfortran_seed_initialized = true;
+}
+
+// Seeds `srand()` from a mix of the current time and a call counter, then
+// (re)fills `_lfortran_seed_buffer` with fresh values. Used both by
+// `_lfortran_random_init(.false., ...)` and to lazily initialize the seed
+// buffer the first time it is read (e.g. `random_seed(get=...)` called
+// before any prior `put`/bare `random_seed()`), so a GET never observes the
+// buffer's initial all-zero state.
+static void _lfortran_seed_buffer_seed_from_time(void) {
+    static unsigned int call_count = 0;
+    unsigned int seed;
+#if defined(_WIN32)
+    seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
+    } else {
+        seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
+    }
+#endif
+    srand(seed);
+    _lfortran_seed_buffer_init_random();
 }
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
@@ -5883,20 +5909,7 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
         srand(0);
         _lfortran_seed_buffer_init_repeatable();
     } else {
-        static unsigned int call_count = 0;
-        unsigned int seed;
-#if defined(_WIN32)
-        seed = (unsigned int)clock() ^ (++call_count * 2654435761u);
-#else
-        struct timespec ts;
-        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-            seed = (unsigned int)(ts.tv_nsec) ^ (++call_count * 2654435761u);
-        } else {
-            seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
-        }
-#endif
-        srand(seed);
-        _lfortran_seed_buffer_init_random();
+        _lfortran_seed_buffer_seed_from_time();
     }
     return false;
 }
@@ -5917,10 +5930,14 @@ LFORTRAN_API void _lfortran_random_seed_put_i32(int32_t value, int32_t index)
     if (index == 1) {
         srand((unsigned)value);
     }
+    _lfortran_seed_initialized = true;
 }
 
 LFORTRAN_API int32_t _lfortran_random_seed_get_i32(int32_t index)
 {
+    if (!_lfortran_seed_initialized) {
+        _lfortran_seed_buffer_seed_from_time();
+    }
     if (index >= 1 && index <= 8) {
         return _lfortran_seed_buffer[index - 1];
     }
