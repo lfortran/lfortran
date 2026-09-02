@@ -427,6 +427,99 @@ inline ASR::expr_t* gpu_local_array_extent(SymbolTable *symtab,
     return arr->m_dims[dim].m_length;
 }
 
+// Counts the writes to one scalar in a statement list, keeping the value of
+// the last one. A name written exactly once stands for that value
+// everywhere.
+class GpuScalarBindingCounter :
+        public ASR::BaseWalkVisitor<GpuScalarBindingCounter> {
+public:
+    ASR::symbol_t *target;
+    size_t n_writes = 0;
+    ASR::expr_t *value = nullptr;
+
+    GpuScalarBindingCounter(ASR::symbol_t *target_) : target(target_) {}
+
+    bool is_target(ASR::expr_t *e) {
+        return e != nullptr && ASR::is_a<ASR::Var_t>(*e) &&
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v) == target;
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (is_target(x.m_head.m_v)) n_writes++;
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_DoLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (is_target(x.m_args[i].m_value)) n_writes++;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>
+            ::visit_SubroutineCall(x);
+    }
+
+    // The generated walker stops at a BLOCK or ASSOCIATE call, but a write
+    // hidden inside one must still be seen.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// The value bound to the integer scalar `name` in `body`, or nullptr when
+// the name is not defined exactly once there. This is how a workspace
+// extent reaches through an ASSOCIATE name: once the offload pass splices
+// the construct in, `associate(rows => self%m_ + 2)` shows up as a local
+// `rows` assigned `self%m_ + 2` once, and only the selector expression is
+// something the host can evaluate.
+inline ASR::expr_t* gpu_local_scalar_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    if (sym == nullptr) return nullptr;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_array(var->m_type)) return nullptr;
+    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(var->m_type))) {
+        return nullptr;
+    }
+    GpuScalarBindingCounter counter(sym);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    if (counter.n_writes != 1) return nullptr;
+    return counter.value;
+}
+
 // Whether the host can read the designator `e`: a kernel parameter, or a
 // component or element reached from one, with every subscript something the
 // host can work out too. `self%points_(1,1,1,1)%values_` is such a
@@ -566,6 +659,15 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
             ASR::down_cast<ASR::Var_t>(v)->m_v);
         for (const std::string &a : arg_names) {
             if (a == name) return true;
+        }
+        // A name of the kernel's own that stands for one value: what an
+        // ASSOCIATE selector becomes once the construct is spliced in.
+        // The value it is bound to is what the host evaluates.
+        ASR::expr_t *bound = gpu_local_scalar_binding(
+            ASR::down_cast<ASR::Var_t>(v)->m_v, body, n_body);
+        if (bound != nullptr) {
+            return gpu_extent_is_host_evaluable(bound, arg_names, symtab,
+                body, n_body, depth + 1);
         }
     }
     return false;

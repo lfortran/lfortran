@@ -145,6 +145,50 @@ public:
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
 
+    // The kernel being emitted, so that a workspace extent can be read
+    // through the names the kernel binds.
+    ASR::stmt_t **current_kernel_body = nullptr;
+    size_t current_kernel_n_body = 0;
+
+    // Render one extent of a per-thread workspace. The pointer into the
+    // workspace is computed on entry to the scope that declares the array,
+    // ahead of the statements that give the scope's own names their values,
+    // so a name that stands for one value -- an ASSOCIATE selector, once
+    // the construct is spliced in -- is rendered as the value it is bound
+    // to. The host sizes the buffer by the same rule.
+    void emit_workspace_extent(ASR::expr_t *e) {
+        if (e != nullptr && ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::expr_t *bound = gpu_local_scalar_binding(
+                ASR::down_cast<ASR::Var_t>(e)->m_v, current_kernel_body,
+                current_kernel_n_body);
+            if (bound != nullptr) {
+                emit_workspace_extent(bound);
+                return;
+            }
+        }
+        if (e != nullptr && ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            src << "(";
+            emit_workspace_extent(op->m_left);
+            src << " " << binop_str(op->m_op) << " ";
+            emit_workspace_extent(op->m_right);
+            src << ")";
+            return;
+        }
+        if (e != nullptr && ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            src << "(-";
+            emit_workspace_extent(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+            src << ")";
+            return;
+        }
+        if (e != nullptr && ASR::is_a<ASR::Cast_t>(*e)) {
+            emit_workspace_extent(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
+            return;
+        }
+        visit_expr(e);
+    }
+
     // The extent of one dimension of an array backed by a workspace, as the
     // shader spells it, or "" when the array has no workspace.
     std::string workspace_dim_str(const std::string &name, size_t d) {
@@ -163,7 +207,7 @@ public:
             std::stringstream save;
             save << src.str();
             src.str("");
-            visit_expr(dim.dim_expr);
+            emit_workspace_extent(dim.dim_expr);
             std::string out = src.str();
             src.str("");
             src << save.str();
@@ -444,7 +488,8 @@ public:
                                 << mem_name << "[0]";
                             all_const = false;
                         } else {
-                            visit_expr(vla_it->dims[d].dim_expr);
+                            emit_workspace_extent(
+                                vla_it->dims[d].dim_expr);
                             all_const = false;
                         }
                     }
@@ -469,7 +514,8 @@ public:
                                 src << "__sizes_" << arr_name << "_"
                                     << mem_name << "[0]";
                             } else {
-                                visit_expr(vla_it->dims[d].dim_expr);
+                                emit_workspace_extent(
+                                    vla_it->dims[d].dim_expr);
                             }
                         }
                         alloc_array_size_exprs[vname] = src.str();
@@ -2957,6 +3003,8 @@ public:
         // This must happen before prescan_alloc_sizes so the prescan
         // can identify VLA workspace variables.
         current_vla_infos = analyze_gpu_vla_workspaces(x);
+        current_kernel_body = x.m_body;
+        current_kernel_n_body = x.n_body;
 
         // Pre-scan Allocate statements to determine sizes
         // for local allocatable array variables.
@@ -4503,7 +4551,8 @@ public:
                                 src << "__sizes_" << arr_name << "_"
                                     << mem_name << "[0]";
                             } else {
-                                visit_expr(vla_it->dims[0].dim_expr);
+                                emit_workspace_extent(
+                                    vla_it->dims[0].dim_expr);
                             }
                         } else {
                             src << "(";
@@ -4521,7 +4570,8 @@ public:
                                     src << "__sizes_" << arr_name << "_"
                                         << mem_name << "[0]";
                                 } else {
-                                    visit_expr(vla_it->dims[d].dim_expr);
+                                    emit_workspace_extent(
+                                    vla_it->dims[d].dim_expr);
                                 }
                             }
                             src << ")";
@@ -4553,7 +4603,7 @@ public:
                                     std::stringstream tmp;
                                     tmp << src.str();
                                     src.str("");
-                                    visit_expr(
+                                    emit_workspace_extent(
                                         vla_it->dims[d].dim_expr);
                                     size_ss << src.str();
                                     src.str("");
