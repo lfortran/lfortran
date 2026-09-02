@@ -21616,7 +21616,12 @@ public:
                         visit_restricted_expr(*len_item->m_value,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                        if (len_value) {
+                            str->m_len = len_value;
+                        } else {
+                            str->m_len = len_expr;
+                        }
                         _processing_char_len = false;
                         if (var_sym != nullptr &&
                                 ASR::is_a<ASR::Var_t>(*str->m_len) &&
@@ -21685,7 +21690,12 @@ public:
                         visit_restricted_expr(*var_sym->m_length,
                             RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                        if (len_value) {
+                            str->m_len = len_value;
+                        } else {
+                            str->m_len = len_expr;
+                        }
                         _processing_char_len = false;
                         if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
                                 !ASRUtils::is_const(str->m_len)) {
