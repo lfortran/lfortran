@@ -427,6 +427,81 @@ inline ASR::expr_t* gpu_local_array_extent(SymbolTable *symtab,
     return arr->m_dims[dim].m_length;
 }
 
+// The subscripts of an array section that span a range, in order. The
+// section's rank is their number, and the extent of its `d`-th dimension is
+// `(right - left) / step + 1` -- a value the host can work out whenever
+// those three are, whatever the scalar subscripts alongside them are.
+inline std::vector<ASR::array_index_t*> gpu_section_ranges(
+        ASR::ArraySection_t *sec) {
+    std::vector<ASR::array_index_t*> ranges;
+    for (size_t i = 0; i < sec->n_args; i++) {
+        if (sec->m_args[i].m_left == nullptr
+                && sec->m_args[i].m_step == nullptr) {
+            continue;
+        }
+        if (sec->m_args[i].m_left == nullptr
+                || sec->m_args[i].m_right == nullptr) {
+            return {};
+        }
+        ranges.push_back(&sec->m_args[i]);
+    }
+    return ranges;
+}
+
+// The range subscripts `size(section, dim)` stands for: one for a given
+// dimension, all of them -- whose extents multiply to the element count --
+// without one. Empty when the section has no shape to read this way.
+inline std::vector<ASR::array_index_t*> gpu_section_extent_ranges(
+        ASR::expr_t *array, ASR::expr_t *dim) {
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(array);
+    if (v == nullptr || !ASR::is_a<ASR::ArraySection_t>(*v)) return {};
+    std::vector<ASR::array_index_t*> ranges = gpu_section_ranges(
+        ASR::down_cast<ASR::ArraySection_t>(v));
+    if (ranges.empty()) return {};
+    if (dim == nullptr) return ranges;
+    int64_t d;
+    if (!try_eval_int_constant(dim, d) || d < 1
+            || (size_t)d > ranges.size()) {
+        return {};
+    }
+    return {ranges[(size_t)d - 1]};
+}
+
+// The extents `size(array, dim)` stands for, read from the shape in the
+// expression's own type. An expression that is not a designator still
+// carries its shape there: a function result declared `real :: r(n)`
+// records `n` as the extent of its one dimension, and semantics has already
+// rewritten that in terms of the actual arguments, so the extent is written
+// in symbols of the scope the call is made from -- which is the scope the
+// kernel arguments come from. Whether the host can reproduce those
+// expressions is then the same question as for any other extent.
+// `dim` selects one dimension; without it the answer is every dimension,
+// whose product is the element count.
+inline bool gpu_expr_shape_extents(ASR::expr_t *array, ASR::expr_t *dim,
+        std::vector<ASR::expr_t*> &lengths) {
+    if (array == nullptr) return false;
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(array));
+    if (t == nullptr || !ASR::is_a<ASR::Array_t>(*t)) return false;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    if (arr->n_dims == 0) return false;
+    size_t begin = 0, end = arr->n_dims;
+    if (dim != nullptr) {
+        int64_t d;
+        if (!try_eval_int_constant(dim, d) || d < 1
+                || (size_t)d > arr->n_dims) {
+            return false;
+        }
+        begin = (size_t)d - 1;
+        end = begin + 1;
+    }
+    for (size_t d = begin; d < end; d++) {
+        if (!arr->m_dims[d].m_length) return false;
+        lengths.push_back(arr->m_dims[d].m_length);
+    }
+    return true;
+}
+
 // Counts the writes to one scalar in a statement list, keeping the value of
 // the last one. A name written exactly once stands for that value
 // everywhere.
@@ -630,6 +705,38 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
             return sz->m_dim == nullptr
                 || gpu_extent_is_host_evaluable(sz->m_dim, arg_names,
                     symtab, body, n_body, depth);
+        }
+        // A section whose base the host cannot read as it stands -- one
+        // subscript is the loop index -- still has extents the host can
+        // work out, because they come from the ranges alone.
+        std::vector<ASR::array_index_t*> ranges =
+            gpu_section_extent_ranges(sz->m_v, sz->m_dim);
+        if (!ranges.empty()) {
+            for (ASR::array_index_t *range : ranges) {
+                if (!gpu_extent_is_host_evaluable(range->m_left, arg_names,
+                            symtab, body, n_body, depth + 1)
+                        || !gpu_extent_is_host_evaluable(range->m_right,
+                            arg_names, symtab, body, n_body, depth + 1)
+                        || (range->m_step != nullptr
+                            && !gpu_extent_is_host_evaluable(range->m_step,
+                                arg_names, symtab, body, n_body,
+                                depth + 1))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        // Not a designator the host can read -- a function call, say --
+        // but its type still records its shape.
+        std::vector<ASR::expr_t*> lengths;
+        if (gpu_expr_shape_extents(sz->m_v, sz->m_dim, lengths)) {
+            for (ASR::expr_t *length : lengths) {
+                if (!gpu_extent_is_host_evaluable(length, arg_names, symtab,
+                        body, n_body, depth + 1)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
     if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
