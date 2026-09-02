@@ -27,3 +27,15 @@ syntax error: Token '.nil.' is unexpected here
    |
 43 |     x = ( .nil. ? a : a )  ! {Error} Token '.nil.' is unexpected here
    |           ^^^^^ 
+
+syntax error: Token '.nil.' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:62:9
+   |
+62 |     x = .nil.  ! {Error} Token '.nil.' is unexpected here
+   |         ^^^^^ 
+
+syntax error: Token '.nil.' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:67:15
+   |
+67 |     call sub( .nil. )  ! {Error} Token '.nil.' is unexpected here
+   |               ^^^^^ 

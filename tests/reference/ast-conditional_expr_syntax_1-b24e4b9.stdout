@@ -216,7 +216,17 @@
         []
         []
         ()
-        ()
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment
+                "! `.NIL.` is a consequent, so outside a conditional it is not a primary and not"
+            )
+            (Comment
+                "! an actual argument either: bare, it is not even syntax."
+            )]
+        )
         [(ImplicitNone
             []
             ()
@@ -274,6 +284,129 @@
                 (Logical .true. ())
                 (Nil)
                 a
+            )]
+            (TriviaNode
+                []
+                [(EOLComment
+                    "! {Error} `.nil.` is only allowed as a consequent of a conditional argument"
+                )]
+            )
+        )]
+        []
+        []
+    )
+    (Subroutine
+        nil_outside_a_conditional
+        []
+        []
+        ()
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)]
+        )
+        [(ImplicitNone
+            []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(x
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )]
+        []
+        []
+    )
+    (Subroutine
+        nil_as_a_bare_actual_argument
+        []
+        []
+        ()
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment
+                "! A reference to an intrinsic has no definable dummy argument that a"
+            )
+            (Comment
+                "! conditional argument could reach, so `( cond ? a : b )` there stays a"
+            )
+            (Comment
+                "! conditional expression, which is a value, and `.NIL.` is not one."
+            )]
+        )
+        [(ImplicitNone
+            []
+            ()
+        )]
+        []
+        []
+    )
+    (Subroutine
+        nil_in_an_intrinsic_reference
+        []
+        []
+        ()
+        ()
+        [(ImplicitNone
+            []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(a
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Assignment
+            0
+            a
+            1
+            ()
+        )
+        (Print
+            0
+            ()
+            [(FuncCallOrArray
+                abs
+                []
+                [(()
+                (ConditionalExpr
+                    (Logical .true. ())
+                    a
+                    (Nil)
+                )
+                ()
+                0)]
+                []
+                []
+                []
             )]
             (TriviaNode
                 []

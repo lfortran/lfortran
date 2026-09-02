@@ -28,6 +28,18 @@ syntax error: Token '.nil.' is unexpected here
 43 |     x = ( .nil. ? a : a )  ! {Error} Token '.nil.' is unexpected here
    |           ^^^^^ 
 
+syntax error: Token '.nil.' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:62:9
+   |
+62 |     x = .nil.  ! {Error} Token '.nil.' is unexpected here
+   |         ^^^^^ 
+
+syntax error: Token '.nil.' is unexpected here
+  --> tests/errors/conditional_expr_syntax_1.f90:67:15
+   |
+67 |     call sub( .nil. )  ! {Error} Token '.nil.' is unexpected here
+   |               ^^^^^ 
+
 semantic error: `.nil.` is only allowed as a consequent of a conditional argument
   --> tests/errors/conditional_expr_syntax_1.f90:53:24
    |
@@ -39,3 +51,9 @@ semantic error: `.nil.` is only allowed as a consequent of a conditional argumen
    |
 54 |     print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
    |                         ^^^^^ a conditional argument is an actual argument of the form `( cond ? a : .nil. )` (Fortran 2023 R1527)
+
+semantic error: `.nil.` is only allowed as a consequent of a conditional argument
+  --> tests/errors/conditional_expr_syntax_1.f90:77:34
+   |
+77 |     print *, abs( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+   |                                  ^^^^^ a conditional argument is an actual argument of the form `( cond ? a : .nil. )` (Fortran 2023 R1527)

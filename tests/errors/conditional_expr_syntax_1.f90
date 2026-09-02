@@ -53,3 +53,26 @@ subroutine nil_is_not_a_value()
     x = ( .true. ? a : .nil. )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
     print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
 end subroutine
+
+! `.NIL.` is a consequent, so outside a conditional it is not a primary and not
+! an actual argument either: bare, it is not even syntax.
+subroutine nil_outside_a_conditional()
+    implicit none
+    integer :: x
+    x = .nil.  ! {Error} Token '.nil.' is unexpected here
+end subroutine
+
+subroutine nil_as_a_bare_actual_argument()
+    implicit none
+    call sub( .nil. )  ! {Error} Token '.nil.' is unexpected here
+end subroutine
+
+! A reference to an intrinsic has no definable dummy argument that a
+! conditional argument could reach, so `( cond ? a : b )` there stays a
+! conditional expression, which is a value, and `.NIL.` is not one.
+subroutine nil_in_an_intrinsic_reference()
+    implicit none
+    integer :: a
+    a = 1
+    print *, abs( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+end subroutine

@@ -39,6 +39,11 @@ contains
         print *, size(x)
     end subroutine
 
+    integer function returns_one(x)
+        integer, intent(in) :: x
+        returns_one = x
+    end function
+
     ! C1540: a consequent may be `.NIL.` only when the dummy argument it
     ! corresponds to is optional, since `.NIL.` leaves it not present.
     subroutine nil_for_a_required_dummy()
@@ -46,6 +51,17 @@ contains
         integer :: a
         a = 1
         call required( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is not allowed for the dummy argument `x`, which is not optional
+    end subroutine
+
+    ! C1540 again, for a function reference: the expansion is a conditional
+    ! expression of the copies rather than an If statement, and the dummy
+    ! argument each copy corresponds to is checked the same way.
+    subroutine nil_for_a_required_dummy_of_a_function()
+        implicit none
+        integer :: a, r
+        a = 1
+        r = returns_one( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is not allowed for the dummy argument `x`, which is not optional
+        print *, r
     end subroutine
 
     ! C1540: at least one consequent shall be a consequent-arg, so they
