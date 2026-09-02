@@ -41,14 +41,51 @@ class ASRToLLVMVisitor;
     }
 
 
+    inline std::string get_type_key(ASR::symbol_t* sym, std::vector<ASR::symbol_t*> visited = {});
+
+    // A SEQUENCE or BIND(C) derived type is "the same type" as any other
+    // derived type declared with the same name, regardless of which scope
+    // declares it.
+    inline std::string get_sequence_or_bindc_type_key(ASR::Struct_t* s, std::vector<ASR::symbol_t*> visited) {
+        std::string key = "seq_or_bindc." + std::string(s->m_name);
+        visited.push_back(&s->base);
+        for (size_t i = 0; i < s->n_members; i++) {
+            ASR::symbol_t* member_sym = s->m_symtab->get_symbol(s->m_members[i]);
+            if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                continue;
+            }
+            ASR::ttype_t* member_type = ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+            ASR::ttype_t* member_elem_type = ASRUtils::extract_type(member_type);
+            if (ASR::is_a<ASR::StructType_t>(*member_elem_type)) {
+                ASR::symbol_t* nested_struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_type_declaration);
+                if (std::find(visited.begin(), visited.end(), nested_struct_sym) != visited.end()) {
+                    key += "|rec." + std::string(ASRUtils::symbol_name(nested_struct_sym));
+                } else {
+                    key += "|" + (nested_struct_sym != nullptr ?
+                        get_type_key(nested_struct_sym, visited) : std::string("struct"));
+                }
+            } else {
+                key += "|" + ASRUtils::type_to_str_with_kind(member_type, nullptr);
+            }
+        }
+        return key;
+    }
+
     // Return symbolName
     // Adds unqiue symtab ID for Struct and Union
-    inline std::string get_type_key(ASR::symbol_t* sym) {
+    inline std::string get_type_key(ASR::symbol_t* sym, std::vector<ASR::symbol_t*> visited) {
         sym = ASRUtils::symbol_get_past_external(sym);
         std::string name = ASRUtils::symbol_name(sym);
         if (!name.empty() && name[0] == '~') return name; // global sentinels for UPoly 
 
         if(ASR::is_a<ASR::Struct_t>(*sym) || ASR::is_a<ASR::Union_t>(*sym)){
+            if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(sym);
+                if (st->m_is_sequence || st->m_abi == ASR::abiType::BindC) {
+                    return get_sequence_or_bindc_type_key(st, visited);
+                }
+            }
             ASR::Module_t* mod = ASRUtils::get_sym_module(sym);
             if(mod) {
                 name = ASRUtils::symbol_name(&mod->base) + 
@@ -59,8 +96,8 @@ class ASRToLLVMVisitor;
 
         return name;
     }
-    inline std::string get_type_key(ASR::Struct_t* sym){
-        return get_type_key(&sym->base);
+    inline std::string get_type_key(ASR::Struct_t* sym, std::vector<ASR::symbol_t*> visited = {}){
+        return get_type_key(&sym->base, visited);
     }
 
     namespace {
