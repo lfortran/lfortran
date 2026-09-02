@@ -76,23 +76,11 @@ inline std::pair<int, int> classify_gpu_kernel_args(
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                     var->m_type_declaration);
                 if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
-                    for (size_t m = 0; m < st->n_members; m++) {
-                        ASR::symbol_t *mem =
-                            st->m_symtab->get_symbol(st->m_members[m]);
-                        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem))
-                            continue;
-                        ASR::Variable_t *mv =
-                            ASR::down_cast<ASR::Variable_t>(mem);
-                        if (!ASRUtils::is_allocatable(mv->m_type))
-                            continue;
-                        ASR::ttype_t *inner =
-                            ASRUtils::type_get_past_allocatable(
-                                mv->m_type);
-                        if (!ASR::is_a<ASR::Array_t>(*inner))
-                            continue;
-                        n_buffer += 3;
-                    }
+                    // Members inherited from the types this one extends are
+                    // decomposed like its own, so they count here too.
+                    n_buffer += 3 *
+                        (int)ASRUtils::collect_allocatable_array_members(
+                            ASR::down_cast<ASR::Struct_t>(s)).size();
                 }
             }
         } else {

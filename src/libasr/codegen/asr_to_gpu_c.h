@@ -23,6 +23,31 @@
 
 namespace LCompilers {
 
+// An extended type is laid out with the parent type as its first field, the
+// same way the LLVM backend lays it out, so that a struct copied to the
+// device keeps identical member offsets on both sides. This is the name of
+// that field in the generated device source.
+static const char *gpu_parent_field = "__parent";
+
+// Number of parent-field hops from `st` up to the type that declares
+// `member_name`, or -1 when no type in the chain declares it.
+static int struct_parent_depth(ASR::Struct_t *st,
+        const std::string &member_name) {
+    int depth = 0;
+    std::set<ASR::Struct_t*> seen;
+    while (st != nullptr) {
+        if (!seen.insert(st).second) break;
+        if (st->m_symtab->get_symbol(member_name)) return depth;
+        if (!st->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        st = ASR::down_cast<ASR::Struct_t>(parent);
+        depth++;
+    }
+    return -1;
+}
+
 class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
 public:
     std::set<std::string> called;
@@ -1828,23 +1853,21 @@ public:
         // Check if this local struct came from an array-of-struct element
         auto arr_it = struct_from_array_elem.find(var_name);
 
-        for (size_t m = 0; m < st->n_members; m++) {
-            ASR::symbol_t *mem =
-                st->m_symtab->get_symbol(st->m_members[m]);
-            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
-            ASR::Variable_t *mv =
-                ASR::down_cast<ASR::Variable_t>(mem);
-            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+        // A member inherited from a type this one extends is
+        // stored and handed over exactly like one of its own.
+        for (auto &mem_entry :
+                ASRUtils::collect_allocatable_array_members(st)) {
+            const std::string &mem_name = mem_entry.first;
+            ASR::Variable_t *mv = mem_entry.second;
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(mv->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
 
             // If this struct came from an array-of-struct element,
             // use the per-element sizes buffer
             if (arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
-                std::string key = arr_name + "." + st->m_members[m];
+                std::string key = arr_name + "." + mem_name;
                 auto sit = struct_array_sizes_params.find(key);
                 if (sit != struct_array_sizes_params.end()) {
                     src << ", " << sit->second << "[" << idx_str << "]";
@@ -1853,7 +1876,7 @@ public:
             }
 
             // Try direct lookup first (var_name.member)
-            std::string key = var_name + "." + st->m_members[m];
+            std::string key = var_name + "." + mem_name;
             auto it = func_array_size_params.find(key);
             if (it != func_array_size_params.end()) {
                 src << ", " << it->second;
@@ -1862,7 +1885,7 @@ public:
                 // (for local struct copies that originated from a
                 // kernel parameter)
                 std::string suffix = std::string(".")
-                    + st->m_members[m];
+                    + mem_name;
                 bool found = false;
                 for (auto &entry : func_array_size_params) {
                     if (entry.first.size() >= suffix.size() &&
@@ -1876,7 +1899,7 @@ public:
                 }
                 if (!found) {
                     src << ", __size_" << var_name << "_"
-                        << st->m_members[m];
+                        << mem_name;
                 }
             }
         }
@@ -1942,19 +1965,16 @@ public:
                         idx_str = idx_ss.str();
                     }
                 }
-                for (size_t m = 0; m < st->n_members; m++) {
-                    ASR::symbol_t *mem =
-                        st->m_symtab->get_symbol(st->m_members[m]);
-                    if (!mem || !ASR::is_a<ASR::Variable_t>(*mem))
-                        continue;
-                    ASR::Variable_t *mv =
-                        ASR::down_cast<ASR::Variable_t>(mem);
-                    if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+                // A member inherited from a type this one extends is
+                // stored and handed over exactly like one of its own.
+                for (auto &mem_entry :
+                        ASRUtils::collect_allocatable_array_members(st)) {
+                    const std::string &mem_name = mem_entry.first;
+                    ASR::Variable_t *mv = mem_entry.second;
                     ASR::ttype_t *inner =
                         ASRUtils::type_get_past_allocatable(mv->m_type);
-                    if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
                     std::string key = arr_name + "."
-                        + st->m_members[m];
+                        + mem_name;
                     auto dit = func_array_data_params.find(key);
                     auto oit = struct_array_offset_params.find(key);
                     if (dit != func_array_data_params.end() &&
@@ -1963,7 +1983,7 @@ public:
                             << oit->second << "[" << idx_str << "]";
                     } else {
                         src << ", __data_" << arr_name << "_"
-                            << st->m_members[m];
+                            << mem_name;
                     }
                     auto sit = struct_array_sizes_params.find(key);
                     if (sit != struct_array_sizes_params.end()) {
@@ -1971,7 +1991,7 @@ public:
                             << "[" << idx_str << "]";
                     } else {
                         src << ", __size_" << arr_name << "_"
-                            << st->m_members[m];
+                            << mem_name;
                     }
                 }
                 return;
@@ -1985,22 +2005,20 @@ public:
 
         auto arr_it = struct_from_array_elem.find(var_name);
 
-        for (size_t m = 0; m < st->n_members; m++) {
-            ASR::symbol_t *mem =
-                st->m_symtab->get_symbol(st->m_members[m]);
-            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
-            ASR::Variable_t *mv =
-                ASR::down_cast<ASR::Variable_t>(mem);
-            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
+        // A member inherited from a type this one extends is
+        // stored and handed over exactly like one of its own.
+        for (auto &mem_entry :
+                ASRUtils::collect_allocatable_array_members(st)) {
+            const std::string &mem_name = mem_entry.first;
+            ASR::Variable_t *mv = mem_entry.second;
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(mv->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
 
             // Emit data pointer for this member
             if (arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
-                std::string key = arr_name + "." + st->m_members[m];
+                std::string key = arr_name + "." + mem_name;
                 auto dit = func_array_data_params.find(key);
                 auto oit = struct_array_offset_params.find(key);
                 if (dit != func_array_data_params.end() &&
@@ -2009,16 +2027,16 @@ public:
                         << oit->second << "[" << idx_str << "]";
                 } else {
                     src << ", __data_" << var_name << "_"
-                        << st->m_members[m];
+                        << mem_name;
                 }
             } else {
-                std::string key = var_name + "." + st->m_members[m];
+                std::string key = var_name + "." + mem_name;
                 auto it = func_array_data_params.find(key);
                 if (it != func_array_data_params.end()) {
                     src << ", " << it->second;
                 } else {
                     std::string suffix = std::string(".")
-                        + st->m_members[m];
+                        + mem_name;
                     bool found = false;
                     for (auto &entry : func_array_data_params) {
                         if (entry.first.size() >= suffix.size() &&
@@ -2032,7 +2050,7 @@ public:
                     }
                     if (!found) {
                         src << ", __data_" << var_name << "_"
-                            << st->m_members[m];
+                            << mem_name;
                     }
                 }
             }
@@ -2041,22 +2059,22 @@ public:
             if (arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
-                std::string key = arr_name + "." + st->m_members[m];
+                std::string key = arr_name + "." + mem_name;
                 auto sit = struct_array_sizes_params.find(key);
                 if (sit != struct_array_sizes_params.end()) {
                     src << ", " << sit->second << "[" << idx_str << "]";
                 } else {
                     src << ", __size_" << var_name << "_"
-                        << st->m_members[m];
+                        << mem_name;
                 }
             } else {
-                std::string key = var_name + "." + st->m_members[m];
+                std::string key = var_name + "." + mem_name;
                 auto it = func_array_size_params.find(key);
                 if (it != func_array_size_params.end()) {
                     src << ", " << it->second;
                 } else {
                     std::string suffix = std::string(".")
-                        + st->m_members[m];
+                        + mem_name;
                     bool found = false;
                     for (auto &entry : func_array_size_params) {
                         if (entry.first.size() >= suffix.size() &&
@@ -2070,7 +2088,7 @@ public:
                     }
                     if (!found) {
                         src << ", __size_" << var_name << "_"
-                            << st->m_members[m];
+                            << mem_name;
                     }
                 }
             }
@@ -2190,22 +2208,24 @@ public:
         return nullptr;
     }
 
-    // Check if a Struct_t has any allocatable array members
+    // Check if a Struct_t has any allocatable array members, including the
+    // ones inherited from the types it extends
     bool struct_has_allocatable_members(ASR::Struct_t *st) {
-        for (size_t m = 0; m < st->n_members; m++) {
-            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[m]);
-            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
-            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
-            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
-            ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(mv->m_type);
-            if (ASR::is_a<ASR::Array_t>(*inner)) return true;
-        }
-        return false;
+        return !ASRUtils::collect_allocatable_array_members(st).empty();
     }
 
     // Emit a device struct definition for a Struct symbol
     void emit_struct_def(ASR::Struct_t *st) {
         src << "struct " << st->m_name << " {\n";
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            if (ASR::is_a<ASR::Struct_t>(*parent)) {
+                src << "    "
+                    << ASR::down_cast<ASR::Struct_t>(parent)->m_name << " "
+                    << gpu_parent_field << ";\n";
+            }
+        }
         for (size_t i = 0; i < st->n_members; i++) {
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
@@ -2216,8 +2236,16 @@ public:
                     // pointer size to keep the struct layout aligned.
                     src << "    long " << mv->m_name << ";\n";
                 } else if (is_struct_type(mv->m_type)) {
+                    // A component that is an array of a derived type keeps
+                    // its extent: the element count is the same on the host,
+                    // and a component reference into it is emitted as a
+                    // subscript.
                     src << "    " << get_struct_name(mv) << " "
-                        << mv->m_name << ";\n";
+                        << mv->m_name;
+                    if (is_array_type(mv->m_type)) {
+                        src << "[" << get_total_elements(mv->m_type) << "]";
+                    }
+                    src << ";\n";
                 } else if (is_array_type(mv->m_type)) {
                     ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(mv->m_type);
                     src << "    " << gpu_type(arr->m_type) << " "
@@ -2234,13 +2262,65 @@ public:
         src << "};\n\n";
     }
 
+    // Static Struct type an expression is read from. Only the forms that
+    // can appear as the base of a component reference are handled; anything
+    // else yields nullptr.
+    ASR::Struct_t* struct_of_expr(ASR::expr_t *e) {
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        }
+        ASR::symbol_t *decl = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*v)) {
+                decl = ASR::down_cast<ASR::Variable_t>(v)->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*m)) {
+                decl = ASR::down_cast<ASR::Variable_t>(m)->m_type_declaration;
+            } else if (ASR::is_a<ASR::Struct_t>(*m)) {
+                decl = m;
+            }
+        }
+        if (!decl) return nullptr;
+        decl = ASRUtils::symbol_get_past_external(decl);
+        if (!ASR::is_a<ASR::Struct_t>(*decl)) return nullptr;
+        return ASR::down_cast<ASR::Struct_t>(decl);
+    }
+
+    // Emit the parent-field selectors that lead from the static type of
+    // `base` down to the type declaring `mem_name`. Emits nothing when the
+    // member is declared by that type itself.
+    void emit_parent_field_path(ASR::expr_t *base,
+            const std::string &mem_name) {
+        ASR::Struct_t *st = struct_of_expr(base);
+        if (!st) return;
+        int depth = struct_parent_depth(st, mem_name);
+        for (int d = 0; d < depth; d++) {
+            src << "." << gpu_parent_field;
+        }
+    }
+
     // Collect struct definitions in dependency order (nested structs first)
     void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
             std::set<std::string> &emitted,
             std::vector<ASR::Struct_t*> &ordered) {
         std::string name = st->m_name;
         if (emitted.count(name)) return;
-        // Emit dependencies first
+        // Emit dependencies first: the parent type is an inline field of
+        // this one, so it must be defined before it.
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            if (ASR::is_a<ASR::Struct_t>(*parent)) {
+                collect_structs_ordered(
+                    ASR::down_cast<ASR::Struct_t>(parent),
+                    scope, emitted, ordered);
+            }
+        }
         for (size_t i = 0; i < st->n_members; i++) {
             ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
@@ -2320,30 +2400,22 @@ public:
                     if (ASR::is_a<ASR::Struct_t>(*st_sym)) {
                         ASR::Struct_t *st =
                             ASR::down_cast<ASR::Struct_t>(st_sym);
-                        for (size_t m = 0; m < st->n_members; m++) {
-                            ASR::symbol_t *mem =
-                                st->m_symtab->get_symbol(
-                                    st->m_members[m]);
-                            if (!mem ||
-                                !ASR::is_a<ASR::Variable_t>(*mem))
-                                continue;
-                            ASR::Variable_t *mv =
-                                ASR::down_cast<ASR::Variable_t>(mem);
-                            if (!ASRUtils::is_allocatable(mv->m_type))
-                                continue;
+                        // A member inherited from a type this one extends is
+                        // stored and handed over exactly like one of its own.
+                        for (auto &mem_entry :
+                                ASRUtils::collect_allocatable_array_members(st)) {
+                            const std::string &mem_name = mem_entry.first;
+                            ASR::Variable_t *mv = mem_entry.second;
                             ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(
-                                    mv->m_type);
-                            if (!ASR::is_a<ASR::Array_t>(*inner))
-                                continue;
+                                ASRUtils::type_get_past_allocatable(mv->m_type);
                             std::string key =
                                 std::string(arg->m_name) + "."
-                                + st->m_members[m];
+                                + mem_name;
                             ASR::Array_t *mem_arr =
                                 ASR::down_cast<ASR::Array_t>(inner);
                             std::string data_name =
                                 "__data_" + std::string(arg->m_name)
-                                + "_" + st->m_members[m];
+                                + "_" + mem_name;
                             std::string elem_type_str;
                             if (is_struct_type(mem_arr->m_type)) {
                                 elem_type_str = get_struct_name(mv);
@@ -2357,7 +2429,7 @@ public:
                             func_array_data_params[key] = data_name;
                             std::string size_name =
                                 "__size_" + std::string(arg->m_name)
-                                + "_" + st->m_members[m];
+                                + "_" + mem_name;
                             src << ", int " << size_name;
                             func_array_size_params[key] = size_name;
                         }
@@ -3001,23 +3073,14 @@ public:
                                 v->m_v));
                     ASR::Struct_t *st = get_struct_decl(var);
                     if (st) {
-                        for (size_t m = 0; m < st->n_members; m++) {
-                            ASR::symbol_t *mem =
-                                st->m_symtab->get_symbol(
-                                    st->m_members[m]);
-                            if (!mem ||
-                                !ASR::is_a<ASR::Variable_t>(*mem))
-                                continue;
-                            ASR::Variable_t *mv =
-                                ASR::down_cast<ASR::Variable_t>(
-                                    mem);
-                            if (!ASRUtils::is_allocatable(mv->m_type))
-                                continue;
+                        // A member inherited from a type this one extends is
+                        // stored and handed over exactly like one of its own.
+                        for (auto &mem_entry :
+                                ASRUtils::collect_allocatable_array_members(st)) {
+                            const std::string &mem_name = mem_entry.first;
+                            ASR::Variable_t *mv = mem_entry.second;
                             ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(
-                                    mv->m_type);
-                            if (!ASR::is_a<ASR::Array_t>(*inner))
-                                continue;
+                                ASRUtils::type_get_past_allocatable(mv->m_type);
                             ASR::Array_t *mem_arr =
                                 ASR::down_cast<ASR::Array_t>(inner);
                             std::string et;
@@ -3028,17 +3091,17 @@ public:
                             }
                             std::string data_name =
                                 "__data_" + args[i].name + "_"
-                                + st->m_members[m];
+                                + mem_name;
                             packed_arrays.push_back({
                                 data_name, et, false, "", 0, 0});
                             std::string off_name =
                                 "__offsets_" + args[i].name + "_"
-                                + st->m_members[m];
+                                + mem_name;
                             packed_arrays.push_back({
                                 off_name, "int", false, "", 0, 0});
                             std::string sizes_name =
                                 "__sizes_" + args[i].name + "_"
-                                + st->m_members[m];
+                                + mem_name;
                             packed_arrays.push_back({
                                 sizes_name, "int", false, "", 0, 0});
                         }
@@ -3105,23 +3168,14 @@ public:
                                     v->m_v));
                         ASR::Struct_t *st = get_struct_decl(var);
                         if (st) {
-                            for (size_t m = 0; m < st->n_members; m++) {
-                                ASR::symbol_t *mem =
-                                    st->m_symtab->get_symbol(
-                                        st->m_members[m]);
-                                if (!mem ||
-                                    !ASR::is_a<ASR::Variable_t>(*mem))
-                                    continue;
-                                ASR::Variable_t *mv =
-                                    ASR::down_cast<ASR::Variable_t>(
-                                        mem);
-                                if (!ASRUtils::is_allocatable(mv->m_type))
-                                    continue;
+                            // A member inherited from a type this one extends is
+                            // stored and handed over exactly like one of its own.
+                            for (auto &mem_entry :
+                                    ASRUtils::collect_allocatable_array_members(st)) {
+                                const std::string &mem_name = mem_entry.first;
+                                ASR::Variable_t *mv = mem_entry.second;
                                 ASR::ttype_t *inner =
-                                    ASRUtils::type_get_past_allocatable(
-                                        mv->m_type);
-                                if (!ASR::is_a<ASR::Array_t>(*inner))
-                                    continue;
+                                    ASRUtils::type_get_past_allocatable(mv->m_type);
                                 ASR::Array_t *mem_arr =
                                     ASR::down_cast<ASR::Array_t>(inner);
                                 std::string et;
@@ -3132,7 +3186,7 @@ public:
                                 }
                                 std::string data_name =
                                     "__data_" + args[i].name + "_"
-                                    + st->m_members[m];
+                                    + mem_name;
                                 src << ",\n    " << global_prefix()
                                     << et << "* "
                                     << data_name
@@ -3143,7 +3197,7 @@ public:
                                      GpuKernelParamKind::Buffer});
                                 std::string off_name =
                                     "__offsets_" + args[i].name + "_"
-                                    + st->m_members[m];
+                                    + mem_name;
                                 src << ",\n    " << global_prefix()
                                     << "int* "
                                     << off_name
@@ -3154,7 +3208,7 @@ public:
                                      GpuKernelParamKind::Buffer});
                                 std::string sizes_name =
                                     "__sizes_" + args[i].name + "_"
-                                    + st->m_members[m];
+                                    + mem_name;
                                 src << ",\n    " << global_prefix()
                                     << "int* "
                                     << sizes_name
@@ -3287,31 +3341,23 @@ public:
                     if (ASR::is_a<ASR::Struct_t>(*st_sym)) {
                         ASR::Struct_t *st =
                             ASR::down_cast<ASR::Struct_t>(st_sym);
-                        for (size_t m = 0; m < st->n_members; m++) {
-                            ASR::symbol_t *mem =
-                                st->m_symtab->get_symbol(
-                                    st->m_members[m]);
-                            if (!mem ||
-                                !ASR::is_a<ASR::Variable_t>(*mem))
-                                continue;
-                            ASR::Variable_t *mv =
-                                ASR::down_cast<ASR::Variable_t>(mem);
-                            if (!ASRUtils::is_allocatable(mv->m_type))
-                                continue;
+                        // A member inherited from a type this one extends is
+                        // stored and handed over exactly like one of its own.
+                        for (auto &mem_entry :
+                                ASRUtils::collect_allocatable_array_members(st)) {
+                            const std::string &mem_name = mem_entry.first;
+                            ASR::Variable_t *mv = mem_entry.second;
                             ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(
-                                    mv->m_type);
-                            if (!ASR::is_a<ASR::Array_t>(*inner))
-                                continue;
+                                ASRUtils::type_get_past_allocatable(mv->m_type);
                             std::string key = args[i].name + "."
-                                + st->m_members[m];
+                                + mem_name;
                             std::string size_name =
                                 "__size_" + args[i].name + "_"
-                                + st->m_members[m];
+                                + mem_name;
                             func_array_size_params[key] = size_name;
                             std::string data_name =
                                 "__data_" + args[i].name + "_"
-                                + st->m_members[m];
+                                + mem_name;
                             func_array_data_params[key] = data_name;
                         }
                     }
@@ -3325,34 +3371,27 @@ public:
                     ASRUtils::symbol_get_past_external(v->m_v));
                 ASR::Struct_t *st = get_struct_decl(var);
                 if (st) {
-                    for (size_t m = 0; m < st->n_members; m++) {
-                        ASR::symbol_t *mem =
-                            st->m_symtab->get_symbol(st->m_members[m]);
-                        if (!mem ||
-                            !ASR::is_a<ASR::Variable_t>(*mem))
-                            continue;
-                        ASR::Variable_t *mv =
-                            ASR::down_cast<ASR::Variable_t>(mem);
-                        if (!ASRUtils::is_allocatable(mv->m_type))
-                            continue;
+                    // A member inherited from a type this one extends is
+                    // stored and handed over exactly like one of its own.
+                    for (auto &mem_entry :
+                            ASRUtils::collect_allocatable_array_members(st)) {
+                        const std::string &mem_name = mem_entry.first;
+                        ASR::Variable_t *mv = mem_entry.second;
                         ASR::ttype_t *inner =
-                            ASRUtils::type_get_past_allocatable(
-                                mv->m_type);
-                        if (!ASR::is_a<ASR::Array_t>(*inner))
-                            continue;
+                            ASRUtils::type_get_past_allocatable(mv->m_type);
                         std::string key = args[i].name + "."
-                            + st->m_members[m];
+                            + mem_name;
                         std::string data_name =
                             "__data_" + args[i].name + "_"
-                            + st->m_members[m];
+                            + mem_name;
                         func_array_data_params[key] = data_name;
                         std::string off_name =
                             "__offsets_" + args[i].name + "_"
-                            + st->m_members[m];
+                            + mem_name;
                         struct_array_offset_params[key] = off_name;
                         std::string sizes_name =
                             "__sizes_" + args[i].name + "_"
-                            + st->m_members[m];
+                            + mem_name;
                         struct_array_sizes_params[key] = sizes_name;
                     }
                 }
@@ -5237,6 +5276,7 @@ public:
                     }
                 }
                 visit_expr(sm->m_v);
+                emit_parent_field_path(sm->m_v, mem_name);
                 src << ".";
                 src << mem_name;
                 break;

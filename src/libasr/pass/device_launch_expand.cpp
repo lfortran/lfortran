@@ -80,15 +80,19 @@ static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
 // A struct passed to a kernel is sized with SizeOfType, which lays it out as
 // an anonymous struct of its member types. Only structs whose members are
 // plain scalars, fixed size arrays, nested plain structs and decomposed
-// allocatable arrays are laid out that way; anything else (an extended type,
-// character or pointer members) has no device layout at all, so a loop that
-// needs it stays on the host.
+// allocatable arrays are laid out that way; anything else (character or
+// pointer members) has no device layout at all, so a loop that needs it
+// stays on the host.
+//
+// An extended type is laid out with the type it extends as its first field,
+// on the device as on the host, so the type it extends has to be laid out
+// that way too.
 static bool struct_is_plain(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) {
         return unsupported("a derived type whose declaration is not known");
     }
-    if (st->m_parent) return unsupported("an extended derived type");
+    if (st->m_parent && !struct_is_plain(st->m_parent)) return false;
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
         if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
@@ -129,6 +133,79 @@ static bool struct_is_plain(ASR::symbol_t *struct_sym) {
     return true;
 }
 
+// Every data member of `st`, the ones it inherits first, in layout order.
+static void collect_data_members(ASR::Struct_t *st,
+        std::vector<ASR::symbol_t*> &members) {
+    if (!st) return;
+    if (st->m_parent) collect_data_members(get_struct(st->m_parent), members);
+    for (size_t i = 0; i < st->n_members; i++) {
+        members.push_back(st->m_symtab->get_symbol(st->m_members[i]));
+    }
+}
+
+static ASR::ttype_t* struct_layout_type(Allocator &al,
+    ASR::symbol_t *struct_sym);
+
+// The type one member occupies inside its struct. A member that is itself a
+// derived type is laid out by that type's own layout, which is not what its
+// StructType signature says when the type extends another one.
+static ASR::ttype_t* member_layout_type(Allocator &al,
+        ASR::Variable_t *member) {
+    ASR::ttype_t *type = member->m_type;
+    ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
+    if (!ASR::is_a<ASR::StructType_t>(*element)) return type;
+    ASR::ttype_t *layout = struct_layout_type(al, member->m_type_declaration);
+    if (!layout) return type;
+    if (!ASR::is_a<ASR::Array_t>(*type)) return layout;
+    ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, layout,
+        array->m_dims, array->n_dims, array->m_physical_type,
+        array->m_memory_space));
+}
+
+// The anonymous struct a value of `struct_sym` is laid out as: the type it
+// extends first, then its own members. Both the host and the device put the
+// inherited part of an extended type in front of the type's own, but a
+// StructType signature lists only the members the type declares itself, so a
+// launch that sized an extended type from its signature would copy only the
+// tail of it. Returns nullptr when the type cannot be inspected.
+static ASR::ttype_t* struct_layout_type(Allocator &al,
+        ASR::symbol_t *struct_sym) {
+    ASR::Struct_t *st = get_struct(struct_sym);
+    if (!st) return nullptr;
+    Vec<ASR::ttype_t*> members;
+    members.reserve(al, st->n_members + 1);
+    if (st->m_parent) {
+        ASR::ttype_t *parent = struct_layout_type(al, st->m_parent);
+        if (!parent) return nullptr;
+        members.push_back(al, parent);
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return nullptr;
+        members.push_back(al, member_layout_type(al,
+            ASR::down_cast<ASR::Variable_t>(member)));
+    }
+    return ASRUtils::TYPE(ASR::make_StructType_t(al, st->base.base.loc,
+        members.p, members.n, nullptr, 0, true, false));
+}
+
+// The type to hand SizeOfType for a value of `type`, which is `type` itself
+// unless it is a derived type whose layout its signature does not describe.
+static ASR::ttype_t* size_of_type_arg(Allocator &al, ASR::expr_t *value,
+        ASR::ttype_t *type) {
+    ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
+    if (!ASR::is_a<ASR::StructType_t>(*element)) return type;
+    ASR::ttype_t *layout = struct_layout_type(al,
+        ASRUtils::get_struct_sym_from_struct_expr(value));
+    if (!layout) return type;
+    if (!ASR::is_a<ASR::Array_t>(*type)) return layout;
+    ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, layout,
+        array->m_dims, array->n_dims, array->m_physical_type,
+        array->m_memory_space));
+}
+
 // True when a value of this type can be handed to the runtime as a plain
 // block of bytes whose size SizeOfType computes correctly.
 static bool is_supported_buffer(ASR::expr_t *arg) {
@@ -147,9 +224,9 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
             return true;
         }
         ASR::Struct_t *st = get_struct(struct_sym);
-        for (size_t i = 0; i < st->n_members; i++) {
-            if (is_decomposed_member(st->m_symtab->get_symbol(
-                    st->m_members[i]))) {
+        for (auto &member :
+                ASRUtils::collect_allocatable_array_members(st)) {
+            if (is_decomposed_member(&member.second->base)) {
                 return unsupported(
                     "an array of derived type that is not a plain variable");
             }
@@ -407,10 +484,11 @@ class DeviceLaunchExpandVisitor :
                 ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
             if (!ASRUtils::is_array(type) ||
                     ASRUtils::get_fixed_size_of_array(type) > 0) {
-                return ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, type,
-                    int64, nullptr));
+                return ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
+                    size_of_type_arg(al, arg, type), int64, nullptr));
             }
-            ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
+            ASR::ttype_t *element = size_of_type_arg(al, arg,
+                ASRUtils::type_get_past_array(type));
             return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
@@ -487,9 +565,12 @@ class DeviceLaunchExpandVisitor :
                     analyze_gpu_vla_workspaces(kernel));
             std::map<std::string, std::string> runtime_sources =
                 find_struct_member_vla_runtime_sources(kernel);
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *member = st->m_symtab->get_symbol(
-                    st->m_members[m]);
+            // A member inherited from a type this one extends is stored
+            // and handed over exactly like one of its own.
+            for (auto &member_entry :
+                    ASRUtils::collect_allocatable_array_members(st)) {
+                const std::string &member_name = member_entry.first;
+                ASR::symbol_t *member = &member_entry.second->base;
                 if (!is_decomposed_member(member)) continue;
                 ASR::ttype_t *member_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::symbol_type(member));
@@ -512,7 +593,7 @@ class DeviceLaunchExpandVisitor :
 
                 // The kernel writes into a member the caller never allocated,
                 // so the host has to give it storage first.
-                std::string key = arg_name + "." + st->m_members[m];
+                std::string key = arg_name + "." + member_name;
                 ASR::expr_t *missing_size = nullptr;
                 auto write_size = write_sizes.find(key);
                 if (write_size != write_sizes.end()) {
@@ -900,9 +981,9 @@ class DeviceLaunchExpandVisitor :
             ASR::expr_t *tmp = declare_local(loc, "gpu_plain_arg",
                 plain_type, struct_sym);
             std::vector<ASR::stmt_t*> back;
-            for (size_t m = 0; m < st->n_members; m++) {
-                ASR::symbol_t *member = st->m_symtab->get_symbol(
-                    st->m_members[m]);
+            std::vector<ASR::symbol_t*> data_members;
+            collect_data_members(st, data_members);
+            for (ASR::symbol_t *member : data_members) {
                 if (member == nullptr
                         || !ASR::is_a<ASR::Variable_t>(*member)) {
                     return arg;
