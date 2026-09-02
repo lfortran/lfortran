@@ -514,7 +514,8 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
                 }
             }
             if (!runtime) continue;
-            if (declared_shape_to_vla_workspace(arr, vname, arg_names, ws)) {
+            if (declared_shape_to_vla_workspace(arr, vname, arg_names, ws,
+                    symtab, body, n_body)) {
                 continue;
             }
             unresolved_name = vname;
@@ -535,7 +536,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
         }
         if (!runtime) continue;
         if (alloc_shape_to_vla_workspace(*target, arr, vname, body, n_body,
-                arg_names, ws)) {
+                arg_names, ws, symtab)) {
             continue;
         }
         unresolved_name = vname;

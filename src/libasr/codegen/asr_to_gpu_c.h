@@ -145,6 +145,11 @@ public:
     // used by the BlockCall handler to emit device pointer offsets.
     std::vector<GpuVlaWorkspace> current_vla_infos;
 
+    // The result variable of the device function being emitted, which a
+    // RETURN inside it hands back. Empty inside a kernel, which returns
+    // nothing.
+    std::string current_return_name;
+
     // The kernel being emitted, so that a workspace extent can be read
     // through the names the kernel binds.
     ASR::stmt_t **current_kernel_body = nullptr;
@@ -2975,9 +2980,16 @@ public:
                 }
             }
         }
+        if (fn->m_return_var) {
+            current_return_name = sanitize_name(
+                ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v)
+                        ->m_name);
+        }
         for (size_t i = 0; i < fn->n_body; i++) {
             visit_stmt(fn->m_body[i]);
         }
+        current_return_name.clear();
         in_inline_function = false;
         if (fn->m_return_var) {
             ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
@@ -4463,7 +4475,14 @@ public:
                 break;
             }
             case ASR::stmtType::Return: {
-                src << get_indent() << "return;\n";
+                // A Fortran RETURN in a function hands back the result
+                // variable, which the device language spells out.
+                if (!current_return_name.empty()) {
+                    src << get_indent() << "return " << current_return_name
+                        << ";\n";
+                } else {
+                    src << get_indent() << "return;\n";
+                }
                 break;
             }
             case ASR::stmtType::WhileLoop: {
