@@ -911,6 +911,13 @@ class DeviceLaunchExpandVisitor :
                     if (i >= x.n_args) break;
                     return x.m_args[i].m_value;
                 }
+                // A name of the kernel's own that stands for one value --
+                // an ASSOCIATE selector, once the construct is spliced in.
+                // The value it is bound to is what the host evaluates.
+                return host_extent(loc, x, kernel,
+                    gpu_local_scalar_binding(
+                        ASR::down_cast<ASR::Var_t>(v)->m_v,
+                        kernel->m_body, kernel->n_body));
             }
             return nullptr;
         }
