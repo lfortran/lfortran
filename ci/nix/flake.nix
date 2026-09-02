@@ -102,7 +102,6 @@
               cppzmq
               libuuid
               openssl
-              xtl
               zeromq
             ] ++ [ xeus_6_0 ];
 
