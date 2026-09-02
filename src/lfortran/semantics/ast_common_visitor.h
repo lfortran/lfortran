@@ -20538,11 +20538,17 @@ public:
 
     // A name followed by a parenthesized list is a procedure reference or an
     // array element or section (R1520 against R911), and only the symbol
-    // tells them apart. An unresolved name is left alone: it is an intrinsic
-    // or an implicit interface, neither of which has a definable dummy
-    // argument that a conditional argument could reach, and `.nil.` in one is
-    // reported by visit_Nil.
+    // tells them apart. A variable that is not a procedure is therefore left
+    // alone: `a( ( c ? i : j ) )` subscripts `a` with a conditional
+    // expression, it does not pass a conditional argument, and turning it
+    // into a selection of two designators would stop it being one.
+    //
+    // An unresolved name is left alone as well: it is an intrinsic or an
+    // implicit interface. `.nil.` in one is reported by visit_Nil.
     ASR::symbol_t* referenced_procedure(const AST::FuncCallOrArray_t &x) {
+        // A reference through a component (`o%f(...)`) is not expanded: the
+        // final member is a binding or an array component, and only
+        // resolving it against the declared type tells which.
         if (x.n_member > 0 || x.n_temp_args > 0) {
             return nullptr;
         }
@@ -20557,7 +20563,10 @@ public:
         s = ASRUtils::symbol_get_past_external(s);
         if (ASR::is_a<ASR::Function_t>(*s)
                 || ASR::is_a<ASR::GenericProcedure_t>(*s)
-                || ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+                || ASR::is_a<ASR::StructMethodDeclaration_t>(*s)
+                // A procedure pointer and a dummy procedure are references
+                // too, and their dummy arguments are as definable as any
+                || ASRUtils::is_symbol_procedure_variable(s)) {
             return s;
         }
         return nullptr;

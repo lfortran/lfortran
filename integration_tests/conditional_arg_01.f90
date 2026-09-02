@@ -39,6 +39,7 @@ program conditional_arg_01
     implicit none
     integer :: x, y, r
     type(holder) :: h
+    procedure(bump), pointer :: fp
 
     ! The chosen variable is the actual argument, so intent(inout) writes
     ! back into it and the other consequent is untouched
@@ -93,7 +94,38 @@ program conditional_arg_01
     x = 1
     r = ( x>0 ? 5 : boom_arg( ( x>0 ? x : y ) ) )
     if (r /= 5) error stop 16
+
+    ! A reference through a procedure pointer is a procedure reference too,
+    ! so its conditional argument is associated by reference as well
+    fp => bump
+    x = 1; y = 2
+    r = fp( ( x>0 ? x : y ) )
+    if (r /= 11) error stop 17
+    if (x /= 11) error stop 18
+    if (y /= 2) error stop 19
+    r = fp( ( x>100 ? x : y ) )
+    if (r /= 12) error stop 20
+    if (y /= 12) error stop 21
+
+    ! And so is a reference to a dummy procedure
+    x = 1; y = 2
+    call through(bump, x, y)
+    if (x /= 11) error stop 22
 contains
+    subroutine through(f, a, b)
+        procedure(bump) :: f
+        integer, intent(inout) :: a, b
+        integer :: got
+        got = f( ( a>0 ? a : b ) )
+        if (got /= 11) error stop 94
+    end subroutine
+
+    integer function bump(a)
+        integer, intent(inout) :: a
+        a = a + 10
+        bump = a
+    end function
+
     subroutine five(a)
         integer, intent(inout) :: a
         a = 5
