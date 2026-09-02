@@ -56,6 +56,25 @@ struct GpuKernelParam {
     GpuKernelParamKind kind;
 };
 
+// An allocatable array component of a kernel argument that is an array of a
+// derived type reaches the device as three buffers: the elements' data laid
+// out end to end, the per-element offsets into it, and the per-element sizes.
+// The sizes buffer holds the *extents* of the component, one entry per
+// dimension per element, in dimension order: element `k` of a rank `R`
+// component occupies entries `k*R .. k*R + R - 1`. A rank-one component
+// therefore keeps the single entry per element it has always had, that
+// element's number of elements, and the buffer accounting below is unchanged;
+// for a higher rank the element count is the product of the R entries.
+// Carrying the extents rather than only the total is what lets the shader
+// linearize `a(i)%m(p,q)`, which needs the extent of every dimension but the
+// last. The host fills the buffer in device_launch_expand and the device
+// reads it in asr_to_gpu_c.h; this is the one place the two agree.
+inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
+    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*inner)) return 0;
+    return ASR::down_cast<ASR::Array_t>(inner)->n_dims;
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
