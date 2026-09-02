@@ -226,6 +226,19 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // Returns the terminator of `bb`, or nullptr when `bb` is not
+        // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
+        // block without a terminator from LLVM 23 on, so inspect the last
+        // instruction directly: this behaves identically on every LLVM
+        // version we support.
+        static inline llvm::Instruction* get_terminator(llvm::BasicBlock* bb) {
+            if (bb->empty()) {
+                return nullptr;
+            }
+            llvm::Instruction& last_instruction = bb->back();
+            return last_instruction.isTerminator() ? &last_instruction : nullptr;
+        }
+
     }
 
     class LLVMList;
@@ -2101,7 +2114,7 @@ class ASRToLLVMVisitor;
          */
         void END_CACHE(llvm::BasicBlock* revert_bb) {
             LCOMPILERS_ASSERT(revert_bb)
-            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+            LCOMPILERS_ASSERT_MSG(!LLVM::get_terminator(builder_->GetInsertBlock()),
                 "`END CACHE` adds the terminator, not expected to be added by other utility")
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(revert_bb);
@@ -2515,7 +2528,7 @@ class ASRToLLVMVisitor;
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->back().getTerminator() == nullptr){
+                if(LLVM::get_terminator(&cache_pair.second->back()) == nullptr){
                     throw LCompilersException("Cache function" + 
                             cache_pair.second->getName().str() +
                             "Not properly created");
