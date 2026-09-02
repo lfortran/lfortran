@@ -118,6 +118,22 @@ The ASR is always representing a semantically valid Fortran code.  This is
 enforced by checks in the ASR C++ constructors (in Debug build).
 When an ASR is used, one can assume it is valid.
 
+## Conditional Expressions and Conditional Arguments
+
+A conditional expression (F2023 10.1.2.3), `( cond ? a : b )`, is an ordinary
+expression and becomes the `ConditionalExpr` AST node. A conditional argument
+(15.5.1) has the same syntax but appears in an actual argument position, where
+it selects the actual argument itself rather than a value: a consequent that is
+a variable stays definable, and a consequent of `.NIL.` (6.2.1) means the dummy
+argument is not present.
+
+Only the context tells the two apart, so the parser does not: both use the same
+production, and `.NIL.` is the `Nil` AST expression node, accepted as a
+consequent everywhere. The semantic layer then rejects `Nil` wherever a value is
+required, and expands a conditional argument by duplicating the procedure
+reference into the arms of a selection, one copy per consequent, so that every
+copy is an ordinary reference that the existing argument checks apply to.
+
 ## Fortran 2008
 
 Fortran 2008 [standard](https://j3-fortran.org/doc/year/10/10-007.pdf) chapter

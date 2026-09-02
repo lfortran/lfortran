@@ -42,3 +42,14 @@ subroutine nil_as_a_condition()
     a = 1
     x = ( .nil. ? a : a )  ! {Error} Token '.nil.' is unexpected here
 end subroutine
+
+! R1527: `.NIL.` is a token of its own (6.2.1), not a named constant and not an
+! expression. It is only a consequent of a conditional argument, and only there
+! does it mean anything, so anywhere a value is required it is rejected.
+subroutine nil_is_not_a_value()
+    implicit none
+    integer :: a, x
+    a = 1
+    x = ( .true. ? a : .nil. )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+    print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+end subroutine

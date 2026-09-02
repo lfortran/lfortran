@@ -92,15 +92,4 @@ contains
         allocate(a(1)); allocate(p(1))
         call gen( ( .true. ? a : p ) )  ! {Error} the consequents of a conditional argument to a generic procedure must have the same `allocatable` and `pointer` attributes
     end subroutine
-
-    ! R1527: `.NIL.` is a token of its own (6.2.1), not a named constant and
-    ! not an expression. It is only a consequent of a conditional argument,
-    ! and only there does it mean anything.
-    subroutine nil_is_not_a_value()
-        implicit none
-        integer :: a, x
-        a = 1
-        x = ( .true. ? a : .nil. )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
-        print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
-    end subroutine
 end module

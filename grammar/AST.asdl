@@ -215,10 +215,6 @@ expr
         identifier var, expr start, expr end, expr? increment)
     | Parenthesis(expr operand)
     | ConditionalExpr(expr test, expr body, expr orelse)
-    -- `.NIL.` (6.2.1). It is only a consequent of a conditional argument
-    -- (R1527), never a value, so the semantic layer rejects it anywhere
-    -- else. It is parsed as an expression so that a conditional
-    -- expression and a conditional argument share one production.
     | Nil()
 
 

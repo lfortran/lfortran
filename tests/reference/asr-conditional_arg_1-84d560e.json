@@ -2,12 +2,12 @@
     "basename": "asr-conditional_arg_1-84d560e",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/conditional_arg_1.f90",
-    "infile_hash": "54943df278814919377b5234e48cc7fef5306a952a8d88bb440e5abe",
+    "infile_hash": "f901a0408296c6ec2103038b3f30ee99b2b9fd4f71dc06ddfd6e7494",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-conditional_arg_1-84d560e.stderr",
-    "stderr_hash": "50bb09ab56e9712d5324763c84a43f61e1a0c3751ee294694f88b30d",
+    "stderr_hash": "3a2c3debc1be10d361c1f6125e2675b6a90be1061efc2b2a4df0070d",
     "returncode": 1
 }
