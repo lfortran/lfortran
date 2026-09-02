@@ -62,7 +62,6 @@ static bool is_decomposed_member(ASR::symbol_t *member) {
     ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
         variable->m_type);
     if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
-    if (ASR::down_cast<ASR::Array_t>(inner)->n_dims != 1) return false;
     ASR::ttype_t *element = ASRUtils::type_get_past_array(inner);
     if (ASR::is_a<ASR::StructType_t>(*element)) {
         return struct_is_plain(variable->m_type_declaration);
@@ -618,6 +617,8 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
                     b.allocatable(b.Array({-1}, int8)));
 
+                size_t rank = gpu_struct_member_rank(
+                    ASR::down_cast<ASR::Variable_t>(member));
                 out.push_back(al, b.Assignment(n,
                     b.ArraySize(arg, nullptr, int32)));
                 Vec<ASR::dimension_t> dims;
@@ -627,8 +628,18 @@ class DeviceLaunchExpandVisitor :
                 dim.m_start = b.i32(1);
                 dim.m_length = n;
                 dims.push_back(al, dim);
-                out.push_back(al, b.Allocate(sizes, dims.p, dims.n));
                 out.push_back(al, b.Allocate(offsets, dims.p, dims.n));
+                // One entry per dimension per element.
+                Vec<ASR::dimension_t> size_dims;
+                size_dims.reserve(al, 1);
+                ASR::dimension_t size_dim;
+                size_dim.loc = loc;
+                size_dim.m_start = b.i32(1);
+                size_dim.m_length = rank > 1
+                    ? b.Mul(n, b.i32((int)rank)) : n;
+                size_dims.push_back(al, size_dim);
+                out.push_back(al, b.Allocate(sizes, size_dims.p,
+                    size_dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
                 std::vector<ASR::stmt_t*> measure;
                 if (missing_size) {
@@ -646,13 +657,18 @@ class DeviceLaunchExpandVisitor :
                 }
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
                     total));
-                measure.push_back(b.Assignment(b.ArrayItem_01(sizes, {k}),
-                    b.ArraySize(struct_member(loc, arg, k, member),
-                        nullptr, int32)));
+                for (size_t d = 0; d < rank; d++) {
+                    measure.push_back(b.Assignment(
+                        member_extent(loc, sizes, k, rank, d),
+                        b.ArraySize(struct_member(loc, arg, k, member),
+                            rank > 1 ? b.i32((int)d + 1) : nullptr,
+                            int32)));
+                }
                 measure.push_back(b.Assignment(total, b.Add(total,
-                    b.ArrayItem_01(sizes, {k}))));
+                    member_element_count(loc, sizes, k, rank))));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
-                member_first_sizes[key] = b.ArrayItem_01(sizes, {b.i32(1)});
+                member_first_sizes[key] = member_element_count(loc, sizes,
+                    b.i32(1), rank);
                 ASR::expr_t *data_bytes = b.Mul(b.i2i_t(total, int64),
                     element_bytes);
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
@@ -663,16 +679,19 @@ class DeviceLaunchExpandVisitor :
                                 element_bytes),
                             address_of(loc,
                                 struct_member(loc, arg, k, member)),
-                            member_byte_size(loc, sizes, k,
+                            member_byte_size(loc, sizes, k, rank,
                                 element_bytes))}));
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
+                ASR::expr_t *sizes_bytes = rank > 1
+                    ? b.Mul(index_bytes, b.i64((int64_t)rank))
+                    : index_bytes;
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
                 buffers.push_back({sizes, address_of(loc, sizes),
-                    index_bytes});
+                    sizes_bytes});
 
                 if (!element_is_empty) {
                     writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
@@ -681,7 +700,7 @@ class DeviceLaunchExpandVisitor :
                                 struct_member(loc, arg, k, member)),
                             member_data_address(loc, data, offsets, k,
                                 element_bytes),
-                            member_byte_size(loc, sizes, k,
+                            member_byte_size(loc, sizes, k, rank,
                                 element_bytes))}));
                 }
                 writebacks.push_back(b.Deallocate(data));
@@ -913,10 +932,37 @@ class DeviceLaunchExpandVisitor :
                     element_bytes), b.i64(1))}));
         }
 
-        ASR::expr_t* member_byte_size(const Location &loc, ASR::expr_t *sizes,
-                ASR::expr_t *index, ASR::expr_t *element_bytes) {
+        // Where the extent of dimension `d` of element `index` sits in the
+        // sizes buffer: the buffer carries `rank` entries per element, in
+        // dimension order.
+        ASR::expr_t* member_extent(const Location &loc, ASR::expr_t *sizes,
+                ASR::expr_t *index, size_t rank, size_t d) {
             ASRUtils::ASRBuilder b(al, loc);
-            return b.Mul(b.i2i_t(b.ArrayItem_01(sizes, {index}), int64),
+            if (rank <= 1) return b.ArrayItem_01(sizes, {index});
+            return b.ArrayItem_01(sizes, {b.Add(
+                b.Mul(b.Sub(index, b.i32(1)), b.i32((int)rank)),
+                b.i32((int)d + 1))});
+        }
+
+        // Number of elements of one element's component: the product of its
+        // extents.
+        ASR::expr_t* member_element_count(const Location &loc,
+                ASR::expr_t *sizes, ASR::expr_t *index, size_t rank) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *count = member_extent(loc, sizes, index, rank, 0);
+            for (size_t d = 1; d < rank; d++) {
+                count = b.Mul(count,
+                    member_extent(loc, sizes, index, rank, d));
+            }
+            return count;
+        }
+
+        ASR::expr_t* member_byte_size(const Location &loc, ASR::expr_t *sizes,
+                ASR::expr_t *index, size_t rank,
+                ASR::expr_t *element_bytes) {
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.Mul(b.i2i_t(
+                member_element_count(loc, sizes, index, rank), int64),
                 element_bytes);
         }
 

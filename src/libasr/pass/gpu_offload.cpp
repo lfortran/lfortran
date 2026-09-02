@@ -9721,6 +9721,40 @@ public:
     // the copied block is self-contained. Nested blocks resolve through the
     // copy's parent chain: an inner use of an outer-block local must find
     // the outer copy, not the original the host keeps.
+    // Point the extents of a scope's own array locals at that scope's
+    // symbols, and do the same for every scope nested in it. Duplicating a
+    // symbol table copies its symbols one by one, so an extent that names
+    // a symbol copied later is left pointing at the original.
+    void retarget_local_extents(SymbolTable *scope) {
+        GpuReplaceSymbols type_replacer(*scope);
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::down_cast<ASR::Variable_t>(item.second)->m_type);
+                if (!type || !ASR::is_a<ASR::Array_t>(*type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+                for (size_t d = 0; d < arr->n_dims; d++) {
+                    if (arr->m_dims[d].m_start) {
+                        type_replacer.current_expr =
+                            &(arr->m_dims[d].m_start);
+                        type_replacer.replace_expr(arr->m_dims[d].m_start);
+                    }
+                    if (arr->m_dims[d].m_length) {
+                        type_replacer.current_expr =
+                            &(arr->m_dims[d].m_length);
+                        type_replacer.replace_expr(arr->m_dims[d].m_length);
+                    }
+                }
+            } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                retarget_local_extents(
+                    ASR::down_cast<ASR::Block_t>(item.second)->m_symtab);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                retarget_local_extents(ASR::down_cast<ASR::AssociateBlock_t>(
+                    item.second)->m_symtab);
+            }
+        }
+    }
+
     void remap_block_to_own_scope(ASR::Block_t *block) {
         GpuReplaceSymbolsVisitor body_v(*block->m_symtab);
         body_v.replacer.resolve_through_parents = true;
@@ -10334,7 +10368,12 @@ public:
         // can still be left on the host. This is the last point at which
         // it can be: the workspaces only exist once the callees are
         // spliced in, and the rewrites below are not reversible.
-        if (pass_options.gpu_offload_metal) {
+        //
+        // The host sizes the workspace the same way whichever device it
+        // launches on, so this holds for every dialect: an extent written
+        // in terms of a spliced callee's own dummy names a symbol that no
+        // longer exists once the callee is gone.
+        {
             std::vector<std::string> kernel_arg_names;
             collect_kernel_arg_names(work, enclosing_block_scopes,
                 kernel_arg_names);
@@ -10347,6 +10386,8 @@ public:
                     "workspace-extent-unresolvable");
                 return;
             }
+        }
+        if (pass_options.gpu_offload_metal) {
             GpuNestedSectionFinder nested_section;
             for (size_t i = 0; i < work.n_body; i++) {
                 nested_section.visit_stmt(*work.body[i]);
@@ -12346,6 +12387,12 @@ public:
                 if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
                 ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
                     item.second);
+                // A local whose extent is written in terms of another
+                // symbol of the same function -- `real :: r(self%m_ + 1)`
+                // -- is copied before that symbol is, and the copy is then
+                // left naming the original. Point every such extent at the
+                // copy's own symbols.
+                retarget_local_extents(func->m_symtab);
                 GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
                 fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
