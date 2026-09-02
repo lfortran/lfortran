@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pickle.h>
 #include <libasr/asr_verify.h>
 #include <libasr/diagnostics.h>
 #include <libasr/modfile.h>
@@ -2572,6 +2573,14 @@ public:
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
         if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    // The second operand of a broadcast is the shape the scalar is spread
+    // over, not data the assignment reads: `b(1:n) = 1.0` is lowered with
+    // the target's own shape there, which would otherwise report every
+    // such assignment as reading what it writes.
+    void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
+        visit_expr(*x.m_array);
     }
 };
 
@@ -9914,7 +9923,6 @@ public:
         for (size_t i = 0; i < region.n_clauses; i++) {
             if (region.m_clauses[i]->type ==
                     ASR::omp_clauseType::OMPReduction) {
-                GpuOffloadReport::emit(loc, report_proc, "reduce-clause");
                 report_not_offloaded(loc,
                     "a reduction has no gpu lowering yet");
                 return;
