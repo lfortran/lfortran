@@ -162,10 +162,10 @@ channels = [
 platforms = ["emscripten-wasm32"]
 
 [feature.wasm-host.dependencies]
-xeus-lite = "*"
-xeus = "*"
-nlohmann_json = "*"
-llvm = "*"
+xeus-lite = "==5.0.0"
+xeus = "==6.0.5"
+nlohmann_json = "==3.12.0"
+llvm = "==22.1.8"
 
 [feature.lite]
 platforms = ["osx-arm64", "linux-64"]
