@@ -2551,12 +2551,6 @@ cond_expr_tail
     | expr "?" cond_consequent ":" cond_expr_tail { $$ = COND_EXPR($1, $3, $5, @$); }
     ;
 
-// A consequent of a conditional argument (R1527) is an expression, a variable
-// or `.NIL.`. A conditional expression (R1002) shares this production, because
-// only the context tells the two apart (C1535): the same syntax is a
-// conditional argument in an actual argument position and a conditional
-// expression everywhere else. `.NIL.` is therefore accepted here and rejected
-// by the semantic layer wherever a value is required.
 cond_consequent
     : expr { $$ = $1; }
     | ".nil." { $$ = NIL(@$); }

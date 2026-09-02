@@ -127,12 +127,17 @@ it selects the actual argument itself rather than a value: a consequent that is
 a variable stays definable, and a consequent of `.NIL.` (6.2.1) means the dummy
 argument is not present.
 
-Only the context tells the two apart, so the parser does not: both use the same
-production, and `.NIL.` is the `Nil` AST expression node, accepted as a
-consequent everywhere. The semantic layer then rejects `Nil` wherever a value is
-required, and expands a conditional argument by duplicating the procedure
-reference into the arms of a selection, one copy per consequent, so that every
-copy is an ordinary reference that the existing argument checks apply to.
+Only the context tells the two apart (C1535), so the parser does not. `.NIL.` is
+a token of its own (6.2.1) rather than a named constant or a defined operator,
+matched ahead of the defined-operator rule in the tokenizer, and a single
+`cond_consequent` production — an expression, a variable or `.NIL.` — is shared
+by both places a conditional expression is parsed. `.NIL.` therefore reaches the
+AST as the `Nil` expression node from any consequent position.
+
+The semantic layer then rejects `Nil` wherever a value is required, and expands a
+conditional argument by duplicating the procedure reference into the arms of a
+selection, one copy per consequent, so that every copy is an ordinary reference
+that the existing argument checks apply to.
 
 ## Fortran 2008
 
