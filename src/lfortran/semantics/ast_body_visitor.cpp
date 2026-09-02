@@ -7745,7 +7745,7 @@ public:
         Allocator& al,
         bool& nopass
     ) {
-        visit_expr_list(x.m_args, x.n_args, args);
+        visit_expr_list(x.m_args, x.n_args, args, original_sym, x.n_member);
         ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
 
         // we handle kwargs here

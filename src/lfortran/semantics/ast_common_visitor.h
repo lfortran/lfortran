@@ -18219,7 +18219,7 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args);
+            visit_expr_list(x.m_args, x.n_args, args, f2, x.n_member);
             if (x.n_member >= 1) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
@@ -21003,11 +21003,78 @@ public:
         (void)iface_type;
     }
 
-    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
+    // True if `e` is a reference to the intrinsic `NULL()` without a `mold`
+    // argument, whose type therefore has to come from the context it is used in.
+    bool is_bare_null_intrinsic(AST::expr_t* e) {
+        if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
+            return false;
+        }
+        AST::FuncCallOrArray_t* f = AST::down_cast<AST::FuncCallOrArray_t>(e);
+        if( to_lower(f->m_func) != "null" || f->n_args != 0 ||
+            f->n_keywords != 0 || f->n_member != 0 ) {
+            return false;
+        }
+        // `null` may be shadowed by a user defined symbol
+        return current_scope->resolve_symbol("null") == nullptr;
+    }
+
+    // The dummy argument of `proc` that the `i`-th actual argument of a call
+    // corresponds to, or nullptr if it cannot be determined here (for example
+    // for a generic procedure, which is resolved later on).
+    ASR::Variable_t* get_dummy_argument(ASR::symbol_t* proc, size_t i) {
+        if( proc == nullptr ) {
+            return nullptr;
+        }
+        proc = ASRUtils::symbol_get_past_external(proc);
+        if( !ASR::is_a<ASR::Function_t>(*proc) ) {
+            return nullptr;
+        }
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(proc);
+        if( i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i]) ) {
+            return nullptr;
+        }
+        ASR::symbol_t* dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+        if( !ASR::is_a<ASR::Variable_t>(*dummy) ) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Variable_t>(dummy);
+    }
+
+    // `proc` is the procedure being called (if already resolved) and
+    // `dummy_offset` the number of its leading dummy arguments that `ast_list`
+    // does not supply (the passed object of a type bound call). Both are only
+    // used to give a bare `NULL()` actual argument its meaning.
+    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args,
+            ASR::symbol_t* proc = nullptr, size_t dummy_offset = 0) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            ASR::Variable_t* null_dummy = nullptr;
+            if( is_bare_null_intrinsic(ast_list[i].m_end) ) {
+                null_dummy = get_dummy_argument(proc, i + dummy_offset);
+            }
+            if( null_dummy != nullptr &&
+                null_dummy->m_presence == ASR::presenceType::Optional &&
+                !ASRUtils::is_pointer(null_dummy->m_type) &&
+                !ASRUtils::is_allocatable(null_dummy->m_type) ) {
+                // F2018 15.5.2.13: a `NULL()` actual argument corresponding to a
+                // non-pointer non-allocatable optional dummy argument means that
+                // the dummy argument is not present.
+                ASR::call_arg_t call_arg;
+                call_arg.loc = ast_list[i].m_end->base.loc;
+                call_arg.m_value = nullptr;
+                call_args.push_back(al, call_arg);
+                continue;
+            }
+            ASR::ttype_t* prev_variable_type = current_variable_type_;
+            if( null_dummy != nullptr ) {
+                // Otherwise `NULL()` is a disassociated pointer of the type of
+                // the dummy argument it is passed to.
+                current_variable_type_ = null_dummy->m_type;
+            }
             this->visit_expr(*ast_list[i].m_end);
+            current_variable_type_ = prev_variable_type;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
