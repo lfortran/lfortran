@@ -855,6 +855,42 @@ class DeviceLaunchExpandVisitor :
                         return b.ArraySize(host, dim, int32);
                     }
                 }
+                // A section whose base the host cannot read as it stands
+                // still has extents the host can work out: they come from
+                // the ranges alone.
+                std::vector<ASR::array_index_t*> ranges =
+                    gpu_section_extent_ranges(sz->m_v, sz->m_dim);
+                if (!ranges.empty()) {
+                    ASR::expr_t *out = nullptr;
+                    for (ASR::array_index_t *range : ranges) {
+                        ASR::expr_t *lo = host_extent(loc, x, kernel,
+                            range->m_left);
+                        ASR::expr_t *hi = host_extent(loc, x, kernel,
+                            range->m_right);
+                        ASR::expr_t *step = range->m_step
+                            ? host_extent(loc, x, kernel, range->m_step)
+                            : b.i32(1);
+                        if (!lo || !hi || !step) { out = nullptr; break; }
+                        ASR::expr_t *one = b.Add(
+                            b.Div(b.Sub(hi, lo), step), b.i32(1));
+                        out = out ? b.Mul(out, one) : one;
+                    }
+                    if (out != nullptr) return out;
+                }
+                // Not a designator the host can read -- a function call,
+                // say -- but its type still records its shape, written in
+                // the symbols of the scope the call is made from.
+                std::vector<ASR::expr_t*> lengths;
+                if (gpu_expr_shape_extents(sz->m_v, sz->m_dim, lengths)) {
+                    ASR::expr_t *out = nullptr;
+                    for (ASR::expr_t *length : lengths) {
+                        ASR::expr_t *one = host_extent(loc, x, kernel,
+                            length);
+                        if (one == nullptr) { out = nullptr; break; }
+                        out = out ? b.Mul(out, one) : one;
+                    }
+                    if (out != nullptr) return out;
+                }
             }
             if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
                 ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
