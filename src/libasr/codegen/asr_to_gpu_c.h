@@ -2209,8 +2209,6 @@ public:
                         ASRUtils::collect_allocatable_array_members(st)) {
                     const std::string &mem_name = mem_entry.first;
                     ASR::Variable_t *mv = mem_entry.second;
-                    ASR::ttype_t *inner =
-                        ASRUtils::type_get_past_allocatable(mv->m_type);
                     std::string key = arr_name + "."
                         + mem_name;
                     auto dit = func_array_data_params.find(key);
@@ -2261,8 +2259,6 @@ public:
                 ASRUtils::collect_allocatable_array_members(st)) {
             const std::string &mem_name = mem_entry.first;
             ASR::Variable_t *mv = mem_entry.second;
-            ASR::ttype_t *inner =
-                ASRUtils::type_get_past_allocatable(mv->m_type);
 
             // Emit data pointer for this member
             if (arr_it != struct_from_array_elem.end()) {
@@ -3622,8 +3618,6 @@ public:
                                 ASRUtils::collect_allocatable_array_members(st)) {
                             const std::string &mem_name = mem_entry.first;
                             ASR::Variable_t *mv = mem_entry.second;
-                            ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(mv->m_type);
                             std::string key = args[i].name + "."
                                 + mem_name;
                             std::string size_name =
@@ -3660,9 +3654,6 @@ public:
                     for (auto &mem_entry :
                             ASRUtils::collect_allocatable_array_members(st)) {
                         const std::string &mem_name = mem_entry.first;
-                        ASR::Variable_t *mv = mem_entry.second;
-                        ASR::ttype_t *inner =
-                            ASRUtils::type_get_past_allocatable(mv->m_type);
                         std::string key = args[i].name + "."
                             + mem_name;
                         std::string data_name =
