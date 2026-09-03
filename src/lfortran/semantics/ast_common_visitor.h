@@ -17693,6 +17693,12 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        // An actual argument of the form `( cond ? a : b )` is a conditional
+        // argument (R1526). It is expanded before the reference is resolved,
+        // so that every copy of it is an ordinary procedure reference.
+        if (handle_conditional_arg_function(x)) {
+            return;
+        }
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
@@ -20304,6 +20310,323 @@ public:
             nullptr);
     }
 
+    // Fortran 2023 conditional argument, 15.5.1 R1526:
+    //     ( scalar-logical-expr ? consequent
+    //       [ : scalar-logical-expr ? consequent ]... : consequent )
+    //     consequent  is  expr  or  variable  or  .NIL.
+    //
+    // C1535 keeps this out of `expr`: in an actual argument position the
+    // syntax of R1002 is a conditional argument, not a conditional
+    // expression. The difference is what the chosen consequent means. It *is*
+    // the actual argument (15.5.2.3), so a variable consequent is associated
+    // by reference and stays definable, and `.nil.` means the dummy argument
+    // is not present. Neither survives being turned into a value, which is
+    // all a conditional expression can produce.
+    //
+    // Substituting the chosen consequent into the reference gets both right,
+    // so that is what happens here: the reference is duplicated into the arms
+    // of a selection, one copy per consequent, and each copy is then
+    // processed as an ordinary procedure reference. The conditions keep their
+    // order and their short circuit, only the chosen consequent is evaluated,
+    // and every rule about an actual argument is then checked by the code
+    // that checks it for a reference written out by hand.
+    //
+    // The parser cannot tell a conditional argument from a conditional
+    // expression, so both arrive as AST::ConditionalExpr, and `.nil.` arrives
+    // as AST::Nil.
+
+    // Walks the `: scalar-logical-expr ? consequent` chain, which the parser
+    // nests in the third operand.
+    static void collect_consequents(AST::expr_t *e,
+            std::vector<AST::expr_t*> &consequents) {
+        while (AST::is_a<AST::ConditionalExpr_t>(*e)) {
+            AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(e);
+            consequents.push_back(c->m_body);
+            e = c->m_orelse;
+        }
+        consequents.push_back(e);
+    }
+
+    // C1540: at least one consequent of a conditional argument shall be a
+    // consequent-arg, so they cannot all be `.nil.`.
+    void check_conditional_arg(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        for (AST::expr_t *c: consequents) {
+            if (!AST::is_a<AST::Nil_t>(*c)) {
+                return;
+            }
+        }
+        diag.add(Diagnostic(
+            "every consequent of this conditional argument is `.nil.`",
+            Level::Error, Stage::Semantic, {
+                Label("at least one consequent shall be an argument "
+                    "(Fortran 2023 C1540)", {x->base.base.loc})}));
+        throw SemanticAbort();
+    }
+
+    // The variable a consequent names, if it names one. A consequent that is
+    // an expression is not resolved here: it is checked against the dummy
+    // argument of the reference it ends up in, once that reference has been
+    // built.
+    ASR::Variable_t* consequent_variable(AST::expr_t *c) {
+        if (!AST::is_a<AST::Name_t>(*c)) {
+            return nullptr;
+        }
+        AST::Name_t *n = AST::down_cast<AST::Name_t>(c);
+        if (n->n_member > 0) {
+            return nullptr;
+        }
+        ASR::symbol_t *s = current_scope->resolve_symbol(to_lower(n->m_id));
+        if (s == nullptr) {
+            return nullptr;
+        }
+        s = ASRUtils::symbol_get_past_external(s);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Variable_t>(s);
+    }
+
+    // C1538 and C1539: the consequent-args of a conditional argument shall
+    // have the same declared type and kind type parameters, and the same
+    // rank. Length type parameters and shape may differ, they come from the
+    // consequent that is chosen (15.5.2.3), exactly as for a conditional
+    // expression.
+    void check_conditional_arg_consequents(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        AST::expr_t *first = nullptr;
+        ASR::ttype_t *first_type = nullptr;
+        for (AST::expr_t *c: consequents) {
+            ASR::Variable_t *v = consequent_variable(c);
+            if (v == nullptr) {
+                continue;
+            }
+            if (first == nullptr) {
+                first = c;
+                first_type = v->m_type;
+                continue;
+            }
+            size_t first_rank = ASRUtils::extract_n_dims_from_ttype(first_type);
+            size_t rank = ASRUtils::extract_n_dims_from_ttype(v->m_type);
+            if (first_rank != rank) {
+                diag.add(Diagnostic(
+                    "the consequents of a conditional argument must have the "
+                    "same rank",
+                    Level::Error, Stage::Semantic, {
+                        Label("rank mismatch (" + std::to_string(first_rank)
+                            + " and " + std::to_string(rank) +
+                            ") (Fortran 2023 C1539)",
+                            {first->base.loc, c->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::types_equal(first_type, v->m_type, nullptr, nullptr,
+                    false)) {
+                diag.add(Diagnostic(
+                    "the consequents of a conditional argument must have the "
+                    "same type and kind",
+                    Level::Error, Stage::Semantic, {
+                        Label("type mismatch ("
+                            + ASRUtils::type_to_str_fortran_expr(first_type, nullptr)
+                            + " and "
+                            + ASRUtils::type_to_str_fortran_expr(
+                                v->m_type, nullptr) +
+                            ") (Fortran 2023 C1538)",
+                            {first->base.loc, c->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    // C1545: in a reference to a generic procedure the consequents shall
+    // agree in the `allocatable` and `pointer` attributes, because the
+    // attributes of the conditional argument as a whole are what the generic
+    // is resolved against (15.5.2.3). Only a consequent that names a variable
+    // is compared here; any other consequent is checked against the dummy
+    // argument of the reference it ends up in.
+    void check_conditional_arg_generic(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        AST::expr_t *first = nullptr;
+        bool first_alloc = false, first_ptr = false;
+        for (AST::expr_t *c: consequents) {
+            ASR::Variable_t *v = consequent_variable(c);
+            if (v == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *t = v->m_type;
+            bool is_alloc = ASRUtils::is_allocatable(t);
+            bool is_ptr = ASRUtils::is_pointer(t);
+            if (first == nullptr) {
+                first = c;
+                first_alloc = is_alloc;
+                first_ptr = is_ptr;
+                continue;
+            }
+            if (is_alloc == first_alloc && is_ptr == first_ptr) {
+                continue;
+            }
+            auto attr = [](bool a, bool p) -> std::string {
+                if (a) return "allocatable";
+                if (p) return "a pointer";
+                return "neither allocatable nor a pointer";
+            };
+            diag.add(Diagnostic(
+                "the consequents of a conditional argument to a generic "
+                "procedure must have the same `allocatable` and `pointer` "
+                "attributes",
+                Level::Error, Stage::Semantic, {
+                    Label("this consequent is " + attr(first_alloc, first_ptr)
+                        + ", this one is " + attr(is_alloc, is_ptr) +
+                        " (Fortran 2023 C1545)",
+                        {first->base.loc, c->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    // The index of the first actual argument that is a conditional argument,
+    // or -1. A keyword argument (R1523) is indexed after the positional ones.
+    // Only the first one is reported: the copies made for it carry the rest,
+    // and processing a copy finds the next one.
+    int64_t first_conditional_arg(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, size_t n_kwargs) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_end != nullptr && args[i].m_start == nullptr
+                    && args[i].m_step == nullptr
+                    && AST::is_a<AST::ConditionalExpr_t>(*args[i].m_end)) {
+                return (int64_t)i;
+            }
+        }
+        for (size_t i = 0; i < n_kwargs; i++) {
+            if (kwargs[i].m_value != nullptr
+                    && AST::is_a<AST::ConditionalExpr_t>(*kwargs[i].m_value)) {
+                return (int64_t)(n_args + i);
+            }
+        }
+        return -1;
+    }
+
+    AST::expr_t* conditional_arg_at(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, int64_t idx) {
+        return idx < (int64_t)n_args ? args[idx].m_end
+            : kwargs[idx - n_args].m_value;
+    }
+
+    // One copy of the argument list, with the conditional argument at `idx`
+    // replaced by one of its consequents.
+    void copy_args_with_consequent(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, size_t n_kwargs, int64_t idx,
+            AST::expr_t *consequent, AST::fnarg_t *&new_args,
+            AST::keyword_t *&new_kwargs) {
+        new_args = n_args > 0 ? al.allocate<AST::fnarg_t>(n_args) : nullptr;
+        for (size_t i = 0; i < n_args; i++) {
+            new_args[i] = args[i];
+            if ((int64_t)i == idx) {
+                new_args[i].m_end = consequent;
+            }
+        }
+        new_kwargs = n_kwargs > 0 ? al.allocate<AST::keyword_t>(n_kwargs)
+            : nullptr;
+        for (size_t i = 0; i < n_kwargs; i++) {
+            new_kwargs[i] = kwargs[i];
+            if ((int64_t)(n_args + i) == idx) {
+                new_kwargs[i].m_value = consequent;
+            }
+        }
+    }
+
+    // A name followed by a parenthesized list is a procedure reference or an
+    // array element or section (R1520 against R911), and only the symbol
+    // tells them apart. A variable that is not a procedure is therefore left
+    // alone: `a( ( c ? i : j ) )` subscripts `a` with a conditional
+    // expression, it does not pass a conditional argument, and turning it
+    // into a selection of two designators would stop it being one.
+    //
+    // An unresolved name is left alone as well: it is an intrinsic or an
+    // implicit interface. `.nil.` in one is reported by visit_Nil.
+    ASR::symbol_t* referenced_procedure(const AST::FuncCallOrArray_t &x) {
+        // A reference through a component (`o%f(...)`) is not expanded: the
+        // final member is a binding or an array component, and only
+        // resolving it against the declared type tells which.
+        if (x.n_member > 0 || x.n_temp_args > 0) {
+            return nullptr;
+        }
+        std::string name = to_lower(x.m_func);
+        ASR::symbol_t *s = current_scope->resolve_symbol("~" + name);
+        if (s == nullptr) {
+            s = current_scope->resolve_symbol(name);
+        }
+        if (s == nullptr) {
+            return nullptr;
+        }
+        s = ASRUtils::symbol_get_past_external(s);
+        if (ASR::is_a<ASR::Function_t>(*s)
+                || ASR::is_a<ASR::GenericProcedure_t>(*s)
+                || ASR::is_a<ASR::StructMethodDeclaration_t>(*s)
+                // A procedure pointer and a dummy procedure are references
+                // too, and their dummy arguments are as definable as any
+                || ASRUtils::is_symbol_procedure_variable(s)) {
+            return s;
+        }
+        return nullptr;
+    }
+
+    // Handles a conditional argument of a function reference, if there is
+    // one. The reference is duplicated into the arms of a conditional
+    // expression, which already evaluates only the arm that is chosen, so
+    // this needs no statement of its own. Returns true when the reference was
+    // replaced, in which case `tmp` holds the result.
+    bool handle_conditional_arg_function(const AST::FuncCallOrArray_t &x) {
+        int64_t idx = first_conditional_arg(x.m_args, x.n_args, x.m_keywords,
+            x.n_keywords);
+        if (idx < 0) {
+            return false;
+        }
+        ASR::symbol_t *proc = referenced_procedure(x);
+        if (proc == nullptr) {
+            return false;
+        }
+        AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(
+            conditional_arg_at(x.m_args, x.n_args, x.m_keywords, idx));
+        check_conditional_arg(c);
+        check_conditional_arg_consequents(c);
+        if (ASR::is_a<ASR::GenericProcedure_t>(*proc)) {
+            check_conditional_arg_generic(c);
+        }
+        AST::expr_t *arms[2] = {c->m_body, c->m_orelse};
+        AST::expr_t *calls[2];
+        for (int i = 0; i < 2; i++) {
+            AST::fnarg_t *new_args;
+            AST::keyword_t *new_kwargs;
+            copy_args_with_consequent(x.m_args, x.n_args, x.m_keywords,
+                x.n_keywords, idx, arms[i], new_args, new_kwargs);
+            calls[i] = AST::down_cast<AST::expr_t>(AST::make_FuncCallOrArray_t(
+                al, x.base.base.loc, x.m_func, x.m_member, x.n_member,
+                new_args, x.n_args, new_kwargs, x.n_keywords, x.m_subargs,
+                x.n_subargs, x.m_temp_args, x.n_temp_args));
+        }
+        AST::ast_t *selection = AST::make_ConditionalExpr_t(al,
+            x.base.base.loc, c->m_test, calls[0], calls[1]);
+        this->visit_expr(*AST::down_cast<AST::expr_t>(selection));
+        return true;
+    }
+
+    // `.nil.` is a token of its own (6.2.1) and is not an expression: R1527
+    // allows it only as a consequent of a conditional argument, where it
+    // means that the dummy argument is not present. Every other position
+    // reaches this.
+    void visit_Nil(const AST::Nil_t &x) {
+        diag.add(Diagnostic(
+            "`.nil.` is only allowed as a consequent of a conditional "
+            "argument",
+            Level::Error, Stage::Semantic, {
+                Label("a conditional argument is an actual argument of the "
+                    "form `( cond ? a : .nil. )` (Fortran 2023 R1527)",
+                    {x.base.base.loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_Logical(const AST::Logical_t &x) {
         int ikind = compiler_options.po.default_integer_kind;
         if (x.m_kind) {
@@ -21050,6 +21373,16 @@ public:
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            // `.nil.` as the chosen consequent of a conditional argument
+            // means the dummy argument is not present (15.5.2.3), which is an
+            // argument that carries no value.
+            if (AST::is_a<AST::Nil_t>(*ast_list[i].m_end)) {
+                ASR::call_arg_t nil_arg;
+                nil_arg.loc = ast_list[i].m_end->base.loc;
+                nil_arg.m_value = nullptr;
+                call_args.push_back(al, nil_arg);
+                continue;
+            }
             ASR::Variable_t* null_dummy = nullptr;
             if( is_bare_null_intrinsic(ast_list[i].m_end) ) {
                 null_dummy = get_dummy_argument(proc, i + dummy_offset);
@@ -21172,8 +21505,14 @@ public:
         }
 
         for (int i = 0; i < (int)n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            // `.nil.` leaves the argument with no value, which is how an
+            // absent optional argument is carried (15.5.2.3)
+            bool is_nil = AST::is_a<AST::Nil_t>(*kwargs[i].m_value);
+            ASR::expr_t *expr = nullptr;
+            if (!is_nil) {
+                this->visit_expr(*kwargs[i].m_value);
+                expr = ASRUtils::EXPR(tmp);
+            }
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
@@ -21199,7 +21538,8 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
-            args.p[idx].loc = expr->base.loc;
+            args.p[idx].loc = is_nil ? kwargs[i].m_value->base.loc
+                : expr->base.loc;
             args.p[idx].m_value = expr;
         }
 

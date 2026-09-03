@@ -3376,12 +3376,27 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/conditional_expr_syntax_1.f90"
 syntax_only_cc = true
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/conditional_arg_1.f90"
+semantics_only_cc = true
 
 # Pins the dedicated AST and ASR nodes for a conditional expression: a
 # ConditionalExpr in the AST and a nested IfExp in the ASR, not a rewrite into
 # `merge`, which would evaluate both arms.
 [[test]]
 filename = "../integration_tests/conditional_expr_01.f90"
+ast = true
+asr = true
+
+# Pins how a conditional argument is lowered: the reference is duplicated into
+# the arms of a selection, one copy per consequent, so that the chosen
+# consequent is the actual argument. A consequent that is `.nil.` leaves the
+# argument of that copy with no value, which is a dummy argument that is not
+# present.
+[[test]]
+filename = "../integration_tests/conditional_arg_02.f90"
 ast = true
 asr = true
 
