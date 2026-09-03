@@ -3193,6 +3193,27 @@ public:
                 create_associate_stmt = true;
             } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
                 create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
+                       ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
+                create_associate_stmt = true;
+                
+                if (ASRUtils::is_array(tmp_type)) {
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(tmp_type);
+                    ASR::dimension_t *var_dims;
+                    ASRUtils::extract_dimensions_from_ttype(tmp_type, var_dims);
+                    
+                    Vec<ASR::dimension_t> new_dims; 
+                    new_dims.reserve(al, n_dims);
+                    
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, tmp_expr->base.loc, 4));
+                    
+                    for (int j = 0; j < n_dims; j++) {
+                        ASR::dimension_t d = var_dims[j];
+                        d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, tmp_expr->base.loc, 1, int_type));
+                        new_dims.push_back(al, d);
+                    }
+                    tmp_type = ASRUtils::duplicate_type(al, tmp_type, &new_dims);
+                }
             }
 
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
