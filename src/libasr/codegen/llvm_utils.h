@@ -793,6 +793,9 @@ class ASRToLLVMVisitor;
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 
+            llvm::Value* get_type_identifier_for_polymorphic_type(ASR::expr_t* arg, llvm::Value* arg_val, 
+                ASR::symbol_t* struct_sym, llvm::Module* module, int class_type_id);
+
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);
 
             llvm::Type* getComplexType(int a_kind, bool get_pointer=false);
