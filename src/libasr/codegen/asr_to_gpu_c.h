@@ -2096,9 +2096,6 @@ public:
         for (auto &mem_entry :
                 ASRUtils::collect_allocatable_array_members(st)) {
             const std::string &mem_name = mem_entry.first;
-            ASR::Variable_t *mv = mem_entry.second;
-            ASR::ttype_t *inner =
-                ASRUtils::type_get_past_allocatable(mv->m_type);
 
             // If this struct came from an array-of-struct element,
             // use the per-element sizes buffer

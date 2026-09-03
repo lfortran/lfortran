@@ -548,7 +548,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
 
 // The same question for the whole loop body: the scopes it opens hold the
 // workspaces, so each one is asked in turn.
-static bool gpu_block_workspace_extents_resolvable(Allocator &/*al*/,
+static bool gpu_block_workspace_extents_resolvable(
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name) {
@@ -562,7 +562,7 @@ static bool gpu_block_workspace_extents_resolvable(Allocator &/*al*/,
                     blk->n_body, arg_names, unresolved_name)) {
                 return false;
             }
-            if (!gpu_block_workspace_extents_resolvable(*(Allocator*)nullptr,
+            if (!gpu_block_workspace_extents_resolvable(
                     blk->m_body, blk->n_body, arg_names, unresolved_name)) {
                 return false;
             }
@@ -10388,7 +10388,7 @@ public:
             collect_kernel_arg_names(work, enclosing_block_scopes,
                 kernel_arg_names);
             std::string unresolved_name;
-            if (!gpu_block_workspace_extents_resolvable(al, work.body,
+            if (!gpu_block_workspace_extents_resolvable(work.body,
                     work.n_body, kernel_arg_names, unresolved_name)) {
                 restore_loop();
                 GpuOffloadReport::set_detail("sym=" + unresolved_name);
