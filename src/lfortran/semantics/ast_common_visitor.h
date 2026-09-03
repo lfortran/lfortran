@@ -21504,6 +21504,9 @@ public:
             args.push_back(al, call_arg);
         }
 
+        // The indices whose argument carries no value because the consequent
+        // chosen for them is `.nil.`, as opposed to not being supplied at all.
+        std::vector<int> nil_args_idx;
         for (int i = 0; i < (int)n; i++) {
             // `.nil.` leaves the argument with no value, which is how an
             // absent optional argument is carried (15.5.2.3)
@@ -21541,6 +21544,9 @@ public:
             args.p[idx].loc = is_nil ? kwargs[i].m_value->base.loc
                 : expr->base.loc;
             args.p[idx].m_value = expr;
+            if (is_nil) {
+                nil_args_idx.push_back(idx);
+            }
         }
 
         // Ensure required arguments are provided, but skip optional ones
@@ -21548,6 +21554,14 @@ public:
             if (args[i].m_value == nullptr) {
                 // Skip checking if the argument is optional
                 if (std::find(optional_args_idx.begin(), optional_args_idx.end(), i) != optional_args_idx.end()) {
+                    continue;
+                }
+                // A `.nil.` consequent supplies the argument, it just gives
+                // it no value. C1540 is what it violates when the dummy
+                // argument is not optional, and the argument checks report
+                // that, the same as for a positional conditional argument.
+                if (std::find(nil_args_idx.begin(), nil_args_idx.end(), i)
+                        != nil_args_idx.end()) {
                     continue;
                 }
                 diag.semantic_error_label(

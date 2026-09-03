@@ -44,6 +44,11 @@ contains
         returns_one = x
     end function
 
+    subroutine two_required(x, y)
+        integer, intent(in) :: x, y
+        print *, x, y
+    end subroutine
+
     ! C1540: a consequent may be `.NIL.` only when the dummy argument it
     ! corresponds to is optional, since `.NIL.` leaves it not present.
     subroutine nil_for_a_required_dummy()
@@ -62,6 +67,16 @@ contains
         a = 1
         r = returns_one( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is not allowed for the dummy argument `x`, which is not optional
         print *, r
+    end subroutine
+
+    ! C1540 through a keyword actual argument (R1523). The consequent is
+    ! supplied, it just leaves the argument with no value, so this is the same
+    ! violation as the positional form and not a missing argument.
+    subroutine nil_for_a_required_dummy_by_keyword()
+        implicit none
+        integer :: a
+        a = 1
+        call two_required(x = a, y = ( .true. ? a : .nil. ))  ! {Error} `.nil.` is not allowed for the dummy argument `y`, which is not optional
     end subroutine
 
     ! C1540: at least one consequent shall be a consequent-arg, so they
