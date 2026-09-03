@@ -645,15 +645,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // Do nothing
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t& /*x*/) {
-        // GPU kernel functions are emitted by the Metal/CUDA codegen
-        // which handles array operations directly. The array_op pass
-        // must not transform functions inside them (e.g. expanding
-        // elemental functions into array loops would produce broken code
-        // that references outer-scope array variables from within a
-        // scalar-parameter helper function in the GPU shader).
-    }
-
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         /* 
         Handle FileWrite with character-array arguments, where x and a are arrays:
@@ -737,7 +728,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             temp_dim->m_length = section_size;
             ASR::ttype_t* temp_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
                 al, loc, base_str_type, temp_dim, 1,
-                ASR::array_physical_typeType::DescriptorArray));
+                ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
             std::string tmp_name = current_scope->get_unique_name("__fw_temp_");
             ASR::expr_t* temp_var = b.Variable(current_scope, tmp_name,
                 temp_arr_type, ASR::intentType::Local);

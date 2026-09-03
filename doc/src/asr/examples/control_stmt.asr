@@ -1,0 +1,258 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "i" (Variable
+              :parent_symtab 1
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "j" (Variable
+              :parent_symtab 1
+              :name "j"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Variable
+              :parent_symtab 1
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Logical
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (DoLoop
+            :name "loop"
+            :head (do_loop_head
+              :v (Var
+                :v (SymbolRef 1 "i")
+              )
+              :start (IntegerConstant
+                :n 1
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :end (IntegerConstant
+                :n 10
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :increment (IntegerConstant
+                :n 1
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+            )
+            :body [
+              (If
+                :name nil
+                :test (IntegerCompare
+                  :left (Var
+                    :v (SymbolRef 1 "i")
+                  )
+                  :op :Eq
+                  :right (IntegerConstant
+                    :n 5
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :type (Logical
+                    :kind 4
+                  )
+                  :value nil
+                )
+                :body [
+                  (Cycle
+                    :stmt_name "loop"
+                  )
+                ]
+                :orelse []
+              )
+              (If
+                :name nil
+                :test (Var
+                  :v (SymbolRef 1 "p")
+                )
+                :body [
+                  (Exit
+                    :stmt_name "loop"
+                  )
+                ]
+                :orelse [
+                  (Assignment
+                    :target (Var
+                      :v (SymbolRef 1 "j")
+                    )
+                    :value (Var
+                      :v (SymbolRef 1 "i")
+                    )
+                    :overloaded nil
+                    :realloc_lhs false
+                    :move_allocation false
+                  )
+                ]
+              )
+            ]
+            :orelse []
+          )
+          (WhileLoop
+            :name nil
+            :test (IntegerCompare
+              :left (Var
+                :v (SymbolRef 1 "j")
+              )
+              :op :Lt
+              :right (IntegerConstant
+                :n 100
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :body [
+              (Assignment
+                :target (Var
+                  :v (SymbolRef 1 "j")
+                )
+                :value (IntegerBinOp
+                  :left (Var
+                    :v (SymbolRef 1 "j")
+                  )
+                  :op :Add
+                  :right (IntegerConstant
+                    :n 1
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :type (Integer
+                    :kind 4
+                  )
+                  :value nil
+                )
+                :overloaded nil
+                :realloc_lhs false
+                :move_allocation false
+              )
+            ]
+            :orelse []
+          )
+          (Assert
+            :test (IntegerCompare
+              :left (Var
+                :v (SymbolRef 1 "j")
+              )
+              :op :GtE
+              :right (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :msg (StringConstant
+              :s "j is not negative"
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 17
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+            )
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

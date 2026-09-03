@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.module_procedure.argument_type_matches]: Module procedure 'impl' implementing the interface in module 'm', argument 1 'a', must have type i32, not r64
-  --> tests/asr/verify/module_procedure_argument_type.asr:81:12
+  --> tests/asr/verify/module_procedure_argument_type.asr:82:12
    |
-81 |       "s" (Module
+82 |       "s" (Module
    |            ^^^^^^ failed here

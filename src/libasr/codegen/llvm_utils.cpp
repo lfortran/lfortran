@@ -2,6 +2,7 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
+#include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
 #include <llvm/Support/raw_ostream.h>
 
@@ -2150,7 +2151,7 @@ namespace LCompilers {
     void LLVMUtils::start_new_block(llvm::BasicBlock *bb) {
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Function *fn = last_bb->getParent();
-        llvm::Instruction *block_terminator = last_bb->getTerminator();
+        llvm::Instruction *block_terminator = LLVM::get_terminator(last_bb);
         if (block_terminator == nullptr) {
             // The previous block is not terminated --- terminate it by jumping
             // to our new block
@@ -2901,49 +2902,6 @@ namespace LCompilers {
             throw LCompilersException("Unhandled case");
         }
     }
-    /*
-     * Decodes a UTF-8 encoded string into a sequence of Unicode codepoints,
-     * then serializes each codepoint into `kind`-width little-endian bytes.
-     *   kind=2 -> 2 bytes per codepoint (UCS-2 / UTF-16 code unit)
-     *   kind=4 -> 4 bytes per codepoint (UCS-4 / UTF-32)
-     */
-    static std::vector<uint8_t> utf8_to_unicode_bytes(const std::string& str, int kind) {
-        std::vector<uint32_t> codepoints;
-        size_t i = 0;
-        while (i < str.length()) {
-            uint32_t codepoint = 0;
-            unsigned char c = str[i];
-            if (c <= 0x7F) {
-                codepoint = c;
-                i += 1;
-            } else if ((c & 0xE0) == 0xC0) {
-                LCOMPILERS_ASSERT(i + 1 < str.length());
-                codepoint = ((c & 0x1F) << 6) | (str[i + 1] & 0x3F);
-                i += 2;
-            } else if ((c & 0xF0) == 0xE0) {
-                LCOMPILERS_ASSERT(i + 2 < str.length());
-                codepoint = ((c & 0x0F) << 12) | ((str[i + 1] & 0x3F) << 6) | (str[i + 2] & 0x3F);
-                i += 3;
-            } else if ((c & 0xF8) == 0xF0) {
-                LCOMPILERS_ASSERT(i + 3 < str.length());
-                codepoint = ((c & 0x07) << 18) | ((str[i + 1] & 0x3F) << 12) | ((str[i + 2] & 0x3F) << 6) | (str[i + 3] & 0x3F);
-                i += 4;
-            } else {
-                LCOMPILERS_ASSERT(false); // Invalid UTF-8 lead byte
-            }
-            codepoints.push_back(codepoint);
-        }
-        // Serialize codepoints into kind-width little-endian bytes
-        std::vector<uint8_t> bytes(codepoints.size() * kind);
-        for (size_t idx = 0; idx < codepoints.size(); ++idx) {
-            uint32_t cp = codepoints[idx];
-            for (int b = 0; b < kind; ++b) {
-                bytes[idx * kind + b] = (cp >> (8 * b)) & 0xFF;
-            }
-        }
-        return bytes;
-    }
-
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
         llvm::GlobalValue::LinkageTypes linkage,
@@ -2990,7 +2948,7 @@ namespace LCompilers {
                         initial_data_padded.resize(len, ' ');
                         const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data_padded, false);
                     } else if (kind == 2 || kind == 4) {
-                        std::vector<uint8_t> bytes = utf8_to_unicode_bytes(initial_data_padded, kind);
+                        std::vector<uint8_t> bytes = LCompilers::utf8_to_unicode_bytes(initial_data_padded, kind);
                         size_t orig_count = bytes.size() / kind;
                         bytes.resize(len * kind, 0x00);
                         // Pad remaining slots with space character (0x20)

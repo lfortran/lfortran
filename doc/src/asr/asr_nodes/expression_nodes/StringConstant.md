@@ -1,59 +1,59 @@
 # StringConstant
 
-A string of characters enclosed in apostrophes or quotes, an `expr` node.
-
+A character literal.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 StringConstant(string s, ttype type)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`s`   | value of string |
-| `type` | table entry type |
+| Argument | Description |
+|----------|-------------|
+| `s` | the bytes of the constant. |
+| `type` | the string type, whose `len` is the length of the constant. |
 
 ### Return values
 
-The return value is the expression that the StringConstant represents.
+The value of the expression.
 
 ## Description
 
-**StringConstant** represents string constant.
-Each character string constant appearing outside a DATA statement is followed by
-a null character to ease communication with C routines.
-
-## Types
-
-Only accepts 1 or more characters.
+A Fortran character value is a byte array, not text: `achar(200)` is a valid
+character whose byte is not valid UTF-8. ASR text writes such a constant as
+`#asr/bytes` rather than as a string, so that a document stays decodable and
+no byte is silently reinterpreted.
 
 ## Examples
 
-```fortran
-"string"
+```clojure
+(StringConstant
+  :s "hello"
+  :type (String
+    :kind 1
+    :len (IntegerConstant
+      :n 5
+      :type (Integer
+        :kind 4
+      )
+      :intboz_type :Decimal
+    )
+    :len_kind :ExpressionLength
+    :physical_type :DescriptorString
+  )
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(StringConstant
-        "string"
-        (Character 1 6 () [])
-    )]
-)
+```{literalinclude} ../../examples/string_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerConstant](IntegerConstant.md), [RealConstant](RealConstant.md)
+[String](../type_nodes/String.md), [StringConcat](StringConcat.md), [StringLen](StringLen.md)

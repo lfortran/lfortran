@@ -338,6 +338,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -367,6 +368,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 e))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -398,6 +400,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 d)
