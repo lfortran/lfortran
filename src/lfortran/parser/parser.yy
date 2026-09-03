@@ -118,7 +118,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_PERCENT "%"
 %token TK_VBAR "|"
 %token TK_QUESTION "?"
-%token TK_NIL ".nil."
 
 %token <str_prefix> TK_STRING
 %token <string> TK_COMMENT
@@ -147,6 +146,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token TK_XOR ".xor."
 %token TK_EQV ".eqv."
 %token TK_NEQV ".neqv."
+%token TK_NIL ".nil."
 
 %token <string> TK_TRUE ".true."
 %token <string> TK_FALSE ".false."
