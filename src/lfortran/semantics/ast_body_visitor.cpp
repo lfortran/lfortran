@@ -3515,6 +3515,14 @@ public:
                 }
             }
             ASR::expr_t *array_stmt = tmp_stmt;
+            if( array_stmt == nullptr ) {
+                diag.add(Diagnostic(
+                    "Unsupported allocate-object form",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_args[i].loc})
+                    }));
+                throw SemanticAbort();
+            }
             // Assume that tmp is an `ArraySection` or `ArrayItem`
             if( ASR::is_a<ASR::ArraySection_t>(*array_stmt) ) {
                 ASR::ArraySection_t* array_ref = ASR::down_cast<ASR::ArraySection_t>(array_stmt);
@@ -3564,6 +3572,27 @@ public:
                 new_arg.m_a = array_stmt;
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
+            } else {
+                // The allocate-object did not resolve to a data reference,
+                // so there is no variable to allocate. This happens with
+                // implicit interfaces enabled, where `x(n)` for a scalar or
+                // undeclared `x` resolves to a call to an external function
+                // `x`. Report it here: an alloc_arg with no target would
+                // crash the checks that run after this loop.
+                std::string label_msg = "this expression cannot be allocated";
+                if (ASR::is_a<ASR::FunctionCall_t>(*array_stmt)) {
+                    ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(array_stmt);
+                    std::string fn_name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(fc->m_name));
+                    label_msg = "`" + fn_name + "` is not an array variable, "
+                        "so this resolves to a function call";
+                }
+                diag.add(Diagnostic(
+                    "An allocate-object must be a data pointer or an allocatable variable",
+                    Level::Error, Stage::Semantic, {
+                        Label(label_msg, {array_stmt->base.loc})
+                    }));
+                throw SemanticAbort();
             }
             alloc_args_vec.push_back(al, new_arg);
         }

@@ -1629,6 +1629,10 @@ filename = "errors/allocate_03.f90"
 run = true
 
 [[test]]
+filename = "errors/allocate_object_01.f90"
+asr_implicit_interface_and_typing = true
+
+[[test]]
 filename = "errors/allocated_04.f90"
 run = true
 

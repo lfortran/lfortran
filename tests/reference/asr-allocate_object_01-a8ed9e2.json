@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocate_object_01-a8ed9e2",
+    "cmd": "lfortran --show-asr --implicit-typing --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/allocate_object_01.f90",
+    "infile_hash": "819abad61dcf774d0b673f2ed9ea2f6a7762beb22e9d4af63fba80ea",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-allocate_object_01-a8ed9e2.stderr",
+    "stderr_hash": "8a44d24169544195841b352d0e085ccda94b32b256f347f8fa394883",
+    "returncode": 2
+}
