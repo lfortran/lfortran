@@ -923,8 +923,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t* v_type = ASR::down_cast<ASR::Integer_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind, false);
                 } else {
                     type = getIntType(a_kind, true);
@@ -934,8 +933,7 @@ namespace LCompilers {
             case (ASR::ttypeType::UnsignedInteger) : {
                 ASR::UnsignedInteger_t* v_type = ASR::down_cast<ASR::UnsignedInteger_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind, false);
                 } else {
                     type = getIntType(a_kind, true);
@@ -963,8 +961,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Real) : {
                 ASR::Real_t* v_type = ASR::down_cast<ASR::Real_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getFPType(a_kind, false);
                 } else {
                     type = getFPType(a_kind, true);
@@ -1023,8 +1020,7 @@ namespace LCompilers {
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
                 a_kind = v_type->m_kind;
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = getIntType(a_kind);
                 } else {
                     type = getIntType(a_kind)->getPointerTo();
@@ -1089,8 +1085,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::EnumType: {
-                if (arg_m_abi == ASR::abiType::BindC
-                    && arg_m_value_attr) {
+                if (arg_m_value_attr) {
                     type = llvm::Type::getInt32Ty(context);
                 } else {
                     type = llvm::Type::getInt32Ty(context)->getPointerTo();
@@ -1243,6 +1238,9 @@ namespace LCompilers {
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
                 }
+                // Keep in sync with ASRToLLVMVisitor::is_cptr_dummy_passed_by_value:
+                // a CPtr dummy is passed by reference (void**) unless it is
+                // VALUE or intent(in).
                 if( (arg->m_intent == ASRUtils::intent_out ||
                      arg->m_intent == ASRUtils::intent_inout ||
                      (arg->m_intent == ASRUtils::intent_unspecified && !arg->m_value_attr)) &&
@@ -9996,6 +9994,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10046,6 +10046,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
@@ -10076,6 +10077,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {    
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10095,6 +10098,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module) 
@@ -10124,6 +10128,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     {    
         Allocator al(1024);
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10160,6 +10166,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     llvm::Function* LLVMStruct::define_intrinsic_type_allocate_function(ASR::ttype_t* type, llvm::Module* module)
@@ -10188,6 +10195,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMStruct::fill_intrinsic_type_allocate_body(ASR::ttype_t* ttype, llvm::Function* func, llvm::Module* module)
     {
         llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::DebugLoc saved_loc = builder->getCurrentDebugLocation();
+        builder->SetCurrentDebugLocation(nullptr);
         llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
         builder->SetInsertPoint(entry);
 
@@ -10234,6 +10243,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+        builder->SetCurrentDebugLocation(saved_loc);
     }
 
     void LLVMStruct::copy_dimension_descriptors(
