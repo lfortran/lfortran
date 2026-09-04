@@ -2100,10 +2100,12 @@ namespace CoBroadcast {
 
             case ASR::ttypeType::Array: {
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
-                if (arr->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
-                    return false;
-                }
                 return is_static_pod_type(arr->m_type);
+            }
+
+            case ASR::ttypeType::Allocatable: {
+                ASR::Allocatable_t* allo = ASR::down_cast<ASR::Allocatable_t>(t);
+                return is_static_pod_type(allo->m_type);
             }
 
             case ASR::ttypeType::StructType: {

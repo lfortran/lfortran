@@ -2864,6 +2864,106 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
 class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayPrifVisitor> {
     private:
         CoarrayPrifReplacer replacer;
+
+        void emit_packed_co_broadcast(const Location &loc,
+                ASR::expr_t* a, ASR::expr_t* source_image,
+                ASR::expr_t* stat, ASR::expr_t* errmsg,
+                Vec<ASR::stmt_t*> &body) {
+            SymbolTable* scope = current_scope;
+            if (!scope) scope = replacer.prif.get_global_scope();
+            if (scope == replacer.prif.get_global_scope()) {
+                ASR::expr_t* base_expr = a;
+                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base_expr))
+                    base_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base_expr)->m_arg;
+                if (ASR::is_a<ASR::ArraySection_t>(*base_expr))
+                    base_expr = ASR::down_cast<ASR::ArraySection_t>(base_expr)->m_v;
+                if (ASR::is_a<ASR::Var_t>(*base_expr)) {
+                    SymbolTable* var_scope = ASRUtils::symbol_parent_symtab(
+                        ASR::down_cast<ASR::Var_t>(base_expr)->m_v);
+                    if (var_scope) scope = var_scope;
+                }
+            }
+            ASRUtils::ASRBuilder b(replacer.al, loc);
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(a));
+            ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(a));
+            Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(replacer.al, n_dims);
+            for (int i = 0; i < n_dims; i++) {
+                ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
+                empty_dims.push_back(replacer.al, d);
+            }
+            ASR::ttype_t* arr_type = ASRUtils::make_Array_t_util(
+                replacer.al, loc, elem_type, empty_dims.p, empty_dims.n,
+                ASR::abiType::Source, false,
+                ASR::array_physical_typeType::DescriptorArray);
+            ASR::ttype_t* alloc_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                replacer.al, loc, arr_type));
+            ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(a);
+            std::string tmp_name = scope->get_unique_name("__co_broadcast_tmp");
+            ASR::symbol_t* tmp_sym = replacer.prif.declare_variable(
+                scope, loc, tmp_name, alloc_type,
+                ASR::intentType::Local, struct_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(replacer.al, loc, tmp_sym));
+
+            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(replacer.al, loc, 4));
+            ASR::expr_t* is_cont = ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(
+                replacer.al, loc, a, logical_type, nullptr));
+            ASR::expr_t* not_cont = ASRUtils::EXPR(ASR::make_LogicalNot_t(
+                replacer.al, loc, is_cont, ASRUtils::expr_type(is_cont), nullptr));
+
+            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(replacer.al, n_dims);
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(replacer.al, loc, 4));
+            for (int i = 0; i < n_dims; i++) {
+                ASR::dimension_t d; d.loc = loc; d.m_start = b.i32(1);
+                ASR::expr_t* dim_idx = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    replacer.al, loc, i+1, int32_type));
+                ASR::expr_t* dim_len = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                    replacer.al, loc, a, dim_idx, int32_type, nullptr));
+                d.m_length = dim_len;
+                alloc_dims.push_back(replacer.al, d);
+            }
+            Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(replacer.al, 1);
+            ASR::alloc_arg_t alloc_arg; alloc_arg.loc = loc; alloc_arg.m_a = tmp_var;
+            alloc_arg.m_dims = alloc_dims.p; alloc_arg.n_dims = alloc_dims.n;
+            alloc_arg.m_len_expr = nullptr; alloc_arg.m_type = nullptr;
+            alloc_arg.m_sym_subclass = nullptr; alloc_arg.m_codims = nullptr; alloc_arg.n_codims = 0;
+            alloc_args.push_back(replacer.al, alloc_arg);
+            Vec<ASR::expr_t*> dealloc_vars; dealloc_vars.reserve(replacer.al, 1);
+            dealloc_vars.push_back(replacer.al, tmp_var);
+
+            ASR::stmt_t* call_orig = replacer.prif.make_prif_co_broadcast_call(
+                loc, a, source_image, stat, errmsg);
+            ASR::stmt_t* call_tmp = replacer.prif.make_prif_co_broadcast_call(
+                loc, tmp_var, source_image, stat, errmsg);
+
+            Vec<ASR::stmt_t*> then_body; then_body.reserve(replacer.al, 5);
+            // Localized workaround for lfortran issue #2979: pack a
+            // non-contiguous CoBroadcast array into a contiguous temp at
+            // the call site. This handles the `contiguous a(..)` dummy
+            // inside `contiguous_co_broadcast` when the generic
+            // `array_passed_in_function_call` cannot (AssumedRank).
+            // Can be removed once the compiler correctly handles
+            // `contiguous` AssumedRank dummies via generic
+            // caller-side `internal_pack`/`unpack`.
+            then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Allocate_t(
+                replacer.al, loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr)));
+            then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Assignment_t(
+                replacer.al, loc, tmp_var, a, nullptr, false, false)));
+            then_body.push_back(replacer.al, call_tmp);
+            then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Assignment_t(
+                replacer.al, loc, a, tmp_var, nullptr, false, false)));
+            then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                replacer.al, loc, dealloc_vars.p, dealloc_vars.n)));
+
+            Vec<ASR::stmt_t*> else_body; else_body.reserve(replacer.al, 1);
+            else_body.push_back(replacer.al, call_orig);
+
+            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                replacer.al, loc, nullptr, not_cont, then_body.p, then_body.n, else_body.p, else_body.n));
+            body.push_back(replacer.al, if_stmt);
+        }
+
     public:
         CoarrayPrifVisitor(Allocator &al_, PRIFInterface &prif)
             : replacer(al_, prif) {
@@ -2992,13 +3092,18 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
 
                         LCOMPILERS_ASSERT(a != nullptr);
 
-                        ASR::ttype_t* a_type = ASRUtils::extract_type(ASRUtils::expr_type(a));
+                        ASR::ttype_t* a_type = ASRUtils::expr_type(a);
+                        ASR::ttype_t* base_type = ASRUtils::extract_type(a_type);
+                        bool is_array = ASRUtils::is_array(a_type);
+                        bool is_struct = base_type && ASR::is_a<ASR::StructType_t>(*base_type);
 
-                        if (ASR::is_a<ASR::StructType_t>(*a_type)) {
+                        if (is_struct && !is_array) {
                             replacer.prif.make_static_struct_broadcast(
                                 replacer.al, x->base.base.loc, a, source_image, stat, errmsg,
                                 body
                             );
+                        } else if (is_array) {
+                            emit_packed_co_broadcast(x->base.base.loc, a, source_image, stat, errmsg, body);
                         } else {
                             body.push_back(replacer.al, replacer.prif.make_prif_co_broadcast_call(
                                 x->base.base.loc, a, source_image, stat, errmsg));
