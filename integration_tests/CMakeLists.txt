@@ -969,6 +969,7 @@ RUN(NAME assumed_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 COMPILE(NAME assumed_rank_12 COMPILERS gfortran llvm llvm_wasm) # move to RUN with llvm once assumed-size -> assumed-rank codegen is supported (#11851)
 
 RUN(NAME assumed_rank_14 LABELS gfortran llvm)
+RUN(NAME assumed_rank_15 LABELS gfortran llvm)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
