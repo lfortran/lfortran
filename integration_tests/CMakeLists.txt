@@ -2572,6 +2572,7 @@ RUN(NAME derived_types_156 LABELS gfortran llvm)
 RUN(NAME derived_types_157 LABELS gfortran llvm)
 RUN(NAME derived_types_158 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
+RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
