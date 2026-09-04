@@ -8842,11 +8842,14 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 }
 
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
-                LCOMPILERS_ASSERT_MSG(
-                    (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(orig_arg_type)) &&
-                    ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(orig_arg_type))->m_len_kind ==
+                ASR::ttype_t* orig_element_type = ASRUtils::type_get_past_array(orig_arg_type);
+                bool dummy_is_assumed_len_character_explicit_shape =
+                    ASR::is_a<ASR::String_t>(*orig_element_type) &&
+                    ASR::down_cast<ASR::String_t>(orig_element_type)->m_len_kind ==
                         ASR::string_length_kindType::AssumedLength &&
-                    ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) ||
+                    ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                LCOMPILERS_ASSERT_MSG(
+                    dummy_is_assumed_len_character_explicit_shape ||
                     dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
                         orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
