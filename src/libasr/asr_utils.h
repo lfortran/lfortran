@@ -1915,6 +1915,10 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::DictItem: {
             return true;
         }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            return ASR::is_a<ASR::Pointer_t>(*func_call->m_type);
+        }
         default:
             return false;
     }
