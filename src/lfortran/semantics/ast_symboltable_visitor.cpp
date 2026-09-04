@@ -2024,19 +2024,7 @@ public:
             is_Function = false;
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
-        }
+
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -2358,6 +2346,20 @@ public:
         }
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            current_procedure_args.clear();
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            current_procedure_args = current_procedure_args_copy;
+            default_storage_save = current_storage_save;
+        }
 
         // Create and register the function
         if (assgnd_access.count(sym_name)) {
