@@ -1504,6 +1504,19 @@ public:
                     AST::If_t* s = AST::down_cast<AST::If_t>(stmt);
                     collect_labels_in_stmts(s->m_body, s->n_body, collect_labels_in_stmt_ref);
                     collect_labels_in_stmts(s->m_orelse, s->n_orelse, collect_labels_in_stmt_ref);
+                    if (s->m_end_label != 0) {
+                        std::string end_label_name = std::to_string(s->m_end_label);
+                        if (!labels.insert(end_label_name).second) {
+                            diag.add(Diagnostic(
+                                "duplicate statement label " + end_label_name,
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {stmt->base.loc})
+                                }));
+                            if (!compiler_options.continue_compilation) {
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
                     break;
                 }
                 case AST::decl_stmtType::DoLoop: {
@@ -9329,6 +9342,26 @@ public:
         }
         if(nesting_lvl_inside_pragma==0) {
             do_in_pragma=false;
+        }
+        if (x.m_end_label != 0) {
+            // A label on the closing `end if` (`86 endif`) is a valid
+            // `GO TO 86` target: end-if-stmt (R1138) is listed as a branch
+            // target statement in F2018 11.2.1. Append a GoToTarget at the
+            // end of the if-body so such branches resolve, mirroring
+            // `do_label` on DoLoop (see the comment there).
+            bool already_targeted = false;
+            for (size_t i=0; i<x.n_body; i++) {
+                if (!AST::is_kind(*x.m_body[i], AST::DeclStmtKind::Statement)) continue;
+                if (stmt_label(x.m_body[i]) == x.m_end_label) {
+                    already_targeted = true;
+                    break;
+                }
+            }
+            if (!already_targeted) {
+                ASR::asr_t *gt = ASR::make_GoToTarget_t(al, x.base.base.loc,
+                    x.m_end_label, s2c(al, std::to_string(x.m_end_label)));
+                body.push_back(al, ASR::down_cast<ASR::stmt_t>(gt));
+            }
         }
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);

@@ -1,0 +1,17 @@
+program if3
+    integer :: i
+    i = 1
+    if (i > 0) then
+        i = 2
+        go to 86
+        i = 3
+86  end if
+    if (i == 0) then
+        i = 10
+    else if (i == 2) then
+        go to 92
+        i = 20
+    else
+        i = 30
+92  end if
+end program

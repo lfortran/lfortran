@@ -172,7 +172,7 @@ decl_stmt
             concurrent_control *control, expr? mask,
             concurrent_locality* locality, decl_stmt* body,
             trivia? t_inside, trivia? trivia)
-    | If(int label, identifier? stmt_name, expr test, decl_stmt* body,
+    | If(int label, identifier? stmt_name, int end_label, expr test, decl_stmt* body,
             decl_stmt* orelse, trivia? if_trivia, trivia? else_trivia, trivia? trivia)
     | IfArithmetic(int label, identifier? stmt_name, expr test,
             int lt_label, int eq_label, int gt_label,
