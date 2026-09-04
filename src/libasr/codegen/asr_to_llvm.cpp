@@ -4522,6 +4522,7 @@ public:
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
             bool check_for_bounds = compiler_options.po.bounds_checking;
+            bool assumed_size_last_dim = false;
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -4552,7 +4553,13 @@ public:
                         llvm::Type* idx_type = arr_descr->get_index_type();
                         unsigned idx_bits = idx_type->getIntegerBitWidth();
                         dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
-                        check_for_bounds = false;
+                        if (idim == x.n_args - 1) {
+                            // Assumed-size last dimension: no upper bound is
+                            // known, but the lower bound can still be checked.
+                            assumed_size_last_dim = true;
+                        } else {
+                            check_for_bounds = false;
+                        }
                     }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
@@ -4603,7 +4610,8 @@ public:
                                                     true,
                                                     false,
                                                     llvm_diminfo.p, is_polymorphic, nullptr,
-                                                    false, false, array_name, infile);
+                                                    false, check_for_bounds,
+                                                    assumed_size_last_dim, array_name, infile);
             } else {
                 llvm::Type* type;
                 bool is_fixed_size = (array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -4625,7 +4633,8 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::StringArraySinglePointer,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     nullptr, false,
-                                                    check_for_bounds, array_name, infile);
+                                                    check_for_bounds, assumed_size_last_dim,
+                                                    array_name, infile);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -10212,6 +10221,103 @@ public:
             } else {
                 visit_expr_wrapper(array_section->m_args[i].m_right, true);
                 non_sliced_indices.p[i] = tmp;
+            }
+        }
+        if (compiler_options.po.bounds_checking) {
+            std::string array_name;
+            if (ASR::is_a<ASR::Var_t>(*array_section->m_v)) {
+                array_name = ASRUtils::EXPR2VAR(array_section->m_v)->m_name;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v)) {
+                array_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(array_section->m_v)->m_m));
+            } else {
+                array_name = "array";
+            }
+            llvm::Type* idx_type = arr_descr->get_index_type();
+            llvm::Value* zero = llvm::ConstantInt::get(idx_type, 0);
+            llvm::Value* one = llvm::ConstantInt::get(idx_type, 1);
+            bool desc_dims = arr_physical_type == ASR::array_physical_typeType::DescriptorArray;
+            llvm::Value* dim_des_arr = nullptr;
+            if (desc_dims) {
+                dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    value_desc_type, value_desc);
+            }
+            for (int i = 0; i < value_rank; i++) {
+                llvm::Value* alb = nullptr;
+                llvm::Value* aub = nullptr;
+                if (desc_dims) {
+                    llvm::Value* dim_des_ptr = arr_descr->get_pointer_to_dimension_descriptor(
+                        dim_des_arr, llvm::ConstantInt::get(idx_type, i));
+                    alb = arr_descr->get_lower_bound(dim_des_ptr);
+                    aub = arr_descr->get_upper_bound(dim_des_ptr);
+                } else {
+                    if (m_dims[i].m_start) {
+                        visit_expr_wrapper(m_dims[i].m_start, true);
+                        alb = builder->CreateSExtOrTrunc(tmp, idx_type);
+                    } else {
+                        alb = one;
+                    }
+                    if (m_dims[i].m_length) {
+                        visit_expr_wrapper(m_dims[i].m_length, true);
+                        llvm::Value* len = builder->CreateSExtOrTrunc(tmp, idx_type);
+                        aub = builder->CreateSub(builder->CreateAdd(alb, len), one);
+                    }
+                    // A dimension without a length (assumed-size last
+                    // dimension) has no known upper bound; check only the
+                    // lower bound then.
+                }
+                llvm::Value* dimension = llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), llvm::APInt(32, i + 1));
+                llvm::Value* bad_idx = nullptr;
+                llvm::Value* fail = nullptr;
+                if (lbs.p[i] != nullptr) {
+                    llvm::Value* start = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
+                    llvm::Value* end = builder->CreateSExtOrTrunc(ubs.p[i], idx_type);
+                    llvm::Value* step = builder->CreateSExtOrTrunc(ds.p[i], idx_type);
+                    // The section accesses start, start+step, ...,
+                    // start + trip*step where trip = (end-start)/step; an
+                    // empty section accesses nothing, so there is nothing
+                    // to check.
+                    llvm::Value* trip = builder->CreateSDiv(
+                        builder->CreateSub(end, start), step);
+                    llvm::Value* nonempty = builder->CreateICmpSGE(trip, zero);
+                    llvm::Value* last = builder->CreateAdd(start,
+                        builder->CreateMul(trip, step));
+                    llvm::Value* step_pos = builder->CreateICmpSGT(step, zero);
+                    llvm::Value* lo = builder->CreateSelect(step_pos, start, last);
+                    llvm::Value* hi = builder->CreateSelect(step_pos, last, start);
+                    llvm::Value* bad_lo = builder->CreateICmpSLT(lo, alb);
+                    llvm::Value* bad = bad_lo;
+                    if (aub) {
+                        bad = builder->CreateOr(bad, builder->CreateICmpSGT(hi, aub));
+                    }
+                    fail = builder->CreateAnd(nonempty, bad);
+                    bad_idx = builder->CreateSelect(bad_lo, lo, hi);
+                } else {
+                    llvm::Value* idxv = builder->CreateSExtOrTrunc(
+                        non_sliced_indices.p[i], idx_type);
+                    llvm::Value* bad_lo = builder->CreateICmpSLT(idxv, alb);
+                    fail = bad_lo;
+                    if (aub) {
+                        fail = builder->CreateOr(fail, builder->CreateICmpSGT(idxv, aub));
+                    }
+                    bad_idx = idxv;
+                }
+                if (aub) {
+                    llvm_utils->generate_runtime_error(fail,
+                        "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
+                        {LLVMUtils::RuntimeLabel("", {array_section->base.base.loc})},
+                        infile, location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, array_name),
+                        bad_idx, dimension, alb, aub);
+                } else {
+                    llvm_utils->generate_runtime_error(fail,
+                        "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but it is below the lower bound %d.",
+                        {LLVMUtils::RuntimeLabel("", {array_section->base.base.loc})},
+                        infile, location_manager,
+                        LCompilers::create_global_string_ptr(context, *module, *builder, array_name),
+                        bad_idx, dimension, alb);
+                }
             }
         }
         LCOMPILERS_ASSERT(target_rank > 0);
