@@ -6169,6 +6169,21 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (sym_) {
+                                        // An ALLOCATABLE statement carries an array-spec of its
+                                        // own: its allocatable-decl is
+                                        // `object-name [( array-spec )] [lbracket coarray-spec
+                                        // rbracket]` (F2018 8.6.1). That spec is the only place
+                                        // the shape can appear when the type was declared in a
+                                        // separate statement:
+                                        //     integer loop
+                                        //     allocatable loop(:)
+                                        // Apply the dimensions first, exactly as a DIMENSION
+                                        // statement would, and add the allocatable attribute on
+                                        // top, so this spells the same thing as the combined
+                                        // form `integer, allocatable :: loop(:)`.
+                                        if (s.n_dim > 0) {
+                                            dimension_variable(s, x.base.base.loc);
+                                        }
                                         ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
@@ -6221,6 +6236,12 @@ public:
                                                     ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
                                             }
                                         } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                                            // Same as above: the ALLOCATABLE statement may be the
+                                            // entity's only declaration under implicit typing,
+                                            // and its array-spec is then the only shape it has.
+                                            if (s.n_dim > 0) {
+                                                dimension_variable(s, x.base.base.loc);
+                                            }
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                             if (!ASRUtils::is_allocatable(v->m_type)) {
                                                 v->m_type = ASRUtils::TYPE(
@@ -8324,6 +8345,20 @@ public:
                             if ( ASR::is_a<ASR::String_t>(*type)) {
                                 array_type->m_physical_type = ASRUtils::is_fixed_size_array(array_type->m_dims, array_type->n_dims) ? ASR::array_physical_typeType::PointerArray : ASR::array_physical_typeType::DescriptorArray;
                             }
+                        } else if ( ASR::is_a<ASR::Allocatable_t>(*symbol_variable->m_type) ) {
+                            // An earlier ALLOCATABLE statement declared the
+                            // entity (with its array-spec, F2018 8.6.1); this
+                            // later type declaration only refines the element
+                            // type and must not drop the wrapper or the dims:
+                            //     allocatable qbh(:)
+                            //     integer qbh
+                            ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(symbol_variable->m_type);
+                            if ( ASR::is_a<ASR::Array_t>(*alloc_type->m_type) ) {
+                                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(alloc_type->m_type);
+                                array_type->m_type = type;
+                            } else {
+                                alloc_type->m_type = type;
+                            }
                         } else {
                             symbol_variable->m_type = type;
                         }
@@ -9325,7 +9360,11 @@ public:
                             variable_added_to_symtab->m_type = type;
                         }
                     } else {
-                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type)) {
+                        // An Allocatable from an earlier ALLOCATABLE statement
+                        // already had its element type refined above; clobbering
+                        // it here would drop the wrapper and the array-spec.
+                        if (!ASR::is_a<ASR::Array_t>(*variable_added_to_symtab->m_type) &&
+                            !ASR::is_a<ASR::Allocatable_t>(*variable_added_to_symtab->m_type)) {
                             variable_added_to_symtab->m_type = type;
                         }
                     }

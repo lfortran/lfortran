@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocatable_attr_dims_implicit-9f3b63b",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/allocatable_attr_dims_implicit.f90",
+    "infile_hash": "6e66d74814e453dc9671a48fa485e9f1fdb95eb6ecfbfd5d8d75d992",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-allocatable_attr_dims_implicit-9f3b63b.stdout",
+    "stdout_hash": "72f25f194fdb6e7c5b98da1c1a59ad6889e9f7a43dde4221430f412c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

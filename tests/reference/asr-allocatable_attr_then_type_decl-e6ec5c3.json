@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocatable_attr_then_type_decl-e6ec5c3",
+    "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
+    "infile": "tests/allocatable_attr_then_type_decl.f90",
+    "infile_hash": "d52157c3bfaf0c6e6977c1e4f0e28db0a54d9f071050df0980c0a133",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-allocatable_attr_then_type_decl-e6ec5c3.stdout",
+    "stdout_hash": "a5a096084a3816f5113330c790a99abe00978b19b7742ecf6074d2ce",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

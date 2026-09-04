@@ -1,0 +1,185 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            allocatable_attr_dims_implicit:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            m:
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    allocatable_attr_dims_implicit
+                    (FunctionType
+                        [(Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 2 n)]
+                    [(Allocate
+                        [((Var 2 x)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n))]
+                        []
+                        ()
+                        ()
+                        ())
+                        ((Var 2 m)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n))]
+                        []
+                        ()
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 x)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 m)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 x)
+                        (Var 2 m)]
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                )
+        })
+    []
+)
