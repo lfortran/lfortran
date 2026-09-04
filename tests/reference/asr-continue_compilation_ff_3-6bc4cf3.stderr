@@ -1,0 +1,5 @@
+tokenizer error: Expected an executable statement inside a do while loop
+ --> tests/errors/continue_compilation_ff_3.f:4:9
+  |
+4 |         XINTEGER :: Y
+  |         ^ 
