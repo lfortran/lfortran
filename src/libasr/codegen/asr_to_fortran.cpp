@@ -1274,11 +1274,49 @@ public:
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
         std::string r = indent;
         r += "deallocate(";
+        bool has_vars = false;
+        
         for (size_t i = 0; i < x.n_vars; i ++) {
-            visit_expr(*x.m_vars[i]);
+            ASR::expr_t* tmp_expr = x.m_vars[i];
+            
+            ASR::expr_t* root_expr = tmp_expr;
+            while (true) {
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::StructInstanceMember_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::ArrayItem_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::Cast_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::Cast_t>(root_expr)->m_arg;
+                } else {
+                    break;
+                }
+            }
+            
+            if (ASR::is_a<ASR::Var_t>(*root_expr)) {
+                const ASR::Var_t* root_var = ASR::down_cast<ASR::Var_t>(root_expr);
+                ASR::Variable_t *root_v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(root_var->m_v));
+                
+                if (root_v->m_storage == ASR::storage_typeType::Parameter) {
+                    continue; 
+                }
+            }
+
+        
+            if (has_vars) {
+                r += ", ";
+            }
+            
+            visit_expr(*tmp_expr);
             r += src;
-            if (i < x.n_vars-1) r += ", ";
+            has_vars = true;
         }
+        
+        if (!has_vars) {
+            src = "";
+            return;
+        }
+
         r += ") ";
         r += "! Implicit deallocate\n";
         src = r;

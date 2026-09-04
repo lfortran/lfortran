@@ -2738,6 +2738,30 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         for (size_t i=0; i<x.n_vars; i++) {
             ASR::symbol_t* tmp_sym = nullptr;
             ASR::expr_t* tmp_expr = x.m_vars[i];
+
+            ASR::expr_t* root_expr = tmp_expr;
+            while (true) {
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::StructInstanceMember_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::ArrayItem_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::Cast_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::Cast_t>(root_expr)->m_arg;
+                } else {
+                    break;
+                }
+            }
+            
+            if (ASR::is_a<ASR::Var_t>(*root_expr)) {
+                const ASR::Var_t* root_var = ASR::down_cast<ASR::Var_t>(root_expr);
+                ASR::Variable_t *root_v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(root_var->m_v));
+                
+                if (root_v->m_storage == ASR::storage_typeType::Parameter) {
+                    continue; 
+                }
+            }
+
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 tmp_sym = tmp_var->m_v;
@@ -2746,8 +2770,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                                     ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
-            out += std::string(ASRUtils::symbol_name(tmp_sym)) + ", ";
+
+            if (out.back() != '(' && out.back() != ' ') {
+                out += ", ";
+            }
+            out += std::string(ASRUtils::symbol_name(tmp_sym));
         }
+        
+        if (out == indent + "// FIXME: implicit deallocate(") {
+            src = "";
+            return;
+        }
+        
         out += ");\n";
         src = out;
     }
