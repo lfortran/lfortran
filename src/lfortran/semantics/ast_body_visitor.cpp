@@ -7000,7 +7000,11 @@ public:
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
-        if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
+        // A defined assignment takes the value as an actual argument, so an
+        // array constructor is allowed even for a scalar target; the overload
+        // resolution above has already matched it against the dummy argument.
+        if (overloaded_stmt == nullptr &&
+            target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
             value->type == ASR::exprType::ArrayConstant ) {
             diag.add(Diagnostic(
                 "ArrayInitalizer expressions can only be assigned array references",
