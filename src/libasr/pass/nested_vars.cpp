@@ -100,6 +100,12 @@ static ASR::ttype_t *duplicate_type_for_nested_context(Allocator &al,
         return ASRUtils::duplicate_type_with_empty_dims(al, var_type,
             ASR::array_physical_typeType::UnboundedPointerArray, true);
     }
+    if (ASR::is_a<ASR::Array_t>(*array_type) &&
+            ASR::down_cast<ASR::Array_t>(array_type)->m_physical_type ==
+                ASR::array_physical_typeType::AssumedRankArray) {
+        return ASRUtils::duplicate_type_with_empty_dims(al, var_type,
+            ASR::array_physical_typeType::AssumedRankArray, true);
+    }
     return ASRUtils::duplicate_type_with_empty_dims(al, var_type);
 }
 

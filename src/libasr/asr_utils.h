@@ -4083,7 +4083,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
     bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true,
     ASR::memory_spaceType memory_space=ASR::memory_spaceType::Global) {
-    if( n_dims == 0 ) {
+    if( n_dims == 0 && physical_type != ASR::array_physical_typeType::AssumedRankArray ) {
         return type;
     }
 
