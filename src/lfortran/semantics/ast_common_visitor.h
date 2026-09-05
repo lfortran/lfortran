@@ -15295,14 +15295,18 @@ public:
                 }
                 int64_t result_size = 64; // Fallback for runtime-sized sources
                 ASR::expr_t* result_size_expr = nullptr;
-                
+
+                // Declare our type safely once for this scope
                 ASR::ttype_t *local_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
 
+                // 1. Get mold byte size natively (it already accounts for fixed string lengths!)
                 ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                 int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
 
+                // Helper to cleanly extract mold string length expression without creating AST DAGs
+                // Safely checks String_t type before doing any down_cast operations
                 auto get_mold_len_expr = [&](bool multiply_kind) -> ASR::expr_t* {
                     ASR::expr_t* expr = nullptr;
                     if (ASR::is_a<ASR::String_t>(*mold_elem_type)) {
@@ -15333,30 +15337,31 @@ public:
                     return expr;
                 };
 
+                // 2. Patch ONLY for assumed/deferred length strings where mold_bytes is unknown (<= 0)
                 if (mold_bytes <= 0 && ASR::is_a<ASR::String_t>(*mold_elem_type)) {
                     ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
                     if (mold_str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
                         mold_str_type->m_len_kind == ASR::string_length_kindType::DeferredLength) {
                         // Leave mold_bytes <= 0 to trigger dynamic calculation
-                    } else if (mold_str_type->m_len) {
-                        if (ASRUtils::expr_value(mold_str_type->m_len)) {
-                            mold_bytes = mold_str_type->m_kind * ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(mold_str_type->m_len))->m_n;
-                        }
+                    } else if (mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len)) {
+                        mold_bytes = mold_str_type->m_kind * ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(mold_str_type->m_len))->m_n;
                     } else {
                         mold_bytes = mold_str_type->m_kind * 1;
                     }
                 }
 
+                // 3. Compute result_size (constant) or result_size_expr (runtime)
                 if (src_bytes > 0 && mold_bytes > 0) {
                     result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                 } else if (mold_bytes == 0 && !ASR::is_a<ASR::String_t>(*mold_elem_type)) {
                     result_size = 0;
                 } else {
+                    // One or both are runtime sized
                     ASR::expr_t* dyn_src_len = src_len_expr;
                     if (src_bytes > 0 && !dyn_src_len) {
                         dyn_src_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, src_bytes, local_int_type));
                     }
-                    
+
                     if (dyn_src_len) {
                         // Create fresh expression nodes to prevent ASR DAG verification crashes
                         ASR::expr_t* mb_1 = get_mold_len_expr(true);
@@ -15395,7 +15400,7 @@ public:
                             al, x.base.base.loc, is_zero_test2, zero_expr3, div_expr, local_int_type, nullptr));
                     }
                 }
-                
+
                 ASR::dimension_t size_dim;
                 size_dim.loc = x.base.base.loc;
                 size_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, local_int_type));
@@ -15407,35 +15412,28 @@ public:
                 new_dims.push_back(al, size_dim);
             }
         }
-        
+
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
+        // Inject explicit string length for runtime array temporaries ONLY if assumed/deferred
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::String_t>(*elem_type)) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
             if (!str_type->m_len && 
                (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
                 str_type->m_len_kind == ASR::string_length_kindType::DeferredLength)) {
-                
+
                 ASR::ttype_t *tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
-                
-                ASR::expr_t* len_arg = mold;
-                if (ASR::is_a<ASR::ArrayConstructor_t>(*mold)) {
-                    ASR::ArrayConstructor_t* arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(mold);
-                    if (arr_const->n_args > 0) {
-                        len_arg = arr_const->m_args[0];
-                    }
-                }
-                
-                ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
-                        al, x.base.base.loc, len_arg, tmp_int_type, nullptr));
-                
+
+                // Reuse get_mold_len_expr to cleanly construct this node and unwrap array bounds safely
+                ASR::expr_t* str_len_expr = get_mold_len_expr(false);
+
                 ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, x.base.base.loc, str_type->m_kind, str_len_expr,
                     ASR::string_length_kindType::ExpressionLength,
                     str_type->m_physical_type));
-                
+
                 if (ASR::is_a<ASR::Array_t>(*type)) {
                     ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(type);
                     arr_type->m_type = new_str_type;
@@ -15444,7 +15442,7 @@ public:
                 }
             }
         }
-        
+
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
             *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
         if(size) size_value = ASRUtils::expr_value(size);
