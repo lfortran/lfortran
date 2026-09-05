@@ -6981,19 +6981,21 @@ public:
                     if (ASRUtils::is_character(*symbol_type) &&
                             phy_type == ASR::array_physical_typeType::PointerArray &&
                             ASRUtils::is_fixed_size_array(symbol_type)) {
-                        bool has_init = v && (v->m_symbolic_value || v->m_value);
-                        if (!has_init) {
-                            ASR::String_t* str_type = ASRUtils::get_string_type(symbol_type);
-                            builder->CreateStore(llvm::Constant::getNullValue(string_descriptor), ptr_member);
-                            setup_string_length(ptr_member, str_type, str_type->m_len);
-                            int64_t array_size = ASRUtils::get_fixed_size_of_array(symbol_type);
-                            llvm::Value* array_size_val = llvm::ConstantInt::get(
-                                context, llvm::APInt(64, array_size));
-                            llvm_utils->set_array_of_strings_memory_on_heap(
-                                str_type, ptr_member,
-                                llvm_utils->get_string_length(str_type, ptr_member),
-                                array_size_val, false);
-                        }
+                        // The character data of such a member is owned by the
+                        // struct: it is heap allocated here and freed by the
+                        // scope-exit finalizer. This holds whether or not the
+                        // component has a default initializer; the initializer
+                        // is copied into this buffer further below.
+                        ASR::String_t* str_type = ASRUtils::get_string_type(symbol_type);
+                        builder->CreateStore(llvm::Constant::getNullValue(string_descriptor), ptr_member);
+                        setup_string_length(ptr_member, str_type, str_type->m_len);
+                        int64_t array_size = ASRUtils::get_fixed_size_of_array(symbol_type);
+                        llvm::Value* array_size_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(64, array_size));
+                        llvm_utils->set_array_of_strings_memory_on_heap(
+                            str_type, ptr_member,
+                            llvm_utils->get_string_length(str_type, ptr_member),
+                            array_size_val, false);
                     }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type))
                         && !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
@@ -7088,6 +7090,27 @@ public:
                             ASRUtils::get_string_type(symbol_type),
                             ASRUtils::get_string_type(expr_type(v->m_symbolic_value)),
                             ASRUtils::is_allocatable(symbol_type));
+                        } else if (ASRUtils::is_array_of_strings(v->m_type) &&
+                                   ASRUtils::extract_physical_type(v->m_type) ==
+                                       ASR::array_physical_typeType::PointerArray &&
+                                   ASRUtils::is_fixed_size_array(v->m_type)) {
+                            // Copy the characters into the member's own heap
+                            // buffer. Copying the string descriptor instead
+                            // would leave the member pointing at the read-only
+                            // constant the initializer lives in, which the
+                            // scope-exit finalizer would then try to free.
+                            ASR::ttype_t* value_type = ASRUtils::expr_type(v->m_symbolic_value);
+                            ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
+                            llvm::Value* n_bytes = builder->CreateMul(
+                                llvm_utils->get_string_length(str_type, ptr_member),
+                                llvm::ConstantInt::get(context, llvm::APInt(64,
+                                    ASRUtils::get_fixed_size_of_array(v->m_type))));
+                            builder->CreateMemCpy(
+                                llvm_utils->get_stringArray_data(v->m_type, ptr_member, false),
+                                llvm::MaybeAlign(),
+                                llvm_utils->get_stringArray_data(value_type, tmp, false),
+                                llvm::MaybeAlign(),
+                                n_bytes, v->m_is_volatile);
                         } else if (ASRUtils::is_array(v->m_type)) {
                             ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(v->m_symbolic_value));
                             llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_value(v->m_symbolic_value), arr_const->m_type, module.get());
