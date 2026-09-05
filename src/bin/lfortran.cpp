@@ -870,6 +870,7 @@ int verify_asr_input(const std::string &infile,
     Allocator al(64*1024*1024);
     compiler_options.po.always_run = true;
     compiler_options.po.run_fun = "f";
+    compiler_options.po.loc_manager = &lm;
 
     pass_manager.apply_passes(al, asr, compiler_options.po, diagnostics);
     if (compiler_options.po.tree) {
@@ -1302,6 +1303,10 @@ int compile_src_to_object_file(const std::string &infile,
 
     // Src -> AST -> ASR
     LCompilers::LocationManager lm;
+    // The passes report diagnostics of their own -- the GPU offload report
+    // is one -- and a report that can name the line it is about is worth
+    // more than one that can only give a byte offset.
+    compiler_options.po.loc_manager = &lm;
 
     if (!from_asr) {
         LCompilers::LocationManager::FileLocations fl;
