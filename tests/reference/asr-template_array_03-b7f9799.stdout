@@ -244,6 +244,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 17 l)
@@ -279,6 +280,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 j))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -313,6 +315,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 k))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -445,6 +448,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 18 k))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -555,6 +559,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -573,6 +578,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -591,6 +597,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )]
                                                         ()
                                                         Source
@@ -603,6 +610,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [zero_t
                                                     mult_t
@@ -850,6 +858,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 15 l)
@@ -963,6 +972,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 16 x)]
@@ -1117,6 +1127,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 13 l)
@@ -1233,6 +1244,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 11 l)
@@ -1346,6 +1358,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 12 x)]
@@ -1385,6 +1398,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1422,6 +1436,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 j))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1454,6 +1469,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 k))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1582,6 +1598,7 @@
                                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                                         (Var 20 k))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1690,6 +1707,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Integer 4)
@@ -1706,6 +1724,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Integer 4)
@@ -1722,6 +1741,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )]
                                                         ()
                                                         Source
@@ -1734,6 +1754,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 20 i)
@@ -1876,6 +1897,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1906,6 +1928,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -1998,6 +2021,7 @@
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -2012,6 +2036,7 @@
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -2026,6 +2051,7 @@
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ()
                                         ))]
@@ -2253,6 +2279,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)
@@ -2369,6 +2396,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 x)
@@ -2485,6 +2513,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 x)
@@ -2601,6 +2630,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 x)
@@ -2692,6 +2722,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 x)]
@@ -2776,6 +2807,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 x)]

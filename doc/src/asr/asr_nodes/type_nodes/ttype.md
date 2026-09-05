@@ -1,342 +1,104 @@
 # ttype
 
-Type nodes.
+The types of ASR.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ttype
-    = Integer(int kind, dimension* dims)
-    | Real(int kind, dimension* dims)
-    | Complex(int kind, dimension* dims)
-    | Character(int kind, int len, expr? len_expr, dimension* dims)
-    | Logical(int kind, dimension* dims)
+    = Integer(int kind)
+    | UnsignedInteger(int kind)
+    | Real(int kind)
+    | Complex(int kind)
+    | String(int kind, expr? len, string_length_kind len_kind, string_physical_type physical_type)
+    | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
-    | Struct(symbol derived_type, dimension* dims)
-    | Enum(symbol enum_type, dimension *dims)
-    | UnionType(symbol union_type, dimension *dims)
-    | Class(symbol class_type, dimension* dims)
+    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
+    | EnumType(symbol enum_type)
+    | UnionType(ttype* data_member_types)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
+    | Allocatable(ttype type)
     | CPtr()
-    | TypeParameter(identifier param, dimension* dims)
+    | SymbolicExpression()
+    | TypeParameter(identifier param)
+    | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
+    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 ```
 
 ### Arguments
 
-`kind` member selects the kind of a given type.
-`dims` denotes dimension descriptor.
-`expr` denotes expression.
-`len` denotes length of variable allowed.
-`derived_type` denotes derived type of class. `derived_type` must point to a
-symbol with a symbol table.
-`enum_type` denotes enumeration type.
-`union_type` denotes union type.
-`class_type` denotes class type.
-`key_type` denotes key type in dictonary type.
-`value_type` denotes value type in dictionary type.
-`param` denotes identifier or variable's.
-
+None.
 
 ### Return values
 
-None.
+None. A type is not evaluated.
 
 ## Description
 
-`ttype` denotes type of variables supported by LFortran. It consists of:
+A `ttype` describes what a value is: the type of every expression, of every
+variable and of every procedure argument is one of these.
 
-1. `Integer` denotes integer type.
-2. `Real` denotes real type.
-3. `Complex` denotes complex type.
-4. `Character` denotes character type.
-5. `Logical` denotes logical type.
-6. `Set` denotes set type.
-7. `List` denotes list type.
-8. `Tuple` denotes tuple type.
-9. `Struct` denotes structure type.
-10. `Enum` denotes enumeration type.
-11. `UnionType` denotes union type.
-12. `Class` denotes class type.
-13. `Dict` denotes dictionary type.
-14. `Pointer` denotes Pointer type.
-15. `CPtr` denotes C pointer type.
-16. `TypeParameter` denotes type of parameter.
+The types divide into a few groups:
 
+- the intrinsic scalar types, [Integer](Integer.md),
+  [UnsignedInteger](UnsignedInteger.md), [Real](Real.md),
+  [Complex](Complex.md), [Logical](Logical.md) and [String](String.md), each
+  fixed by a [kind](../kinds_nodes/kinds.md);
+- the derived types, [StructType](StructType.md), [EnumType](EnumType.md) and
+  [UnionType](UnionType.md), whose definitions are symbols;
+- the composite types [Array](Array.md), [Pointer](Pointer.md) and
+  [Allocatable](Allocatable.md), which wrap another type;
+- [CPtr](CPtr.md) and [FunctionType](FunctionType.md), which describe a C
+  address and a procedure signature;
+- [TypeParameter](TypeParameter.md), a placeholder inside a generic
+  [Template](../symbol_nodes/Template.md);
+- the LPython container types [List](List.md), [Set](Set.md), [Dict](Dict.md)
+  and [Tuple](Tuple.md), and [SymbolicExpression](SymbolicExpression.md).
 
-## Types
+A type separates what a value *is* from how it is *represented*. An
+[Array](Array.md) carries an `array_physical_type` and a
+[String](String.md) a `string_physical_type`, and two values with the same
+logical type may differ in it; the physical casts,
+[ArrayPhysicalCast](../expression_nodes/ArrayPhysicalCast.md) and
+[StringPhysicalCast](../expression_nodes/StringPhysicalCast.md), convert
+between representations without changing the value, while
+[Cast](../expression_nodes/Cast.md) changes the value itself.
 
-**ttype** defines types of variables or identifiers supported by LFortran.
-
-## Examples
-
-Example for `integer`:
-
-```fortran
-integer(8) :: x
-x = 6
-x
-```
-
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            x:
-                (Variable
-                    1
-                    x
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 8 [])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 x)
-        (Cast
-            (IntegerConstant 6 (Integer 4 []))
-            IntegerToInteger
-            (Integer 8 [])
-            (IntegerConstant 6 (Integer 8 []))
-        )
-        ()
-    )
-    (Var 1 x)]
-)
-```
-
-Example for `derived_type`:
-
-```fortran
-program t01_derived_type
-implicit none
-type type_A
-    integer :: i
-    real :: r
-end type
-type(type_A) :: A
-A%i = 5
-A%r = 5.5
-end program
-```
-
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            t01_derived_type:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            a:
-                                (Variable
-                                    2
-                                    a
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Struct
-                                        2 type_a
-                                        []
-                                    )
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            type_a:
-                                (StructType
-                                    (SymbolTable
-                                        3
-                                        {
-                                            i:
-                                                (Variable
-                                                    3
-                                                    i
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4 [])
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                ),
-                                            r:
-                                                (Variable
-                                                    3
-                                                    r
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4 [])
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                )
-
-                                        })
-                                    type_a
-                                    [i
-                                    r]
-                                    Source
-                                    Public
-                                    ()
-                                )
-
-                        })
-                    t01_derived_type
-                    []
-                    [(=
-                        (StructInstanceMember
-                            (Var 2 a)
-                            3 i
-                            (Integer 4 [])
-                            ()
-                        )
-                        (IntegerConstant 5 (Integer 4 []))
-                        ()
-                    )
-                    (=
-                        (StructInstanceMember
-                            (Var 2 a)
-                            3 r
-                            (Real 4 [])
-                            ()
-                        )
-                        (RealConstant
-                            5.500000
-                            (Real 4 [])
-                        )
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example for `complex`:
-
-```fortran
-program complex1
-complex :: x
-x = (3.0, 4.0)
-end program
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            complex1:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            x:
-                                (Variable
-                                    2
-                                    x
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Complex 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    complex1
-                    []
-                    [(=
-                        (Var 2 x)
-                        (ComplexConstructor
-                            (RealConstant
-                                3.000000
-                                (Real 4 [])
-                            )
-                            (RealConstant
-                                4.000000
-                                (Real 4 [])
-                            )
-                            (Complex 4 [])
-                            (ComplexConstant
-                                3.000000
-                                4.000000
-                                (Complex 4 [])
-                            )
-                        )
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-```
-
-Example for `dimension`:
-
-```fortran
-integer :: x
-dimension x(3)
-```
-
-ASR:
-
-```
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            x:
-                (Variable
-                    1
-                    x
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 3 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    []
-)
-```
 ## See Also
+
+[kinds](../kinds_nodes/kinds.md), [Cast](../expression_nodes/Cast.md),
+[symbol](../symbol_nodes/symbol.md)
+
+## Type Nodes
+
+```{toctree}
+---
+maxdepth: 1
+---
+Allocatable
+Array
+Complex
+CPtr
+Dict
+EnumType
+FunctionType
+Integer
+List
+Logical
+Pointer
+Real
+Set
+String
+StringPhysicalType
+StructType
+SymbolicExpression
+Tuple
+TypeParameter
+UnionType
+UnsignedInteger
+```

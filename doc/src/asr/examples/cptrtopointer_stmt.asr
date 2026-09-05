@@ -1,0 +1,138 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "c" (Variable
+              :parent_symtab 1
+              :name "c"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (CPtr)
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Variable
+              :parent_symtab 1
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Pointer
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                  :memory_space :Global
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "shape" (Variable
+              :parent_symtab 1
+              :name "shape"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (CPtrToPointer
+            :cptr (Var
+              :v (SymbolRef 1 "c")
+            )
+            :ptr (Var
+              :v (SymbolRef 1 "p")
+            )
+            :shape (Var
+              :v (SymbolRef 1 "shape")
+            )
+            :lower_bounds nil
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

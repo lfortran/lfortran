@@ -113,6 +113,7 @@ class ASRToLLVMVisitor;
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
                     llvm::Type::getInt32Ty(context),                               // str_len
+                    llvm::Type::getInt32Ty(context),                               // str_kind
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
                     llvm::Type::getInt32Ty(context)                                // end_len
                 },
@@ -224,6 +225,19 @@ class ASRToLLVMVisitor;
         // Check if type is represented as a pointer to the backend type.
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
+
+        // Returns the terminator of `bb`, or nullptr when `bb` is not
+        // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
+        // block without a terminator from LLVM 23 on, so inspect the last
+        // instruction directly: this behaves identically on every LLVM
+        // version we support.
+        static inline llvm::Instruction* get_terminator(llvm::BasicBlock* bb) {
+            if (bb->empty()) {
+                return nullptr;
+            }
+            llvm::Instruction& last_instruction = bb->back();
+            return last_instruction.isTerminator() ? &last_instruction : nullptr;
+        }
 
     }
 
@@ -2100,7 +2114,7 @@ class ASRToLLVMVisitor;
          */
         void END_CACHE(llvm::BasicBlock* revert_bb) {
             LCOMPILERS_ASSERT(revert_bb)
-            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+            LCOMPILERS_ASSERT_MSG(!LLVM::get_terminator(builder_->GetInsertBlock()),
                 "`END CACHE` adds the terminator, not expected to be added by other utility")
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(revert_bb);
@@ -2270,7 +2284,8 @@ class ASRToLLVMVisitor;
         static bool non_deallocatable_construct(ASR::asr_t* const s){ // Can't deallocate
             ASR::symbol_t* sym = ASR::is_a<ASR::symbol_t>(*s) ? ASR::down_cast<ASR::symbol_t>(s) : nullptr;
             const bool is_interface = sym && ASR::is_a<ASR::Function_t>(*sym)
-                                      && ASRUtils::get_FunctionType(sym)->m_deftype == ASR::Interface;
+                                      && ASRUtils::is_declaration_deftype(
+                                          ASRUtils::get_FunctionType(sym)->m_deftype);
             const bool is_external_abi = sym && ASR::is_a<ASR::Function_t>(*sym)
                                       && ASRUtils::get_FunctionType(sym)->m_abi == ASR::ExternalUndefined;
             const bool is_TU = !sym && ASR::is_a<ASR::unit_t>(*s) && ASR::is_a<ASR::TranslationUnit_t>(*(ASR::unit_t*)s);
@@ -2350,6 +2365,8 @@ class ASRToLLVMVisitor;
                 case ASR::Complex:
                 case ASR::UnsignedInteger:
                 case ASR::Logical:
+                // An enumeration value is the integer it is stored as.
+                case ASR::EnumType:
                     return false;
                 case ASR::StructType:{
                     ASR::StructType_t* struc_t = ASR::down_cast<ASR::StructType_t>(t);
@@ -2511,7 +2528,7 @@ class ASRToLLVMVisitor;
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->back().getTerminator() == nullptr){
+                if(LLVM::get_terminator(&cache_pair.second->back()) == nullptr){
                     throw LCompilersException("Cache function" + 
                             cache_pair.second->getName().str() +
                             "Not properly created");

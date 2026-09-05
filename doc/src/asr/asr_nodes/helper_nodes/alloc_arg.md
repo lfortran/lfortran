@@ -1,24 +1,26 @@
 # alloc_arg
 
-An **allocation argument** used inside the `Allocate` and `ReAlloc` statement.
+One object of an `allocate` statement, with everything needed to allocate it.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-alloc_arg(expr a, dimension* dims, expr? len_expr, symbol? sym_subclass, ttype? type)
+```text
+alloc_arg
+    = (expr a, dimension* dims, codimension* codims, expr? len_expr, symbol? sym_subclass, ttype? type)
 ```
 
 ### Arguments
 
-Input arguments of `a`, `dims`, optional `len_expr`, optional `sym_subclass`, and optional `type`.
-
-`a` contains the variable to be allocated.  
-`dims` contains a list of dimension bounds in the form of tuples `(lower, upper)` representing shape.  
-`len_expr` is an optional expression specifying length, used for character and derived types.  
-`sym_subclass` is an optional symbol representing subclass type for polymorphic allocation.  
-`type` is an optional type that specifies the target type of allocation.
+| Argument | Description |
+|----------|-------------|
+| `a` | the object being allocated. |
+| `dims` | the shape it is given, one [dimension](dimension.md) per rank. |
+| `codims` | the codimensions it is given, for a coarray. |
+| `len_expr` | the character length, for `character(len=n) ::`. |
+| `sym_subclass` | the dynamic type to allocate, for `allocate(t :: x)` with a polymorphic object. |
+| `type` | the type to allocate, when it differs from the declared type. |
 
 ### Return values
 
@@ -26,64 +28,49 @@ None.
 
 ## Description
 
-**alloc_arg** specifies one element in the `Allocate` statement. It defines what variable to allocate, with what dimensions, type, subclass, and optional length parameters. It is used only as part of the `Allocate` and `ReAlloc` node.
-
-## Types
-
-The variable `a` must be allocatable.  
-Dimensions must be valid integer expressions.  
-Optional fields may be used for polymorphic or character allocations.
+The shape is here rather than in the type of the variable, because an
+allocatable is declared with a deferred shape and gets its bounds at each
+allocation. Everything a backend needs for one object is in one product, so
+[Allocate](../statement_nodes/Allocate.md) is a list of them.
 
 ## Examples
 
-Following example code allocates a memory block of size 3:
-
-```fortran
-program allocate_mem
-real, allocatable :: a(:)
-allocate(a(3))
-end program
+```clojure
+(alloc_arg
+  :a (Var
+    :v (SymbolRef 1 "a")
+  )
+  :dims [
+    (dimension
+      :start (IntegerConstant
+        :n 1
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+      :length (IntegerConstant
+        :n 10
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+    )
+  ]
+  :codims []
+  :len_expr nil
+  :sym_subclass nil
+  :type nil
+)
 ```
 
-ASR (portion corresponding to `alloc_arg`):
+It comes from this complete ASR text document:
 
+```{literalinclude} ../../examples/allocate_stmt.asr
+:language: clojure
 ```
-((Var 2 a)
-[((IntegerConstant 1 (Integer 4) Decimal)
-(IntegerConstant 3 (Integer 4) Decimal))]
-()
-()
-())
-```
-
-```fortran
-type :: base
-    integer :: x
-end type
-
-type, extends(base) :: derived
-    real :: y
-end type
-
-class(base), allocatable :: obj
-
-allocate(derived :: obj)
-```
-
-```
-((Var 2 obj)
-[]
-()
-2 derived
-(StructType
-    []
-    []
-    .true.
-    2 derived
-))
-```
-
 
 ## See Also
 
-[Allocate](#allocate)
+[Allocate](../statement_nodes/Allocate.md), [ReAlloc](../statement_nodes/ReAlloc.md), [dimension](dimension.md), [Allocatable](../type_nodes/Allocatable.md)

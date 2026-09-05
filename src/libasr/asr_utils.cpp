@@ -606,6 +606,18 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(union_instance_member->m_m));
             return var->m_type_declaration;
         }
+        case ASR::exprType::IfExp: {
+            // Both arms of a conditional expression have the same declared
+            // type, so either of them names the derived type. The first arm
+            // that resolves to one wins, since an arm can be, say, a null
+            // pointer that carries no declaration of its own.
+            ASR::IfExp_t* if_exp = ASR::down_cast<ASR::IfExp_t>(expression);
+            ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(if_exp->m_body);
+            if (struct_sym == nullptr) {
+                struct_sym = get_struct_sym_from_struct_expr(if_exp->m_orelse);
+            }
+            return struct_sym;
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
@@ -821,6 +833,14 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
         case ASR::exprType::PointerNullConstant: {
             // PointerNullConstant is a special case where it does not have a function
             // associated with it, so we return nullptr.
+            return nullptr;
+        }
+        case ASR::exprType::FunctionPointerCast: {
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionPointerCast_t>(expr)->m_to);
+            if (to && ASR::is_a<ASR::Function_t>(*to)) {
+                return ASR::down_cast<ASR::Function_t>(to);
+            }
             return nullptr;
         }
         default:
@@ -3039,14 +3059,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     }
                 }
 
-                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
-                // If it is, it is compatible with any explicit interface formal argument.
-                // Similarly, if formal argument is an implicit interface, it accepts an explicit interface actual argument.
+                // A procedure declared `external` with no interface (e.g.
+                // `external :: f`) has an unknown signature, so it matches any
+                // explicit interface formal argument, and vice versa.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
                     ASR::FunctionType_t* arg2_func_type = ASR::down_cast<ASR::FunctionType_t>(arg2);
-                    if ((arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) ||
-                        (arg2_func_type->n_arg_types == 0 && arg2_func_type->m_deftype == ASR::deftypeType::Interface)) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type) ||
+                        ASRUtils::is_bare_implicit_interface(*arg2_func_type)) {
                         continue;
                     }
                 }
@@ -3095,11 +3115,12 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
 
-                // Check if actual argument is an implicit interface procedure (e.g. external :: f)
-                // If it is, it is compatible with any explicit interface formal argument.
+                // A procedure declared `external` with no interface (e.g.
+                // `external :: f`) has an unknown signature, so it matches any
+                // explicit interface formal argument.
                 if (ASR::is_a<ASR::FunctionType_t>(*arg1) && ASR::is_a<ASR::FunctionType_t>(*arg2)) {
                     ASR::FunctionType_t* arg1_func_type = ASR::down_cast<ASR::FunctionType_t>(arg1);
-                    if (arg1_func_type->n_arg_types == 0 && arg1_func_type->m_deftype == ASR::deftypeType::Interface) {
+                    if (ASRUtils::is_bare_implicit_interface(*arg1_func_type)) {
                         continue;
                     }
                 }
@@ -3415,9 +3436,13 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
 }
 
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
-                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+                            ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
     ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);
-    switch (ttype->type) {
+
+    ASR::ttype_t* underlying_type = ASRUtils::type_get_past_allocatable_pointer(ttype);
+    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(underlying_type);
+
+    switch (element_type->type) {
         case ASR::ttypeType::Real: {
             return ASR::make_RealBinOp_t(al, loc, lexpr, binop, rexpr,
                 ASRUtils::duplicate_type(al, ttype), nullptr);
@@ -3487,7 +3512,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dims.push_back(al, dim);
     ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -3514,7 +3539,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array ? ASR::array_physical_typeType::PointerArray: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {

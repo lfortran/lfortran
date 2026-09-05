@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_kernel_source_02-50a3dd7",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_kernel_source_02.f90",
+    "infile_hash": "96ecdbc2fea10f324f919623ea8fcbfa81f59c6bd22e124a42eda710",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_kernel_source_02-50a3dd7.stdout",
+    "stdout_hash": "2eb824c050f8e8b090ca2a40bc43e018be0ef154e70ee6fd05002558",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

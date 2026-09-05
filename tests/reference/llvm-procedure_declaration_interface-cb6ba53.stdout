@@ -7,12 +7,12 @@ target datalayout = "..."
 @__module___lcompilers_created__nested_context__example__target_value = global float 0.000000e+00
 @__module___lcompilers_created__nested_context__my_module__my_wrapper__fun = global float ()* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info = private unnamed_addr constant [13 x i8] c"S-DESC-31,R4\00", align 1
+@serialization_info = private unnamed_addr constant [16 x i8] c"S-DESC-K1-31,R4\00", align 1
 @string_const_data = private constant [31 x i8] c"Via wrapper (should equal .5): "
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([31 x i8], [31 x i8]* @string_const_data, i32 0, i32 0), i64 31 }>
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.2 = private unnamed_addr constant [13 x i8] c"S-DESC-31,R4\00", align 1
+@serialization_info.2 = private unnamed_addr constant [16 x i8] c"S-DESC-K1-31,R4\00", align 1
 @string_const_data.3 = private constant [31 x i8] c"Direct call (should equal .5): "
 @string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([31 x i8], [31 x i8]* @string_const_data.3, i32 0, i32 0), i64 31 }>
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -104,7 +104,7 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = call float @__module_my_module_my_wrapper(float ()* @my_fun)
   %6 = alloca float, align 4
   store float %5, float* %6, align 4
-  %7 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info, i32 0, i32 0), i64* %4, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %6)
+  %7 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @serialization_info, i32 0, i32 0), i64* %4, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %6)
   %8 = load i64, i64* %4, align 8
   %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %7, i8** %9, align 8
@@ -115,7 +115,7 @@ define i32 @main(i32 %0, i8** %1) {
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %14 = load i64, i64* %13, align 8
   %15 = trunc i64 %14 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %12, i32 %15, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %16 = icmp eq i8* %7, null
   br i1 %16, label %free_done, label %free_nonnull
 
@@ -132,7 +132,7 @@ free_done:                                        ; preds = %free_nonnull, %.ent
   %20 = call float @my_fun()
   %21 = alloca float, align 4
   store float %20, float* %21, align 4
-  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([13 x i8], [13 x i8]* @serialization_info.2, i32 0, i32 0), i64* %19, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.4, float* %21)
+  %22 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @serialization_info.2, i32 0, i32 0), i64* %19, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.4, float* %21)
   %23 = load i64, i64* %19, align 8
   %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
   store i8* %22, i8** %24, align 8
@@ -143,7 +143,7 @@ free_done:                                        ; preds = %free_nonnull, %.ent
   %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
   %29 = load i64, i64* %28, align 8
   %30 = trunc i64 %29 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i32 %30, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   %31 = icmp eq i8* %22, null
   br i1 %31, label %free_done3, label %free_nonnull2
 
@@ -231,7 +231,7 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i3
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 
