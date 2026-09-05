@@ -3866,6 +3866,92 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
     return array_size;
 }
 
+// The shape of `matmul` and of `transpose` follows entirely from the
+// shapes of their operands, and neither carries dimensions of its own in
+// its result type, so a `size(...)` query on one has to be answered from
+// the operands: matmul is (n,k)x(k,m) -> (n,m), (n,k)x(k) -> (n) and
+// (k)x(k,m) -> (m), and transpose swaps the two extents of its argument.
+// The general rule in `make_ArraySize_t_util` -- the size of the first
+// array argument, which holds for the intrinsics whose result has the
+// shape of their argument -- would answer `size(matmul(a, b))` with the
+// size of `a`.  Returns nullptr for every other intrinsic, and for an
+// operand rank combination that is not one of matmul's three.
+static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
+    const Location &a_loc, ASR::IntrinsicArrayFunction_t* af,
+    ASR::expr_t* a_dim, ASR::ttype_t* a_type, bool for_type) {
+    // Each dimension of the result, as the operand and the 1-based
+    // dimension of that operand whose extent it is.
+    std::vector<std::pair<ASR::expr_t*, int64_t>> shape;
+    ASRUtils::IntrinsicArrayFunctions id =
+        static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id);
+    if( id == ASRUtils::IntrinsicArrayFunctions::MatMul ) {
+        if( af->n_args != 2 ) return nullptr;
+        ASR::expr_t* a = ASRUtils::get_past_array_physical_cast(af->m_args[0]);
+        ASR::expr_t* b = ASRUtils::get_past_array_physical_cast(af->m_args[1]);
+        size_t ra = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(a));
+        size_t rb = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(b));
+        if( ra == 2 && rb == 2 ) {
+            shape.push_back({a, 1});
+            shape.push_back({b, 2});
+        } else if( ra == 2 && rb == 1 ) {
+            shape.push_back({a, 1});
+        } else if( ra == 1 && rb == 2 ) {
+            shape.push_back({b, 2});
+        } else {
+            return nullptr;
+        }
+    } else if( id == ASRUtils::IntrinsicArrayFunctions::Transpose ) {
+        if( af->n_args != 1 ) return nullptr;
+        ASR::expr_t* a = ASRUtils::get_past_array_physical_cast(af->m_args[0]);
+        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(a)) != 2 ) {
+            return nullptr;
+        }
+        shape.push_back({a, 2});
+        shape.push_back({a, 1});
+    } else {
+        return nullptr;
+    }
+    ASRBuilder builder(al, a_loc);
+    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+    auto extent = [&](size_t i) {
+        ASR::expr_t* d = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, a_loc, shape[i].second, int32_type));
+        return ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc, shape[i].first,
+            d, a_type, nullptr, for_type));
+    };
+    if( a_dim == nullptr ) {
+        ASR::expr_t* size = extent(0);
+        for( size_t i = 1; i < shape.size(); i++ ) {
+            size = builder.Mul(size, extent(i));
+        }
+        return &(size->base);
+    }
+    if( shape.size() == 1 ) {
+        // A rank-one result has one dimension whatever `dim` evaluates to.
+        return &(extent(0)->base);
+    }
+    int dim = -1;
+    if( ASRUtils::extract_value(ASRUtils::expr_value(a_dim), dim) ) {
+        if( dim < 1 || (size_t) dim > shape.size() ) return nullptr;
+        return &(extent((size_t) dim - 1)->base);
+    }
+    Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+    merge_args.push_back(al, extent(0));
+    merge_args.push_back(al, extent(1));
+    merge_args.push_back(al, builder.Eq(a_dim,
+        builder.i_t(1, ASRUtils::expr_type(a_dim))));
+    diag::Diagnostics diag;
+    ASR::asr_t *merged = ASRUtils::Merge::create_Merge(
+        al, a_loc, merge_args, diag);
+    // The three arguments are two integer extents and a logical test
+    // constructed here, so Merge cannot reject them. A failure is an
+    // invariant break, not a user diagnostic to drop.
+    LCOMPILERS_ASSERT(merged != nullptr);
+    LCOMPILERS_ASSERT(!diag.has_error());
+    if (merged == nullptr || diag.has_error()) return nullptr;
+    return merged;
+}
+
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -3882,6 +3968,9 @@ ASR::asr_t* make_ArraySize_t_util(
     }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
+        ASR::asr_t* shape_size = array_intrinsic_shape_size(al, a_loc, af,
+            a_dim, a_type, for_type);
+        if( shape_size != nullptr ) return shape_size;
         int64_t dim_arg_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
             static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id));
         ASR::expr_t* af_dim = nullptr;

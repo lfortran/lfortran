@@ -728,10 +728,17 @@ namespace LCompilers {
                                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))));
                     }
                 } else {
+                    // Without an expression there is no Struct symbol to lay
+                    // the type out from, so it is laid out as an anonymous
+                    // struct of its member types. A member is laid out the
+                    // way it would be anywhere else -- an allocatable one as
+                    // its descriptor -- which is more than an element type
+                    // can be.
                     ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(m_type);
                     std::vector<llvm::Type*> member_types;
                     for (size_t i = 0; i < st->n_data_member_types; i++) {
-                        member_types.push_back(get_el_type(nullptr, st->m_data_member_types[i], module));
+                        member_types.push_back(get_type_from_ttype_t_util(
+                            st->m_data_member_types[i], nullptr, module));
                     }
                     el_type = llvm::StructType::get(context, member_types);
                 }
