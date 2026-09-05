@@ -125,6 +125,7 @@
                 :restrictions []
                 :is_restriction false
                 :exec_space :Kernel
+                :external_abi false
               )
               :dependencies []
               :args [

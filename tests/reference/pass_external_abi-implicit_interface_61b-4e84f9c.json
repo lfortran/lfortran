@@ -1,0 +1,13 @@
+{
+    "basename": "pass_external_abi-implicit_interface_61b-4e84f9c",
+    "cmd": "lfortran --pass=external_abi --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/implicit_interface_61b.f90",
+    "infile_hash": "cf78142b77abd033731f50ac563a1918feb0833590e3400c7f72cdef",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_external_abi-implicit_interface_61b-4e84f9c.stdout",
+    "stdout_hash": "060a9ee865dfc8668784502767d2111410d15bf20926ac57ba06f143",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

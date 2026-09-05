@@ -40,6 +40,11 @@ public:
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
+    // True while visiting the bodies of an `abstract interface` block. An
+    // abstract interface only names a set of characteristics that ordinary
+    // procedures are matched against, so it must not be treated as the
+    // declaration of a separately compiled external procedure.
+    bool is_abstract_interface = false;
     bool in_program = false;
     int program_count = 0; // To track number of program units in a single file
     Location first_program_loc; // Location of the first program unit
@@ -1720,7 +1725,10 @@ public:
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, init_deterministic, init_side_effect_free);
+            is_requirement, init_deterministic, init_side_effect_free,
+            nullptr, nullptr, nullptr, ASR::exec_spaceType::Host,
+            declares_external_procedure(parent_scope, is_module,
+                current_procedure_abi_type));
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -2431,7 +2439,10 @@ public:
             /* m_deterministic */ init_deterministic,
             /* m_side_effect_free */ init_side_effect_free, /* m_c_header */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
-            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
+            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr,
+            /* m_exec_space */ ASR::exec_spaceType::Host,
+            /* m_external_abi */ declares_external_procedure(parent_scope,
+                is_module, current_procedure_abi_type)
         );
 
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
@@ -3348,6 +3359,38 @@ public:
         }
     }
 
+    // True when the subprogram currently being declared is a separately
+    // compiled external procedure, i.e. one whose caller and definition are
+    // linked without either seeing the other's ASR. Such procedures use the
+    // classic Fortran external ABI (hidden trailing CHARACTER lengths), which
+    // is the ABI gfortran and flang use and therefore the one LFortran must
+    // commit to; everything else is free to use LFortran's own conventions.
+    //
+    //   * an interface body in a plain (non-abstract, non-module, non-bind(c))
+    //     interface block declares such a procedure;
+    //   * a subprogram defined at the top level (not contained in a module,
+    //     program or another subprogram) is such a procedure.
+    //
+    // An `abstract interface` only lists characteristics for procedure
+    // pointers, dummy procedures and deferred bindings, and a `module`
+    // interface is implemented in a submodule of the same build, so neither
+    // is external.
+    bool declares_external_procedure(SymbolTable* parent_scope,
+            bool is_module_procedure, ASR::abiType abi) const {
+        if (abi == ASR::abiType::BindC) {
+            // A bind(c) procedure uses the C ABI; the classic Fortran external
+            // ABI and the C one are mutually exclusive.
+            return false;
+        }
+        if (is_module_procedure) {
+            return false;
+        }
+        if (is_interface) {
+            return !is_abstract_interface;
+        }
+        return parent_scope != nullptr && parent_scope->parent == nullptr;
+    }
+
     void visit_Interface(const AST::Interface_t &x) {
         if (AST::is_a<AST::InterfaceHeaderName_t>(*x.m_header)) {
             std::string generic_name = to_lower(AST::down_cast<AST::InterfaceHeaderName_t>(x.m_header)->m_name);
@@ -3364,9 +3407,13 @@ public:
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
             std::vector<std::string> proc_names;
+            bool old_is_abstract_interface = is_abstract_interface;
+            is_abstract_interface = AST::is_a<AST::AbstractInterfaceHeader_t>(
+                *x.m_header);
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
             }
+            is_abstract_interface = old_is_abstract_interface;
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
             std::vector<std::string> proc_names;
@@ -5517,7 +5564,9 @@ public:
                     ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
                     ftype->m_module, ftype->m_inline, ftype->m_static,
                     ftype->m_restrictions, ftype->n_restrictions,
-                    ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
+                    ftype->m_is_restriction, f->m_deterministic,
+                    f->m_side_effect_free, nullptr, nullptr, nullptr,
+                    ASR::exec_spaceType::Host, ftype->m_external_abi);
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }
             default : {

@@ -5101,7 +5101,7 @@ public:
                     al, loc, nullptr, 0, type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr, false, false,
                     false, false, false, nullptr, 0, false,
-                    ASR::exec_spaceType::Host));
+                    ASR::exec_spaceType::Host, false));
                 std::string iface_name = "__" + sym + "_iface_implicit";
                 SymbolTable *parent_scope = current_scope->parent;
                 if (!parent_scope) parent_scope = current_scope;
@@ -5198,7 +5198,9 @@ public:
                 ASR::abiType::BindC, ext_access,
                 ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
-                false, false, false);
+                false, false, false, nullptr, nullptr, nullptr,
+                /* m_exec_space */ ASR::exec_spaceType::Host,
+                /* m_external_abi */ true);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
         } else {
@@ -10178,6 +10180,7 @@ public:
                 ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::DescriptorString));
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
+            bool char_is_array = dims.size() > 0 || is_dimension_star || is_assumed_rank;
 
             LCOMPILERS_ASSERT(sym_type->n_kind < 3)
             
@@ -10196,9 +10199,9 @@ public:
 
                 if (id == "kind") {
                     //TODO: Handle kind attribute on item (ideally should be a function call)
-                    determine_char_len_and_kind(nullptr, &item, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(nullptr, &item, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
                 } else {
-                    determine_char_len_and_kind(&item, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item, nullptr, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
                 }
 
             } else if (sym_type->n_kind == 2) {
@@ -10248,16 +10251,16 @@ public:
                 }
 
                 if (id1 == "kind" && id2 == "len") {
-                    determine_char_len_and_kind(&item2, &item1, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item2, &item1, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
 
                     //TODO: Handle kind attribute on item1 (ideally should be a function call)
                 } else {
-                    determine_char_len_and_kind(&item1, &item2, sym_type, var_sym, sym, str, is_argument, abi);
+                    determine_char_len_and_kind(&item1, &item2, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
 
                     //TODO: Handle kind attribute on item2 (ideally should be a function call)
                 }
             } else {
-                determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi);
+                determine_char_len_and_kind(nullptr, nullptr, sym_type, var_sym, sym, str, is_argument, abi, char_is_array);
             }
 
             // a negative length specifier declares a zero length string
@@ -10276,6 +10279,7 @@ public:
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
                     dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                     ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
                                     ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
@@ -10694,7 +10698,7 @@ public:
                         nullptr, 0, return_type, ASR::abiType::Source,
                         ASR::deftypeType::Interface, nullptr,
                         false, false, false, false, false, nullptr, 0, false,
-                        ASR::exec_spaceType::Host));
+                        ASR::exec_spaceType::Host, false));
                     std::string iface_name = "__" + sym + "_iface_implicit";
                     SymbolTable *parent_scope = current_scope->parent;
                     ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
@@ -10765,7 +10769,7 @@ public:
                     nullptr, 0, return_type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr,
                     false, false, false, false, false, nullptr, 0, false,
-                    ASR::exec_spaceType::Host));
+                    ASR::exec_spaceType::Host, false));
                 // Create a backing Function symbol so type_declaration is set.
                 std::string iface_name = "__" + sym + "_iface_" + func_name;
                 SymbolTable *parent_scope = current_scope->parent;
@@ -10801,7 +10805,7 @@ public:
                         nullptr, 0, nullptr, ASR::abiType::Source,        
                         ASR::deftypeType::Interface, nullptr,                     
                         false, false, false, false, false, nullptr, 0, false,
-                        ASR::exec_spaceType::Host));
+                        ASR::exec_spaceType::Host, false));
                     SymbolTable *parent_scope = current_scope->parent; 
                     SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                     ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
@@ -17107,19 +17111,10 @@ public:
                     }
                 }
                 if (ASRUtils::is_array(var_type)) {
-                    // For arrays like A(n, m) we use A(*) in implicit interface.
-                    ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(var_type));
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
-                    ASR::array_physical_typeType phys_type;
-                    if (ASRUtils::is_character(*array_type->m_type)) {
-                        phys_type = ASR::array_physical_typeType::DescriptorArray;
-                    } else if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-                        phys_type = array_type->m_physical_type;
-                    } else {
-                        phys_type = ASR::array_physical_typeType::PointerArray;
-                    }
-                    var_type = ASRUtils::duplicate_type_with_empty_dims(al, array_var_type, phys_type, true);
+                    // For arrays like A(n, m) we use A(*) in implicit
+                    // interface (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*var_expr) && compiler_options.legacy_array_sections) {
                     ASR::symbol_t* func_sym = parent_scope->resolve_symbol(func_name);
                     ASR::Function_t* func = nullptr;
@@ -17135,6 +17130,12 @@ public:
                         ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(expected_arg_type);
                         var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
                     }
+                } else if (ASRUtils::is_character(*var_type) &&
+                        ASRUtils::is_allocatable_or_pointer(var_type)) {
+                    // Synthesize a plain assumed-length dummy for an
+                    // allocatable/deferred-length CHARACTER actual (see
+                    // normalize_implicit_interface_character_dummy).
+                    var_type = ASRUtils::normalize_implicit_interface_character_dummy(al, var_type);
                 }
                 SetChar variable_dependencies_vec;
                 variable_dependencies_vec.reserve(al, 1);
@@ -17238,7 +17239,9 @@ public:
             /* a_return_var */ to_return,
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            false, false, false, nullptr, nullptr, nullptr,
+            /* m_exec_space */ ASR::exec_spaceType::Host,
+            /* m_external_abi */ true);
         ASR::symbol_t* new_fn = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::symbol_t* existing = sym_scope->get_symbol(sym_name);
         // First inference (or replacing a bare ImplicitInterface declaration):
@@ -21363,7 +21366,7 @@ public:
                 al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
                 ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
                 false, false, false, false, false, nullptr, 0, false,
-                ASR::exec_spaceType::Host));
+                ASR::exec_spaceType::Host, false));
             ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Function_t(
                     al, loc, fn_scope, s2c(al, iface_name),
@@ -22099,7 +22102,7 @@ public:
     }
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
-    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi) {
+    AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
         // and return variables
         bool is_return_var = false;
@@ -22272,6 +22275,21 @@ public:
             str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, type->base.base.loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.base.loc, 4))));
             str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
+        }
+
+        // For a BIND(C) scalar dummy argument or return variable, a
+        // default-kind (C_CHAR) character of length 1 is interoperable with a
+        // C `char` and must be passed with the CChar physical type (i.e. as
+        // `char*`), just like an explicit `character(kind=c_char)`. This also
+        // covers `character`, `character(len=1)` and `character(len=c_char)`.
+        // Arrays keep their descriptor-based physical type.
+        if ((is_argument || is_return_var) && abi == ASR::BindC && !is_array &&
+                str->m_physical_type == ASR::DescriptorString &&
+                str->m_kind == 1 && str->m_len != nullptr) {
+            int64_t len;
+            if (ASRUtils::extract_value(str->m_len, len) && len == 1) {
+                str->m_physical_type = ASR::CChar;
+            }
         }
 
     // Check CChar length

@@ -114,6 +114,7 @@
                         []
                         .false.
                         Host
+                        .true.
                     )
                     [x_main__lcompilers]
                     [(Var 2 dummy)]
@@ -201,6 +202,7 @@
                         []
                         .false.
                         Host
+                        .false.
                     )
                     []
                     [(Var 4 entry__lcompilers)
@@ -447,6 +449,7 @@
                         []
                         .false.
                         Host
+                        .false.
                     )
                     [x_main__lcompilers]
                     [(Var 3 dummy)]

@@ -78,7 +78,8 @@
                                                 "static": false,
                                                 "restrictions": [],
                                                 "is_restriction": false,
-                                                "exec_space": "Host"
+                                                "exec_space": "Host",
+                                                "external_abi": false
                                             },
                                             "loc": {
                                                 "first": 220,
@@ -298,7 +299,8 @@
                                                 "static": false,
                                                 "restrictions": [],
                                                 "is_restriction": false,
-                                                "exec_space": "Host"
+                                                "exec_space": "Host",
+                                                "external_abi": false
                                             },
                                             "loc": {
                                                 "first": 65,

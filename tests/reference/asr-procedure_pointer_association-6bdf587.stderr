@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.call.procedure_argument_matches_formal]: Procedure pointer association argument 1 must have type i32, not r64
-   --> tests/asr/verify/procedure_pointer_association.asr:143:12
+   --> tests/asr/verify/procedure_pointer_association.asr:145:12
     |
-143 |           (Associate
+145 |           (Associate
     |            ^^^^^^^^^ failed here

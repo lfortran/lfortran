@@ -125,6 +125,7 @@
                                         []
                                         .false.
                                         Host
+                                        .true.
                                     )
                                     []
                                     [(Var 3 prinf_arg_0)
@@ -152,6 +153,7 @@
                         []
                         .false.
                         Host
+                        .true.
                     )
                     []
                     [(Var 2 m)]

@@ -76,6 +76,7 @@
                                         []
                                         .false.
                                         Host
+                                        .true.
                                     )
                                     []
                                     [(Var 4 klvna_arg_0)]
@@ -211,6 +212,7 @@
                         []
                         .false.
                         Host
+                        .true.
                     )
                     []
                     [(Var 2 nt)

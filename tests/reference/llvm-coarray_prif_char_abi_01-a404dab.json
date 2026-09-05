@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-coarray_prif_char_abi_01-a404dab",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/coarray_prif_char_abi_01.f90",
+    "infile_hash": "5e6b79095bf56895e97545cbea8a528e0a58f85b940fe26cdae3f12c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-coarray_prif_char_abi_01-a404dab.stdout",
+    "stdout_hash": "831e96e4e3d4c620532b0f41412ed302bcc5df0cfe98467981e2f3d6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

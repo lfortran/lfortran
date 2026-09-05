@@ -2,12 +2,12 @@
     "basename": "asr-call_rank_mismatch-ec56b79",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/call_rank_mismatch.asr",
-    "infile_hash": "16a2044f600164170b021e0518931af68fb5c4ee110cdcaaec7ad1c2",
+    "infile_hash": "812c2fb151608f6ee14a446e6fd858170c8f8ceefddaf792a9444977",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-call_rank_mismatch-ec56b79.stderr",
-    "stderr_hash": "7cf66c46cffcec7e293f48803273a6137f92a1bd4674738ef14aa9c5",
+    "stderr_hash": "30ae8bf2700f083908db862bd77082a49291edf1bcbaf9a51f763592",
     "returncode": 2
 }

@@ -24,6 +24,7 @@
                         []
                         .false.
                         Host
+                        .false.
                     )
                     [prini_main__lcompilers]
                     []
@@ -62,6 +63,7 @@
                         []
                         .false.
                         Host
+                        .true.
                     )
                     [prini_main__lcompilers]
                     []
@@ -129,6 +131,7 @@
                                         []
                                         .false.
                                         Host
+                                        .true.
                                     )
                                     []
                                     []
@@ -155,6 +158,7 @@
                         []
                         .false.
                         Host
+                        .false.
                     )
                     []
                     [(Var 4 entry__lcompilers)]

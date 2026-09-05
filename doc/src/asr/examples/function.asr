@@ -111,6 +111,7 @@
                 :restrictions []
                 :is_restriction false
                 :exec_space :Host
+                :external_abi false
               )
               :dependencies []
               :args [

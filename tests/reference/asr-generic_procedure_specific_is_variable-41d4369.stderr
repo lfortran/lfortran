@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.generic_procedure.specific_is_procedure]: GenericProcedure 'gen' specific procedure 'notaproc' must be a procedure, not Variable
-   --> tests/asr/verify/generic_procedure_specific_is_variable.asr:123:20
+   --> tests/asr/verify/generic_procedure_specific_is_variable.asr:124:20
     |
-123 |             "gen" (GenericProcedure
+124 |             "gen" (GenericProcedure
     |                    ^^^^^^^^^^^^^^^^ failed here

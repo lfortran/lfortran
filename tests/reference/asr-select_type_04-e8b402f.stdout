@@ -219,6 +219,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     [(Var 7 tab)]
@@ -489,6 +490,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     [check_table]
                                     [(Var 8 table)

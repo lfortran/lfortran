@@ -2,12 +2,12 @@
     "basename": "asr-generic_procedure_specific_is_variable-41d4369",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/generic_procedure_specific_is_variable.asr",
-    "infile_hash": "0a707c0995455fda59dcd0da225f3a43f885ba1d0a0d157ae0c604e0",
+    "infile_hash": "3ec66448d9fb2af8d1021519dc9d2ed5a530f181f7b151f1ecbb5e80",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-generic_procedure_specific_is_variable-41d4369.stderr",
-    "stderr_hash": "a42fadb8b1431168cb686c19dcd29d4b614cd58e43773e76e750b766",
+    "stderr_hash": "1d908de909838767e18f9b420921bc84590beb4c486a8d417e8b4f00",
     "returncode": 2
 }

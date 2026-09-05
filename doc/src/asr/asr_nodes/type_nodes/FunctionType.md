@@ -10,7 +10,7 @@ The signature of a procedure.
 FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
     deftype deftype, string? bindc_name, bool elemental, bool pure,
     bool module, bool inline, bool static, symbol* restrictions,
-    bool is_restriction, exec_space exec_space)
+    bool is_restriction, exec_space exec_space, bool external_abi)
 ```
 
 ### Arguments
@@ -30,6 +30,7 @@ FunctionType(ttype* arg_types, ttype? return_var_type, abi abi,
 | `restrictions` | for a procedure of a generic [Template](../symbol_nodes/Template.md), the operations its type parameters must provide. |
 | `is_restriction` | `true` when this signature is itself one of those required operations rather than a procedure with an implementation. |
 | `exec_space` | where the procedure runs; see [exec_space](../enum_nodes/exec_space.md). |
+| `external_abi` | `true` for a separately compiled external procedure: a subprogram defined at the top level, an interface body in a plain (non-abstract, non-module) interface block, or an interface synthesized for a procedure referenced without an explicit one. Such procedures use the classic Fortran external ABI, in which a CHARACTER dummy is passed as a data pointer with its length as a hidden trailing argument, so that they interoperate with gfortran and flang. Compiler-synthesized procedures leave this `false`. The frontend sets the flag from the declaration alone; the `external_abi` ASR pass then clears it again for a dummy procedure and for a procedure whose address is taken, because both must match the ordinary ABI of whatever is bound to them. After that pass the flag alone describes the ABI a backend emits. |
 
 ### Return values
 
@@ -82,6 +83,7 @@ arguments are not known here.
   :restrictions []
   :is_restriction false
   :exec_space :Host
+  :external_abi false
 )
 ```
 

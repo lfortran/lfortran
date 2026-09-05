@@ -219,6 +219,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [times
                                                     plus]
@@ -414,6 +415,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 6 a)
@@ -557,6 +559,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 7 a)
@@ -864,6 +867,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     [~mul_intrinsic
                                                     ~add_intrinsic]
@@ -1170,6 +1174,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 10 arg0)
@@ -1294,6 +1299,7 @@
                                                         []
                                                         .false.
                                                         Host
+                                                        .false.
                                                     )
                                                     []
                                                     [(Var 11 arg0)
@@ -1339,6 +1345,7 @@
                                         []
                                         .false.
                                         Host
+                                        .false.
                                     )
                                     []
                                     []
@@ -1602,6 +1609,7 @@
                                                         []
                                                         .true.
                                                         Host
+                                                        .true.
                                                     )
                                                     []
                                                     [(Var 4 a)

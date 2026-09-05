@@ -2,7 +2,7 @@
     "basename": "asr-binary_op_assumed_rank_operand-370fd54",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/binary_op_assumed_rank_operand.asr",
-    "infile_hash": "007b326381e4ea723f9bd2ac63a643eef6f2ff3e7492af8f658843da",
+    "infile_hash": "05a465cc5a1448cbfa13e20e7f433e5def0374095e4add160f098321",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
