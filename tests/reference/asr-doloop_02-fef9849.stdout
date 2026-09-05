@@ -1,0 +1,296 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            doloop_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            hi:
+                                (Variable
+                                    2
+                                    hi
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            hi_alloc:
+                                (Variable
+                                    2
+                                    hi_alloc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            hi_ptr:
+                                (Variable
+                                    2
+                                    hi_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            lo:
+                                (Variable
+                                    2
+                                    lo
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            lo_ptr:
+                                (Variable
+                                    2
+                                    lo_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            step:
+                                (Variable
+                                    2
+                                    step
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            step_ptr:
+                                (Variable
+                                    2
+                                    step_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    doloop_02
+                    []
+                    [(Associate
+                        (Var 2 lo_ptr)
+                        (Var 2 lo)
+                    )
+                    (Associate
+                        (Var 2 hi_ptr)
+                        (Var 2 hi)
+                    )
+                    (Associate
+                        (Var 2 step_ptr)
+                        (Var 2 step)
+                    )
+                    (Allocate
+                        [((Var 2 hi_alloc)
+                        []
+                        []
+                        ()
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (Var 2 lo_ptr)
+                        (Var 2 hi_ptr)
+                        (Var 2 step_ptr))
+                        [(Print
+                            (StringFormat
+                                ()
+                                [(Var 2 i)]
+                                FormatFortran
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 hi_ptr)
+                        ())
+                        [(Print
+                            (StringFormat
+                                ()
+                                [(Var 2 i)]
+                                FormatFortran
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 hi_alloc)
+                        ())
+                        [(Print
+                            (StringFormat
+                                ()
+                                [(Var 2 i)]
+                                FormatFortran
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

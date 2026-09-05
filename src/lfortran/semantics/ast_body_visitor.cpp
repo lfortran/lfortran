@@ -9500,7 +9500,8 @@ public:
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
-            type = ASRUtils::expr_type(start);
+            type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(start));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
                 diag.semantic_warning_label(
                     "Start expression in DO loop must be integer",
@@ -9513,7 +9514,8 @@ public:
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
-            type = ASRUtils::expr_type(end);
+            type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(end));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
                 diag.semantic_warning_label(
                     "End expression in DO loop must be integer",
@@ -9540,7 +9542,8 @@ public:
                     throw SemanticAbort();
                 }
             } else {
-                type = ASRUtils::expr_type(increment);
+                type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(increment));
                 if (!ASR::is_a<ASR::Integer_t>(*type)) {
                     diag.semantic_warning_label(
                         "Step expression (increment) in DO loop must be integer",
