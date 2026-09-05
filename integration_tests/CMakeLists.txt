@@ -751,6 +751,8 @@ RUN(NAME block_data_string_01 LABELS llvm gfortran)
 RUN(NAME block_data_string_02 LABELS llvm gfortran)
 RUN(NAME block_data_string_03 LABELS llvm gfortran)
 RUN(NAME block_data_string_04 LABELS llvm gfortran)
+RUN(NAME block_data_string_05 LABELS llvm gfortran)
+RUN(NAME block_data_string_06 LABELS llvm gfortran)
 RUN(NAME block_data_03 LABELS llvm gfortran)
 RUN(NAME block_data_04 LABELS llvm gfortran)
 RUN(NAME arrays_01_logical LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -1999,6 +2001,9 @@ RUN(NAME bindc_05 LABELS gfortran llvm EXTRAFILES bindc_05c.c)
 RUN(NAME bindc_06 LABELS gfortran llvm EXTRAFILES bindc_06b.c)
 RUN(NAME bindc_07 LABELS gfortran llvm EXTRAFILES bindc_07.c)
 RUN(NAME bindc_08 LABELS gfortran llvm EXTRAFILES bindc_08.c EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME bindc_57 LABELS gfortran llvm EXTRAFILES bindc_57.c)
+RUN(NAME bindc_58 LABELS gfortran llvm EXTRAFILES bindc_58_module.f90)
+RUN(NAME bindc_60 LABELS gfortran llvm EXTRAFILES bindc_60.c)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
@@ -2208,6 +2213,22 @@ RUN(NAME implicit_interface_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
     EXTRAFILES implicit_interface_49b.f90)
 RUN(NAME implicit_interface_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
     EXTRAFILES implicit_interface_50b.f90)
+RUN(NAME implicit_interface_52 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_52b.f90)
+RUN(NAME implicit_interface_53 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_55 LABELS gfortran llvm
+    EXTRAFILES implicit_interface_55b.f90)
+RUN(NAME implicit_interface_56 LABELS gfortran llvm
+    EXTRA_ARGS --separate-compilation --implicit-interface
+    EXTRAFILES implicit_interface_56b.f90)
+RUN(NAME implicit_interface_57 LABELS gfortran llvm)
+RUN(NAME implicit_interface_58 LABELS gfortran llvm)
+RUN(NAME implicit_interface_60 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_61 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_61b.f90)
+RUN(NAME implicit_interface_62 LABELS gfortran llvm
+    EXTRA_ARGS --separate-compilation --implicit-interface
+    EXTRAFILES implicit_interface_62b.f90)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -3529,8 +3550,7 @@ RUN(NAME external_21 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
-    EXTRAFILES external_string_arg_01_stubs.c
-    GFORTRAN_ARGS -fno-underscoring)
+    EXTRAFILES external_string_arg_01_stubs.c)
 
 
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

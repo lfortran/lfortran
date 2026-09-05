@@ -101,8 +101,6 @@ FINALIZE_SYMTABLE_cb:                             ; preds = %return
   ret void
 }
 
-declare void @f(float*, float*)
-
 define float @__module_callback_02_foo(float* %c, float* %d, float* %res) {
 .entry:
   %foo = alloca float, align 4
