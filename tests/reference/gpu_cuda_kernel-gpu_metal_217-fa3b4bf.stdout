@@ -1,23 +1,2 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
-    int __dim_l_0;
-    int __lb_l_0;
-};
-
-extern "C" __global__ void __lfortran_gpu_kernel_2(
-    int* l,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
-{
-    int __dim_l_0 = __scalar_args.__dim_l_0;
-    int __lb_l_0 = __scalar_args.__lb_l_0;
-    int __flat_idx;
-    int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 1);
-    l[((int)(i) - (__lb_l_0))] = ((int)1);
-}
-

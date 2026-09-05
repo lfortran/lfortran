@@ -5064,10 +5064,13 @@ RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_208 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_209 LABELS gfortran llvm metal cuda_cpu)
-# gpu_metal_210 onward were written against the Metal path. Thirteen of
+# gpu_metal_210 onward were written against the Metal path. Twelve of
 # them are not labelled cuda_cpu: the CUDA lowering does not yet compile
 # them, and labelling a test for a backend that cannot run it says nothing
-# about the backend it was written for.
+# about the backend it was written for. gpu_metal_217 was one of them: the
+# CUDA path used to lower its logical(8) loop to a 4-byte int kernel rather
+# than decline it, so the label would have caught a wrong answer. It does
+# decline it now, and carries the label.
 RUN(NAME gpu_metal_210 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_211 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_212 LABELS gfortran llvm metal cuda_cpu)
@@ -5075,7 +5078,7 @@ RUN(NAME gpu_metal_213 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_214 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_215 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_216 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_217 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_217 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_218 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_219 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_220 LABELS gfortran llvm metal)
@@ -5146,6 +5149,7 @@ RUN(NAME gpu_metal_284 LABELS gfortran llvm metal EXTRAFILES gpu_metal_284_mod.f
 RUN(NAME gpu_metal_285 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_286 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_287 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_288 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
