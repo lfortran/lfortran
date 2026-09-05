@@ -8091,36 +8091,19 @@ public:
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
                 SymbolTable* sym_symtab = ASRUtils::symbol_parent_symtab(original_sym);
-                bool crosses_module_boundary = false;
-                SymbolTable* st = current_scope;
                 
-                while (st != nullptr && st != sym_symtab) {
-                    if (st->parent != nullptr && st->asr_owner) {
-                        ASR::symbol_t* st_owner = ASR::down_cast<ASR::symbol_t>(st->asr_owner);
-                        if (ASR::is_a<ASR::Module_t>(*st_owner)) {
-                            crosses_module_boundary = true;
-                            break;
-                        }
-                    }
-                    st = st->parent;
-                }
-
-                if (crosses_module_boundary) {
+                // If the subroutine is defined in the global Translation Unit (which has no parent),
+                // but we are calling it from inside a deeper scope (like a Module), we must
+                // wrap it in a local ExternalSymbol so module serialization remains self-contained.
+                if (sym_symtab != nullptr && sym_symtab->parent == nullptr && current_scope != sym_symtab) {
                     std::string sym_name = ASRUtils::symbol_name(original_sym);
                     ASR::symbol_t *existing_sym = current_scope->get_symbol(sym_name);
+                    
                     if (existing_sym == nullptr) {
-                        char* mod_name = s2c(al, "");
-                        
-                        if (sym_symtab->parent != nullptr && sym_symtab->asr_owner) {
-                            ASR::symbol_t* asr_owner = ASR::down_cast<ASR::symbol_t>(sym_symtab->asr_owner);
-                            if (ASR::is_a<ASR::Module_t>(*asr_owner) || ASR::is_a<ASR::Program_t>(*asr_owner)) {
-                                mod_name = ASRUtils::symbol_name(asr_owner);
-                            }
-                        }
-                        
+                        // Create the local reference. A global TU symbol has no module name ("").
                         ASR::asr_t *ext_sym = ASR::make_ExternalSymbol_t(al, x.base.base.loc,
                             current_scope, s2c(al, sym_name), original_sym,
-                            mod_name, nullptr, 0, s2c(al, sym_name),
+                            s2c(al, ""), nullptr, 0, s2c(al, sym_name),
                             ASR::accessType::Private);
                         original_sym = ASR::down_cast<ASR::symbol_t>(ext_sym);
                         current_scope->add_symbol(sym_name, original_sym);
