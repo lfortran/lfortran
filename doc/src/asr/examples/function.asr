@@ -1,0 +1,176 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "add" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 2
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 2
+                    :name "b"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 2
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "add"
+              :function_signature (FunctionType
+                :arg_types [
+                  (Integer
+                    :kind 4
+                  )
+                  (Integer
+                    :kind 4
+                  )
+                ]
+                :return_var_type (Integer
+                  :kind 4
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 2 "a")
+                )
+                (Var
+                  :v (SymbolRef 2 "b")
+                )
+              ]
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 2 "c")
+                  )
+                  :value (IntegerBinOp
+                    :left (Var
+                      :v (SymbolRef 2 "a")
+                    )
+                    :op :Add
+                    :right (Var
+                      :v (SymbolRef 2 "b")
+                    )
+                    :type (Integer
+                      :kind 4
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                )
+              ]
+              :return_var (Var
+                :v (SymbolRef 2 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

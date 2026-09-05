@@ -1,0 +1,13 @@
+{
+    "basename": "c-char4_backend_c-3d5d281",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/errors/char4_backend_c.f90",
+    "infile_hash": "3ece0042443ce9e62eb377b1cb078e9bcad1f840bdf28371e7053f99",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "c-char4_backend_c-3d5d281.stderr",
+    "stderr_hash": "10dd09cf88a06c98a95c4aa66cf4aed263d4f6bdc55c3d66018cb966",
+    "returncode": 1
+}

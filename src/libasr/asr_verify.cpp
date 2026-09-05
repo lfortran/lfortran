@@ -726,6 +726,57 @@ public:
         }
     }
 
+    static ASR::memory_spaceType array_memory_space(ASR::ttype_t *type) {
+        ASR::ttype_t *base =
+            ASRUtils::type_get_past_allocatable_pointer(type);
+        if (ASR::is_a<ASR::Array_t>(*base)) {
+            return ASR::down_cast<ASR::Array_t>(base)->m_memory_space;
+        }
+        return ASR::memory_spaceType::Global;
+    }
+
+    // Whether a scope belongs to code the host runs, which has one flat
+    // memory and so knows only the Global space. Everything device_partition
+    // did not take is host code, the clones the memory space pass makes for
+    // the device included.
+    static bool is_host_only_scope(SymbolTable *symtab) {
+        while (symtab) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
+                if (ASRUtils::runs_on_device(sym)) return false;
+            }
+            symtab = symtab->parent;
+        }
+        return true;
+    }
+
+    // The memory space of an array is part of a routine's interface, so the
+    // signature and the dummy it describes have to name the same one. A code
+    // generator that qualifies a parameter from one and indexes it from the
+    // other would otherwise read the wrong memory.
+    void verify_argument_memory_spaces(const Function_t &x) {
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+        for (size_t i = 0; i < x.n_args && i < ftype->n_arg_types; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+            if (!arg_sym || !ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::ttype_t *declared =
+                ASR::down_cast<ASR::Variable_t>(arg_sym)->m_type;
+            if (!declared || !ftype->m_arg_types[i]) continue;
+            if (!ASRUtils::is_array(declared) ||
+                    !ASRUtils::is_array(ftype->m_arg_types[i])) {
+                continue;
+            }
+            require(array_memory_space(declared)
+                        == array_memory_space(ftype->m_arg_types[i]),
+                "Argument " + std::to_string(i + 1) + " of `"
+                    + std::string(x.m_name) + "` is declared in a different "
+                    "memory space than its signature gives it");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -770,6 +821,7 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
+        verify_argument_memory_spaces(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
@@ -806,6 +858,20 @@ public:
         require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            require_id(x.n_args == 0,
+                "asr.verify.function.implicit_interface_has_no_args",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no dummy arguments");
+            require_id(x.n_body == 0,
+                "asr.verify.function.implicit_interface_has_no_body",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no body");
+            require_id(function_type->m_abi == ASR::abiType::BindC,
+                "asr.verify.function.implicit_interface_is_bindc",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so its abi must be BindC");
+        }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::ttype_t *argument_type =
@@ -873,32 +939,6 @@ public:
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
-    }
-
-    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        require(x.m_symtab != nullptr,
-            "GpuKernelFunction::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == parent_symtab,
-            "GpuKernelFunction::m_symtab->parent is not the right parent");
-        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
-            "GpuKernelFunction::m_symtab::asr_owner must point to it");
-        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
-            "GpuKernelFunction::m_symtab->counter must be unique");
-        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        for (auto &a : x.m_symtab->get_scope()) {
-            LCOMPILERS_ASSERT(a.second);
-            this->visit_symbol(*a.second);
-        }
-        visit_ttype(*x.m_function_signature);
-        for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-        }
-        current_symtab = parent_symtab;
     }
 
     template <typename T>
@@ -1205,6 +1245,13 @@ public:
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
+        if (x.m_type && ASRUtils::is_array(x.m_type)) {
+            require(array_memory_space(x.m_type)
+                        == ASR::memory_spaceType::Global
+                    || !is_host_only_scope(symtab),
+                "Variable '" + std::string(x.m_name) + "' is host code, so "
+                "its array cannot live in a device memory space");
+        }
 
         ASR::asr_t* asr_owner = symtab->asr_owner;
         bool is_module = false, is_struct = false;
@@ -1438,7 +1485,6 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
-            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -1455,8 +1501,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -1469,9 +1514,6 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
-                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
-                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
-                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -1523,8 +1565,6 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
-            } else if( gkfm ) {
-                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -1922,11 +1962,14 @@ public:
         ASR::FunctionType_t *actual = as_procedure_type(actual_type);
         ASR::FunctionType_t *formal = as_procedure_type(formal_type);
         if (actual == nullptr || formal == nullptr) return;
-        // An interface that declares no arguments constrains nothing: that is
-        // the shape `EXTERNAL f` and `procedure(), pointer` produce, and ASR
-        // has no way yet to tell it apart from a genuine argumentless one.
+        // An ImplicitInterface declaration constrains nothing: its argument
+        // list is unknown. `procedure()` and `procedure(), pointer` still
+        // have empty arg_types and deftype Interface, so they also skip until
+        // they have their own ASR state. A genuine zero-argument Interface
+        // shares that empty shape and still skips for the same reason.
         auto unconstrained = [](ASR::FunctionType_t *t) {
-            return t->n_arg_types == 0;
+            return t->m_deftype == ASR::deftypeType::ImplicitInterface
+                || t->n_arg_types == 0;
         };
         if (unconstrained(actual) || unconstrained(formal)) return;
         require_with_loc_id(
@@ -2264,6 +2307,19 @@ public:
         }
     }
 
+    // TODO: also verify that a Device function only calls Device
+    // or HostDevice functions. That invariant does not hold yet: a kernel body
+    // is copied verbatim from the host loop, so it still calls Host functions
+    // until the device call-graph closure pass exists.
+    void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
+            "GpuKernelLaunch::m_kernel '" +
+                std::string(ASRUtils::symbol_name(x.m_kernel)) +
+                "' must be a function that runs on the device");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
@@ -2279,6 +2335,9 @@ public:
                 require(ASR::is_a<ASR::Function_t>(*s) ||
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
+                require(!ASR::is_a<ASR::Function_t>(*s) ||
+                        !ASRUtils::is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(s)),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' was declared external with no interface; the call must reference the signature inferred at this call site.");
             }
             // A CALL statement discards no result, because a procedure
             // invoked by one has none to discard.
@@ -2483,6 +2542,10 @@ public:
             require(fn_->m_return_var != nullptr,
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
+            require(!ASRUtils::is_bare_implicit_interface(*fn_),
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " was declared external with no interface; the call must"
+                    " reference the signature inferred at this call site.");
             // The call site's result type is what the surrounding expression
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.
@@ -2651,6 +2714,24 @@ public:
                 " is not supported");
     }
 
+    // An assumed rank array has no shape of its own: its rank is only known
+    // from the `select rank` block that selects it. An operation on one has
+    // no result shape, so the frontend must first pin the rank down with an
+    // ArrayPhysicalCast away from AssumedRankArray. Reaching an operation
+    // without that cast means the rank was never resolved, and every later
+    // stage reads the operand as rank 0.
+    void verify_operand_not_assumed_rank(const char *name,
+            const char *position, ASR::ttype_t *type, const Location &loc) {
+        if (type == nullptr) return;
+        require_with_loc_id(
+            !ASRUtils::is_assumed_rank_array(type),
+            "asr.verify.operation.operand_not_assumed_rank",
+            std::string(name) + " " + position + " is an assumed rank "
+                "array, which has no known rank; it must be cast to a "
+                "descriptor array first",
+            loc);
+    }
+
     // An operation combines two operands of one type into a result of that
     // type, and a comparison combines two operands of one type into a
     // logical. The frontend guarantees this by inserting explicit Cast
@@ -2665,6 +2746,9 @@ public:
         ASR::ttype_t *left_type = typed_expr_type(left);
         ASR::ttype_t *right_type = typed_expr_type(right);
         if (left_type == nullptr || right_type == nullptr) return;
+        verify_operand_not_assumed_rank(name, "left operand", left_type, loc);
+        verify_operand_not_assumed_rank(name, "right operand", right_type, loc);
+        if (diagnostics.has_error()) return;
         if (is_procedure_type(left_type) || is_procedure_type(right_type)
                 || is_struct_like_type(left_type)
                 || is_struct_like_type(right_type)) {
@@ -2760,6 +2844,34 @@ public:
         verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
             true, x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
+    void verify_unary_operand(const char *name, ASR::expr_t *arg,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        verify_operand_not_assumed_rank(name, "argument",
+            typed_expr_type(arg), loc);
+    }
+
+    void visit_IntegerUnaryMinus(const IntegerUnaryMinus_t &x) {
+        verify_unary_operand("IntegerUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerUnaryMinus(x);
+    }
+
+    void visit_UnsignedIntegerUnaryMinus(const UnsignedIntegerUnaryMinus_t &x) {
+        verify_unary_operand("UnsignedIntegerUnaryMinus", x.m_arg,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerUnaryMinus(x);
+    }
+
+    void visit_RealUnaryMinus(const RealUnaryMinus_t &x) {
+        verify_unary_operand("RealUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealUnaryMinus(x);
+    }
+
+    void visit_ComplexUnaryMinus(const ComplexUnaryMinus_t &x) {
+        verify_unary_operand("ComplexUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexUnaryMinus(x);
     }
 
     // A StructConstructor's arguments fill the type's members in
@@ -2898,6 +3010,18 @@ public:
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
+            // A "StringArraySinglePointer" array is one flat character buffer,
+            // so its elements are plain C characters. Pairing it with
+            // "DescriptorString" elements describes two different layouts at
+            // once, and leaves every consumer to pick one on its own.
+            if(x.m_physical_type == ASR::StringArraySinglePointer){
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(x.m_type));
+                require(str->m_physical_type == ASR::CChar,
+                    "Array of strings with physical type"
+                    " \"StringArraySinglePointer\" must have string physical"
+                    " type \"CChar\", not \"DescriptorString\"")
+            }
         }
         if(ASRUtils::is_class_type(x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
@@ -2937,6 +3061,9 @@ public:
     }
 
     void visit_String(const String_t &x){
+/*Check the character kind*/
+        require(ASRUtils::is_supported_character_kind(x.m_kind),
+            "String kind must be 1 or 4, found " + std::to_string(x.m_kind));
 /*General Check on the length*/ 
         if(x.m_len){
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
@@ -2992,6 +3119,41 @@ public:
             "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
         BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
     }
+    void visit_IfExp(const IfExp_t &x) {
+        // Fortran 2023 conditional expression (10.1.2.3) and compiler
+        // generated selections both land here. The condition selects one of
+        // two arms at run time, so it must be a scalar logical, and both arms
+        // must be usable as the result.
+        ASR::ttype_t *test_type = typed_expr_type(x.m_test);
+        if (test_type != nullptr) {
+            require(ASRUtils::is_logical(*test_type),
+                "IfExp condition must be logical");
+            require(ASRUtils::extract_n_dims_from_ttype(test_type) == 0,
+                "IfExp condition must be a scalar");
+        }
+        ASR::ttype_t *body_type = typed_expr_type(x.m_body);
+        ASR::ttype_t *orelse_type = typed_expr_type(x.m_orelse);
+        if (body_type != nullptr && orelse_type != nullptr
+                && !is_procedure_type(body_type)
+                && !is_procedure_type(orelse_type)
+                && !is_struct_like_type(body_type)
+                && !is_struct_like_type(orelse_type)) {
+            require(ASRUtils::check_equal_type(body_type, orelse_type,
+                    x.m_body, x.m_orelse),
+                "IfExp arms must have the same type and kind, found "
+                + ASRUtils::type_to_str_fortran_expr(body_type, x.m_body)
+                + " and " + ASRUtils::type_to_str_fortran_expr(orelse_type,
+                    x.m_orelse));
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(orelse_type),
+                "IfExp arms must have the same rank");
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(x.m_type),
+                "IfExp result must have the same rank as its arms");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_IfExp(x);
+    }
+
     void visit_StringSection(const StringSection_t &x){
         require(x.m_start, "StringSection start member must be provided")
         require(x.m_end, "StringSection end member must be provided")
@@ -3131,6 +3293,51 @@ public:
                 "DoConcurrentLoop::m_shared must be a Var");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_OMPRegion(const OMPRegion_t &x) {
+        for ( size_t i = 0; i < x.n_clauses; i++ ) {
+            ASR::expr_t **vars = nullptr;
+            size_t n_vars = 0;
+            switch (x.m_clauses[i]->type) {
+                case ASR::omp_clauseType::OMPPrivate: {
+                    ASR::OMPPrivate_t *c = ASR::down_cast<ASR::OMPPrivate_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPShared: {
+                    ASR::OMPShared_t *c = ASR::down_cast<ASR::OMPShared_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPFirstPrivate: {
+                    ASR::OMPFirstPrivate_t *c =
+                        ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPLastPrivate: {
+                    ASR::OMPLastPrivate_t *c =
+                        ASR::down_cast<ASR::OMPLastPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPReduction: {
+                    ASR::OMPReduction_t *c =
+                        ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                default: break;
+            }
+            for ( size_t j = 0; j < n_vars; j++ ) {
+                require(ASR::is_a<ASR::Var_t>(*vars[j]),
+                    "a variable named by an OMPRegion clause must be a Var");
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_OMPRegion(x);
     }
 
 };

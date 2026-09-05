@@ -966,6 +966,181 @@ program continue_compilation_1
         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
         print *, values(1)
     end subroutine
+
+    subroutine character_kind_mixing_concat()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_kind_mixing_compare()
+        implicit none
+        character(kind=4, len=3) :: wide
+        character(len=3) :: narrow
+        wide = 4_"abc"
+        narrow = "xyz"
+        if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+    end subroutine
+
+    subroutine character_literal_kind_not_supported()
+        implicit none
+        character(len=4) :: s
+        s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+    end subroutine
+
+    subroutine intrinsic_type_member_not_found()
+        implicit none
+        type :: itm_t
+            complex :: c
+            character(len=5) :: s
+            integer :: i
+        end type itm_t
+        type :: itm_outer_t
+            type(itm_t) :: in
+        end type itm_outer_t
+        type(itm_t) :: d
+        type(itm_outer_t) :: o
+        print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+        print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
+        print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
+        print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    end subroutine
+
+    subroutine character_maxval_dim_mask_not_supported()
+        implicit none
+        character(len=3) :: c(2,2), r(2), s
+        c = 'abc'
+        r = maxval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+        r = minval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+        s = maxval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+        s = minval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    end subroutine
+
+    ! Fortran 2023 conditional expressions, ( cond ? a : b ). C1004 requires
+    ! the arms to agree in declared type, kind type parameters and rank, and
+    ! R1002 requires the condition to be a scalar logical expression.
+    subroutine conditional_expr_arm_type_mismatch()
+        implicit none
+        integer :: x
+        x = ( .true. ? 1 : 1.0 )  ! {Error} the arms of a conditional expression must have the same type and kind
+    end subroutine
+
+    subroutine conditional_expr_arm_kind_mismatch()
+        implicit none
+        integer(4) :: a
+        integer(8) :: b, x
+        character(kind=1, len=2) :: c1
+        character(kind=4, len=2) :: c4
+        character(len=2) :: c
+        logical(4) :: l4
+        logical(8) :: l8, l
+        a = 1; b = 2
+        x = ( .true. ? a : b )  ! {Error} the arms of a conditional expression must have the same type and kind
+        c1 = "ab"; c4 = 4_"ab"
+        c = ( .true. ? c1 : c4 )  ! {Error} the arms of a conditional expression must have the same type and kind
+        l4 = .true.; l8 = .false.
+        l = ( .true. ? l4 : l8 )  ! {Error} the arms of a conditional expression must have the same type and kind
+    end subroutine
+
+    subroutine conditional_expr_arm_rank_mismatch()
+        implicit none
+        integer :: a, b(2)
+        a = 1; b = 2
+        print *, ( .true. ? a : b )  ! {Error} the arms of a conditional expression must have the same rank
+    end subroutine
+
+    subroutine conditional_expr_arm_declared_type_mismatch()
+        implicit none
+        type :: cond_base
+            integer :: n
+        end type
+        type, extends(cond_base) :: cond_ext
+            integer :: m
+        end type
+        type(cond_base) :: b
+        type(cond_ext) :: e
+        b = cond_base(1); e = cond_ext(2, 3)
+        print *, ( .true. ? e : b )  ! {Error} the arms of a conditional expression must have the same declared type
+    end subroutine
+
+    subroutine conditional_expr_condition_not_logical()
+        implicit none
+        integer :: x
+        x = ( 1 ? 2 : 3 )  ! {Error} the condition of a conditional expression must be logical
+    end subroutine
+
+    subroutine conditional_expr_condition_not_scalar()
+        implicit none
+        logical :: m(2)
+        integer :: a(2), b(2)
+        m = .true.
+        a = 1; b = 2
+        print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
+    end subroutine
+
+    ! A conditional expression produces a value, so it is neither a target nor
+    ! a pointer (R1033 requires a data-target).
+    subroutine conditional_expr_pointer_assignment()
+        implicit none
+        integer, target :: a, b
+        integer, pointer :: p
+        a = 1; b = 2
+        p => ( .true. ? a : b )  ! {Error} a conditional expression cannot be a pointer assignment target
+    end subroutine
+
+    ! A conditional expression is a primary (R1001), but 10.1.11 and 10.1.12
+    ! enumerate the primaries a specification expression and a constant
+    ! expression may contain, and a conditional expression is in neither list.
+    ! The parenthesized alternative in those lists is the R1001 form
+    ! `( expr )`, which is a different alternative of primary from R1002.
+    ! Each declaration below is rejected, so its entity is deliberately left
+    ! unused: referring to it would only add a cascading "not declared" error.
+    subroutine conditional_expr_in_init_expr()
+        implicit none
+        integer, parameter :: cx = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+        integer :: cy = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+    end subroutine
+
+    subroutine conditional_expr_in_kind()
+        implicit none
+        integer(kind = ( .true. ? 4 : 8 )) :: ck  ! {Error} a conditional expression is not allowed in a constant expression
+        character(kind = ( .true. ? 1 : 4 ), len = 2) :: cc  ! {Error} a conditional expression is not allowed in a constant expression
+    end subroutine
+
+    subroutine conditional_expr_in_specification_expr(n)
+        implicit none
+        integer, intent(in) :: n
+        character(len = ( n>0 ? n : 1 )) :: cs  ! {Error} a conditional expression is not allowed in a specification expression
+        integer :: ca( ( n>0 ? n : 1 ) )  ! {Error} a conditional expression is not allowed in a specification expression
+    end subroutine
+
+    subroutine derived_type_constructor_argument_errors()
+        implicit none
+        type :: plain_t
+            integer :: value
+        end type
+        type :: parameterized_t(k)
+            integer, kind :: k
+            integer :: value
+        end type
+        print *, parameterized_t(4, 8)(1)  ! {Error} too many arguments in parameterized derived type constructor
+        print *, parameterized_t(4)(1, 2)  ! {Error} too many arguments in parameterized derived type constructor
+        print *, plain_t(1, 2)  ! {Error} too many arguments in derived type constructor
+        print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
+    end subroutine
+
+    ! Keep the unsupported character kind declarations last: a rejected
+    ! declaration makes the symbol table visitor skip the program units that
+    ! follow it, which would hide the errors expected above.
+    subroutine character_kind_not_supported()
+        implicit none
+        character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+        character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+        character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+    end subroutine
 end program
 
 ! A syntax error inside a module makes the parser skip the erroneous
@@ -984,3 +1159,18 @@ contains
     end function foo
 end module
 
+! An arm of a conditional expression is an ordinary expression, so a call in
+! it is still a call made by the enclosing procedure (15.7).
+module conditional_expr_purity_1
+    implicit none
+contains
+    integer function conditional_expr_impure()
+        print *, "side effect"
+        conditional_expr_impure = 1
+    end function
+
+    pure integer function conditional_expr_pure(c)
+        logical, intent(in) :: c
+        conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+    end function
+end module

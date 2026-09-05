@@ -1099,7 +1099,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
                 array_type = ASRUtils::expr_type(value);
             } else {
-                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray));
+                array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, ASRUtils::expr_type(value), dim.p, dim.size(), ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             }
             ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(al, value->base.loc,
                                         args.p, args.n, array_type, ASR::arraystorageType::ColMajor);
@@ -1179,8 +1179,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         ASR::stmt_t* create_do_loop_concat_idl(ASR::ImpliedDoLoop_t* x) {
             const Location& loc = x->base.base.loc;
 
+            // The accumulator holds the loop's own values, so it takes their
+            // character kind rather than assuming the default.
+            int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::extract_type(ASRUtils::expr_type(x->m_values[0])));
             ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind, nullptr,
                     ASR::string_length_kindType::DeferredLength,
                     ASR::string_physical_typeType::DescriptorString))));
 
@@ -1201,7 +1205,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             // __lf_accum = ""
             ASR::expr_t* empty_str = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, loc, s2c(al, ""),
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                     ASR::string_length_kindType::ExpressionLength,

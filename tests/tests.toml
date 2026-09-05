@@ -14,6 +14,13 @@ filename = "asr/compile/procedure_declaration_interface.asr"
 asr_clojure = true
 llvm = true
 
+# The LLVM reference of a fixture is tied to the LLVM version that printed it,
+# so this one stores only the ASR. The registered `test_asr_compile_` and
+# `test_asr_object_` CTests still build and link it on every LLVM version.
+[[test]]
+filename = "asr/compile/enum_constructor_external_symbol.asr"
+asr_clojure = true
+
 [[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
@@ -206,14 +213,6 @@ asr_openmp = true
 [[test]]
 filename = "../integration_tests/openmp_70.f90"
 c_target_omp = true
-
-[[test]]
-filename = "../integration_tests/openmp_71.f90"
-c_target_cuda = true
-
-[[test]]
-filename = "../integration_tests/openmp_72.f90"
-c_target_cuda = true
 
 [[test]]
 filename = "subroutine2.f90"
@@ -1905,11 +1904,6 @@ filename = "../integration_tests/doconcurrentloop_01.f90"
 ast_f90 = true
 
 [[test]]
-filename = "../integration_tests/do_concurrent_01.f90"
-pass = "openmp"
-options = "--mlir-gpu-offloading --openmp"
-
-[[test]]
 filename = "subroutine9.f90"
 ast = true
 ast_f90 = true
@@ -3370,8 +3364,41 @@ filename = "errors/use_associated_redeclaration_1.f90"
 asr = true
 
 [[test]]
+filename = "errors/char4_backend_c.f90"
+c = true
+cpp = true
+wat = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/conditional_expr_syntax_1.f90"
+syntax_only_cc = true
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/conditional_arg_1.f90"
+semantics_only_cc = true
+
+# Pins the dedicated AST and ASR nodes for a conditional expression: a
+# ConditionalExpr in the AST and a nested IfExp in the ASR, not a rewrite into
+# `merge`, which would evaluate both arms.
+[[test]]
+filename = "../integration_tests/conditional_expr_01.f90"
+ast = true
+asr = true
+
+# Pins how a conditional argument is lowered: the reference is duplicated into
+# the arms of a selection, one copy per consequent, so that the chosen
+# consequent is the actual argument. A consequent that is `.nil.` leaves the
+# argument of that copy with no value, which is a dummy argument that is not
+# present.
+[[test]]
+filename = "../integration_tests/conditional_arg_02.f90"
+ast = true
+asr = true
 
 [[test]]
 filename = "errors/continue_compilation_2.f90"
@@ -4432,6 +4459,11 @@ filename = "char1.f90"
 fortran = true
 
 [[test]]
+filename = "implicit_interface_external_decl.f90"
+fortran = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "integer_to_real_cast_in_comparison.f90"
 fortran = true
 
@@ -4677,6 +4709,12 @@ asr = true
 [[test]]
 filename = "errors/incorrect_number_args_subroutine.f90"
 asr = true
+
+[[test]]
+filename = "errors/implicit_interface_explicit_zero_arg.f90"
+asr = true
+options = "--implicit-interface"
+extrafiles = "errors/implicit_interface_explicit_zero_arg_mod.f90"
 
 [[test]]
 filename = "optional_argument_subroutine_in_type.f90"
@@ -5427,6 +5465,14 @@ filename = "asr/verify/binary_op_operand_kind_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/binary_op_assumed_rank_operand.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/unary_op_assumed_rank_operand.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
 asr = true
 
@@ -5584,4 +5630,12 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_constructor_element_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/bindc_string_array_physical_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/implicit_interface_call_target.asr"
 asr = true

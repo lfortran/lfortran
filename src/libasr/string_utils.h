@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 #include <cctype>
 
 #include <libasr/alloc.h>
@@ -53,6 +54,44 @@ char* str_unescape_fortran(Allocator &al, LCompilers::Str &s, char ch);
 
 bool str_compare(const unsigned char *pos, std::string s);
 void rtrim(std::string& str);
+
+// UTF-8 helpers ------------------------------------------------------------
+//
+// A CHARACTER value of kind > 1 is stored in ASR as UTF-8 in
+// `StringConstant::m_s` (a `char*` cannot carry the embedded null bytes that
+// raw UCS-4 would produce), while its ASR length is a count of characters.
+// These helpers convert between the two.
+
+// Returns true if `value` is well-formed UTF-8. Overlong forms, surrogates and
+// out-of-range code points are rejected.
+bool is_valid_utf8(const char *value, size_t size);
+bool is_valid_utf8(const std::string &value);
+
+// Decodes well-formed UTF-8 into code points. The input must already have
+// passed `is_valid_utf8`.
+std::vector<uint32_t> utf8_decode(const std::string &s);
+
+// Number of Unicode code points in `s`, i.e. the Fortran length of the value
+// `s` encodes. Malformed trailing bytes count as one character each, so this
+// never reads past the end of `s`.
+size_t utf8_codepoint_count(const std::string &s);
+size_t utf8_codepoint_count(const char *s);
+
+// Appends the UTF-8 encoding of a single code point to `out`.
+void utf8_encode_codepoint(std::string &out, uint32_t code_point);
+
+// Decodes UTF-8 and serialises each code point as `kind` little-endian bytes:
+// kind 2 gives UCS-2, kind 4 gives UCS-4. This is the in-memory form the
+// backends use.
+std::vector<uint8_t> utf8_to_unicode_bytes(const std::string &s, int kind);
+
+// The inverse of `utf8_to_unicode_bytes`: reads `count` code points of `kind`
+// little-endian bytes each and returns their UTF-8 encoding.
+std::string unicode_bytes_to_utf8(const uint8_t *bytes, size_t count, int kind);
+
+// Splits UTF-8 into one string per code point. Malformed trailing bytes are
+// returned as single byte entries rather than dropped.
+std::vector<std::string> utf8_split(const std::string &s);
 
 } // namespace LCompilers
 

@@ -24,6 +24,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -57,6 +58,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -90,6 +92,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -123,6 +126,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -672,6 +676,7 @@
                                     (()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )
@@ -945,6 +950,7 @@
                                         (()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 )]
@@ -956,6 +962,7 @@
                                     (()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -1258,6 +1265,7 @@
                                         (()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                 )]
@@ -1269,6 +1277,7 @@
                                     (()
                                     ())]
                                     DescriptorArray
+                                    Global
                                 )
                                 ()
                             )]
@@ -1537,6 +1546,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1566,6 +1576,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1595,6 +1606,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1624,6 +1636,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1653,6 +1666,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1682,6 +1696,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1711,6 +1726,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1742,6 +1758,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1773,6 +1790,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1874,6 +1892,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1903,6 +1922,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1932,6 +1952,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1961,6 +1982,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1990,6 +2012,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2019,6 +2042,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2048,6 +2072,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2077,6 +2102,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2106,6 +2132,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2135,6 +2162,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2164,6 +2192,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2193,6 +2222,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2266,6 +2296,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -2274,6 +2305,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -2282,6 +2314,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Integer 4)
@@ -2298,6 +2331,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 b)
@@ -2334,6 +2368,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2374,6 +2409,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2408,6 +2444,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2448,6 +2485,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2482,6 +2520,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2522,6 +2561,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2556,6 +2596,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2596,6 +2637,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2630,6 +2672,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2670,6 +2713,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2704,6 +2748,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2744,6 +2789,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -2799,6 +2845,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -2807,6 +2854,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2817,6 +2865,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2851,6 +2900,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2859,6 +2909,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2867,6 +2918,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2907,6 +2959,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -2915,6 +2968,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2923,6 +2977,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -2960,6 +3015,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -2968,6 +3024,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2978,6 +3035,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3012,6 +3070,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3020,6 +3079,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3028,6 +3088,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3068,6 +3129,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3076,6 +3138,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3084,6 +3147,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3121,6 +3185,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3129,6 +3194,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3139,6 +3205,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3173,6 +3240,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3181,6 +3249,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3189,6 +3258,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3229,6 +3299,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3237,6 +3308,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3245,6 +3317,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3282,6 +3355,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3290,6 +3364,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3300,6 +3375,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3334,6 +3410,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3342,6 +3419,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3350,6 +3428,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3390,6 +3469,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3398,6 +3478,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3406,6 +3487,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3443,6 +3525,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3451,6 +3534,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3461,6 +3545,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3495,6 +3580,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3503,6 +3589,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3511,6 +3598,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3551,6 +3639,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3559,6 +3648,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3567,6 +3657,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3604,6 +3695,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
                                                             FixedSizeArray
+                                                            Global
                                                         )
                                                         ColMajor
                                                     )
@@ -3612,6 +3704,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3622,6 +3715,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3656,6 +3750,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3664,6 +3759,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3672,6 +3768,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3712,6 +3809,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         ()
                                                     )
@@ -3720,6 +3818,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                                         SIMDArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -3728,6 +3827,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 8 (Integer 4) Decimal))]
                                                     SIMDArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -3763,6 +3863,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3803,6 +3904,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3837,6 +3939,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3877,6 +3980,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3911,6 +4015,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3951,6 +4056,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -3985,6 +4091,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4025,6 +4132,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4059,6 +4167,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4099,6 +4208,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4133,6 +4243,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4173,6 +4284,7 @@
                                                 [(()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4208,6 +4320,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4239,6 +4352,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4270,6 +4384,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4391,6 +4506,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4399,6 +4515,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4407,6 +4524,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -4419,6 +4537,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 a)
@@ -4458,6 +4577,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -4468,6 +4588,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -4589,6 +4710,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4620,6 +4742,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4651,6 +4774,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -4892,6 +5016,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4900,6 +5025,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -4908,6 +5034,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -4920,6 +5047,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [kernel2]
                                     [(Var 5 a)
@@ -4980,6 +5108,7 @@
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     FixedSizeArray
+                                                    Global
                                                 )
                                                 ()
                                             )
@@ -4990,6 +5119,7 @@
                                                 (()
                                                 ())]
                                                 DescriptorArray
+                                                Global
                                             )
                                             ()
                                         )
@@ -5065,6 +5195,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -5079,6 +5210,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))
@@ -5093,6 +5225,7 @@
                                                                     (()
                                                                     ())]
                                                                     DescriptorArray
+                                                                    Global
                                                                 )
                                                                 ()
                                                             ))

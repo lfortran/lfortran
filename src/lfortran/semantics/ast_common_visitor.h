@@ -422,11 +422,15 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc, x.m_s, x.m_type));
     }
 
+    // Substring bounds are character positions. For kind > 1 the value holds
+    // UTF-8, so one character can span several bytes and the value has to be
+    // sliced character by character.
     void visit_StringSection(const ASR::StringSection_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
-        std::string str(str_val);
-        int start = 1, end = (int)str.size();
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
+        int start = 1, end = (int)characters.size();
         if (x.m_start) {
             this->visit_expr(*x.m_start);
             start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
@@ -435,18 +439,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             this->visit_expr(*x.m_end);
             end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
         }
-        int len = end - start + 1;
-        std::string result = len > 0 ? str.substr(start - 1, len) : "";
+        std::string result;
+        for (int i = start; i <= end && i <= (int)characters.size(); i++) {
+            result += characters[i - 1];
+        }
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
 
     void visit_StringItem(const ASR::StringItem_t &x) {
         this->visit_expr(*x.m_arg);
-        char* str_val = ASR::down_cast<ASR::StringConstant_t>(value)->m_s;
+        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
         this->visit_expr(*x.m_idx);
         int idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        std::string result(1, str_val[idx - 1]);
+        std::string result = characters[idx - 1];
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
@@ -910,6 +918,18 @@ inline static void set_intrinsic_return_kind(Allocator& al, const Location& loc,
     }
 }
 
+inline static std::string cmpop_to_str(ASR::cmpopType op) {
+    switch (op) {
+        case (ASR::cmpopType::Eq): return "==";
+        case (ASR::cmpopType::NotEq): return "/=";
+        case (ASR::cmpopType::Lt): return "<";
+        case (ASR::cmpopType::LtE): return "<=";
+        case (ASR::cmpopType::Gt): return ">";
+        case (ASR::cmpopType::GtE): return ">=";
+        default: return "";
+    }
+}
+
 inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
                                    ASR::expr_t *&left, ASR::expr_t *&right,
                                    ASR::asr_t *&asr, std::string& intrinsic_op_name,
@@ -1064,6 +1084,20 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     }
 
     if( overloaded == nullptr ) {
+        if (ASRUtils::is_character(*left_type2) && ASRUtils::is_character(*right_type2)) {
+            int64_t left_kind = ASRUtils::extract_kind_from_ttype_t(left_type2);
+            int64_t right_kind = ASRUtils::extract_kind_from_ttype_t(right_type2);
+            if (left_kind != right_kind) {
+                diag.add(diag::Diagnostic(
+                    "operands of comparison operator '" + cmpop_to_str(asr_op) +
+                    "' must be character with the same kind, found character(" +
+                    std::to_string(left_kind) + ") and character(" +
+                    std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
                                     ASRUtils::expr_type(right), left, right)) {
             diag.add(diag::Diagnostic(
@@ -1777,6 +1811,11 @@ class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
+    // Set by create_implicit_interface_function when a later reference needs a
+    // different signature than the first: canonical is the first-inferred
+    // procedure, target is the interface describing this reference's view.
+    ASR::symbol_t* implicit_interface_fpcast_canonical = nullptr;
+    ASR::symbol_t* implicit_interface_fpcast_target = nullptr;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -2144,6 +2183,41 @@ public:
     bool in_Subroutine = false;
     bool _processing_dimensions = false;
     bool _processing_char_len = false;
+
+    // Fortran 2023 10.1.11 and 10.1.12 are closed lists of the primaries that
+    // a specification expression and a constant expression may contain. A
+    // conditional expression (R1002) is a primary, but it is in neither list,
+    // so the contexts that require one have to reject it even though the
+    // syntax is fine. This records which such context is being processed, so
+    // that the diagnostic can name the constraint that requires it.
+    enum class RestrictedExprContext {
+        None,
+        KindParameter,    // C701, a constant expression
+        InitExpr,         // C1012, a constant expression
+        CharacterLength,  // C704, a specification expression
+        ArrayBound,       // a specification expression
+    };
+    RestrictedExprContext restricted_expr_context = RestrictedExprContext::None;
+
+    // Restores the previous context even when the visit throws SemanticAbort,
+    // which would otherwise leave the flag set for the rest of the run under
+    // --continue-compilation.
+    struct RestrictedExprScope {
+        CommonVisitor &v;
+        RestrictedExprContext previous;
+        RestrictedExprScope(CommonVisitor &v_, RestrictedExprContext context)
+                : v{v_}, previous{v_.restricted_expr_context} {
+            v.restricted_expr_context = context;
+        }
+        ~RestrictedExprScope() {
+            v.restricted_expr_context = previous;
+        }
+    };
+
+    void visit_restricted_expr(AST::expr_t &e, RestrictedExprContext context) {
+        RestrictedExprScope restricted_scope(*this, context);
+        this->visit_expr(e);
+    }
     bool _declaring_variable = false;
     bool _processing_common_block_object = false;
     bool is_implicit_interface = false;
@@ -3002,6 +3076,8 @@ public:
         bool is_char_type, bool is_argument, char* var_name) {  
         LCOMPILERS_ASSERT(dims.size() == 0);
         is_compile_time = false;
+        RestrictedExprScope restricted_scope(*this,
+            RestrictedExprContext::ArrayBound);
         _processing_dimensions = true;
 	    dims.reserve(al, n_dim);
 	    for (size_t i=0; i<n_dim; i++) {
@@ -3420,7 +3496,11 @@ public:
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
             is_real = 1;
         }
-        if (check_equal_value(a->m_value, a->n_value)) {
+        // An array section must go through the general path below, which
+        // merges its values into the variable's full-size initializer;
+        // the equal-value broadcast here would initialize the whole array.
+        if (!ASR::is_a<ASR::ArraySection_t>(*object) &&
+                check_equal_value(a->m_value, a->n_value)) {
             /*
                 Case:
                 integer :: x(5)
@@ -3521,10 +3601,12 @@ public:
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
             int size_of_array = 0;
-            
+            ASR::ArraySection_t* array_section = nullptr;
+
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
-                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(ASR::down_cast<ASR::ArraySection_t>(object));
-                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+                array_section = ASR::down_cast<ASR::ArraySection_t>(object);
+                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(array_section);
+                object = array_section->m_v;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                 ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(object);
                 size_of_array = a->n_value - curr_value; 
@@ -3669,7 +3751,7 @@ public:
                     ASR::ttype_t* shape_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, x.base.base.loc, int_type,
                             shape_dims.p, shape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray));
+                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     ASR::expr_t* shape = ASRUtils::EXPR(
                         ASR::make_IntrinsicArrayFunction_t(al,
                             x.base.base.loc,
@@ -3692,7 +3774,7 @@ public:
                         ASR::make_Array_t(al, x.base.base.loc,
                             array_type->m_type, reshape_dims.p,
                             reshape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray));
+                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
                         al, x.base.base.loc, arr_const, shape, nullptr,
                         nullptr, reshape_type, nullptr));
@@ -3702,8 +3784,115 @@ public:
                 LCOMPILERS_ASSERT(current_body != nullptr)
                 current_body->push_back(al, assign_stmt);
             } else {
-                v2->m_value = ASRUtils::EXPR(tmp);
-                v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                // A DATA statement may initialize an array in sections, e.g.
+                //   data x(1:2) /100, 200/, x(3:4) /300, 400/
+                // Merge each section's values into a full-size initializer at
+                // the correct column-major offsets; overwriting m_value with a
+                // section-sized constant would drop earlier sections and leave
+                // an initializer smaller than the array.
+                bool merged = false;
+                if (array_section != nullptr) {
+                    ASR::ttype_t* var_ttype = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(v2->m_type));
+                    ASR::Array_t* full_arr = ASR::is_a<ASR::Array_t>(*var_ttype) ?
+                        ASR::down_cast<ASR::Array_t>(var_ttype) : nullptr;
+                    int64_t full_size = full_arr ? ASRUtils::get_fixed_size_of_array(
+                        full_arr->m_dims, full_arr->n_dims) : -1;
+                    size_t ndims = full_arr ? full_arr->n_dims : 0;
+                    bool bounds_ok = full_size > 0 && array_section->n_args == ndims;
+                    std::vector<int64_t> lb(ndims), extent(ndims),
+                        sec_start(ndims), sec_end(ndims), sec_step(ndims);
+                    for (size_t d = 0; bounds_ok && d < ndims; d++) {
+                        lb[d] = 1;
+                        if (full_arr->m_dims[d].m_start &&
+                                !ASRUtils::extract_value(full_arr->m_dims[d].m_start, lb[d])) {
+                            bounds_ok = false;
+                        }
+                        if (!full_arr->m_dims[d].m_length ||
+                                !ASRUtils::extract_value(full_arr->m_dims[d].m_length, extent[d])) {
+                            bounds_ok = false;
+                        }
+                        ASR::array_index_t &arg = array_section->m_args[d];
+                        if (!bounds_ok || !arg.m_left || !arg.m_right ||
+                                !ASRUtils::extract_value(arg.m_left, sec_start[d]) ||
+                                !ASRUtils::extract_value(arg.m_right, sec_end[d])) {
+                            bounds_ok = false;
+                            break;
+                        }
+                        sec_step[d] = 1;
+                        if (arg.m_step && !ASRUtils::extract_value(arg.m_step, sec_step[d])) {
+                            bounds_ok = false;
+                        }
+                        if (sec_step[d] == 0) bounds_ok = false;
+                    }
+                    if (bounds_ok) {
+                        std::vector<int64_t> stride(ndims);
+                        for (size_t d = 0; d < ndims; d++) {
+                            stride[d] = d == 0 ? 1 : stride[d-1] * extent[d-1];
+                        }
+                        std::vector<ASR::expr_t*> init(full_size, nullptr);
+                        if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
+                            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
+                            if (ASRUtils::get_fixed_size_of_array(ac->m_type) == full_size) {
+                                for (int64_t k = 0; k < full_size; k++) {
+                                    init[k] = ASRUtils::fetch_ArrayConstant_value(al, ac, k);
+                                }
+                            }
+                        } else if (v2->m_value && ASR::is_a<ASR::ArrayConstructor_t>(*v2->m_value)) {
+                            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(v2->m_value);
+                            if (ac->n_args == (size_t) full_size) {
+                                for (int64_t k = 0; k < full_size; k++) {
+                                    init[k] = ac->m_args[k];
+                                }
+                            }
+                        }
+                        for (int64_t k = 0; k < full_size; k++) {
+                            if (init[k] == nullptr) {
+                                init[k] = ASRUtils::get_constant_zero_with_given_type(
+                                    al, full_arr->m_type);
+                            }
+                        }
+                        // Walk the section in column-major element order and
+                        // drop each DATA value at its linear position.
+                        std::vector<int64_t> idx = sec_start;
+                        for (size_t k = 0; bounds_ok && k < body.size(); k++) {
+                            int64_t linear = 0;
+                            for (size_t d = 0; d < ndims; d++) {
+                                linear += (idx[d] - lb[d]) * stride[d];
+                            }
+                            if (linear < 0 || linear >= full_size) {
+                                bounds_ok = false;
+                                break;
+                            }
+                            init[linear] = body[k];
+                            for (size_t d = 0; d < ndims; d++) {
+                                idx[d] += sec_step[d];
+                                if ((sec_step[d] > 0 && idx[d] <= sec_end[d]) ||
+                                    (sec_step[d] < 0 && idx[d] >= sec_end[d])) break;
+                                idx[d] = sec_start[d];
+                            }
+                        }
+                        if (bounds_ok) {
+                            Vec<ASR::expr_t*> full_body;
+                            full_body.reserve(al, full_size);
+                            for (int64_t k = 0; k < full_size; k++) {
+                                full_body.push_back(al, init[k]);
+                            }
+                            ASR::expr_t* full_const = ASRUtils::EXPR(
+                                ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc,
+                                    full_body.p, full_body.size(),
+                                    ASRUtils::duplicate_type(al, var_ttype),
+                                    ASR::arraystorageType::ColMajor));
+                            v2->m_value = full_const;
+                            v2->m_symbolic_value = full_const;
+                            merged = true;
+                        }
+                    }
+                }
+                if (!merged) {
+                    v2->m_value = ASRUtils::EXPR(tmp);
+                    v2->m_symbolic_value = ASRUtils::EXPR(tmp);
+                }
                 SetChar var_deps_vec;
                 var_deps_vec.reserve(al, 1);
                 ASRUtils::collect_variable_dependencies(al, var_deps_vec, v2->m_type,
@@ -4669,7 +4858,7 @@ public:
                 new_dims.push_back(al, dim);
             }
             ASR::ttype_t* inner_type = evaluate_type_bounds(al, arr->m_type, loc);
-            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc, inner_type, new_dims.p, new_dims.size(), arr->m_physical_type));
+            return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc, inner_type, new_dims.p, new_dims.size(), arr->m_physical_type, arr->m_memory_space));
         } else if (ASRUtils::is_character(*type)) {
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(type);
             if (str->m_len) {
@@ -4884,7 +5073,20 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
-            assgnd_access[sym] = ASR::accessType::Public;
+            // Respect the default accessibility of the enclosing scope (e.g. a
+            // module `private` statement) as well as any explicit access already
+            // assigned to this name. An external procedure declared in a
+            // `private` module must be private, otherwise `use` would wrongly
+            // import it and later re-declarations (e.g. via an F77 `include`)
+            // would be reported as bogus redeclarations.
+            ASR::accessType ext_access = dflt_access;
+            if (assgnd_access.find(sym) != assgnd_access.end()) {
+                ext_access = assgnd_access[sym];
+            }
+            // Do not record `ext_access` back into `assgnd_access`: that map is
+            // never cleared between program units, so a `private` module would
+            // make the same-named external private in every later program unit
+            // of the same file.
             if (assgnd_pointer.count(sym) > 0) {
                 ASR::ttype_t *type = nullptr;
                 if (determined_type) {
@@ -4898,7 +5100,8 @@ public:
                 ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                     al, loc, nullptr, 0, type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr, false, false,
-                    false, false, false, nullptr, 0, false));
+                    false, false, false, nullptr, 0, false,
+                    ASR::exec_spaceType::Host));
                 std::string iface_name = "__" + sym + "_iface_implicit";
                 SymbolTable *parent_scope = current_scope->parent;
                 if (!parent_scope) parent_scope = current_scope;
@@ -4927,7 +5130,7 @@ public:
                     variable_dependencies_vec.size(),
                     ASR::intentType::Local, nullptr, nullptr,
                     ASR::storage_typeType::Default, ptr_type, iface_sym,
-                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::abiType::Source, ext_access,
                     ASR::presenceType::Required, false);
                 current_scope->add_or_overwrite_symbol(
                     sym, ASR::down_cast<ASR::symbol_t>(var));
@@ -4992,7 +5195,8 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                ASR::abiType::BindC, ext_access,
+                ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -5084,25 +5288,31 @@ public:
     }
 
     bool check_is_external(std::string sym, SymbolTable* scope = nullptr) {
-        if (scope) {
-            external_procedures = external_procedures_mapping[get_hash(scope->asr_owner)];
-        } else if (current_scope->asr_owner) {
-            external_procedures = external_procedures_mapping[get_hash(current_scope->asr_owner)];
-        }
-        if (std::find(external_procedures.begin(), external_procedures.end(), sym) != external_procedures.end()) {
+        // The `external_procedures` member accumulates the external procedures
+        // of the scope currently being built (filled by
+        // `create_external_function`). It is only valid for that in-progress
+        // scope, so consult it only when the caller did not pass a specific
+        // `scope`. We must not overwrite it: the previous implementation
+        // assigned the (still empty) map entry to this member, which dropped
+        // every external procedure declared earlier in the same scope.
+        if (scope == nullptr &&
+            std::find(external_procedures.begin(), external_procedures.end(),
+                sym) != external_procedures.end()) {
             return true;
         }
-        SymbolTable* s = (scope ? scope : current_scope);
-        s = s->parent;
-        while (s && s->asr_owner) {
+        // Then consult the persisted mapping for the requested (or current)
+        // scope and all of its parents. Skip tables whose asr_owner is not
+        // set yet (the ASR node is created after the spec part for Program /
+        // Function / Subroutine) rather than aborting the walk.
+        for (SymbolTable *s = (scope ? scope : current_scope); s; s = s->parent) {
+            if (!s->asr_owner) continue;
             auto it = external_procedures_mapping.find(get_hash(s->asr_owner));
             if (it != external_procedures_mapping.end()) {
-                const std::vector<std::string>& parent_procs = it->second;
-                if (std::find(parent_procs.begin(), parent_procs.end(), sym) != parent_procs.end()) {
+                const std::vector<std::string>& procs = it->second;
+                if (std::find(procs.begin(), procs.end(), sym) != procs.end()) {
                     return true;
                 }
             }
-            s = s->parent;
         }
         return false;
     }
@@ -5303,7 +5513,7 @@ public:
                 : ASR::array_physical_typeType::FixedSizeArray;
         ASR::ttype_t* new_arr_type = ASRUtils::TYPE(
             ASR::make_Array_t(al, loc, element_type,
-                dims.p, dims.n, phys_type));
+                dims.p, dims.n, phys_type, ASR::memory_spaceType::Global));
         return ASRUtils::EXPR(
             ASR::make_ArrayConstant_t(al, loc, n_data, new_data,
                 new_arr_type, ASR::arraystorageType::ColMajor));
@@ -6222,7 +6432,7 @@ public:
                         Vec<ASR::dimension_t> d1 = make_dim_one(loc, one);
                         ASR::ttype_t* sat = ASRUtils::TYPE(ASR::make_Array_t(
                             al, loc, int_type, d1.p, d1.size(),
-                            ASR::array_physical_typeType::PointerArray));
+                            ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                         return ASRUtils::make_ArrayConstructor_t_util(
                             al, loc, shape.p, shape.size(),
                             sat, ASR::arraystorageType::ColMajor);
@@ -6705,7 +6915,7 @@ public:
                                                 args_shape2.reserve(al, 1);
                                                 args_shape2.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq2->base.loc, size2, int_type)));
 
-                                                ASR::ttype_t* array_type_shape2 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq2->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::ttype_t* array_type_shape2 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq2->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant2 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq2->base.loc, args_shape2.p, args_shape2.size(), array_type_shape2, ASR::arraystorageType::ColMajor);
                                                 // Create var reference for ia2 (var2__ is already Variable_t*, cast to symbol_t*)
                                                 ASR::expr_t* var2_ref = ASRUtils::EXPR(ASR::make_Var_t(al, asr_eq2->base.loc, (ASR::symbol_t*)var2__));
@@ -6742,7 +6952,7 @@ public:
                                                 args_shape1.reserve(al, 1);
                                                 args_shape1.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, asr_eq1->base.loc, size1, int_type)));
 
-                                                ASR::ttype_t* array_type_shape1 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray));
+                                                ASR::ttype_t* array_type_shape1 = ASRUtils::TYPE(ASR::make_Array_t(al, asr_eq1->base.loc, int_type, dim.p, dim.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant1 = ASRUtils::make_ArrayConstructor_t_util(al, asr_eq1->base.loc, args_shape1.p, args_shape1.size(), array_type_shape1, ASR::arraystorageType::ColMajor);
                                                 emit_cptr_to_pointer(asr_eq1->base.loc, pointer_to_cptr1, asr_eq1, array_constant1);
                                             } else {
@@ -6766,7 +6976,7 @@ public:
 
                                                 ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(
                                                     al, asr_eq1->base.loc, int_type, dim.p, dim.size(),
-                                                    ASR::array_physical_typeType::PointerArray));
+                                                    ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* array_constant = ASRUtils::make_ArrayConstructor_t_util(
                                                     al, asr_eq1->base.loc, args_shape.p, args_shape.size(),
                                                     array_type, ASR::arraystorageType::ColMajor);
@@ -7055,7 +7265,7 @@ public:
                                                 }
                                                 ASR::ttype_t* shape_array_type = ASRUtils::TYPE(ASR::make_Array_t(
                                                     al, alias_expr->base.loc, int_type, dim_one.p, dim_one.size(),
-                                                    ASR::array_physical_typeType::PointerArray));
+                                                    ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                                                 ASR::asr_t* shape_constant = ASRUtils::make_ArrayConstructor_t_util(
                                                     al, alias_expr->base.loc, shape_args.p, shape_args.size(),
                                                     shape_array_type, ASR::arraystorageType::ColMajor);
@@ -7591,7 +7801,11 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 is_attr_external = true;
-                                assgnd_access[sym] = ASR::accessType::Public;
+                                // Do not force Public here: an external
+                                // procedure declared in a `private` module must
+                                // keep the default (private) accessibility so
+                                // that `use` does not import it. Only an
+                                // explicit access specification overrides it.
                                 if (assgnd_access.count(sym)) {
                                     s_access = assgnd_access[sym];
                                 }
@@ -8160,10 +8374,7 @@ public:
                             if( ASR::is_a<ASR::Struct_t>(
                                 *ASRUtils::symbol_get_past_external(sym_found)) ) {
                                 init_expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
-                                                func_call->base.base.loc,
-                                                func_call->m_args, func_call->n_args,
-                                                func_call->m_keywords, func_call->n_keywords,
-                                                sym_found, is_struct_const));
+                                                *func_call, sym_found, is_struct_const));
                             } else {
                                 std::string func_name = func_call->m_func ?
                                     std::string(func_call->m_func) : "function";
@@ -8509,7 +8720,8 @@ public:
                         }
                     }
                     try {
-                        this->visit_expr(*s.m_initializer);
+                        visit_restricted_expr(*s.m_initializer,
+                            RestrictedExprContext::InitExpr);
                     } catch (const SemanticAbort &) {
                         // If parameter initialization fails, remove the variable to prevent
                         // creating a parameter without symbolic_value
@@ -9276,6 +9488,67 @@ public:
         }
     }
 
+    class PDTInitializerReplacer : public ASR::BaseExprReplacer<PDTInitializerReplacer> {
+        using Base = ASR::BaseExprReplacer<PDTInitializerReplacer>;
+        CommonVisitor& visitor;
+        SymbolTable* template_scope;
+        SymbolTable* instance_scope;
+        const std::map<int64_t, int64_t>& sentinel_to_actual;
+
+        template <typename T>
+        void resolve_constructor(T* x) {
+            Vec<ASR::call_arg_t> vals;
+            vals.from_pointer_n(x->m_args, x->n_args);
+            visitor.resolve_pdt_constructor(x->base.base.loc, x->m_dt_sym, vals);
+            x->m_args = vals.p;
+            x->n_args = vals.size();
+            x->m_type = ASRUtils::make_StructType_t_util(
+                visitor.al, x->base.base.loc, x->m_dt_sym, true);
+        }
+
+    public:
+        PDTInitializerReplacer(CommonVisitor& visitor, SymbolTable* template_scope,
+                SymbolTable* instance_scope,
+                const std::map<int64_t, int64_t>& sentinel_to_actual)
+            : visitor(visitor), template_scope(template_scope),
+              instance_scope(instance_scope), sentinel_to_actual(sentinel_to_actual) {}
+
+        void replace_ttype(ASR::ttype_t* type) {
+            replace_sentinel_kinds(type, sentinel_to_actual);
+            Base::replace_ttype(type);
+        }
+
+        void replace_Var(ASR::Var_t* x) {
+            if (ASRUtils::symbol_parent_symtab(x->m_v) == template_scope) {
+                ASR::symbol_t* symbol = instance_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+                LCOMPILERS_ASSERT(symbol);
+                x->m_v = symbol;
+            }
+        }
+
+        void replace_Cast(ASR::Cast_t* x) {
+            Base::replace_Cast(x);
+            ASR::ttype_t* type = ASRUtils::extract_type(x->m_type);
+            if (ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
+                    || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)) {
+                ASR::expr_t* arg = x->m_arg;
+                ImplicitCastRules::set_converted_value(visitor.al, x->base.base.loc,
+                    &arg, ASRUtils::expr_type(arg), x->m_type, visitor.diag);
+                *this->current_expr = arg;
+            }
+        }
+
+        void replace_StructConstant(ASR::StructConstant_t* x) {
+            Base::replace_StructConstant(x);
+            resolve_constructor(x);
+        }
+
+        void replace_StructConstructor(ASR::StructConstructor_t* x) {
+            Base::replace_StructConstructor(x);
+            resolve_constructor(x);
+        }
+    };
+
     // Core monomorphizer: given explicit kind values, create the concrete struct.
     // Called both from instantiate_pdt (which parses kind args from AST) and
     // recursively for inner PDT members that were deferred during template
@@ -9428,6 +9701,18 @@ public:
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
             var->m_type = rewrap_pdt_member_type(var->m_type, inner_type, var->base.base.loc);
             var->m_type_declaration = inner_sym_decl;
+        }
+        current_scope = new_scope;
+        PDTInitializerReplacer initializer_replacer(*this, pdt_struct->m_symtab,
+            new_scope, sentinel_to_actual);
+        for (auto& item : new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)
+                    || kind_values.find(item.first) != kind_values.end()) continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
+            initializer_replacer.current_expr = &var->m_symbolic_value;
+            initializer_replacer.replace_expr(var->m_symbolic_value);
+            initializer_replacer.current_expr = &var->m_value;
+            initializer_replacer.replace_expr(var->m_value);
         }
         current_scope = saved_scope;
 
@@ -9769,7 +10054,8 @@ public:
             sym_type->m_kind != nullptr
         ) {
             if (sym_type->m_kind->m_value) {
-                this->visit_expr(*sym_type->m_kind->m_value);
+                visit_restricted_expr(*sym_type->m_kind->m_value,
+                    RestrictedExprContext::KindParameter);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 a_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, sym_type->m_kind->loc, diag);
             }
@@ -9794,7 +10080,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9806,7 +10092,7 @@ public:
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9826,7 +10112,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9862,7 +10148,7 @@ public:
             }
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9875,7 +10161,7 @@ public:
             a_kind = 8;
             type = ASRUtils::TYPE(ASR::make_Complex_t(al, loc, a_kind));
             if (is_assumed_rank) {
-                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
@@ -9984,24 +10270,13 @@ public:
             if (is_assumed_rank) {
                 type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type,
                     nullptr, 0,
-                    ASR::array_physical_typeType::AssumedRankArray));
+                    ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
             } else {
-                ASR::array_physical_typeType array_physical_type =
-                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
-                                    ASR::array_physical_typeType::DescriptorArray;
-                // A StringArraySinglePointer array is one flat character
-                // buffer, so its elements are plain C characters rather than
-                // string descriptors. Keep the two physical types consistent
-                // here, where the array one is decided: a mismatched pair
-                // leaves the representation of the array ambiguous, and any
-                // consumer would have to pick a winner on its own.
-                if (array_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
-                    str->m_physical_type = ASR::CChar;
-                }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
-                    array_physical_type,
+                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
+                                    ASRUtils::is_fixed_size_array(dims.p, dims.n) ? ASR::array_physical_typeType::PointerArray :
+                                    ASR::array_physical_typeType::DescriptorArray,
                     dims.size() > 0 ? true : false);
             }
 
@@ -10059,7 +10334,7 @@ public:
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                     if (is_assumed_rank) {
-                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10273,7 +10548,7 @@ public:
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 }
                 if (is_assumed_rank) {
-                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                 } else {
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10365,7 +10640,7 @@ public:
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                     if (is_assumed_rank) {
-                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                        type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10395,7 +10670,7 @@ public:
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);
                 }
                 if (is_assumed_rank) {
-                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+                    type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                 } else {
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -10418,8 +10693,8 @@ public:
                         al, loc,
                         nullptr, 0, return_type, ASR::abiType::Source,
                         ASR::deftypeType::Interface, nullptr,
-                        false, false, false, false, false, nullptr, 0, false
-                        ));
+                        false, false, false, false, false, nullptr, 0, false,
+                        ASR::exec_spaceType::Host));
                     std::string iface_name = "__" + sym + "_iface_implicit";
                     SymbolTable *parent_scope = current_scope->parent;
                     ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
@@ -10489,8 +10764,8 @@ public:
                     al, loc,
                     nullptr, 0, return_type, ASR::abiType::Source,
                     ASR::deftypeType::Interface, nullptr,
-                    false, false, false, false, false, nullptr, 0, false
-                    ));
+                    false, false, false, false, false, nullptr, 0, false,
+                    ASR::exec_spaceType::Host));
                 // Create a backing Function symbol so type_declaration is set.
                 std::string iface_name = "__" + sym + "_iface_" + func_name;
                 SymbolTable *parent_scope = current_scope->parent;
@@ -10525,8 +10800,8 @@ public:
                         al, attr_loc,
                         nullptr, 0, nullptr, ASR::abiType::Source,        
                         ASR::deftypeType::Interface, nullptr,                     
-                        false, false, false, false, false, nullptr, 0, false
-                        )); 
+                        false, false, false, false, false, nullptr, 0, false,
+                        ASR::exec_spaceType::Host));
                     SymbolTable *parent_scope = current_scope->parent; 
                     SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                     ASR::symbol_t *placeholder = ASR::down_cast<ASR::symbol_t>(
@@ -10579,58 +10854,100 @@ public:
     }
 
 
-    ASR::asr_t* create_DerivedTypeConstructor(const Location &loc,
-            AST::fnarg_t* m_args, size_t n_args, AST::keyword_t* kwargs,
-            size_t n_kwargs, ASR::symbol_t *v, bool is_const = false) {
-        Vec<ASR::call_arg_t> vals;
-        visit_expr_list(m_args, n_args, vals);
-        visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
+    struct StructConstructorInfo {
+        std::vector<ASR::symbol_t*> members;
+        std::vector<size_t> kind_indices;
+    };
 
-        // For PDTs with kind parameters, resolve to the instantiated type
-        // and re-cast args to concrete member types (not sentinel types).
-        ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v_orig);
-        if (struct_type->n_kind_params > 0) {
-            std::string pdt_name = struct_type->m_name;
-            std::vector<int64_t> kind_vals;
-            for (size_t i = 0; i < struct_type->n_kind_params; i++) {
-                std::string kp_name(struct_type->m_kind_params[i]);
-                ASR::symbol_t* kp_sym = struct_type->m_symtab->get_symbol(kp_name);
-                ASR::Variable_t* kp_var = ASR::down_cast<ASR::Variable_t>(kp_sym);
-                int64_t kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                    ASRUtils::expr_value(kp_var->m_symbolic_value))->m_n;
-                kind_vals.push_back(kind_val);
+    StructConstructorInfo get_struct_constructor_info(ASR::symbol_t* v) {
+        std::vector<ASR::Struct_t*> chain;
+        while (v) {
+            ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v));
+            chain.push_back(type);
+            v = type->m_parent;
+        }
+        StructConstructorInfo info;
+        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+            ASR::Struct_t* type = *it;
+            size_t offset = info.members.size();
+            for (size_t i = 0; i < type->n_members; i++) {
+                info.members.push_back(type->m_symtab->get_symbol(type->m_members[i]));
             }
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, 0);
-            ASR::symbol_t* type_declaration = nullptr;
-            instantiate_pdt_by_values(loc, pdt_name, kind_vals,
-                false, false, dims, type_declaration,
-                ASR::abiType::Source, false);
-            if (type_declaration) {
-                v = type_declaration;
-            }
-
-            // Re-cast args to the instantiated member types
-            ASR::symbol_t* v_inst = ASRUtils::symbol_get_past_external(v);
-            ASR::Struct_t* inst_struct = ASR::down_cast<ASR::Struct_t>(v_inst);
-            for (size_t i = 0; i < vals.size() && i < inst_struct->n_members; i++) {
-                if (vals[i].m_value == nullptr) continue;
-                std::string member_name(inst_struct->m_members[i]);
-                ASR::symbol_t* inst_member_sym =
-                    inst_struct->m_symtab->get_symbol(member_name);
-                if (inst_member_sym) {
-                    ASR::ttype_t* inst_member_type =
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::symbol_type(inst_member_sym));
-                    ASR::ttype_t* arg_type =
-                        ASRUtils::type_get_past_allocatable(
-                            ASRUtils::expr_type(vals[i].m_value));
-                    ImplicitCastRules::set_converted_value(al, loc,
-                        &vals.p[i].m_value, arg_type, inst_member_type, diag);
-                }
+            for (size_t i = 0; i < type->n_kind_params; i++) {
+                ASR::symbol_t* param = type->m_symtab->get_symbol(type->m_kind_params[i]);
+                auto member = std::find(info.members.begin() + offset, info.members.end(), param);
+                LCOMPILERS_ASSERT(member != info.members.end());
+                info.kind_indices.push_back(std::distance(info.members.begin(), member));
             }
         }
+        return info;
+    }
+
+    void resolve_pdt_constructor(const Location& loc, ASR::symbol_t*& v,
+            Vec<ASR::call_arg_t>& vals) {
+        StructConstructorInfo info = get_struct_constructor_info(v);
+        if (info.kind_indices.empty()) return;
+
+        std::vector<int64_t> kind_vals;
+        bool deferred = false;
+        for (size_t index : info.kind_indices) {
+            int64_t kind_val = ASRUtils::extract_kind<SemanticAbort>(
+                vals[index].m_value, vals[index].loc, diag);
+            kind_vals.push_back(kind_val);
+            deferred |= kind_val >= PDT_SENTINEL;
+        }
+        // A component initializer can depend on the enclosing PDT's parameters.
+        // Keep its constructor in the template until those parameters are bound.
+        if (deferred) return;
+
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+        ASR::symbol_t* type_declaration = nullptr;
+        instantiate_pdt_by_values(loc, ASRUtils::symbol_name(v), kind_vals,
+            false, false, dims, type_declaration, ASR::abiType::Source, false);
+        v = type_declaration;
+        visit_kwargs(vals, nullptr, 0, loc, v, diag);
+    }
+
+    ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
+            ASR::symbol_t *v, bool is_const = false) {
+        const Location& loc = x.base.base.loc;
+        StructConstructorInfo info = get_struct_constructor_info(v);
+        bool is_pdt = !info.kind_indices.empty();
+        Vec<ASR::call_arg_t> vals;
+        visit_expr_list(x.m_args, x.n_args, vals);
+        if (is_pdt && x.n_subargs > 0) {
+            if (vals.size() > info.kind_indices.size()
+                    || x.n_subargs > info.members.size() - info.kind_indices.size()) {
+                diag.semantic_error_label("too many arguments in parameterized derived type constructor",
+                    {loc}, "type parameters and components must be specified in their respective argument lists");
+                throw SemanticAbort();
+            }
+            Vec<ASR::call_arg_t> components;
+            visit_expr_list(x.m_subargs, x.n_subargs, components);
+            Vec<ASR::call_arg_t> combined;
+            combined.reserve(al, info.members.size());
+            for (size_t i = 0; i < info.members.size(); i++) {
+                ASR::call_arg_t arg;
+                arg.loc = loc;
+                arg.m_value = nullptr;
+                combined.push_back(al, arg);
+            }
+            for (size_t i = 0; i < vals.size(); i++) {
+                combined.p[info.kind_indices[i]] = vals[i];
+            }
+            size_t component = 0;
+            for (size_t i = 0; i < info.members.size() && component < components.size(); i++) {
+                if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
+                        == info.kind_indices.end()) {
+                    combined.p[i] = components[component++];
+                }
+            }
+            vals = combined;
+        }
+        visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, !is_pdt);
+        if (is_pdt) resolve_pdt_constructor(loc, v, vals);
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
@@ -10910,8 +11227,17 @@ public:
                     if( end == -1 && !flag ) {
                         end = str_length;
                     } else {
+                        // Substring bounds are character positions. For kind > 1
+                        // the value holds UTF-8, so slice whole characters.
+                        std::vector<std::string> characters =
+                            ASRUtils::string_value_characters(m_str->m_s, s_type->m_kind);
+                        // An initializer shorter than the declared length is
+                        // blank padded, so the value has `str_length` characters.
+                        characters.resize(str_length, " ");
+                        int64_t sliced_len = 0;
                         for( int i = start - 1; i < end; i += step ) {
-                            sliced_str.push_back(m_str->m_s[i]);
+                            sliced_str += characters[i];
+                            sliced_len++;
                         }
                         Str l_str;
                         l_str.from_str(al, sliced_str);
@@ -10919,7 +11245,7 @@ public:
                             ASRUtils::TYPE(ASR::make_String_t(al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type), 
                                 ASRUtils::EXPR(
                                     ASR::make_IntegerConstant_t(
-                                        al, loc, sliced_str.size(),
+                                        al, loc, sliced_len,
                                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind))
                                     )
                                 ),
@@ -11926,8 +12252,7 @@ public:
             // procedure
             ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
             if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
-                return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
-                    x.m_keywords, x.n_keywords, tmp_v);
+                return create_DerivedTypeConstructor(x, tmp_v);
             }
 
             bool is_function = true;
@@ -12109,8 +12434,7 @@ public:
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
-                    return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
-                        x.m_keywords, x.n_keywords, tmp_v);
+                    return create_DerivedTypeConstructor(x, tmp_v);
                 }
 
                 bool is_function = true;
@@ -12627,7 +12951,7 @@ public:
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
                                                         ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
                                                         array_t->m_dims, array_t->n_dims,
-                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr));
+                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr), ASR::memory_spaceType::Global);
                         // make ArraySection
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
@@ -13426,8 +13750,7 @@ public:
                     int kind = ASRUtils::extract_kind_from_ttype_t(v_variable_arr_type);
                     ASR::dimension_t* m_dims = nullptr;
                     int n_dims = ASRUtils::extract_dimensions_from_ttype(v_variable_arr_type, m_dims);
-                    Vec<ASR::dimension_t> dim_vec;
-                    dim_vec.from_pointer_n_copy(al, m_dims, n_dims);
+                    Vec<ASR::dimension_t> dim_vec = ASRUtils::make_complex_dimensions_bounds(al, loc, m_dims, n_dims);
                     ASR::ttype_t *real_type = ASR::down_cast<ASR::ttype_t>(
                         ASR::make_Real_t(al, loc, kind));
                     ASR::ttype_t* complex_arr_ret_type = ASRUtils::duplicate_type(al, real_type, &dim_vec,
@@ -13489,6 +13812,68 @@ public:
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
+    }
+
+    // Resolves a type parameter inquiry (`%kind`, `%len`) or a complex part
+    // designator (`%re`, `%im`) that is applied to an arbitrary expression,
+    // such as the `%re` in `d%c%re` where the base `d%c` is a component
+    // reference rather than a plain variable. Returns nullptr when `base` is
+    // of a derived or union type, in which case the caller resolves the
+    // member through that type's symbol table instead.
+    ASR::asr_t* resolve_intrinsic_type_member(const Location &loc,
+            const std::string &member_name, ASR::expr_t* base,
+            const std::string &base_name) {
+        ASR::ttype_t* base_type = ASRUtils::extract_type(ASRUtils::expr_type(base));
+        if (ASR::is_a<ASR::StructType_t>(*base_type) ||
+                ASR::is_a<ASR::UnionType_t>(*base_type)) {
+            return nullptr;
+        }
+        if (member_name == "kind") {
+            ASRUtils::create_intrinsic_function create_func =
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(member_name);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, base);
+            return create_func(al, loc, args, diag);
+        }
+        if (ASR::is_a<ASR::Complex_t>(*base_type)) {
+            if (member_name != "re" && member_name != "im") {
+                diag.add(Diagnostic("Complex variable '" + base_name + "' only has %re, %im, and %kind members, not '" + member_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(base_type)));
+            if (ASRUtils::is_array(ASRUtils::expr_type(base))) {
+                ASR::expr_t* desc_arr = ASRUtils::cast_to_descriptor(al, base);
+                ASR::dimension_t* m_dims = nullptr;
+                int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(base)), m_dims);
+                Vec<ASR::dimension_t> dim_vec = ASRUtils::make_complex_dimensions_bounds(al, loc, m_dims, n_dims);
+                ASR::ttype_t* real_arr_type = ASRUtils::duplicate_type(al, real_type,
+                    &dim_vec, ASR::array_physical_typeType::DescriptorArray, true);
+                if (member_name == "re") {
+                    return ASR::make_ComplexRe_t(al, loc, desc_arr, real_arr_type, nullptr);
+                }
+                return ASR::make_ComplexIm_t(al, loc, desc_arr, real_arr_type, nullptr);
+            }
+            if (member_name == "re") {
+                return ASR::make_ComplexRe_t(al, loc, base, real_type, nullptr);
+            }
+            return ASR::make_ComplexIm_t(al, loc, base, real_type, nullptr);
+        }
+        if (ASR::is_a<ASR::String_t>(*base_type)) {
+            if (member_name != "len") {
+                diag.add(Diagnostic("Character variable '" + base_name + "' only has %len and %kind members, not '" + member_name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            return create_StringLen_from_expr(base, int32, loc);
+        }
+        diag.add(Diagnostic("Variable '" + base_name + "' doesn't have any member named, '" + member_name + "'.",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
@@ -14152,7 +14537,7 @@ public:
         ASR::ttype_t* arr_element_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
 
         ASR::ttype_t* reshape_ttype = ASRUtils::TYPE(ASR::make_Array_t(al, arr_element_type->base.loc, arr_element_type,
-                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                    nullptr, newshape_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
 
         size_t n_dims_array_reshape = ASRUtils::extract_n_dims_from_ttype(reshape_ttype);
 
@@ -14221,7 +14606,7 @@ public:
                         size_t curr_idx = elements.size();
                         ASR::ttype_t* new_type = ASRUtils::TYPE(
                             ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
-                                            a_type_->m_physical_type)
+                                            a_type_->m_physical_type, a_type_->m_memory_space)
                         );
                         void *data = ASRUtils::set_ArrayConstant_data(elements.p, curr_idx, a_type_->m_type);
                         int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
@@ -14302,7 +14687,7 @@ public:
                     size_t curr_idx = elements_.size();
                     ASR::ttype_t* new_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, a_type_->base.base.loc, a_type_->m_type, dims.p, dims.n,
-                                        a_type_->m_physical_type)
+                                        a_type_->m_physical_type, a_type_->m_memory_space)
                     );
                     void *data = ASRUtils::set_ArrayConstant_data(elements_.p, curr_idx, a_type_->m_type);
                     int64_t n_data = curr_idx * ASRUtils::extract_kind_from_ttype_t(a_type_->m_type);
@@ -16540,6 +16925,93 @@ public:
         return nullptr;
     }
 
+    // True if `v` denotes a procedure that was declared `external` without an
+    // interface (e.g. `integer, external :: foo`). Unwraps ExternalSymbol and
+    // delegates to ASRUtils::is_bare_implicit_interface.
+    bool is_implicit_interface_decl(ASR::symbol_t* v) {
+        return ASRUtils::is_bare_implicit_interface(v);
+    }
+
+    // True if `v` is a BindC Interface function that LFortran synthesized for
+    // an external with an implicit interface (has a concrete argument list
+    // inferred from a call, not a user-written interface block).
+    bool is_synthesized_implicit_interface(ASR::symbol_t* v) {
+        if (!v) return false;
+        ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(v);
+        if (!f2 || !ASR::is_a<ASR::Function_t>(*f2)) return false;
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(f2);
+        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(fn);
+        return ft->m_abi == ASR::abiType::BindC
+            && ft->m_deftype == ASR::deftypeType::Interface
+            && fn->n_body == 0;
+    }
+
+    // True if the actual arguments in `args` match the dummy signature of `fn`
+    // in type (and rank), which is what a later reference is allowed to differ
+    // in under an implicit interface.
+    bool call_args_match_function(ASR::Function_t* fn, Vec<ASR::call_arg_t>& args) {
+        size_t offset = 0;
+        if (fn->n_args != args.size() + offset) {
+            // Allow mismatch in count only if we'll re-infer; treat as no match.
+            if (fn->n_args != args.size()) return false;
+        }
+        for (size_t i = 0; i < args.size() && i < fn->n_args; i++) {
+            if (!args[i].m_value) continue;
+            ASR::ttype_t* passed = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(args[i].m_value)));
+            ASR::ttype_t* dummy = ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(fn->m_args[i])));
+            if (!ASRUtils::check_equal_type(passed, dummy, args[i].m_value, fn->m_args[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Build a procedure-pointer temporary holding
+    //   FunctionPointerCast(canonical, to_iface)
+    // and return the temporary Variable symbol. The caller uses it as the
+    // SubroutineCall/FunctionCall name so the call agrees with `to_iface`.
+    ASR::symbol_t* make_fpcast_call_target(
+        const Location& loc,
+        ASR::symbol_t* canonical,
+        ASR::symbol_t* to_iface)
+    {
+        LCOMPILERS_ASSERT(current_body != nullptr);
+        ASR::symbol_t* canon = ASRUtils::symbol_get_past_external(canonical);
+        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(to_iface);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
+        // The cast's type is FunctionType (same as Var of a Function), not
+        // Pointer(FunctionType): Associate of a pointer-typed value would load
+        // through it. The temp procedure-pointer variable is Pointer(...).
+        ASR::ttype_t* fn_type = ASRUtils::duplicate_type(al, to_fn->m_function_signature);
+        ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, fn_type));
+
+        std::string tmp_name = current_scope->get_unique_name(
+            std::string(ASRUtils::symbol_name(canon)) + "_fpcast", false);
+        ASR::symbol_t* tmp_var = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, tmp_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, ptr_type, to_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_var);
+
+        ASR::expr_t* src = ASRUtils::EXPR(ASR::make_Var_t(al, loc, canon));
+        ASR::expr_t* cast = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
+            al, loc, src, to_sym, fn_type, nullptr));
+        ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_var));
+        // Associate, not Assignment: procedure pointers are associated the
+        // same way as `sp => add_ten`, and Assignment's store lowering does
+        // not match the Pointer(FunctionType) physical representation.
+        current_body->push_back(al, ASRUtils::STMT(
+            ASR::make_Associate_t(al, loc, lhs, cast)));
+        return tmp_var;
+    }
+
+
     template <class Call>
     void create_implicit_interface_function(const Call &x, std::string func_name, bool add_return, ASR::ttype_t* old_type) {
         is_implicit_interface = true;
@@ -16746,6 +17218,13 @@ public:
                 ASR::down_cast<ASR::symbol_t>(return_var)));
         }
 
+        // Infer a complete Interface from this reference's actual arguments
+        // and store it under `sym_name`, overwriting any ImplicitInterface
+        // placeholder of the same name. Later references in this scope are
+        // checked against this inferred signature. BindC with a null
+        // bindc_name uses the Fortran name as the link symbol, so this
+        // Interface and any other declaration of the same name resolve to
+        // one procedure at link time.
         tmp = ASRUtils::make_Function_t_util(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
@@ -16759,7 +17238,49 @@ public:
             ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
-        sym_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        ASR::symbol_t* new_fn = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::symbol_t* existing = sym_scope->get_symbol(sym_name);
+        // First inference (or replacing a bare ImplicitInterface declaration):
+        // install under the user-visible name. A later reference that needs a
+        // *different* signature keeps this symbol and builds a cast view.
+        if (existing && is_synthesized_implicit_interface(existing)
+                && !is_implicit_interface_decl(existing)) {
+            ASR::Function_t* ex = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(existing));
+            ASR::Function_t* nw = ASR::down_cast<ASR::Function_t>(new_fn);
+            // Compare arg counts / types via the just-built call args vs existing.
+            bool same = (ex->n_args == nw->n_args);
+            for (size_t i = 0; same && i < ex->n_args; i++) {
+                ASR::ttype_t* t1 = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(ex->m_args[i])));
+                ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(nw->m_args[i])));
+                if (!ASRUtils::check_equal_type(t1, t2, ex->m_args[i], nw->m_args[i])) {
+                    same = false;
+                }
+            }
+            if (same) {
+                // Drop the duplicate; callers resolve sym_name to existing.
+                current_scope = parent_scope;
+                is_implicit_interface = false;
+                implicit_interface_parent_scope = nullptr;
+                return;
+            }
+            // Different signature: keep `existing` as the canonical procedure
+            // and file this view under a private name for use as the cast
+            // target interface.
+            std::string cast_name = sym_scope->get_unique_name(
+                sym_name + "@fpcast", false);
+            ASR::Function_t* nw_mut = ASR::down_cast<ASR::Function_t>(new_fn);
+            nw_mut->m_name = s2c(al, cast_name);
+            sym_scope->add_symbol(cast_name, new_fn);
+            implicit_interface_fpcast_canonical = existing;
+            implicit_interface_fpcast_target = new_fn;
+        } else {
+            sym_scope->add_or_overwrite_symbol(sym_name, new_fn);
+            implicit_interface_fpcast_canonical = nullptr;
+            implicit_interface_fpcast_target = nullptr;
+        }
         current_scope = parent_scope;
 
         is_implicit_interface = false;
@@ -17238,7 +17759,7 @@ public:
                     physical_type = ASR::array_physical_typeType::PointerArray;
                 }
                 ASR::ttype_t* base_type = ASRUtils::extract_type(type);
-                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, base_type, dims.p, dims.n, physical_type));
+                ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc, base_type, dims.p, dims.n, physical_type, ASR::memory_spaceType::Global));
                 int64_t n_data = itr * ASRUtils::extract_kind_from_ttype_t(base_type);
                 if (ASRUtils::is_character(*base_type)) {
                     int len;
@@ -17280,6 +17801,12 @@ public:
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+        // An actual argument of the form `( cond ? a : b )` is a conditional
+        // argument (R1526). It is expanded before the reference is resolved,
+        // so that every copy of it is an ordinary procedure reference.
+        if (handle_conditional_arg_function(x)) {
+            return;
+        }
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
@@ -17322,6 +17849,16 @@ public:
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
             }
+        }
+        if (compiler_options.implicit_interface && !is_external_procedure
+                && is_implicit_interface_decl(v)) {
+            // `v` was declared `external` with no interface, so its argument
+            // list is unknown. Infer the concrete interface from this call's
+            // arguments, exactly like a locally declared external. A reference
+            // that passes no arguments infers a zero-argument interface; it
+            // must not be left resolving to the declaration itself, which is
+            // not a call target.
+            is_external_procedure = true;
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
@@ -17796,7 +18333,7 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args);
+            visit_expr_list(x.m_args, x.n_args, args, f2, x.n_member);
             if (x.n_member >= 1) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
@@ -17910,8 +18447,7 @@ public:
                         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(local_sym);
                         if (struct_sym &&
                                 ASR::is_a<ASR::Struct_t>(*struct_sym)) {
-                            tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
-                                                    x.m_keywords, x.n_keywords, local_sym);
+                            tmp = create_DerivedTypeConstructor(x, local_sym);
                             return;
                         }
                         bool is_function = true;
@@ -18005,8 +18541,7 @@ public:
             }
 
             case(ASR::symbolType::Struct): {
-                tmp = create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
-                                                    x.m_keywords, x.n_keywords, v);
+                tmp = create_DerivedTypeConstructor(x, v);
                 break;
             }
             case(ASR::symbolType::StructMethodDeclaration):
@@ -18992,9 +19527,11 @@ public:
             throw SemanticAbort();
         }
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Arithmetic", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Arithmetic", x.base.base.loc);
         visit_BinOp2(al, x, left, right, tmp, binop2str[x.m_op], current_scope);
 
         if (ASR::is_a<ASR::IntegerBinOp_t>(*ASRUtils::EXPR(tmp))) {
@@ -19524,6 +20061,16 @@ public:
 
         if( ASR::is_a<ASR::String_t>(*left_type) &&
             ASR::is_a<ASR::String_t>(*right_type) ) { // CreateIntrinisc `stringConcat`
+            int64_t left_kind = ASR::down_cast<ASR::String_t>(left_type)->m_kind;
+            int64_t right_kind = ASR::down_cast<ASR::String_t>(right_type)->m_kind;
+            if (left_kind != right_kind) {
+                diag.add(Diagnostic(
+                    "operands of // must be character with the same kind, "
+                    "found character(" + std::to_string(left_kind) + ") and character("
+                    + std::to_string(right_kind) + ")",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             Vec<ASR::expr_t*> v; v.reserve(al, 1);
             v.push_back(al, left);
             v.push_back(al, right);
@@ -19605,33 +20152,63 @@ public:
 
     void visit_UnaryOp(const AST::UnaryOp_t &x) {
         this->visit_expr(*x.m_operand);
-        ASR::expr_t *operand = ASRUtils::EXPR(tmp);
+        ASR::expr_t *operand = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(operand, "Arithmetic", x.base.base.loc);
         CommonVisitorMethods::visit_UnaryOp(al, x, operand, tmp,
             current_scope, current_function_dependencies,
             current_module_dependencies, diag);
     }
 
+    // Inside a `select rank` block the selector is known to have a specific
+    // rank, so a reference to it takes part in expressions as a descriptor
+    // array of that rank rather than as an assumed rank array. `expr` is
+    // returned unchanged when it does not reference such a selector.
+    ASR::expr_t* cast_assumed_rank_selector(ASR::expr_t* expr) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr)) ||
+                !ASR::is_a<ASR::Var_t>(*expr)) {
+            return expr;
+        }
+        std::string array_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        auto it = assumed_rank_arrays.find(array_name);
+        if (it == assumed_rank_arrays.end()) {
+            return expr;
+        }
+        // `create_array_type_with_empty_dims` returns the element type itself
+        // for `rank(0)`, i.e. a scalar selector.
+        ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(al,
+            it->second, ASRUtils::extract_type(ASRUtils::expr_type(expr)));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+            expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+    }
+
+    // An assumed rank array that is not the selector of an enclosing
+    // `select rank` block has no known rank, so it cannot take part in an
+    // operation. `op_kind` names the kind of operation, e.g. "Comparison".
+    void ensure_not_assumed_rank(ASR::expr_t* expr, const std::string& op_kind,
+            const Location& loc) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return;
+        }
+        std::string array_name = "";
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            array_name = " ('" + std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "')";
+        }
+        diag.add(Diagnostic(op_kind + " operations are not allowed on "
+            "assumed-rank arrays" + array_name,
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        throw SemanticAbort();
+    }
+
     void visit_Compare(const AST::Compare_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
-        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(left))) {
-            std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(left)->m_v);
-            if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
-                diag.add(Diagnostic("Comparison operations are not allowed on assumed-rank arrays ('" + array_name + "')",
-                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            } else {
-                size_t rank = assumed_rank_arrays[array_name];
-                ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, 
-                    rank, ASRUtils::extract_type(ASRUtils::expr_type(left)));
-                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                    left->base.loc, left, ASR::array_physical_typeType::AssumedRankArray, 
-                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
-                left = cast_expr;
-            }
-        }
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
+        ensure_not_assumed_rank(left, "Comparison", x.base.base.loc);
+        ensure_not_assumed_rank(right, "Comparison", x.base.base.loc);
         CommonVisitorMethods::visit_Compare(al, x, left, right, tmp,
                                             cmpop2str[x.m_op], current_scope,
                                             current_function_dependencies,
@@ -19641,6 +20218,519 @@ public:
 
     void visit_Parenthesis(const AST::Parenthesis_t &x) {
         this->visit_expr(*x.m_operand);
+    }
+
+    // A conditional expression is a primary (R1001), but 10.1.11 and 10.1.12
+    // enumerate the primaries a specification expression and a constant
+    // expression may contain, and a conditional expression is in neither
+    // list. The parenthesized alternative in those lists is the R1001 form
+    // `( expr )`, which is a different alternative of primary from R1002.
+    void reject_conditional_expr_in_restricted_context(const Location &loc) {
+        if (restricted_expr_context == RestrictedExprContext::None) {
+            return;
+        }
+        std::string clause, requirement;
+        switch (restricted_expr_context) {
+            case RestrictedExprContext::KindParameter: {
+                clause = "constant";
+                requirement = "a kind type parameter shall be a constant "
+                    "expression (Fortran 2023 C701)";
+                break;
+            }
+            case RestrictedExprContext::InitExpr: {
+                clause = "constant";
+                requirement = "an initialization expression shall be a "
+                    "constant expression (Fortran 2023 C1012)";
+                break;
+            }
+            case RestrictedExprContext::CharacterLength: {
+                clause = "specification";
+                requirement = "a type parameter value shall be a "
+                    "specification expression (Fortran 2023 C704)";
+                break;
+            }
+            case RestrictedExprContext::ArrayBound: {
+                clause = "specification";
+                requirement = "an array bound shall be a specification "
+                    "expression";
+                break;
+            }
+            default: {
+                return;
+            }
+        }
+        std::string listing = (clause == "constant") ? "10.1.12" : "10.1.11";
+        diag.add(Diagnostic(
+            "a conditional expression is not allowed in a " + clause
+                + " expression",
+            Level::Error, Stage::Semantic, {
+                Label(requirement, {loc}),
+                Label("help: Fortran 2023 " + listing + " does not list a "
+                    "conditional expression among the permitted primaries; "
+                    "use `merge`, which is permitted here", {loc}, false)}));
+        throw SemanticAbort();
+    }
+
+    // Renders the types of the two arms of a conditional expression for a
+    // diagnostic. type_to_str_with_kind spells out the kind for the numeric
+    // types but not for logical or character, where a kind mismatch would
+    // otherwise print the same text on both sides.
+    void conditional_arm_type_strs(ASR::expr_t *body, ASR::expr_t *orelse,
+            std::string &body_str, std::string &orelse_str) {
+        ASR::ttype_t *body_type = ASRUtils::expr_type(body);
+        ASR::ttype_t *orelse_type = ASRUtils::expr_type(orelse);
+        body_str = ASRUtils::type_to_str_with_kind(body_type, body);
+        orelse_str = ASRUtils::type_to_str_with_kind(orelse_type, orelse);
+        if (body_str == orelse_str) {
+            body_str += "(kind=" + std::to_string(
+                ASRUtils::extract_kind_from_ttype_t(body_type)) + ")";
+            orelse_str += "(kind=" + std::to_string(
+                ASRUtils::extract_kind_from_ttype_t(orelse_type)) + ")";
+        }
+    }
+
+    // Fortran 2023 conditional expression, 10.1.2.3 R1002:
+    //     ( scalar-logical-expr ? expr [ : scalar-logical-expr ? expr ]... : expr )
+    // The parser nests the repeating group, so each node here has exactly one
+    // condition and two arms, and maps directly onto ASR::IfExp, which the
+    // backends lower with real branches. Only the chosen arm is evaluated
+    // (10.1.4 NOTE 3), so this must never be rewritten into `merge`.
+    void visit_ConditionalExpr(const AST::ConditionalExpr_t &x) {
+        reject_conditional_expr_in_restricted_context(x.base.base.loc);
+        this->visit_expr(*x.m_test);
+        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_body);
+        ASR::expr_t *body = ASRUtils::EXPR(tmp);
+        this->visit_expr(*x.m_orelse);
+        ASR::expr_t *orelse = ASRUtils::EXPR(tmp);
+        ensure_not_assumed_rank(test, "Conditional expression", x.base.base.loc);
+        ensure_not_assumed_rank(body, "Conditional expression", x.base.base.loc);
+        ensure_not_assumed_rank(orelse, "Conditional expression", x.base.base.loc);
+
+        ASR::ttype_t *test_type = ASRUtils::expr_type(test);
+        if (!ASRUtils::is_logical(*test_type)) {
+            diag.add(Diagnostic(
+                "the condition of a conditional expression must be logical",
+                Level::Error, Stage::Semantic, {Label(
+                    "this condition is " + ASRUtils::type_to_str_with_kind(
+                        test_type, test), {test->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (ASRUtils::extract_n_dims_from_ttype(test_type) != 0) {
+            diag.add(Diagnostic(
+                "the condition of a conditional expression must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("this condition is " +
+                        ASRUtils::type_to_str_with_kind(test_type, test),
+                        {test->base.loc}),
+                    Label("help: use `merge` to select elementwise with an "
+                        "array mask", {test->base.loc}, false)}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t *body_type = ASRUtils::expr_type(body);
+        ASR::ttype_t *orelse_type = ASRUtils::expr_type(orelse);
+        // C1004: the arms must agree in declared type and kind type parameters.
+        // They need not agree in length type parameters or in shape, so no
+        // implicit conversion is inserted between them here.
+        if (!ASRUtils::check_equal_type(body_type, orelse_type, body, orelse)) {
+            std::string body_str, orelse_str;
+            conditional_arm_type_strs(body, orelse, body_str, orelse_str);
+            diag.add(Diagnostic(
+                "the arms of a conditional expression must have the same type "
+                "and kind",
+                Level::Error, Stage::Semantic, {Label(
+                    "type mismatch (" + body_str + " and " + orelse_str + ")",
+                    {body->base.loc, orelse->base.loc})}));
+            throw SemanticAbort();
+        }
+        // check_equal_type accepts a parent type and an extension of it,
+        // because they are compatible in an assignment. C1004 is stricter: the
+        // arms must have the same declared type, so compare the derived types
+        // themselves.
+        if (ASRUtils::is_struct(*ASRUtils::extract_type(body_type))
+                && ASRUtils::is_struct(*ASRUtils::extract_type(orelse_type))) {
+            ASR::symbol_t *body_struct = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(body));
+            ASR::symbol_t *orelse_struct = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(orelse));
+            if (body_struct != orelse_struct) {
+                diag.add(Diagnostic(
+                    "the arms of a conditional expression must have the same "
+                    "declared type",
+                    Level::Error, Stage::Semantic, {Label(
+                        "type mismatch (" + ASRUtils::type_to_str_fortran_expr(
+                            body_type, body) + " and " +
+                        ASRUtils::type_to_str_fortran_expr(orelse_type, orelse)
+                        + ")", {body->base.loc, orelse->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        size_t body_rank = ASRUtils::extract_n_dims_from_ttype(body_type);
+        size_t orelse_rank = ASRUtils::extract_n_dims_from_ttype(orelse_type);
+        if (body_rank != orelse_rank) {
+            diag.add(Diagnostic(
+                "the arms of a conditional expression must have the same rank",
+                Level::Error, Stage::Semantic, {Label(
+                    "rank mismatch (" + std::to_string(body_rank) + " and " +
+                    std::to_string(orelse_rank) + ")",
+                    {body->base.loc, orelse->base.loc})}));
+            throw SemanticAbort();
+        }
+
+        ASR::ttype_t *type = body_type;
+        // 10.1.4 p23: the result is polymorphic if either arm is
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(orelse_type)) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(body_type))) {
+            type = orelse_type;
+        }
+        // 10.1.4 p22: the shape and the length type parameters of the result
+        // are those of the arm that is chosen, and the arms only have to agree
+        // in rank and kind. Neither is therefore known before an arm has been
+        // chosen, so an array result has deferred extents, a character result
+        // has a deferred length, and both are allocatable. The `merge`
+        // intrinsic returns a deferred length string for the same reason.
+        if (ASRUtils::is_array(type) || ASRUtils::is_character(*type)) {
+            ASR::ttype_t *element = ASRUtils::extract_type(type);
+            if (ASR::is_a<ASR::String_t>(*element)) {
+                ASR::String_t *str = ASR::down_cast<ASR::String_t>(element);
+                element = ASRUtils::TYPE(ASR::make_String_t(al,
+                    x.base.base.loc, str->m_kind, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString));
+            }
+            if (ASRUtils::is_array(type)) {
+                element = ASRUtils::create_array_type_with_empty_dims(al,
+                    ASRUtils::extract_n_dims_from_ttype(type), element);
+            }
+            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                x.base.base.loc, element));
+        }
+
+        // The compile time value is deliberately left empty. 10.1.12 does not
+        // list a conditional expression among the forms of a constant
+        // expression, and an expression without a compile time value is
+        // already rejected wherever one is required, such as a `parameter`
+        // initializer or a kind parameter.
+        tmp = ASR::make_IfExp_t(al, x.base.base.loc, test, body, orelse, type,
+            nullptr);
+    }
+
+    // Fortran 2023 conditional argument, 15.5.1 R1526:
+    //     ( scalar-logical-expr ? consequent
+    //       [ : scalar-logical-expr ? consequent ]... : consequent )
+    //     consequent  is  expr  or  variable  or  .NIL.
+    //
+    // C1535 keeps this out of `expr`: in an actual argument position the
+    // syntax of R1002 is a conditional argument, not a conditional
+    // expression. The difference is what the chosen consequent means. It *is*
+    // the actual argument (15.5.2.3), so a variable consequent is associated
+    // by reference and stays definable, and `.nil.` means the dummy argument
+    // is not present. Neither survives being turned into a value, which is
+    // all a conditional expression can produce.
+    //
+    // Substituting the chosen consequent into the reference gets both right,
+    // so that is what happens here: the reference is duplicated into the arms
+    // of a selection, one copy per consequent, and each copy is then
+    // processed as an ordinary procedure reference. The conditions keep their
+    // order and their short circuit, only the chosen consequent is evaluated,
+    // and every rule about an actual argument is then checked by the code
+    // that checks it for a reference written out by hand.
+    //
+    // The parser cannot tell a conditional argument from a conditional
+    // expression, so both arrive as AST::ConditionalExpr, and `.nil.` arrives
+    // as AST::Nil.
+
+    // Walks the `: scalar-logical-expr ? consequent` chain, which the parser
+    // nests in the third operand.
+    static void collect_consequents(AST::expr_t *e,
+            std::vector<AST::expr_t*> &consequents) {
+        while (AST::is_a<AST::ConditionalExpr_t>(*e)) {
+            AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(e);
+            consequents.push_back(c->m_body);
+            e = c->m_orelse;
+        }
+        consequents.push_back(e);
+    }
+
+    // C1540: at least one consequent of a conditional argument shall be a
+    // consequent-arg, so they cannot all be `.nil.`.
+    void check_conditional_arg(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        for (AST::expr_t *c: consequents) {
+            if (!AST::is_a<AST::Nil_t>(*c)) {
+                return;
+            }
+        }
+        diag.add(Diagnostic(
+            "every consequent of this conditional argument is `.nil.`",
+            Level::Error, Stage::Semantic, {
+                Label("at least one consequent shall be an argument "
+                    "(Fortran 2023 C1540)", {x->base.base.loc})}));
+        throw SemanticAbort();
+    }
+
+    // The variable a consequent names, if it names one. A consequent that is
+    // an expression is not resolved here: it is checked against the dummy
+    // argument of the reference it ends up in, once that reference has been
+    // built.
+    ASR::Variable_t* consequent_variable(AST::expr_t *c) {
+        if (!AST::is_a<AST::Name_t>(*c)) {
+            return nullptr;
+        }
+        AST::Name_t *n = AST::down_cast<AST::Name_t>(c);
+        if (n->n_member > 0) {
+            return nullptr;
+        }
+        ASR::symbol_t *s = current_scope->resolve_symbol(to_lower(n->m_id));
+        if (s == nullptr) {
+            return nullptr;
+        }
+        s = ASRUtils::symbol_get_past_external(s);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Variable_t>(s);
+    }
+
+    // C1538 and C1539: the consequent-args of a conditional argument shall
+    // have the same declared type and kind type parameters, and the same
+    // rank. Length type parameters and shape may differ, they come from the
+    // consequent that is chosen (15.5.2.3), exactly as for a conditional
+    // expression.
+    void check_conditional_arg_consequents(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        AST::expr_t *first = nullptr;
+        ASR::ttype_t *first_type = nullptr;
+        for (AST::expr_t *c: consequents) {
+            ASR::Variable_t *v = consequent_variable(c);
+            if (v == nullptr) {
+                continue;
+            }
+            if (first == nullptr) {
+                first = c;
+                first_type = v->m_type;
+                continue;
+            }
+            size_t first_rank = ASRUtils::extract_n_dims_from_ttype(first_type);
+            size_t rank = ASRUtils::extract_n_dims_from_ttype(v->m_type);
+            if (first_rank != rank) {
+                diag.add(Diagnostic(
+                    "the consequents of a conditional argument must have the "
+                    "same rank",
+                    Level::Error, Stage::Semantic, {
+                        Label("rank mismatch (" + std::to_string(first_rank)
+                            + " and " + std::to_string(rank) +
+                            ") (Fortran 2023 C1539)",
+                            {first->base.loc, c->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (!ASRUtils::types_equal(first_type, v->m_type, nullptr, nullptr,
+                    false)) {
+                diag.add(Diagnostic(
+                    "the consequents of a conditional argument must have the "
+                    "same type and kind",
+                    Level::Error, Stage::Semantic, {
+                        Label("type mismatch ("
+                            + ASRUtils::type_to_str_fortran_expr(first_type, nullptr)
+                            + " and "
+                            + ASRUtils::type_to_str_fortran_expr(
+                                v->m_type, nullptr) +
+                            ") (Fortran 2023 C1538)",
+                            {first->base.loc, c->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    // C1545: in a reference to a generic procedure the consequents shall
+    // agree in the `allocatable` and `pointer` attributes, because the
+    // attributes of the conditional argument as a whole are what the generic
+    // is resolved against (15.5.2.3). Only a consequent that names a variable
+    // is compared here; any other consequent is checked against the dummy
+    // argument of the reference it ends up in.
+    void check_conditional_arg_generic(AST::ConditionalExpr_t *x) {
+        std::vector<AST::expr_t*> consequents;
+        collect_consequents((AST::expr_t*)(&x->base), consequents);
+        AST::expr_t *first = nullptr;
+        bool first_alloc = false, first_ptr = false;
+        for (AST::expr_t *c: consequents) {
+            ASR::Variable_t *v = consequent_variable(c);
+            if (v == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *t = v->m_type;
+            bool is_alloc = ASRUtils::is_allocatable(t);
+            bool is_ptr = ASRUtils::is_pointer(t);
+            if (first == nullptr) {
+                first = c;
+                first_alloc = is_alloc;
+                first_ptr = is_ptr;
+                continue;
+            }
+            if (is_alloc == first_alloc && is_ptr == first_ptr) {
+                continue;
+            }
+            auto attr = [](bool a, bool p) -> std::string {
+                if (a) return "allocatable";
+                if (p) return "a pointer";
+                return "neither allocatable nor a pointer";
+            };
+            diag.add(Diagnostic(
+                "the consequents of a conditional argument to a generic "
+                "procedure must have the same `allocatable` and `pointer` "
+                "attributes",
+                Level::Error, Stage::Semantic, {
+                    Label("this consequent is " + attr(first_alloc, first_ptr)
+                        + ", this one is " + attr(is_alloc, is_ptr) +
+                        " (Fortran 2023 C1545)",
+                        {first->base.loc, c->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    // The index of the first actual argument that is a conditional argument,
+    // or -1. A keyword argument (R1523) is indexed after the positional ones.
+    // Only the first one is reported: the copies made for it carry the rest,
+    // and processing a copy finds the next one.
+    int64_t first_conditional_arg(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, size_t n_kwargs) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_end != nullptr && args[i].m_start == nullptr
+                    && args[i].m_step == nullptr
+                    && AST::is_a<AST::ConditionalExpr_t>(*args[i].m_end)) {
+                return (int64_t)i;
+            }
+        }
+        for (size_t i = 0; i < n_kwargs; i++) {
+            if (kwargs[i].m_value != nullptr
+                    && AST::is_a<AST::ConditionalExpr_t>(*kwargs[i].m_value)) {
+                return (int64_t)(n_args + i);
+            }
+        }
+        return -1;
+    }
+
+    AST::expr_t* conditional_arg_at(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, int64_t idx) {
+        return idx < (int64_t)n_args ? args[idx].m_end
+            : kwargs[idx - n_args].m_value;
+    }
+
+    // One copy of the argument list, with the conditional argument at `idx`
+    // replaced by one of its consequents.
+    void copy_args_with_consequent(AST::fnarg_t *args, size_t n_args,
+            AST::keyword_t *kwargs, size_t n_kwargs, int64_t idx,
+            AST::expr_t *consequent, AST::fnarg_t *&new_args,
+            AST::keyword_t *&new_kwargs) {
+        new_args = n_args > 0 ? al.allocate<AST::fnarg_t>(n_args) : nullptr;
+        for (size_t i = 0; i < n_args; i++) {
+            new_args[i] = args[i];
+            if ((int64_t)i == idx) {
+                new_args[i].m_end = consequent;
+            }
+        }
+        new_kwargs = n_kwargs > 0 ? al.allocate<AST::keyword_t>(n_kwargs)
+            : nullptr;
+        for (size_t i = 0; i < n_kwargs; i++) {
+            new_kwargs[i] = kwargs[i];
+            if ((int64_t)(n_args + i) == idx) {
+                new_kwargs[i].m_value = consequent;
+            }
+        }
+    }
+
+    // A name followed by a parenthesized list is a procedure reference or an
+    // array element or section (R1520 against R911), and only the symbol
+    // tells them apart. A variable that is not a procedure is therefore left
+    // alone: `a( ( c ? i : j ) )` subscripts `a` with a conditional
+    // expression, it does not pass a conditional argument, and turning it
+    // into a selection of two designators would stop it being one.
+    //
+    // An unresolved name is left alone as well: it is an intrinsic or an
+    // implicit interface. `.nil.` in one is reported by visit_Nil.
+    ASR::symbol_t* referenced_procedure(const AST::FuncCallOrArray_t &x) {
+        // A reference through a component (`o%f(...)`) is not expanded: the
+        // final member is a binding or an array component, and only
+        // resolving it against the declared type tells which.
+        if (x.n_member > 0 || x.n_temp_args > 0) {
+            return nullptr;
+        }
+        std::string name = to_lower(x.m_func);
+        ASR::symbol_t *s = current_scope->resolve_symbol("~" + name);
+        if (s == nullptr) {
+            s = current_scope->resolve_symbol(name);
+        }
+        if (s == nullptr) {
+            return nullptr;
+        }
+        s = ASRUtils::symbol_get_past_external(s);
+        if (ASR::is_a<ASR::Function_t>(*s)
+                || ASR::is_a<ASR::GenericProcedure_t>(*s)
+                || ASR::is_a<ASR::StructMethodDeclaration_t>(*s)
+                // A procedure pointer and a dummy procedure are references
+                // too, and their dummy arguments are as definable as any
+                || ASRUtils::is_symbol_procedure_variable(s)) {
+            return s;
+        }
+        return nullptr;
+    }
+
+    // Handles a conditional argument of a function reference, if there is
+    // one. The reference is duplicated into the arms of a conditional
+    // expression, which already evaluates only the arm that is chosen, so
+    // this needs no statement of its own. Returns true when the reference was
+    // replaced, in which case `tmp` holds the result.
+    bool handle_conditional_arg_function(const AST::FuncCallOrArray_t &x) {
+        int64_t idx = first_conditional_arg(x.m_args, x.n_args, x.m_keywords,
+            x.n_keywords);
+        if (idx < 0) {
+            return false;
+        }
+        ASR::symbol_t *proc = referenced_procedure(x);
+        if (proc == nullptr) {
+            return false;
+        }
+        AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(
+            conditional_arg_at(x.m_args, x.n_args, x.m_keywords, idx));
+        check_conditional_arg(c);
+        check_conditional_arg_consequents(c);
+        if (ASR::is_a<ASR::GenericProcedure_t>(*proc)) {
+            check_conditional_arg_generic(c);
+        }
+        AST::expr_t *arms[2] = {c->m_body, c->m_orelse};
+        AST::expr_t *calls[2];
+        for (int i = 0; i < 2; i++) {
+            AST::fnarg_t *new_args;
+            AST::keyword_t *new_kwargs;
+            copy_args_with_consequent(x.m_args, x.n_args, x.m_keywords,
+                x.n_keywords, idx, arms[i], new_args, new_kwargs);
+            calls[i] = AST::down_cast<AST::expr_t>(AST::make_FuncCallOrArray_t(
+                al, x.base.base.loc, x.m_func, x.m_member, x.n_member,
+                new_args, x.n_args, new_kwargs, x.n_keywords, x.m_subargs,
+                x.n_subargs, x.m_temp_args, x.n_temp_args));
+        }
+        AST::ast_t *selection = AST::make_ConditionalExpr_t(al,
+            x.base.base.loc, c->m_test, calls[0], calls[1]);
+        this->visit_expr(*AST::down_cast<AST::expr_t>(selection));
+        return true;
+    }
+
+    // `.nil.` is a token of its own (6.2.1) and is not an expression: R1527
+    // allows it only as a consequent of a conditional argument, where it
+    // means that the dummy argument is not present. Every other position
+    // reaches this.
+    void visit_Nil(const AST::Nil_t &x) {
+        diag.add(Diagnostic(
+            "`.nil.` is only allowed as a consequent of a conditional "
+            "argument",
+            Level::Error, Stage::Semantic, {
+                Label("a conditional argument is an actual argument of the "
+                    "form `( cond ? a : .nil. )` (Fortran 2023 R1527)",
+                    {x.base.base.loc})}));
+        throw SemanticAbort();
     }
 
     void visit_Logical(const AST::Logical_t &x) {
@@ -19700,6 +20790,9 @@ public:
     void visit_String(const AST::String_t &x) {
         int s_len = strlen(x.m_s);
         int kind = 1;
+        // `s_len` is fixed up below once `kind` is known: a kind > 1 literal
+        // holds UTF-8 in ASR, so its Fortran length is the number of code
+        // points, not the number of bytes.
         if (x.m_kind) {
             kind = std::atoi(x.m_kind);
             if (kind == 0) {
@@ -19747,6 +20840,15 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (!ASRUtils::is_supported_character_kind(kind)) {
+            diag.add(Diagnostic("kind " + std::to_string(kind) +
+                " is not supported for character, only 1 and 4 are",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (kind > 1) {
+            s_len = (int)utf8_codepoint_count(x.m_s);
         }
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, kind, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, s_len,
@@ -20234,6 +21336,9 @@ public:
             existing_ft->m_arg_types = arg_type_arr;
             existing_ft->n_arg_types = n_arg_types;
             existing_ft->m_return_var_type = return_type;
+            // The interface is now known, so this is no longer a procedure
+            // known only by name.
+            existing_ft->m_deftype = ASR::deftypeType::Interface;
             iface_type = existing_fn->m_function_signature;
             existing_fn->m_args = args.p;
             existing_fn->n_args = args.size();
@@ -20242,7 +21347,8 @@ public:
             iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                 al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
                 ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
-                false, false, false, false, false, nullptr, 0, false));
+                false, false, false, false, false, nullptr, 0, false,
+                ASR::exec_spaceType::Host));
             ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_Function_t(
                     al, loc, fn_scope, s2c(al, iface_name),
@@ -20326,11 +21432,88 @@ public:
         (void)iface_type;
     }
 
-    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args) {
+    // True if `e` is a reference to the intrinsic `NULL()` without a `mold`
+    // argument, whose type therefore has to come from the context it is used in.
+    bool is_bare_null_intrinsic(AST::expr_t* e) {
+        if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
+            return false;
+        }
+        AST::FuncCallOrArray_t* f = AST::down_cast<AST::FuncCallOrArray_t>(e);
+        if( to_lower(f->m_func) != "null" || f->n_args != 0 ||
+            f->n_keywords != 0 || f->n_member != 0 ) {
+            return false;
+        }
+        // `null` may be shadowed by a user defined symbol
+        return current_scope->resolve_symbol("null") == nullptr;
+    }
+
+    // The dummy argument of `proc` that the `i`-th actual argument of a call
+    // corresponds to, or nullptr if it cannot be determined here (for example
+    // for a generic procedure, which is resolved later on).
+    ASR::Variable_t* get_dummy_argument(ASR::symbol_t* proc, size_t i) {
+        if( proc == nullptr ) {
+            return nullptr;
+        }
+        proc = ASRUtils::symbol_get_past_external(proc);
+        if( !ASR::is_a<ASR::Function_t>(*proc) ) {
+            return nullptr;
+        }
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(proc);
+        if( i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i]) ) {
+            return nullptr;
+        }
+        ASR::symbol_t* dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+        if( !ASR::is_a<ASR::Variable_t>(*dummy) ) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Variable_t>(dummy);
+    }
+
+    // `proc` is the procedure being called (if already resolved) and
+    // `dummy_offset` the number of its leading dummy arguments that `ast_list`
+    // does not supply (the passed object of a type bound call). Both are only
+    // used to give a bare `NULL()` actual argument its meaning.
+    void visit_expr_list(AST::fnarg_t *ast_list, size_t n, Vec<ASR::call_arg_t>& call_args,
+            ASR::symbol_t* proc = nullptr, size_t dummy_offset = 0) {
         call_args.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             LCOMPILERS_ASSERT(ast_list[i].m_end != nullptr);
+            // `.nil.` as the chosen consequent of a conditional argument
+            // means the dummy argument is not present (15.5.2.3), which is an
+            // argument that carries no value.
+            if (AST::is_a<AST::Nil_t>(*ast_list[i].m_end)) {
+                ASR::call_arg_t nil_arg;
+                nil_arg.loc = ast_list[i].m_end->base.loc;
+                nil_arg.m_value = nullptr;
+                call_args.push_back(al, nil_arg);
+                continue;
+            }
+            ASR::Variable_t* null_dummy = nullptr;
+            if( is_bare_null_intrinsic(ast_list[i].m_end) ) {
+                null_dummy = get_dummy_argument(proc, i + dummy_offset);
+            }
+            if( null_dummy != nullptr &&
+                null_dummy->m_presence == ASR::presenceType::Optional &&
+                !ASRUtils::is_pointer(null_dummy->m_type) &&
+                !ASRUtils::is_allocatable(null_dummy->m_type) ) {
+                // F2018 15.5.2.13: a `NULL()` actual argument corresponding to a
+                // non-pointer non-allocatable optional dummy argument means that
+                // the dummy argument is not present.
+                ASR::call_arg_t call_arg;
+                call_arg.loc = ast_list[i].m_end->base.loc;
+                call_arg.m_value = nullptr;
+                call_args.push_back(al, call_arg);
+                continue;
+            }
+            ASR::ttype_t* prev_variable_type = current_variable_type_;
+            if( null_dummy != nullptr ) {
+                // Otherwise `NULL()` is a disassociated pointer of the type of
+                // the dummy argument it is passed to.
+                current_variable_type_ = null_dummy->m_type;
+            }
             this->visit_expr(*ast_list[i].m_end);
+            current_variable_type_ = prev_variable_type;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
@@ -20427,9 +21610,18 @@ public:
             args.push_back(al, call_arg);
         }
 
+        // The indices whose argument carries no value because the consequent
+        // chosen for them is `.nil.`, as opposed to not being supplied at all.
+        std::vector<int> nil_args_idx;
         for (int i = 0; i < (int)n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            // `.nil.` leaves the argument with no value, which is how an
+            // absent optional argument is carried (15.5.2.3)
+            bool is_nil = AST::is_a<AST::Nil_t>(*kwargs[i].m_value);
+            ASR::expr_t *expr = nullptr;
+            if (!is_nil) {
+                this->visit_expr(*kwargs[i].m_value);
+                expr = ASRUtils::EXPR(tmp);
+            }
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
             if (search == fn_args2.end()) {
@@ -20455,8 +21647,12 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
-            args.p[idx].loc = expr->base.loc;
+            args.p[idx].loc = is_nil ? kwargs[i].m_value->base.loc
+                : expr->base.loc;
             args.p[idx].m_value = expr;
+            if (is_nil) {
+                nil_args_idx.push_back(idx);
+            }
         }
 
         // Ensure required arguments are provided, but skip optional ones
@@ -20464,6 +21660,14 @@ public:
             if (args[i].m_value == nullptr) {
                 // Skip checking if the argument is optional
                 if (std::find(optional_args_idx.begin(), optional_args_idx.end(), i) != optional_args_idx.end()) {
+                    continue;
+                }
+                // A `.nil.` consequent supplies the argument, it just gives
+                // it no value. C1540 is what it violates when the dummy
+                // argument is not optional, and the argument checks report
+                // that, the same as for a positional conditional argument.
+                if (std::find(nil_args_idx.begin(), nil_args_idx.end(), i)
+                        != nil_args_idx.end()) {
                     continue;
                 }
                 diag.semantic_error_label(
@@ -20477,27 +21681,20 @@ public:
     }
 
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
-        const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag) {
+        const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag,
+        bool cast_args = true) {
         fn = ASRUtils::symbol_get_past_external(fn);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn));
-        std::deque<std::string> constructor_args;
-        std::deque<ASR::symbol_t*> constructor_arg_syms;
-        ASR::Struct_t* fn_struct_type = ASR::down_cast<ASR::Struct_t>(fn);
-        while( fn_struct_type ) {
-            for( int i = (int) fn_struct_type->n_members - 1; i >= 0; i-- ) {
-                constructor_args.push_front(fn_struct_type->m_members[i]);
-                constructor_arg_syms.push_front(
-                    fn_struct_type->m_symtab->get_symbol(
-                        fn_struct_type->m_members[i]));
-            }
-            if( fn_struct_type->m_parent != nullptr ) {
-                ASR::symbol_t* fn_ = ASRUtils::symbol_get_past_external(
-                                        fn_struct_type->m_parent);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn_));
-                fn_struct_type = ASR::down_cast<ASR::Struct_t>(fn_);
-            } else {
-                fn_struct_type = nullptr;
-            }
+        StructConstructorInfo info = get_struct_constructor_info(fn);
+        const auto& constructor_arg_syms = info.members;
+        std::vector<std::string> constructor_args;
+        for (ASR::symbol_t* member : constructor_arg_syms) {
+            constructor_args.push_back(ASRUtils::symbol_name(member));
+        }
+        if (args.size() > constructor_args.size()) {
+            diag.semantic_error_label("too many arguments in derived type constructor",
+                {loc}, "more positional arguments than components and type parameters");
+            throw SemanticAbort();
         }
 
         int n_ = (int) constructor_args.size() - (int) args.size();
@@ -20547,7 +21744,9 @@ public:
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    default_init = arg_var->m_value;
+                    bool is_kind_param = std::find(info.kind_indices.begin(),
+                        info.kind_indices.end(), i) != info.kind_indices.end();
+                    default_init = is_kind_param ? arg_var->m_symbolic_value : arg_var->m_value;
                     if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
                     }
@@ -20570,7 +21769,7 @@ public:
             }
         }
 
-        for (size_t i = 0; i < constructor_arg_syms.size(); i++) {
+        for (size_t i = 0; cast_args && i < constructor_arg_syms.size(); i++) {
             if( args[i].m_value != nullptr ) {
                 ASR::symbol_t* member_sym = constructor_arg_syms[i];
                 ASR::ttype_t* member_type = ASRUtils::type_get_past_allocatable(
@@ -20684,6 +21883,12 @@ public:
                 }
             }
             i = x_n_member - 1;
+            ASR::asr_t* intrinsic_member = resolve_intrinsic_type_member(loc,
+                to_lower(x_m_id), ASRUtils::EXPR(tmp), to_lower(x_m_member[i].m_name));
+            if( intrinsic_member != nullptr ) {
+                tmp = intrinsic_member;
+                return;
+            }
             tmp2 = (ASR::StructInstanceMember_t*) this->resolve_variable2(loc, to_lower(x_m_id),
                         to_lower(x_m_member[i].m_name), scope);
             ASR::ttype_t* tmp2_mem_type = tmp2->m_type;
@@ -20793,7 +21998,7 @@ public:
                 array_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, array_section->base.base.loc,
                     tmp2->m_type, dims.p, dims.size(),
-                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray));
+                    ASRUtils::is_character(*tmp2->m_type)? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
         }
@@ -20902,9 +22107,18 @@ public:
                     str->m_physical_type = ASR::DescriptorString;
                 }
             } else {
-                this->visit_expr(*kind_item->m_value);
+                visit_restricted_expr(*kind_item->m_value,
+                    RestrictedExprContext::KindParameter);
                 ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
                 str->m_kind = ASRUtils::extract_kind<SemanticAbort>(kind_expr, kind_item->loc, diag);
+                if (!ASRUtils::is_supported_character_kind(str->m_kind)) {
+                    diag.add(diag::Diagnostic(
+                        "kind " + std::to_string(str->m_kind) +
+                        " is not supported for character, only 1 and 4 are",
+                        Level::Error, Stage::Semantic, {
+                        diag::Label("", {kind_item->loc})}));
+                    throw SemanticAbort();
+                }
                 str->m_physical_type = ASR::DescriptorString;
             }
         } else {
@@ -20921,9 +22135,15 @@ public:
                         len_item->m_value, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
                     } else { // Evaluate normally
                         _processing_char_len = true;
-                        this->visit_expr(*len_item->m_value);
+                        visit_restricted_expr(*len_item->m_value,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                        if (len_value) {
+                            str->m_len = len_value;
+                        } else {
+                            str->m_len = len_expr;
+                        }
                         _processing_char_len = false;
                         if (var_sym != nullptr &&
                                 ASR::is_a<ASR::Var_t>(*str->m_len) &&
@@ -20989,9 +22209,15 @@ public:
                         var_sym->m_length, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
                     } else { // Evaluate normally
                         _processing_char_len = true;
-                        this->visit_expr(*var_sym->m_length);
+                        visit_restricted_expr(*var_sym->m_length,
+                            RestrictedExprContext::CharacterLength);
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                        if (len_value) {
+                            str->m_len = len_value;
+                        } else {
+                            str->m_len = len_expr;
+                        }
                         _processing_char_len = false;
                         if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
                                 !ASRUtils::is_const(str->m_len)) {

@@ -1,69 +1,54 @@
 # IntegerConstant
 
-Integer literal constant, an `expr` node.
+An integer literal.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-IntegerConstant(int n, ttype type)
+```text
+IntegerConstant(int n, ttype type, integerboz intboz_type)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `n`           | value of integer |
-| `type`        | tabel entry type |
+| Argument | Description |
+|----------|-------------|
+| `n` | the value. |
+| `type` | the integer type, which fixes the kind and therefore the range of the constant. |
+| `intboz_type` | how the constant was written: `Decimal`, or `Binary`, `Octal` or `Hex` for a BOZ literal; see [integerboz](../enum_nodes/integerboz.md). |
 
 ### Return values
 
-The return value is the expression that the IntegerConstant represents.
+The value of the expression.
 
 ## Description
 
-**IntegerConstant** represents integer constant which consists of a optional
-plus or minus sign, followed by a string of decimal digits. No other characters
-are allowed except, a space. If no sign is present, the constant is assumed to
-be non negative.
+The value is stored as a number, not as text, so a BOZ literal such as
+`z'ff'` is an **IntegerConstant** with `n` equal to 255. `intboz_type` records
+only how it was spelled, which matters for diagnostics and for unparsing but
+not for code generation.
 
-The value must be in the `INTEGER*4` range (-2147483648, 2147483647).
-
-If `INTEGER*8` range is (-9223372036854775808,9223372036854775807).
-
-## Types
-
-Only accepts integers.
+An **IntegerConstant** has no `value` member because it is its own value.
 
 ## Examples
 
-
-```fortran
-+199
-29002
--2147483648
+```clojure
+(IntegerConstant
+  :n 255
+  :type (Integer
+    :kind 4
+  )
+  :intboz_type :Hex
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(IntegerConstant 199 (Integer 4 []))
-    (IntegerConstant 29002 (Integer 4 []))
-    (IntegerUnaryMinus
-        (IntegerConstant 2147483648 (Integer 4 []))
-        (Integer 4 [])
-        (IntegerConstant -2147483648 (Integer 4 []))
-    )]
-)
+```{literalinclude} ../../examples/integer_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[RealConstant](RealConstant.md), [ComplexConstant](ComplexConstant.md).
+[RealConstant](RealConstant.md), [LogicalConstant](LogicalConstant.md), [integerboz](../enum_nodes/integerboz.md), [Integer](../type_nodes/Integer.md)

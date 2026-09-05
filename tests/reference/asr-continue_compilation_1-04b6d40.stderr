@@ -11,10 +11,10 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-   --> tests/errors/continue_compilation_1.f90:978:7
-    |
-978 |       foo    end type t_recovery
-    |       ^^^ 
+    --> tests/errors/continue_compilation_1.f90:1153:7
+     |
+1153 |       foo    end type t_recovery
+     |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
@@ -544,6 +544,78 @@ semantic error: equivalence between a common block variable and this array eleme
 949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
 
+semantic error: a conditional expression is not allowed in a constant expression
+    --> tests/errors/continue_compilation_1.f90:1103:36
+     |
+1103 |         integer, parameter :: cx = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+     |                                    ^^^^^^^^^^^^^^^^^^ an initialization expression shall be a constant expression (Fortran 2023 C1012)
+     |
+1103 |         integer, parameter :: cx = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+     |                                    ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: a conditional expression is not allowed in a constant expression
+    --> tests/errors/continue_compilation_1.f90:1104:25
+     |
+1104 |         integer :: cy = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+     |                         ^^^^^^^^^^^^^^^^^^ an initialization expression shall be a constant expression (Fortran 2023 C1012)
+     |
+1104 |         integer :: cy = ( .true. ? 1 : 0 )  ! {Error} a conditional expression is not allowed in a constant expression
+     |                         ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: a conditional expression is not allowed in a constant expression
+    --> tests/errors/continue_compilation_1.f90:1109:24
+     |
+1109 |         integer(kind = ( .true. ? 4 : 8 )) :: ck  ! {Error} a conditional expression is not allowed in a constant expression
+     |                        ^^^^^^^^^^^^^^^^^^ a kind type parameter shall be a constant expression (Fortran 2023 C701)
+     |
+1109 |         integer(kind = ( .true. ? 4 : 8 )) :: ck  ! {Error} a conditional expression is not allowed in a constant expression
+     |                        ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: a conditional expression is not allowed in a constant expression
+    --> tests/errors/continue_compilation_1.f90:1110:26
+     |
+1110 |         character(kind = ( .true. ? 1 : 4 ), len = 2) :: cc  ! {Error} a conditional expression is not allowed in a constant expression
+     |                          ^^^^^^^^^^^^^^^^^^ a kind type parameter shall be a constant expression (Fortran 2023 C701)
+     |
+1110 |         character(kind = ( .true. ? 1 : 4 ), len = 2) :: cc  ! {Error} a conditional expression is not allowed in a constant expression
+     |                          ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: a conditional expression is not allowed in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1116:25
+     |
+1116 |         character(len = ( n>0 ? n : 1 )) :: cs  ! {Error} a conditional expression is not allowed in a specification expression
+     |                         ^^^^^^^^^^^^^^^ a type parameter value shall be a specification expression (Fortran 2023 C704)
+     |
+1116 |         character(len = ( n>0 ? n : 1 )) :: cs  ! {Error} a conditional expression is not allowed in a specification expression
+     |                         ~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.11 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: a conditional expression is not allowed in a specification expression
+    --> tests/errors/continue_compilation_1.f90:1117:24
+     |
+1117 |         integer :: ca( ( n>0 ? n : 1 ) )  ! {Error} a conditional expression is not allowed in a specification expression
+     |                        ^^^^^^^^^^^^^^^ an array bound shall be a specification expression
+     |
+1117 |         integer :: ca( ( n>0 ? n : 1 ) )  ! {Error} a conditional expression is not allowed in a specification expression
+     |                        ~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.11 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
+semantic error: kind 2 is not supported for character, only 1 and 4 are
+    --> tests/errors/continue_compilation_1.f90:1140:19
+     |
+1140 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
+
+semantic error: kind 3 is not supported for character, only 1 and 4 are
+    --> tests/errors/continue_compilation_1.f90:1141:19
+     |
+1141 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
+
+semantic error: kind 8 is not supported for character, only 1 and 4 are
+    --> tests/errors/continue_compilation_1.f90:1142:19
+     |
+1142 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+     |                   ^^^^^^ 
+
 semantic error: Symbol 'undeclared_proc' not declared
    --> tests/errors/continue_compilation_1.f90:640:9
     |
@@ -551,10 +623,16 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-   --> tests/errors/continue_compilation_1.f90:981:7
-    |
-981 |       class(t_recovery), intent(in) :: self
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    --> tests/errors/continue_compilation_1.f90:1156:7
+     |
+1156 |       class(t_recovery), intent(in) :: self
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol 'bad_op' not declared
+ --> tests/errors/continue_compilation_1.f90:1:2
+  |
+1 | ! If you need a function, put it into the module below and remove the same
+  |  ^ 
 
 semantic error: Symbol 'bad_op' not declared
  --> tests/errors/continue_compilation_1.f90:1:2
@@ -1883,3 +1961,150 @@ semantic error: The implied do loop variable 'r_idx' must be a scalar integer, n
     |
 966 |         values = [(real(r_idx), r_idx = 1, 3)]  ! {Error} The implied do loop variable 'r_idx' must be a scalar integer, not real(4)
     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operands of // must be character with the same kind, found character(4) and character(1)
+   --> tests/errors/continue_compilation_1.f90:976:18
+    |
+976 |         print *, wide // narrow  ! {Error} operands of // must be character with the same kind, found character(4) and character(1)
+    |                  ^^^^^^^^^^^^^^ 
+
+semantic error: operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+   --> tests/errors/continue_compilation_1.f90:985:13
+    |
+985 |         if (wide == narrow) print *, "eq"  ! {Error} operands of comparison operator '==' must be character with the same kind, found character(4) and character(1)
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: kind 3 is not supported for character, only 1 and 4 are
+   --> tests/errors/continue_compilation_1.f90:991:13
+    |
+991 |         s = 3_"abc"  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+    |             ^^^^^^^ 
+
+semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1006:18
+     |
+1006 |         print *, d%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+     |                  ^^^^^^^^^ 
+
+semantic error: Character variable 's' only has %len and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1007:18
+     |
+1007 |         print *, d%s%bogus  ! {Error} Character variable 's' only has %len and %kind members, not 'bogus'
+     |                  ^^^^^^^^^ 
+
+semantic error: Variable 'i' doesn't have any member named, 'bogus'.
+    --> tests/errors/continue_compilation_1.f90:1008:18
+     |
+1008 |         print *, d%i%bogus  ! {Error} Variable 'i' doesn't have any member named, 'bogus'.
+     |                  ^^^^^^^^^ 
+
+semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+    --> tests/errors/continue_compilation_1.f90:1009:18
+     |
+1009 |         print *, o%in%c%bogus  ! {Error} Complex variable 'c' only has %re, %im, and %kind members, not 'bogus'
+     |                  ^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1016:13
+     |
+1016 |         r = maxval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1017:13
+     |
+1017 |         r = minval(c, dim=1)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1018:13
+     |
+1018 |         s = maxval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MaxVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+    --> tests/errors/continue_compilation_1.f90:1019:13
+     |
+1019 |         s = minval(c, mask=.false.)  ! {Error} `dim` and `mask` arguments to `MinVal` are not implemented yet for arrays of character type
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the arms of a conditional expression must have the same type and kind
+    --> tests/errors/continue_compilation_1.f90:1028:24
+     |
+1028 |         x = ( .true. ? 1 : 1.0 )  ! {Error} the arms of a conditional expression must have the same type and kind
+     |                        ^   ^^^ type mismatch (integer(4) and real(4))
+
+semantic error: the arms of a conditional expression must have the same type and kind
+    --> tests/errors/continue_compilation_1.f90:1041:24
+     |
+1041 |         x = ( .true. ? a : b )  ! {Error} the arms of a conditional expression must have the same type and kind
+     |                        ^   ^ type mismatch (integer(4) and integer(8))
+
+semantic error: the arms of a conditional expression must have the same type and kind
+    --> tests/errors/continue_compilation_1.f90:1043:24
+     |
+1043 |         c = ( .true. ? c1 : c4 )  ! {Error} the arms of a conditional expression must have the same type and kind
+     |                        ^^   ^^ type mismatch (string(kind=1) and string(kind=4))
+
+semantic error: the arms of a conditional expression must have the same type and kind
+    --> tests/errors/continue_compilation_1.f90:1045:24
+     |
+1045 |         l = ( .true. ? l4 : l8 )  ! {Error} the arms of a conditional expression must have the same type and kind
+     |                        ^^   ^^ type mismatch (logical(kind=4) and logical(kind=8))
+
+semantic error: the arms of a conditional expression must have the same rank
+    --> tests/errors/continue_compilation_1.f90:1052:29
+     |
+1052 |         print *, ( .true. ? a : b )  ! {Error} the arms of a conditional expression must have the same rank
+     |                             ^   ^ rank mismatch (0 and 1)
+
+semantic error: the arms of a conditional expression must have the same declared type
+    --> tests/errors/continue_compilation_1.f90:1066:29
+     |
+1066 |         print *, ( .true. ? e : b )  ! {Error} the arms of a conditional expression must have the same declared type
+     |                             ^   ^ type mismatch (cond_ext and cond_base)
+
+semantic error: the condition of a conditional expression must be logical
+    --> tests/errors/continue_compilation_1.f90:1072:15
+     |
+1072 |         x = ( 1 ? 2 : 3 )  ! {Error} the condition of a conditional expression must be logical
+     |               ^ this condition is integer(4)
+
+semantic error: the condition of a conditional expression must be scalar
+    --> tests/errors/continue_compilation_1.f90:1081:20
+     |
+1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
+     |                    ^ this condition is logical[:]
+     |
+1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
+     |                    ~ help: use `merge` to select elementwise with an array mask
+
+semantic error: a conditional expression cannot be a pointer assignment target
+    --> tests/errors/continue_compilation_1.f90:1091:14
+     |
+1091 |         p => ( .true. ? a : b )  ! {Error} a conditional expression cannot be a pointer assignment target
+     |              ^^^^^^^^^^^^^^^^^^ this is a value, not a target or a pointer
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1129:18
+     |
+1129 |         print *, parameterized_t(4, 8)(1)  ! {Error} too many arguments in parameterized derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1130:18
+     |
+1130 |         print *, parameterized_t(4)(1, 2)  ! {Error} too many arguments in parameterized derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1131:18
+     |
+1131 |         print *, plain_t(1, 2)  ! {Error} too many arguments in derived type constructor
+     |                  ^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1132:18
+     |
+1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters

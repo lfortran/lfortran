@@ -11,6 +11,9 @@ cmake -E copy_directory share $dest/share
 cmake -E copy_directory cmake $dest/cmake
 cmake -E copy_directory examples $dest/examples
 cmake -E copy_directory doc/man $dest/doc/man
+# tests/asr/check_docs.py reads the ASR node documentation, so the
+# tarball has to carry it for `ctest` to be able to run that test.
+cmake -E copy_directory doc/src/asr $dest/doc/src/asr
 cmake -E copy_directory tests/asr $dest/tests/asr
 
 # Copy Files:

@@ -1949,7 +1949,7 @@ namespace LCompilers {
 
             // type code and attribute from parameters
             builder->CreateStore(
-                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), type_code),
+                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), type_code, true),
                 llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_TYPE));
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), cfi_attr),

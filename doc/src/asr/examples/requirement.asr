@@ -1,0 +1,161 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "r" (Requirement
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "op" (Function
+                    :symtab (SymbolTable
+                      :id 3
+                      :symbols {
+                        "x" (Variable
+                          :parent_symtab 3
+                          :name "x"
+                          :dependencies []
+                          :intent :In
+                          :symbolic_value nil
+                          :value nil
+                          :storage :Default
+                          :type (TypeParameter
+                            :param "t"
+                          )
+                          :type_declaration nil
+                          :abi :Source
+                          :access :Public
+                          :presence :Required
+                          :value_attr false
+                          :target_attr false
+                          :contiguous_attr false
+                          :bindc_name nil
+                          :is_volatile false
+                          :is_protected false
+                          :pass_attr :NotMethod
+                          :self_argument nil
+                          :codims []
+                        )
+                        "z" (Variable
+                          :parent_symtab 3
+                          :name "z"
+                          :dependencies []
+                          :intent :ReturnVar
+                          :symbolic_value nil
+                          :value nil
+                          :storage :Default
+                          :type (TypeParameter
+                            :param "t"
+                          )
+                          :type_declaration nil
+                          :abi :Source
+                          :access :Public
+                          :presence :Required
+                          :value_attr false
+                          :target_attr false
+                          :contiguous_attr false
+                          :bindc_name nil
+                          :is_volatile false
+                          :is_protected false
+                          :pass_attr :NotMethod
+                          :self_argument nil
+                          :codims []
+                        )
+                      }
+                    )
+                    :name "op"
+                    :function_signature (FunctionType
+                      :arg_types [
+                        (TypeParameter
+                          :param "t"
+                        )
+                      ]
+                      :return_var_type (TypeParameter
+                        :param "t"
+                      )
+                      :abi :Source
+                      :deftype :Implementation
+                      :bindc_name nil
+                      :elemental false
+                      :pure false
+                      :module false
+                      :inline false
+                      :static false
+                      :restrictions []
+                      :is_restriction false
+                      :exec_space :Host
+                    )
+                    :dependencies []
+                    :args [
+                      (Var
+                        :v (SymbolRef 3 "x")
+                      )
+                    ]
+                    :body []
+                    :return_var (Var
+                      :v (SymbolRef 3 "z")
+                    )
+                    :access :Public
+                    :deterministic false
+                    :side_effect_free false
+                    :module_file nil
+                  )
+                  "t" (Variable
+                    :parent_symtab 2
+                    :name "t"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (TypeParameter
+                      :param "t"
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "r"
+              :args [
+                "t"
+                "op"
+              ]
+              :requires []
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 4
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)
