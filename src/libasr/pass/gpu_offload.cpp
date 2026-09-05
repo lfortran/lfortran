@@ -20,7 +20,6 @@
 
 #include <deque>
 #include <filesystem>
-#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -31,84 +30,7 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
-// `--gpu-offload-report`. Every `do concurrent` that does not end up as a
-// GPU kernel of its own is reported on stderr with the source position, the
-// enclosing procedure and a `reason=` tag. A loop that device code has to
-// run in order is reported too, under its own reason, so a loop running
-// serially *on the device* can be told apart from one left on the host.
-//
-// The state is per-run and set once by the visitor's constructor, so every
-// report site costs a single bool test while the report is off.
 namespace {
-
-struct GpuOffloadReport {
-    static bool enabled;
-    static const LocationManager *lm;
-    // Extra `key=value` fields for the next report, filled in by the
-    // analysis that found the obstruction.
-    static std::string detail;
-
-    static void configure(const PassOptions &po) {
-        enabled = po.gpu_offload_report;
-        lm = po.loc_manager;
-        detail.clear();
-    }
-
-    // Whether the region being decided has already had its line. The
-    // guard below turns this into the promise that every region gets one.
-    static bool reported;
-
-    static void set_detail(const std::string &d) {
-        if (enabled) detail = d;
-    }
-
-    static void clear_detail() {
-        detail.clear();
-    }
-
-    // Where a loop is, as the source spells it.
-    static std::string site(const Location &loc) {
-        if (lm != nullptr && !lm->files.empty()) {
-            uint32_t line = 0, col = 0;
-            std::string filename;
-            lm->pos_to_linecol(lm->output_to_input_pos(loc.first, false),
-                line, col, filename);
-            return filename + ":" + std::to_string(line) + ":"
-                + std::to_string(col);
-        }
-        return "<offset " + std::to_string(loc.first) + ">";
-    }
-
-    // One line for a loop the device runs as a kernel of its own. Every
-    // parallel loop the pass sees is reported, whichever way it went, so
-    // the report answers "was anything left behind?" on its own rather
-    // than by being compared against a count of the source.
-    static void emit_offloaded(const Location &loc, const std::string &proc,
-            const std::string &kernel) {
-        if (!enabled) return;
-        std::cerr << "gpu-offload-report: " << site(loc)
-                  << ": do concurrent status=device"
-                  << " proc=" << proc << " kernel=" << kernel << std::endl;
-        reported = true;
-        detail.clear();
-    }
-
-    // `on_device` distinguishes a loop the device runs serially from one
-    // that falls back to the host altogether.
-    static void emit(const Location &loc, const std::string &proc,
-            const std::string &reason, bool on_device = false) {
-        if (!enabled) return;
-        std::cerr << "gpu-offload-report: " << site(loc) << ": do concurrent"
-                  << " status=" << (on_device ? "device-serial" : "host")
-                  << " proc=" << proc << " reason=" << reason;
-        if (!detail.empty()) {
-            std::cerr << " " << detail;
-        }
-        std::cerr << std::endl;
-        reported = true;
-        detail.clear();
-    }
-};
 
 // Hands a body rewrite the loop's statements and writes whatever it made
 // of them back into the loop. The rewrites report their result by moving
@@ -126,33 +48,6 @@ public:
 
     ~NestBodyWriteBack() { nest.set_body(body, n_body); }
 };
-
-// Reports the region on the way out of the decision if nothing else did,
-// so that a report with no line for a loop means the loop was never
-// offered to the pass -- not that some exit forgot to say why.
-class GpuRegionReportGuard {
-public:
-    Location loc;
-    std::string proc;
-    bool saved;
-
-    GpuRegionReportGuard(const Location &loc_, const std::string &proc_)
-        : loc(loc_), proc(proc_), saved(GpuOffloadReport::reported) {
-        GpuOffloadReport::reported = false;
-    }
-
-    ~GpuRegionReportGuard() {
-        if (!GpuOffloadReport::reported) {
-            GpuOffloadReport::emit(loc, proc, "not offloaded");
-        }
-        GpuOffloadReport::reported = saved;
-    }
-};
-
-bool GpuOffloadReport::enabled = false;
-bool GpuOffloadReport::reported = false;
-const LocationManager *GpuOffloadReport::lm = nullptr;
-std::string GpuOffloadReport::detail;
 
 // `inline_device_function_calls` splices a device callee into the loop
 // body by replacing whole statement vectors -- the loop's own and that of
@@ -841,7 +736,6 @@ class GpuLocalArrayChecker :
         public ASR::BaseWalkVisitor<GpuLocalArrayChecker> {
 public:
     bool has_unsized_local_array = false;
-    // Name of the first offending local, for --gpu-offload-report.
     std::string unsized_name;
 
     // True when every extent of the array is present as an expression,
@@ -2895,26 +2789,7 @@ public:
 
     GpuOffloadVisitor(Allocator &al, PassOptions pass_options_,
                       ASR::TranslationUnit_t &tu_)
-        : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {
-        GpuOffloadReport::configure(pass_options);
-    }
-
-    // Name of the procedure the loop being visited sits in, for
-    // --gpu-offload-report. BLOCK and ASSOCIATE scopes are skipped: they
-    // are not what a user calls the enclosing procedure.
-    std::string report_enclosing_proc() const {
-        SymbolTable *scope = current_scope;
-        while (scope && scope->asr_owner
-                && scope->asr_owner->type == ASR::asrType::symbol) {
-            ASR::symbol_t *owner = down_cast<ASR::symbol_t>(scope->asr_owner);
-            if (!ASR::is_a<ASR::Block_t>(*owner)
-                    && !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                return ASRUtils::symbol_name(owner);
-            }
-            scope = scope->parent;
-        }
-        return "<global>";
-    }
+        : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
 
     // Load any module dependencies of a loaded submodule TU into
     // the main TU's symbol table so that fix_external_symbols can
@@ -3882,9 +3757,6 @@ public:
     // memory. The same holds for a loop already lifted into a kernel.
     // Both are sequentialized here, before this round rewrites anything,
     // so the decision is made on intact ASR.
-    // The procedure the region being decided belongs to, for the report.
-    std::string report_proc_name;
-
     std::set<ASR::OMPRegion_t*> serial_regions;
     std::set<ASR::Function_t*> device_reachable_functions;
 
@@ -3907,15 +3779,6 @@ public:
             }
         };
         GpuParallelRegionCollector blocked;
-        // Owner of each blocked loop, for --gpu-offload-report only.
-        std::map<const ASR::OMPRegion_t*, std::string> blocked_owner;
-        auto note_owner = [&](const GpuParallelRegionCollector &c,
-                const std::string &owner) {
-            if (!GpuOffloadReport::enabled) return;
-            for (const ASR::OMPRegion_t *loop : c.loops) {
-                blocked_owner.emplace(loop, owner);
-            }
-        };
         for (auto &item : tu.m_symtab->get_scope()) {
             if (!ASRUtils::is_device_kernel(item.second)) continue;
             ASR::Function_t *k =
@@ -3925,7 +3788,6 @@ public:
             for (size_t i = 0; i < k->n_body; i++) {
                 in_kernel.visit_stmt(*k->m_body[i]);
             }
-            note_owner(in_kernel, item.first);
             blocked.loops.insert(in_kernel.loops.begin(),
                 in_kernel.loops.end());
         }
@@ -3948,15 +3810,10 @@ public:
             for (size_t i = 0; i < fn->n_body; i++) {
                 in_fn.visit_stmt(*fn->m_body[i]);
             }
-            note_owner(in_fn, fn->m_name);
             blocked.loops.insert(in_fn.loops.begin(), in_fn.loops.end());
         }
         for (ASR::OMPRegion_t *loop : blocked.loops) {
-            if (!serial_regions.insert(loop).second) continue;
-            auto owner = blocked_owner.find(loop);
-            GpuOffloadReport::emit(loop->base.base.loc,
-                owner == blocked_owner.end() ? "<unknown>" : owner->second,
-                "sequentialized-for-device", true);
+            serial_regions.insert(loop);
         }
         GpuSerialRegionMarker::run(serial_regions);
     }
@@ -4043,40 +3900,34 @@ public:
     // Can this callee's body be spliced verbatim into the caller?
     static bool can_inline_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc) {
-        std::string callee = fn ? std::string(fn->m_name) : std::string("?");
-        auto decline = [&](const char *sub) {
-            GpuOffloadReport::set_detail(std::string("sub=") + sub
-                + " callee=" + callee);
-            return false;
-        };
         if (!fn || !fn->m_return_var || fn->n_body == 0) {
-            return decline("callee-no-return-var-or-empty-body");
+            return false;
         }
         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         if (ft->m_abi != ASR::abiType::Source) {
-            return decline("callee-abi-not-source");
+            return false;
         }
         if (ft->m_deftype != ASR::deftypeType::Implementation) {
-            return decline("callee-not-implementation");
+            return false;
         }
         if (fn->n_args != fc->n_args) {
-            return decline("callee-arg-count-mismatch");
+            return false;
         }
         for (size_t i = 0; i < fc->n_args; i++) {
             // An absent optional actual has no expression to substitute.
             if (!fc->m_args[i].m_value) {
-                return decline("callee-absent-optional-actual");
+                return false;
             }
         }
         for (size_t i = 0; i < fn->n_args; i++) {
             if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
-                return decline("callee-dummy-not-var");
+                return false;
             }
         }
         std::vector<ASR::symbol_t*> nested;
         if (!collect_flattened_scopes(fn->m_body, fn->n_body, nested)) {
-            return decline("callee-nested-scope-not-flattenable");
+            return false;
         }
         std::set<ASR::symbol_t*> flattened(nested.begin(), nested.end());
         // Every symbol the callee owns, in its own scope and in each
@@ -4104,17 +3955,11 @@ public:
                 if (ASR::is_a<ASR::Block_t>(*item.second) ||
                         ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
                     if (!flattened.count(item.second)) {
-                        GpuOffloadReport::set_detail(
-                            "sub=callee-nested-scope-unreached callee="
-                            + callee + " sym=" + item.first);
                         return false;
                     }
                     continue;
                 }
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    GpuOffloadReport::set_detail(
-                        "sub=callee-symtab-has-non-variable callee=" + callee
-                        + " sym=" + item.first);
                     return false;
                 }
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
@@ -4122,9 +3967,6 @@ public:
                 // SAVE state must persist across calls; inlining would
                 // give every call site its own copy.
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    GpuOffloadReport::set_detail(
-                        "sub=callee-save-local callee=" + callee
-                        + " sym=" + item.first);
                     return false;
                 }
             }
@@ -4145,10 +3987,10 @@ public:
                 rc.visit_stmt(*body[i]);
             }
         }
-        if (rc.count > 1) return decline("callee-multiple-returns");
+        if (rc.count > 1) return false;
         if (rc.count == 1 &&
                 !ASR::is_a<ASR::Return_t>(*fn->m_body[fn->n_body - 1])) {
-            return decline("callee-return-not-last");
+            return false;
         }
         return true;
     }
@@ -4229,14 +4071,9 @@ public:
                 // spliced; one nested inside a larger expression would
                 // need a temporary the caller does not have.
                 if (call != top) {
-                    GpuOffloadReport::set_detail(
-                        "sub=call-not-top-level-value callee="
-                        + std::string(callee->m_name));
                     return false;
                 }
                 if (on_stack.count(callee)) {
-                    GpuOffloadReport::set_detail("sub=callee-recursive callee="
-                        + std::string(callee->m_name));
                     return false;
                 }
                 if (!can_inline_device_function(callee, call)) return false;
@@ -9297,10 +9134,6 @@ public:
     // offloaded must still compile and run. Report why it was left on the
     // host rather than build a kernel that would quietly do something else.
     void report_not_offloaded(const Location &where, const std::string &why) {
-        // The audit line and the warning say the same thing, so they are
-        // said together: a reason good enough for the user is the reason
-        // the report should carry too.
-        GpuOffloadReport::emit(where, report_proc_name, why);
         if (pass_options.diagnostics == nullptr) return;
         pass_options.diagnostics->message_label(
             "parallel loop not offloaded to the GPU, "
@@ -9885,18 +9718,6 @@ public:
             return;
         }
 
-        GpuOffloadReport::clear_detail();
-        std::string report_proc;
-        if (GpuOffloadReport::enabled) report_proc = report_enclosing_proc();
-        report_proc_name = report_proc;
-        GpuRegionReportGuard report_guard(region.base.base.loc, report_proc);
-        // A region device code has to run was already reported when it was
-        // handed to the device to run serially. Reaching it again here is
-        // that same decision arriving, not a second one to report.
-        if (serial_regions.count(const_cast<ASR::OMPRegion_t*>(&region))) {
-            GpuOffloadReport::reported = true;
-        }
-
         // Only the regions the dispatch pass gave to the device. Every other
         // exit of this function leaves the region alone, and the regions
         // still marked for the device once the pass is done are the ones it
@@ -9935,15 +9756,14 @@ public:
         // 3-D shape of the underlying dispatch grid therefore does not limit
         // the number of loop indices.
         if (n_dims == 0) {
-            GpuOffloadReport::emit(loc, report_proc, "no-loop-index");
+            report_not_offloaded(loc, "the loop has no index");
             return;
         }
 
         for (size_t d = 0; d < n_dims; d++) {
             if (!nest.head(d).m_v || !nest.head(d).m_start ||
                     !nest.head(d).m_end) {
-                GpuOffloadReport::emit(loc, report_proc,
-                    "loop-head-incomplete");
+                report_not_offloaded(loc, "the loop head is incomplete");
                 return;
             }
         }
@@ -9975,9 +9795,9 @@ public:
         // copied and it is the copy that is rewritten, the original
         // standing until the launch replaces it.
         //
-        // A BLOCK is left uncopied: it is a scope, and the kernel takes the
-        // scope itself rather than a copy of it. The snapshot further down
-        // is what keeps the host's blocks intact if the launch is declined.
+        // A BLOCK in the nest is copied with it. The kernel takes that copy
+        // and the host keeps its own, so a rewrite on the way to a kernel
+        // cannot reach the host, and a decline has nothing to put back.
         ParallelLoopNest work;
         kernel_block_names.clear();
         {
@@ -10250,8 +10070,8 @@ public:
             // the chain on unchanged reaches the device as a component of
             // the wrong element, which is a wrong number and no
             // diagnostic, so decline the loop instead.
-            GpuOffloadReport::emit(loc, report_proc,
-                "struct-element-cannot-be-gathered");
+            report_not_offloaded(loc,
+                "a derived-type element cannot be gathered for the gpu");
             return;
         }
 
@@ -10274,9 +10094,9 @@ public:
             for (auto &sym : candidate_syms) {
                 if (!is_metal_representable_type(sym.second.first,
                         sym.second.second)) {
-                    GpuOffloadReport::set_detail("sym=" + sym.first);
-                    GpuOffloadReport::emit(loc, report_proc,
-                        "type-not-metal-representable");
+                    report_not_offloaded(loc,
+                        "the type of '" + sym.first +
+                        "' is not representable on the gpu");
                     return;
                 }
             }
@@ -10285,10 +10105,9 @@ public:
                 local_array_checker.visit_stmt(*work.body[i]);
             }
             if (local_array_checker.has_unsized_local_array) {
-                GpuOffloadReport::set_detail(
-                    "sym=" + local_array_checker.unsized_name);
-                GpuOffloadReport::emit(loc, report_proc,
-                    "unsized-local-array");
+                report_not_offloaded(loc,
+                    "local array '" + local_array_checker.unsized_name +
+                    "' has no extent the gpu can use");
                 return;
             }
             // An array assignment whose two sides overlap the same array
@@ -10300,8 +10119,8 @@ public:
                 alias_arg_names);
             if (body_needs_unsupported_alias_temp(work.body, work.n_body,
                     true, alias_arg_names)) {
-                GpuOffloadReport::emit(loc, report_proc,
-                    "runtime-sized-alias-temp");
+                report_not_offloaded(loc,
+                    "an aliased assignment needs a run-time sized temporary");
                 return;
             }
             // A strided section actual argument is gathered into a
@@ -10309,8 +10128,8 @@ public:
             // cannot be sized at compile time the gather is impossible,
             // and passing the section on would silently drop its stride.
             if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
-                GpuOffloadReport::emit(loc, report_proc,
-                    "strided-section-cannot-be-gathered");
+                report_not_offloaded(loc,
+                    "a strided section cannot be gathered for the gpu");
                 return;
             }
             // A device function may need a run-time sized local -- an
@@ -10332,8 +10151,8 @@ public:
                     // result). Emitting a shader that cannot compile
                     // would be worse than not offloading at all.
                     functions_to_inline.clear();
-                    GpuOffloadReport::emit(loc, report_proc,
-                        "device-function-cannot-be-inlined");
+                    report_not_offloaded(loc,
+                        "a device function cannot be inlined");
                     return;
                 }
             }
@@ -10391,9 +10210,9 @@ public:
             if (!gpu_block_workspace_extents_resolvable(work.body,
                     work.n_body, kernel_arg_names, unresolved_name)) {
                 restore_loop();
-                GpuOffloadReport::set_detail("sym=" + unresolved_name);
-                GpuOffloadReport::emit(loc, report_proc,
-                    "workspace-extent-unresolvable");
+                report_not_offloaded(loc,
+                    "workspace '" + unresolved_name +
+                    "' cannot be sized on the host");
                 return;
             }
         }
@@ -10404,8 +10223,8 @@ public:
             }
             if (nested_section.found) {
                 restore_loop();
-                GpuOffloadReport::emit(loc, report_proc,
-                    "nested-section-cannot-be-addressed");
+                report_not_offloaded(loc,
+                    "a nested array section cannot be addressed on the gpu");
                 return;
             }
         }
@@ -13157,9 +12976,6 @@ public:
 
         tu_symtab->add_symbol(kernel_name,
             ASR::down_cast<ASR::symbol_t>(kernel_func));
-        // The loop is a kernel from here on, so this is where the report
-        // says so: every exit above leaves it on the host and has said why.
-        GpuOffloadReport::emit_offloaded(loc, report_proc, kernel_name);
 
         // Pre-allocate host-side allocatable arrays that are assigned
         // from a FunctionCall inside the loop body. The GPU

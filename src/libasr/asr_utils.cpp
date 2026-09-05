@@ -3937,7 +3937,15 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
     merge_args.push_back(al, builder.Eq(a_dim,
         builder.i_t(1, ASRUtils::expr_type(a_dim))));
     diag::Diagnostics diag;
-    return ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag);
+    ASR::asr_t *merged = ASRUtils::Merge::create_Merge(
+        al, a_loc, merge_args, diag);
+    // The three arguments are two integer extents and a logical test
+    // constructed here, so Merge cannot reject them. A failure is an
+    // invariant break, not a user diagnostic to drop.
+    LCOMPILERS_ASSERT(merged != nullptr);
+    LCOMPILERS_ASSERT(!diag.has_error());
+    if (merged == nullptr || diag.has_error()) return nullptr;
+    return merged;
 }
 
 ASR::asr_t* make_ArraySize_t_util(
