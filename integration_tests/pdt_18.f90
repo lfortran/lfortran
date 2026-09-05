@@ -17,9 +17,19 @@ program pdt_18
     implicit none
     type(outer_t(4)) :: value4
     type(outer_t(8)) :: value8
+    type(outer_t(4)) :: init4 = outer_t(4)()
+    type(outer_t(8)) :: init8 = outer_t(8)()
 
     if (value4%member%k /= 4 .or. kind(value4%member%value) /= 4) error stop
     if (value8%member%k /= 8 .or. kind(value8%member%value) /= 8) error stop
     if (value4%member%value /= 1.0) error stop
     if (value8%member%value /= 1.0_8) error stop
+    if (init4%member%k /= 4 .or. kind(init4%member%value) /= 4) error stop
+    if (init8%member%k /= 8 .or. kind(init8%member%value) /= 8) error stop
+    if (init4%member%value /= 1.0) error stop
+    if (init8%member%value /= 1.0_8) error stop
+
+    value4 = outer_t(4)()
+    value8 = outer_t(8)()
+    if (value4%member%value /= 1.0 .or. value8%member%value /= 1.0_8) error stop
 end program
