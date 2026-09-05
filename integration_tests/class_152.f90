@@ -1,4 +1,4 @@
-﻿program class_151
+﻿program class_152
     implicit none
     
     type :: token
@@ -12,4 +12,4 @@
     matches = same_type_as(alias, value)
     
     if (.not. matches) error stop
-end program class_151
+end program class_152
