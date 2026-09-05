@@ -694,9 +694,9 @@ class ASRToLLVMVisitor;
                 llvm::Value* char_kind = nullptr);
 
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
-            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
+            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const = true);
 
-            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
+            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const, bool is_const = true);
             /*
                 Declare + Setup
                 string in the global scope of the llvm module.
