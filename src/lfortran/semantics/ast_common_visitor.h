@@ -589,6 +589,12 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             }
         }
         std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+        // Some intrinsics' registry keys (grammar names) don't match the
+        // lowercased enum name (e.g. StringLenTrim -> "stringlentrim" vs
+        // registry key "len_trim"). Map those special cases here.
+        if (intrinsic_name == "stringlentrim") {
+            intrinsic_name = "len_trim";
+        }
         size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
         for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
         ASRUtils::create_intrinsic_function create_func =
