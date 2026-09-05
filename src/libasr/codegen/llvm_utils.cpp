@@ -2208,6 +2208,7 @@ namespace LCompilers {
                         throw LCompilersException("Unhandled String Physical type");
                 }
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 switch (str_type->m_physical_type){
                     // `string_descriptor*` and `char*`
@@ -2649,6 +2650,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_data(str, str_desc, get_pointer_to_data);
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 return get_string_data(str, arr_ptr, get_pointer_to_data);
             }
@@ -2669,6 +2671,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_length(str, str_desc);
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 return get_string_length(str, arr_ptr);
             }
