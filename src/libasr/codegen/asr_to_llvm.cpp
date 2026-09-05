@@ -3951,9 +3951,8 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                bool is_poly0 = ASR::is_a<ASR::Class_t>(*ASRUtils::extract_type(arg_type0));
-                bool is_poly1 = ASR::is_a<ASR::Class_t>(*ASRUtils::extract_type(arg_type1));
-
+                bool is_poly0 = (ASRUtils::extract_type(arg_type0)->type != ASR::ttypeType::Struct);
+                bool is_poly1 = (ASRUtils::extract_type(arg_type1)->type != ASR::ttypeType::Struct);
 
                 llvm::Type* field0_type = is_poly0 
                     ? llvm::cast<llvm::StructType>(class_type0)->getElementType(0)
@@ -3965,7 +3964,6 @@ public:
                         llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg, 0);
                         return llvm_utils->CreateLoad2(field0_type, id_ptr);
                     }
-
                     if (field0_type->isPointerTy()) {
                         return struct_api->get_pointer_to_method(struct_sym, module.get());
                     }
@@ -4020,8 +4018,8 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                bool is_poly0 = ASR::is_a<ASR::Class_t>(*ASRUtils::extract_type(arg_type0));
-                bool is_poly1 = ASR::is_a<ASR::Class_t>(*ASRUtils::extract_type(arg_type1));
+                bool is_poly0 = (ASRUtils::extract_type(arg_type0)->type != ASR::ttypeType::Struct);
+                bool is_poly1 = (ASRUtils::extract_type(arg_type1)->type != ASR::ttypeType::Struct);
 
                 llvm::Type* field0_type = is_poly0 
                     ? llvm::cast<llvm::StructType>(class_type0)->getElementType(0)
