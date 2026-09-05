@@ -75,6 +75,16 @@ program abstract_type_co_broadcast
     do i = 1, num_elements
       print *, "Image 2, element", i, "base_array:", ext_array(i)%base_array
       print *, "Image 2, element", i, "scalar_comp:", ext_array(i)%scalar_comp
+      
+      ! Validate inherited array component using array expressions and ANY intrinsic
+      if (any(abs(ext_array(i)%base_array - [(real(i * 10 + j, kind=real64), j=1, array_len)]) > 1.0e-8_real64)) then
+        error stop "Data corruption detected: base_array elements do not match expected values."
+      end if
+    
+      ! Validate extended scalar component
+      if (ext_array(i)%scalar_comp /= i * 100) then
+        error stop "Data corruption detected: scalar_comp does not match expected value."
+      end if
     end do
   end if
 
