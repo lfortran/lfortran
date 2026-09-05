@@ -85,6 +85,20 @@ using ASRUtils::is_argument_of_type_CPtr;
 // Helper functions for LLVM function name mangling
 namespace {
 
+bool is_dummy_procedure(const ASR::Function_t& fn) {
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(&fn.base);
+    if (owner && ASR::is_a<ASR::Function_t>(*owner)) {
+        ASR::Function_t* parent = ASR::down_cast<ASR::Function_t>(owner);
+        for (size_t i = 0; i < parent->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*parent->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(parent->m_args[i])->m_v == &fn.base) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /**
  * Check if a function is an external interface function.
  * External interface functions are functions with:
@@ -8202,18 +8216,12 @@ public:
             if (is_a<ASR::Function_t>(*s)) {
                 // * Function (`fn`)
                 // Deal with case where procedure passed in as argument
-                ASR::Function_t *arg = ASR::down_cast<ASR::Function_t>(s);
                 uint32_t h = get_hash((ASR::asr_t*)arg_sym);
                 std::string arg_s = ASRUtils::symbol_name(arg_sym);
                 llvm_arg.setName(arg_s);
                 llvm_symtab_fn_arg[h] = &llvm_arg;
                 if( is_function_variable(arg_sym) ) {
                     llvm_symtab[h] = &llvm_arg;
-                }
-                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                    llvm::FunctionType* fntype = llvm_utils->get_function_type(*arg, module.get());
-                    llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, arg->m_name, module.get());
-                    llvm_symtab_fn[h] = fn;
                 }
             }
             asr_arg_idx++;
@@ -8302,6 +8310,10 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (is_dummy_procedure(x)) {
+            // A dummy procedure is an argument, not a separately linked symbol.
+            return;
+        }
         if (ASRUtils::is_device_only_function(x)) {
             // A routine that exists only on the device is not lowered to LLVM
             // IR. The device code generator emits it as Metal/CUDA source.
@@ -8367,6 +8379,9 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
+        if (is_dummy_procedure(x)) {
+            return;
+        }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
         uint32_t h = get_hash((ASR::asr_t*)&x);
         llvm::Function *F = nullptr;
@@ -8490,10 +8505,6 @@ public:
                             ASR::Var_t *arg = down_cast<ASR::Var_t>(x.m_args[i]);
                             if ( arg->m_v == item.second ) {
                                 interface_as_arg = true;
-                                llvm::FunctionType* fntype = llvm_utils->get_function_type(*v, module.get());
-                                llvm::Function* fn = llvm::Function::Create(fntype, llvm::Function::ExternalLinkage, v->m_name, module.get());
-                                uint32_t hash = get_hash((ASR::asr_t*)v);
-                                llvm_symtab_fn[hash] = fn;
                             }
                         }
                     }
@@ -25182,7 +25193,7 @@ public:
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
-            llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             if ( x.m_original_name && ASR::is_a<ASR::Variable_t>(*x.m_original_name) ) {
                 ASR::Variable_t* x_m_original_name = ASR::down_cast<ASR::Variable_t>(x.m_original_name);
@@ -25770,10 +25781,7 @@ public:
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
-            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                throw CodeGenError("The callback function not found in llvm_symtab_fn");
-            }
-            llvm::FunctionType* fntype = llvm_symtab_fn[h]->getFunctionType();
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             // For procedure pointer variables (Pointer_t(FunctionType_t)), the argument
             // is passed by reference (fntype**), so we need to load to get fntype*.

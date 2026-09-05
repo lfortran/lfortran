@@ -314,8 +314,6 @@ FINALIZE_SYMTABLE_driver:                         ; preds = %return
   ret void
 }
 
-declare void @fnc(i32*, i32*, i32*)
-
 define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
