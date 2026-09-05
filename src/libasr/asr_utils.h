@@ -2229,6 +2229,51 @@ static inline bool all_args_evaluated(const Vec<ASR::array_index_t> &args) {
     return true;
 }
 
+// Returns the symbol the designator `a_expr` is ultimately built on, e.g.
+// `x`, `x(1)`, `x(1:2)%c` and `x%c(3)(1:2)` all return the symbol of `x`.
+// Returns nullptr if `a_expr` is not a designator rooted at a `Var`.
+static inline ASR::symbol_t* get_designator_base_symbol(ASR::expr_t* a_expr) {
+    while( a_expr != nullptr ) {
+        switch( a_expr->type ) {
+            case ASR::exprType::Var: {
+                return ASR::down_cast<ASR::Var_t>(a_expr)->m_v;
+            }
+            case ASR::exprType::ArrayItem: {
+                a_expr = ASR::down_cast<ASR::ArrayItem_t>(a_expr)->m_v;
+                break;
+            }
+            case ASR::exprType::ArraySection: {
+                a_expr = ASR::down_cast<ASR::ArraySection_t>(a_expr)->m_v;
+                break;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                a_expr = ASR::down_cast<ASR::StructInstanceMember_t>(a_expr)->m_v;
+                break;
+            }
+            case ASR::exprType::StringItem: {
+                a_expr = ASR::down_cast<ASR::StringItem_t>(a_expr)->m_arg;
+                break;
+            }
+            case ASR::exprType::StringSection: {
+                a_expr = ASR::down_cast<ASR::StringSection_t>(a_expr)->m_arg;
+                break;
+            }
+            case ASR::exprType::ComplexRe: {
+                a_expr = ASR::down_cast<ASR::ComplexRe_t>(a_expr)->m_arg;
+                break;
+            }
+            case ASR::exprType::ComplexIm: {
+                a_expr = ASR::down_cast<ASR::ComplexIm_t>(a_expr)->m_arg;
+                break;
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+    return nullptr;
+}
+
 static inline ASR::Variable_t* extract_ExternalSymbol_Variable(ASR::expr_t* a_expr) {
     ASR::expr_t* variable_expr = nullptr;
     if (ASR::is_a<ASR::ArrayItem_t>(*a_expr)) {

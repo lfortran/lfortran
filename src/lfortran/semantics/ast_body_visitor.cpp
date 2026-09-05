@@ -157,6 +157,10 @@ public:
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
     AST::decl_stmt_t **starting_m_body = nullptr;
     std::vector<ASR::symbol_t*> do_loop_variables;
+    // Associate names whose selector is an expression rather than a variable,
+    // mapped to the location of that selector. Such a name must not appear in
+    // a variable definition context (F2018 11.1.3.3).
+    std::map<ASR::symbol_t*, Location> expression_associate_variables;
     std::map<ASR::asr_t*, std::pair<const AST::decl_stmt_t*,int64_t>> print_statements;
     std::vector<ASR::DoConcurrentLoop_t *> omp_constructs;
     std::vector<ASR::stmt_t*> omp_region_body={};
@@ -2364,6 +2368,9 @@ public:
             }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            if (_type == AST::decl_stmtType::Read) {
+                check_associate_name_is_definable(expr, "READ statement");
+            }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -3177,6 +3184,32 @@ public:
         }
     }
 
+    // F2018 11.1.3.3: an associate name whose selector is an expression, and
+    // not a variable, must not appear in a variable definition context.
+    void check_associate_name_is_definable(ASR::expr_t* target,
+            const std::string& context) {
+        if( expression_associate_variables.empty() ) {
+            return;
+        }
+        ASR::symbol_t* sym = ASRUtils::get_designator_base_symbol(target);
+        if( sym == nullptr ) {
+            return;
+        }
+        auto it = expression_associate_variables.find(sym);
+        if( it == expression_associate_variables.end() ) {
+            return;
+        }
+        diag.add(Diagnostic(
+            "Associate name `" + std::string(ASRUtils::symbol_name(sym)) +
+            "` is associated with an expression and cannot be used in a "
+            "variable definition context (" + context + ")",
+            Level::Error, Stage::Semantic, {
+                Label("", {target->base.loc}),
+                Label("associated with an expression here", {it->second}, false)
+            }));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+    }
+
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
         std::string name = current_scope->get_unique_name("associate_block");
@@ -3184,6 +3217,7 @@ public:
                                         new_scope, s2c(al, name), nullptr, 0);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        std::vector<ASR::symbol_t*> associate_syms;
         for( size_t i = 0; i < x.n_syms; i++ ) {
             if (AST::is_a<AST::BOZ_t>(*x.m_syms[i].m_initializer)) {
                 diag.add(Diagnostic(
@@ -3264,6 +3298,18 @@ public:
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
+            // The selector is an expression (a reference to a pointer valued
+            // function is a variable, hence the pointer check), or it is built
+            // on an associate name that is itself not definable, so the new
+            // associate name is not definable inside the construct either.
+            ASR::symbol_t* selector_sym = ASRUtils::get_designator_base_symbol(tmp_expr);
+            if( (!create_associate_stmt && !ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))) ||
+                (selector_sym != nullptr && expression_associate_variables.find(
+                    selector_sym) != expression_associate_variables.end()) ) {
+                associate_syms.push_back(ASR::down_cast<ASR::symbol_t>(v));
+                expression_associate_variables[ASR::down_cast<ASR::symbol_t>(v)] =
+                    tmp_expr->base.loc;
+            }
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
             if( create_associate_stmt ) {
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
@@ -3281,6 +3327,9 @@ public:
         current_scope = new_scope;
         transform_stmts(body, x.n_body, x.m_body);
         current_scope = current_scope_copy;
+        for( ASR::symbol_t* associate_sym: associate_syms ) {
+            expression_associate_variables.erase(associate_sym);
+        }
         ASR::AssociateBlock_t* associate_block_t = ASR::down_cast<ASR::AssociateBlock_t>(
             ASR::down_cast<ASR::symbol_t>(associate_block));
         associate_block_t->m_body = body.p;
@@ -6773,6 +6822,7 @@ public:
                 target = cast_expr;
             }
         }
+        check_associate_name_is_definable(target, "assignment");
         if (auto* v = ASRUtils::extract_ExternalSymbol_Variable(target)) {
             if (v->m_is_protected) {
                 diag.add(Diagnostic(
@@ -9550,6 +9600,7 @@ public:
         }
 
         if (var) {
+            check_associate_name_is_definable(var, "DO loop variable");
             if (ASR::is_a<ASR::Var_t>(*var)) {
                 ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
                 ASR::symbol_t* loop_var_sym = loop_var->m_v;

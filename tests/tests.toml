@@ -5639,3 +5639,7 @@ asr = true
 [[test]]
 filename = "asr/verify/implicit_interface_call_target.asr"
 asr = true
+
+[[test]]
+filename = "errors/associate_expr_not_definable_1.f90"
+semantics_only_cc = true

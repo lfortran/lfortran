@@ -1,0 +1,13 @@
+{
+    "basename": "asr-associate_expr_not_definable_1-507e3a9",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/associate_expr_not_definable_1.f90",
+    "infile_hash": "e1e5e97cb4de5d58d7ae1d8c65701c85b855422a1c998b44ff53cace",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-associate_expr_not_definable_1-507e3a9.stderr",
+    "stderr_hash": "61e09ee9ad2edbe59563621f3c6d8e207a75df2f03e985ab98af7023",
+    "returncode": 1
+}
