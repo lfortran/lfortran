@@ -995,6 +995,8 @@ std::string token2text(const int token)
         T(TK_RBRACKET_OLD, "/)")
         T(TK_PERCENT, "%")
         T(TK_VBAR, "|")
+        T(TK_QUESTION, "?")
+        T(TK_NIL, ".nil.")
 
         T(TK_STRING, "string")
         T(TK_COMMENT, "comment")

@@ -1,0 +1,13 @@
+{
+    "basename": "wat-char4_backend_c-670ea10",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/errors/char4_backend_c.f90",
+    "infile_hash": "3ece0042443ce9e62eb377b1cb078e9bcad1f840bdf28371e7053f99",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "wat-char4_backend_c-670ea10.stderr",
+    "stderr_hash": "7ecce351bcd4a82c551ecedd43fa0c916bf450f2a2454f113ec47ae7",
+    "returncode": 1
+}

@@ -1,0 +1,304 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "circle" (Struct
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "r" (Variable
+                    :parent_symtab 2
+                    :name "r"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "circle"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "r"
+              ]
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent (SymbolRef 1 "shape")
+              :kind_params []
+            )
+            "shape" (Struct
+              :symtab (SymbolTable
+                :id 3
+                :symbols {}
+              )
+              :name "shape"
+              :struct_signature (StructType
+                :data_member_types []
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members []
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract true
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 4
+          :symbols {
+            "c" (Variable
+              :parent_symtab 4
+              :name "c"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :type_declaration (SymbolRef 4 "circle")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "circle" (ExternalSymbol
+              :parent_symtab 4
+              :name "circle"
+              :external (SymbolRef 1 "circle")
+              :module_name "m"
+              :scope_names []
+              :original_name "circle"
+              :access :Public
+            )
+            "s" (Variable
+              :parent_symtab 4
+              :name "s"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Pointer
+                :type (StructType
+                  :data_member_types []
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+              )
+              :type_declaration (SymbolRef 4 "shape")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "shape" (ExternalSymbol
+              :parent_symtab 4
+              :name "shape"
+              :external (SymbolRef 1 "shape")
+              :module_name "m"
+              :scope_names []
+              :original_name "shape"
+              :access :Public
+            )
+            "x" (Variable
+              :parent_symtab 4
+              :name "x"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Real
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (SelectType
+            :selector (Var
+              :v (SymbolRef 4 "s")
+            )
+            :assoc_name "c"
+            :body [
+              (TypeStmtName
+                :sym (SymbolRef 4 "circle")
+                :body [
+                  (Assignment
+                    :target (Var
+                      :v (SymbolRef 4 "x")
+                    )
+                    :value (RealConstant
+                      :r 1.0
+                      :type (Real
+                        :kind 4
+                      )
+                    )
+                    :overloaded nil
+                    :realloc_lhs false
+                    :move_allocation false
+                  )
+                ]
+              )
+              (ClassStmt
+                :sym (SymbolRef 4 "shape")
+                :body [
+                  (Assignment
+                    :target (Var
+                      :v (SymbolRef 4 "x")
+                    )
+                    :value (RealConstant
+                      :r 2.0
+                      :type (Real
+                        :kind 4
+                      )
+                    )
+                    :overloaded nil
+                    :realloc_lhs false
+                    :move_allocation false
+                  )
+                ]
+              )
+              (TypeStmtType
+                :type (Real
+                  :kind 4
+                )
+                :body [
+                  (Assignment
+                    :target (Var
+                      :v (SymbolRef 4 "x")
+                    )
+                    :value (RealConstant
+                      :r 3.0
+                      :type (Real
+                        :kind 4
+                      )
+                    )
+                    :overloaded nil
+                    :realloc_lhs false
+                    :move_allocation false
+                  )
+                ]
+              )
+            ]
+            :default [
+              (Assignment
+                :target (Var
+                  :v (SymbolRef 4 "x")
+                )
+                :value (RealConstant
+                  :r 0.0
+                  :type (Real
+                    :kind 4
+                  )
+                )
+                :overloaded nil
+                :realloc_lhs false
+                :move_allocation false
+              )
+            ]
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

@@ -319,6 +319,11 @@ public:
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        // Isolate this module's externals from a previous program unit, and
+        // restore that unit's list when the module ends so a later sibling
+        // does not inherit them.
+        std::vector<std::string> saved_external_procedures = external_procedures;
+        external_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
         ASR::asr_t *tmp0 = nullptr;
@@ -456,6 +461,10 @@ public:
                 }
             }
         }
+        // Module_t already exists, so persist before CONTAINS. Nested
+        // procedures can then find these names via parent-scope mapping
+        // lookup even while their own accumulator is isolated.
+        external_procedures_mapping[get_hash(tmp0)] = external_procedures;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -466,6 +475,7 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        external_procedures = saved_external_procedures;
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
@@ -570,6 +580,9 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Isolate this program's externals from a previous program unit.
+        std::vector<std::string> saved_external_procedures = external_procedures;
+        external_procedures.clear();
         generic_procedures.clear();
         current_module_dependencies.reserve(al, 4);
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
@@ -733,6 +746,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
 
@@ -1317,6 +1331,13 @@ public:
         // Handle templated subroutines
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Save the externals accumulated by the enclosing scope so they are
+        // restored (not discarded) once this subroutine has been processed.
+        // A contained subroutine must not wipe the host scope's external
+        // procedures; otherwise a later reference in the host (e.g. a typed
+        // external function call in a program that also has a CONTAINS section)
+        // would wrongly be seen as having no interface.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         if (x.n_temp_args > 0) {
             is_template = true;
 
@@ -1642,7 +1663,12 @@ public:
                 throw SemanticAbort();
             }
         }
-        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ) {
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
+        if ( interface_name == sym_name || generic_procedures.find(sym_name) != generic_procedures.end() ||
+             (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check)) ) {
             sym_name = sym_name + "~genericprocedure";
         }
 
@@ -1714,7 +1740,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
-        external_procedures.clear();
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
@@ -1856,6 +1882,14 @@ public:
         // Handle templated functions
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
+        // Save the externals accumulated by the enclosing scope so they are
+        // restored (not discarded) once this function has been processed.
+        // Without this, a bare `external foo` declared inside this function
+        // would leak into a sibling program unit processed afterwards and
+        // wrongly mark a later same-named declaration there as an external
+        // procedure (dropping its explicitly declared type). This mirrors the
+        // handling in visit_Subroutine.
+        std::vector<std::string> saved_external_procedures = external_procedures;
         std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
@@ -2334,9 +2368,19 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
+        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        if (existing_sym_check) {
+            existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
+        }
         if (generic_procedures.find(sym_name) != generic_procedures.end()
-            || interface_name == to_lower(sym_name)) {
-            sym_name = sym_name + "~genericprocedure";
+            || interface_name == to_lower(sym_name) ||
+            (existing_sym_check && ASR::is_a<ASR::GenericProcedure_t>(*existing_sym_check))) {
+            // This specific procedure shares its generic interface's name, so
+            // it is stored under "<name>~genericprocedure" to avoid clashing
+            // with the GenericProcedure symbol in the symbol table. The real
+            // external (link) symbol is still "<name>"; the backend recovers it
+            // with ASRUtils::strip_genericprocedure_suffix().
+            sym_name = sym_name + ASRUtils::genericprocedure_suffix;
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
@@ -2491,6 +2535,7 @@ public:
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
         explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
@@ -3012,7 +3057,7 @@ public:
                             ASR::ttype_t* element_type = replace_deferred_struct_type(array_t->m_type);
                             return ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
                                 element_type, array_t->m_dims, array_t->n_dims,
-                                array_t->m_physical_type));
+                                array_t->m_physical_type, array_t->m_memory_space));
                         }
                         if (ASR::is_a<ASR::Pointer_t>(*t)) {
                             ASR::Pointer_t* pointer_t = ASR::down_cast<ASR::Pointer_t>(t);
@@ -3806,6 +3851,7 @@ public:
 
             add_custom_operator(proc, assgn[current_scope]);
         }
+        assgn_proc_names_locations.clear();
     }
 
     void add_generic_procedures() {
@@ -3817,16 +3863,28 @@ public:
             symbols.reserve(al, proc.second.size());
             bool any_error = false;
             for (auto &pname : proc.second) {
-                std::string correct_pname = pname.first;
-                if( pname.first == proc.first ) {
-                    correct_pname = pname.first + "~genericprocedure";
+                std::string name = to_lower(pname.first);
+                ASR::symbol_t *x = nullptr;
+                if( name == proc.first ) {
+                    // A specific procedure declared in this scope under its
+                    // generic interface's name is stored with the
+                    // genericprocedure suffix, see the comment where the
+                    // suffix is added.
+                    x = current_scope->resolve_symbol(
+                        name + ASRUtils::genericprocedure_suffix);
+                    if (!x) {
+                        // Otherwise it comes from another scope (e.g. it is
+                        // use associated), where it keeps its plain name. The
+                        // generic interface itself is not a candidate.
+                        x = current_scope->resolve_symbol(name);
+                        if (x && ASR::is_a<ASR::GenericProcedure_t>(
+                                *ASRUtils::symbol_get_past_external(x))) {
+                            x = nullptr;
+                        }
+                    }
+                } else {
+                    x = current_scope->resolve_symbol(name);
                 }
-                Str s;
-                s.from_str_view(correct_pname);
-                char *name = s.c_str(al);
-                // lower case the name
-                name = s2c(al, to_lower(name));
-                ASR::symbol_t *x = current_scope->resolve_symbol(name);
                 if (!x) {
                     diag.add(Diagnostic(
                         "Symbol '" + std::string(pname.first) + "' not declared",
@@ -4109,6 +4167,7 @@ public:
                 sync_pdt_specialization_symbols(clss, current_scope);
             }
         }
+        generic_class_procedures.clear();
     }
 
     bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
@@ -4393,6 +4452,8 @@ public:
             }
         }
         check_class_procedure_overrides();
+        class_procedures.clear();
+        class_deferred_procedures.clear();
     }
 
     // The name of the derived type that declares the binding `x` overrides.

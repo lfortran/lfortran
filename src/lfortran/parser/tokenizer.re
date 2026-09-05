@@ -580,6 +580,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             "," { RET(TK_COMMA) }
             "*" { RET(TK_STAR) }
             "|" { RET(TK_VBAR) }
+            "?" { RET(TK_QUESTION) }
 
             // Multiple character symbols
             ".." { RET(TK_DBL_DOT) }
@@ -621,6 +622,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             '.true.' ("_" kind)? { token_logical_kind(yylval.string, 6); RET(TK_TRUE) }
             '.false.' ("_" kind)? { token_logical_kind(yylval.string, 7); RET(TK_FALSE) }
+
+            '.nil.' { RET(TK_NIL) }
 
             // This is needed to ensure that 2.op.3 gets tokenized as
             // TK_INTEGER(2), TK_DEFOP(.op.), TK_INTEGER(3), and not

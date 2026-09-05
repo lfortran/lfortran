@@ -1,0 +1,5 @@
+semantic error: More actual than formal arguments in procedure call
+ --> tests/errors/implicit_interface_explicit_zero_arg.f90:5:9
+  |
+5 |   r = f(1)
+  |         ^ 

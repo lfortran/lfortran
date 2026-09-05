@@ -1,0 +1,181 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "b" (Variable
+              :parent_symtab 1
+              :name "b"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Allocatable
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                  :memory_space :Global
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "mask" (Variable
+              :parent_symtab 1
+              :name "mask"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Logical
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 3
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "b")
+            )
+            :value (ArrayPack
+              :array (Var
+                :v (SymbolRef 1 "a")
+              )
+              :mask (Var
+                :v (SymbolRef 1 "mask")
+              )
+              :vector nil
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start nil
+                    :length nil
+                  )
+                ]
+                :physical_type :DescriptorArray
+                :memory_space :Global
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

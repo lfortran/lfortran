@@ -1,0 +1,313 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "exists" (Variable
+              :parent_symtab 1
+              :name "exists"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Logical
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "iostat" (Variable
+              :parent_symtab 1
+              :name "iostat"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "n" (Variable
+              :parent_symtab 1
+              :name "n"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "unit" (Variable
+              :parent_symtab 1
+              :name "unit"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (FileOpen
+            :label -1
+            :newunit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :filename (StringConstant
+              :s "data.txt"
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 8
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+            )
+            :status (StringConstant
+              :s "old"
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 3
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+            )
+            :form nil
+            :access nil
+            :iostat (Var
+              :v (SymbolRef 1 "iostat")
+            )
+            :iomsg nil
+            :action nil
+            :delim nil
+            :recl nil
+            :position nil
+            :blank nil
+            :encoding nil
+            :sign nil
+            :decimal nil
+            :round nil
+            :pad nil
+            :asynchronous nil
+          )
+          (FileRead
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :fmt nil
+            :iomsg nil
+            :iostat (Var
+              :v (SymbolRef 1 "iostat")
+            )
+            :advance nil
+            :size nil
+            :id nil
+            :pos nil
+            :values [
+              (Var
+                :v (SymbolRef 1 "n")
+              )
+            ]
+            :overloaded nil
+            :is_formatted true
+            :nml nil
+            :rec nil
+            :pad nil
+          )
+          (FileWrite
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :iomsg nil
+            :iostat nil
+            :id nil
+            :values [
+              (Var
+                :v (SymbolRef 1 "n")
+              )
+            ]
+            :separator nil
+            :end nil
+            :overloaded nil
+            :is_formatted true
+            :nml nil
+            :rec nil
+            :pos nil
+            :asynchronous nil
+          )
+          (FileBackspace
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :iostat nil
+            :iomsg nil
+            :err nil
+          )
+          (FileRewind
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :iostat nil
+            :err nil
+            :iomsg nil
+          )
+          (FileEndfile
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :iostat nil
+            :iomsg nil
+            :err nil
+          )
+          (Flush
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :err nil
+            :iomsg nil
+            :iostat nil
+          )
+          (FileInquire
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :file nil
+            :iostat nil
+            :err nil
+            :exist (Var
+              :v (SymbolRef 1 "exists")
+            )
+            :opened nil
+            :number nil
+            :named nil
+            :name nil
+            :access nil
+            :sequential nil
+            :direct nil
+            :form nil
+            :formatted nil
+            :unformatted nil
+            :recl nil
+            :nextrec nil
+            :blank nil
+            :position nil
+            :action nil
+            :read nil
+            :write nil
+            :readwrite nil
+            :delim nil
+            :pad nil
+            :flen nil
+            :blocksize nil
+            :convert nil
+            :carriagecontrol nil
+            :size nil
+            :pos nil
+            :iolength nil
+            :iolength_vars []
+            :decimal nil
+            :sign nil
+            :encoding nil
+            :stream nil
+            :iomsg nil
+            :round nil
+            :pending nil
+            :asynchronous nil
+          )
+          (FileClose
+            :label -1
+            :unit (Var
+              :v (SymbolRef 1 "unit")
+            )
+            :iostat nil
+            :iomsg nil
+            :err nil
+            :status nil
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

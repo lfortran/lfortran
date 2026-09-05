@@ -1374,7 +1374,7 @@ namespace MoveAlloc {
                                 str_t->m_physical_type));
                             ASR::ttype_t* new_array = ASRUtils::TYPE(ASR::make_Array_t(
                                 al, arr->base.base.loc, deferred_str, arr->m_dims, arr->n_dims,
-                                arr->m_physical_type));
+                                arr->m_physical_type, arr->m_memory_space));
                             return ASRUtils::TYPE(ASR::make_Allocatable_t(al, type->base.loc, new_array));
                         }
                     }

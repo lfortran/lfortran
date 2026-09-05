@@ -688,7 +688,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         var_type = 
                             ASRUtils::TYPE(
                                 ASR::make_Pointer_t(al, str->base.base.loc,
-                                    ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, 1,
+                                    ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, str->m_kind,
                                         nullptr, ASR::DeferredLength, ASR::DescriptorString))));
                     }
                 } else if(ASRUtils::is_array_of_strings(var_type)){ // e.g -> `character(len=foo()) :: str(10)`
@@ -711,7 +711,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             pending_length_ctx_sym = ASR::down_cast<ASR::Var_t>(len_expr_var)->m_v;
                         }
                         // Create a new ASR::String node, To avoid using the original one.
-                        array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, 1,
+                        array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, string_t->m_kind,
                                             nullptr, ASR::DeferredLength, ASR::DescriptorString));
                     }
                 }

@@ -866,7 +866,8 @@ class PRIFInterface {
             ASR::ttype_t *cleanup_func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                 al, loc, cleanup_arg_types.p, cleanup_arg_types.n,
                 nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
-                nullptr, false, false, false, false, false, nullptr, 0, false));
+                nullptr, false, false, false, false, false, nullptr, 0, false,
+                ASR::exec_spaceType::Host));
             ASR::ttype_t *cleanup_ptr_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, cleanup_func_type));
             ASR::expr_t *final_proc = b.Variable(fn_symtab, "final_proc", cleanup_ptr_type,
@@ -1491,7 +1492,7 @@ class PRIFInterface {
                 global_scope->add_symbol(derived_type_name, type_declaration);
             }
             ASR::ttype_t * assumed_type = ASRUtils::make_StructType_t_util(al, loc, type_declaration, false);
-            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray));
+            ASR::ttype_t * a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(al, loc, assumed_type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
 
             ASR::symbol_t *a_sym = declare_variable(
                 fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, type_declaration,
@@ -1539,7 +1540,7 @@ class PRIFInterface {
                 ASR::string_physical_typeType::DescriptorString));
             ASR::ttype_t *a_type_assumed = ASRUtils::TYPE(ASR::make_Array_t(
                 al, loc, a_char_type, nullptr, 0,
-                ASR::array_physical_typeType::AssumedRankArray));
+                ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
 
             ASR::symbol_t *a_sym = declare_variable(
                 fn_symtab, loc, "a", a_type_assumed, ASR::intentType::InOut, nullptr,
@@ -1852,7 +1853,8 @@ class PRIFInterface {
             ASR::ttype_t *cleanup_ft = ASRUtils::TYPE(ASR::make_FunctionType_t(
                 al, loc, fp_arg_types.p, fp_arg_types.n,
                 nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface,
-                nullptr, false, false, false, false, false, nullptr, 0, false));
+                nullptr, false, false, false, false, false, nullptr, 0, false,
+                ASR::exec_spaceType::Host));
             ASR::expr_t *null_fptr = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc, cleanup_ft, nullptr));
             

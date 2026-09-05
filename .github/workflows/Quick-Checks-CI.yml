@@ -165,6 +165,15 @@ jobs:
             cd ./integration_tests
             ./run_tests.py -b metal -j3
 
+      # The CUDA device code is compiled and run on the CPU, so this exercises
+      # the whole CUDA path on a runner that has no GPU.
+      - name: Test CUDA GPU backend on the CPU (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b cuda_cpu -j3
+
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
@@ -263,13 +272,6 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm_omp
       
-      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Target Offload
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        run: |
-            cd integration_tests
-            ./run_tests.py -b target_offload
-
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
