@@ -16458,7 +16458,8 @@ public:
         bool is_fixed_size_array_result = ASRUtils::is_array(x.m_type) &&
             ASRUtils::extract_physical_type(x.m_type) == ASR::array_physical_typeType::FixedSizeArray;
         if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type),
-             x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && !ASRUtils::is_string_only(expr_type(x.m_mold)) &&
+             x.m_source, const_cast<ASR::expr_t*>(&x.base), false) && 
+             !ASRUtils::is_character(*ASRUtils::extract_type(expr_type(x.m_mold))) &&
                 !skip_string_to_int8_load ) {
             bool need_pointer_for_memcpy = false;
             if (is_fixed_size_array_result) {
