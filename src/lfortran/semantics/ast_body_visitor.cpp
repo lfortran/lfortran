@@ -8090,7 +8090,8 @@ public:
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
-                final_sym = original_sym;
+                final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc, 
+                                                             original_sym, current_scope);
                 original_sym = nullptr;
                 legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 break;

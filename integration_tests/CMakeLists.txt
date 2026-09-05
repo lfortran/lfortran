@@ -649,6 +649,7 @@ RUN(NAME subroutines_18 LABELS gfortran llvm)
 RUN(NAME subroutines_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME subroutines_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME subroutines_21 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME module_subroutine_external_call LABELS gfortran llvm cpp x86 fortran)
 
 RUN(NAME functions_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir fortran)
 RUN(NAME functions_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
