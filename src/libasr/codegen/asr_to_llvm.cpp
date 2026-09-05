@@ -3951,9 +3951,11 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                bool is_poly0 = (ASRUtils::extract_type(arg_type0)->type != ASR::ttypeType::Struct);
-                bool is_poly1 = (ASRUtils::extract_type(arg_type1)->type != ASR::ttypeType::Struct);
+                // Safely determine polymorphism using the proper ASR ClassType_t
+                bool is_poly0 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type0));
+                bool is_poly1 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type1));
 
+                // Extract field 0 safely from whichever argument is polymorphic
                 llvm::Type* field0_type = is_poly0 
                     ? llvm::cast<llvm::StructType>(class_type0)->getElementType(0)
                     : (is_poly1 ? llvm::cast<llvm::StructType>(class_type1)->getElementType(0) 
@@ -3961,9 +3963,11 @@ public:
 
                 auto get_type_id = [&](llvm::Value* arg, llvm::Type* class_type, ASR::symbol_t* struct_sym, bool is_poly) -> llvm::Value* {
                     if (is_poly) {
+                        // If it's a polymorphic class wrapper, load field 0 (vtable/hash)
                         llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg, 0);
                         return llvm_utils->CreateLoad2(field0_type, id_ptr);
                     }
+                    // If it's non-polymorphic, fetch the static vtable/hash directly
                     if (field0_type->isPointerTy()) {
                         return struct_api->get_pointer_to_method(struct_sym, module.get());
                     }
@@ -4018,8 +4022,9 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                bool is_poly0 = (ASRUtils::extract_type(arg_type0)->type != ASR::ttypeType::Struct);
-                bool is_poly1 = (ASRUtils::extract_type(arg_type1)->type != ASR::ttypeType::Struct);
+                // Safely determine polymorphism using the proper ASR ClassType_t
+                bool is_poly0 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type0));
+                bool is_poly1 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type1));
 
                 llvm::Type* field0_type = is_poly0 
                     ? llvm::cast<llvm::StructType>(class_type0)->getElementType(0)
@@ -4037,6 +4042,7 @@ public:
                     return llvm::ConstantInt::get(field0_type, get_class_hash(struct_sym));
                 };
 
+                // Fetch proper type identifiers based on polymorphism
                 llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0, is_poly0);
                 llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1, is_poly1);
 
@@ -4161,7 +4167,7 @@ public:
             }
         }
     }
-
+    
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
         switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
