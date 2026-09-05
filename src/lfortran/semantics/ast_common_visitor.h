@@ -17788,17 +17788,31 @@ public:
         ASR::expr_t *n = args[0].m_value;
         ASR::expr_t *w = args[1].m_value;
 
-        ASR::ttype_t* n_type = ASRUtils::expr_type(n);
-        ASR::ttype_t* w_type = ASRUtils::expr_type(w);
+        ASR::ttype_t* type_n = ASRUtils::expr_type(n);
+        ASR::ttype_t* type_w = ASRUtils::expr_type(w);
+        ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
+        ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
-        if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
-            if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
+        ASR::ttype_t* cast_target_for_w = base_n;
+
+        if (ASRUtils::is_array(type_w)) {
+            ASR::Array_t* w_arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(type_w));
+            cast_target_for_w = ASRUtils::make_Array_t_util(al, loc, base_n, 
+                                                            w_arr->m_dims, w_arr->n_dims);
+        }
+
+        if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
+            if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
+                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
+                                   ASR::cast_kindType::IntegerToInteger, 
+                                   cast_target_for_w, nullptr, nullptr));
             }
         }
 
-        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
-                            n, w, n_type);
+        ASR::ttype_t* out_type = ASRUtils::is_array(type_n) ? type_n : cast_target_for_w;
+
+        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift, n, w, out_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
