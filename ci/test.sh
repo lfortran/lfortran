@@ -35,6 +35,11 @@ src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
 src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 ./intrinsics_04
 
+# Link with an explicit non-default C compiler driver: any of clang, cc
+# or gcc can drive the final link, there is no clang-specific coupling
+LFORTRAN_LINKER=gcc src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04_gcc
+./intrinsics_04_gcc
+
 
 # Run all tests (does not work on Windows yet):
 cmake --version

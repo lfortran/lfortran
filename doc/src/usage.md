@@ -282,26 +282,72 @@ module varray
 end module varray
 ```
 
-## Selecting the C Compiler
+## Selecting the C Compiler (Link Driver)
 
-By default LFortran uses the `clang` compiler.  On some systems
-the compiler has a version number or spelling difference.  The compiler
-can be changed with the `LFORTRAN_CC` symbol:
+Producing an executable (for example `lfortran hw.f90` or
+`lfortran -o hw hw.o`) requires a C compiler driver, because the LLVM
+backend invokes one at run time to link the generated object files against
+the LFortran runtime library. Any standard C compiler driver works — there
+is no clang-specific coupling, the driver only supplies the platform glue
+(startup object files, the C library, default library search paths).
+
+The `--linker`/`LFORTRAN_LINKER` selection described here only affects
+the final link step of the LLVM backend. Separately, the C and C++
+backends (`--backend=c`, `--backend=cpp`) compile the generated C/C++
+source with the driver from the `LFORTRAN_CC` environment variable
+(default `cc`).
+
+If no driver is selected with `--linker` or `LFORTRAN_LINKER`, LFortran
+uses a fixed per-platform default driver (`clang` on macOS, `gcc` on
+Windows MinGW targets, `cc` on Linux and other Unix systems, where it is
+normally provided by the system gcc). LFortran deliberately does not
+search `$PATH` for a driver on every invocation and does not consult the
+standard `CC` environment variable — build tools and CMake often export
+`CC` values (toolchain-internal paths, extra flags, cross compilers) that
+belong to their own context and are not valid link drivers for LFortran.
+The selected name is resolved by the shell when the link command runs;
+if it does not exist, LFortran reports that the linker command was not
+found and how to select a different one.
+
+A non-standard directory containing the driver can be selected with
+`--linker-path` or `LFORTRAN_LINKER_PATH`; that directory is verified
+up front, so a misplaced `--linker-path` fails with an explicit,
+actionable error message instead of a shell error:
 
 ```
-unset LFORTRAN_CC
-lfortran hw.f90
-Hello World!
-
-export LFORTRAN_CC=gcc
-lfortran hw.f90
-Hello World!
-
-export LFORTRAN_CC=clang-14
-lfortran hw.f90
-sh: clang-14: not found
-...(further error messages)...
+lfortran hw.f90                      # platform default driver
+lfortran hw.f90 --linker=gcc         # use gcc
+export LFORTRAN_LINKER=gcc
+lfortran hw.f90                      # same via environment variable
+export LFORTRAN_LINKER="ccache clang"
+lfortran hw.f90                      # wrappers and extra arguments work
+export LFORTRAN_LINKER_PATH=/usr/local/bin
+export LFORTRAN_LINKER=gcc-13
+lfortran hw.f90                      # use /usr/local/bin/gcc-13
 ```
+
+Only the final link step needs a C compiler driver: interactive mode,
+the `--show-*` text outputs and compiling to object files (`-c`) do not
+need one; WASM targets either need no driver or use user-provided
+toolchains (`EMSDK_PATH`, `WASI_SDK_PATH`). On Windows the default link
+path uses MSVC's `link` instead.
+
+The one exception to "any driver works" is the Metal GPU backend
+(`--gpu=metal`): it compiles its Objective-C runtime with the same
+driver, and only clang can compile Objective-C, so that backend requires
+clang.
+
+## Debug Line Information
+
+When compiling with `-g`, LFortran additionally generates side files with
+line information used to print source line numbers in runtime stacktraces.
+This step uses the external LLVM tools `llvm-dwarfdump` (and `dsymutil` on
+macOS, which ships with the Xcode command line tools) plus Python. This
+step is optional: if any of these tools are missing or the step otherwise
+fails, LFortran prints a warning and continues — the executable is still
+built with the DWARF debug information emitted by LLVM, only the line
+numbers in runtime stacktraces are missing. Install the LLVM tools (for
+example `conda install llvm-tools`) to enable them.
 
 ## Differences from other compilers
 
