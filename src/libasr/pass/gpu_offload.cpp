@@ -10146,23 +10146,13 @@ public:
         // offload after rewriting, the loop would stay on the host in a
         // form the later array_op pass no longer normalizes, and codegen
         // would fail. So: no mutation until the decision is made.
-        if (pass_options.gpu_offload_metal) {
-            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
-                candidate_syms;
-            collect_involved_syms(work, enclosing_block_scopes, candidate_syms);
-            // Every symbol reaching the kernel — buffer parameters,
-            // by-value members of the __ScalarArgs struct and kernel-local
-            // temporaries alike — is collected here, so a single sweep
-            // covers all of them.
-            for (auto &sym : candidate_syms) {
-                if (!is_metal_representable_type(sym.second.first,
-                        sym.second.second)) {
-                    report_not_offloaded(loc,
-                        "the type of '" + sym.first +
-                        "' is not representable on the gpu");
-                    return;
-                }
-            }
+        // What the pass's own lowering can and cannot do, which is the same
+        // whichever device the launch targets: a local with no extent, an
+        // aliased assignment that would need a run-time sized temporary, and
+        // a strided actual that has to be gathered into a contiguous one.
+        // These used to run for Metal only, so the CUDA path went on to build
+        // a kernel that read the wrong elements and said nothing.
+        {
             GpuLocalArrayChecker local_array_checker;
             for (size_t i = 0; i < work.n_body; i++) {
                 local_array_checker.visit_stmt(*work.body[i]);
@@ -10194,6 +10184,27 @@ public:
                 report_not_offloaded(loc,
                     "a strided section cannot be gathered for the gpu");
                 return;
+            }
+        }
+
+        // What the Metal Shading Language in particular cannot represent, and
+        // the splicing that only its lowering does.
+        if (pass_options.gpu_offload_metal) {
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+                candidate_syms;
+            collect_involved_syms(work, enclosing_block_scopes, candidate_syms);
+            // Every symbol reaching the kernel — buffer parameters,
+            // by-value members of the __ScalarArgs struct and kernel-local
+            // temporaries alike — is collected here, so a single sweep
+            // covers all of them.
+            for (auto &sym : candidate_syms) {
+                if (!is_metal_representable_type(sym.second.first,
+                        sym.second.second)) {
+                    report_not_offloaded(loc,
+                        "the type of '" + sym.first +
+                        "' is not representable on the gpu");
+                    return;
+                }
             }
             // A device function may need a run-time sized local -- an
             // array-constructor temporary sized from an assumed-shape
