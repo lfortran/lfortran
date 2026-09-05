@@ -8105,7 +8105,9 @@ public:
                     st = st->parent;
                 }
 
-                if (crosses_module_boundary) {
+                bool is_local_to_module = (sym_symtab == current_scope || sym_symtab->asr_owner == current_scope->asr_owner);
+
+                if (crosses_module_boundary && !is_local_to_module) {
                     std::string sym_name = ASRUtils::symbol_name(original_sym);
                     ASR::symbol_t *existing_sym = current_scope->get_symbol(sym_name);
                     if (existing_sym == nullptr) {
