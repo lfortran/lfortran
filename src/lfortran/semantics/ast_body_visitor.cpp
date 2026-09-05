@@ -3198,19 +3198,24 @@ public:
             ASR::ttype_t* tmp_type = ASRUtils::expr_type(tmp_expr);
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
+            bool selector_is_parenthesized = AST::is_a<AST::Parenthesis_t>(
+                *x.m_syms[i].m_initializer);
 
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+            if( !selector_is_parenthesized && ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                 tmp_storage = variable->m_storage;
                 tmp_type = variable->m_type;
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+            } else if (!selector_is_parenthesized &&
+                    ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
                 create_associate_stmt = true;
                 ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 tmp_type = sim->m_type;
-            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+            } else if (!selector_is_parenthesized &&
+                    ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
                 create_associate_stmt = true;
-            } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
+            } else if (!selector_is_parenthesized &&
+                    ASR::is_a<ASR::ArraySection_t>(*tmp_expr)) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
                 ASR::ttype_t* base_type = nullptr;
@@ -3230,9 +3235,11 @@ public:
                     }
                 }
                 tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+            } else if (!selector_is_parenthesized &&
+                    ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
                 create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
+            } else if (!selector_is_parenthesized &&
+                    ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
 
