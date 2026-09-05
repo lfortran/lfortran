@@ -149,6 +149,16 @@ static bool descend_loop_nest(ASR::stmt_t *loop, int64_t collapse,
     return true;
 }
 
+bool parallel_loop_nest_of(ASR::stmt_t *loop, int64_t collapse,
+        ParallelLoopNest &nest) {
+    const char *why = nullptr;
+    return descend_loop_nest(loop, collapse, nest, why);
+}
+
+int64_t parallel_collapse_count(const ASR::OMPRegion_t &x) {
+    return collapse_count(x.m_clauses, x.n_clauses);
+}
+
 bool parallel_loop_nest(const ASR::OMPRegion_t &x, ParallelLoopNest &nest) {
     if (x.m_region != ASR::omp_region_typeType::ParallelDo) return false;
     if (x.n_body != 1) return false;
