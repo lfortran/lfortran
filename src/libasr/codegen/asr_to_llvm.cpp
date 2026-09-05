@@ -2854,13 +2854,44 @@ public:
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
+            ASR::expr_t* root_expr = tmp_expr;
+            while (true) {
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::StructInstanceMember_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::ArrayItem_t>(root_expr)->m_v;
+                } else if (ASR::is_a<ASR::Cast_t>(*root_expr)) {
+                    root_expr = ASR::down_cast<ASR::Cast_t>(root_expr)->m_arg;
+                } else {
+                    break;
+                }
+            }
+            
+            if (ASR::is_a<ASR::Var_t>(*root_expr)) {
+                const ASR::Var_t* root_var = ASR::down_cast<ASR::Var_t>(root_expr);
+                ASR::Variable_t *root_v = ASR::down_cast<ASR::Variable_t>(
+                                        ASRUtils::symbol_get_past_external(root_var->m_v));
+                
+                if (root_v->m_storage == ASR::storage_typeType::Parameter) {
+                    continue; 
+                }
+                
+                std::string var_name = std::string(root_v->m_name);
+                if (root_v->m_storage == ASR::storage_typeType::Local && 
+                    (var_name.find("__") == 0 || var_name.find("~") == 0)) {
+                    continue;
+                }
+            }
+
             ASR::symbol_t* curr_obj = nullptr;
             ASR::abiType abt = ASR::abiType::Source;
+            
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 curr_obj = tmp_var->m_v;
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                                    symbol_get_past_external(curr_obj));
+                                        symbol_get_past_external(curr_obj));
+
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
                 if (!ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
