@@ -5099,3 +5099,31 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+# Interactive reads from standard input over Emscripten must not swallow
+# the record-terminating newline (see #12108). The loader drives the program
+# prompt by prompt and keeps stdin open, like a browser prompt with no
+# input pending: a read that over-fetches then waits for input that never
+# arrives and the loader times out (or the program misreads it). It only
+# makes sense under the emscripten backend, hence the custom registration.
+if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+    find_program(WASM_EXEC_RUNTIME node)
+    add_executable(read_stdin_01 read_stdin_01.f90)
+    target_compile_options(read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+    target_link_options(read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+    if (WASM_EXEC_RUNTIME)
+        add_test(NAME read_stdin_01
+            COMMAND ${WASM_EXEC_RUNTIME}
+                ${CMAKE_CURRENT_SOURCE_DIR}/read_stdin_01_loader.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/read_stdin_01)
+        # the loader's own per-scenario timeout is 10s, for 7 scenarios;
+        # give ctest a generous backstop
+        set_tests_properties(read_stdin_01 PROPERTIES
+            LABELS "llvm_wasm_emcc" TIMEOUT 300)
+    else()
+        message(WARNING "node not found: read_stdin_01 will be "
+            "compiled but not run")
+    endif()
+endif()

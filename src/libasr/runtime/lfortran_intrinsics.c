@@ -6170,6 +6170,30 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     list_dir_state_reset(&unit_to_file[last_index_used]);
 }
 
+// Emscripten's stdin is a character device whose read() keeps filling the
+// caller's buffer (up to 1024 bytes), so a buffered stdio stream swallows
+// the newline that terminates the Fortran record: any stdio operation on
+// stdin (fgets, fgetc, scanf) pays for it, interactive READ statements
+// then ask for more input and only finish at end of file (a browser then
+// re-prompts forever).  Line buffering does not fix it: for an input
+// stream it still fills the whole buffer before returning.  Read stdin
+// one character at a time instead.  Every standard-input read path must
+// call this before touching stdin.  The call sites are lazy on purpose:
+// a runtime-startup hook would also work, but it would force character
+// mode on every program, including those that never do an interactive
+// read and could otherwise keep bulk reads buffered.
+static void use_stdin_char_mode(void)
+{
+#if defined(__EMSCRIPTEN__)
+    static int done;
+    // The runtime is not threaded, but an atomic exchange documents and
+    // future-proofs the one-shot initialization of setvbuf().
+    if (!__atomic_exchange_n(&done, 1, __ATOMIC_RELAXED)) {
+        setvbuf(stdin, NULL, _IONBF, 0);
+    }
+#endif
+}
+
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode, int *pad_mode) {
     _lfortran_init_standard_units();
     // Initialize all output params to safe defaults for unconnected units
@@ -6199,7 +6223,12 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
             if (encoding_mode) *encoding_mode = unit_to_file[i].encoding;
             if (round_mode) *round_mode = unit_to_file[i].round_mode;
             if (pad_mode) *pad_mode = unit_to_file[i].pad_mode;
-            return unit_to_file[i].filep;
+            FILE *connected_file = unit_to_file[i].filep;
+            if (connected_file == stdin) {
+                // The preconnected input unit (5) reads through stdin.
+                use_stdin_char_mode();
+            }
+            return connected_file;
         }
     }
     return NULL;
@@ -7912,6 +7941,9 @@ static void skip_trailing_comma(FILE *filep) {
 
 static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t bufsize, int32_t *iostat)
 {
+    // All token-based list-directed reads of the standard input funnel
+    // through here.
+    use_stdin_char_mode();
     if (bufsize == 0) {
         if (iostat) *iostat = 1;
         return false;
@@ -8516,6 +8548,7 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     }
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             int8_t val;
             if (scanf("%" SCNd8, &val) != 1) {
@@ -8742,6 +8775,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             int16_t val;
             if (scanf("%hd", &val) != 1) {
@@ -8850,6 +8884,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             int32_t val;
             if (scanf("%d", &val) != 1) {
@@ -8957,6 +8992,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             int64_t val;
             if (scanf("%" SCNd64, &val) != 1) {
@@ -9067,6 +9103,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
     if (unit_num == -1) {
         filep = stdin;
         unit_file_bin = false;
+        use_stdin_char_mode();
     } else {
         filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
                                            &access_id, &read_access, &write_access, &delim_value, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -9499,6 +9536,7 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         char buf_re[100], buf_im[100];
         if (scanf("%99s %99s", buf_re, buf_im) != 2) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -9620,6 +9658,7 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         char buf_re[100], buf_im[100];
         if (scanf("%99s %99s", buf_re, buf_im) != 2) {
             if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -9747,6 +9786,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
     char buf_re[100], buf_im[100];
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             if (scanf("%99s %99s", buf_re, buf_im) != 2) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -9908,6 +9948,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
     char buf_re[100], buf_im[100];
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             if (scanf("%99s %99s", buf_re, buf_im) != 2) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -10069,6 +10110,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
     char buffer[100];
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             if (scanf("%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -10187,6 +10229,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
     char buffer[100];
 
     if (unit_num == -1) {
+        use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
             if (scanf("%99s", buffer) != 1) {
                 if (iostat) { *iostat = feof(stdin) ? -1 : 1; return; }
@@ -10311,6 +10354,7 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
         filep = stdin;
         unit_file_bin = false;
         access_id = -1;
+        use_stdin_char_mode();
     } else {
         filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         if (!filep) {
@@ -11605,6 +11649,10 @@ LFORTRAN_API void _lfortran_formatted_read(
             exit(1);
         }
     } else {
+        // External formatted reads from stdin must not depend on stdio
+        // buffering: on some targets (see use_stdin_char_mode) a buffered
+        // read swallows the record-terminating newline.
+        use_stdin_char_mode();
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = stdin;
     }
@@ -15013,6 +15061,7 @@ LFORTRAN_API void _lfortran_namelist_read(
 
     if (!filep) {
         filep = stdin;
+        use_stdin_char_mode();
     }
 
     if (unit_file_bin) {
