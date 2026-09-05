@@ -9493,6 +9493,31 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return gep;
     }
 
+    llvm::Value* LLVMUtils::get_type_identifier_for_polymorphic_type(
+            ASR::expr_t* arg, llvm::Value* arg_val, ASR::symbol_t* struct_sym,
+            llvm::Module* module, int class_type_id) {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t* core_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+        if (ASRUtils::is_class_type(core_type)) {
+            llvm::Type* class_type = getClassType(
+                ASR::down_cast<ASR::Struct_t>(struct_sym), false);
+            if (ASRUtils::is_allocatable(arg_type) ||
+                ASR::is_a<ASR::Pointer_t>(*arg_type)) {
+                arg_val = CreateLoad2(class_type->getPointerTo(), arg_val);
+            }
+            llvm::Value* id_ptr = create_gep2(class_type, arg_val, 0);
+            llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type)->getElementType(0);
+            return CreateLoad2(field0_type, id_ptr);
+        }
+        // Non-polymorphic derived type: use the static type's identifier.
+        if (compiler_options.new_classes) {
+            return struct_api->get_pointer_to_method(struct_sym, module);
+        }
+        return llvm::ConstantInt::get(getIntType(8),
+            llvm::APInt(64, class_type_id));
+    }
+
     void LLVMStruct::store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module)
     {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
