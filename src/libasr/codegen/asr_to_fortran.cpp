@@ -1300,8 +1300,13 @@ public:
                 if (root_v->m_storage == ASR::storage_typeType::Parameter) {
                     continue; 
                 }
+                
+                std::string var_name = std::string(root_v->m_name);
+                if (root_v->m_storage == ASR::storage_typeType::Local && 
+                    (var_name.find("__") == 0 || var_name.find("~") == 0)) {
+                    continue;
+                }
             }
-
         
             if (has_vars) {
                 r += ", ";

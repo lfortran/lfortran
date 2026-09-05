@@ -2762,7 +2762,6 @@ public:
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
-
             ASR::expr_t* root_expr = tmp_expr;
             while (true) {
                 if (ASR::is_a<ASR::StructInstanceMember_t>(*root_expr)) {
@@ -2783,6 +2782,12 @@ public:
                 
                 if (root_v->m_storage == ASR::storage_typeType::Parameter) {
                     continue; 
+                }
+                
+                std::string var_name = std::string(root_v->m_name);
+                if (root_v->m_storage == ASR::storage_typeType::Local && 
+                    (var_name.find("__") == 0 || var_name.find("~") == 0)) {
+                    continue;
                 }
             }
 
