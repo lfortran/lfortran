@@ -10304,6 +10304,38 @@ public:
             handle_array_section_association_to_pointer(x);
         } else if (is_component_array_expr(x.m_value)) {
             handle_component_array_association(x);
+        } else if ((ASR::is_a<ASR::ComplexRe_t>(*x.m_value) ||
+                    ASR::is_a<ASR::ComplexIm_t>(*x.m_value)) &&
+                   !ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            // Complex scalar parts are designators in an ASSOCIATE target.
+            // Visit the complex argument without loading it, then associate
+            // the target pointer with the selected component address.
+            bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_value);
+            ASR::expr_t* complex_arg = is_re
+                ? ASR::down_cast<ASR::ComplexRe_t>(x.m_value)->m_arg
+                : ASR::down_cast<ASR::ComplexIm_t>(x.m_value)->m_arg;
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            visit_expr(*complex_arg);
+            ptr_loads = ptr_loads_copy;
+            llvm::Value* complex_ptr = tmp;
+            if (!complex_ptr->getType()->isPointerTy()) {
+                llvm::Value* complex_storage = llvm_utils->CreateAlloca(
+                    complex_ptr->getType(), nullptr, "associate_complex_storage");
+                builder->CreateStore(complex_ptr, complex_storage);
+                complex_ptr = complex_storage;
+            }
+            int kind = ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(complex_arg));
+            llvm::Type* complex_type = (kind == 4) ? complex_type_4 : complex_type_8;
+            llvm::Value* component_ptr = llvm_utils->create_gep2(
+                complex_type, complex_ptr, is_re ? 0 : 1);
+
+            ptr_loads = 0;
+            visit_expr(*x.m_target);
+            llvm::Value* target_ptr = tmp;
+            ptr_loads = ptr_loads_copy;
+            builder->CreateStore(component_ptr, target_ptr);
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;

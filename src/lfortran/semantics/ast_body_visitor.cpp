@@ -3210,6 +3210,11 @@ public:
                 tmp_type = sim->m_type;
             } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
                 create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
+                       ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
+                // Complex parts are designators. Associate them with the
+                // original storage instead of copying their current value.
+                create_associate_stmt = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
