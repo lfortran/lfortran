@@ -9143,6 +9143,7 @@ public:
             llvm::Type *el_type = llvm_utils->get_el_type(
                 asr_expr, ASRUtils::extract_type(asr_type), module.get());
             switch( physical_type ) {
+                case ASR::array_physical_typeType::AssumedRankArray:
                 case ASR::array_physical_typeType::DescriptorArray: {
                     llvm_tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(asr_expr, asr_type, module.get()), llvm_tmp));
                     break;
