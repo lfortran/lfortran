@@ -3,12 +3,12 @@ module pdt_18_m
 
     type inner_t(k)
         integer, kind :: k
-        real(k) :: value
+        real(k) :: value = 1
     end type
 
     type outer_t(k)
         integer, kind :: k
-        type(inner_t(k)) :: member = inner_t(k)(real(1, k))
+        type(inner_t(k)) :: member = inner_t(k)()
     end type
 end module
 
