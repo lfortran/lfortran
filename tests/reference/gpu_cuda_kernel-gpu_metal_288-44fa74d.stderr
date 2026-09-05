@@ -1,0 +1,5 @@
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_288.f90:26:16
+   |
+26 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the gpu backend does not support stop
