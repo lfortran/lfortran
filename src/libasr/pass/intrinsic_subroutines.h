@@ -2088,7 +2088,7 @@ namespace CoMin {
 }
 
 namespace CoBroadcast {
-   static inline bool is_static_pod_type(ASR::ttype_t* t) {
+   static inline bool is_static_pod_type(ASR::ttype_t* t, bool is_component = false) {
         if (!t) return false;
 
         switch (t->type) {
@@ -2100,18 +2100,24 @@ namespace CoBroadcast {
 
             case ASR::ttypeType::Array: {
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
-                return is_static_pod_type(arr->m_type);
+                if (is_component && arr->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    return false;
+                }
+                return is_static_pod_type(arr->m_type, is_component);
             }
 
             case ASR::ttypeType::Allocatable: {
+                if (is_component) {
+                    return false;
+                }
                 ASR::Allocatable_t* allo = ASR::down_cast<ASR::Allocatable_t>(t);
-                return is_static_pod_type(allo->m_type);
+                return is_static_pod_type(allo->m_type, is_component);
             }
 
             case ASR::ttypeType::StructType: {
                 ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(t);
                 for (size_t i = 0; i < st->n_data_member_types; i++) {
-                    if (!is_static_pod_type(st->m_data_member_types[i])) {
+                    if (!is_static_pod_type(st->m_data_member_types[i], true)) {
                         return false;
                     }
                 }

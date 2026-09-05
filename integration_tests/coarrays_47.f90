@@ -32,9 +32,7 @@ block
             arr(i)%y = -1
         end do
     end if
-    sync all
     call co_broadcast(arr, source_image=SRC)
-    sync all
     ok = .true.
     do i = 1, N1
         if (arr(i)%x /= i .or. arr(i)%y /= i*10) ok = .false.
@@ -73,14 +71,12 @@ block
             mat(1,i)%y = -1
         end do
     end if
-    sync all
     
     ! `mat(1,:)` is a row of a column-major 2-D array, i.e. strided
     ! with stride = N2, hence non-contiguous. GFortran packs it via
     ! `internal_pack` at the `contiguous` dummy call inside
     ! `prif_co_broadcast -> contiguous_co_broadcast`.
     call co_broadcast(mat(1,:), source_image=SRC)
-    sync all
     
     ok = .true.
     ! 1. Validate the broadcasted row arrived safely

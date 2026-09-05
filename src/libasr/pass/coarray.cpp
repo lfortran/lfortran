@@ -2885,6 +2885,7 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             }
             ASRUtils::ASRBuilder b(replacer.al, loc);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(a));
+            LCOMPILERS_ASSERT_MSG(n_dims >= 1, "emit_packed_co_broadcast called for non-array")
             ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(a));
             Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(replacer.al, n_dims);
             for (int i = 0; i < n_dims; i++) {
