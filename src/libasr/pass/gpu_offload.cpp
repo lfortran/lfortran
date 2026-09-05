@@ -2778,6 +2778,43 @@ private:
     bool committed_ = false;
 };
 
+// What the pass takes out of the host's scope while it drafts a kernel: the
+// copies of the blocks in the loop nest, and the kernel number the draft
+// would be named after. Every exit that leaves the loop on the host has to
+// give both back -- the copies because a block nothing calls is left over ASR
+// in a live function, half-rewritten once the inliners below have run, and
+// the number because a gap makes an emitted kernel's name depend on unrelated
+// declines elsewhere in the file. There are a dozen such exits, so a guard
+// owns them rather than each exit remembering to.
+class GpuKernelDraftGuard {
+public:
+    GpuKernelDraftGuard(SymbolTable *scope, std::vector<std::string> &names,
+            int &counter)
+        : scope_(scope), names_(names), counter_(counter),
+          saved_counter_(counter) {}
+
+    ~GpuKernelDraftGuard() {
+        if (committed_) return;
+        for (const std::string &n : names_) {
+            // One already moved into the kernel goes with it.
+            if (scope_ != nullptr && scope_->get_symbol(n) != nullptr) {
+                scope_->erase_symbol(n);
+            }
+        }
+        names_.clear();
+        counter_ = saved_counter_;
+    }
+
+    void commit() { committed_ = true; }
+
+private:
+    SymbolTable *scope_;
+    std::vector<std::string> &names_;
+    int &counter_;
+    int saved_counter_;
+    bool committed_ = false;
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -9133,8 +9170,32 @@ public:
     // A parallel loop is ordinary Fortran, so a loop that cannot be
     // offloaded must still compile and run. Report why it was left on the
     // host rather than build a kernel that would quietly do something else.
+    // The loop whose offload is being decided, and the loops already
+    // reported. pass_replace_gpu_offload re-walks the translation unit until
+    // nothing changes, so a declined loop is visited again on every sweep;
+    // without this the user is told about it once per sweep rather than once
+    // per loop.
+    const ASR::OMPRegion_t *region_being_decided = nullptr;
+    std::set<const ASR::OMPRegion_t*> reported_regions;
+
+    // Names the region a decline is about for as long as the decision lasts,
+    // whichever of the dozen exits it leaves by.
+    struct DecisionScope {
+        GpuOffloadVisitor &v;
+        const ASR::OMPRegion_t *saved;
+        DecisionScope(GpuOffloadVisitor &v_, const ASR::OMPRegion_t *r)
+            : v(v_), saved(v_.region_being_decided) {
+            v.region_being_decided = r;
+        }
+        ~DecisionScope() { v.region_being_decided = saved; }
+    };
+
     void report_not_offloaded(const Location &where, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
+        if (region_being_decided != nullptr &&
+                !reported_regions.insert(region_being_decided).second) {
+            return;
+        }
         pass_options.diagnostics->message_label(
             "parallel loop not offloaded to the GPU, "
             "it runs on the CPU instead",
@@ -9712,6 +9773,7 @@ public:
     }
 
     void visit_OMPRegion(const ASR::OMPRegion_t &region) {
+        DecisionScope decision(*this, &region);
         if (!pass_options.gpu_offload_metal &&
                 !pass_options.gpu_offload_cuda) {
             decline(region);
@@ -9800,6 +9862,13 @@ public:
         // cannot reach the host, and a decline has nothing to put back.
         ParallelLoopNest work;
         kernel_block_names.clear();
+        // From here on the pass is drafting a kernel: it copies the blocks of
+        // the nest into this scope and takes a kernel number. Every exit
+        // below that leaves the loop on the host drops both, whichever exit
+        // it is; the draft is handed to the kernel by committing the guard
+        // once the launch is known to be supported.
+        GpuKernelDraftGuard draft_guard(current_scope, kernel_block_names,
+            gpu_kernel_counter);
         {
             ASRUtils::ExprStmtDuplicator dup(al);
             dup.allow_procedure_calls = true;
@@ -9809,12 +9878,6 @@ public:
                     !parallel_loop_nest_of(loop_copy,
                         parallel_collapse_count(region), work)) {
                 // Nothing here can be rewritten safely.
-                for (const std::string &name : kernel_block_names) {
-                    if (current_scope->get_symbol(name) != nullptr) {
-                        current_scope->erase_symbol(name);
-                    }
-                }
-                kernel_block_names.clear();
                 decline(region);
                 return;
             }
@@ -12951,17 +13014,13 @@ public:
                 }
                 member_extent_undo.clear();
                 // The host's own blocks were never touched: the kernel was
-                // given copies. Drop the copies, which nothing else names.
-                for (const std::string &name : kernel_block_names) {
-                    // One already moved into the kernel goes with it.
-                    if (orig_scope->get_symbol(name) != nullptr) {
-                        orig_scope->erase_symbol(name);
-                    }
-                }
-                kernel_block_names.clear();
+                // given copies, which the draft guard drops.
                 return;
             }
         }
+        // The launch stands, so the blocks and the kernel number are the
+        // kernel's from here on.
+        draft_guard.commit();
 
         // The loop is offloaded from here on, so this is where a clause the
         // launch cannot honour is reported: before this every exit still
