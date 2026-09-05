@@ -19157,15 +19157,21 @@ public:
             // pointer to the next line.
             // Skip for internal (string) reads — no file position to advance.
             if (!is_string || empty_read) {
-            std::string runtime_func_name = "_lfortran_empty_read";
+            std::string runtime_func_name = x.m_advance
+                ? "_lfortran_empty_read_advance" : "_lfortran_empty_read";
             llvm::Function *fn = module->getFunction(runtime_func_name);
             if (!fn) {
+                std::vector<llvm::Type*> arg_types = {
+                    llvm::Type::getInt32Ty(context),
+                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                    llvm::Type::getInt32Ty(context)};
+                if (x.m_advance) {
+                    arg_types.push_back(
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                    arg_types.push_back(llvm::Type::getInt64Ty(context));
+                }
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)
-                        }, false);
+                        llvm::Type::getVoidTy(context), arg_types, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, runtime_func_name,
                             module.get());
@@ -19176,16 +19182,22 @@ public:
             // When x.m_iostat is provided and values were read (n_values > 0),
             // only call empty_read if no error occurred during value reads.
             // When n_values == 0, no reads happened yet so call unconditionally.
+            llvm::SmallVector<llvm::Value*, 5> empty_read_args = {
+                unit_val, iostat_for_empty_read, no_values_flag};
+            if (x.m_advance) {
+                empty_read_args.push_back(advance);
+                empty_read_args.push_back(advance_length);
+            }
             if (x.m_iostat && x.n_values > 0) {
                 llvm::Value* iostat_val = builder->CreateLoad(
                     llvm::Type::getInt32Ty(context), iostat_for_empty_read);
                 llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
                     iostat_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
                 llvm_utils->create_if_else(iostat_is_zero, [&]() {
-                    builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
+                    builder->CreateCall(fn, empty_read_args);
                 }, [](){});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
+                builder->CreateCall(fn, empty_read_args);
             }
             }
         }

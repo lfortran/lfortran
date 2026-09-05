@@ -5097,3 +5097,51 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+# Interactive reads from standard input.  The loader drives the program
+# prompt by prompt and keeps stdin open, like a browser prompt with no
+# input pending: under Emscripten a read that over-fetches then waits for
+# input that never arrives (#12108).  The eager scenarios additionally
+# guard the record boundaries between several reads of one process
+# (#12656); they run the same way on a native binary fed through a pipe.
+set(READ_STDIN_01_LOADED no)
+if (LFORTRAN_BACKEND STREQUAL "llvm_wasm_emcc")
+    set(READ_STDIN_01_LOADED yes)
+    set(READ_STDIN_01_LABEL "llvm_wasm_emcc")
+    set(READ_STDIN_01_ARG "wasm")
+    add_executable(read_stdin_01 read_stdin_01.f90)
+    target_compile_options(read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+    target_link_options(read_stdin_01 PUBLIC
+        --backend=llvm --target=wasm32-unknown-emscripten)
+elseif (LFORTRAN_BACKEND STREQUAL "llvm")
+    set(READ_STDIN_01_LOADED yes)
+    set(READ_STDIN_01_LABEL "llvm")
+    set(READ_STDIN_01_ARG "native")
+    add_executable(read_stdin_01 read_stdin_01.f90)
+elseif (NOT LFORTRAN_BACKEND)
+    # GFortran pass (see RUN_UTIL: no LFORTRAN_BACKEND means gfortran)
+    set(READ_STDIN_01_LOADED yes)
+    set(READ_STDIN_01_LABEL "gfortran")
+    set(READ_STDIN_01_ARG "native")
+    add_executable(read_stdin_01 read_stdin_01.f90)
+endif()
+if (READ_STDIN_01_LOADED)
+    find_program(WASM_EXEC_RUNTIME node)
+    if (WASM_EXEC_RUNTIME)
+        add_test(NAME read_stdin_01
+            COMMAND ${WASM_EXEC_RUNTIME}
+                ${CMAKE_CURRENT_SOURCE_DIR}/read_stdin_01_loader.mjs
+                ${CMAKE_CURRENT_BINARY_DIR}/read_stdin_01
+                ${READ_STDIN_01_ARG})
+        # the loader's own per-scenario timeout is 10s, for 12 scenarios;
+        # give ctest a generous backstop
+        set_tests_properties(read_stdin_01 PROPERTIES
+            LABELS "${READ_STDIN_01_LABEL}" TIMEOUT 300)
+    else()
+        message(WARNING "node not found: read_stdin_01 will be "
+            "compiled but not run")
+    endif()
+endif()
+
+RUN(NAME read_advance_01 LABELS gfortran llvm llvm_wasm_emcc)
