@@ -10907,6 +10907,15 @@ public:
         instantiate_pdt_by_values(loc, ASRUtils::symbol_name(v), kind_vals,
             false, false, dims, type_declaration, ASR::abiType::Source, false);
         v = type_declaration;
+        // Kind arguments must be concrete values so the constructor can be
+        // used outside the PDT instance's symbol table.
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        for (size_t i = 0; i < info.kind_indices.size(); i++) {
+            size_t index = info.kind_indices[i];
+            LCOMPILERS_ASSERT(index < vals.size());
+            vals.p[index].m_value = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, kind_vals[i], int_type));
+        }
         visit_kwargs(vals, nullptr, 0, loc, v, diag);
     }
 
@@ -10946,8 +10955,12 @@ public:
             }
             vals = combined;
         }
-        visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, !is_pdt);
-        if (is_pdt) resolve_pdt_constructor(loc, v, vals);
+        if (is_pdt) {
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false);
+            resolve_pdt_constructor(loc, v, vals);
+        } else {
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag);
+        }
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
@@ -21697,7 +21710,7 @@ public:
 
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
         const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag,
-        bool cast_args = true) {
+        bool cast_args = true, bool fill_component_defaults = true) {
         fn = ASRUtils::symbol_get_past_external(fn);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn));
         StructConstructorInfo info = get_struct_constructor_info(fn);
@@ -21755,12 +21768,16 @@ public:
             if( args[i].m_value == nullptr ) {
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
                 LCOMPILERS_ASSERT(arg_sym != nullptr);
+                bool is_kind_param = std::find(info.kind_indices.begin(),
+                    info.kind_indices.end(), i) != info.kind_indices.end();
+                // PDT component defaults belong to the instantiated type.
+                if (!fill_component_defaults && !is_kind_param) {
+                    continue;
+                }
                 ASR::expr_t* default_init = nullptr;
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    bool is_kind_param = std::find(info.kind_indices.begin(),
-                        info.kind_indices.end(), i) != info.kind_indices.end();
                     default_init = is_kind_param ? arg_var->m_symbolic_value : arg_var->m_value;
                     if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
