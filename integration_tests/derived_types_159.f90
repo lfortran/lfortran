@@ -3,7 +3,7 @@
 ! (heap allocated and freed at scope exit), not point at the read-only
 ! constant holding the initializer.
 ! See https://github.com/lfortran/lfortran/issues/12692
-program derived_types_155
+program derived_types_159
     implicit none
 
     character(len=1), parameter :: letters(4) = ['a', 'b', 'c', 'd']
@@ -38,4 +38,4 @@ program derived_types_155
     if (letters(1) /= 'a') error stop
 
     print *, calen%chars, c%chars, t%names
-end program derived_types_155
+end program derived_types_159
