@@ -39,14 +39,24 @@ building a launch that would read the wrong bytes.
 */
 // Why the last rejected launch could not be expanded, for the warning.
 static std::string unsupported_reason;
-static bool unsupported(const char *why) {
+static bool unsupported(const std::string &why) {
     unsupported_reason = why;
     return false;
 }
 
-static bool is_plain_scalar(ASR::ttype_t *type) {
+// A number or a logical: what the device languages have a scalar type for at
+// all, before their widths are considered.
+static bool is_numeric_scalar(ASR::ttype_t *type) {
     return ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
         || ASR::is_a<ASR::Logical_t>(*type);
+}
+
+// ... and of a width the device has a type of its own for.  A width the
+// device cannot match is not a layout the launch can hand over: the buffer is
+// sized from the host element type, so the kernel would stride through it at
+// the wrong size and quietly compute on the wrong elements.
+static bool is_plain_scalar(ASR::ttype_t *type) {
+    return is_numeric_scalar(type) && gpu_scalar_width_supported(type);
 }
 
 // An allocatable rank one array member of a struct is not stored inline: the
@@ -125,6 +135,11 @@ static bool struct_is_plain(ASR::symbol_t *struct_sym) {
             continue;
         }
         if (!is_plain_scalar(base)) {
+            if (is_numeric_scalar(base)) {
+                return unsupported("a derived type with a "
+                    + gpu_scalar_type_name(base)
+                    + " member, which has no gpu type of the same width");
+            }
             return unsupported(
                 "a derived type with a member that is not a number");
         }
@@ -218,6 +233,10 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         return true;
     }
     if (is_plain_scalar(base)) return true;
+    if (is_numeric_scalar(base)) {
+        return unsupported("an array of " + gpu_scalar_type_name(base)
+            + ", which has no gpu type of the same width");
+    }
     return unsupported("an array whose elements are not numbers");
 }
 

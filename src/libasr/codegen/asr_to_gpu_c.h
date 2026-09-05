@@ -379,13 +379,26 @@ public:
         return std::string(indent_level * 4, ' ');
     }
 
+    // A type the emitter has no device type of the host's width for. The
+    // launch declines these, so reaching one is a bug in that agreement;
+    // emitting a comment makes the generated source fail to build instead of
+    // building into wrong numbers.
+    std::string unsupported_gpu_type(const std::string &name, int kind) {
+        return "/* unsupported " + name + "(" + std::to_string(kind) +
+            ") on the gpu */";
+    }
+
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
             case ASR::ttypeType::Integer: {
                 int kind = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
                 if (kind == 4) return "int";
                 if (kind == 8) return "long";
-                return "int";
+                // gpu_scalar_width_supported keeps the launch from handing
+                // over a width with no device type, so this is unreachable.
+                // Emit something that does not compile rather than a type of
+                // the wrong width, which would be silently wrong numbers.
+                return unsupported_gpu_type("integer", kind);
             }
             case ASR::ttypeType::Real: {
                 int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
@@ -397,7 +410,10 @@ public:
                 if (kind == 1) return "char";
                 if (kind == 2) return "short";
                 if (kind == 4) return "int";
-                return "int";
+                // No device language has a 64-bit boolean; the launch turns
+                // such a loop back to the host rather than reinterpreting the
+                // host's 8-byte elements as 4-byte ones.
+                return unsupported_gpu_type("logical", kind);
             }
             case ASR::ttypeType::Array: {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -411,7 +427,9 @@ public:
                 return "/* unsupported struct type */";
             }
             default:
-                return "float";
+                // Complex and character reach the device as nothing at all;
+                // `float` was a guess that compiled and computed rubbish.
+                return "/* unsupported type on the gpu */";
         }
     }
 

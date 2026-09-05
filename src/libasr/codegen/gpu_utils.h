@@ -75,6 +75,55 @@ inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
     return ASR::down_cast<ASR::Array_t>(inner)->n_dims;
 }
 
+// The integer, real and logical kinds the device languages have a type of the
+// same width for. A buffer reaches the device as a block of bytes sized from
+// the host element type, so a device type of a different width makes the
+// kernel stride through it at the wrong size: it reads and writes the wrong
+// elements, and nothing says so. `logical(8)` is the case that bites -- the
+// emitter has no 64-bit boolean and used to fall back to a 4-byte `int`.
+//
+// The launch (device_launch_expand.cpp) and the emitter (asr_to_gpu_c.h) both
+// go through this, so a scalar type either has one width on both sides or the
+// loop is not offloaded at all.  What a dialect can represent on top of this
+// is narrower still -- Metal has no 64-bit floating point type -- and is
+// checked where the dialect is known.
+inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
+    switch (t->type) {
+        case ASR::ttypeType::Integer:
+            switch (ASR::down_cast<ASR::Integer_t>(t)->m_kind) {
+                case 4: case 8: return true;
+                default: return false;
+            }
+        case ASR::ttypeType::Real:
+            switch (ASR::down_cast<ASR::Real_t>(t)->m_kind) {
+                case 4: case 8: return true;
+                default: return false;
+            }
+        case ASR::ttypeType::Logical:
+            switch (ASR::down_cast<ASR::Logical_t>(t)->m_kind) {
+                case 1: case 2: case 4: return true;
+                default: return false;
+            }
+        default:
+            return false;
+    }
+}
+
+// The type as a user would write it, for a diagnostic that has to name the
+// kind it is turning down: `logical(8)`, `real(16)`.
+inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {
+    std::string base;
+    switch (t->type) {
+        case ASR::ttypeType::Integer: base = "integer"; break;
+        case ASR::ttypeType::Real: base = "real"; break;
+        case ASR::ttypeType::Logical: base = "logical"; break;
+        case ASR::ttypeType::Complex: base = "complex"; break;
+        default: return "that type";
+    }
+    return base + "(" +
+        std::to_string(ASRUtils::extract_kind_from_ttype_t(t)) + ")";
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
