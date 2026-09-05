@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1138:7
+    --> tests/errors/continue_compilation_1.f90:1153:7
      |
-1138 |       foo    end type t_recovery
+1153 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -599,21 +599,21 @@ semantic error: a conditional expression is not allowed in a specification expre
      |                        ~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.11 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1125:19
+    --> tests/errors/continue_compilation_1.f90:1140:19
      |
-1125 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+1140 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1126:19
+    --> tests/errors/continue_compilation_1.f90:1141:19
      |
-1126 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1141 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1127:19
+    --> tests/errors/continue_compilation_1.f90:1142:19
      |
-1127 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1142 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -623,9 +623,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1141:7
+    --> tests/errors/continue_compilation_1.f90:1156:7
      |
-1141 |       class(t_recovery), intent(in) :: self
+1156 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -2084,3 +2084,27 @@ semantic error: a conditional expression cannot be a pointer assignment target
      |
 1091 |         p => ( .true. ? a : b )  ! {Error} a conditional expression cannot be a pointer assignment target
      |              ^^^^^^^^^^^^^^^^^^ this is a value, not a target or a pointer
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1129:18
+     |
+1129 |         print *, parameterized_t(4, 8)(1)  ! {Error} too many arguments in parameterized derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1130:18
+     |
+1130 |         print *, parameterized_t(4)(1, 2)  ! {Error} too many arguments in parameterized derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1131:18
+     |
+1131 |         print *, plain_t(1, 2)  ! {Error} too many arguments in derived type constructor
+     |                  ^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1132:18
+     |
+1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
