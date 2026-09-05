@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocatable_attr_implicit_none-e562d00",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/allocatable_attr_implicit_none.f90",
+    "infile_hash": "87cc3315d19b7cd5462404518b91f87bc93e7a4a3f25a74239fba625",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-allocatable_attr_implicit_none-e562d00.stdout",
+    "stdout_hash": "89d47566135c6524fda240ea32e2158a58c63ede5ad2e6a52f4cb727",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
