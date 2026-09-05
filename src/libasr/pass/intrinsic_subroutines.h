@@ -2088,6 +2088,46 @@ namespace CoMin {
 }
 
 namespace CoBroadcast {
+   static inline bool is_static_pod_type(ASR::ttype_t* t, bool is_component = false) {
+        if (!t) return false;
+
+        switch (t->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+                return true;
+
+            case ASR::ttypeType::Array: {
+                ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+                if (is_component && arr->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    return false;
+                }
+                return is_static_pod_type(arr->m_type, is_component);
+            }
+
+            case ASR::ttypeType::Allocatable: {
+                if (is_component) {
+                    return false;
+                }
+                ASR::Allocatable_t* allo = ASR::down_cast<ASR::Allocatable_t>(t);
+                return is_static_pod_type(allo->m_type, is_component);
+            }
+
+            case ASR::ttypeType::StructType: {
+                ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(t);
+                for (size_t i = 0; i < st->n_data_member_types; i++) {
+                    if (!is_static_pod_type(st->m_data_member_types[i], true)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            default:
+                return false;
+        }
+    }
     static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
              diag::Diagnostics& diagnostics) {
 
@@ -2096,28 +2136,22 @@ namespace CoBroadcast {
              + std::to_string(x.n_args),
             x.base.base.loc, diagnostics);
 
-        ASRUtils::require_impl(
-            ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_real(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_complex(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ||
-            ASRUtils::is_logical(*ASRUtils::expr_type(x.m_args[0])) ,
-            "First argument must be of integer, real, complex, character or logical type",
+        ASRUtils::require_impl(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[0])) ||
+            is_static_pod_type(ASRUtils::expr_type(x.m_args[0])),
+            "First argument must be of integer, real, complex, character, logical or static derived type",
             x.base.base.loc, diagnostics);
     }
 
     static inline ASR::asr_t* create_CoBroadcast(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);
-        if (!ASRUtils::is_integer(*arg_type) && !ASRUtils::is_real(*arg_type)
-                && !ASRUtils::is_complex(*arg_type) && !ASRUtils::is_character(*arg_type)
-                && !ASRUtils::is_logical(*arg_type)) {
+        if (!ASRUtils::is_character(*arg_type) && !is_static_pod_type(arg_type)) {
             diag.add(diag::Diagnostic(
-                "`a` argument of `co_broadcast` must currently be of integer, real, complex, character or logical type, but got " +
+                "`a` argument of `co_broadcast` must currently be of integer, real, complex, character, logical or static derived type, but got " +
                     ASRUtils::type_to_str_fortran_expr(arg_type, args[0]) +
                     " which is not yet supported",
                 diag::Level::Error, diag::Stage::Semantic,
-                {diag::Label("must currently be integer, real, complex, character or logical type; other types are not yet supported", { args[0]->base.loc })}));
+                {diag::Label("must currently be integer, real, complex, character, logical or static derived type; other types are not yet supported", { args[0]->base.loc })}));
             return nullptr;
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
@@ -2138,10 +2172,20 @@ namespace CoBroadcast {
         const std::string new_name = "_lcompilers_co_broadcast_"
             + std::to_string(arg_types.n);
         declare_basic_variables(new_name);
-        fill_func_arg_sub("a", arg_types[0], InOut);
-        if (arg_types.n >= 2) {
-            fill_func_arg_sub("source_image", arg_types[1], In);
+        ASR::symbol_t *type_decl = nullptr;
+        ASR::expr_t *target_expr = new_args[0].m_value;
+        if (ASR::is_a<ASR::ArrayItem_t>(*target_expr)) {
+            target_expr = ASR::down_cast<ASR::ArrayItem_t>(target_expr)->m_v;
         }
+        if (ASR::is_a<ASR::Var_t>(*target_expr)) {
+            ASR::Variable_t *orig_var = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(target_expr)->m_v);
+            type_decl = orig_var->m_type_declaration;
+        }
+        auto arg_a = b.Variable(fn_symtab, "a", arg_types[0], ASR::intentType::InOut, type_decl);
+        args.push_back(al, arg_a);
+        LCOMPILERS_ASSERT(arg_types.n >= 2);
+        fill_func_arg_sub("source_image", arg_types[1], In);
         if (arg_types.n >= 3) {
             fill_func_arg_sub("stat", arg_types[2], In);
         }
