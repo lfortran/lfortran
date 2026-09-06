@@ -1,39 +1,41 @@
-! An array of a derived type with an allocatable component, passed through
-! a procedure pointer. LLVM lays the element type out from FunctionType
-! with no expression, so an allocatable member must be a descriptor rather
-! than an array element type.
+! Derived type components that are character arrays with a default
+! initializer.  The component's character data must be owned by the struct
+! (heap allocated and freed at scope exit), not point at the read-only
+! constant holding the initializer.
+! See https://github.com/lfortran/lfortran/issues/12692
 program derived_types_159
-implicit none
-type :: t
-    integer, allocatable :: a(:)
-    integer :: n
-end type
-type(t) :: xs(2)
-procedure(work), pointer :: p
-integer :: i
+    implicit none
 
-do i = 1, 2
-    allocate(xs(i)%a(2))
-    xs(i)%a = [i, i + 10]
-    xs(i)%n = i
-end do
+    character(len=1), parameter :: letters(4) = ['a', 'b', 'c', 'd']
 
-p => work
-call p(xs)
+    type :: calendar
+        character(len=1) :: chars(4) = letters
+    end type calendar
 
-if (xs(1)%a(1) /= 2) error stop 1
-if (xs(1)%a(2) /= 12) error stop 2
-if (xs(2)%n /= 12) error stop 3
-if (.not. allocated(xs(2)%a)) error stop 4
-if (xs(2)%a(1) /= 2) error stop 5
-if (storage_size(xs(1)) /= sizeof(xs(1)) * 8) error stop 6
+    type :: tags
+        character(len=3) :: names(2) = ['abc', 'de ']
+        integer :: n = 7
+    end type tags
 
-contains
+    type(calendar), parameter :: calen = calendar()
+    type(calendar) :: c
+    type(tags) :: t
+    integer :: i
 
-subroutine work(arr)
-    type(t), intent(inout) :: arr(:)
-    arr(1)%a = arr(1)%a + 1
-    arr(2)%n = arr(2)%n + 10
-end subroutine
+    do i = 1, 4
+        if (calen%chars(i) /= letters(i)) error stop
+        if (c%chars(i) /= letters(i)) error stop
+    end do
 
-end program
+    if (t%names(1) /= 'abc') error stop
+    if (t%names(2) /= 'de ') error stop
+    if (t%n /= 7) error stop
+
+    ! The component is writable storage of its own, not shared constant data.
+    c%chars(1) = 'z'
+    if (c%chars(1) /= 'z') error stop
+    if (calen%chars(1) /= 'a') error stop
+    if (letters(1) /= 'a') error stop
+
+    print *, calen%chars, c%chars, t%names
+end program derived_types_159

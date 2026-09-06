@@ -10907,6 +10907,15 @@ public:
         instantiate_pdt_by_values(loc, ASRUtils::symbol_name(v), kind_vals,
             false, false, dims, type_declaration, ASR::abiType::Source, false);
         v = type_declaration;
+        // Kind arguments must be concrete values so the constructor can be
+        // used outside the PDT instance's symbol table.
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        for (size_t i = 0; i < info.kind_indices.size(); i++) {
+            size_t index = info.kind_indices[i];
+            LCOMPILERS_ASSERT(index < vals.size());
+            vals.p[index].m_value = ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, kind_vals[i], int_type));
+        }
         visit_kwargs(vals, nullptr, 0, loc, v, diag);
     }
 
@@ -10946,8 +10955,12 @@ public:
             }
             vals = combined;
         }
-        visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, !is_pdt);
-        if (is_pdt) resolve_pdt_constructor(loc, v, vals);
+        if (is_pdt) {
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false);
+            resolve_pdt_constructor(loc, v, vals);
+        } else {
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag);
+        }
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
@@ -17788,17 +17801,31 @@ public:
         ASR::expr_t *n = args[0].m_value;
         ASR::expr_t *w = args[1].m_value;
 
-        ASR::ttype_t* n_type = ASRUtils::expr_type(n);
-        ASR::ttype_t* w_type = ASRUtils::expr_type(w);
+        ASR::ttype_t* type_n = ASRUtils::expr_type(n);
+        ASR::ttype_t* type_w = ASRUtils::expr_type(w);
+        ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
+        ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
-        if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
-            if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
+        ASR::ttype_t* cast_target_for_w = base_n;
+
+        if (ASRUtils::is_array(type_w)) {
+            ASR::Array_t* w_arr = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(type_w));
+            cast_target_for_w = ASRUtils::make_Array_t_util(al, loc, base_n, 
+                                                            w_arr->m_dims, w_arr->n_dims);
+        }
+
+        if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
+            if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
+                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
+                                   ASR::cast_kindType::IntegerToInteger, 
+                                   cast_target_for_w, nullptr, nullptr));
             }
         }
 
-        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
-                            n, w, n_type);
+        ASR::ttype_t* out_type = ASRUtils::is_array(type_n) ? type_n : cast_target_for_w;
+
+        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift, n, w, out_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -21683,7 +21710,7 @@ public:
 
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
         const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag,
-        bool cast_args = true) {
+        bool cast_args = true, bool fill_component_defaults = true) {
         fn = ASRUtils::symbol_get_past_external(fn);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn));
         StructConstructorInfo info = get_struct_constructor_info(fn);
@@ -21741,12 +21768,16 @@ public:
             if( args[i].m_value == nullptr ) {
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
                 LCOMPILERS_ASSERT(arg_sym != nullptr);
+                bool is_kind_param = std::find(info.kind_indices.begin(),
+                    info.kind_indices.end(), i) != info.kind_indices.end();
+                // PDT component defaults belong to the instantiated type.
+                if (!fill_component_defaults && !is_kind_param) {
+                    continue;
+                }
                 ASR::expr_t* default_init = nullptr;
                 bool is_default_needed = true;
                 if( ASR::is_a<ASR::Variable_t>(*arg_sym) ) {
                     ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    bool is_kind_param = std::find(info.kind_indices.begin(),
-                        info.kind_indices.end(), i) != info.kind_indices.end();
                     default_init = is_kind_param ? arg_var->m_symbolic_value : arg_var->m_value;
                     if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;

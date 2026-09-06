@@ -3436,9 +3436,13 @@ ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
 }
 
 ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType binop,
-                        ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
+                            ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype) {
     ASRUtils::make_ArrayBroadcast_t_util(al, loc, lexpr, rexpr);
-    switch (ttype->type) {
+
+    ASR::ttype_t* underlying_type = ASRUtils::type_get_past_allocatable_pointer(ttype);
+    ASR::ttype_t* element_type = ASRUtils::type_get_past_array(underlying_type);
+
+    switch (element_type->type) {
         case ASR::ttypeType::Real: {
             return ASR::make_RealBinOp_t(al, loc, lexpr, binop, rexpr,
                 ASRUtils::duplicate_type(al, ttype), nullptr);
