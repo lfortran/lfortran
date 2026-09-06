@@ -3951,32 +3951,22 @@ public:
                     arg1 = llvm_utils->CreateLoad2(class_type1->getPointerTo(), arg1);
                 }
 
-                // Safely determine polymorphism using the proper ASR ClassType_t
-                bool is_poly0 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type0));
-                bool is_poly1 = ASR::is_a<ASR::ClassType_t>(*ASRUtils::extract_type(arg_type1));
-
-                // Extract field 0 safely from whichever argument is polymorphic
-                llvm::Type* field0_type = is_poly0 
-                    ? llvm::cast<llvm::StructType>(class_type0)->getElementType(0)
-                    : (is_poly1 ? llvm::cast<llvm::StructType>(class_type1)->getElementType(0) 
-                                : llvm::Type::getInt32Ty(context));
-
-                auto get_type_id = [&](llvm::Value* arg, llvm::Type* class_type, ASR::symbol_t* struct_sym, bool is_poly) -> llvm::Value* {
-                    if (is_poly) {
-                        // If it's a polymorphic class wrapper, load field 0 (vtable/hash)
+                llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type0)->getElementType(0);
+                auto get_type_id = [&](llvm::Value* arg, llvm::Type* class_type,
+                        ASR::symbol_t* struct_sym) -> llvm::Value* {
+                    llvm::Type* arg_type = arg->getType();
+                    if (arg_type->isPointerTy() &&
+                            arg_type->getPointerElementType() == class_type) {
                         llvm::Value* id_ptr = llvm_utils->create_gep2(class_type, arg, 0);
                         return llvm_utils->CreateLoad2(field0_type, id_ptr);
                     }
-                    // If it's non-polymorphic, fetch the static vtable/hash directly
                     if (field0_type->isPointerTy()) {
                         return struct_api->get_pointer_to_method(struct_sym, module.get());
                     }
                     return llvm::ConstantInt::get(field0_type, get_class_hash(struct_sym));
                 };
-
-                llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0, is_poly0);
-                llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1, is_poly1);
-
+                llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0);
+                llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1);
                 if (field0_type->isPointerTy()) {
                     // new_classes: compare vtable pointers
                     tmp = builder->CreateICmpEQ(
@@ -4038,6 +4028,7 @@ public:
                 };
                 llvm::Value* id0 = get_type_id(arg0, class_type0, struct_sym0);
                 llvm::Value* id1 = get_type_id(arg1, class_type1, struct_sym1);
+
                 if (field0_type->isPointerTy()) {
                     // new_classes: compare vtable pointers
                     tmp = builder->CreateICmpEQ(
@@ -4063,35 +4054,6 @@ public:
                         llvm::cast<llvm::PointerType>(ptr_type)));
                 break;
             }
-            case ASRUtils::IntrinsicElementalFunctions::StorageSize: {
-                ASR::expr_t* arg_expr = x.m_args[0];
-                ASR::ttype_t* arg_type = ASRUtils::expr_type(arg_expr);
-                
-                 ASR::ttype_t* base_type = ASRUtils::extract_type(arg_type);
-
-                if (ASRUtils::is_character(*base_type)) {
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
-                        al, x.base.base.loc, arg_expr, int_type, nullptr));
-
-                    this->visit_expr(*str_len_expr);
-                    llvm::Value* str_len = tmp;
-
-                    int return_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-                    llvm::Type* dest_type = llvm_utils->getIntType(return_kind);
-                    
-                    if (str_len->getType() != dest_type) {
-                        str_len = builder->CreateIntCast(str_len, dest_type, /*isSigned=*/true);
-                    }
-
-                    llvm::Value* bits_per_byte = llvm::ConstantInt::get(dest_type, 8);
-                    tmp = builder->CreateMul(str_len, bits_per_byte, "storage_size_bits");
-
-                } else {
-                    throw CodeGenError("Runtime storage_size for this type is not yet implemented", x.base.base.loc);
-                }
-                break;
-            }
             default: {
                 throw CodeGenError("Either the '" + ASRUtils::IntrinsicElementalFunctionRegistry::
                         get_intrinsic_function_name(x.m_intrinsic_id) +
@@ -4100,7 +4062,7 @@ public:
             }
         }
     }
-    
+
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
         switch (static_cast<ASRUtils::IntrinsicImpureFunctions>(x.m_impure_intrinsic_id)) {
             case ASRUtils::IntrinsicImpureFunctions::IsIostatEnd : {
