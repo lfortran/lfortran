@@ -2230,15 +2230,28 @@ public:
 
     /********************************** Expr **********************************/
     void visit_IfExp(const ASR::IfExp_t &x) {
-        std::string r = "";
-        visit_expr(*x.m_test);
-        r += src;
-        r += " ? ";
-        visit_expr(*x.m_body);
-        r += src;
-        r += " : ";
-        visit_expr(*x.m_orelse);
-        r += src;
+        // Fortran 2023 conditional expression, 10.1.2.3 R1002. The enclosing
+        // parentheses are part of the syntax, not decoration, so they must
+        // always be printed. A nested conditional expression in the `orelse`
+        // position is printed flat, as the repeating group of R1002.
+        std::string r = "(";
+        const ASR::IfExp_t *e = &x;
+        while (true) {
+            visit_expr(*e->m_test);
+            r += src;
+            r += " ? ";
+            visit_expr(*e->m_body);
+            r += src;
+            r += " : ";
+            if (ASR::is_a<ASR::IfExp_t>(*e->m_orelse)) {
+                e = ASR::down_cast<ASR::IfExp_t>(e->m_orelse);
+            } else {
+                visit_expr(*e->m_orelse);
+                r += src;
+                break;
+            }
+        }
+        r += ")";
         src = r;
     }
 

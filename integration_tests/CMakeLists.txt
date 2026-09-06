@@ -467,6 +467,24 @@ RUN(NAME cond_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cond_06 LABELS gfortran llvm)
 
+# Fortran 2023 conditional expressions, `( cond ? a : b )` (10.1.2.3 R1002).
+# These carry no `gfortran` label: CI compiles the gfortran pass with the
+# system /usr/bin/gfortran, which is GNU 13.3.0 and predates the feature, so
+# it reports "Expected a right parenthesis in expression" at the `?`. GFortran
+# grew conditional expressions in GCC 15, and even GCC 16 supports them only
+# for scalars of intrinsic type, so the array (06) and derived type (07) tests
+# could not be labelled `gfortran` in any case.
+RUN(NAME conditional_expr_01 LABELS llvm)
+RUN(NAME conditional_expr_02 LABELS llvm)
+RUN(NAME conditional_expr_03 LABELS llvm)
+RUN(NAME conditional_expr_04 LABELS llvm)
+RUN(NAME conditional_expr_05 LABELS llvm)
+RUN(NAME conditional_expr_06 LABELS llvm)
+RUN(NAME conditional_expr_07 LABELS llvm)
+RUN(NAME conditional_arg_01 LABELS llvm)
+RUN(NAME conditional_arg_02 LABELS llvm)
+RUN(NAME conditional_arg_03 LABELS llvm)
+
 RUN(NAME complex_cloc_01 LABELS gfortran llvm)
 RUN(NAME complex_solutions LABELS gfortran llvm)
 
@@ -678,6 +696,7 @@ RUN(NAME functions_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_61 LABELS gfortran llvm fortran)
 RUN(NAME functions_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME functions_63 LABELS gfortran llvm)
 
 RUN(NAME common_01 LABELS gfortran)
 
@@ -812,6 +831,7 @@ RUN(NAME arrays_reshape_42 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_43 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_44 LABELS gfortran llvm)
 RUN(NAME arrays_reshape_45 LABELS llvm) # gfortran segfaults on reshape () of polymorphic allocatable array
+RUN(NAME arrays_reshape_46 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
@@ -950,6 +970,7 @@ RUN(NAME assumed_rank_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 COMPILE(NAME assumed_rank_12 COMPILERS gfortran llvm llvm_wasm) # move to RUN with llvm once assumed-size -> assumed-rank codegen is supported (#11851)
 
 RUN(NAME assumed_rank_14 LABELS gfortran llvm)
+RUN(NAME assumed_rank_15 LABELS gfortran llvm)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2380,6 +2401,8 @@ RUN(NAME pdt_13 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME pdt_14 LABELS llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME pdt_15 LABELS gfortran llvm)
 RUN(NAME pdt_16 LABELS gfortran llvm)
+RUN(NAME pdt_17 LABELS llvm flang)
+RUN(NAME pdt_18 LABELS llvm flang)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
@@ -2551,6 +2574,8 @@ RUN(NAME derived_types_154 LABELS gfortran llvm)
 RUN(NAME derived_types_155 LABELS gfortran llvm)
 RUN(NAME derived_types_156 LABELS gfortran llvm)
 RUN(NAME derived_types_157 LABELS gfortran llvm)
+RUN(NAME derived_types_158 LABELS gfortran llvm)
+RUN(NAME derived_types_159 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
@@ -2756,11 +2781,11 @@ RUN(NAME associate_48 LABELS gfortran llvm)
 RUN(NAME associate_49 LABELS gfortran llvm)
 RUN(NAME associate_50 LABELS gfortran llvm)
 RUN(NAME associate_51 LABELS gfortran llvm)
-
 RUN(NAME associate_52 LABELS gfortran llvm)
 RUN(NAME associate_53 LABELS gfortran llvm)
 RUN(NAME associate_54 LABELS gfortran llvm)
 RUN(NAME associate_55 LABELS gfortran llvm)
+RUN(NAME associate_56 LABELS llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4162,6 +4187,7 @@ RUN(NAME optional_10 LABELS gfortran llvm)
 RUN(NAME optional_11 LABELS gfortran llvm)
 RUN(NAME optional_12 LABELS gfortran llvm)
 RUN(NAME optional_13 LABELS gfortran llvm)
+RUN(NAME optional_14 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4184,6 +4210,7 @@ RUN(NAME matmul_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --re
 RUN(NAME matmul_05 LABELS gfortran llvm)
 RUN(NAME matmul_06 LABELS gfortran llvm)
 RUN(NAME matmul_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME array_size_matmul_01 LABELS gfortran llvm)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma NO_FAST_MATH)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
@@ -4226,6 +4253,7 @@ RUN(NAME ip_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME shifta_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME shifta_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME elemental_shifta_01 LABELS gfortran llvm)
 
 RUN(NAME equivalence_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME equivalence_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

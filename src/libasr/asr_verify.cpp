@@ -3119,6 +3119,41 @@ public:
             "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
         BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
     }
+    void visit_IfExp(const IfExp_t &x) {
+        // Fortran 2023 conditional expression (10.1.2.3) and compiler
+        // generated selections both land here. The condition selects one of
+        // two arms at run time, so it must be a scalar logical, and both arms
+        // must be usable as the result.
+        ASR::ttype_t *test_type = typed_expr_type(x.m_test);
+        if (test_type != nullptr) {
+            require(ASRUtils::is_logical(*test_type),
+                "IfExp condition must be logical");
+            require(ASRUtils::extract_n_dims_from_ttype(test_type) == 0,
+                "IfExp condition must be a scalar");
+        }
+        ASR::ttype_t *body_type = typed_expr_type(x.m_body);
+        ASR::ttype_t *orelse_type = typed_expr_type(x.m_orelse);
+        if (body_type != nullptr && orelse_type != nullptr
+                && !is_procedure_type(body_type)
+                && !is_procedure_type(orelse_type)
+                && !is_struct_like_type(body_type)
+                && !is_struct_like_type(orelse_type)) {
+            require(ASRUtils::check_equal_type(body_type, orelse_type,
+                    x.m_body, x.m_orelse),
+                "IfExp arms must have the same type and kind, found "
+                + ASRUtils::type_to_str_fortran_expr(body_type, x.m_body)
+                + " and " + ASRUtils::type_to_str_fortran_expr(orelse_type,
+                    x.m_orelse));
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(orelse_type),
+                "IfExp arms must have the same rank");
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(x.m_type),
+                "IfExp result must have the same rank as its arms");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_IfExp(x);
+    }
+
     void visit_StringSection(const StringSection_t &x){
         require(x.m_start, "StringSection start member must be provided")
         require(x.m_end, "StringSection end member must be provided")

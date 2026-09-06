@@ -1915,6 +1915,10 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::DictItem: {
             return true;
         }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            return ASR::is_a<ASR::Pointer_t>(*func_call->m_type);
+        }
         default:
             return false;
     }
@@ -4232,6 +4236,22 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
 
+// Fortran array-valued complex part designators (%re, %im) have default
+// lower bound 1; preserve each dimension's length from the base array.
+static inline Vec<ASR::dimension_t> make_complex_dimensions_bounds(Allocator& al,
+        const Location &loc, ASR::dimension_t* m_dims, int n_dims) {
+    Vec<ASR::dimension_t> dim_vec;
+    dim_vec.reserve(al, n_dims);
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    for (int i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+        dim.m_length = m_dims[i].m_length;
+        dim_vec.push_back(al, dim);
+    }
+    return dim_vec;
+}
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     Vec<ASR::dimension_t>* dims=nullptr,
@@ -8436,6 +8456,28 @@ template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
+
+        // An argument with no value is a dummy argument that is not present.
+        // `.nil.`, the consequent of a conditional argument that leaves it
+        // absent, is the only way to write one (15.5.2.3), and C1540 allows
+        // it only when the dummy argument is optional.
+        if (!passed_arg_expr && i < f->n_args
+                && ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*sym)
+                    && ASR::down_cast<ASR::Variable_t>(sym)->m_presence
+                        != ASR::presenceType::Optional) {
+                diag.add(diag::Diagnostic(
+                    "`.nil.` is not allowed for the dummy argument `"
+                    + std::string(ASRUtils::symbol_name(sym))
+                    + "`, which is not optional",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("a consequent may be `.nil.` only when "
+                            "the dummy argument is optional "
+                            "(Fortran 2023 C1540)", {args[i].loc})}));
+                throw SemanticAbort();
+            }
+        }
 
         if (passed_arg_expr && i < f->n_args) {
             if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
