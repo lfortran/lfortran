@@ -15275,7 +15275,7 @@ public:
                     }
                 } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
                     // For scalar strings: use string length as mold size
-                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
+                   ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(src_type);
                     if( str_type->m_len ) {
                         if( ASRUtils::expr_value(str_type->m_len) ) {
                             src_bytes = ASR::down_cast<ASR::IntegerConstant_t>(
@@ -15405,7 +15405,18 @@ public:
                (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
                 str_type->m_len_kind == ASR::string_length_kindType::DeferredLength)) {
 
-                ASR::expr_t* str_len_expr = get_mold_len_expr(false);
+                ASR::ttype_t *tmp_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, x.base.base.loc, compiler_options.po.default_integer_kind));
+
+                ASR::expr_t* len_arg = mold;
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*mold)) {
+                    ASR::ArrayConstructor_t* arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(mold);
+                    if (arr_const->n_args > 0) {
+                        len_arg = arr_const->m_args[0];
+                    }
+                }
+                ASR::expr_t* str_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, x.base.base.loc, len_arg, tmp_int_type, nullptr));
+
                 ASR::ttype_t* new_str_type = ASRUtils::TYPE(ASR::make_String_t(
                     al, x.base.base.loc, str_type->m_kind, str_len_expr,
                     ASR::string_length_kindType::ExpressionLength,
