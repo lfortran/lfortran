@@ -2901,6 +2901,19 @@ public:
     }
 
 
+    // Whether `sym` would receive a type from the implicit typing rules in
+    // the current scope: the option is on and IMPLICIT NONE has not cleared
+    // the mapping for its first letter. Modes such as `--std=f23` turn the
+    // option on, so the option alone does not say whether an entity that has
+    // no type declaration yet can be declared implicitly.
+    bool has_implicit_type(const std::string &sym) {
+        if (!compiler_options.implicit_typing) {
+            return false;
+        }
+        auto it = implicit_dictionary.find(to_lower(std::string(1, sym[0])));
+        return it != implicit_dictionary.end() && it->second != nullptr;
+    }
+
     void dimension_variable(AST::var_sym_t const & s, const Location& loc) {
 	std::string sym = to_lower(s.m_name);
 	bool is_proc_arg = (std::find(current_procedure_args.begin(),
@@ -2908,7 +2921,7 @@ public:
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
-	    if (compiler_options.implicit_typing) {
+	    if (has_implicit_type(sym)) {
 		ASR::intentType intent;
 		if (is_proc_arg) {
 		    intent = ASRUtils::intent_unspecified;
@@ -6147,10 +6160,10 @@ public:
                                         // Record the array-spec as a typeless placeholder now,
                                         // the same way a DIMENSION statement would; the type
                                         // declaration later merges the element type into it.
-                                        // (Under implicit typing the entity is declared through
-                                        // a different path further down, which applies the
-                                        // array-spec itself.)
-                                        if (s.n_dim > 0 && !compiler_options.implicit_typing) {
+                                        // (When implicit typing can type the entity, it is
+                                        // declared through a different path further down,
+                                        // which applies the array-spec itself.)
+                                        if (s.n_dim > 0 && !has_implicit_type(sym)) {
                                             dimension_variable(s, x.base.base.loc);
                                         }
                                         assgnd_allocatable.insert(to_lower(sym));
