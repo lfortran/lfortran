@@ -637,12 +637,18 @@ public:
 // rejected here to preserve the pre-existing bail-out behaviour.
 static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
     switch (base_t->type) {
-        case ASR::ttypeType::Real:
-            return ASR::down_cast<ASR::Real_t>(base_t)->m_kind != 8;
-        case ASR::ttypeType::Integer:
-            return ASR::down_cast<ASR::Integer_t>(base_t)->m_kind != 8;
+        case ASR::ttypeType::Real: {
+            // gpu_scalar_width_supported is the host/device width table;
+            // Metal also has no 64-bit float.
+            int kind = ASR::down_cast<ASR::Real_t>(base_t)->m_kind;
+            return gpu_scalar_width_supported(base_t) && kind != 8;
+        }
+        case ASR::ttypeType::Integer: {
+            int kind = ASR::down_cast<ASR::Integer_t>(base_t)->m_kind;
+            return gpu_scalar_width_supported(base_t) && kind != 8;
+        }
         case ASR::ttypeType::Logical:
-            return ASR::down_cast<ASR::Logical_t>(base_t)->m_kind != 8;
+            return gpu_scalar_width_supported(base_t);
         case ASR::ttypeType::Complex:
             return false;
         default:
@@ -802,6 +808,65 @@ public:
         ASR::AssociateBlock_t *blk =
             ASR::down_cast<ASR::AssociateBlock_t>(b);
         check_scope(blk->m_symtab, blk->m_body, blk->n_body);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// A BLOCK-local is not a kernel argument, so GpuSymbolCollector skips it
+// and the Metal representability sweep never sees it. The width table still
+// has to apply: a real(16) local used to compile as float at a 16-byte
+// host stride.
+class GpuLocalWidthChecker :
+        public ASR::BaseWalkVisitor<GpuLocalWidthChecker> {
+public:
+    bool unsupported = false;
+    std::string bad_name;
+    bool metal = false;
+
+    bool type_ok(ASR::ttype_t *t) {
+        ASR::ttype_t *base = ASRUtils::extract_type(t);
+        if (ASR::is_a<ASR::Integer_t>(*base)
+                || ASR::is_a<ASR::Real_t>(*base)
+                || ASR::is_a<ASR::Logical_t>(*base)) {
+            if (!gpu_scalar_width_supported(base)) return false;
+            if (metal && !is_metal_representable_scalar_type(base)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void check_scope(SymbolTable *symtab) {
+        if (!symtab) return;
+        for (auto &item : symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (!type_ok(var->m_type)) {
+                unsupported = true;
+                if (bad_name.empty()) bad_name = item.first;
+            }
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        check_scope(blk->m_symtab);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        check_scope(blk->m_symtab);
         for (size_t i = 0; i < blk->n_body; i++) {
             visit_stmt(*blk->m_body[i]);
         }
@@ -10183,6 +10248,17 @@ public:
             if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
                 report_not_offloaded(loc,
                     "a strided section cannot be gathered for the gpu");
+                return;
+            }
+            GpuLocalWidthChecker width_checker;
+            width_checker.metal = pass_options.gpu_offload_metal;
+            for (size_t i = 0; i < work.n_body; i++) {
+                width_checker.visit_stmt(*work.body[i]);
+            }
+            if (width_checker.unsupported) {
+                report_not_offloaded(loc,
+                    "local '" + width_checker.bad_name +
+                    "' has no gpu type of the same width");
                 return;
             }
         }

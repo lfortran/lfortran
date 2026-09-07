@@ -402,7 +402,8 @@ public:
             }
             case ASR::ttypeType::Real: {
                 int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
-                return dialect.real_type(kind);
+                if (kind == 4 || kind == 8) return dialect.real_type(kind);
+                return unsupported_gpu_type("real", kind);
             }
             case ASR::ttypeType::Logical: {
                 // Use int to match LLVM's i32 representation for Logical(4)
