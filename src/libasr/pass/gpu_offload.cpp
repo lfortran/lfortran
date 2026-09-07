@@ -2858,6 +2858,34 @@ private:
     bool committed_ = false;
 };
 
+// The splice snapshot and the ASSOCIATE-array types rewritten in place
+// have to be given back on every decline after they are taken. There are
+// several such exits, so a guard owns them rather than each one
+// remembering to.
+class GpuSpliceRestoreGuard {
+public:
+    GpuSpliceRestoreGuard(GpuLoopBodySnapshot &snapshot,
+            std::vector<ScopeArrayDims> &scope_dims)
+        : snapshot_(snapshot), scope_dims_(scope_dims) {}
+
+    ~GpuSpliceRestoreGuard() {
+        if (committed_) return;
+        for (auto it = scope_dims_.rbegin();
+                it != scope_dims_.rend(); ++it) {
+            it->var->m_type = it->type;
+        }
+        scope_dims_.clear();
+        snapshot_.restore();
+    }
+
+    void commit() { committed_ = true; }
+
+private:
+    GpuLoopBodySnapshot &snapshot_;
+    std::vector<ScopeArrayDims> &scope_dims_;
+    bool committed_ = false;
+};
+
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
@@ -9603,16 +9631,16 @@ public:
             && ASRUtils::symbol_get_past_external(found) == sym;
     }
 
-    // The blocks the kernel was given copies of, so that a declined
-    // offload can drop them again.
+    // The BLOCKs and ASSOCIATEs the kernel was given copies of, so that
+    // a declined offload can drop them again.
     std::vector<std::string> kernel_block_names;
 
     // Copies a loop nest so that the pass can rewrite it without touching
     // the loop the host would run if the offload is declined.
     //
-    // A BLOCK is copied along with it. The kernel takes the copy and the
-    // host keeps its own, so no rewrite on the way to a kernel can reach
-    // the host, and a decline has nothing to put back.
+    // A BLOCK or ASSOCIATE is copied along with it. The kernel takes the
+    // copy and the host keeps its own, so no rewrite on the way to a
+    // kernel can reach the host, and a decline has nothing to put back.
     ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
             ASRUtils::ExprStmtDuplicator &dup) {
         if (stmt == nullptr) return nullptr;
@@ -9637,9 +9665,28 @@ public:
                 stmt->base.loc, bc->m_label, copy));
         }
         if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
-            // An ASSOCIATE is inlined away before the kernel is built, so
-            // it is carried across as it stands.
-            return stmt;
+            ASR::AssociateBlockCall_t *abc =
+                ASR::down_cast<ASR::AssociateBlockCall_t>(stmt);
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(abc->m_m);
+            if (sym == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                return stmt;
+            }
+            ASR::AssociateBlock_t *orig =
+                ASR::down_cast<ASR::AssociateBlock_t>(sym);
+            ASRUtils::SymbolDuplicator sym_dup(al);
+            ASR::symbol_t *copy = sym_dup.duplicate_AssociateBlock(orig,
+                current_scope);
+            if (copy == nullptr) return nullptr;
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(copy);
+            remap_associate_to_own_scope(ab);
+            std::string name = current_scope->get_unique_name(
+                std::string(orig->m_name) + "_gpu");
+            ab->m_name = s2c(al, name);
+            current_scope->add_symbol(name, copy);
+            kernel_block_names.push_back(name);
+            return ASRUtils::STMT(ASR::make_AssociateBlockCall_t(al,
+                stmt->base.loc, copy));
         }
         if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             // Only the nest itself is rebuilt, so that each level keeps a
@@ -9702,6 +9749,31 @@ public:
         }
     }
 
+    // duplicate_AssociateBlock copies the symbol table but leaves Var
+    // nodes in the body pointing at the original Variables. Point them at
+    // the copies so the inliner rewrites the draft, not the host
+    // construct the original nest still names.
+    void remap_associate_to_own_scope(ASR::AssociateBlock_t *ab) {
+        GpuReplaceSymbolsVisitor body_v(*ab->m_symtab);
+        body_v.replacer.resolve_through_parents = true;
+        for (size_t j = 0; j < ab->n_body; j++) {
+            body_v.visit_stmt(*ab->m_body[j]);
+        }
+        retarget_local_extents(ab->m_symtab);
+        for (auto &item : ab->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                remap_block_to_own_scope(
+                    ASR::down_cast<ASR::Block_t>(item.second));
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)
+                    && item.second != (ASR::symbol_t*)ab) {
+                remap_associate_to_own_scope(
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second));
+            }
+        }
+        retarget_nested_calls_in((ASR::symbol_t*)ab, ab->m_symtab,
+            ab->m_body, ab->n_body);
+    }
+
     void remap_block_to_own_scope(ASR::Block_t *block) {
         GpuReplaceSymbolsVisitor body_v(*block->m_symtab);
         body_v.replacer.resolve_through_parents = true;
@@ -9717,16 +9789,12 @@ public:
                 continue;
             }
             if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-                // Through the ASSOCIATE's own table: the names it binds
-                // live there, and resolving them against the block's would
-                // leave them pointing at the original's.
-                ASR::AssociateBlock_t *ab =
-                    ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                GpuReplaceSymbolsVisitor assoc_v(*ab->m_symtab);
-                assoc_v.replacer.resolve_through_parents = true;
-                for (size_t j = 0; j < ab->n_body; j++) {
-                    assoc_v.visit_stmt(*ab->m_body[j]);
-                }
+                // Through the ASSOCIATE's own table: nested calls and
+                // the names it binds live there, and resolving them
+                // against the block's would leave them pointing at the
+                // original's.
+                remap_associate_to_own_scope(
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second));
                 continue;
             }
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -9747,9 +9815,10 @@ public:
         }
     }
 
-    // A call to a nested block inside `block` names the original; point it
-    // at the copy that `block`'s own table holds.
-    void retarget_block_calls_in(ASR::Block_t *block) {
+    // A call to a nested BLOCK or ASSOCIATE names the original; point it
+    // at the copy that `scope` holds.
+    void retarget_nested_calls_in(ASR::symbol_t *owner, SymbolTable *scope,
+            ASR::stmt_t **body, size_t n_body) {
         std::function<void(ASR::stmt_t**, size_t)> walk =
             [&](ASR::stmt_t **stmts, size_t n_stmts) {
             for (size_t i = 0; i < n_stmts; i++) {
@@ -9760,9 +9829,9 @@ public:
                     ASR::Block_t *inner =
                         ASR::down_cast<ASR::Block_t>(bc->m_m);
                     ASR::symbol_t *local =
-                        block->m_symtab->get_symbol(inner->m_name);
+                        scope->get_symbol(inner->m_name);
                     if (local && ASR::is_a<ASR::Block_t>(*local)
-                            && local != (ASR::symbol_t*)block) {
+                            && local != owner) {
                         bc->m_m = local;
                         retarget_block_calls_in(
                             ASR::down_cast<ASR::Block_t>(local));
@@ -9770,9 +9839,9 @@ public:
                     continue;
                 }
                 if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmts[i])) {
-                    // An ASSOCIATE inside the block is copied with it, and
-                    // the call has to name the copy for the same reason a
-                    // nested block's does.
+                    // An ASSOCIATE inside the construct is copied with it,
+                    // and the call has to name the copy for the same
+                    // reason a nested block's does.
                     ASR::AssociateBlockCall_t *abc =
                         ASR::down_cast<ASR::AssociateBlockCall_t>(stmts[i]);
                     ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
@@ -9781,13 +9850,14 @@ public:
                             || !ASR::is_a<ASR::AssociateBlock_t>(*inner)) {
                         continue;
                     }
-                    ASR::symbol_t *local = block->m_symtab->get_symbol(
+                    ASR::symbol_t *local = scope->get_symbol(
                         ASRUtils::symbol_name(inner));
                     if (local && ASR::is_a<ASR::AssociateBlock_t>(*local)) {
                         abc->m_m = local;
                         ASR::AssociateBlock_t *ab =
                             ASR::down_cast<ASR::AssociateBlock_t>(local);
-                        walk(ab->m_body, ab->n_body);
+                        retarget_nested_calls_in(local, ab->m_symtab,
+                            ab->m_body, ab->n_body);
                     }
                     continue;
                 }
@@ -9806,7 +9876,12 @@ public:
                 }
             }
         };
-        walk(block->m_body, block->n_body);
+        walk(body, n_body);
+    }
+
+    void retarget_block_calls_in(ASR::Block_t *block) {
+        retarget_nested_calls_in((ASR::symbol_t*)block, block->m_symtab,
+            block->m_body, block->n_body);
     }
 
     // A region this pass does not take is left exactly as it was, and is
@@ -9900,9 +9975,10 @@ public:
         // copied and it is the copy that is rewritten, the original
         // standing until the launch replaces it.
         //
-        // A BLOCK in the nest is copied with it. The kernel takes that copy
-        // and the host keeps its own, so a rewrite on the way to a kernel
-        // cannot reach the host, and a decline has nothing to put back.
+        // A BLOCK or ASSOCIATE in the nest is copied with it. The kernel
+        // takes that copy and the host keeps its own, so a rewrite on the
+        // way to a kernel cannot reach the host, and a decline has
+        // nothing to put back.
         ParallelLoopNest work;
         kernel_block_names.clear();
         // From here on the pass is drafting a kernel: it copies the blocks of
@@ -10296,14 +10372,7 @@ public:
         std::vector<ScopeArrayDims> scope_dims_undo;
         std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>>
             member_extent_undo;
-        auto restore_loop = [&]() {
-            for (auto it = scope_dims_undo.rbegin();
-                    it != scope_dims_undo.rend(); ++it) {
-                it->var->m_type = it->type;
-            }
-            scope_dims_undo.clear();
-            splice_snapshot.restore();
-        };
+        GpuSpliceRestoreGuard splice_guard(splice_snapshot, scope_dims_undo);
         {
             splice_snapshot.record(work, current_scope);
             inline_device_function_calls(work.body, work.n_body);
@@ -10337,7 +10406,6 @@ public:
             std::string unresolved_name;
             if (!gpu_block_workspace_extents_resolvable(work.body,
                     work.n_body, kernel_arg_names, unresolved_name)) {
-                restore_loop();
                 report_not_offloaded(loc,
                     "workspace '" + unresolved_name +
                     "' cannot be sized on the host");
@@ -10350,7 +10418,6 @@ public:
                 nested_section.visit_stmt(*work.body[i]);
             }
             if (nested_section.found) {
-                restore_loop();
                 report_not_offloaded(loc,
                     "a nested array section cannot be addressed on the gpu");
                 return;
@@ -13083,9 +13150,10 @@ public:
                 return;
             }
         }
-        // The launch stands, so the blocks and the kernel number are the
-        // kernel's from here on.
+        // The launch stands, so the blocks, the spliced shape, and the
+        // kernel number are the kernel's from here on.
         draft_guard.commit();
+        splice_guard.commit();
 
         // The loop is offloaded from here on, so this is where a clause the
         // launch cannot honour is reported: before this every exit still
