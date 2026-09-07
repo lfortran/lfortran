@@ -862,11 +862,9 @@ class DeviceLaunchExpandVisitor :
                 if (base == nullptr) return nullptr;
                 ASR::symbol_t *st =
                     ASRUtils::get_struct_sym_from_struct_expr(base);
-                if (st == nullptr) return nullptr;
-                ASR::symbol_t *member = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(st))->m_symtab
-                        ->get_symbol(ASRUtils::symbol_name(
-                            ASRUtils::symbol_get_past_external(sm->m_m)));
+                ASR::symbol_t *member = gpu_struct_lookup_member(st,
+                    ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(sm->m_m)));
                 if (member == nullptr) return nullptr;
                 return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
                     loc, base, member, ASRUtils::symbol_type(member),
@@ -991,11 +989,7 @@ class DeviceLaunchExpandVisitor :
                 for (const std::string &m : path) {
                     ASR::symbol_t *st =
                         ASRUtils::get_struct_sym_from_struct_expr(out);
-                    ASR::symbol_t *member = st
-                        ? ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(st))
-                                ->m_symtab->get_symbol(m)
-                        : nullptr;
+                    ASR::symbol_t *member = gpu_struct_lookup_member(st, m);
                     if (member == nullptr) return nullptr;
                     out = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                         al, loc, out, member,
@@ -1570,11 +1564,8 @@ class DeviceLaunchExpandVisitor :
                             for (const std::string &m : dim.member_path) {
                                 ASR::symbol_t *st =
                                     ASRUtils::get_struct_sym_from_struct_expr(e);
-                                ASR::symbol_t *member = st
-                                    ? ASR::down_cast<ASR::Struct_t>(
-                                        ASRUtils::symbol_get_past_external(st))
-                                            ->m_symtab->get_symbol(m)
-                                    : nullptr;
+                                ASR::symbol_t *member =
+                                    gpu_struct_lookup_member(st, m);
                                 if (member == nullptr) { ok = false; break; }
                                 e = ASRUtils::EXPR(
                                     ASR::make_StructInstanceMember_t(al, loc, e,
@@ -1588,9 +1579,6 @@ class DeviceLaunchExpandVisitor :
                             x.m_args[dim.call_arg_index].m_value, int64);
                     }
                     LCOMPILERS_ASSERT(extent != nullptr);
-                    if (extent == nullptr) {
-                        extent = b.i64(0);
-                    }
                     n_elements = b.Mul(n_elements, extent);
                 }
                 ASR::expr_t *n_bytes = b.Mul(n_elements,
@@ -1657,7 +1645,9 @@ static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
     const Location &loc = kernel->base.base.loc;
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
-            if (!dim.is_host_expr) continue;
+            if (dim.is_constant) continue;
+            if (dim.is_struct_member_size) continue;
+            if (dim.dim_expr == nullptr) continue;
             if (DeviceLaunchExpandVisitor::host_extent(al, loc, kernel,
                     call_args, n_call_args, dim.dim_expr) == nullptr) {
                 return unsupported("a variable length array whose extent "

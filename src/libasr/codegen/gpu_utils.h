@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -77,6 +78,29 @@ struct GpuKernelParam {
 // linearize `a(i)%m(p,q)`, which needs the extent of every dimension but the
 // last. The host fills the buffer in device_launch_expand and the device
 // reads it in asr_to_gpu_c.h; this is the one place the two agree.
+// The symbol `name` on `struct_sym` or a type it extends. Inherited
+// components live in the parent Struct, so a lookup that only reads
+// the child's table misses them.
+inline ASR::symbol_t* gpu_struct_lookup_member(ASR::symbol_t *struct_sym,
+        const std::string &name) {
+    if (struct_sym == nullptr) return nullptr;
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) return nullptr;
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    std::set<ASR::Struct_t*> seen;
+    while (st != nullptr) {
+        if (!seen.insert(st).second) break;
+        ASR::symbol_t *member = st->m_symtab->get_symbol(name);
+        if (member) return member;
+        if (!st->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        st = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return nullptr;
+}
+
 inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
     ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(var->m_type);
     if (!ASR::is_a<ASR::Array_t>(*inner)) return 0;
