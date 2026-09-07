@@ -11828,7 +11828,6 @@ public:
                 std::vector<int64_t> strides;
                 bool all_valid = true;
                 
-                int based_indexing = get_based_indexing(v);
                 int64_t current_stride = 1;
 
                 for (size_t d = 0; d < n_args; d++) {
