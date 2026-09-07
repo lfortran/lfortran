@@ -1577,9 +1577,9 @@ class DeviceLaunchExpandVisitor :
                         extent = b.i2i_t(
                             x.m_args[dim.call_arg_index].m_value, int64);
                     }
+                    LCOMPILERS_ASSERT(extent != nullptr);
                     if (extent == nullptr) {
-                        LFORTRAN_ERROR("gpu launch: cannot size a workspace "
-                            "dimension");
+                        extent = b.i64(0);
                     }
                     n_elements = b.Mul(n_elements, extent);
                 }
