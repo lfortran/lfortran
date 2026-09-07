@@ -8,6 +8,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -279,8 +280,52 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
     return dim.call_arg_index < n_call_args;
 }
 
+// The extent of a kernel-local array, including one declared in a BLOCK
+// the body opens. array_struct_temporary creates such locals after
+// gpu_offload, so a lookup that only reads the kernel's own symbol table
+// misses them.
+static ASR::expr_t* gpu_local_array_extent_nested(
+        const ASR::Function_t *kernel, const std::string &name, size_t dim) {
+    ASR::expr_t *e = gpu_local_array_extent(kernel->m_symtab,
+        kernel->m_body, kernel->n_body, name, dim);
+    if (e) return e;
+    std::function<ASR::expr_t*(ASR::stmt_t**, size_t)> walk =
+        [&](ASR::stmt_t **stmts, size_t n) -> ASR::expr_t* {
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmts[i])->m_m);
+                if (!b || !ASR::is_a<ASR::Block_t>(*b)) continue;
+                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                ASR::expr_t *found = gpu_local_array_extent(blk->m_symtab,
+                    blk->m_body, blk->n_body, name, dim);
+                if (found) return found;
+                found = walk(blk->m_body, blk->n_body);
+                if (found) return found;
+            } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
+                ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+                ASR::expr_t *found = walk(dl->m_body, dl->n_body);
+                if (found) return found;
+            } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+                ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+                ASR::expr_t *found = walk(ifs->m_body, ifs->n_body);
+                if (found) return found;
+                found = walk(ifs->m_orelse, ifs->n_orelse);
+                if (found) return found;
+            }
+        }
+        return nullptr;
+    };
+    return walk(kernel->m_body, kernel->n_body);
+}
+
+// Defined after DeviceLaunchExpandVisitor so it can rebuild a host-evaluable
+// workspace extent the same way expand does.
+static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
+        ASR::call_arg_t *call_args, size_t n_call_args);
+
 // True when every argument of this launch has a shape the pass can expand.
-static bool launch_is_supported(ASR::symbol_t *kernel_sym,
+static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
         ASR::call_arg_t *call_args, size_t n_call_args) {
     ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
     if (n_call_args != kernel->n_args) {
@@ -320,10 +365,10 @@ static bool launch_is_supported(ASR::symbol_t *kernel_sym,
     return true;
 }
 
-bool gpu_launch_is_supported(ASR::symbol_t *kernel, ASR::call_arg_t *args,
-        size_t n_args, std::string &reason) {
+bool gpu_launch_is_supported(Allocator &al, ASR::symbol_t *kernel,
+        ASR::call_arg_t *args, size_t n_args, std::string &reason) {
     unsupported_reason.clear();
-    if (launch_is_supported(kernel, args, n_args)) return true;
+    if (launch_is_supported(al, kernel, args, n_args)) return true;
     reason = unsupported_reason;
     return false;
 }
@@ -747,13 +792,14 @@ class DeviceLaunchExpandVisitor :
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
         }
 
+    public:
         // A designator the kernel writes in terms of its parameters, built
         // again over the actual arguments of this launch so the host can
         // read the same object: `self%points_(1,1,1,1)%values_` names one
         // array whichever side asks for it.
-        ASR::expr_t* host_designator(const Location &loc,
-                const ASR::GpuKernelLaunch_t &x,
-                const ASR::Function_t *kernel, ASR::expr_t *e) {
+        static ASR::expr_t* host_designator(Allocator &al, const Location &loc,
+                const ASR::Function_t *kernel, ASR::call_arg_t *args,
+                size_t n_args, ASR::expr_t *e) {
             if (e == nullptr) return nullptr;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
@@ -764,15 +810,16 @@ class DeviceLaunchExpandVisitor :
                     std::string pname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v);
                     if (pname != name) continue;
-                    if (i >= x.n_args) break;
-                    return x.m_args[i].m_value;
+                    if (i >= n_args) break;
+                    return args[i].m_value;
                 }
                 return nullptr;
             }
             if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
                 ASR::StructInstanceMember_t *sm =
                     ASR::down_cast<ASR::StructInstanceMember_t>(v);
-                ASR::expr_t *base = host_designator(loc, x, kernel, sm->m_v);
+                ASR::expr_t *base = host_designator(al, loc, kernel, args,
+                    n_args, sm->m_v);
                 if (base == nullptr) return nullptr;
                 ASR::symbol_t *st =
                     ASRUtils::get_struct_sym_from_struct_expr(base);
@@ -788,13 +835,13 @@ class DeviceLaunchExpandVisitor :
             }
             if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
                 ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
-                ASR::expr_t *base = host_designator(loc, x, kernel,
-                    item->m_v);
+                ASR::expr_t *base = host_designator(al, loc, kernel, args,
+                    n_args, item->m_v);
                 if (base == nullptr) return nullptr;
                 std::vector<ASR::expr_t*> subs;
                 for (size_t i = 0; i < item->n_args; i++) {
-                    ASR::expr_t *sub = host_extent(loc, x, kernel,
-                        item->m_args[i].m_right);
+                    ASR::expr_t *sub = host_extent(al, loc, kernel, args,
+                        n_args, item->m_args[i].m_right);
                     if (sub == nullptr) return nullptr;
                     subs.push_back(sub);
                 }
@@ -809,28 +856,30 @@ class DeviceLaunchExpandVisitor :
         // the same number before it dispatches, so every parameter the
         // expression names is replaced by the argument bound to it.
         // Returns nullptr when some part of it has no host counterpart.
-        ASR::expr_t* host_extent(const Location &loc,
-                const ASR::GpuKernelLaunch_t &x,
-                const ASR::Function_t *kernel, ASR::expr_t *e) {
+        static ASR::expr_t* host_extent(Allocator &al, const Location &loc,
+                const ASR::Function_t *kernel, ASR::call_arg_t *args,
+                size_t n_args, ASR::expr_t *e) {
             if (e == nullptr) return nullptr;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
             if (ASR::is_a<ASR::Cast_t>(*v)) {
-                return host_extent(loc, x, kernel,
+                return host_extent(al, loc, kernel, args, n_args,
                     ASR::down_cast<ASR::Cast_t>(v)->m_arg);
             }
             if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return v;
             if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
                 ASR::IntegerBinOp_t *op =
                     ASR::down_cast<ASR::IntegerBinOp_t>(v);
-                ASR::expr_t *l = host_extent(loc, x, kernel, op->m_left);
-                ASR::expr_t *r = host_extent(loc, x, kernel, op->m_right);
+                ASR::expr_t *l = host_extent(al, loc, kernel, args, n_args,
+                    op->m_left);
+                ASR::expr_t *r = host_extent(al, loc, kernel, args, n_args,
+                    op->m_right);
                 if (!l || !r) return nullptr;
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
                     op->m_op, r, ASRUtils::expr_type(l), nullptr));
             }
             if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
-                ASR::expr_t *a = host_extent(loc, x, kernel,
+                ASR::expr_t *a = host_extent(al, loc, kernel, args, n_args,
                     ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg);
                 if (!a) return nullptr;
                 return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
@@ -850,26 +899,33 @@ class DeviceLaunchExpandVisitor :
                 for (size_t i = 0; i < arg_names.size(); i++) {
                     if (arg_names[i] != arr_name) continue;
                     is_arg = true;
-                    if (i >= x.n_args || !x.m_args[i].m_value) break;
-                    return b.ArraySize(x.m_args[i].m_value,
+                    if (i >= n_args || !args[i].m_value) break;
+                    return b.ArraySize(args[i].m_value,
                         b.i32((int)d + 1), int32);
                 }
                 if (!is_arg) {
                     // A local of the kernel, whose own extent is written
                     // over the parameters. `size(t) + 1` is resolved by
-                    // carrying on through `t`'s extent.
-                    return host_extent(loc, x, kernel,
-                        gpu_local_array_extent(kernel->m_symtab,
-                            kernel->m_body, kernel->n_body, arr_name, d));
+                    // carrying on through `t`'s extent. A later pass may
+                    // have created the local without a resolvable extent
+                    // here; fall through rather than giving up, so the
+                    // ArraySize case can still rebuild it.
+                    ASR::expr_t *local = gpu_local_array_extent_nested(
+                        kernel, arr_name, d);
+                    if (local != nullptr) {
+                        ASR::expr_t *rebuilt = host_extent(al, loc, kernel,
+                            args, n_args, local);
+                        if (rebuilt != nullptr) return rebuilt;
+                    }
                 }
             }
             size_t idx = 0;
             std::vector<std::string> path;
             if (resolve_extent_to_arg_member(v, arg_names, idx, path)) {
-                if (idx >= x.n_args || !x.m_args[idx].m_value) {
+                if (idx >= n_args || !args[idx].m_value) {
                     return nullptr;
                 }
-                ASR::expr_t *out = x.m_args[idx].m_value;
+                ASR::expr_t *out = args[idx].m_value;
                 for (const std::string &m : path) {
                     ASR::symbol_t *st =
                         ASRUtils::get_struct_sym_from_struct_expr(out);
@@ -890,10 +946,12 @@ class DeviceLaunchExpandVisitor :
             // its shape.
             if (ASR::is_a<ASR::ArraySize_t>(*v)) {
                 ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
-                ASR::expr_t *host = host_designator(loc, x, kernel, sz->m_v);
+                ASR::expr_t *host = host_designator(al, loc, kernel, args,
+                    n_args, sz->m_v);
                 if (host != nullptr) {
                     ASR::expr_t *dim = sz->m_dim
-                        ? host_extent(loc, x, kernel, sz->m_dim) : nullptr;
+                        ? host_extent(al, loc, kernel, args, n_args,
+                            sz->m_dim) : nullptr;
                     if (sz->m_dim == nullptr || dim != nullptr) {
                         return b.ArraySize(host, dim, int32);
                     }
@@ -906,12 +964,13 @@ class DeviceLaunchExpandVisitor :
                 if (!ranges.empty()) {
                     ASR::expr_t *out = nullptr;
                     for (ASR::array_index_t *range : ranges) {
-                        ASR::expr_t *lo = host_extent(loc, x, kernel,
-                            range->m_left);
-                        ASR::expr_t *hi = host_extent(loc, x, kernel,
-                            range->m_right);
+                        ASR::expr_t *lo = host_extent(al, loc, kernel, args,
+                            n_args, range->m_left);
+                        ASR::expr_t *hi = host_extent(al, loc, kernel, args,
+                            n_args, range->m_right);
                         ASR::expr_t *step = range->m_step
-                            ? host_extent(loc, x, kernel, range->m_step)
+                            ? host_extent(al, loc, kernel, args, n_args,
+                                range->m_step)
                             : b.i32(1);
                         if (!lo || !hi || !step) { out = nullptr; break; }
                         ASR::expr_t *one = b.Add(
@@ -927,8 +986,8 @@ class DeviceLaunchExpandVisitor :
                 if (gpu_expr_shape_extents(sz->m_v, sz->m_dim, lengths)) {
                     ASR::expr_t *out = nullptr;
                     for (ASR::expr_t *length : lengths) {
-                        ASR::expr_t *one = host_extent(loc, x, kernel,
-                            length);
+                        ASR::expr_t *one = host_extent(al, loc, kernel, args,
+                            n_args, length);
                         if (one == nullptr) { out = nullptr; break; }
                         out = out ? b.Mul(out, one) : one;
                     }
@@ -937,9 +996,11 @@ class DeviceLaunchExpandVisitor :
             }
             if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
                 ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
-                ASR::expr_t *host = host_designator(loc, x, kernel, bd->m_v);
+                ASR::expr_t *host = host_designator(al, loc, kernel, args,
+                    n_args, bd->m_v);
                 ASR::expr_t *dim = host
-                    ? host_extent(loc, x, kernel, bd->m_dim) : nullptr;
+                    ? host_extent(al, loc, kernel, args, n_args, bd->m_dim)
+                    : nullptr;
                 if (host != nullptr && dim != nullptr) {
                     return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
                         host, dim, int32, bd->m_bound, nullptr));
@@ -954,15 +1015,15 @@ class DeviceLaunchExpandVisitor :
                     ASR::down_cast<ASR::Var_t>(base)->m_v);
                 for (size_t i = 0; i < arg_names.size(); i++) {
                     if (arg_names[i] != name) continue;
-                    if (i >= x.n_args || !x.m_args[i].m_value) break;
+                    if (i >= n_args || !args[i].m_value) break;
                     std::vector<ASR::expr_t*> subs;
                     for (size_t k = 0; k < item->n_args; k++) {
-                        ASR::expr_t *sub = host_extent(loc, x, kernel,
-                            item->m_args[k].m_right);
+                        ASR::expr_t *sub = host_extent(al, loc, kernel, args,
+                            n_args, item->m_args[k].m_right);
                         if (sub == nullptr) return nullptr;
                         subs.push_back(sub);
                     }
-                    return b.ArrayItem_01(x.m_args[i].m_value, subs);
+                    return b.ArrayItem_01(args[i].m_value, subs);
                 }
                 return nullptr;
             }
@@ -971,19 +1032,21 @@ class DeviceLaunchExpandVisitor :
                     ASR::down_cast<ASR::Var_t>(v)->m_v);
                 for (size_t i = 0; i < arg_names.size(); i++) {
                     if (arg_names[i] != name) continue;
-                    if (i >= x.n_args) break;
-                    return x.m_args[i].m_value;
+                    if (i >= n_args) break;
+                    return args[i].m_value;
                 }
                 // A name of the kernel's own that stands for one value --
                 // an ASSOCIATE selector, once the construct is spliced in.
                 // The value it is bound to is what the host evaluates.
-                return host_extent(loc, x, kernel,
+                return host_extent(al, loc, kernel, args, n_args,
                     gpu_local_scalar_binding(
                         ASR::down_cast<ASR::Var_t>(v)->m_v,
                         kernel->m_body, kernel->n_body));
             }
             return nullptr;
         }
+
+    private:
 
         ASR::expr_t* struct_member(const Location &loc, ASR::expr_t *arg,
                 ASR::expr_t *index, ASR::symbol_t *member) {
@@ -1416,8 +1479,8 @@ class DeviceLaunchExpandVisitor :
                             extent = b.i2i_t(first->second, int64);
                         }
                     } else if (dim.is_host_expr) {
-                        ASR::expr_t *host = host_extent(loc, x, kernel,
-                            dim.dim_expr);
+                        ASR::expr_t *host = host_extent(al, loc, kernel,
+                            x.m_args, x.n_args, dim.dim_expr);
                         if (host != nullptr) {
                             extent = b.i2i_t(host, int64);
                         }
@@ -1509,6 +1572,26 @@ class DeviceLaunchExpandVisitor :
         }
 
 };
+
+static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
+        ASR::call_arg_t *call_args, size_t n_call_args) {
+    if (!launch_is_supported_args(kernel_sym, call_args, n_call_args)) {
+        return false;
+    }
+    ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
+    const Location &loc = kernel->base.base.loc;
+    for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
+        for (auto &dim : workspace.dims) {
+            if (!dim.is_host_expr) continue;
+            if (DeviceLaunchExpandVisitor::host_extent(al, loc, kernel,
+                    call_args, n_call_args, dim.dim_expr) == nullptr) {
+                return unsupported("a variable length array whose extent "
+                    "cannot be rebuilt on the host");
+            }
+        }
+    }
+    return true;
+}
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {

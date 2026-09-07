@@ -13090,7 +13090,7 @@ public:
         // before it enters the symbol table, so nothing is left behind.
         {
             std::string reason;
-            if (!gpu_launch_is_supported(
+            if (!gpu_launch_is_supported(al,
                     ASR::down_cast<ASR::symbol_t>(kernel_func),
                     call_args.p, call_args.n, reason)) {
                 report_not_offloaded(loc,
