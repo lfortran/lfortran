@@ -637,16 +637,17 @@ static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
 }
 
 // A derived type is representable only when every one of its data members
-// is, because the Metal struct is laid out member by member: a single fp64
-// member anywhere in the type changes the element size the kernel would
-// have to stride by, while the host buffer keeps the wider layout. The
-// members inherited through `extends` live in the parent Struct (they are
-// reached at run time through the `__parent` member), so the parent chain
-// has to be walked as well. `visited` guards against self-referential
-// types such as `type(node), pointer :: next`, whose member graph is
-// cyclic.
-static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
-        std::set<ASR::Struct_t*> &visited) {
+// is, because the device struct is laid out member by member: a single
+// unsupported member anywhere in the type changes the element size the
+// kernel would have to stride by, while the host buffer keeps the wider
+// layout. The members inherited through `extends` live in the parent
+// Struct (they are reached at run time through the `__parent` member), so
+// the parent chain has to be walked as well. `visited` guards against
+// self-referential types such as `type(node), pointer :: next`, whose
+// member graph is cyclic.
+static bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited,
+        bool (*scalar_ok)(ASR::ttype_t*)) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
     if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
         // The derived type cannot be inspected, so it cannot be shown to
@@ -659,7 +660,7 @@ static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
         return true;
     }
     if (st->m_parent
-            && !is_metal_representable_struct(st->m_parent, visited)) {
+            && !gpu_struct_members_ok(st->m_parent, visited, scalar_ok)) {
         return false;
     }
     for (size_t i = 0; i < st->n_members; i++) {
@@ -671,15 +672,21 @@ static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
         ASR::ttype_t *mtype = ASRUtils::extract_type(mvar->m_type);
         if (ASR::is_a<ASR::StructType_t>(*mtype)) {
             if (!mvar->m_type_declaration
-                    || !is_metal_representable_struct(
-                        mvar->m_type_declaration, visited)) {
+                    || !gpu_struct_members_ok(
+                        mvar->m_type_declaration, visited, scalar_ok)) {
                 return false;
             }
-        } else if (!is_metal_representable_scalar_type(mtype)) {
+        } else if (!scalar_ok(mtype)) {
             return false;
         }
     }
     return true;
+}
+
+static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited) {
+    return gpu_struct_members_ok(struct_sym, visited,
+        is_metal_representable_scalar_type);
 }
 
 // Answers whether the Metal Shading Language can represent the type of `e`
@@ -797,7 +804,8 @@ public:
 // A BLOCK-local is not a kernel argument, so GpuSymbolCollector skips it
 // and the Metal representability sweep never sees it. The width table still
 // has to apply: a real(16) local used to compile as float at a 16-byte
-// host stride.
+// host stride, and a derived-type local whose member is real(8) or
+// complex is the same hole.
 class GpuLocalWidthChecker :
         public ASR::BaseWalkVisitor<GpuLocalWidthChecker> {
 public:
@@ -805,10 +813,22 @@ public:
     std::string bad_name;
     bool metal = false;
 
-    bool type_ok(ASR::ttype_t *t) {
-        ASR::ttype_t *base = ASRUtils::extract_type(t);
+    bool type_ok(ASR::Variable_t *var) {
+        ASR::ttype_t *base = ASRUtils::extract_type(var->m_type);
         if (ASR::is_a<ASR::StructType_t>(*base)) {
-            return true;
+            // A BLOCK-local is not a kernel argument, so the symbol
+            // collector never hands this type to
+            // is_metal_representable_type. Walk the members here: a
+            // real(8) or complex component is the same silent-wrong-width
+            // hole the scalar path already closed.
+            if (!var->m_type_declaration) return false;
+            std::set<ASR::Struct_t*> visited;
+            if (metal) {
+                return is_metal_representable_struct(
+                    var->m_type_declaration, visited);
+            }
+            return gpu_struct_members_ok(var->m_type_declaration, visited,
+                gpu_scalar_width_supported);
         }
         if (metal) {
             return is_metal_representable_scalar_type(base);
@@ -822,7 +842,7 @@ public:
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                 item.second);
-            if (!type_ok(var->m_type)) {
+            if (!type_ok(var)) {
                 unsupported = true;
                 if (bad_name.empty()) bad_name = item.first;
             }
@@ -12795,6 +12815,34 @@ public:
             [&](ASR::Block_t *block, bool reparent) {
             if (reparent) {
                 block->m_symtab->parent = kernel_scope;
+            }
+            // A BLOCK-local derived type is not a kernel argument, so
+            // involved_syms never imported it. Bring the Struct into the
+            // kernel and retarget the local's type_declaration: the
+            // kernel's parent is the translation unit, which cannot see
+            // the host procedure's types.
+            {
+                std::function<void(SymbolTable*)> import_scope_structs =
+                    [&](SymbolTable *st) {
+                    for (auto &item : st->get_scope()) {
+                        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                            import_struct_type(item.second, orig_scope,
+                                kernel_scope, loc);
+                        } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                            import_scope_structs(
+                                ASR::down_cast<ASR::Block_t>(
+                                    item.second)->m_symtab);
+                        } else if (ASR::is_a<ASR::AssociateBlock_t>(
+                                *item.second)) {
+                            import_scope_structs(
+                                ASR::down_cast<ASR::AssociateBlock_t>(
+                                    item.second)->m_symtab);
+                        }
+                    }
+                };
+                import_scope_structs(block->m_symtab);
+                fixup_struct_refs_in_scope(block->m_symtab, kernel_scope,
+                    s2c(al, kernel_name));
             }
             // Pre-compute VLA dimension expressions that contain
             // FunctionCall nodes on the host side and pass the
