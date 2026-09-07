@@ -9658,9 +9658,10 @@ public:
     // Copies a loop nest so that the pass can rewrite it without touching
     // the loop the host would run if the offload is declined.
     //
-    // A BLOCK or ASSOCIATE is copied along with it. The kernel takes the
-    // copy and the host keeps its own, so no rewrite on the way to a
-    // kernel can reach the host, and a decline has nothing to put back.
+    // A BLOCK or ASSOCIATE is copied along with it, including one nested
+    // in `if` or `while`. The kernel takes the copy and the host keeps
+    // its own, so no rewrite on the way to a kernel can reach the host,
+    // and a decline has nothing to put back.
     ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
             ASRUtils::ExprStmtDuplicator &dup) {
         if (stmt == nullptr) return nullptr;
@@ -9723,6 +9724,46 @@ public:
             return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
                 dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
                 dl->n_orelse));
+        }
+        if (ASR::is_a<ASR::If_t>(*stmt)) {
+            ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmt);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, ifs->n_body);
+            for (size_t i = 0; i < ifs->n_body; i++) {
+                ASR::stmt_t *c = copy_loop_stmt(ifs->m_body[i], dup);
+                if (c == nullptr) return nullptr;
+                body.push_back(al, c);
+            }
+            Vec<ASR::stmt_t*> orelse;
+            orelse.reserve(al, ifs->n_orelse);
+            for (size_t i = 0; i < ifs->n_orelse; i++) {
+                ASR::stmt_t *c = copy_loop_stmt(ifs->m_orelse[i], dup);
+                if (c == nullptr) return nullptr;
+                orelse.push_back(al, c);
+            }
+            return ASRUtils::STMT(ASR::make_If_t(al, ifs->base.base.loc,
+                ifs->m_name, ifs->m_test, body.p, body.n, orelse.p,
+                orelse.n));
+        }
+        if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
+            ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, wl->n_body);
+            for (size_t i = 0; i < wl->n_body; i++) {
+                ASR::stmt_t *c = copy_loop_stmt(wl->m_body[i], dup);
+                if (c == nullptr) return nullptr;
+                body.push_back(al, c);
+            }
+            Vec<ASR::stmt_t*> orelse;
+            orelse.reserve(al, wl->n_orelse);
+            for (size_t i = 0; i < wl->n_orelse; i++) {
+                ASR::stmt_t *c = copy_loop_stmt(wl->m_orelse[i], dup);
+                if (c == nullptr) return nullptr;
+                orelse.push_back(al, c);
+            }
+            return ASRUtils::STMT(ASR::make_WhileLoop_t(al,
+                wl->base.base.loc, wl->m_name, wl->m_test, body.p, body.n,
+                orelse.p, orelse.n));
         }
         dup.success = true;
         ASR::stmt_t *c = dup.duplicate_stmt(stmt);
@@ -12801,11 +12842,6 @@ public:
             }
         }
 
-        // The kernel mutates Block symbols in place (VLA host capture
-        // depends on that). Snapshot a pristine copy first so a declined
-        // launch can put the host loop back.
-
-
         // This helper processes a block and recursively handles any nested
         // BlockCall statements, since GpuReplaceSymbolsVisitor does not
         // descend into BlockCall/AssociateBlockCall automatically.
@@ -13080,6 +13116,19 @@ public:
                         ASR::Block_t *block =
                             ASR::down_cast<ASR::Block_t>(bc->m_m);
                         std::string block_name = block->m_name;
+                        // Only a copy this pass made is safe to take. A
+                        // BlockCall that still names the host's own block
+                        // is a copy_loop_stmt miss; mutating it here
+                        // would steal the host nest if the launch is then
+                        // declined.
+                        bool is_copy = false;
+                        for (const std::string &n : kernel_block_names) {
+                            if (n == block_name) {
+                                is_copy = true;
+                                break;
+                            }
+                        }
+                        if (!is_copy) continue;
                         process_block_for_kernel(block, true);
                         if (orig_scope->get_symbol(block_name)) {
                             orig_scope->erase_symbol(block_name);

@@ -243,8 +243,7 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
 }
 
 static bool is_supported_scalar(ASR::ttype_t *type) {
-    ASR::ttype_t *t = ASRUtils::extract_type(type);
-    return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t);
+    return is_plain_scalar(ASRUtils::extract_type(type));
 }
 
 static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
@@ -353,8 +352,14 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
             if (!is_supported_buffer(arg)) return false;
         } else {
             if (!is_supported_scalar(arg_type)) {
-                return unsupported("a scalar that is not an integer or a "
-                    "real");
+                ASR::ttype_t *t = ASRUtils::extract_type(arg_type);
+                if (is_numeric_scalar(t)) {
+                    return unsupported("a scalar of "
+                        + gpu_scalar_type_name(t)
+                        + ", which has no gpu type of the same width");
+                }
+                return unsupported("a scalar that is not an integer, a "
+                    "real, or a logical");
             }
             if (!same_scalar_type(arg_type, kparam->m_type)) {
                 return unsupported("a scalar whose kind differs from the "
