@@ -1144,8 +1144,6 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                         symtab, body, n_body)) {
                     vd.is_host_expr = true;
-                } else if (find_arg_var_in_expr(dim, arg_names, idx)) {
-                    vd.call_arg_index = idx;
                 } else if (try_resolve_array_size_to_arg_var(dim, body,
                         n_body, arg_names, idx)) {
                     vd.call_arg_index = idx;
@@ -1209,8 +1207,6 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                     symtab, body, n_body)) {
                 vd.is_host_expr = true;
-            } else if (find_arg_var_in_expr(dim, arg_names, idx)) {
-                vd.call_arg_index = idx;
             } else if (dim_expr_struct_member_key(dim, member_key)) {
                 vd.is_struct_member_size = true;
                 vd.struct_member_key = member_key;
