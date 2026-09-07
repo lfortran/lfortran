@@ -4277,6 +4277,10 @@ filename = "../integration_tests/gpu_metal_306.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_307.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
