@@ -227,7 +227,10 @@ public:
             + key.substr(dot + 1);
         size_t rank = dim.struct_member_rank;
         if (rank == 0) rank = 1;
-        return struct_member_total_size_expr(sizes, "0", rank);
+        int64_t idx = dim.struct_member_elem_index;
+        if (idx < 0) idx = 0;
+        return struct_member_total_size_expr(sizes, std::to_string(idx),
+            rank);
     }
 
     // Maps array parameter names to their synthesized size parameter

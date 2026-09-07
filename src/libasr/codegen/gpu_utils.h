@@ -23,6 +23,11 @@ struct GpuVlaDim {
     // Rank of that component. The sizes buffer holds this many extents
     // per element, so the element count is their product, not [0].
     size_t struct_member_rank = 1;
+    // 0-based index of the struct-array element the extent names, or -1
+    // when that index is not a compile-time constant. A per-thread
+    // workspace cannot be strided by one element's product if another
+    // thread may need a larger one.
+    int64_t struct_member_elem_index = -1;
     // When non-empty, the size is the scalar component chain
     // arg%member_path[0]%member_path[1]%... of the kernel argument at
     // `call_arg_index`. A struct is handed to the kernel as a buffer, so
@@ -919,7 +924,7 @@ inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
 // The "struct_array.member" key of an array expression that is a
 // deferred-shape component, such as `a(i)%v` or a section of one.
 inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
-        size_t *rank = nullptr) {
+        size_t *rank = nullptr, int64_t *elem_index = nullptr) {
     if (e == nullptr) return false;
     e = ASRUtils::get_past_array_physical_cast(e);
     while (ASR::is_a<ASR::Cast_t>(*e)) {
@@ -935,9 +940,35 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
     ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(sm->m_m);
     std::string member = ASRUtils::symbol_name(ms);
     ASR::expr_t *base = sm->m_v;
+    int64_t index = 0;
     if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
-        base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(base);
+        index = -1;
+        if (item->n_args == 1) {
+            ASR::expr_t *ie = item->m_args[0].m_right
+                ? item->m_args[0].m_right : item->m_args[0].m_left;
+            int64_t v = 0;
+            if (ie != nullptr && ASRUtils::expr_value(ie) != nullptr
+                    && ASRUtils::extract_value(
+                        ASRUtils::expr_value(ie), v)) {
+                int64_t lb = 1;
+                ASR::ttype_t *at = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::expr_type(item->m_v));
+                if (ASR::is_a<ASR::Array_t>(*at)) {
+                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(at);
+                    if (arr->n_dims >= 1 && arr->m_dims[0].m_start
+                            && ASRUtils::expr_value(arr->m_dims[0].m_start)
+                            != nullptr) {
+                        ASRUtils::extract_value(ASRUtils::expr_value(
+                            arr->m_dims[0].m_start), lb);
+                    }
+                }
+                index = v - lb;
+            }
+        }
+        base = item->m_v;
     } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
+        index = -1;
         base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
     }
     if (!ASR::is_a<ASR::Var_t>(*base)) return false;
@@ -951,6 +982,7 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
             if (r > 0) *rank = r;
         }
     }
+    if (elem_index != nullptr) *elem_index = index;
     return true;
 }
 
@@ -1021,7 +1053,7 @@ inline bool find_struct_member_key_from_assignments(
 // such an extent itself, because the element index only exists on the device;
 // it sizes the workspace from the component's own sizes instead.
 inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key,
-        size_t *rank = nullptr) {
+        size_t *rank = nullptr, int64_t *elem_index = nullptr) {
     if (dim == nullptr) return false;
     ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
     while (ASR::is_a<ASR::Cast_t>(*e)) {
@@ -1029,7 +1061,7 @@ inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key,
     }
     if (!ASR::is_a<ASR::ArraySize_t>(*e)) return false;
     return expr_struct_member_key(
-        ASR::down_cast<ASR::ArraySize_t>(e)->m_v, key, rank);
+        ASR::down_cast<ASR::ArraySize_t>(e)->m_v, key, rank, elem_index);
 }
 
 // The size in bytes of an array's element, or 0 when the element type is
@@ -1102,13 +1134,14 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
                         vd.member_path)) {
                     vd.call_arg_index = idx;
+                } else if (dim_expr_struct_member_key(dim, member_key,
+                        &vd.struct_member_rank,
+                        &vd.struct_member_elem_index)) {
+                    vd.is_struct_member_size = true;
+                    vd.struct_member_key = member_key;
                 } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                         symtab, body, n_body)) {
                     vd.is_host_expr = true;
-                } else if (dim_expr_struct_member_key(dim, member_key,
-                        &vd.struct_member_rank)) {
-                    vd.is_struct_member_size = true;
-                    vd.struct_member_key = member_key;
                 } else {
                     // The host cannot size a workspace it cannot measure.
                     // Leave the array to the device language, which either
@@ -1164,13 +1197,14 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
                     vd.member_path)) {
                 vd.call_arg_index = idx;
+            } else if (dim_expr_struct_member_key(dim, member_key,
+                    &vd.struct_member_rank,
+                    &vd.struct_member_elem_index)) {
+                vd.is_struct_member_size = true;
+                vd.struct_member_key = member_key;
             } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                     symtab, body, n_body)) {
                 vd.is_host_expr = true;
-            } else if (dim_expr_struct_member_key(dim, member_key,
-                    &vd.struct_member_rank)) {
-                vd.is_struct_member_size = true;
-                vd.struct_member_key = member_key;
             } else {
                 // The host cannot size a workspace it cannot measure. Leave
                 // the array to the device language, which either declares it
@@ -1270,6 +1304,7 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     vd.struct_member_key = struct_key;
     vd.struct_member_rank = gpu_struct_member_rank_from_key(kernel,
         struct_key);
+    vd.struct_member_elem_index = -1;
     ws.dims.push_back(vd);
     return true;
 }

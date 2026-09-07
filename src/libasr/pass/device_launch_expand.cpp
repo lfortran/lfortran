@@ -263,15 +263,28 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
     if (dim.is_constant) return true;
     if (dim.is_struct_member_size) {
         if (dim.struct_member_key.empty()) return false;
+        if (dim.struct_member_elem_index < 0) {
+            return unsupported("a workspace sized from a struct element "
+                "whose shape may differ per thread");
+        }
         std::string::size_type dot = dim.struct_member_key.find('.');
         if (dot == std::string::npos) return false;
         std::string arr = dim.struct_member_key.substr(0, dot);
+        std::string mem = dim.struct_member_key.substr(dot + 1);
         for (size_t i = 0; i < kernel->n_args; i++) {
-            if (ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v)
-                    == arr) {
-                return true;
+            ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
+            if (std::string(kparam->m_name) != arr) continue;
+            ASR::Struct_t *st = get_struct(kparam->m_type_declaration);
+            if (!st) return false;
+            for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
+                if (m.first == mem && is_decomposed_member(
+                        &m.second->base)) {
+                    return true;
+                }
             }
+            return false;
         }
         return false;
     }
@@ -334,6 +347,7 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
             if (!workspace_dim_can_expand(dim, kernel, n_call_args)) {
+                if (!unsupported_reason.empty()) return false;
                 return unsupported("a variable length array whose extent "
                     "cannot be rebuilt on the host");
             }
