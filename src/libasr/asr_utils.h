@@ -3588,6 +3588,52 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
     }
 }
 
+    // Compute the LLVM layout for a declared derived type. StructType_t carries
+    // only its component types, while Struct_t also records an inherited parent
+    // that LLVM lowers as the first, inlined field.
+    static inline std::pair<int64_t, int64_t>
+    compute_struct_type_size_align(ASR::Struct_t* struct_type) {
+        int64_t offset = 0;
+        int64_t max_align = 1;
+
+        if (struct_type->m_parent != nullptr) {
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            if (parent_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*parent_sym)) {
+                return {-1, -1};
+            }
+            auto [size, align] = compute_struct_type_size_align(
+                ASR::down_cast<ASR::Struct_t>(parent_sym));
+            if (size < 0) return {-1, -1};
+            offset += size;
+            max_align = align;
+        }
+
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* member_sym = struct_type->m_symtab->get_symbol(
+                struct_type->m_members[i]);
+            member_sym = ASRUtils::symbol_get_past_external(member_sym);
+            if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                return {-1, -1};
+            }
+            ASR::ttype_t* member_type =
+                ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+            auto [size, align] = compute_type_size_align(member_type);
+            if (size < 0) return {-1, -1};
+            if (!struct_type->m_is_packed) {
+                offset = ((offset + align - 1) / align) * align;
+                if (align > max_align) max_align = align;
+            }
+            offset += size;
+        }
+
+        if (!struct_type->m_is_packed) {
+            offset = ((offset + max_align - 1) / max_align) * max_align;
+        }
+        if (offset == 0) offset = 1;
+        return {offset, struct_type->m_is_packed ? 1 : max_align};
+    }
+
 static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
     if (type == nullptr) {
         return -1;

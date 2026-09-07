@@ -12,8 +12,15 @@ end type prif_coarray_handle
 
 program coarray_collectives_01
 implicit none
+type :: point
+    real(4) :: x
+    real(4) :: y
+end type point
+integer(4), dimension(:), allocatable :: __co_broadcast_tmp
+integer(4), dimension(:), allocatable :: arr
 integer(4) :: me
 integer(4) :: n_images
+type(point) :: pt
 integer(4) :: stat
 character(len=2, kind=1), save :: str = "hi"
 integer(4) :: val
@@ -29,6 +36,17 @@ call __module_prif_prif_co_min(val)
 call __module_prif_prif_co_max_character(str)
 call __module_prif_prif_co_min_character(str)
 call __module_prif_prif_co_broadcast(val, 1)
+call __module_prif_prif_co_broadcast_cptr(c_loc(pt), 8_8, 1)
+allocate(arr(5))
+if (.not. is_contiguous(arr(1:5:2))) then
+    allocate(__co_broadcast_tmp(size(arr(1:5:2), 1)))
+    __co_broadcast_tmp = arr(1:5:2)
+    call __module_prif_prif_co_broadcast(__co_broadcast_tmp, 1)
+    arr(1:5:2) = __co_broadcast_tmp
+    deallocate(__co_broadcast_tmp)
+else
+    call __module_prif_prif_co_broadcast(arr(1:5:2), 1)
+end if
 call __module_prif_prif_sync_all()
 call __module_prif_prif_stop(.false.)
 
@@ -42,6 +60,19 @@ interface
         integer(4), intent(in) :: source_image
         integer(4), intent(out), optional :: stat
     end subroutine __module_prif_prif_co_broadcast
+end interface
+
+interface
+    subroutine __module_prif_prif_co_broadcast_cptr(a_ptr, size_in_bytes, source_image, stat, errmsg,&
+        &
+         errmsg_alloc)
+        type(c_ptr), intent(in) :: a_ptr
+        character(len=*, kind=1), intent(inout), optional :: errmsg
+        character(len=:, kind=1), allocatable, intent(inout), optional :: errmsg_alloc
+        integer(8), intent(in) :: size_in_bytes
+        integer(4), intent(in) :: source_image
+        integer(4), intent(out), optional :: stat
+    end subroutine __module_prif_prif_co_broadcast_cptr
 end interface
 
 interface
