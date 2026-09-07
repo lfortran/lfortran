@@ -6758,6 +6758,45 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+
+        // Handle character array section with substring on LHS:
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*target)) {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(target);
+            if (ac->n_args == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*ac->m_args[0])) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(ac->m_args[0]);
+                if (idl->n_values == 1 && ASR::is_a<ASR::StringSection_t>(*idl->m_values[0])) {
+                    ASR::expr_t* string_section_target = idl->m_values[0];
+
+                    this->visit_expr(*x.m_value);
+                    ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                    // Cast value to match element (scalar string) type if needed
+                    ASR::ttype_t* target_elem_type = ASRUtils::expr_type(string_section_target);
+                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                        ASRUtils::expr_type(value), target_elem_type, diag);
+
+                    // Build the inner assignment: string_section_target = value
+                    ASR::stmt_t* inner_assign = ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                            string_section_target, value, nullptr, false, false));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, inner_assign);
+
+                    // Build the DoLoop head
+                    ASR::do_loop_head_t head;
+                    head.loc = x.base.base.loc;
+                    head.m_v = idl->m_var;
+                    head.m_start = idl->m_start;
+                    head.m_end = idl->m_end;
+                    head.m_increment = idl->m_increment;
+
+                    tmp = ASR::make_DoLoop_t(al, x.base.base.loc, nullptr,
+                        head, body.p, body.size(), nullptr, 0);
+                    return;
+                }
+            }
+        }
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {
             std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(target)->m_v);
             if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
