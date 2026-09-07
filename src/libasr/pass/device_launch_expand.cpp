@@ -443,6 +443,9 @@ class DeviceLaunchExpandVisitor :
         // "<array>.<member>". A member sized at run time from another one,
         // and a workspace sized from a member, both read it.
         std::map<std::string, ASR::expr_t*> member_first_sizes;
+        // Sizes buffer of a decomposed member, so a workspace can be
+        // counted from the same element the device strides by.
+        std::map<std::string, ASR::expr_t*> member_sizes_bufs;
 
         ASR::call_arg_t call_arg(const Location &loc, ASR::expr_t *value) {
             ASR::call_arg_t arg;
@@ -769,6 +772,7 @@ class DeviceLaunchExpandVisitor :
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
                 member_first_sizes[key] = member_element_count(loc, sizes,
                     b.i32(1), rank);
+                member_sizes_bufs[key] = sizes;
                 ASR::expr_t *data_bytes = b.Mul(b.i2i_t(total, int64),
                     element_bytes);
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
@@ -1538,10 +1542,16 @@ class DeviceLaunchExpandVisitor :
                     if (dim.is_constant) {
                         extent = b.i64(dim.constant_value);
                     } else if (dim.is_struct_member_size) {
-                        auto first = member_first_sizes.find(
+                        auto sit = member_sizes_bufs.find(
                             dim.struct_member_key);
-                        if (first != member_first_sizes.end()) {
-                            extent = b.i2i_t(first->second, int64);
+                        if (sit != member_sizes_bufs.end()
+                                && dim.struct_member_elem_index >= 0) {
+                            size_t rank = dim.struct_member_rank;
+                            if (rank == 0) rank = 1;
+                            extent = b.i2i_t(member_element_count(loc,
+                                sit->second, b.i32((int)
+                                    dim.struct_member_elem_index + 1),
+                                rank), int64);
                         }
                     } else if (dim.is_host_expr) {
                         ASR::expr_t *host = host_extent(al, loc, kernel,
