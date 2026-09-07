@@ -232,6 +232,15 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         ASR::symbol_t *struct_sym =
             ASRUtils::get_struct_sym_from_struct_expr(arg);
         if (!struct_is_plain(struct_sym)) return false;
+        ASR::ttype_t *arr_t = ASRUtils::type_get_past_allocatable_pointer(
+            arg_type);
+        if (ASR::is_a<ASR::Array_t>(*arr_t)) {
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arr_t);
+            if (arr->n_dims != 1) {
+                return unsupported("a rank-" + std::to_string(arr->n_dims)
+                    + " array of derived type");
+            }
+        }
         return true;
     }
     if (is_plain_scalar(base)) return true;
