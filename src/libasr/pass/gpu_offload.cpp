@@ -4162,7 +4162,8 @@ public:
     // inlined cannot be, in which case the loop is not offloaded.
     bool plan_device_function_inlining(ASR::stmt_t **stmts, size_t n_stmts,
             std::map<ASR::Function_t*, bool> &memo,
-            std::set<ASR::Function_t*> &on_stack) {
+            std::set<ASR::Function_t*> &on_stack,
+            bool spliceable = true) {
         for (size_t si = 0; si < n_stmts; si++) {
             ASR::stmt_t *stmt = stmts[si];
             if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
@@ -4171,7 +4172,9 @@ public:
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                     if (!plan_device_function_inlining(blk->m_body,
-                            blk->n_body, memo, on_stack)) return false;
+                            blk->n_body, memo, on_stack, spliceable)) {
+                        return false;
+                    }
                 }
                 continue;
             }
@@ -4181,8 +4184,13 @@ public:
                 if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
                     ASR::AssociateBlock_t *blk =
                         ASR::down_cast<ASR::AssociateBlock_t>(b);
+                    // Splice rewrites an assignment in the current
+                    // scope. An ASSOCIATE-local actual would leave a
+                    // BlockCall whose Vars point outside that table.
                     if (!plan_device_function_inlining(blk->m_body,
-                            blk->n_body, memo, on_stack)) return false;
+                            blk->n_body, memo, on_stack, false)) {
+                        return false;
+                    }
                 }
                 continue;
             }
@@ -4197,8 +4205,9 @@ public:
                         on_stack)) continue;
                 // Only a call that *is* the assignment's value can be
                 // spliced; one nested inside a larger expression would
-                // need a temporary the caller does not have.
-                if (call != top) {
+                // need a temporary the caller does not have. ASSOCIATE
+                // is the same: splice cannot rewrite that scope.
+                if (!spliceable || call != top) {
                     return false;
                 }
                 if (on_stack.count(callee)) {
@@ -4208,7 +4217,7 @@ public:
                 functions_to_inline.insert(callee);
                 on_stack.insert(callee);
                 bool ok = plan_device_function_inlining(callee->m_body,
-                    callee->n_body, memo, on_stack);
+                    callee->n_body, memo, on_stack, spliceable);
                 on_stack.erase(callee);
                 if (!ok) return false;
             }
@@ -4490,9 +4499,9 @@ public:
     // is left to inline (a callee's own calls surface only once its body
     // has been spliced in). The planner has already proved this
     // terminates: it rejects any call cycle.
-    void inline_device_function_calls(ASR::stmt_t **&stmts,
+    bool inline_device_function_calls(ASR::stmt_t **&stmts,
             size_t &n_stmts) {
-        if (functions_to_inline.empty()) return;
+        if (functions_to_inline.empty()) return true;
         for (size_t round = 0; round < functions_to_inline.size() + 1;
                 round++) {
             Vec<ASR::stmt_t*> new_body;
@@ -4505,8 +4514,8 @@ public:
                         ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
                     if (b && ASR::is_a<ASR::Block_t>(*b)) {
                         ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                        inline_device_function_calls(blk->m_body,
-                            blk->n_body);
+                        if (!inline_device_function_calls(blk->m_body,
+                                blk->n_body)) return false;
                     }
                     new_body.push_back(al, stmt);
                     continue;
@@ -4522,10 +4531,7 @@ public:
                     ASR::down_cast<ASR::Assignment_t>(stmt);
                 ASR::stmt_t *spliced = splice_device_function(callee,
                     call, asgn->m_target, stmt->base.loc);
-                if (!spliced) {
-                    new_body.push_back(al, stmt);
-                    continue;
-                }
+                if (!spliced) return false;
                 new_body.push_back(al, spliced);
                 changed = true;
             }
@@ -4533,6 +4539,7 @@ public:
             stmts = new_body.p;
             n_stmts = new_body.n;
         }
+        return true;
     }
 
     // Inline IntrinsicArrayFunction All inside a parallel loop body.
@@ -10443,7 +10450,12 @@ public:
         GpuSpliceRestoreGuard splice_guard(splice_snapshot, scope_dims_undo);
         {
             splice_snapshot.record(work, current_scope);
-            inline_device_function_calls(work.body, work.n_body);
+            if (!inline_device_function_calls(work.body, work.n_body)) {
+                functions_to_inline.clear();
+                report_not_offloaded(loc,
+                    "a device function cannot be inlined");
+                return;
+            }
             functions_to_inline.clear();
             // Run-time sized alias temporaries become BLOCK locals here,
             // ahead of the workspace pre-flight below, so that the
