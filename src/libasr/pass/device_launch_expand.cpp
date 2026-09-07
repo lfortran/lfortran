@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
+#include <libasr/assert.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_launch_expand.h>
@@ -253,6 +254,31 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
             ASRUtils::extract_kind_from_ttype_t(tb);
 }
 
+// True when the host can turn this workspace dimension into an extent
+// expression at expand time. A dimension that cannot is not "already
+// fine": skipping it would size the buffer short while the device still
+// multiplies the extent in.
+static bool workspace_dim_can_expand(const GpuVlaDim &dim,
+        const ASR::Function_t *kernel, size_t n_call_args) {
+    if (dim.is_constant) return true;
+    if (dim.is_struct_member_size) {
+        if (dim.struct_member_key.empty()) return false;
+        std::string::size_type dot = dim.struct_member_key.find('.');
+        if (dot == std::string::npos) return false;
+        std::string arr = dim.struct_member_key.substr(0, dot);
+        for (size_t i = 0; i < kernel->n_args; i++) {
+            if (ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v)
+                    == arr) {
+                return true;
+            }
+        }
+        return false;
+    }
+    if (dim.is_host_expr) return dim.dim_expr != nullptr;
+    return dim.call_arg_index < n_call_args;
+}
+
 // True when every argument of this launch has a shape the pass can expand.
 static bool launch_is_supported(ASR::symbol_t *kernel_sym,
         ASR::call_arg_t *call_args, size_t n_call_args) {
@@ -263,11 +289,9 @@ static bool launch_is_supported(ASR::symbol_t *kernel_sym,
     }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
-            if (dim.is_constant || dim.is_struct_member_size) continue;
-            if (dim.is_host_expr) continue;
-            if (dim.call_arg_index >= n_call_args) {
-                return unsupported("a variable length array sized outside "
-                    "the kernel arguments");
+            if (!workspace_dim_can_expand(dim, kernel, n_call_args)) {
+                return unsupported("a variable length array whose extent "
+                    "cannot be rebuilt on the host");
             }
         }
     }
@@ -1388,39 +1412,46 @@ class DeviceLaunchExpandVisitor :
                     } else if (dim.is_struct_member_size) {
                         auto first = member_first_sizes.find(
                             dim.struct_member_key);
-                        if (first == member_first_sizes.end()) continue;
-                        extent = b.i2i_t(first->second, int64);
+                        if (first != member_first_sizes.end()) {
+                            extent = b.i2i_t(first->second, int64);
+                        }
                     } else if (dim.is_host_expr) {
                         ASR::expr_t *host = host_extent(loc, x, kernel,
                             dim.dim_expr);
-                        if (host == nullptr) continue;
-                        extent = b.i2i_t(host, int64);
+                        if (host != nullptr) {
+                            extent = b.i2i_t(host, int64);
+                        }
                     } else if (!dim.member_path.empty()) {
                         // A scalar component of a struct argument. The
                         // struct reaches the kernel as a buffer, so the
                         // host reads the component here instead.
-                        ASR::expr_t *e =
-                            x.m_args[dim.call_arg_index].m_value;
-                        bool ok = true;
-                        for (const std::string &m : dim.member_path) {
-                            ASR::symbol_t *st =
-                                ASRUtils::get_struct_sym_from_struct_expr(e);
-                            ASR::symbol_t *member = st
-                                ? ASR::down_cast<ASR::Struct_t>(
-                                    ASRUtils::symbol_get_past_external(st))
-                                        ->m_symtab->get_symbol(m)
-                                : nullptr;
-                            if (member == nullptr) { ok = false; break; }
-                            e = ASRUtils::EXPR(
-                                ASR::make_StructInstanceMember_t(al, loc, e,
-                                    member, ASRUtils::symbol_type(member),
-                                    nullptr));
+                        if (dim.call_arg_index < x.n_args) {
+                            ASR::expr_t *e =
+                                x.m_args[dim.call_arg_index].m_value;
+                            bool ok = true;
+                            for (const std::string &m : dim.member_path) {
+                                ASR::symbol_t *st =
+                                    ASRUtils::get_struct_sym_from_struct_expr(e);
+                                ASR::symbol_t *member = st
+                                    ? ASR::down_cast<ASR::Struct_t>(
+                                        ASRUtils::symbol_get_past_external(st))
+                                            ->m_symtab->get_symbol(m)
+                                    : nullptr;
+                                if (member == nullptr) { ok = false; break; }
+                                e = ASRUtils::EXPR(
+                                    ASR::make_StructInstanceMember_t(al, loc, e,
+                                        member, ASRUtils::symbol_type(member),
+                                        nullptr));
+                            }
+                            if (ok) extent = b.i2i_t(e, int64);
                         }
-                        if (!ok) continue;
-                        extent = b.i2i_t(e, int64);
-                    } else {
+                    } else if (dim.call_arg_index < x.n_args) {
                         extent = b.i2i_t(
                             x.m_args[dim.call_arg_index].m_value, int64);
+                    }
+                    if (extent == nullptr) {
+                        LFORTRAN_ERROR("gpu launch: cannot size a workspace "
+                            "dimension");
                     }
                     n_elements = b.Mul(n_elements, extent);
                 }
