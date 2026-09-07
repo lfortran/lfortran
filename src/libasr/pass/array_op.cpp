@@ -1829,6 +1829,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
 
     void visit_Assignment(const ASR::Assignment_t& x) {
+        // A non-elemental defined assignment is entirely carried out by the
+        // overloaded subroutine call, which takes both sides as actual
+        // arguments. There is no element-wise assignment to expand and no
+        // shape conformance to check. (An elemental one is expanded below.)
+        if (x.m_overloaded != nullptr &&
+                ASR::is_a<ASR::SubroutineCall_t>(*x.m_overloaded) &&
+                !ASRUtils::is_elemental(ASR::down_cast<ASR::SubroutineCall_t>(
+                    x.m_overloaded)->m_name)) {
+            return ;
+        }
         if (ASRUtils::is_simd_array(x.m_target)) {
             if( !(ASRUtils::is_allocatable(x.m_value) ||
                   ASRUtils::is_pointer(ASRUtils::expr_type(x.m_value))) ) {
