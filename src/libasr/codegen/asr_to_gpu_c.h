@@ -203,10 +203,7 @@ public:
             const GpuVlaDim &dim = ws.dims[d];
             if (dim.is_constant) return std::to_string(dim.constant_value);
             if (dim.is_struct_member_size) {
-                std::string key = dim.struct_member_key;
-                auto dot = key.find('.');
-                return "__sizes_" + key.substr(0, dot) + "_"
-                    + key.substr(dot + 1) + "[0]";
+                return struct_member_workspace_extent(dim);
             }
             if (dim.dim_expr == nullptr) return "";
             std::stringstream save;
@@ -219,6 +216,18 @@ public:
             return out;
         }
         return "";
+    }
+
+    // Element count of the first struct-array element, from the sizes
+    // buffer: the product of that element's per-dimension extents.
+    std::string struct_member_workspace_extent(const GpuVlaDim &dim) {
+        std::string key = dim.struct_member_key;
+        auto dot = key.find('.');
+        std::string sizes = "__sizes_" + key.substr(0, dot) + "_"
+            + key.substr(dot + 1);
+        size_t rank = dim.struct_member_rank;
+        if (rank == 0) rank = 1;
+        return struct_member_total_size_expr(sizes, "0", rank);
     }
 
     // Maps array parameter names to their synthesized size parameter
@@ -553,13 +562,8 @@ public:
                             src << vla_it->dims[d].constant_value;
                             total_const_size *= vla_it->dims[d].constant_value;
                         } else if (vla_it->dims[d].is_struct_member_size) {
-                            std::string key =
-                                vla_it->dims[d].struct_member_key;
-                            auto dot = key.find('.');
-                            std::string arr_name = key.substr(0, dot);
-                            std::string mem_name = key.substr(dot + 1);
-                            src << "__sizes_" << arr_name << "_"
-                                << mem_name << "[0]";
+                            src << struct_member_workspace_extent(
+                                vla_it->dims[d]);
                             all_const = false;
                         } else {
                             emit_workspace_extent(
@@ -580,13 +584,8 @@ public:
                             if (vla_it->dims[d].is_constant) {
                                 src << vla_it->dims[d].constant_value;
                             } else if (vla_it->dims[d].is_struct_member_size) {
-                                std::string key =
-                                    vla_it->dims[d].struct_member_key;
-                                auto dot = key.find('.');
-                                std::string arr_name = key.substr(0, dot);
-                                std::string mem_name = key.substr(dot + 1);
-                                src << "__sizes_" << arr_name << "_"
-                                    << mem_name << "[0]";
+                                src << struct_member_workspace_extent(
+                                    vla_it->dims[d]);
                             } else {
                                 emit_workspace_extent(
                                     vla_it->dims[d].dim_expr);
@@ -4542,13 +4541,8 @@ public:
                             if (vla_it->dims[0].is_constant) {
                                 src << vla_it->dims[0].constant_value;
                             } else if (vla_it->dims[0].is_struct_member_size) {
-                                std::string key =
-                                    vla_it->dims[0].struct_member_key;
-                                auto dot = key.find('.');
-                                std::string arr_name = key.substr(0, dot);
-                                std::string mem_name = key.substr(dot + 1);
-                                src << "__sizes_" << arr_name << "_"
-                                    << mem_name << "[0]";
+                                src << struct_member_workspace_extent(
+                                    vla_it->dims[0]);
                             } else {
                                 emit_workspace_extent(
                                     vla_it->dims[0].dim_expr);
@@ -4561,13 +4555,8 @@ public:
                                 if (vla_it->dims[d].is_constant) {
                                     src << vla_it->dims[d].constant_value;
                                 } else if (vla_it->dims[d].is_struct_member_size) {
-                                    std::string key =
-                                        vla_it->dims[d].struct_member_key;
-                                    auto dot = key.find('.');
-                                    std::string arr_name = key.substr(0, dot);
-                                    std::string mem_name = key.substr(dot + 1);
-                                    src << "__sizes_" << arr_name << "_"
-                                        << mem_name << "[0]";
+                                    src << struct_member_workspace_extent(
+                                        vla_it->dims[d]);
                                 } else {
                                     emit_workspace_extent(
                                     vla_it->dims[d].dim_expr);
@@ -4589,15 +4578,8 @@ public:
                                         .constant_value;
                                 } else if (vla_it->dims[d]
                                         .is_struct_member_size) {
-                                    std::string key =
-                                        vla_it->dims[d].struct_member_key;
-                                    auto dot = key.find('.');
-                                    std::string arr_name =
-                                        key.substr(0, dot);
-                                    std::string mem_name =
-                                        key.substr(dot + 1);
-                                    size_ss << "__sizes_" << arr_name
-                                        << "_" << mem_name << "[0]";
+                                    size_ss << struct_member_workspace_extent(
+                                        vla_it->dims[d]);
                                 } else {
                                     std::stringstream tmp;
                                     tmp << src.str();

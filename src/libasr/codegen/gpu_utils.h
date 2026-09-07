@@ -20,6 +20,9 @@ struct GpuVlaDim {
     // per-element sizes. struct_member_key is "arr_name.member_name".
     bool is_struct_member_size = false;
     std::string struct_member_key;
+    // Rank of that component. The sizes buffer holds this many extents
+    // per element, so the element count is their product, not [0].
+    size_t struct_member_rank = 1;
     // When non-empty, the size is the scalar component chain
     // arg%member_path[0]%member_path[1]%... of the kernel argument at
     // `call_arg_index`. A struct is handed to the kernel as a buffer, so
@@ -915,7 +918,8 @@ inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
 
 // The "struct_array.member" key of an array expression that is a
 // deferred-shape component, such as `a(i)%v` or a section of one.
-inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key) {
+inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
+        size_t *rank = nullptr) {
     if (e == nullptr) return false;
     e = ASRUtils::get_past_array_physical_cast(e);
     while (ASR::is_a<ASR::Cast_t>(*e)) {
@@ -928,8 +932,8 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key) {
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return false;
     ASR::StructInstanceMember_t *sm =
         ASR::down_cast<ASR::StructInstanceMember_t>(e);
-    std::string member = ASRUtils::symbol_name(
-        ASRUtils::symbol_get_past_external(sm->m_m));
+    ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(sm->m_m);
+    std::string member = ASRUtils::symbol_name(ms);
     ASR::expr_t *base = sm->m_v;
     if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
         base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
@@ -939,6 +943,14 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key) {
     if (!ASR::is_a<ASR::Var_t>(*base)) return false;
     key = std::string(ASRUtils::symbol_name(
         ASR::down_cast<ASR::Var_t>(base)->m_v)) + "." + member;
+    if (rank != nullptr) {
+        *rank = 1;
+        if (ASR::is_a<ASR::Variable_t>(*ms)) {
+            size_t r = gpu_struct_member_rank(
+                ASR::down_cast<ASR::Variable_t>(ms));
+            if (r > 0) *rank = r;
+        }
+    }
     return true;
 }
 
@@ -1008,7 +1020,8 @@ inline bool find_struct_member_key_from_assignments(
 // deferred-shape component, such as `size(a(i)%v)`. The host cannot evaluate
 // such an extent itself, because the element index only exists on the device;
 // it sizes the workspace from the component's own sizes instead.
-inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key) {
+inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key,
+        size_t *rank = nullptr) {
     if (dim == nullptr) return false;
     ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
     while (ASR::is_a<ASR::Cast_t>(*e)) {
@@ -1016,7 +1029,7 @@ inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key) {
     }
     if (!ASR::is_a<ASR::ArraySize_t>(*e)) return false;
     return expr_struct_member_key(
-        ASR::down_cast<ASR::ArraySize_t>(e)->m_v, key);
+        ASR::down_cast<ASR::ArraySize_t>(e)->m_v, key, rank);
 }
 
 // The size in bytes of an array's element, or 0 when the element type is
@@ -1092,7 +1105,8 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                         symtab, body, n_body)) {
                     vd.is_host_expr = true;
-                } else if (dim_expr_struct_member_key(dim, member_key)) {
+                } else if (dim_expr_struct_member_key(dim, member_key,
+                        &vd.struct_member_rank)) {
                     vd.is_struct_member_size = true;
                     vd.struct_member_key = member_key;
                 } else {
@@ -1153,7 +1167,8 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             } else if (gpu_extent_is_host_evaluable(dim, arg_names,
                     symtab, body, n_body)) {
                 vd.is_host_expr = true;
-            } else if (dim_expr_struct_member_key(dim, member_key)) {
+            } else if (dim_expr_struct_member_key(dim, member_key,
+                    &vd.struct_member_rank)) {
                 vd.is_struct_member_size = true;
                 vd.struct_member_key = member_key;
             } else {
@@ -1203,6 +1218,31 @@ inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
     return true;
 }
 
+inline size_t gpu_struct_member_rank_from_key(const ASR::Function_t &kernel,
+        const std::string &key) {
+    std::string::size_type dot = key.find('.');
+    if (dot == std::string::npos) return 1;
+    std::string arr = key.substr(0, dot);
+    std::string mem = key.substr(dot + 1);
+    for (size_t ai = 0; ai < kernel.n_args; ai++) {
+        ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
+        ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(av->m_v));
+        if (std::string(avar->m_name) != arr) continue;
+        if (!avar->m_type_declaration) continue;
+        ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(
+            avar->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*decl)) continue;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(decl);
+        for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
+            if (m.first != mem) continue;
+            size_t r = gpu_struct_member_rank(m.second);
+            return r > 0 ? r : 1;
+        }
+    }
+    return 1;
+}
+
 inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
         ASR::Array_t *arr, const std::string &var_name,
         GpuVlaWorkspace &ws, ASR::stmt_t **scope_body = nullptr,
@@ -1228,6 +1268,8 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     vd.call_arg_index = 0;
     vd.is_struct_member_size = true;
     vd.struct_member_key = struct_key;
+    vd.struct_member_rank = gpu_struct_member_rank_from_key(kernel,
+        struct_key);
     ws.dims.push_back(vd);
     return true;
 }
