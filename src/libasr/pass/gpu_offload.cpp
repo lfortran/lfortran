@@ -9435,6 +9435,9 @@ public:
         ab->m_symtab->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         parent_scope->add_symbol(block_name, block_sym);
+        if (parent_scope == current_scope) {
+            kernel_block_names.push_back(block_name);
+        }
         return ASRUtils::STMT(ASR::make_BlockCall_t(al, ab->base.base.loc,
             -1, block_sym));
     }
@@ -9469,6 +9472,10 @@ public:
                 block->m_symtab->parent = parent_scope;
             }
             parent_scope->add_symbol(name, item.second);
+            if (ASR::is_a<ASR::Block_t>(*item.second)
+                    && parent_scope == current_scope) {
+                kernel_block_names.push_back(name);
+            }
         }
     }
 
@@ -10729,7 +10736,7 @@ public:
                     // referenced by FunctionCall/SubroutineCall nodes
                     // in the resolved statements and must remain
                     // reachable for import_struct_def.
-                    migrate_inlined_assoc_symbols(ab, current_scope);
+                    migrate_inlined_assoc_symbols(ab, block->m_symtab);
                 }
                 std::string ab_name = ab->m_name;
                 block->m_symtab->erase_symbol(ab_name);
@@ -13069,9 +13076,19 @@ public:
                     ASR::BlockCall_t *inner_bc =
                         ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
                     if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
-                        process_block_for_kernel(
-                            ASR::down_cast<ASR::Block_t>(inner_bc->m_m),
-                            false);
+                        ASR::Block_t *inner =
+                            ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
+                        std::string inner_name = inner->m_name;
+                        bool host_owned = orig_scope->get_symbol(inner_name)
+                            == inner_bc->m_m;
+                        process_block_for_kernel(inner, host_owned);
+                        if (host_owned) {
+                            orig_scope->erase_symbol(inner_name);
+                            if (!kernel_scope->get_symbol(inner_name)) {
+                                kernel_scope->add_symbol(inner_name,
+                                    inner_bc->m_m);
+                            }
+                        }
                     }
                 }
             }
