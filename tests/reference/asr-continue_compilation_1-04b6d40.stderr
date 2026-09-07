@@ -2102,9 +2102,3 @@ semantic error: too many arguments in derived type constructor
      |
 1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
-
-semantic error: Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
-    --> tests/errors/continue_compilation_1.f90:1174:43
-     |
-1174 |         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
-     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ 
