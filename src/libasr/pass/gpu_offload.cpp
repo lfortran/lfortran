@@ -385,6 +385,7 @@ static ASR::expr_t* gpu_scope_array_shape_source(const ASR::Variable_t *var,
 // on the host, and means the pre-flight and the backend cannot disagree.
 static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
         ASR::stmt_t **body, size_t n_body,
+        ASR::stmt_t **root_body, size_t root_n,
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name) {
     if (symtab == nullptr) return true;
@@ -411,7 +412,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
             }
             if (!runtime) continue;
             if (declared_shape_to_vla_workspace(arr, vname, arg_names, ws,
-                    symtab, body, n_body)) {
+                    symtab, root_body, root_n)) {
                 continue;
             }
             unresolved_name = vname;
@@ -431,8 +432,8 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
             }
         }
         if (!runtime) continue;
-        if (alloc_shape_to_vla_workspace(*target, arr, vname, body, n_body,
-                arg_names, ws, symtab)) {
+        if (alloc_shape_to_vla_workspace(*target, arr, vname, root_body,
+                root_n, arg_names, ws, symtab)) {
             continue;
         }
         unresolved_name = vname;
@@ -447,35 +448,16 @@ static bool gpu_block_workspace_extents_resolvable(
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name) {
-    for (size_t i = 0; i < n_body; i++) {
-        if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
-            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
-            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-            if (!gpu_scope_workspaces_resolvable(blk->m_symtab, blk->m_body,
-                    blk->n_body, arg_names, unresolved_name)) {
-                return false;
+    bool ok = true;
+    gpu_walk_scopes(body, n_body,
+        [&](SymbolTable *symtab, ASR::stmt_t **sbody, size_t sn) {
+            if (!ok) return;
+            if (!gpu_scope_workspaces_resolvable(symtab, sbody, sn,
+                    body, n_body, arg_names, unresolved_name)) {
+                ok = false;
             }
-            if (!gpu_block_workspace_extents_resolvable(
-                    blk->m_body, blk->n_body, arg_names, unresolved_name)) {
-                return false;
-            }
-        } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*body[i])) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::AssociateBlockCall_t>(body[i])->m_m);
-            if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) {
-                continue;
-            }
-            ASR::AssociateBlock_t *ab =
-                ASR::down_cast<ASR::AssociateBlock_t>(b);
-            if (!gpu_scope_workspaces_resolvable(ab->m_symtab, ab->m_body,
-                    ab->n_body, arg_names, unresolved_name)) {
-                return false;
-            }
-        }
-    }
-    return true;
+        });
+    return ok;
 }
 
 // Look up a member (component or type-bound procedure) by name in a
@@ -649,10 +631,8 @@ static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
         }
         case ASR::ttypeType::Logical:
             return gpu_scalar_width_supported(base_t);
-        case ASR::ttypeType::Complex:
-            return false;
         default:
-            return true;
+            return false;
     }
 }
 
@@ -827,15 +807,13 @@ public:
 
     bool type_ok(ASR::ttype_t *t) {
         ASR::ttype_t *base = ASRUtils::extract_type(t);
-        if (ASR::is_a<ASR::Integer_t>(*base)
-                || ASR::is_a<ASR::Real_t>(*base)
-                || ASR::is_a<ASR::Logical_t>(*base)) {
-            if (!gpu_scalar_width_supported(base)) return false;
-            if (metal && !is_metal_representable_scalar_type(base)) {
-                return false;
-            }
+        if (ASR::is_a<ASR::StructType_t>(*base)) {
+            return true;
         }
-        return true;
+        if (metal) {
+            return is_metal_representable_scalar_type(base);
+        }
+        return gpu_scalar_width_supported(base);
     }
 
     void check_scope(SymbolTable *symtab) {

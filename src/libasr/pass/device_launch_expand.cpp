@@ -813,6 +813,13 @@ class DeviceLaunchExpandVisitor :
                     if (i >= n_args) break;
                     return args[i].m_value;
                 }
+                ASR::expr_t *bound = gpu_local_array_binding(
+                    ASR::down_cast<ASR::Var_t>(v)->m_v, kernel->m_body,
+                    kernel->n_body);
+                if (bound != nullptr) {
+                    return host_designator(al, loc, kernel, args, n_args,
+                        bound);
+                }
                 return nullptr;
             }
             if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
@@ -969,8 +976,15 @@ class DeviceLaunchExpandVisitor :
             // its shape.
             if (ASR::is_a<ASR::ArraySize_t>(*v)) {
                 ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
+                ASR::expr_t *array = sz->m_v;
+                if (array != nullptr && ASR::is_a<ASR::Var_t>(*array)) {
+                    ASR::expr_t *bound = gpu_local_array_binding(
+                        ASR::down_cast<ASR::Var_t>(array)->m_v,
+                        kernel->m_body, kernel->n_body);
+                    if (bound != nullptr) array = bound;
+                }
                 ASR::expr_t *host = host_designator(al, loc, kernel, args,
-                    n_args, sz->m_v);
+                    n_args, array);
                 if (host != nullptr) {
                     ASR::expr_t *dim = sz->m_dim
                         ? host_extent(al, loc, kernel, args, n_args,
@@ -983,7 +997,7 @@ class DeviceLaunchExpandVisitor :
                 // still has extents the host can work out: they come from
                 // the ranges alone.
                 std::vector<ASR::array_index_t*> ranges =
-                    gpu_section_extent_ranges(sz->m_v, sz->m_dim);
+                    gpu_section_extent_ranges(array, sz->m_dim);
                 if (!ranges.empty()) {
                     ASR::expr_t *out = nullptr;
                     for (ASR::array_index_t *range : ranges) {
@@ -1006,7 +1020,7 @@ class DeviceLaunchExpandVisitor :
                 // say -- but its type still records its shape, written in
                 // the symbols of the scope the call is made from.
                 std::vector<ASR::expr_t*> lengths;
-                if (gpu_expr_shape_extents(sz->m_v, sz->m_dim, lengths)) {
+                if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
                     ASR::expr_t *out = nullptr;
                     for (ASR::expr_t *length : lengths) {
                         ASR::expr_t *one = host_extent(al, loc, kernel, args,

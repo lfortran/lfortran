@@ -613,7 +613,9 @@ public:
                     if (eit != alloc_array_size_exprs.end()) {
                         src << "[" << eit->second << "]";
                     } else {
-                        src << "[1]";
+                        throw CodeGenError(
+                            "gpu offload: local array '" + vname +
+                            "' has no host-measurable extent");
                     }
                 }
                 local_alloc_arrays.insert(vname);
@@ -3320,13 +3322,16 @@ public:
                     if (ASR::is_a<ASR::Array_t>(*base_type)) {
                         ASR::Array_t *arr =
                             ASR::down_cast<ASR::Array_t>(base_type);
-                        int elem_size = 4;
-                        if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
-                            elem_size = ASR::down_cast<ASR::Real_t>(
-                                arr->m_type)->m_kind;
-                        } else if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
-                            elem_size = ASR::down_cast<ASR::Integer_t>(
-                                arr->m_type)->m_kind;
+                        int elem_size = gpu_vla_elem_size(arr);
+                        if (elem_size <= 0) {
+                            if (is_struct_type(arr->m_type)) {
+                                elem_size = 0;
+                            } else {
+                                throw CodeGenError(
+                                    "gpu offload: packed argument '" +
+                                    args[i].name +
+                                    "' has no gpu type of the same width");
+                            }
                         }
                         int64_t total_elements = 1;
                         for (size_t d = 0; d < arr->n_dims; d++) {
@@ -3541,37 +3546,27 @@ public:
         // Emit VLA workspace buffer parameters
         for (size_t v = 0; v < current_vla_infos.size(); v++) {
             LCOMPILERS_ASSERT(current_vla_infos[v].buffer_index == buffer_idx);
-            ASR::Variable_t *vla_var = nullptr;
-            // Look up the variable in block scopes
-            for (size_t bi = 0; bi < x.n_body; bi++) {
-                if (!ASR::is_a<ASR::BlockCall_t>(*x.m_body[bi])) continue;
-                ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-                    x.m_body[bi]);
-                if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
-                ASR::symbol_t *sym = block->m_symtab->resolve_symbol(
-                    current_vla_infos[v].var_name);
-                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
-                    vla_var = ASR::down_cast<ASR::Variable_t>(sym);
-                    break;
-                }
+            ASR::Variable_t *vla_var = find_gpu_vla_variable(
+                x, current_vla_infos[v].var_name);
+            if (vla_var == nullptr) {
+                throw CodeGenError(
+                    "gpu offload: workspace '" +
+                    current_vla_infos[v].var_name +
+                    "' has no matching local");
             }
-            // Also look up in kernel scope (for allocatable VLAs)
-            if (!vla_var) {
-                ASR::symbol_t *sym = x.m_symtab->resolve_symbol(
-                    current_vla_infos[v].var_name);
-                if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
-                    vla_var = ASR::down_cast<ASR::Variable_t>(sym);
-                }
+            std::string elem_type_str;
+            ASR::ttype_t *vla_type = ASRUtils::type_get_past_allocatable(
+                vla_var->m_type);
+            if (ASR::is_a<ASR::Array_t>(*vla_type)) {
+                elem_type_str = gpu_type(
+                    ASR::down_cast<ASR::Array_t>(vla_type)->m_type);
             }
-            std::string elem_type_str = "float";
-            if (vla_var) {
-                ASR::ttype_t *vla_type = ASRUtils::type_get_past_allocatable(
-                    vla_var->m_type);
-                if (ASR::is_a<ASR::Array_t>(*vla_type)) {
-                    elem_type_str = gpu_type(
-                        ASR::down_cast<ASR::Array_t>(vla_type)->m_type);
-                }
+            if (elem_type_str.empty()
+                    || elem_type_str.find("unsupported") != std::string::npos) {
+                throw CodeGenError(
+                    "gpu offload: workspace '" +
+                    current_vla_infos[v].var_name +
+                    "' has no gpu type of the same width");
             }
 
             if (has_prev) src << ",\n";
@@ -4522,14 +4517,20 @@ public:
                             return ws.var_name == vname;
                         });
                     if (vla_it != current_vla_infos.end()) {
-                        // Get the element type string from the variable
-                        std::string elem_type_str = "float";
+                        std::string elem_type_str;
                         ASR::ttype_t *vtype =
                             ASRUtils::type_get_past_allocatable(v->m_type);
                         if (ASR::is_a<ASR::Array_t>(*vtype)) {
                             elem_type_str = gpu_type(
                                 ASR::down_cast<ASR::Array_t>(
                                     vtype)->m_type);
+                        }
+                        if (elem_type_str.empty()
+                                || elem_type_str.find("unsupported")
+                                    != std::string::npos) {
+                            throw CodeGenError(
+                                "gpu offload: workspace '" + vname +
+                                "' has no gpu type of the same width");
                         }
                         // Emit a device pointer into the per-thread slice
                         src << get_indent() << global_prefix()
