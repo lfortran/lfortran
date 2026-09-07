@@ -16,6 +16,12 @@ syntax error: Token 'foo' (of type 'identifier') is unexpected here
 1153 |       foo    end type t_recovery
      |       ^^^ 
 
+semantic error: Module 'lfortran_intrinsic_ieee_arithmetic' modfile was not found
+ --> tests/errors/continue_compilation_1.f90:5:5
+  |
+5 |     use, intrinsic :: ieee_arithmetic, only: ieee_class, ieee_quiet_nan, ieee_class_type
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
   --> tests/errors/continue_compilation_1.f90:53:5 - 57:24
    |
@@ -39,11 +45,17 @@ semantic error: Derived type `another_undefined_type` is not defined
 79 |         type(another_undefined_type) :: s3_in_subroutine
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: c_char should have a length of 1
-   --> tests/errors/continue_compilation_1.f90:103:9
+semantic error: Module 'lfortran_intrinsic_iso_c_binding' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:102:9
+    |
+102 |         use iso_c_binding
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'c_char' is not declared
+   --> tests/errors/continue_compilation_1.f90:103:31
     |
 103 |         character(len=2, kind=c_char), intent(in) :: c
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |                               ^^^^^^ 'c_char' is undeclared
 
 semantic error: Dummy argument 'c' not defined
    --> tests/errors/continue_compilation_1.f90:101:5 - 104:20
@@ -192,6 +204,12 @@ semantic error: Interface 'sub_test' is referenced but not defined
 182 |         procedure(sub_test), pointer :: pf2
     |         ^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: Module 'lfortran_intrinsic_ieee_arithmetic' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:209:5
+    |
+209 |     use continue_compilation_1_mod
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
    --> tests/errors/continue_compilation_1.f90:210:5 - 212:49
     |
@@ -223,17 +241,23 @@ semantic error: Symbol is already declared in the same scope
 239 |     double precision array
     |                      ~~~~~ original declaration
 
-semantic error: Array members must me of the same type as the struct
-   --> tests/errors/continue_compilation_1.f90:244:53
+semantic error: Derived type `logger_type` is not defined
+   --> tests/errors/continue_compilation_1.f90:241:5
+    |
+241 |     type(logger_type) :: logger
+    |     ^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:244:5
     |
 244 |     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
-    |                                                     ^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Initialization of `myclass_array2` must reduce to a compile time constant.
-   --> tests/errors/continue_compilation_1.f90:245:66
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:245:5
     |
 245 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
-    |                                                                  ^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters
    --> tests/errors/continue_compilation_1.f90:246:5
@@ -283,6 +307,18 @@ semantic error: `protected` attribute is only allowed in specification part of a
 254 |     integer, parameter, protected :: protected_parameter_var
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:255:5
+    |
+255 |     type(MyClass) :: v1, v2, v3
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:256:5
+    |
+256 |     type(MyClass) :: arr(3)
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
+
 semantic error: Variable `n` cannot appear in the expression as it is not a constant
    --> tests/errors/continue_compilation_1.f90:259:27
     |
@@ -325,38 +361,53 @@ semantic error: Variable `uninitialized_param_local` with parameter attribute is
 278 |     type(MyClass), parameter :: uninitialized_param_local
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Symbol not found: `non_existent_symbol`
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:279:5
     |
 279 |     type(MyClass) :: err_obj1 = non_existent_symbol
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Named initialization not supported with: my_func
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:280:5
     |
 280 |     type(MyClass) :: err_obj2 = my_func
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Initialization with non-constant variable `non_parameter_var` is not allowed
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:282:5
     |
 282 |     type(MyClass) :: err_obj3 = non_parameter_var
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-281 |     integer :: non_parameter_var = 5
-    |                ~~~~~~~~~~~~~~~~~~~~~ declared here
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Parameter `myclass_array` has no initialization value
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:283:5
     |
 283 |     type(MyClass) :: err_obj4 = myclass_array
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Symbol not found: `uninitialized_param_local`
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:284:5
     |
 284 |     type(MyClass) :: err_obj5 = uninitialized_param_local
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `ieee_class_type` is not defined
+   --> tests/errors/continue_compilation_1.f90:292:5
+    |
+292 |     type(ieee_class_type) :: ieee_cls
+    |     ^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `base` is not defined
+   --> tests/errors/continue_compilation_1.f90:293:5
+    |
+293 |     type(Base) :: base_var
+    |     ^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `derived` is not defined
+   --> tests/errors/continue_compilation_1.f90:294:5
+    |
+294 |     type(Derived) :: derived_var
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: CLASS variable 'inst_tt' must be dummy, allocatable or pointer
    --> tests/errors/continue_compilation_1.f90:295:5
@@ -376,7 +427,7 @@ semantic error: Contiguous attribute can only be applied to declared variables
 298 |     contiguous :: contig_not_declared
     |                   ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Contiguous attribute can only be applied to variables
+semantic error: Contiguous attribute can only be applied to declared variables
    --> tests/errors/continue_compilation_1.f90:299:19
     |
 299 |     contiguous :: MyClass
@@ -393,6 +444,18 @@ semantic error: LEN parameters in parameterized derived types are not supported 
     |
 305 |         integer, len :: n
     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:308:5
+    |
+308 |     type(MyClass) :: eoshift_derived_array(1), eoshift_derived_result(1)
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:519:5
+    |
+519 |     type(MyClass) :: obj
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
@@ -442,23 +505,29 @@ semantic error: type mismatch in initialization: `string` cannot be assigned to 
 643 |     integer, parameter :: n2 = "abc"
     |                                ^^^^^ 
 
-semantic error: Pointer initialization target `ptr_src_no_target` must have the `target` attribute
+semantic error: Derived type `myclass` is not defined
+   --> tests/errors/continue_compilation_1.f90:644:5
+    |
+644 |     type(MyClass) :: ptr_src_no_target
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:645:5
     |
 645 |     type(MyClass), pointer :: ptr_requires_target => ptr_src_no_target
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-644 |     type(MyClass) :: ptr_src_no_target
-    |                      ~~~~~~~~~~~~~~~~~ declared here
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: Type mismatch in pointer initialization of `ptr_type_mismatch`
+semantic error: Derived type `base` is not defined
+   --> tests/errors/continue_compilation_1.f90:646:5
+    |
+646 |     type(Base), target :: ptr_tgt_base
+    |     ^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `myclass` is not defined
    --> tests/errors/continue_compilation_1.f90:647:5
     |
 647 |     type(MyClass), pointer :: ptr_type_mismatch => ptr_tgt_base
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    |
-646 |     type(Base), target :: ptr_tgt_base
-    |                           ~~~~~~~~~~~~ target declared here
+    |     ^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: Dimensions specified for 'm' after its initialization
    --> tests/errors/continue_compilation_1.f90:654:18
@@ -508,11 +577,17 @@ semantic error: Variable `a` cannot have both the OPTIONAL and VALUE attribute b
 748 |     subroutine bindc_optional_value(a) bind(c)
     |                                     ^ 
 
-semantic error: Function `c_loc` is not permitted in an initialization expression
+semantic error: Module 'lfortran_intrinsic_iso_c_binding' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:807:9
+    |
+807 |         use iso_c_binding, only: c_loc, c_ptr
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `c_ptr` is not defined
    --> tests/errors/continue_compilation_1.f90:810:13
     |
 810 |             type(c_ptr) :: ptr = c_loc(target_value)
-    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |             ^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: length specifier is only valid for character type
    --> tests/errors/continue_compilation_1.f90:869:20
@@ -525,6 +600,18 @@ semantic error: Derived type `t_pair_local` is not defined
     |
 910 |         type(t_pair_local) :: x
     |         ^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Module 'lfortran_intrinsic_iso_fortran_env' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:927:9
+    |
+927 |         use iso_fortran_env, only: int32
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'int32' is not declared
+   --> tests/errors/continue_compilation_1.f90:929:17
+    |
+929 |         integer(int32) :: decl_order_second
+    |                 ^^^^^ 'int32' is undeclared
 
 semantic error: equivalence array bounds and subscripts must be constant
    --> tests/errors/continue_compilation_1.f90:935:22
@@ -543,6 +630,22 @@ semantic error: equivalence between a common block variable and this array eleme
     |
 949 |         equivalence (first, alias(1))  ! {Error} equivalence between a common block variable and this array element is not implemented
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsupported equivalence
+
+semantic error: Derived type 'myclass' not declared
+   --> tests/errors/continue_compilation_1.f90:952:9
+    |
+952 |         class(MyClass) :: this
+    |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'this' not defined
+   --> tests/errors/continue_compilation_1.f90:951:5 - 953:18
+    |
+951 |        subroutine set_caller(this)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+953 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a conditional expression is not allowed in a constant expression
     --> tests/errors/continue_compilation_1.f90:1103:36
@@ -802,11 +905,11 @@ semantic error: Second argument of modulo cannot be 0
 379 |     print *, modulo(1, 0)
     |              ^^^^^^^^^^^^ 
 
-semantic error: Procedure 'my_func' accepts 2 arguments, but 3 were provided
+semantic error: Function 'my_func' not found (not user defined nor intrinsic)
    --> tests/errors/continue_compilation_1.f90:381:5
     |
 381 |     call my_func(y=1, x=2, z=1)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ incorrect number of arguments to 'my_func'
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Result of `nint` overflows its kind(4)
    --> tests/errors/continue_compilation_1.f90:384:13
@@ -1243,7 +1346,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 492 |     a_real = [logical::]
     |     ^^^^^^   ^^^^^^^^^^^ type mismatch (real[:] and logical[:])
 
-semantic error: Subroutine `dummy_sub` called as a function
+semantic error: Function 'dummy_sub' not found (not user defined nor intrinsic)
    --> tests/errors/continue_compilation_1.f90:494:14
     |
 494 |     print *, dummy_sub()
@@ -1339,23 +1442,29 @@ semantic error: `cycle` statements cannot be outside of loops
 514 |     cycle
     |     ^^^^^ 
 
-semantic error: Required argument `y` at position 2 is missing in procedure call
-   --> tests/errors/continue_compilation_1.f90:516:18
+semantic error: Function 'my_func' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:516:5
     |
 516 |     call my_func(10)
-    |                  ^^ 
+    |     ^^^^^^^^^^^^^^^^ 
 
-semantic error: Required argument `x` is missing in procedure call
+semantic error: Function 'my_func' not found (not user defined nor intrinsic)
    --> tests/errors/continue_compilation_1.f90:517:5
     |
 517 |     call my_func()
     |     ^^^^^^^^^^^^^^ 
 
-semantic error: Required argument `extra_arg` is missing in procedure call
+semantic error: Variable 'obj' not declared
+   --> tests/errors/continue_compilation_1.f90:520:5
+    |
+520 |     obj%value = 42
+    |     ^^^^^^^^^ 
+
+semantic error: Variable 'obj' is not declared
    --> tests/errors/continue_compilation_1.f90:521:5
     |
 521 |     call obj%display()
-    |     ^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^^^^^^ 'obj' is undeclared
 
 semantic error: Shape mismatch in `allocate` statement.
    --> tests/errors/continue_compilation_1.f90:523:14
@@ -1382,17 +1491,17 @@ semantic error: Cannot allocate an array from a scalar source.
 526 |     allocate(arr4, source=7)
     |              ^^^^ allocated variable is an array, but `source` is a scalar
 
-semantic error: Argument was not specified
+semantic error: Variable 'logger' is not declared
    --> tests/errors/continue_compilation_1.f90:528:5
     |
 528 |     call logger % add_log_file(filename=filename)
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 1-th argument not specified for add_log_file
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'logger' is undeclared
 
-semantic error: Required argument `unit` is missing in procedure call
+semantic error: Variable 'logger' is not declared
    --> tests/errors/continue_compilation_1.f90:529:5
     |
 529 |     call logger % add_log_file()
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'logger' is undeclared
 
 semantic error: `allocate` statement only accepts four keyword arguments: `stat`, `errmsg`, `source` and `mold`
    --> tests/errors/continue_compilation_1.f90:531:5
@@ -1418,7 +1527,7 @@ semantic error: The argument `mask` must be of rank 2, an array with rank 1 was 
 536 |     print *, pack(arr2, mask1)
     |                         ^^^^^ 
 
-semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot appear in LHS of assignment
+semantic error: Variable 'protected_module_my_class_obj' not declared
    --> tests/errors/continue_compilation_1.f90:539:5
     |
 539 |     protected_module_my_class_obj%value = 42
@@ -1430,17 +1539,17 @@ semantic error: Different shape for array assignment on dimension 1(2 and 1)
 540 |     cc_a4 = cc_temp4(cc_i1+1:cc_i1+1)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Invalid syntax of derived type for array constructor
-   --> tests/errors/continue_compilation_1.f90:541:12
+semantic error: Variable 'arr' is not declared
+   --> tests/errors/continue_compilation_1.f90:541:5
     |
 541 |     arr = [type(MyClass) :: v1, v2, v3]
-    |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
+    |     ^^^ 'arr' is undeclared
 
-semantic error: Class type `NonExistingType` is not defined
-   --> tests/errors/continue_compilation_1.f90:543:11
+semantic error: Variable 'arr' is not declared
+   --> tests/errors/continue_compilation_1.f90:543:5
     |
 543 |     arr = [NonExistingType :: v1, v2, v3]
-    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^ 'arr' is undeclared
 
 semantic error: DATA statement element count mismatch: 8 elements on left-hand side, 10 values on right-hand side
    --> tests/errors/continue_compilation_1.f90:546:5
@@ -1476,11 +1585,11 @@ semantic error: Assigned format (using integer variable as format specifier) is 
 565 |     read (5, fmt_i3)
     |     ^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument `p`: expected a procedure but got `integer`
-   --> tests/errors/continue_compilation_1.f90:568:21
+semantic error: Function 'proc_param' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:568:5
     |
 568 |     call proc_param(42)
-    |                     ^^ 
+    |     ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: `end` must be a literal integer label
    --> tests/errors/continue_compilation_1.f90:571:18
@@ -1548,17 +1657,23 @@ semantic error: Allocate should only be called with Allocatable or Pointer type 
 590 |     allocate(strx)
     |              ^^^^ 'strx' is not allocatable or pointer
 
-semantic error: Type mismatch: allocatable character dummy argument 's' has length 5 but actual argument has length 10.
-   --> tests/errors/continue_compilation_1.f90:592:32
+semantic error: Function 'modify_and_deallocate' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:592:5
     |
 592 |     call modify_and_deallocate(strx)
-    |                                ^^^^ dummy argument 's' declared here
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Intrinsic `allocated` can be called only on allocatable argument
    --> tests/errors/continue_compilation_1.f90:593:14
     |
 593 |     print *, allocated(strx)
     |              ^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'intrinsic_polymorphic' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:595:5
+    |
+595 |     call intrinsic_polymorphic("  Hello World  ")
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Duplicate value of `encoding` found
    --> tests/errors/continue_compilation_1.f90:597:5
@@ -1620,25 +1735,25 @@ semantic error: `op` is not defined or imported
 610 |     bad_x = 5 .op. 3
     |             ^^^^^^^^ 
 
-semantic error: Operands of comparison operator '==' are not comparable: ieee_class_type == ieee_class_type
+semantic error: Variable 'ieee_cls' is not declared
+   --> tests/errors/continue_compilation_1.f90:611:5
+    |
+611 |     ieee_cls = ieee_class(0.0)
+    |     ^^^^^^^^ 'ieee_cls' is undeclared
+
+semantic error: Variable 'ieee_cls' is not declared
    --> tests/errors/continue_compilation_1.f90:612:10
     |
 612 |     b = (ieee_cls == ieee_quiet_nan)
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |          ^^^^^^^^ 'ieee_cls' is undeclared
 
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:612:5
-    |
-612 |     b = (ieee_cls == ieee_quiet_nan)
-    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
-
-semantic error: Type mismatch in assignment, the types must be compatible
+semantic error: Variable 'base_var' is not declared
    --> tests/errors/continue_compilation_1.f90:617:5
     |
 617 |     base_var = derived_var
-    |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
+    |     ^^^^^^^^ 'base_var' is undeclared
 
-semantic error: Type mismatch in argument `this`: expected `derived_type` but got `integer(4)`
+semantic error: More actual than formal arguments in procedure call
    --> tests/errors/continue_compilation_1.f90:628:21
     |
 628 |     call set_caller(1)
@@ -1680,11 +1795,11 @@ semantic error: Duplicate value of `decimal` found
 636 |     open(unit=7, decimal="POINT", decimal="comma")
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Missing 'boundary' argument to 'eoshift' intrinsic
-   --> tests/errors/continue_compilation_1.f90:642:38
+semantic error: Variable 'eoshift_derived_result' is not declared
+   --> tests/errors/continue_compilation_1.f90:642:5
     |
 642 |     eoshift_derived_result = eoshift(eoshift_derived_array, 1)
-    |                                      ^^^^^^^^^^^^^^^^^^^^^ 
+    |     ^^^^^^^^^^^^^^^^^^^^^^ 'eoshift_derived_result' is undeclared
 
 semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by default. Use `--logical-casting` flag to enable it.
    --> tests/errors/continue_compilation_1.f90:648:5
@@ -1692,11 +1807,20 @@ semantic error: Implicit casting from LOGICAL to INTEGER is not allowed by defau
 648 |     a(1) = .true.
     |     ^^^^^^^^^^^^^ 
 
+semantic error: Variable 'base_var' is not declared
+   --> tests/errors/continue_compilation_1.f90:649:19
+    |
+649 |     derived_cls = base_var
+    |                   ^^^^^^^^ 'base_var' is undeclared
+
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:649:5
     |
 649 |     derived_cls = base_var
-    |     ^^^^^^^^^^^   ^^^^^^^^ type mismatch (derived and base)
+    |     ^^^^^^^^^^^ type mismatch (derived_type and derived_type allocatable)
+    |
+649 |     derived_cls = base_var
+    |     ^^^^^^^^^^^ type mismatch (derived_type and derived_type allocatable)
 
 warning: Real constant overflows its kind (4)
    --> tests/errors/continue_compilation_1.f90:651:15
@@ -1710,17 +1834,17 @@ semantic error: Missing actual argument for argument 'stat'
 652 |     a5 = missing_required_arg_func()
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: `asynchronous` must be of type String
-   --> tests/errors/continue_compilation_1.f90:655:69
+semantic error: Module 'lfortran_intrinsic_custom' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:655:5
     |
 655 |     open(newunit=u, file="test.dat", status="replace", asynchronous=1)
-    |                                                                     ^ 
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Duplicate value of `asynchronous` found
-   --> tests/errors/continue_compilation_1.f90:656:89
+semantic error: Module 'lfortran_intrinsic_custom' modfile was not found
+   --> tests/errors/continue_compilation_1.f90:656:5
     |
 656 |     open(newunit=u, file="test.dat", status="replace", asynchronous="yes", asynchronous="no")
-    |                                                                                         ^^^^ 
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The argument `shift` in `eoshift` must be scalar or have rank one less than `array`
    --> tests/errors/continue_compilation_1.f90:659:22
@@ -1944,6 +2068,12 @@ semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 1
 918 |         print *, real(1., 666)
     |                           ^^^ 
 
+semantic error: Variable 'decl_order_second' is not declared
+   --> tests/errors/continue_compilation_1.f90:930:9
+    |
+930 |         decl_order_second = decl_order_first
+    |         ^^^^^^^^^^^^^^^^^ 'decl_order_second' is undeclared
+
 semantic error: `array` and `value` arguments of `findloc` must have the same type and kind, but got character(len=1, kind=4) and character(len=1, kind=1)
    --> tests/errors/continue_compilation_1.f90:959:18
     |
@@ -2102,3 +2232,9 @@ semantic error: too many arguments in derived type constructor
      |
 1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:1174:43
+     |
+1174 |         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ 
