@@ -1,6 +1,8 @@
 ! A BLOCK workspace whose extent is an IfExp the host can rebuild
 ! (Fortran 2023 conditional, which ASR stores as IfExp). The launch
 ! used to guess a kernel argument instead of evaluating the condition.
+! No gfortran label: GNU 13 cannot parse `?` (see CMakeLists.txt
+! conditional_expr_*).
 program gpu_metal_307
 implicit none
 real :: a(4)
