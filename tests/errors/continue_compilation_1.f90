@@ -1117,6 +1117,21 @@ program continue_compilation_1
         integer :: ca( ( n>0 ? n : 1 ) )  ! {Error} a conditional expression is not allowed in a specification expression
     end subroutine
 
+    subroutine derived_type_constructor_argument_errors()
+        implicit none
+        type :: plain_t
+            integer :: value
+        end type
+        type :: parameterized_t(k)
+            integer, kind :: k
+            integer :: value
+        end type
+        print *, parameterized_t(4, 8)(1)  ! {Error} too many arguments in parameterized derived type constructor
+        print *, parameterized_t(4)(1, 2)  ! {Error} too many arguments in parameterized derived type constructor
+        print *, plain_t(1, 2)  ! {Error} too many arguments in derived type constructor
+        print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.

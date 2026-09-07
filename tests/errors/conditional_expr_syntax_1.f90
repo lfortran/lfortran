@@ -33,3 +33,46 @@ subroutine stray_question_mark()
     integer :: x
     x = ( ? 1 : 0 )  ! {Error} Token '?' is unexpected here
 end subroutine
+
+! `.NIL.` is a consequent (R1527), never a condition: the condition of R1526 is
+! a scalar-logical-expr, so `.NIL.` in that position is not even syntax.
+subroutine nil_as_a_condition()
+    implicit none
+    integer :: a, x
+    a = 1
+    x = ( .nil. ? a : a )  ! {Error} Token '.nil.' is unexpected here
+end subroutine
+
+! R1527: `.NIL.` is a token of its own (6.2.1), not a named constant and not an
+! expression. It is only a consequent of a conditional argument, and only there
+! does it mean anything, so anywhere a value is required it is rejected.
+subroutine nil_is_not_a_value()
+    implicit none
+    integer :: a, x
+    a = 1
+    x = ( .true. ? a : .nil. )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+    print *, ( .true. ? .nil. : a )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+end subroutine
+
+! `.NIL.` is a consequent, so outside a conditional it is not a primary and not
+! an actual argument either: bare, it is not even syntax.
+subroutine nil_outside_a_conditional()
+    implicit none
+    integer :: x
+    x = .nil.  ! {Error} Token '.nil.' is unexpected here
+end subroutine
+
+subroutine nil_as_a_bare_actual_argument()
+    implicit none
+    call sub( .nil. )  ! {Error} Token '.nil.' is unexpected here
+end subroutine
+
+! A reference to an intrinsic has no definable dummy argument that a
+! conditional argument could reach, so `( cond ? a : b )` there stays a
+! conditional expression, which is a value, and `.NIL.` is not one.
+subroutine nil_in_an_intrinsic_reference()
+    implicit none
+    integer :: a
+    a = 1
+    print *, abs( ( .true. ? a : .nil. ) )  ! {Error} `.nil.` is only allowed as a consequent of a conditional argument
+end subroutine

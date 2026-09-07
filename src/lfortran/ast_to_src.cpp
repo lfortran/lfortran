@@ -3758,6 +3758,13 @@ public:
         last_expr_precedence = 13;
     }
 
+    // `.NIL.` (R1527), the consequent of a conditional argument that leaves
+    // the dummy argument not present
+    void visit_Nil(const Nil_t &/*x*/) {
+        s = ".nil.";
+        last_expr_precedence = 13;
+    }
+
     void visit_Real(const Real_t &x) {
         s = syn(gr::Real);
         s += x.m_n;
