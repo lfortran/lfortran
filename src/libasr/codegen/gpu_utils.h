@@ -720,6 +720,23 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
             ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg, arg_names,
             symtab, body, n_body, depth);
     }
+    if (ASR::is_a<ASR::IntegerCompare_t>(*v)) {
+        ASR::IntegerCompare_t *cmp =
+            ASR::down_cast<ASR::IntegerCompare_t>(v);
+        return gpu_extent_is_host_evaluable(cmp->m_left, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(cmp->m_right, arg_names, symtab,
+                body, n_body, depth);
+    }
+    if (ASR::is_a<ASR::IfExp_t>(*v)) {
+        ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(v);
+        return gpu_extent_is_host_evaluable(ie->m_test, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(ie->m_body, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(ie->m_orelse, arg_names, symtab,
+                body, n_body, depth);
+    }
     // An element of an array parameter, at a subscript the host can work
     // out too. The loop index is not a parameter, so an element the
     // iteration picks is correctly not evaluable here.

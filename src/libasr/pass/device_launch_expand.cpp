@@ -885,6 +885,29 @@ class DeviceLaunchExpandVisitor :
                 return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
                     a, ASRUtils::expr_type(a), nullptr));
             }
+            if (ASR::is_a<ASR::IntegerCompare_t>(*v)) {
+                ASR::IntegerCompare_t *cmp =
+                    ASR::down_cast<ASR::IntegerCompare_t>(v);
+                ASR::expr_t *l = host_extent(al, loc, kernel, args, n_args,
+                    cmp->m_left);
+                ASR::expr_t *r = host_extent(al, loc, kernel, args, n_args,
+                    cmp->m_right);
+                if (!l || !r) return nullptr;
+                return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, l,
+                    cmp->m_op, r, ASRUtils::expr_type(v), nullptr));
+            }
+            if (ASR::is_a<ASR::IfExp_t>(*v)) {
+                ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(v);
+                ASR::expr_t *t = host_extent(al, loc, kernel, args, n_args,
+                    ie->m_test);
+                ASR::expr_t *bdy = host_extent(al, loc, kernel, args, n_args,
+                    ie->m_body);
+                ASR::expr_t *els = host_extent(al, loc, kernel, args, n_args,
+                    ie->m_orelse);
+                if (!t || !bdy || !els) return nullptr;
+                return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy, els,
+                    ASRUtils::expr_type(bdy), nullptr));
+            }
             std::vector<std::string> arg_names;
             for (size_t i = 0; i < kernel->n_args; i++) {
                 arg_names.push_back(ASRUtils::symbol_name(
