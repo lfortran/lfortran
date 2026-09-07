@@ -7039,16 +7039,23 @@ public:
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
-        if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
-            value->type == ASR::exprType::ArrayConstant ) {
-            diag.add(Diagnostic(
-                "ArrayInitalizer expressions can only be assigned array references",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
+        // Shape conformance is a rule of intrinsic assignment only. A defined
+        // assignment passes both sides as actual arguments, so the value may be
+        // an array constructor assigned to a scalar, or an array of a different
+        // rank or size than the target; the overload resolution above has
+        // already matched it against the dummy arguments.
+        if (overloaded_stmt == nullptr) {
+            if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
+                value->type == ASR::exprType::ArrayConstant ) {
+                diag.add(Diagnostic(
+                    "ArrayInitalizer expressions can only be assigned array references",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            check_ArrayAssignmentCompatibility(target, value, x);
         }
-        check_ArrayAssignmentCompatibility(target, value, x);
 
         if( overloaded_stmt == nullptr ) {
             bool lhs_supports_implicit_cast = (

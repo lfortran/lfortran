@@ -1132,6 +1132,15 @@ program continue_compilation_1
         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
     end subroutine
 
+    ! Intrinsic assignment of an array constructor to a scalar. With a
+    ! defined assignment(=) in scope this is legal (see integration test
+    ! defined_assignment_02.f90); without one it stays an error.
+    subroutine array_constructor_to_scalar()
+        implicit none
+        integer :: i
+        i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.

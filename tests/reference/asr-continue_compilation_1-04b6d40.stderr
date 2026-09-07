@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1153:7
+    --> tests/errors/continue_compilation_1.f90:1162:7
      |
-1153 |       foo    end type t_recovery
+1162 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -599,21 +599,21 @@ semantic error: a conditional expression is not allowed in a specification expre
      |                        ~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.11 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1140:19
+    --> tests/errors/continue_compilation_1.f90:1149:19
      |
-1140 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+1149 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1141:19
+    --> tests/errors/continue_compilation_1.f90:1150:19
      |
-1141 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1150 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1142:19
+    --> tests/errors/continue_compilation_1.f90:1151:19
      |
-1142 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1151 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -623,9 +623,9 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1156:7
+    --> tests/errors/continue_compilation_1.f90:1165:7
      |
-1156 |       class(t_recovery), intent(in) :: self
+1165 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
@@ -2108,3 +2108,9 @@ semantic error: too many arguments in derived type constructor
      |
 1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: ArrayInitalizer expressions can only be assigned array references
+    --> tests/errors/continue_compilation_1.f90:1141:9
+     |
+1141 |         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
+     |         ^^^^^^^^^^^^^ 
