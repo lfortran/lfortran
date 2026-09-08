@@ -11,9 +11,9 @@ syntax error: implicit statement must appear before declaration and executable s
     |         ^^^^^^^^^^^^^^ 
 
 syntax error: Token 'foo' (of type 'identifier') is unexpected here
-    --> tests/errors/continue_compilation_1.f90:1194:7
+    --> tests/errors/continue_compilation_1.f90:1203:7
      |
-1194 |       foo    end type t_recovery
+1203 |       foo    end type t_recovery
      |       ^^^ 
 
 semantic error: `function` attribute of 'frexp' conflicts with `subroutine` attribute
@@ -599,21 +599,21 @@ semantic error: a conditional expression is not allowed in a specification expre
      |                        ~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.11 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
 
 semantic error: kind 2 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1181:19
+    --> tests/errors/continue_compilation_1.f90:1190:19
      |
-1181 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
+1190 |         character(kind=2, len=4) :: a  ! {Error} kind 2 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 3 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1182:19
+    --> tests/errors/continue_compilation_1.f90:1191:19
      |
-1182 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
+1191 |         character(kind=3, len=4) :: b  ! {Error} kind 3 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: kind 8 is not supported for character, only 1 and 4 are
-    --> tests/errors/continue_compilation_1.f90:1183:19
+    --> tests/errors/continue_compilation_1.f90:1192:19
      |
-1183 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
+1192 |         character(kind=8, len=4) :: c  ! {Error} kind 8 is not supported for character, only 1 and 4 are
      |                   ^^^^^^ 
 
 semantic error: Symbol 'undeclared_proc' not declared
@@ -623,22 +623,16 @@ semantic error: Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1197:7
+    --> tests/errors/continue_compilation_1.f90:1206:7
      |
-1197 |       class(t_recovery), intent(in) :: self
+1206 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Symbol 'bad_op' not declared
- --> tests/errors/continue_compilation_1.f90:1:2
-  |
-1 | ! If you need a function, put it into the module below and remove the same
-  |  ^ 
-
-semantic error: Symbol 'bad_op' not declared
- --> tests/errors/continue_compilation_1.f90:1:2
-  |
-1 | ! If you need a function, put it into the module below and remove the same
-  |  ^ 
+   --> tests/errors/continue_compilation_1.f90:288:9
+    |
+288 |         module procedure bad_op
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -2109,56 +2103,68 @@ semantic error: too many arguments in derived type constructor
 1132 |         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
 
-semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:1144:13
+semantic error: ArrayInitalizer expressions can only be assigned array references
+    --> tests/errors/continue_compilation_1.f90:1141:9
      |
-1144 |             expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+1141 |         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
+     |         ^^^^^^^^^^^^^ 
+
+semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+    --> tests/errors/continue_compilation_1.f90:1153:13
+     |
+1153 |             expr_arr = 4  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
      |             ^^^^^^^^ 
      |
-1143 |         associate (expr_arr => assoc_arr + 1)
+1152 |         associate (expr_arr => assoc_arr + 1)
      |                                ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:1145:13
+    --> tests/errors/continue_compilation_1.f90:1154:13
      |
-1145 |             expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
+1154 |             expr_arr(2) = 5  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (assignment)
      |             ^^^^^^^^^^^ 
      |
-1143 |         associate (expr_arr => assoc_arr + 1)
+1152 |         associate (expr_arr => assoc_arr + 1)
      |                                ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
-    --> tests/errors/continue_compilation_1.f90:1146:24
+    --> tests/errors/continue_compilation_1.f90:1155:24
      |
-1146 |             read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
+1155 |             read(*, *) expr_arr  ! {Error} Associate name `expr_arr` is associated with an expression and cannot be used in a variable definition context (READ statement)
      |                        ^^^^^^^^ 
      |
-1143 |         associate (expr_arr => assoc_arr + 1)
+1152 |         associate (expr_arr => assoc_arr + 1)
      |                                ~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
-    --> tests/errors/continue_compilation_1.f90:1149:16
+    --> tests/errors/continue_compilation_1.f90:1158:16
      |
-1149 |             do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
+1158 |             do expr_size = 1, 3  ! {Error} Associate name `expr_size` is associated with an expression and cannot be used in a variable definition context (DO loop variable)
      |                ^^^^^^^^^ 
      |
-1148 |         associate (expr_size => size(assoc_arr))
+1157 |         associate (expr_size => size(assoc_arr))
      |                                 ~~~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:1153:13
+    --> tests/errors/continue_compilation_1.f90:1162:13
      |
-1153 |             expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
+1162 |             expr_call = 4  ! {Error} Associate name `expr_call` is associated with an expression and cannot be used in a variable definition context (assignment)
      |             ^^^^^^^^^ 
      |
-1152 |         associate (expr_call => associate_expr_value())
+1161 |         associate (expr_call => associate_expr_value())
      |                                 ~~~~~~~~~~~~~~~~~~~~~~ associated with an expression here
 
 semantic error: Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
-    --> tests/errors/continue_compilation_1.f90:1158:17
+    --> tests/errors/continue_compilation_1.f90:1167:17
      |
-1158 |                 expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
+1167 |                 expr_inner = 4  ! {Error} Associate name `expr_inner` is associated with an expression and cannot be used in a variable definition context (assignment)
      |                 ^^^^^^^^^^ 
      |
-1157 |             associate (expr_inner => expr_outer)
+1166 |             associate (expr_inner => expr_outer)
      |                                      ~~~~~~~~~~ associated with an expression here
+
+semantic error: Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:1224:43
+     |
+1224 |         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
+     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ 

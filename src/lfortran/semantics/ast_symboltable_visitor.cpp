@@ -29,8 +29,8 @@ public:
     };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
-    std::map<std::string, std::vector<std::string>> overloaded_op_procs;
-    std::map<std::string, std::vector<std::string>> defined_op_procs;
+    std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
+    std::map<std::string, std::vector<std::pair<std::string, Location>>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
@@ -44,7 +44,7 @@ public:
     int program_count = 0; // To track number of program units in a single file
     Location first_program_loc; // Location of the first program unit
     std::string interface_name = "";
-    ASR::symbol_t *current_module_sym;
+    ASR::symbol_t *current_module_sym = nullptr;
 
     ASR::ttype_t *tmp_type;
 
@@ -1890,7 +1890,7 @@ public:
         // procedure (dropping its explicitly declared type). This mirrors the
         // handling in visit_Subroutine.
         std::vector<std::string> saved_external_procedures = external_procedures;
-        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -2024,19 +2024,7 @@ public:
             is_Function = false;
         }
         process_simd_variables();
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
-        }
+
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -2358,6 +2346,20 @@ public:
         }
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
+
+        for (size_t i=0; i<x.n_contains; i++) {
+            bool current_storage_save = default_storage_save;
+            default_storage_save = false;
+            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            current_procedure_args.clear();
+            try {
+                visit_program_unit(*x.m_contains[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            current_procedure_args = current_procedure_args_copy;
+            default_storage_save = current_storage_save;
+        }
 
         // Create and register the function
         if (assgnd_access.count(sym_name)) {
@@ -3369,8 +3371,8 @@ public:
             }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
             std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             // check if the operator is already defined, if yes, then a new defition means it is being overloaded
             if (overloaded_op_procs.find(op) != overloaded_op_procs.end()) {
                 overloaded_op_procs[op].insert(overloaded_op_procs[op].end(),
@@ -3380,8 +3382,8 @@ public:
             }
         } else if (AST::is_a<AST::InterfaceHeaderDefinedOperator_t>(*x.m_header)) {
             std::string op = to_lower(AST::down_cast<AST::InterfaceHeaderDefinedOperator_t>(x.m_header)->m_operator_name);
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             // check if the operator is already defined, if yes, then a new defition means it is being overloaded
             if (defined_op_procs.find(op) != defined_op_procs.end()) {
                 defined_op_procs[op].insert(defined_op_procs[op].end(),
@@ -3401,8 +3403,8 @@ public:
                 throw SemanticAbort();
             }
             op_name = "~write_" + op_name;
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             defined_op_procs[op_name] = proc_names;
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
@@ -3414,8 +3416,8 @@ public:
                 throw SemanticAbort();
             }
             op_name = "~read_" + op_name;
-            std::vector<std::string> proc_names;
-            fill_interface_proc_names(x, proc_names);
+            std::vector<std::pair<std::string, Location>> proc_names;
+            fill_interface_proc_names_with_loc(x, proc_names);
             defined_op_procs[op_name] = proc_names;
         }  else {
             diag.add(diag::Diagnostic(
@@ -3688,13 +3690,8 @@ public:
     }
 
     void add_custom_operator(
-            std::pair<const std::string, std::vector<std::string>> &proc,
+            std::pair<const std::string, std::vector<std::pair<std::string, Location>>> &proc,
             ASR::accessType access) {
-        // FIXME LOCATION (we need to pass Location in, not initialize it
-        // here)
-        Location loc;
-        loc.first = 1;
-        loc.last = 1;
         Str s;
 
         // Append "~~" to the begining of any custom defined operator
@@ -3704,12 +3701,27 @@ public:
         char *generic_name = s.c_str(al);
         Vec<ASR::symbol_t*> symbols;
         symbols.reserve(al, proc.second.size());
-        for (auto &pname : proc.second) {
-            ASR::symbol_t *x;
+        // Location for the CustomOperator symbol itself: use the first
+        // procedure's location (a fallback default is used only if the
+        // interface had no procedures at all, which should not normally
+        // happen).
+        Location op_loc = proc.second.empty() ? Location() : proc.second[0].second;
+        for (auto &pname_loc : proc.second) {
+            const std::string &pname = pname_loc.first;
+            const Location &loc = pname_loc.second;
             Str s;
             s.from_str_view(pname);
             char *name = s.c_str(al);
-            x = resolve_symbol(loc, to_lower(name));
+            ASR::symbol_t *x = current_scope->resolve_symbol(to_lower(name));
+            if (!x) {
+                diag.add(Diagnostic(
+                    "Symbol '" + pname + "' not declared",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                continue;
+            }
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
@@ -3740,14 +3752,14 @@ public:
                 }
             }
         }
-        ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
+        ASR::asr_t *v = ASR::make_CustomOperator_t(al, op_loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
         current_scope->add_or_overwrite_symbol(new_operator_name, ASR::down_cast<ASR::symbol_t>(v));
     }
 
     void add_overloaded_procedures() {
         for (auto &proc : overloaded_op_procs) {
-            std::pair<const std::string, std::vector<std::string>>
+            std::pair<const std::string, std::vector<std::pair<std::string, Location>>>
                 proc_ = {proc.first, proc.second};
             add_custom_operator(proc_, ASR::accessType::Public);
         }
@@ -3764,7 +3776,7 @@ public:
             return ;
         }
         bool any_error = false;
-        std::vector<std::string> assgn_proc_names;
+        std::vector<std::pair<std::string, Location>> assgn_proc_names;
         assgn_proc_names.reserve(assgn_proc_names_locations.size());
         for (const auto &name_loc : assgn_proc_names_locations) {
             ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(name_loc.first));
@@ -3778,7 +3790,7 @@ public:
                 if (!compiler_options.continue_compilation) throw SemanticAbort();
                 continue;
             }
-            assgn_proc_names.push_back(name_loc.first);
+            assgn_proc_names.push_back(name_loc);
             sym = ASRUtils::symbol_get_past_external(sym);
             // Must be a subroutine
             if (!ASR::is_a<ASR::Function_t>(*sym)) {
@@ -3846,7 +3858,7 @@ public:
             }
         }
         if(!any_error) {
-            std::pair<const std::string, std::vector<std::string>>
+            std::pair<const std::string, std::vector<std::pair<std::string, Location>>>
                 proc = {"~assign", assgn_proc_names};
 
             add_custom_operator(proc, assgn[current_scope]);
@@ -4675,7 +4687,7 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        std::map<std::string, std::vector<std::string>> requirement_op_procs;
+        std::map<std::string, std::vector<std::pair<std::string, Location>>> requirement_op_procs;
         for (auto &proc: overloaded_op_procs) {
             requirement_op_procs[proc.first] = proc.second;
         }
@@ -4864,7 +4876,7 @@ public:
             current_procedure_args.push_back(to_lower(x.m_namelist[i]));
         }
 
-        std::map<std::string, std::vector<std::string>> ext_overloaded_op_procs;
+        std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
         for (auto &proc: overloaded_op_procs) {
             ext_overloaded_op_procs[proc.first] = proc.second;
         }

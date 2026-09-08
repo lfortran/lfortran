@@ -916,7 +916,12 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
             newline = false;
             if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
+            // `&` starts a continuation if it is the last non-blank character
+            // on the line, or (outside a string) if it is followed by a
+            // trailing comment. Inside a string `!` never starts a comment,
+            // so `&!` must be kept verbatim there.
+            if (!in_comment && s[pos] == '&' && (next_nonspace_character(s,pos) == '\n'
+                    || (!in_string && next_nonspace_character(s,pos) == '!'))) {
                 size_t pos2=pos+1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);

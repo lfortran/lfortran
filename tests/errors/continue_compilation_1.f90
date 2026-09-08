@@ -1132,6 +1132,15 @@ program continue_compilation_1
         print *, parameterized_t(4, 1, 2)  ! {Error} too many arguments in derived type constructor
     end subroutine
 
+    ! Intrinsic assignment of an array constructor to a scalar. With a
+    ! defined assignment(=) in scope this is legal (see integration test
+    ! defined_assignment_02.f90); without one it stays an error.
+    subroutine array_constructor_to_scalar()
+        implicit none
+        integer :: i
+        i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
+    end subroutine
+
     ! An associate name whose selector is an expression, and not a variable, is
     ! not definable, so it must not appear in a variable definition context
     ! (F2018 11.1.3.3).
