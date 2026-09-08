@@ -617,6 +617,98 @@ inline bool gpu_expr_shape_extents(ASR::expr_t *array, ASR::expr_t *dim,
     return true;
 }
 
+// The sub-expression an elementwise array expression takes its shape from,
+// or nullptr when `e` is not one.
+//
+// An elementwise operator conforms with its array operands, so
+// `0.5*(a(1:n-1) + a(2:n))` has exactly the shape of `a(1:n-1)`, and a
+// scalar broadcast into such an expression carries the shape it was
+// broadcast against rather than one of its own. An expression like that has
+// no shape in its own type -- the array constructor lowering writes the
+// extent of its temporary as `size(<that expression>)` -- so a caller that
+// wants the extent walks down to an operand that does carry it. Both the
+// pre-flight in the offload pass and the launch that rebuilds the extent on
+// the host walk it the same way, so they cannot disagree about the size.
+inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
+    if (e == nullptr) return nullptr;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    if (v == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(v))) {
+        return nullptr;
+    }
+    // An operand that is itself an array. A broadcast scalar is one too,
+    // but it borrows its shape from the operand beside it, so it is only
+    // taken when nothing else is there -- and then it has no shape to give.
+    auto pick = [](ASR::expr_t *left, ASR::expr_t *right) -> ASR::expr_t* {
+        ASR::expr_t *operands[2] = {left, right};
+        for (ASR::expr_t *o : operands) {
+            if (o == nullptr) continue;
+            ASR::expr_t *b = ASRUtils::get_past_array_physical_cast(o);
+            if (b == nullptr || ASR::is_a<ASR::ArrayBroadcast_t>(*b)) {
+                continue;
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(b))) return b;
+        }
+        return nullptr;
+    };
+    auto unary = [](ASR::expr_t *arg) -> ASR::expr_t* {
+        if (arg == nullptr) return nullptr;
+        ASR::expr_t *b = ASRUtils::get_past_array_physical_cast(arg);
+        if (b == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(b))) {
+            return nullptr;
+        }
+        return b;
+    };
+    switch (v->type) {
+        case ASR::exprType::Cast:
+            return unary(ASR::down_cast<ASR::Cast_t>(v)->m_arg);
+        case ASR::exprType::IntegerUnaryMinus:
+            return unary(ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::RealUnaryMinus:
+            return unary(ASR::down_cast<ASR::RealUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::ComplexUnaryMinus:
+            return unary(ASR::down_cast<ASR::ComplexUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::LogicalNot:
+            return unary(ASR::down_cast<ASR::LogicalNot_t>(v)->m_arg);
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *o = ASR::down_cast<ASR::IntegerBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t *o = ASR::down_cast<ASR::RealBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::ComplexBinOp: {
+            ASR::ComplexBinOp_t *o = ASR::down_cast<ASR::ComplexBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::LogicalBinOp: {
+            ASR::LogicalBinOp_t *o = ASR::down_cast<ASR::LogicalBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::IntegerCompare: {
+            ASR::IntegerCompare_t *o =
+                ASR::down_cast<ASR::IntegerCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::RealCompare: {
+            ASR::RealCompare_t *o = ASR::down_cast<ASR::RealCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::ComplexCompare: {
+            ASR::ComplexCompare_t *o =
+                ASR::down_cast<ASR::ComplexCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::LogicalCompare: {
+            ASR::LogicalCompare_t *o =
+                ASR::down_cast<ASR::LogicalCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        default:
+            return nullptr;
+    }
+}
+
 // Counts the writes to one scalar in a statement list, keeping the value of
 // the last one. A name written exactly once stands for that value
 // everywhere.
@@ -854,49 +946,59 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
     if (ASR::is_a<ASR::ArraySize_t>(*v)) {
         ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
         ASR::expr_t *array = sz->m_v;
-        // `size(slice)` of an ASSOCIATE name is the size of the selector.
-        if (array != nullptr && ASR::is_a<ASR::Var_t>(*array)) {
-            ASR::expr_t *bound = gpu_local_array_binding(
-                ASR::down_cast<ASR::Var_t>(array)->m_v, body, n_body);
-            if (bound != nullptr) array = bound;
-        }
-        if (gpu_designator_is_host_readable(array, arg_names, symtab,
-                body, n_body)) {
-            return sz->m_dim == nullptr
-                || gpu_extent_is_host_evaluable(sz->m_dim, arg_names,
-                    symtab, body, n_body, depth);
-        }
-        // A section whose base the host cannot read as it stands -- one
-        // subscript is the loop index -- still has extents the host can
-        // work out, because they come from the ranges alone.
-        std::vector<ASR::array_index_t*> ranges =
-            gpu_section_extent_ranges(array, sz->m_dim);
-        if (!ranges.empty()) {
-            for (ASR::array_index_t *range : ranges) {
-                if (!gpu_extent_is_host_evaluable(range->m_left, arg_names,
-                            symtab, body, n_body, depth + 1)
-                        || !gpu_extent_is_host_evaluable(range->m_right,
-                            arg_names, symtab, body, n_body, depth + 1)
-                        || (range->m_step != nullptr
-                            && !gpu_extent_is_host_evaluable(range->m_step,
-                                arg_names, symtab, body, n_body,
-                                depth + 1))) {
-                    return false;
-                }
+        // The shape asked for may sit one or more elementwise operators
+        // below the expression itself, so walk down to the operand that
+        // carries it. The rank is the same all the way down, so the
+        // dimension asked for stays the same too.
+        for (int hop = 0; hop < 8 && array != nullptr; hop++) {
+            // `size(slice)` of an ASSOCIATE name is the size of the
+            // selector.
+            if (ASR::is_a<ASR::Var_t>(*array)) {
+                ASR::expr_t *bound = gpu_local_array_binding(
+                    ASR::down_cast<ASR::Var_t>(array)->m_v, body, n_body);
+                if (bound != nullptr) array = bound;
             }
-            return true;
-        }
-        // Not a designator the host can read -- a function call, say --
-        // but its type still records its shape.
-        std::vector<ASR::expr_t*> lengths;
-        if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
-            for (ASR::expr_t *length : lengths) {
-                if (!gpu_extent_is_host_evaluable(length, arg_names, symtab,
-                        body, n_body, depth + 1)) {
-                    return false;
-                }
+            if (gpu_designator_is_host_readable(array, arg_names, symtab,
+                    body, n_body)) {
+                return sz->m_dim == nullptr
+                    || gpu_extent_is_host_evaluable(sz->m_dim, arg_names,
+                        symtab, body, n_body, depth);
             }
-            return true;
+            // A section whose base the host cannot read as it stands -- one
+            // subscript is the loop index -- still has extents the host can
+            // work out, because they come from the ranges alone.
+            std::vector<ASR::array_index_t*> ranges =
+                gpu_section_extent_ranges(array, sz->m_dim);
+            if (!ranges.empty()) {
+                for (ASR::array_index_t *range : ranges) {
+                    if (!gpu_extent_is_host_evaluable(range->m_left,
+                                arg_names, symtab, body, n_body, depth + 1)
+                            || !gpu_extent_is_host_evaluable(range->m_right,
+                                arg_names, symtab, body, n_body, depth + 1)
+                            || (range->m_step != nullptr
+                                && !gpu_extent_is_host_evaluable(
+                                    range->m_step, arg_names, symtab, body,
+                                    n_body, depth + 1))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // Not a designator the host can read -- a function call, say --
+            // but its type still records its shape.
+            std::vector<ASR::expr_t*> lengths;
+            if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
+                for (ASR::expr_t *length : lengths) {
+                    if (!gpu_extent_is_host_evaluable(length, arg_names,
+                            symtab, body, n_body, depth + 1)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // An elementwise array expression records no shape of its own;
+            // it has the shape of its array operand.
+            array = gpu_elementwise_shape_source(array);
         }
     }
     if (ASR::is_a<ASR::ArrayBound_t>(*v)) {

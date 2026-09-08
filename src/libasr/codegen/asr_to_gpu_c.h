@@ -252,6 +252,81 @@ public:
         return "";
     }
 
+    // The names whose workspace size is being rendered, so a workspace
+    // whose extent reads its own size stops rather than recursing.
+    std::set<std::string> workspace_size_expanding;
+
+    // The element count a `size(t)` inside another workspace's extent
+    // stands for, or "" when `t` has no workspace of its own. The cached
+    // allocate-size string cannot be used there: it is rendered for the
+    // body, where the block's own scalars already hold their values, and
+    // a workspace pointer is computed on entry to the block, ahead of the
+    // statements that give them those values. Asking the workspace itself
+    // renders the extent under the same rule the pointer is under.
+    std::string workspace_size_str(const std::string &name,
+            ASR::expr_t *dim) {
+        if (workspace_size_expanding.count(name)) return "";
+        size_t n_dims = 0;
+        bool found = false;
+        for (const GpuVlaWorkspace &ws : current_vla_infos) {
+            if (ws.var_name != name) continue;
+            n_dims = ws.dims.size();
+            found = true;
+            break;
+        }
+        if (!found || n_dims == 0) return "";
+        size_t begin = 0, end = n_dims;
+        if (dim != nullptr) {
+            int64_t d;
+            if (!try_eval_int_constant(dim, d) || d < 1
+                    || (size_t)d > n_dims) {
+                return "";
+            }
+            begin = (size_t)d - 1;
+            end = begin + 1;
+        }
+        workspace_size_expanding.insert(name);
+        std::string out;
+        for (size_t d = begin; d < end; d++) {
+            std::string one = workspace_dim_str(name, d);
+            if (one.empty()) { out = ""; break; }
+            out = out.empty() ? one : "(" + out + " * " + one + ")";
+        }
+        workspace_size_expanding.erase(name);
+        return out;
+    }
+
+    // The element count of a local pointer associated with a section,
+    // rendered again from the section itself rather than from the cached
+    // string, so that a name the block binds stands for its value. Used
+    // only while a per-thread workspace extent is being rendered, where
+    // the cached string would name a scalar that has no value yet.
+    std::string associated_section_size_str(const std::string &name,
+            ASR::expr_t *dim) {
+        auto it = array_size_source_expr.find(name);
+        if (it == array_size_source_expr.end()) return "";
+        std::vector<ASR::array_index_t*> ranges =
+            gpu_section_extent_ranges(it->second, dim);
+        if (ranges.empty()) return "";
+        std::stringstream save;
+        save << src.str();
+        src.str("");
+        bool first = true;
+        for (ASR::array_index_t *range : ranges) {
+            if (!first) src << " * ";
+            first = false;
+            src << "((";
+            visit_expr(range->m_right);
+            src << ") - (";
+            visit_expr(range->m_left);
+            src << ") + 1)";
+        }
+        std::string out = src.str();
+        src.str("");
+        src << save.str();
+        return out;
+    }
+
     // Element count of the first struct-array element, from the sizes
     // buffer: the product of that element's per-dimension extents.
     std::string struct_member_workspace_extent(const GpuVlaDim &dim) {
@@ -315,6 +390,13 @@ public:
     // for runtime-dependent allocation sizes that cannot be resolved to
     // compile-time constants.
     std::map<std::string, std::string> alloc_array_size_exprs;
+    // The array expression a local pointer was associated with, kept
+    // beside the size string above. The string is rendered for use in the
+    // body, where the block's own scalars already hold their values; a
+    // per-thread workspace pointer is computed on entry to the block,
+    // ahead of the statements that bind them, so an extent read there is
+    // rendered again from this expression under the workspace rule.
+    std::map<std::string, ASR::expr_t*> array_size_source_expr;
 
     // Maps pointer-to-section variable names to the device C expression
     // string for the section size, set when processing Associate stmts
@@ -867,6 +949,7 @@ public:
     void prescan_alloc_sizes(const ASR::Function_t &kf) {
         alloc_array_sizes.clear();
         alloc_array_size_exprs.clear();
+        array_size_source_expr.clear();
         ptr_to_local_alloc.clear();
         kernel_arg_names.clear();
         vla_workspace_names.clear();
@@ -1492,6 +1575,7 @@ public:
                     src << save.str();
                     if (!size_str.empty()) {
                         alloc_array_size_exprs[tgt] = size_str;
+                        array_size_source_expr[tgt] = assoc->m_value;
                     }
                     if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
                         std::string base = ASRUtils::symbol_name(
@@ -5503,13 +5587,42 @@ public:
             }
             case ASR::exprType::ArraySize: {
                 ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
+                // An elementwise array expression records no shape of its
+                // own; it has the shape of its array operand, so walk down
+                // to the operand that carries it. The offload pre-flight
+                // resolves such an extent the same way, so the count the
+                // device works out here is the one the host sized the
+                // buffer with.
+                ASR::expr_t *av = as->m_v;
+                for (int hop = 0; hop < 8 && av != nullptr; hop++) {
+                    if (ASR::is_a<ASR::Var_t>(*av)
+                            || ASR::is_a<ASR::StructInstanceMember_t>(*av)
+                            || !gpu_section_extent_ranges(av,
+                                as->m_dim).empty()) {
+                        break;
+                    }
+                    ASR::expr_t *next = gpu_elementwise_shape_source(av);
+                    if (next == nullptr) break;
+                    av = next;
+                }
+                if (av == nullptr) av = as->m_v;
                 if (as->m_value) {
                     visit_expr(as->m_value);
-                } else if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
+                } else if (ASR::is_a<ASR::Var_t>(*av)) {
                     std::string arr_name = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
+                        ASR::down_cast<ASR::Var_t>(av)->m_v);
+                    std::string ws_size;
+                    if (in_workspace_extent) {
+                        ws_size = workspace_size_str(arr_name, as->m_dim);
+                        if (ws_size.empty()) {
+                            ws_size = associated_section_size_str(arr_name,
+                                as->m_dim);
+                        }
+                    }
                     auto it = func_array_size_params.find(arr_name);
-                    if (it != func_array_size_params.end()) {
+                    if (!ws_size.empty()) {
+                        src << ws_size;
+                    } else if (it != func_array_size_params.end()) {
                         src << it->second;
                     } else {
                         auto pit = ptr_section_sizes.find(arr_name);
@@ -5519,7 +5632,7 @@ public:
                         } else if (eit != alloc_array_size_exprs.end()) {
                             src << eit->second;
                         } else {
-                            ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+                            ASR::ttype_t *arr_type = ASRUtils::expr_type(av);
                             if (ASR::is_a<ASR::Array_t>(*arr_type)) {
                                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
                                     arr_type);
@@ -5539,15 +5652,15 @@ public:
                             }
                         }
                     }
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
-                    emit_struct_member_array_size(as->m_v, as->m_dim);
-                } else if (!gpu_section_extent_ranges(as->m_v,
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*av)) {
+                    emit_struct_member_array_size(av, as->m_dim);
+                } else if (!gpu_section_extent_ranges(av,
                         as->m_dim).empty()) {
                     // A section spans as many elements as its ranges do,
                     // whatever the scalar subscripts alongside them are.
                     bool first_range = true;
                     for (ASR::array_index_t *range :
-                            gpu_section_extent_ranges(as->m_v, as->m_dim)) {
+                            gpu_section_extent_ranges(av, as->m_dim)) {
                         if (!first_range) src << " * ";
                         first_range = false;
                         src << "(((";

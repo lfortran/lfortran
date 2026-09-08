@@ -4507,7 +4507,22 @@ public:
                     ASRUtils::ExprStmtDuplicator value_dup(al);
                     param_value = value_dup.duplicate_expr(v->m_value);
                 }
+                // The block the splice creates is nested inside the
+                // scope the call was made from, so a clone that keeps a
+                // name something enclosing already uses shadows it in the
+                // device source: the callee's result variable `faces`
+                // would hide the caller's array of the same name, and the
+                // copy-out would write the per-thread workspace instead
+                // of the array. get_unique_name only looks at the block's
+                // own scope, so the enclosing chain is asked as well.
                 std::string name = block_scope->get_unique_name(v->m_name);
+                for (int attempt = 1;
+                        block_scope->resolve_symbol(name) != nullptr;
+                        attempt++) {
+                    name = block_scope->get_unique_name(
+                        std::string(v->m_name) + "_"
+                        + std::to_string(attempt));
+                }
                 ASR::symbol_t *ns = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, block_scope,
                         s2c(al, name), nullptr, 0, ASR::intentType::Local,

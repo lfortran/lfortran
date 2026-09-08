@@ -1081,58 +1081,68 @@ class DeviceLaunchExpandVisitor :
             if (ASR::is_a<ASR::ArraySize_t>(*v)) {
                 ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
                 ASR::expr_t *array = sz->m_v;
-                if (array != nullptr && ASR::is_a<ASR::Var_t>(*array)) {
-                    ASR::expr_t *bound = gpu_local_array_binding(
-                        ASR::down_cast<ASR::Var_t>(array)->m_v,
-                        kernel->m_body, kernel->n_body);
-                    if (bound != nullptr) array = bound;
-                }
-                ASR::expr_t *host = host_designator(al, loc, kernel, args,
-                    n_args, array);
-                if (host != nullptr) {
-                    ASR::expr_t *dim = sz->m_dim
-                        ? host_extent(al, loc, kernel, args, n_args,
-                            sz->m_dim) : nullptr;
-                    if (sz->m_dim == nullptr || dim != nullptr) {
-                        return b.ArraySize(host, dim, int32);
+                // The shape asked for may sit one or more elementwise
+                // operators below the expression itself; walk down to the
+                // operand that carries it, exactly as the pre-flight in
+                // gpu_extent_is_host_evaluable() does, so the extent the
+                // host computes is the one it decided it could.
+                for (int hop = 0; hop < 8 && array != nullptr; hop++) {
+                    if (ASR::is_a<ASR::Var_t>(*array)) {
+                        ASR::expr_t *bound = gpu_local_array_binding(
+                            ASR::down_cast<ASR::Var_t>(array)->m_v,
+                            kernel->m_body, kernel->n_body);
+                        if (bound != nullptr) array = bound;
                     }
-                }
-                // A section whose base the host cannot read as it stands
-                // still has extents the host can work out: they come from
-                // the ranges alone.
-                std::vector<ASR::array_index_t*> ranges =
-                    gpu_section_extent_ranges(array, sz->m_dim);
-                if (!ranges.empty()) {
-                    ASR::expr_t *out = nullptr;
-                    for (ASR::array_index_t *range : ranges) {
-                        ASR::expr_t *lo = host_extent(al, loc, kernel, args,
-                            n_args, range->m_left);
-                        ASR::expr_t *hi = host_extent(al, loc, kernel, args,
-                            n_args, range->m_right);
-                        ASR::expr_t *step = range->m_step
+                    ASR::expr_t *host = host_designator(al, loc, kernel, args,
+                        n_args, array);
+                    if (host != nullptr) {
+                        ASR::expr_t *dim = sz->m_dim
                             ? host_extent(al, loc, kernel, args, n_args,
-                                range->m_step)
-                            : b.i32(1);
-                        if (!lo || !hi || !step) { out = nullptr; break; }
-                        ASR::expr_t *one = b.Add(
-                            b.Div(b.Sub(hi, lo), step), b.i32(1));
-                        out = out ? b.Mul(out, one) : one;
+                                sz->m_dim) : nullptr;
+                        if (sz->m_dim == nullptr || dim != nullptr) {
+                            return b.ArraySize(host, dim, int32);
+                        }
                     }
-                    if (out != nullptr) return out;
-                }
-                // Not a designator the host can read -- a function call,
-                // say -- but its type still records its shape, written in
-                // the symbols of the scope the call is made from.
-                std::vector<ASR::expr_t*> lengths;
-                if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
-                    ASR::expr_t *out = nullptr;
-                    for (ASR::expr_t *length : lengths) {
-                        ASR::expr_t *one = host_extent(al, loc, kernel, args,
-                            n_args, length);
-                        if (one == nullptr) { out = nullptr; break; }
-                        out = out ? b.Mul(out, one) : one;
+                    // A section whose base the host cannot read as it stands
+                    // still has extents the host can work out: they come from
+                    // the ranges alone.
+                    std::vector<ASR::array_index_t*> ranges =
+                        gpu_section_extent_ranges(array, sz->m_dim);
+                    if (!ranges.empty()) {
+                        ASR::expr_t *out = nullptr;
+                        for (ASR::array_index_t *range : ranges) {
+                            ASR::expr_t *lo = host_extent(al, loc, kernel, args,
+                                n_args, range->m_left);
+                            ASR::expr_t *hi = host_extent(al, loc, kernel, args,
+                                n_args, range->m_right);
+                            ASR::expr_t *step = range->m_step
+                                ? host_extent(al, loc, kernel, args, n_args,
+                                    range->m_step)
+                                : b.i32(1);
+                            if (!lo || !hi || !step) { out = nullptr; break; }
+                            ASR::expr_t *one = b.Add(
+                                b.Div(b.Sub(hi, lo), step), b.i32(1));
+                            out = out ? b.Mul(out, one) : one;
+                        }
+                        if (out != nullptr) return out;
                     }
-                    if (out != nullptr) return out;
+                    // Not a designator the host can read -- a function call,
+                    // say -- but its type still records its shape, written in
+                    // the symbols of the scope the call is made from.
+                    std::vector<ASR::expr_t*> lengths;
+                    if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
+                        ASR::expr_t *out = nullptr;
+                        for (ASR::expr_t *length : lengths) {
+                            ASR::expr_t *one = host_extent(al, loc, kernel, args,
+                                n_args, length);
+                            if (one == nullptr) { out = nullptr; break; }
+                            out = out ? b.Mul(out, one) : one;
+                        }
+                        if (out != nullptr) return out;
+                    }
+                    // An elementwise array expression records no shape of its
+                    // own; it has the shape of its array operand.
+                    array = gpu_elementwise_shape_source(array);
                 }
             }
             if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
