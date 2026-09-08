@@ -296,6 +296,22 @@ public:
         return out;
     }
 
+    // Fortran `(hi - lo) / step + 1`; a missing step is 1, matching the
+    // host rebuild of the same extent in device_launch_expand.
+    void emit_section_range_extent(ASR::array_index_t *range) {
+        src << "(((";
+        visit_expr(range->m_right);
+        src << ") - (";
+        visit_expr(range->m_left);
+        src << ")) / (";
+        if (range->m_step) {
+            visit_expr(range->m_step);
+        } else {
+            src << "1";
+        }
+        src << ") + 1)";
+    }
+
     // The element count of a local pointer associated with a section,
     // rendered again from the section itself rather than from the cached
     // string, so that a name the block binds stands for its value. Used
@@ -315,11 +331,7 @@ public:
         for (ASR::array_index_t *range : ranges) {
             if (!first) src << " * ";
             first = false;
-            src << "((";
-            visit_expr(range->m_right);
-            src << ") - (";
-            visit_expr(range->m_left);
-            src << ") + 1)";
+            emit_section_range_extent(range);
         }
         std::string out = src.str();
         src.str("");
@@ -1550,27 +1562,18 @@ public:
                     ASR::ArraySection_t *as =
                         ASR::down_cast<ASR::ArraySection_t>(
                             assoc->m_value);
-                    // Compute section size expression
+                    std::vector<ASR::array_index_t*> ranges =
+                        gpu_section_extent_ranges(assoc->m_value, nullptr);
                     std::stringstream save;
                     save << src.str();
-                    std::string size_str;
+                    src.str("");
                     bool first_sz = true;
-                    for (size_t d = 0; d < as->n_args; d++) {
-                        if (as->m_args[d].m_left
-                                && as->m_args[d].m_right
-                                && as->m_args[d].m_step) {
-                            src.str("");
-                            src << "((";
-                            visit_expr(as->m_args[d].m_right);
-                            src << ") - (";
-                            visit_expr(as->m_args[d].m_left);
-                            src << ") + 1)";
-                            std::string dim_sz = src.str();
-                            if (!first_sz) size_str += " * ";
-                            first_sz = false;
-                            size_str += dim_sz;
-                        }
+                    for (ASR::array_index_t *range : ranges) {
+                        if (!first_sz) src << " * ";
+                        first_sz = false;
+                        emit_section_range_extent(range);
                     }
+                    std::string size_str = src.str();
                     src.str("");
                     src << save.str();
                     if (!size_str.empty()) {
@@ -1700,11 +1703,7 @@ public:
                 std::stringstream save;
                 save << src.str();
                 src.str("");
-                src << "((";
-                visit_expr(as->m_args[d].m_right);
-                src << ") - (";
-                visit_expr(as->m_args[d].m_left);
-                src << ") + 1)";
+                emit_section_range_extent(&as->m_args[d]);
                 std::string dim_size = src.str();
                 src.str("");
                 src << save.str();
@@ -5681,17 +5680,7 @@ public:
                             gpu_section_extent_ranges(av, as->m_dim)) {
                         if (!first_range) src << " * ";
                         first_range = false;
-                        src << "(((";
-                        visit_expr(range->m_right);
-                        src << ") - (";
-                        visit_expr(range->m_left);
-                        src << ")) / (";
-                        if (range->m_step) {
-                            visit_expr(range->m_step);
-                        } else {
-                            src << "1";
-                        }
-                        src << ") + 1)";
+                        emit_section_range_extent(range);
                     }
                 } else {
                     src << "/* unsupported ArraySize */";

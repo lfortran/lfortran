@@ -5222,6 +5222,10 @@ RUN(NAME gpu_metal_320 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_321 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_322 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_323 LABELS gfortran llvm metal cuda_cpu)
+# No cuda_cpu, for the same reason as gpu_metal_312: the callee's
+# run-time sized workspace is spliced into the kernel only under
+# `--gpu=metal`.
+RUN(NAME gpu_metal_324 LABELS gfortran llvm metal)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
