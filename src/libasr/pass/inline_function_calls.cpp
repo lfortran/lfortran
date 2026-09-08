@@ -193,6 +193,16 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 }
             }
 
+            // Inlined locals are allocated at the caller's entry, before
+            // copies of the actuals are assigned. A local whose extent is
+            // an argument would be allocated empty.
+            if( (variable->m_intent == ASRUtils::intent_local ||
+                 variable->m_intent == ASRUtils::intent_unspecified) &&
+                ASRUtils::is_array(var_type) &&
+                !ASRUtils::is_fixed_size_array(var_type) ) {
+                return false;
+            }
+
         }
 
         for( size_t i = 0; i < func_call->n_args; i++ ) {

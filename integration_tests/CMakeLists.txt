@@ -697,6 +697,7 @@ RUN(NAME functions_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_61 LABELS gfortran llvm fortran)
 RUN(NAME functions_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_63 LABELS gfortran llvm)
+RUN(NAME functions_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME common_01 LABELS gfortran)
 
@@ -5207,7 +5208,7 @@ RUN(NAME gpu_metal_306 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_307 LABELS llvm metal cuda_cpu)
 RUN(NAME gpu_metal_308 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_309 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_310 LABELS gfortran llvm metal cuda_cpu NO_FAST) # --fast zeros a contained VLA
+RUN(NAME gpu_metal_310 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
