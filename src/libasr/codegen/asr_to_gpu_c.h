@@ -1684,7 +1684,7 @@ public:
             if (idx_expr) {
                 if (!first_dim) src << " + ";
                 first_dim = false;
-                std::string lb = get_lower_bound_str(arr, d);
+                std::string lb = get_lower_bound_str(arr, d, arr_name);
                 if (stride == "1") {
                     src << "((int)(";
                     visit_expr(idx_expr);
@@ -2151,7 +2151,8 @@ public:
                     ai->base.base.loc);
             }
             std::string term = "((int)(" + expr_str(idx) + ") - ("
-                + get_lower_bound_str(mem_arr, d) + "))";
+                + get_lower_bound_str(mem_arr, d,
+                    arr_name + "%" + mem_name) + "))";
             if (!stride.empty()) {
                 term = "(" + stride + " * " + term + ")";
             }
@@ -5715,18 +5716,93 @@ public:
         }
     }
 
-    std::string get_lower_bound_str(ASR::Array_t *arr, size_t d) {
-        if (arr && d < arr->n_dims && arr->m_dims[d].m_start) {
-            ASR::expr_t *start = arr->m_dims[d].m_start;
-            if (ASR::is_a<ASR::IntegerConstant_t>(*start)) {
+    // How an array whose type carries no extent of its own is described on
+    // the device: by a size argument of the routine, by the extents of the
+    // section a pointer was bound to, or by the workspace it lives in.
+    // Empty when none of them knows this dimension.
+    std::string looked_up_dim_extent_str(const std::string &arr_var_name,
+            size_t d) {
+        if (arr_var_name.empty()) return "";
+        auto pit = func_array_size_params.find(arr_var_name + "__dim"
+            + std::to_string(d + 1));
+        if (pit != func_array_size_params.end()) return pit->second;
+        auto sit = ptr_section_dim_sizes.find(arr_var_name);
+        if (sit != ptr_section_dim_sizes.end() && d < sit->second.size()) {
+            return sit->second[d];
+        }
+        return workspace_dim_str(arr_var_name, d);
+    }
+
+    // A name for an array in a message, when one is known.
+    static std::string array_described_as(const std::string &arr_var_name) {
+        if (arr_var_name.empty()) return "an array";
+        return "`" + arr_var_name + "`";
+    }
+
+    // True when `rendered` is device source the kernel can evaluate, rather
+    // than the placeholder visit_expr leaves behind for an expression it has
+    // no lowering for.
+    static bool is_renderable(const std::string &rendered) {
+        return !rendered.empty()
+            && rendered.find("unsupported") == std::string::npos;
+    }
+
+    // The extent of dimension `d`, which is the stride the dimensions after
+    // it are counted by. A guess here does not read a neighbouring element,
+    // it collapses whole dimensions onto another one, so an extent that
+    // cannot be rendered is an error rather than a fallback.
+    std::string dim_extent_str(ASR::Array_t *arr, size_t d,
+            const std::string &arr_var_name, const Location &loc) {
+        ASR::expr_t *dim_len = arr->m_dims[d].m_length;
+        if (dim_len) {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
                 return std::to_string(
-                    ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n);
-            } else if (ASR::is_a<ASR::Var_t>(*start)) {
+                    ASR::down_cast<ASR::IntegerConstant_t>(dim_len)->m_n);
+            }
+            if (ASR::is_a<ASR::Var_t>(*dim_len)) {
                 return ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(start)->m_v);
+                    ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
             }
         }
-        return "1";
+        std::string len_str = looked_up_dim_extent_str(arr_var_name, d);
+        if (!len_str.empty()) return len_str;
+        if (dim_len) {
+            // An extent of any other shape, such as `2*n`, is device source
+            // of its own as long as everything it reads is in scope there.
+            len_str = expr_str(dim_len);
+            if (is_renderable(len_str)) return "(" + len_str + ")";
+        } else if (!arr_var_name.empty()) {
+            // pass_array_by_data names the extents of an assumed shape dummy
+            // after the dummy itself.
+            return "__size_" + arr_var_name + "_dim" + std::to_string(d + 1);
+        }
+        throw CodeGenError("gpu offload: the extent of dimension "
+            + std::to_string(d + 1) + " of "
+            + array_described_as(arr_var_name)
+            + " is not available inside a gpu kernel", loc);
+    }
+
+    // The lower bound of dimension `d`, which the subscripts are counted
+    // from. A bound that is there but cannot be rendered is an error:
+    // counting from 1 instead would address a different element.
+    std::string get_lower_bound_str(ASR::Array_t *arr, size_t d,
+            const std::string &arr_var_name = "") {
+        if (!arr || d >= arr->n_dims || !arr->m_dims[d].m_start) return "1";
+        ASR::expr_t *start = arr->m_dims[d].m_start;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*start)) {
+            return std::to_string(
+                ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n);
+        }
+        if (ASR::is_a<ASR::Var_t>(*start)) {
+            return ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(start)->m_v);
+        }
+        std::string lb = expr_str(start);
+        if (is_renderable(lb)) return "(" + lb + ")";
+        throw CodeGenError("gpu offload: the lower bound of dimension "
+            + std::to_string(d + 1) + " of "
+            + array_described_as(arr_var_name)
+            + " is not available inside a gpu kernel", start->base.loc);
     }
 
     void emit_linearized_index(ASR::ArrayItem_t *ai,
@@ -5754,7 +5830,7 @@ public:
             if (!idx) continue;
             if (!first) src << " + ";
             first = false;
-            std::string lb = get_lower_bound_str(arr, d);
+            std::string lb = get_lower_bound_str(arr, d, arr_var_name);
             if (stride == "1") {
                 src << "((int)(";
                 visit_expr(idx);
@@ -5764,37 +5840,11 @@ public:
                 visit_expr(idx);
                 src << ") - (" << lb << ")))";
             }
-            if (arr && d < arr->n_dims) {
-                ASR::expr_t *dim_len = arr->m_dims[d].m_length;
-                std::string len_str = "0";
-                if (dim_len) {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
-                        len_str = std::to_string(
-                            ASR::down_cast<ASR::IntegerConstant_t>(
-                                dim_len)->m_n);
-                    } else if (ASR::is_a<ASR::Var_t>(*dim_len)) {
-                        len_str = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(dim_len)->m_v);
-                    }
-                } else if (!arr_var_name.empty()) {
-                    // The extent is an argument of the routine, or, for a
-                    // pointer into a section, the extent of that section.
-                    auto pit = func_array_size_params.find(arr_var_name
-                        + "__dim" + std::to_string(d + 1));
-                    auto sit = ptr_section_dim_sizes.find(arr_var_name);
-                    if (pit != func_array_size_params.end()) {
-                        len_str = pit->second;
-                    } else if (sit != ptr_section_dim_sizes.end()
-                            && d < sit->second.size()) {
-                        len_str = sit->second[d];
-                    } else {
-                        len_str = workspace_dim_str(arr_var_name, d);
-                        if (len_str.empty()) {
-                            len_str = "__size_" + arr_var_name + "_dim"
-                                + std::to_string(d + 1);
-                        }
-                    }
-                }
+            // Only the dimensions a later subscript is strided by need an
+            // extent; the last one is never counted past.
+            if (arr && d < arr->n_dims && d + 1 < ai->n_args) {
+                std::string len_str = dim_extent_str(arr, d, arr_var_name,
+                    ai->base.base.loc);
                 if (stride == "1") {
                     stride = len_str;
                 } else {
