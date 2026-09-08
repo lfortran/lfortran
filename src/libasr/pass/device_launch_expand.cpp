@@ -851,8 +851,17 @@ class DeviceLaunchExpandVisitor :
                 member_first_sizes[key] = member_element_count(loc, sizes,
                     b.i32(1), rank);
                 member_sizes_bufs[key] = sizes;
-                ASR::expr_t *data_bytes = b.Mul(b.i2i_t(total, int64),
-                    element_bytes);
+                // A member that is allocated but holds no elements in any
+                // of them -- `allocate(x%m(0,3))` -- leaves nothing to hand
+                // over, but the buffer still has to have a byte in it: the
+                // launch takes the address of its first element, and the
+                // runtime has no buffer of no bytes to give the kernel.
+                ASR::expr_t *data_bytes = declare_local(loc,
+                    "gpu_member_bytes", int64);
+                out.push_back(al, b.Assignment(data_bytes,
+                    b.Mul(b.i2i_t(total, int64), element_bytes)));
+                out.push_back(al, b.If(b.Lt(data_bytes, b.i64(1)),
+                    {b.Assignment(data_bytes, b.i64(1))}, {}));
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
                 if (!element_is_empty) {
                     out.push_back(al, b.DoLoop(k, b.i32(1), n, {
