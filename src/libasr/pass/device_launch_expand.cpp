@@ -159,6 +159,38 @@ static void collect_data_members(ASR::Struct_t *st,
     }
 }
 
+// A polymorphic argument reaches the device as the class container it is
+// represented by, so the launch hands the kernel a plain copy of the declared
+// type's own components instead of the container. That copy is only possible
+// when every component either is copied by an assignment or is one the device
+// never reads through the struct at all: an allocatable array component is
+// handed over as its own flat buffers, so it is skipped, but any other
+// allocatable or pointer component has no copy, and the loop stays on the
+// host rather than handing the kernel a container it would read as the
+// declared type.
+static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
+    ASR::Struct_t *st = get_struct(struct_sym);
+    if (!st) {
+        return unsupported("a polymorphic argument whose declared type is "
+            "not known");
+    }
+    std::vector<ASR::symbol_t*> members;
+    collect_data_members(st, members);
+    for (ASR::symbol_t *member : members) {
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
+            return unsupported("a polymorphic argument with a non-data "
+                "component");
+        }
+        if (is_decomposed_member(member)) continue;
+        if (ASRUtils::is_allocatable_or_pointer(
+                ASRUtils::symbol_type(member))) {
+            return unsupported("a polymorphic argument with an allocatable "
+                "or pointer component the gpu backend cannot copy");
+        }
+    }
+    return true;
+}
+
 static ASR::ttype_t* struct_layout_type(Allocator &al,
     ASR::symbol_t *struct_sym);
 
@@ -232,6 +264,18 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
         ASR::symbol_t *struct_sym =
             ASRUtils::get_struct_sym_from_struct_expr(arg);
         if (!struct_is_plain(struct_sym)) return false;
+        if (ASRUtils::is_class_type(base)) {
+            // The kernel is generated against the declared type, so the
+            // launch has to hand over the declared type's own data rather
+            // than the class container holding it.
+            if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) {
+                return unsupported("an unlimited polymorphic argument");
+            }
+            if (ASRUtils::is_array(arg_type)) {
+                return unsupported("an array of a polymorphic type");
+            }
+            if (!class_argument_can_be_copied(struct_sym)) return false;
+        }
         ASR::ttype_t *arr_t = ASRUtils::type_get_past_allocatable_pointer(
             arg_type);
         if (ASR::is_a<ASR::Array_t>(*arr_t)) {
@@ -1231,6 +1275,14 @@ class DeviceLaunchExpandVisitor :
                         || !ASR::is_a<ASR::Variable_t>(*member)) {
                     return arg;
                 }
+                // An allocatable array component is not read through the
+                // struct on the device at all: it is handed over as its own
+                // flat buffers, and the field the device lays out in its
+                // place is never read. Copying it would deep copy the whole
+                // array for nothing, so leave it alone -- but keep it in the
+                // layout, because the components after it are read at their
+                // own offsets.
+                if (is_decomposed_member(member)) continue;
                 ASR::ttype_t *mt = ASRUtils::symbol_type(member);
                 if (ASRUtils::is_allocatable_or_pointer(mt)) return arg;
                 ASR::expr_t *from = ASRUtils::EXPR(
