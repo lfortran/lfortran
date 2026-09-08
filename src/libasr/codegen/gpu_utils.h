@@ -242,6 +242,25 @@ inline ASR::Allocate_t* find_allocate_for_var(
     return nullptr;
 }
 
+// A Fortran named constant carries its value on the symbol, not in the
+// expression node: `integer, parameter :: end_point = 1` reaches the
+// backends as a `Var` whose `Variable` holds an `IntegerConstant` in
+// `m_value`. Such a name is as knowable ahead of the launch as the literal
+// `1` is, so an extent that mentions one is host-evaluable. Returns the
+// constant the expression folds to, or nullptr when it does not fold.
+//
+// The pre-flight, the host-side rebuild of the extent and the device-side
+// rendering of it all ask this one question, so that the size the host
+// allocates and the stride the device walks cannot disagree.
+inline ASR::expr_t* gpu_folded_int_constant(ASR::expr_t *e) {
+    if (e == nullptr) return nullptr;
+    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) return e;
+    ASR::expr_t *val = ASRUtils::expr_value(e);
+    if (val == nullptr || val == e) return nullptr;
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*val)) return nullptr;
+    return val;
+}
+
 // Try to evaluate an ASR integer expression as a compile-time constant.
 inline bool try_eval_int_constant(ASR::expr_t *e, int64_t &val) {
     if (!e) return false;
@@ -869,12 +888,16 @@ inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
     if (e == nullptr) return false;
     if (depth > 8) return false;
     ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    // A compile-time constant -- a literal, or a name declared `parameter`
+    // -- is known before the launch, so the host can size a workspace by
+    // it. The value lives on the symbol rather than in the node, so a
+    // `Var` has to be asked for it explicitly.
+    if (gpu_folded_int_constant(v) != nullptr) return true;
     if (ASR::is_a<ASR::Cast_t>(*v)) {
         return gpu_extent_is_host_evaluable(
             ASR::down_cast<ASR::Cast_t>(v)->m_arg, arg_names, symtab,
             body, n_body, depth);
     }
-    if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return true;
     size_t idx = 0;
     std::vector<std::string> path;
     if (resolve_extent_to_dim_arg(v, arg_names, idx)) return true;

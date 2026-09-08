@@ -977,11 +977,15 @@ class DeviceLaunchExpandVisitor :
             if (e == nullptr) return nullptr;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+            // A compile-time constant -- a literal, or a name declared
+            // `parameter` -- is the same number on both sides, so the host
+            // computes it by folding it, exactly as the pre-flight in
+            // gpu_extent_is_host_evaluable() decided it could.
+            if (ASR::expr_t *k = gpu_folded_int_constant(v)) return k;
             if (ASR::is_a<ASR::Cast_t>(*v)) {
                 return host_extent(al, loc, kernel, args, n_args,
                     ASR::down_cast<ASR::Cast_t>(v)->m_arg);
             }
-            if (ASR::is_a<ASR::IntegerConstant_t>(*v)) return v;
             if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
                 ASR::IntegerBinOp_t *op =
                     ASR::down_cast<ASR::IntegerBinOp_t>(v);

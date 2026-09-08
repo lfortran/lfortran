@@ -4965,6 +4965,18 @@ public:
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(expr);
                 if (in_workspace_extent && array_elem_index < 0
                         && array_elem_index_var.empty()) {
+                    // A named constant in a workspace extent is written
+                    // out as its value, not as its name. The pointer that
+                    // strides the buffer is computed at the head of the
+                    // block, ahead of the declaration the name would
+                    // refer to, and the host sized the buffer by folding
+                    // the same constant -- so both sides say the same
+                    // number and the shader stays well-formed.
+                    ASR::expr_t *k = gpu_folded_int_constant(expr);
+                    if (k != nullptr) {
+                        src << ASR::down_cast<ASR::IntegerConstant_t>(k)->m_n;
+                        break;
+                    }
                     ASR::expr_t *bound = workspace_extent_binding(v->m_v);
                     if (bound != nullptr) {
                         emit_workspace_binding(v->m_v, bound);

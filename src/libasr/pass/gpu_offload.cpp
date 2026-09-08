@@ -11246,6 +11246,16 @@ public:
             // For struct-typed variables, import the Struct into kernel scope
             ASR::symbol_t *type_decl = nullptr;
             ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            if (orig_sym == nullptr && sym_info.second != nullptr
+                    && ASR::is_a<ASR::Var_t>(*sym_info.second)) {
+                // A name the loop body reads that the enclosing scope
+                // cannot look up: a module `parameter` that a spliced-in
+                // callee uses and the caller's `use ... , only:` list
+                // leaves out. The reference the body carries still names
+                // the symbol, so take it from there -- without it the
+                // launch is handed an argument built over a null symbol.
+                orig_sym = ASR::down_cast<ASR::Var_t>(sym_info.second)->m_v;
+            }
             if (orig_sym) {
                 type_decl = import_struct_type(orig_sym,
                     orig_scope, kernel_scope, loc);
