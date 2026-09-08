@@ -994,6 +994,10 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
     } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
         index = -1;
         base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
+    } else {
+        // size(x%v) on a scalar struct is not an element of a struct
+        // array: the host reads that extent from the argument itself.
+        return false;
     }
     if (!ASR::is_a<ASR::Var_t>(*base)) return false;
     key = std::string(ASRUtils::symbol_name(

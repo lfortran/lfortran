@@ -285,6 +285,7 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
                 ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v));
             if (std::string(kparam->m_name) != arr) continue;
+            if (!ASRUtils::is_array(kparam->m_type)) return false;
             ASR::Struct_t *st = get_struct(kparam->m_type_declaration);
             if (!st) return false;
             for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
