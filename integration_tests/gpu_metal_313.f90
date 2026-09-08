@@ -24,8 +24,9 @@ contains
         class(op_t), intent(in) :: self
         integer, intent(in) :: n
         integer, allocatable :: a(:)
+        integer :: i
         allocate(a(n))
-        do concurrent (integer :: i = 1:n) default(none) shared(a, self, n)
+        do concurrent (i = 1:n)
             a(i) = self%m_ + 1000 * self%k_ + i
         end do
     end function
