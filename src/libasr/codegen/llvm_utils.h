@@ -226,6 +226,19 @@ class ASRToLLVMVisitor;
         // e.g. -> `i64*`
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
+        // Returns the terminator of `bb`, or nullptr when `bb` is not
+        // terminated yet. `llvm::BasicBlock::getTerminator()` asserts on a
+        // block without a terminator from LLVM 23 on, so inspect the last
+        // instruction directly: this behaves identically on every LLVM
+        // version we support.
+        static inline llvm::Instruction* get_terminator(llvm::BasicBlock* bb) {
+            if (bb->empty()) {
+                return nullptr;
+            }
+            llvm::Instruction& last_instruction = bb->back();
+            return last_instruction.isTerminator() ? &last_instruction : nullptr;
+        }
+
     }
 
     class LLVMList;
@@ -681,9 +694,9 @@ class ASRToLLVMVisitor;
                 llvm::Value* char_kind = nullptr);
 
             // Handles string literals ==> e.g. `print *, "HelloWorld"`
-            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
+            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const = true);
 
-            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
+            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const, bool is_const = true);
             /*
                 Declare + Setup
                 string in the global scope of the llvm module.
@@ -779,6 +792,9 @@ class ASRToLLVMVisitor;
                 llvm::Module* module, bool is_pointer=false);
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
+
+            llvm::Value* get_type_identifier_for_polymorphic_type(ASR::expr_t* arg, llvm::Value* arg_val, 
+                ASR::symbol_t* struct_sym, llvm::Module* module, int class_type_id);
 
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);
 
@@ -2101,7 +2117,7 @@ class ASRToLLVMVisitor;
          */
         void END_CACHE(llvm::BasicBlock* revert_bb) {
             LCOMPILERS_ASSERT(revert_bb)
-            LCOMPILERS_ASSERT_MSG(!builder_->GetInsertBlock()->getTerminator(),
+            LCOMPILERS_ASSERT_MSG(!LLVM::get_terminator(builder_->GetInsertBlock()),
                 "`END CACHE` adds the terminator, not expected to be added by other utility")
             builder_->CreateRetVoid();
             builder_->SetInsertPoint(revert_bb);
@@ -2515,7 +2531,7 @@ class ASRToLLVMVisitor;
 
         void check_all_caches_done_properly(){
             for(auto const& cache_pair : type_finalizer_cache_){
-                if(cache_pair.second->back().getTerminator() == nullptr){
+                if(LLVM::get_terminator(&cache_pair.second->back()) == nullptr){
                     throw LCompilersException("Cache function" + 
                             cache_pair.second->getName().str() +
                             "Not properly created");

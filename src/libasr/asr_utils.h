@@ -1915,6 +1915,10 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::DictItem: {
             return true;
         }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(a_value);
+            return ASR::is_a<ASR::Pointer_t>(*func_call->m_type);
+        }
         default:
             return false;
     }
@@ -3584,6 +3588,52 @@ static inline std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* 
     }
 }
 
+    // Compute the LLVM layout for a declared derived type. StructType_t carries
+    // only its component types, while Struct_t also records an inherited parent
+    // that LLVM lowers as the first, inlined field.
+    static inline std::pair<int64_t, int64_t>
+    compute_struct_type_size_align(ASR::Struct_t* struct_type) {
+        int64_t offset = 0;
+        int64_t max_align = 1;
+
+        if (struct_type->m_parent != nullptr) {
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            if (parent_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*parent_sym)) {
+                return {-1, -1};
+            }
+            auto [size, align] = compute_struct_type_size_align(
+                ASR::down_cast<ASR::Struct_t>(parent_sym));
+            if (size < 0) return {-1, -1};
+            offset += size;
+            max_align = align;
+        }
+
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* member_sym = struct_type->m_symtab->get_symbol(
+                struct_type->m_members[i]);
+            member_sym = ASRUtils::symbol_get_past_external(member_sym);
+            if (member_sym == nullptr || !ASR::is_a<ASR::Variable_t>(*member_sym)) {
+                return {-1, -1};
+            }
+            ASR::ttype_t* member_type =
+                ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+            auto [size, align] = compute_type_size_align(member_type);
+            if (size < 0) return {-1, -1};
+            if (!struct_type->m_is_packed) {
+                offset = ((offset + align - 1) / align) * align;
+                if (align > max_align) max_align = align;
+            }
+            offset += size;
+        }
+
+        if (!struct_type->m_is_packed) {
+            offset = ((offset + max_align - 1) / max_align) * max_align;
+        }
+        if (offset == 0) offset = 1;
+        return {offset, struct_type->m_is_packed ? 1 : max_align};
+    }
+
 static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
     if (type == nullptr) {
         return -1;
@@ -4232,6 +4282,22 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
 
+// Fortran array-valued complex part designators (%re, %im) have default
+// lower bound 1; preserve each dimension's length from the base array.
+static inline Vec<ASR::dimension_t> make_complex_dimensions_bounds(Allocator& al,
+        const Location &loc, ASR::dimension_t* m_dims, int n_dims) {
+    Vec<ASR::dimension_t> dim_vec;
+    dim_vec.reserve(al, n_dims);
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    for (int i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+        dim.m_length = m_dims[i].m_length;
+        dim_vec.push_back(al, dim);
+    }
+    return dim_vec;
+}
 
 static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
     Vec<ASR::dimension_t>* dims=nullptr,
@@ -8436,6 +8502,28 @@ template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
     for (size_t i = 0; i < args.size(); i++) {
         ASR::expr_t* passed_arg_expr = args[i].m_value;
+
+        // An argument with no value is a dummy argument that is not present.
+        // `.nil.`, the consequent of a conditional argument that leaves it
+        // absent, is the only way to write one (15.5.2.3), and C1540 allows
+        // it only when the dummy argument is optional.
+        if (!passed_arg_expr && i < f->n_args
+                && ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*sym)
+                    && ASR::down_cast<ASR::Variable_t>(sym)->m_presence
+                        != ASR::presenceType::Optional) {
+                diag.add(diag::Diagnostic(
+                    "`.nil.` is not allowed for the dummy argument `"
+                    + std::string(ASRUtils::symbol_name(sym))
+                    + "`, which is not optional",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("a consequent may be `.nil.` only when "
+                            "the dummy argument is optional "
+                            "(Fortran 2023 C1540)", {args[i].loc})}));
+                throw SemanticAbort();
+            }
+        }
 
         if (passed_arg_expr && i < f->n_args) {
             if (ASR::is_a<ASR::Var_t>(*f->m_args[i])) {

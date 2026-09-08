@@ -271,8 +271,8 @@ time_section "🧪 Testing Formal" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout 0.3.0
-  assert_git_commit d3f8c5a37684a0598eee62c5f60629c94c6c3536
+  git checkout 0.4.0
+  assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
   # disabled because it gets a SEGV on Linux:
   #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build

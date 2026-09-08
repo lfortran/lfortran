@@ -215,6 +215,7 @@ expr
         identifier var, expr start, expr end, expr? increment)
     | Parenthesis(expr operand)
     | ConditionalExpr(expr test, expr body, expr orelse)
+    | Nil()
 
 
 -- All statement nodes have an optional trivia?, here is the meaning:

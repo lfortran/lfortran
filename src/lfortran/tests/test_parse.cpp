@@ -486,6 +486,20 @@ TEST_CASE("Tokenizer") {
     };
     CHECK(tokens(al, s) == ref);
 
+    // `.nil.` is a token of its own (6.2.1), not a defined operator
+    s = "(x ? y : .nil.)";
+    ref = {
+        tt::TK_LPAREN,
+        tt::TK_NAME,
+        tt::TK_QUESTION,
+        tt::TK_NAME,
+        tt::TK_COLON,
+        tt::TK_NIL,
+        tt::TK_RPAREN,
+        tt::END_OF_FILE,
+    };
+    CHECK(tokens(al, s) == ref);
+
     s = "2*@";
     CHECK_THROWS_AS(tokens(al, s), TokenizerError0);
 

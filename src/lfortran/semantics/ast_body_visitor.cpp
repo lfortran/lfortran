@@ -3210,6 +3210,11 @@ public:
                 tmp_type = sim->m_type;
             } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
                 create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
+                       ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
+                // Complex parts are designators. Associate them with the
+                // original storage instead of copying their current value.
+                create_associate_stmt = true;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
@@ -6753,6 +6758,45 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+
+        // Handle character array section with substring on LHS:
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*target)) {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(target);
+            if (ac->n_args == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*ac->m_args[0])) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(ac->m_args[0]);
+                if (idl->n_values == 1 && ASR::is_a<ASR::StringSection_t>(*idl->m_values[0])) {
+                    ASR::expr_t* string_section_target = idl->m_values[0];
+
+                    this->visit_expr(*x.m_value);
+                    ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                    // Cast value to match element (scalar string) type if needed
+                    ASR::ttype_t* target_elem_type = ASRUtils::expr_type(string_section_target);
+                    ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                        ASRUtils::expr_type(value), target_elem_type, diag);
+
+                    // Build the inner assignment: string_section_target = value
+                    ASR::stmt_t* inner_assign = ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                            string_section_target, value, nullptr, false, false));
+
+                    Vec<ASR::stmt_t*> body;
+                    body.reserve(al, 1);
+                    body.push_back(al, inner_assign);
+
+                    // Build the DoLoop head
+                    ASR::do_loop_head_t head;
+                    head.loc = x.base.base.loc;
+                    head.m_v = idl->m_var;
+                    head.m_start = idl->m_start;
+                    head.m_end = idl->m_end;
+                    head.m_increment = idl->m_increment;
+
+                    tmp = ASR::make_DoLoop_t(al, x.base.base.loc, nullptr,
+                        head, body.p, body.size(), nullptr, 0);
+                    return;
+                }
+            }
+        }
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(target))) {
             std::string array_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(target)->m_v);
             if (assumed_rank_arrays.find(array_name) == assumed_rank_arrays.end()) {
@@ -6995,16 +7039,23 @@ public:
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
-        if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
-            value->type == ASR::exprType::ArrayConstant ) {
-            diag.add(Diagnostic(
-                "ArrayInitalizer expressions can only be assigned array references",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
+        // Shape conformance is a rule of intrinsic assignment only. A defined
+        // assignment passes both sides as actual arguments, so the value may be
+        // an array constructor assigned to a scalar, or an array of a different
+        // rank or size than the target; the overload resolution above has
+        // already matched it against the dummy arguments.
+        if (overloaded_stmt == nullptr) {
+            if (target->type == ASR::exprType::Var && !ASRUtils::is_array(target_type) &&
+                value->type == ASR::exprType::ArrayConstant ) {
+                diag.add(Diagnostic(
+                    "ArrayInitalizer expressions can only be assigned array references",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            check_ArrayAssignmentCompatibility(target, value, x);
         }
-        check_ArrayAssignmentCompatibility(target, value, x);
 
         if( overloaded_stmt == nullptr ) {
             bool lhs_supports_implicit_cast = (
@@ -7745,7 +7796,7 @@ public:
         Allocator& al,
         bool& nopass
     ) {
-        visit_expr_list(x.m_args, x.n_args, args);
+        visit_expr_list(x.m_args, x.n_args, args, original_sym, x.n_member);
         ASR::symbol_t* f2 = ASRUtils::symbol_get_past_external(original_sym);
 
         // we handle kwargs here
@@ -7916,7 +7967,60 @@ public:
         visit_Assignment(assignment);
     }
 
+    // A conditional argument (R1526) of a subroutine reference. Unlike a name
+    // followed by a parenthesized list in an expression, a `call` statement is
+    // always a procedure reference, so an actual argument of the form
+    // `( cond ? a : b )` is always a conditional argument here.
+    //
+    // The chosen consequent *is* the actual argument (15.5.2.3), so the
+    // reference is duplicated into the arms of an If statement, one copy per
+    // consequent. A variable consequent is then associated by reference and
+    // stays definable, and `.nil.` leaves the dummy argument not present.
+    // Visiting a copy expands the next conditional argument of the reference,
+    // and the nested `: cond ? consequent` arms of this one.
+    bool handle_conditional_arg_subroutine(const AST::SubroutineCall_t &x) {
+        int64_t idx = first_conditional_arg(x.m_args, x.n_args, x.m_keywords,
+            x.n_keywords);
+        if (idx < 0) {
+            return false;
+        }
+        AST::ConditionalExpr_t *c = AST::down_cast<AST::ConditionalExpr_t>(
+            conditional_arg_at(x.m_args, x.n_args, x.m_keywords, idx));
+        check_conditional_arg(c);
+        check_conditional_arg_consequents(c);
+        {
+            ASR::symbol_t *s = current_scope->resolve_symbol(
+                to_lower(x.m_name));
+            if (s != nullptr && ASR::is_a<ASR::GenericProcedure_t>(
+                    *ASRUtils::symbol_get_past_external(s))) {
+                check_conditional_arg_generic(c);
+            }
+        }
+        AST::expr_t *arms[2] = {c->m_body, c->m_orelse};
+        AST::decl_stmt_t *calls[2];
+        for (int i = 0; i < 2; i++) {
+            AST::fnarg_t *new_args;
+            AST::keyword_t *new_kwargs;
+            copy_args_with_consequent(x.m_args, x.n_args, x.m_keywords,
+                x.n_keywords, idx, arms[i], new_args, new_kwargs);
+            calls[i] = AST::down_cast<AST::decl_stmt_t>(
+                AST::make_SubroutineCall_t(al, x.base.base.loc, 0, x.m_name,
+                    x.m_member, x.n_member, new_args, x.n_args, new_kwargs,
+                    x.n_keywords, x.m_temp_args, x.n_temp_args, nullptr));
+        }
+        // The label of the reference belongs to the selection that replaces
+        // it, so that a branch to it still reaches the whole thing.
+        AST::If_t *selection = AST::down_cast2<AST::If_t>(AST::make_If_t(al,
+            x.base.base.loc, x.m_label, nullptr, c->m_test, &calls[0], 1,
+            &calls[1], 1, nullptr, nullptr, nullptr));
+        this->visit_If(*selection);
+        return true;
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+        if (handle_conditional_arg_subroutine(x)) {
+            return;
+        }
         std::string sub_name = to_lower(x.m_name);
         // Only treat as intrinsic if no user-defined callable procedure
         // with this name exists in scope (user procedures shadow intrinsics)
