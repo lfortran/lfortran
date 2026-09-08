@@ -155,6 +155,34 @@ public:
     ASR::stmt_t **current_kernel_body = nullptr;
     size_t current_kernel_n_body = 0;
 
+    // True while a per-thread workspace extent is being rendered. A name
+    // the kernel body binds stands for its value there, wherever in the
+    // expression it appears -- including inside a node this file renders
+    // through `visit_expr`, such as the declared extent an `ArraySize` of
+    // another local array reduces to.
+    bool in_workspace_extent = false;
+    // The names currently being expanded, so a binding that reaches itself
+    // stops rather than recursing forever.
+    std::set<ASR::symbol_t*> workspace_extent_expanding;
+
+    // The value a kernel-body name stands for, when the body defines that
+    // integer scalar exactly once, or nullptr when it does not.
+    ASR::expr_t* workspace_extent_binding(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr) return nullptr;
+        if (workspace_extent_expanding.count(sym)) return nullptr;
+        return gpu_local_scalar_binding(sym, current_kernel_body,
+            current_kernel_n_body);
+    }
+
+    // Render `bound` in place of the name `sym`, guarding against a cycle.
+    void emit_workspace_binding(ASR::symbol_t *sym, ASR::expr_t *bound) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        workspace_extent_expanding.insert(sym);
+        emit_workspace_extent(bound);
+        workspace_extent_expanding.erase(sym);
+    }
+
     // Render one extent of a per-thread workspace. The pointer into the
     // workspace is computed on entry to the scope that declares the array,
     // ahead of the statements that give the scope's own names their values,
@@ -163,11 +191,10 @@ public:
     // to. The host sizes the buffer by the same rule.
     void emit_workspace_extent(ASR::expr_t *e) {
         if (e != nullptr && ASR::is_a<ASR::Var_t>(*e)) {
-            ASR::expr_t *bound = gpu_local_scalar_binding(
-                ASR::down_cast<ASR::Var_t>(e)->m_v, current_kernel_body,
-                current_kernel_n_body);
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+            ASR::expr_t *bound = workspace_extent_binding(sym);
             if (bound != nullptr) {
-                emit_workspace_extent(bound);
+                emit_workspace_binding(sym, bound);
                 return;
             }
         }
@@ -191,7 +218,14 @@ public:
             emit_workspace_extent(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
             return;
         }
+        // Anything else is rendered the ordinary way, but still under the
+        // rule above: a name the body binds is worth nothing yet at the
+        // point the pointer is computed, so it has to stand for its value
+        // however deeply it is nested.
+        bool outer = in_workspace_extent;
+        in_workspace_extent = true;
         visit_expr(e);
+        in_workspace_extent = outer;
     }
 
     // The extent of one dimension of an array backed by a workspace, as the
@@ -673,8 +707,13 @@ public:
         return total;
     }
 
-    // Compute the allocation size as a device C expression string.
-    // Used when compile-time constant evaluation fails.
+    // The element count an `allocate` gives an array, as the shader spells
+    // it, used when compile-time constant evaluation fails. The string is
+    // pasted into declarations the scope emits on entry, ahead of the
+    // statements that give the scope's own names their values, so it is
+    // rendered by the same rule a workspace extent is: a name the kernel
+    // body binds stands for the value it is bound to, never for the
+    // variable, which is not written yet at that point.
     std::string compute_alloc_size_expr(ASR::alloc_arg_t &arg) {
         std::stringstream save;
         save << src.str();
@@ -684,7 +723,7 @@ public:
             ASR::dimension_t &dim = arg.m_dims[d];
             if (!dim.m_length) return "";
             src.str("");
-            visit_expr(dim.m_length);
+            emit_workspace_extent(dim.m_length);
             std::string dim_expr = src.str();
             if (dim_expr.empty()) return "";
             if (!first) result += " * ";
@@ -4875,6 +4914,14 @@ public:
             }
             case ASR::exprType::Var: {
                 ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(expr);
+                if (in_workspace_extent && array_elem_index < 0
+                        && array_elem_index_var.empty()) {
+                    ASR::expr_t *bound = workspace_extent_binding(v->m_v);
+                    if (bound != nullptr) {
+                        emit_workspace_binding(v->m_v, bound);
+                        break;
+                    }
+                }
                 src << sanitize_name(ASRUtils::symbol_name(v->m_v));
                 if (array_elem_index >= 0) {
                     ASR::ttype_t *vtype = ASRUtils::expr_type(expr);
