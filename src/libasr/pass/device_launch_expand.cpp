@@ -159,6 +159,33 @@ static void collect_data_members(ASR::Struct_t *st,
     }
 }
 
+// True when a value of this type carries an allocatable or a pointer
+// component at any depth. Assigning such a value copies the component's
+// descriptor rather than its storage here, because the launch is expanded
+// after the passes that turn an intrinsic assignment into a deep copy have
+// run, so the copy would share the original's storage and free it twice.
+static bool struct_has_allocatable_parts(ASR::symbol_t *struct_sym) {
+    ASR::Struct_t *st = get_struct(struct_sym);
+    if (!st) return true;
+    if (st->m_parent && struct_has_allocatable_parts(st->m_parent)) {
+        return true;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return true;
+        ASR::ttype_t *type = ASRUtils::symbol_type(member);
+        if (ASRUtils::is_allocatable_or_pointer(type)) return true;
+        ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::StructType_t>(*base) &&
+                struct_has_allocatable_parts(
+                    ASR::down_cast<ASR::Variable_t>(member)
+                        ->m_type_declaration)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // A polymorphic argument reaches the device as the class container it is
 // represented by, so the launch hands the kernel a plain copy of the declared
 // type's own components instead of the container. That copy is only possible
@@ -182,10 +209,21 @@ static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
                 "component");
         }
         if (is_decomposed_member(member)) continue;
-        if (ASRUtils::is_allocatable_or_pointer(
-                ASRUtils::symbol_type(member))) {
+        ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
+        if (ASRUtils::is_allocatable_or_pointer(member_type)) {
             return unsupported("a polymorphic argument with an allocatable "
                 "or pointer component the gpu backend cannot copy");
+        }
+        // A component of a derived type that holds allocatable parts is
+        // copied here by an assignment that only copies the descriptors,
+        // so the copy would share the argument's own storage.
+        ASR::ttype_t *member_base = ASRUtils::type_get_past_array(member_type);
+        if (ASR::is_a<ASR::StructType_t>(*member_base) &&
+                struct_has_allocatable_parts(
+                    ASR::down_cast<ASR::Variable_t>(member)
+                        ->m_type_declaration)) {
+            return unsupported("a polymorphic argument with a component of "
+                "a derived type that has allocatable parts");
         }
     }
     return true;
@@ -276,15 +314,10 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
             }
             if (!class_argument_can_be_copied(struct_sym)) return false;
         }
-        ASR::ttype_t *arr_t = ASRUtils::type_get_past_allocatable_pointer(
-            arg_type);
-        if (ASR::is_a<ASR::Array_t>(*arr_t)) {
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(arr_t);
-            if (arr->n_dims != 1) {
-                return unsupported("a rank-" + std::to_string(arr->n_dims)
-                    + " array of derived type");
-            }
-        }
+        // An array of a derived type of any rank is handed over by the
+        // column-major position of its elements, which is the order both
+        // the host writes the flattened component buffers in and the
+        // device reads them back in, so the rank itself is no obstacle.
         return true;
     }
     if (is_plain_scalar(base)) return true;
@@ -1156,12 +1189,45 @@ class DeviceLaunchExpandVisitor :
 
     private:
 
+        // The subscripts of the element of `arg` at column-major position
+        // `index`, counting from one. The flattened component buffers are
+        // laid out and read by that position, so an array of a rank above
+        // one is walked in the same order the device reads it back in
+        // rather than declined: subscript d is
+        // lbound_d + mod((index - 1) / (e_0 * ... * e_{d-1}), e_d).
+        std::vector<ASR::expr_t*> element_subscripts(const Location &loc,
+                ASR::expr_t *arg, ASR::expr_t *index) {
+            ASRUtils::ASRBuilder b(al, loc);
+            std::vector<ASR::expr_t*> subscripts;
+            int rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(arg));
+            if (rank <= 1) {
+                subscripts.push_back(index);
+                return subscripts;
+            }
+            ASR::expr_t *flat = b.Sub(index, b.i32(1));
+            ASR::expr_t *stride = nullptr;
+            for (int d = 0; d < rank; d++) {
+                ASR::expr_t *extent = b.ArraySize(arg, b.i32(d + 1), int32);
+                ASR::expr_t *pos = stride == nullptr
+                    ? flat : b.Div(flat, stride);
+                if (d + 1 < rank) {
+                    // mod(pos, extent), spelled out so no intrinsic has to
+                    // survive the passes that run after this one.
+                    pos = b.Sub(pos, b.Mul(b.Div(pos, extent), extent));
+                }
+                subscripts.push_back(b.Add(b.GetLBound(arg, d + 1), pos));
+                stride = stride == nullptr ? extent : b.Mul(stride, extent);
+            }
+            return subscripts;
+        }
+
         ASR::expr_t* struct_member(const Location &loc, ASR::expr_t *arg,
                 ASR::expr_t *index, ASR::symbol_t *member) {
             ASRUtils::ASRBuilder b(al, loc);
             return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc,
-                b.ArrayItem_01(arg, {index}), member,
-                ASRUtils::symbol_type(member), nullptr));
+                b.ArrayItem_01(arg, element_subscripts(loc, arg, index)),
+                member, ASRUtils::symbol_type(member), nullptr));
         }
 
         ASR::expr_t* member_data_address(const Location &loc,

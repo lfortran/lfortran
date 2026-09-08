@@ -1998,23 +1998,29 @@ public:
 
     // Zero-based index of the element that `arr_ai` selects out of a kernel
     // argument that is an array of a derived type, as a device expression.
+    // The host lays the flattened component buffers out in array element
+    // order, so an array of any rank is addressed by the column-major
+    // position of the element, the same one the host counted by.
     // Returns an empty string when the selection cannot be rendered, in
     // which case the caller must not emit an index at all: the flattened
     // component buffers are addressed through this index, so guessing one
     // would read another element's data.
     std::string struct_array_element_index_str(ASR::ArrayItem_t *arr_ai) {
-        if (arr_ai->n_args != 1) return "";
-        ASR::expr_t *idx = arr_ai->m_args[0].m_right
-            ? arr_ai->m_args[0].m_right : arr_ai->m_args[0].m_left;
-        if (!idx) return "";
-        ASR::Array_t *idx_arr = nullptr;
-        ASR::ttype_t *idx_arr_type = ASRUtils::type_get_past_allocatable(
-            ASRUtils::expr_type(arr_ai->m_v));
-        if (ASR::is_a<ASR::Array_t>(*idx_arr_type)) {
-            idx_arr = ASR::down_cast<ASR::Array_t>(idx_arr_type);
+        if (arr_ai->n_args == 0) return "";
+        for (size_t d = 0; d < arr_ai->n_args; d++) {
+            if (arr_ai->m_args[d].m_right == nullptr
+                    && arr_ai->m_args[d].m_left == nullptr) {
+                return "";
+            }
         }
-        std::string lb = get_lower_bound_str(idx_arr, 0);
-        return "((int)(" + expr_str(idx) + ") - (" + lb + "))";
+        std::stringstream saved;
+        saved.swap(src);
+        emit_linearized_index(arr_ai, ASRUtils::expr_type(arr_ai->m_v));
+        std::string out = src.str();
+        saved.swap(src);
+        if (out.empty()) return "";
+        if (arr_ai->n_args == 1) return out;
+        return "(" + out + ")";
     }
 
     // Zero-based offset of the element that `ai` selects inside one element
@@ -2242,33 +2248,14 @@ public:
                 ASR::Struct_t *st =
                     ASR::down_cast<ASR::Struct_t>(st_sym);
                 std::string arr_name(arr_var->m_name);
-                // Compute 0-based index string
-                std::string idx_str = "0";
-                if (ai->n_args == 1) {
-                    ASR::expr_t *idx = ai->m_args[0].m_right
-                        ? ai->m_args[0].m_right
-                        : ai->m_args[0].m_left;
-                    if (idx) {
-                        ASR::Array_t *arr_t = nullptr;
-                        ASR::ttype_t *arr_type =
-                            ASRUtils::type_get_past_allocatable(
-                                ASRUtils::expr_type(ai->m_v));
-                        if (ASR::is_a<ASR::Array_t>(*arr_type)) {
-                            arr_t = ASR::down_cast<ASR::Array_t>(
-                                arr_type);
-                        }
-                        std::string lb = get_lower_bound_str(arr_t, 0);
-                        std::stringstream idx_ss;
-                        {
-                            std::stringstream saved;
-                            saved.swap(src);
-                            visit_expr(idx);
-                            idx_ss << "((int)(" << src.str()
-                                   << ") - (" << lb << "))";
-                            saved.swap(src);
-                        }
-                        idx_str = idx_ss.str();
-                    }
+                // Column-major position of the element, the one the
+                // host counted the flattened buffers out by.
+                std::string idx_str =
+                    struct_array_element_index_str(ai);
+                if (idx_str.empty()) {
+                    throw CodeGenError("gpu offload: the element of `"
+                        + arr_name + "` passed here cannot be addressed "
+                        "inside a gpu kernel", ai->base.base.loc);
                 }
                 // A member inherited from a type this one extends is
                 // stored and handed over exactly like one of its own.
@@ -3825,37 +3812,15 @@ public:
                         ASR::ttype_t *arr_type =
                             ASRUtils::expr_type(ai->m_v);
                         if (is_struct_type(arr_type) &&
-                                is_array_type(arr_type) &&
-                                ai->n_args == 1) {
-                            // Capture the 0-based index expression
-                            std::stringstream idx_ss;
-                            ASR::expr_t *idx_expr =
-                                ai->m_args[0].m_right
-                                ? ai->m_args[0].m_right
-                                : ai->m_args[0].m_left;
-                            if (idx_expr) {
-                                // Temporarily emit into a separate stream
-                                std::stringstream saved;
-                                saved.swap(src);
-                                visit_expr(idx_expr);
-                                ASR::Array_t *sa_arr = nullptr;
-                                ASR::ttype_t *sa_inner =
-                                    ASRUtils::type_get_past_allocatable(
-                                        arr_type);
-                                if (ASR::is_a<ASR::Array_t>(*sa_inner)) {
-                                    sa_arr = ASR::down_cast<ASR::Array_t>(
-                                        sa_inner);
-                                }
-                                std::string lb = get_lower_bound_str(
-                                    sa_arr, 0);
-                                idx_ss << "((int)(" << src.str()
-                                       << ") - (" << lb << "))";
-                                saved.swap(src);
-                            } else {
-                                idx_ss << "0";
-                            }
+                                is_array_type(arr_type)) {
+                            // The 0-based column-major position of the
+                            // element, which is what the flattened
+                            // component buffers are indexed by.
+                            std::string idx_str =
+                                struct_array_element_index_str(ai);
+                            if (idx_str.empty()) idx_str = "0";
                             struct_from_array_elem[tgt_name] =
-                                {arr_name, idx_ss.str()};
+                                {arr_name, idx_str};
                         }
                     }
                 }
@@ -5508,37 +5473,18 @@ public:
                             struct_array_offset_params.find(key);
                         if (dit != func_array_data_params.end() &&
                                 oit != struct_array_offset_params.end()) {
-                            src << "(" << dit->second << " + "
-                                << oit->second << "[";
-                            if (arr_ai->n_args == 1) {
-                                ASR::expr_t *idx =
-                                    arr_ai->m_args[0].m_right
-                                    ? arr_ai->m_args[0].m_right
-                                    : arr_ai->m_args[0].m_left;
-                                if (idx) {
-                                    ASR::Array_t *idx_arr = nullptr;
-                                    ASR::ttype_t *idx_arr_type =
-                                        ASRUtils::type_get_past_allocatable(
-                                            ASRUtils::expr_type(
-                                                arr_ai->m_v));
-                                    if (ASR::is_a<ASR::Array_t>(
-                                            *idx_arr_type)) {
-                                        idx_arr =
-                                            ASR::down_cast<ASR::Array_t>(
-                                                idx_arr_type);
-                                    }
-                                    std::string lb =
-                                        get_lower_bound_str(idx_arr, 0);
-                                    src << "((int)(";
-                                    visit_expr(idx);
-                                    src << ") - (" << lb << "))";
-                                } else {
-                                    src << "0";
-                                }
-                            } else {
-                                src << "0";
+                            std::string arr_idx_str =
+                                struct_array_element_index_str(arr_ai);
+                            if (arr_idx_str.empty()) {
+                                throw CodeGenError("gpu offload: the "
+                                    "element of `" + arr_name + "` "
+                                    "selected here cannot be addressed "
+                                    "inside a gpu kernel",
+                                    sm->base.base.loc);
                             }
-                            src << "])";
+                            src << "(" << dit->second << " + "
+                                << oit->second << "[" << arr_idx_str
+                                << "])";
                             break;
                         }
                     }

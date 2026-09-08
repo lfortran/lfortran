@@ -1000,29 +1000,55 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
     ASR::expr_t *base = sm->m_v;
     int64_t index = 0;
     if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+        // The column-major position of the element, which is the position
+        // the flattened component buffers are laid out and read by. An
+        // array of any rank has one as long as every subscript, lower
+        // bound and extent it takes is known here.
         ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(base);
         index = -1;
-        if (item->n_args == 1) {
-            ASR::expr_t *ie = item->m_args[0].m_right
-                ? item->m_args[0].m_right : item->m_args[0].m_left;
-            int64_t v = 0;
-            if (ie != nullptr && ASRUtils::expr_value(ie) != nullptr
-                    && ASRUtils::extract_value(
-                        ASRUtils::expr_value(ie), v)) {
-                int64_t lb = 1;
-                ASR::ttype_t *at = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::expr_type(item->m_v));
-                if (ASR::is_a<ASR::Array_t>(*at)) {
-                    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(at);
-                    if (arr->n_dims >= 1 && arr->m_dims[0].m_start
-                            && ASRUtils::expr_value(arr->m_dims[0].m_start)
-                            != nullptr) {
-                        ASRUtils::extract_value(ASRUtils::expr_value(
-                            arr->m_dims[0].m_start), lb);
-                    }
+        ASR::Array_t *arr = nullptr;
+        ASR::ttype_t *at = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(
+                ASRUtils::expr_type(item->m_v)));
+        if (ASR::is_a<ASR::Array_t>(*at)) {
+            arr = ASR::down_cast<ASR::Array_t>(at);
+        }
+        size_t known_dims = arr != nullptr ? arr->n_dims : 1;
+        if (known_dims == item->n_args) {
+            int64_t position = 0, stride = 1;
+            bool known = true;
+            for (size_t d = 0; d < item->n_args && known; d++) {
+                ASR::expr_t *ie = item->m_args[d].m_right
+                    ? item->m_args[d].m_right : item->m_args[d].m_left;
+                int64_t v = 0;
+                if (ie == nullptr || ASRUtils::expr_value(ie) == nullptr
+                        || !ASRUtils::extract_value(
+                            ASRUtils::expr_value(ie), v)) {
+                    known = false;
+                    break;
                 }
-                index = v - lb;
+                int64_t lb = 1;
+                if (arr != nullptr && arr->m_dims[d].m_start != nullptr
+                        && ASRUtils::expr_value(arr->m_dims[d].m_start)
+                            != nullptr) {
+                    ASRUtils::extract_value(ASRUtils::expr_value(
+                        arr->m_dims[d].m_start), lb);
+                }
+                position += stride * (v - lb);
+                if (d + 1 < item->n_args) {
+                    int64_t extent = 0;
+                    if (arr == nullptr || arr->m_dims[d].m_length == nullptr
+                            || ASRUtils::expr_value(arr->m_dims[d].m_length)
+                                == nullptr
+                            || !ASRUtils::extract_value(ASRUtils::expr_value(
+                                arr->m_dims[d].m_length), extent)) {
+                        known = false;
+                        break;
+                    }
+                    stride *= extent;
+                }
             }
+            if (known) index = position;
         }
         base = item->m_v;
     } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
