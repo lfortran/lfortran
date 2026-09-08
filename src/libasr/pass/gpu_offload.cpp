@@ -4558,6 +4558,7 @@ public:
         block_scope->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         current_scope->add_symbol(block_name, block_sym);
+        kernel_block_names.push_back(block_name);
         return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
             block_sym));
     }
@@ -7551,6 +7552,7 @@ public:
             ASR::symbol_t *block_sym =
                 ASR::down_cast<ASR::symbol_t>(block);
             current_scope->add_symbol(block_name, block_sym);
+            kernel_block_names.push_back(block_name);
             new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
                 al, loc, -1, block_sym)));
             changed = true;
@@ -8577,6 +8579,9 @@ public:
             ASR::symbol_t *block_sym =
                 ASR::down_cast<ASR::symbol_t>(block);
             scope->add_symbol(block_name, block_sym);
+            if (scope == current_scope) {
+                kernel_block_names.push_back(block_name);
+            }
             new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
                 al, stmt->base.loc, -1, block_sym)));
             changed = true;
