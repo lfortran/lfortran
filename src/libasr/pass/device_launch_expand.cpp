@@ -1591,13 +1591,23 @@ class DeviceLaunchExpandVisitor :
                     } else if (dim.is_struct_member_size) {
                         auto sit = member_sizes_bufs.find(
                             dim.struct_member_key);
-                        if (sit != member_sizes_bufs.end()
-                                && dim.struct_member_elem_index >= 0) {
+                        if (sit != member_sizes_bufs.end()) {
                             size_t rank = dim.struct_member_rank;
                             if (rank == 0) rank = 1;
+                            // The element the extent names, or the
+                            // first one when the index is the loop
+                            // variable and so has no value on the host --
+                            // which is what the device sizes its own slice
+                            // from, so both sides step through the buffer
+                            // together. While the loop still exists
+                            // gpu_launch_is_supported() declines that
+                            // second shape rather than assume every
+                            // element is alike; by here the loop is gone
+                            // and matching the device is all that is left.
+                            int64_t elem = dim.struct_member_elem_index;
+                            if (elem < 0) elem = 0;
                             extent = b.i2i_t(member_element_count(loc,
-                                sit->second, b.i32((int)
-                                    dim.struct_member_elem_index + 1),
+                                sit->second, b.i32((int) elem + 1),
                                 rank), int64);
                         }
                     } else if (dim.is_host_expr) {
@@ -1631,7 +1641,19 @@ class DeviceLaunchExpandVisitor :
                         extent = b.i2i_t(
                             x.m_args[dim.call_arg_index].m_value, int64);
                     }
-                    LCOMPILERS_ASSERT(extent != nullptr);
+                    if (extent == nullptr) {
+                        // Nothing is left to fall back on: the loop this
+                        // launch came from is gone, so a workspace the host
+                        // cannot size has to be reported rather than
+                        // guessed at. gpu_launch_is_supported() declines
+                        // such a launch while the loop is still there;
+                        // this is the backstop for a shape only the later
+                        // passes create.
+                        throw LCompilersException("the gpu backend cannot "
+                            "size the per-thread workspace for '"
+                            + workspace.var_name + "': its extent is not "
+                            "known on the host");
+                    }
                     n_elements = b.Mul(n_elements, extent);
                 }
                 ASR::expr_t *n_bytes = b.Mul(n_elements,

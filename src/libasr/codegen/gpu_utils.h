@@ -357,6 +357,35 @@ inline bool try_resolve_array_size_via_associate(
     return false;
 }
 
+// The extent an ArraySize reads straight off the type of what it measures.
+// `size(a(i)%m)`, where the component is declared `real :: m(2)`, is 2
+// whatever `i` is: the index is never evaluated, so the extent is the same
+// for every thread and the workspace it sizes is a compile-time constant.
+// A deferred shape carries no lengths in its type, so this says nothing
+// about an allocatable or a pointer.
+inline bool try_resolve_array_size_from_type(ASR::ArraySize_t *as,
+        int64_t &result) {
+    if (as->m_v == nullptr) return false;
+    ASR::ttype_t *t = ASRUtils::expr_type(as->m_v);
+    if (t == nullptr) return false;
+    if (ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)) return false;
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, dims);
+    if (n_dims == 0 || dims == nullptr) return false;
+    if (as->m_dim != nullptr) {
+        int64_t d = 0;
+        if (!try_eval_int_constant(as->m_dim, d)) return false;
+        if (d < 1 || (size_t)d > n_dims) return false;
+        if (dims[d - 1].m_length == nullptr) return false;
+        return ASRUtils::extract_value(
+            ASRUtils::expr_value(dims[d - 1].m_length), result);
+    }
+    int64_t total = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+    if (total < 0) return false;
+    result = total;
+    return true;
+}
+
 // Try to resolve an Allocate dimension to a compile-time constant,
 // including tracing ArraySize through Associate statements.
 inline bool try_resolve_alloc_dim_constant(
@@ -364,9 +393,14 @@ inline bool try_resolve_alloc_dim_constant(
         ASR::stmt_t **body, size_t n_body,
         int64_t &result) {
     if (try_eval_int_constant(dim, result)) return true;
-    if (ASR::is_a<ASR::ArraySize_t>(*dim)) {
-        return try_resolve_array_size_via_associate(
-            ASR::down_cast<ASR::ArraySize_t>(dim), body, n_body, result);
+    ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
+    while (ASR::is_a<ASR::Cast_t>(*e)) {
+        e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+    }
+    if (ASR::is_a<ASR::ArraySize_t>(*e)) {
+        ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(e);
+        if (try_resolve_array_size_from_type(as, result)) return true;
+        return try_resolve_array_size_via_associate(as, body, n_body, result);
     }
     return false;
 }
