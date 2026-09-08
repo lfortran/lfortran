@@ -160,10 +160,12 @@ static void collect_data_members(ASR::Struct_t *st,
 }
 
 // True when a value of this type carries an allocatable or a pointer
-// component at any depth. Assigning such a value copies the component's
-// descriptor rather than its storage here, because the launch is expanded
-// after the passes that turn an intrinsic assignment into a deep copy have
-// run, so the copy would share the original's storage and free it twice.
+// component at any depth. Such a value cannot be copied by a single
+// assignment here: the launch is expanded after the passes that turn an
+// intrinsic assignment into a deep copy have run, so what reaches the
+// backend is a block copy of the descriptors, and the copy would then own
+// the original's storage and free it twice. It is copied part by part
+// instead, leaving those components alone.
 static bool struct_has_allocatable_parts(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) return true;
@@ -213,17 +215,6 @@ static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
         if (ASRUtils::is_allocatable_or_pointer(member_type)) {
             return unsupported("a polymorphic argument with an allocatable "
                 "or pointer component the gpu backend cannot copy");
-        }
-        // A component of a derived type that holds allocatable parts is
-        // copied here by an assignment that only copies the descriptors,
-        // so the copy would share the argument's own storage.
-        ASR::ttype_t *member_base = ASRUtils::type_get_past_array(member_type);
-        if (ASR::is_a<ASR::StructType_t>(*member_base) &&
-                struct_has_allocatable_parts(
-                    ASR::down_cast<ASR::Variable_t>(member)
-                        ->m_type_declaration)) {
-            return unsupported("a polymorphic argument with a component of "
-                "a derived type that has allocatable parts");
         }
     }
     return true;
@@ -423,6 +414,47 @@ static ASR::expr_t* gpu_local_array_extent_nested(
 static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
         ASR::call_arg_t *call_args, size_t n_call_args);
 
+// The device lays a placeholder out in the field of an allocatable
+// component and reads the component's data from a flat buffer of its own,
+// named after the argument the component hangs off. Only a component of an
+// argument itself, or of one of its elements, has such a buffer, so a
+// component reached through another component would be read as the
+// placeholder. Finds the first such read, so the loop stays on the host
+// instead.
+class NestedAllocatableReadFinder :
+        public ASR::BaseWalkVisitor<NestedAllocatableReadFinder> {
+public:
+    bool found = false;
+    std::string member_name;
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!found && member && ASR::is_a<ASR::Variable_t>(*member)
+                && ASRUtils::is_allocatable_or_pointer(
+                    ASRUtils::symbol_type(member))) {
+            ASR::expr_t *base = x.m_v;
+            while (true) {
+                base = ASRUtils::get_past_array_physical_cast(base);
+                if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+                    base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
+                    continue;
+                }
+                if (ASR::is_a<ASR::ArraySection_t>(*base)) {
+                    base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
+                    continue;
+                }
+                break;
+            }
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+                found = true;
+                member_name = ASRUtils::symbol_name(member);
+            }
+        }
+        ASR::BaseWalkVisitor<NestedAllocatableReadFinder>
+            ::visit_StructInstanceMember(x);
+    }
+};
+
 // True when every argument of this launch has a shape the pass can expand.
 static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
         ASR::call_arg_t *call_args, size_t n_call_args) {
@@ -430,6 +462,15 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
     if (n_call_args != kernel->n_args) {
         return unsupported("a kernel that takes a different number of "
             "arguments");
+    }
+    NestedAllocatableReadFinder nested;
+    for (size_t i = 0; i < kernel->n_body; i++) {
+        nested.visit_stmt(*kernel->m_body[i]);
+    }
+    if (nested.found) {
+        return unsupported("an allocatable component `" + nested.member_name
+            + "` reached through another component, which has no buffer of "
+            "its own");
     }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
@@ -1329,6 +1370,105 @@ class DeviceLaunchExpandVisitor :
             out.push_back(al, body[0]);
         }
 
+        // The parts of one value of a derived type that the device reads
+        // through the struct it is handed, copied component by component
+        // into `to`, with the copy back into `from` collected in `back`.
+        //
+        // An allocatable or a pointer component is not one of those parts:
+        // it reaches the kernel as its own flat buffers, and the field the
+        // device lays out in its place is never read through. It is also the
+        // one component a copy here must not touch -- this pass runs after
+        // the deep copy rewrites, so an assignment of it reaches the backend
+        // as a block copy of the array descriptor, after which the local and
+        // the argument name the same descriptor and the same storage, and
+        // the local's finalization frees what the argument still points at.
+        // So it is skipped, and the field keeps the value the local was
+        // declared with, while the components around it keep their offsets.
+        //
+        // Returns false when a component has no copy at all.
+        bool copy_plain_parts(const Location &loc, ASR::expr_t *to,
+                ASR::expr_t *from, ASR::symbol_t *struct_sym,
+                std::vector<ASR::stmt_t*> &out,
+                std::vector<ASR::stmt_t*> &back) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::Struct_t *st = get_struct(struct_sym);
+            if (st == nullptr) return false;
+            std::vector<ASR::symbol_t*> data_members;
+            collect_data_members(st, data_members);
+            for (ASR::symbol_t *member : data_members) {
+                if (member == nullptr
+                        || !ASR::is_a<ASR::Variable_t>(*member)) {
+                    return false;
+                }
+                ASR::ttype_t *mt = ASRUtils::symbol_type(member);
+                if (ASRUtils::is_allocatable_or_pointer(mt)) continue;
+                ASR::expr_t *mfrom = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc, from, member,
+                        mt, nullptr));
+                ASR::expr_t *mto = ASRUtils::EXPR(
+                    ASR::make_StructInstanceMember_t(al, loc, to, member,
+                        mt, nullptr));
+                ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(
+                    member)->m_type_declaration;
+                if (ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::type_get_past_array(mt))
+                        && struct_has_allocatable_parts(decl)) {
+                    if (!copy_plain_parts_of_value(loc, mto, mfrom, mt, decl,
+                            out, back)) {
+                        return false;
+                    }
+                    continue;
+                }
+                out.push_back(b.Assignment(mto, mfrom));
+                back.push_back(b.Assignment(mfrom, mto));
+            }
+            return true;
+        }
+
+        // The same, for a value that may be an array of such a type: every
+        // element is copied on its own, because the whole array has no copy
+        // that is not the block copy of descriptors this is here to avoid.
+        bool copy_plain_parts_of_value(const Location &loc, ASR::expr_t *to,
+                ASR::expr_t *from, ASR::ttype_t *type, ASR::symbol_t *decl,
+                std::vector<ASR::stmt_t*> &out,
+                std::vector<ASR::stmt_t*> &back) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (!ASRUtils::is_array(type)) {
+                return copy_plain_parts(loc, to, from, decl, out, back);
+            }
+            ASR::dimension_t *dims = nullptr;
+            int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+            if (rank <= 0) return false;
+            std::vector<ASR::expr_t*> idx;
+            for (int d = 0; d < rank; d++) {
+                if (dims[d].m_start == nullptr
+                        || dims[d].m_length == nullptr) {
+                    return false;
+                }
+                idx.push_back(declare_local(loc,
+                    "gpu_part_i" + std::to_string(d), int32));
+            }
+            std::vector<ASR::stmt_t*> body, body_back;
+            if (!copy_plain_parts(loc, b.ArrayItem_01(to, idx),
+                    b.ArrayItem_01(from, idx), decl, body, body_back)) {
+                return false;
+            }
+            for (int d = 0; d < rank; d++) {
+                ASR::expr_t *start = dims[d].m_start;
+                ASR::expr_t *end = b.Sub(b.Add(start, dims[d].m_length),
+                    b.i32(1));
+                if (!body.empty()) {
+                    body = {b.DoLoop(idx[d], start, end, body)};
+                }
+                if (!body_back.empty()) {
+                    body_back = {b.DoLoop(idx[d], start, end, body_back)};
+                }
+            }
+            for (ASR::stmt_t *stmt : body) out.push_back(stmt);
+            for (ASR::stmt_t *stmt : body_back) back.push_back(stmt);
+            return true;
+        }
+
         // A polymorphic argument reaches the device as the class container
         // it is represented by -- a type descriptor beside the data -- and
         // the kernel is generated against the declared type, so reading a
@@ -1350,39 +1490,15 @@ class DeviceLaunchExpandVisitor :
                     || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
                 return arg;
             }
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
             ASR::ttype_t *plain_type = ASRUtils::make_StructType_t_util(al,
                 loc, struct_sym, true);
             ASR::expr_t *tmp = declare_local(loc, "gpu_plain_arg",
                 plain_type, struct_sym);
-            std::vector<ASR::stmt_t*> back;
-            std::vector<ASR::symbol_t*> data_members;
-            collect_data_members(st, data_members);
-            for (ASR::symbol_t *member : data_members) {
-                if (member == nullptr
-                        || !ASR::is_a<ASR::Variable_t>(*member)) {
-                    return arg;
-                }
-                // An allocatable array component is not read through the
-                // struct on the device at all: it is handed over as its own
-                // flat buffers, and the field the device lays out in its
-                // place is never read. Copying it would deep copy the whole
-                // array for nothing, so leave it alone -- but keep it in the
-                // layout, because the components after it are read at their
-                // own offsets.
-                if (is_decomposed_member(member)) continue;
-                ASR::ttype_t *mt = ASRUtils::symbol_type(member);
-                if (ASRUtils::is_allocatable_or_pointer(mt)) return arg;
-                ASR::expr_t *from = ASRUtils::EXPR(
-                    ASR::make_StructInstanceMember_t(al, loc, arg, member,
-                        mt, nullptr));
-                ASR::expr_t *to = ASRUtils::EXPR(
-                    ASR::make_StructInstanceMember_t(al, loc, tmp, member,
-                        mt, nullptr));
-                out.push_back(al, b.Assignment(to, from));
-                back.push_back(b.Assignment(from, to));
+            std::vector<ASR::stmt_t*> forward, back;
+            if (!copy_plain_parts(loc, tmp, arg, struct_sym, forward, back)) {
+                return arg;
             }
+            for (ASR::stmt_t *stmt : forward) out.push_back(al, stmt);
             if (kparam->m_intent != ASR::intentType::In) {
                 for (ASR::stmt_t *stmt : back) writebacks.push_back(stmt);
             }
