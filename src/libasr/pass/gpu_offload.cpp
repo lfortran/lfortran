@@ -4507,7 +4507,22 @@ public:
                     ASRUtils::ExprStmtDuplicator value_dup(al);
                     param_value = value_dup.duplicate_expr(v->m_value);
                 }
+                // The block the splice creates is nested inside the
+                // scope the call was made from, so a clone that keeps a
+                // name something enclosing already uses shadows it in the
+                // device source: the callee's result variable `faces`
+                // would hide the caller's array of the same name, and the
+                // copy-out would write the per-thread workspace instead
+                // of the array. get_unique_name only looks at the block's
+                // own scope, so the enclosing chain is asked as well.
                 std::string name = block_scope->get_unique_name(v->m_name);
+                for (int attempt = 1;
+                        block_scope->resolve_symbol(name) != nullptr;
+                        attempt++) {
+                    name = block_scope->get_unique_name(
+                        std::string(v->m_name) + "_"
+                        + std::to_string(attempt));
+                }
                 ASR::symbol_t *ns = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(al, loc, block_scope,
                         s2c(al, name), nullptr, 0, ASR::intentType::Local,
@@ -11231,6 +11246,16 @@ public:
             // For struct-typed variables, import the Struct into kernel scope
             ASR::symbol_t *type_decl = nullptr;
             ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+            if (orig_sym == nullptr && sym_info.second != nullptr
+                    && ASR::is_a<ASR::Var_t>(*sym_info.second)) {
+                // A name the loop body reads that the enclosing scope
+                // cannot look up: a module `parameter` that a spliced-in
+                // callee uses and the caller's `use ... , only:` list
+                // leaves out. The reference the body carries still names
+                // the symbol, so take it from there -- without it the
+                // launch is handed an argument built over a null symbol.
+                orig_sym = ASR::down_cast<ASR::Var_t>(sym_info.second)->m_v;
+            }
             if (orig_sym) {
                 type_decl = import_struct_type(orig_sym,
                     orig_scope, kernel_scope, loc);

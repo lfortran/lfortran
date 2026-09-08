@@ -14037,7 +14037,17 @@ public:
 
         this->visit_expr(*x);
 
-        if (load_ref &&
+        // A fixed size array member is stored inline in the struct, so what
+        // the member selects is the block of storage itself. Loading it
+        // would hand back the aggregate by value, which has no address to
+        // copy from or index through.
+        bool inline_array_member =
+            ASR::is_a<ASR::StructInstanceMember_t>(*x) &&
+            ASRUtils::is_array(ASRUtils::expr_type(x)) &&
+            ASRUtils::extract_physical_type(ASRUtils::expr_type(x)) ==
+                ASR::array_physical_typeType::FixedSizeArray;
+
+        if (load_ref && !inline_array_member &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
@@ -14055,7 +14065,7 @@ public:
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
-            if( load_ref &&
+            if( load_ref && !inline_array_member &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 tmp = logical_load_val(tmp, x, is_volatile);

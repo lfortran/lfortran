@@ -4293,6 +4293,22 @@ filename = "../integration_tests/gpu_metal_310.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_315.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_316.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_317.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_320.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 

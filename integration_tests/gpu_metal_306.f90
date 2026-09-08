@@ -1,6 +1,5 @@
-! An array of derived type of rank 2 has no device element index.
-! The launch used to commit and then throw in the device C emitter.
-! The loop stays on the host.
+! An array of derived type of rank 2 is addressed on the device by the
+! column-major position of its elements, so the loop is offloaded.
 program gpu_metal_306
 implicit none
 type :: t
