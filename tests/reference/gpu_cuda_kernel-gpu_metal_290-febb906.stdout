@@ -1,0 +1,47 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int nn;
+    int __dim_r_0;
+    int __lb_r_0;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* r,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    float* __vla_work)
+{
+    int nn = __scalar_args.nn;
+    int __dim_r_0 = __scalar_args.__dim_r_0;
+    int __lb_r_0 = __scalar_args.__lb_r_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    int p;
+    int q;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        float acc;
+        float* work = __vla_work + (blockIdx.x * blockDim.x + threadIdx.x) * ((nn + 1) * 2);
+        acc =   0.00000000000000000e+00f;
+        q = (1 - 1);
+        while (((q + 1) <= 2)) {
+            q = (q + 1);
+            __do_loop_end = (nn + 1);
+            p = (1 - 1);
+            while (((p + 1) <= __do_loop_end)) {
+                p = (p + 1);
+                work[((int)(p) - (1)) + ((nn + 1) * ((int)(q) - (1)))] = ((float)i);
+                acc = (acc + work[((int)(p) - (1)) + ((nn + 1) * ((int)(q) - (1)))]);
+            }
+        }
+        r[((int)(i) - (__lb_r_0))] = acc;
+    }
+}
+
