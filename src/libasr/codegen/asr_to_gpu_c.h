@@ -4150,35 +4150,20 @@ public:
                                         alloc_array_sizes.find(rname);
                                     auto seit =
                                         alloc_array_size_exprs.find(rname);
-                                    // Emit index expression
-                                    std::stringstream idx_ss;
-                                    {
-                                        std::stringstream saved;
-                                        saved.swap(src);
-                                        ASR::expr_t *idx_expr =
-                                            ai->m_args[0].m_right
-                                            ? ai->m_args[0].m_right
-                                            : ai->m_args[0].m_left;
-                                        visit_expr(idx_expr);
-                                        ASR::Array_t *sa2_arr = nullptr;
-                                        ASR::ttype_t *sa2_inner =
-                                            ASRUtils::type_get_past_allocatable(
-                                                ASRUtils::expr_type(ai->m_v));
-                                        if (ASR::is_a<ASR::Array_t>(*sa2_inner)) {
-                                            sa2_arr = ASR::down_cast<ASR::Array_t>(
-                                                sa2_inner);
-                                        }
-                                        std::string lb = get_lower_bound_str(
-                                            sa2_arr, 0);
-                                        idx_ss << "((int)(" << src.str()
-                                               << ") - (" << lb << "))";
-                                        saved.swap(src);
+                                    std::string idx_str =
+                                        struct_array_element_index_str(ai);
+                                    if (idx_str.empty()) {
+                                        throw CodeGenError("gpu offload: the"
+                                            " element of `" + sname + "`"
+                                            " assigned here cannot be"
+                                            " addressed inside a gpu"
+                                            " kernel", ai->base.base.loc);
                                     }
                                     src << "{\n";
                                     indent_level++;
                                     src << get_indent() << "int __off = "
                                         << off_it->second << "["
-                                        << idx_ss.str() << "];\n";
+                                        << idx_str << "];\n";
                                     if (sit != alloc_array_sizes.end()) {
                                         int64_t sz = sit->second;
                                         for (int64_t ei = 0; ei < sz; ei++) {
