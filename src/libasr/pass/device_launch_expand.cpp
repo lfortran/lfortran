@@ -197,6 +197,36 @@ static bool struct_has_allocatable_parts(ASR::symbol_t *struct_sym) {
 // allocatable or pointer component has no copy, and the loop stays on the
 // host rather than handing the kernel a container it would read as the
 // declared type.
+//
+// This walks the components in the same order, and asks the same questions
+// of each one, as the copy that copy_plain_parts() builds once the launch is
+// accepted. The two must agree: a launch accepted here whose copy cannot
+// then be built would leave the kernel reading a class container as the
+// declared type, which is the type descriptor read as data.
+static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym);
+
+// The same question for one component, which may be an array of a derived
+// type, each element of which is copied on its own.
+static bool class_component_can_be_copied(ASR::ttype_t *type,
+        ASR::symbol_t *decl) {
+    if (!ASRUtils::is_array(type)) {
+        return class_argument_can_be_copied(decl);
+    }
+    ASR::dimension_t *dims = nullptr;
+    int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    if (rank <= 0) {
+        return unsupported("a polymorphic argument with a component array "
+            "of no rank the gpu backend can copy");
+    }
+    for (int d = 0; d < rank; d++) {
+        if (dims[d].m_start == nullptr || dims[d].m_length == nullptr) {
+            return unsupported("a polymorphic argument with a component "
+                "array whose extents are not known where it is passed");
+        }
+    }
+    return class_argument_can_be_copied(decl);
+}
+
 static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) {
@@ -210,11 +240,19 @@ static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
             return unsupported("a polymorphic argument with a non-data "
                 "component");
         }
-        if (is_decomposed_member(member)) continue;
         ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
         if (ASRUtils::is_allocatable_or_pointer(member_type)) {
+            if (is_decomposed_member(member)) continue;
             return unsupported("a polymorphic argument with an allocatable "
                 "or pointer component the gpu backend cannot copy");
+        }
+        ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(
+            member)->m_type_declaration;
+        if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(member_type))
+                && struct_has_allocatable_parts(decl)
+                && !class_component_can_be_copied(member_type, decl)) {
+            return false;
         }
     }
     return true;
@@ -1496,7 +1534,15 @@ class DeviceLaunchExpandVisitor :
                 plain_type, struct_sym);
             std::vector<ASR::stmt_t*> forward, back;
             if (!copy_plain_parts(loc, tmp, arg, struct_sym, forward, back)) {
-                return arg;
+                // gpu_launch_is_supported() accepted this launch because
+                // class_argument_can_be_copied() walks these same
+                // components, so there is a copy for every one of them.
+                // Handing the container over instead would have the kernel
+                // read the type descriptor as the declared type's data, so
+                // the two walks disagreeing is reported, not compiled.
+                throw LCompilersException("the gpu backend cannot copy the "
+                    "components of the polymorphic argument passed as '"
+                    + std::string(kparam->m_name) + "' to a gpu kernel");
             }
             for (ASR::stmt_t *stmt : forward) out.push_back(al, stmt);
             if (kparam->m_intent != ASR::intentType::In) {
