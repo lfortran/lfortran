@@ -68,7 +68,7 @@ implicit none
 integer, parameter :: nx = 8, ny = 3
 real :: c(nx, ny)
 real :: fa(nx-1, ny), fb(nx-2, ny), fc(nx-1, ny), fd(nx-1, ny)
-integer :: i, j
+integer :: i, j, q
 
 do j = 1, ny
     do i = 1, nx
@@ -81,19 +81,19 @@ fb = 0
 fc = 0
 fd = 0
 
-do concurrent (integer :: q = 1:ny)
+do concurrent (q = 1:ny)
     fa(:,q) = faces_a(c(:,q))
 end do
 
-do concurrent (integer :: q = 1:ny)
+do concurrent (q = 1:ny)
     fb(:,q) = faces_b(c(:,q))
 end do
 
-do concurrent (integer :: q = 1:ny)
+do concurrent (q = 1:ny)
     fc(:,q) = faces_c(c(:,q))
 end do
 
-do concurrent (integer :: q = 1:ny)
+do concurrent (q = 1:ny)
     fd(:,q) = faces_d(c(:,q))
 end do
 

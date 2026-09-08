@@ -29,7 +29,7 @@ use gpu_metal_318_mod, only : face_values
 implicit none
 integer, parameter :: nx = 4, ny = 3
 real :: centers(nx, ny), faces(nx+1, ny), expected(nx+1, ny)
-integer :: i, j
+integer :: i, j, k
 
 do j = 1, ny
     do i = 1, nx
@@ -45,7 +45,7 @@ do j = 1, ny
     expected(nx+1,j) = centers(nx,j)
 end do
 
-do concurrent (integer :: k = 1:ny)
+do concurrent (k = 1:ny)
     faces(:,k) = face_values(centers(:,k))
 end do
 
