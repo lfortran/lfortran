@@ -3903,7 +3903,12 @@ public:
                             // component buffers are indexed by.
                             std::string idx_str =
                                 struct_array_element_index_str(ai);
-                            if (idx_str.empty()) idx_str = "0";
+                            if (idx_str.empty()) {
+                                throw CodeGenError("gpu offload: the element"
+                                    " of `" + arr_name + "` assigned here "
+                                    "cannot be addressed inside a gpu "
+                                    "kernel", ai->base.base.loc);
+                            }
                             struct_from_array_elem[tgt_name] =
                                 {arr_name, idx_str};
                         }
