@@ -1094,17 +1094,19 @@ public:
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
                 item.second);
             std::string fn_name(fn->m_name);
-            // Build a set of parameter names for quick lookup
-            std::set<std::string> param_names;
+            // Which dummy each parameter of the routine is. A statement
+            // that names one is answered from here, so nothing below has
+            // to walk the argument list a second time comparing spellings
+            // -- and a local that happens to share a dummy's name is no
+            // longer mistaken for the dummy.
+            std::map<ASR::symbol_t*, size_t> param_index;
             for (size_t pi = 0; pi < fn->n_args; pi++) {
-                ASR::Variable_t *pv =
-                    ASR::down_cast<ASR::Variable_t>(
-                        ASR::down_cast<ASR::Var_t>(
-                            fn->m_args[pi])->m_v);
-                param_names.insert(std::string(pv->m_name));
+                param_index[ASR::down_cast<ASR::Var_t>(
+                    fn->m_args[pi])->m_v] = pi;
             }
-            // Build a map of local FixedSizeArray variable names → sizes
-            std::map<std::string, int64_t> local_fixed_sizes;
+            // The local FixedSizeArray variables, and how many elements
+            // each holds.
+            std::map<ASR::symbol_t*, int64_t> local_fixed_sizes;
             for (auto &sym : fn->m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Variable_t>(*sym.second)) continue;
                 ASR::Variable_t *var =
@@ -1129,7 +1131,7 @@ public:
                     }
                 }
                 if (all_const && total > 0) {
-                    local_fixed_sizes[std::string(var->m_name)] = total;
+                    local_fixed_sizes[sym.second] = total;
                 }
             }
             for (size_t si = 0; si < fn->n_body; si++) {
@@ -1141,21 +1143,15 @@ public:
                         if (!ASR::is_a<ASR::Var_t>(
                                 *alloc->m_args[ai].m_a))
                             continue;
-                        std::string alloc_var = ASRUtils::symbol_name(
+                        ASR::symbol_t *alloc_var =
                             ASR::down_cast<ASR::Var_t>(
-                                alloc->m_args[ai].m_a)->m_v);
+                                alloc->m_args[ai].m_a)->m_v;
                         int64_t sz = compute_alloc_size(
                             alloc->m_args[ai]);
                         if (sz <= 0) continue;
-                        for (size_t pi = 0; pi < fn->n_args; pi++) {
-                            ASR::Variable_t *pv =
-                                ASR::down_cast<ASR::Variable_t>(
-                                    ASR::down_cast<ASR::Var_t>(
-                                        fn->m_args[pi])->m_v);
-                            if (std::string(pv->m_name) == alloc_var) {
-                                func_allocs[fn_name][pi] = sz;
-                                break;
-                            }
+                        auto pit = param_index.find(alloc_var);
+                        if (pit != param_index.end()) {
+                            func_allocs[fn_name][pit->second] = sz;
                         }
                     }
                 } else if (fn->m_body[si]->type ==
@@ -1164,41 +1160,24 @@ public:
                         ASR::down_cast<ASR::Assignment_t>(
                             fn->m_body[si]);
                     if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
-                    std::string tgt_name = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(
-                            asgn->m_target)->m_v);
-                    if (!param_names.count(tgt_name)) continue;
+                    auto tgt_it = param_index.find(
+                        ASR::down_cast<ASR::Var_t>(asgn->m_target)->m_v);
+                    if (tgt_it == param_index.end()) continue;
+                    size_t tgt_idx = tgt_it->second;
                     if (ASR::is_a<ASR::Var_t>(*asgn->m_value)) {
-                        std::string val_name = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(
-                                asgn->m_value)->m_v);
-                        auto fit = local_fixed_sizes.find(val_name);
+                        ASR::symbol_t *val = ASR::down_cast<ASR::Var_t>(
+                            asgn->m_value)->m_v;
+                        auto fit = local_fixed_sizes.find(val);
                         if (fit != local_fixed_sizes.end()) {
-                            for (size_t pi = 0; pi < fn->n_args; pi++) {
-                                ASR::Variable_t *pv =
-                                    ASR::down_cast<ASR::Variable_t>(
-                                        ASR::down_cast<ASR::Var_t>(
-                                            fn->m_args[pi])->m_v);
-                                if (std::string(pv->m_name) == tgt_name) {
-                                    if (!func_allocs[fn_name].count(pi)) {
-                                        func_allocs[fn_name][pi] =
-                                            fit->second;
-                                    }
-                                    break;
-                                }
+                            if (!func_allocs[fn_name].count(tgt_idx)) {
+                                func_allocs[fn_name][tgt_idx] =
+                                    fit->second;
                             }
-                        } else if (param_names.count(val_name)) {
-                            size_t tgt_idx = SIZE_MAX, val_idx = SIZE_MAX;
-                            for (size_t pi = 0; pi < fn->n_args; pi++) {
-                                std::string pname(ASRUtils::symbol_name(
-                                    ASR::down_cast<ASR::Var_t>(
-                                        fn->m_args[pi])->m_v));
-                                if (pname == tgt_name) tgt_idx = pi;
-                                if (pname == val_name) val_idx = pi;
-                            }
-                            if (tgt_idx != SIZE_MAX && val_idx != SIZE_MAX) {
+                        } else {
+                            auto vit = param_index.find(val);
+                            if (vit != param_index.end()) {
                                 func_param_copies[fn_name][tgt_idx] =
-                                    val_idx;
+                                    vit->second;
                             }
                         }
                     } else if (ASR::is_a<ASR::StructInstanceMember_t>(
@@ -1209,34 +1188,16 @@ public:
                             ASR::down_cast<ASR::StructInstanceMember_t>(
                                 asgn->m_value);
                         if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
-                            std::string struct_name =
-                                ASRUtils::symbol_name(
-                                    ASR::down_cast<ASR::Var_t>(
-                                        sm->m_v)->m_v);
-                            if (param_names.count(struct_name)) {
+                            auto sit = param_index.find(
+                                ASR::down_cast<ASR::Var_t>(
+                                    sm->m_v)->m_v);
+                            if (sit != param_index.end()) {
                                 std::string mem_name =
                                     ASRUtils::symbol_name(
                                         ASRUtils::symbol_get_past_external(
                                             sm->m_m));
-                                size_t tgt_idx = SIZE_MAX;
-                                size_t struct_idx = SIZE_MAX;
-                                for (size_t pi = 0;
-                                        pi < fn->n_args; pi++) {
-                                    std::string pname(
-                                        ASRUtils::symbol_name(
-                                            ASR::down_cast<ASR::Var_t>(
-                                                fn->m_args[pi])->m_v));
-                                    if (pname == tgt_name)
-                                        tgt_idx = pi;
-                                    if (pname == struct_name)
-                                        struct_idx = pi;
-                                }
-                                if (tgt_idx != SIZE_MAX &&
-                                        struct_idx != SIZE_MAX) {
-                                    func_struct_member_deps[fn_name]
-                                        [tgt_idx] = {struct_idx,
-                                                     mem_name};
-                                }
+                                func_struct_member_deps[fn_name]
+                                    [tgt_idx] = {sit->second, mem_name};
                             }
                         }
                     }
@@ -3050,17 +3011,16 @@ public:
         // Declare local variables (non-argument, non-return, non-parameter)
         in_inline_function = true;
         {
-            std::set<std::string> arg_names;
+            // The dummies and the result, which are declared by the
+            // signature rather than by a local declaration.
+            std::set<ASR::symbol_t*> declared_by_signature;
             for (size_t i = 0; i < fn->n_args; i++) {
-                ASR::Variable_t *a = ASR::down_cast<ASR::Variable_t>(
+                declared_by_signature.insert(
                     ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-                arg_names.insert(std::string(a->m_name));
             }
-            std::string ret_name;
             if (fn->m_return_var) {
-                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
+                declared_by_signature.insert(
                     ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
-                ret_name = rv->m_name;
             }
             for (auto &item : fn->m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -3068,8 +3028,7 @@ public:
                     item.second);
                 if (var->m_storage == ASR::storage_typeType::Parameter)
                     continue;
-                if (arg_names.count(std::string(var->m_name))) continue;
-                if (std::string(var->m_name) == ret_name) continue;
+                if (declared_by_signature.count(item.second)) continue;
                 emit_local_var_decl(var);
             }
         }
@@ -3079,7 +3038,7 @@ public:
         // arrays (needed for array copy and broadcast assignments).
         {
             // Collect sizes of local FixedSizeArray variables
-            std::map<std::string, int64_t> local_fixed_sizes;
+            std::map<ASR::symbol_t*, int64_t> local_fixed_sizes;
             for (auto &sym : fn->m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Variable_t>(*sym.second)) continue;
                 ASR::Variable_t *var =
@@ -3104,7 +3063,7 @@ public:
                     }
                 }
                 if (all_const && total > 0) {
-                    local_fixed_sizes[std::string(var->m_name)] = total;
+                    local_fixed_sizes[sym.second] = total;
                 }
             }
             for (size_t i = 0; i < fn->n_body; i++) {
@@ -3160,7 +3119,8 @@ public:
                     if (!ASR::is_a<ASR::Var_t>(*val)) continue;
                     std::string val_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(val)->m_v);
-                    auto fit = local_fixed_sizes.find(val_name);
+                    auto fit = local_fixed_sizes.find(
+                        ASR::down_cast<ASR::Var_t>(val)->m_v);
                     if (fit != local_fixed_sizes.end() &&
                             !alloc_array_sizes.count(tgt_name)) {
                         alloc_array_sizes[tgt_name] = fit->second;
