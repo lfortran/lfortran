@@ -85,6 +85,7 @@ set(SRC
     pass/gpu_offload.cpp
     pass/gpu_offload_designator.cpp
     pass/gpu_offload_preflight.cpp
+    pass/gpu_offload_rewrite.cpp
     pass/device_partition.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
