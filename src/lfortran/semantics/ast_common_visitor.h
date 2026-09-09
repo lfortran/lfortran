@@ -15294,7 +15294,6 @@ public:
                     }
                 }
 
-                // Declare type safely once for this scope
                 ASR::ttype_t *local_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
                     al, x.base.base.loc, compiler_options.po.default_integer_kind));
 
@@ -15302,7 +15301,6 @@ public:
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
                 int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
 
-                // Helper to cleanly extract mold string length expression without DAG sharing
                 auto get_mold_len_expr = [&](bool multiply_kind) -> ASR::expr_t* {
                     ASR::expr_t* expr = nullptr;
                     if (ASR::is_a<ASR::String_t>(*mold_elem_type)) {
@@ -15333,7 +15331,6 @@ public:
                     return expr;
                 };
 
-                // Patch for assumed/deferred length strings
                 if (mold_bytes <= 0 && ASR::is_a<ASR::String_t>(*mold_elem_type)) {
                     ASR::String_t* mold_str_type = ASR::down_cast<ASR::String_t>(mold_elem_type);
                     if (mold_str_type->m_len && ASRUtils::expr_value(mold_str_type->m_len)) {
@@ -15356,23 +15353,18 @@ public:
                     if (src_bytes > 0 && !dyn_src_len) {
                         dyn_src_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, src_bytes, local_int_type));
                     }
-
                     if (dyn_src_len) {
                         ASR::expr_t* mb_1 = get_mold_len_expr(true);
                         ASR::expr_t* mb_div = get_mold_len_expr(true);
                         ASR::expr_t* mb_cond = get_mold_len_expr(true);
-                        
                         ASR::expr_t* one_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, local_int_type));
                         ASR::expr_t* zero_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, local_int_type));
                         ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4));
-                        
                         ASR::expr_t* mold_bytes_minus_one = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                             al, x.base.base.loc, mb_1, ASR::binopType::Sub, one_expr, local_int_type, nullptr));
-                        
                         ASR::expr_t* numerator = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                             al, x.base.base.loc, dyn_src_len, ASR::binopType::Add, mold_bytes_minus_one, local_int_type, nullptr));
                         
-                        // Safe divisor fallback
                         ASR::expr_t* is_zero = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
                             al, x.base.base.loc, mb_cond, ASR::cmpopType::Eq, zero_expr, cmp_type, nullptr));
                         ASR::expr_t* safe_divisor = ASRUtils::EXPR(ASR::make_IfExp_t(
@@ -15397,7 +15389,6 @@ public:
 
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
 
-        // Inject explicit string length for runtime array temporaries
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::String_t>(*elem_type)) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
