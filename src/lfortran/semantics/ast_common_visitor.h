@@ -16783,7 +16783,7 @@ public:
         ASR::expr_t *arg = args[0];
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, x.base.base.loc, 8));
+            ASR::make_Integer_t(al, x.base.base.loc, 8));
         ASR::expr_t *value = nullptr;
         int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
         if (type_size > 0) {
@@ -16803,9 +16803,8 @@ public:
                 al, x.base.base.loc, array_size_expr, ASR::binopType::Mul, elem_size_expr, size_type, nullptr));
             }
         }
-    
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-           size_type, value);
+            size_type, value);
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
