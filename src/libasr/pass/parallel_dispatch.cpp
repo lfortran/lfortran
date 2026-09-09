@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/pass_utils.h>
@@ -39,9 +40,13 @@ class ParallelDispatchVisitor :
 {
 public:
     const PassOptions &pass_options;
+    // What the selected device can do. Only whether one was selected at all
+    // matters here: the choice is a device or the host, never which device.
+    const GpuDeviceCapabilities device_caps;
 
     ParallelDispatchVisitor(const PassOptions &pass_options_) :
-        pass_options(pass_options_) {
+        pass_options(pass_options_),
+        device_caps(gpu_device_capabilities(pass_options_)) {
     }
 
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
@@ -49,9 +54,8 @@ public:
         if (xx.m_exec_target == ASR::exec_targetType::ExecAuto &&
                 omp_region_has_clause(x,
                     ASR::omp_clauseType::OMPIndependent)) {
-            bool gpu = pass_options.gpu_offload_metal ||
-                       pass_options.gpu_offload_cuda;
-            xx.m_exec_target = gpu ? ASR::exec_targetType::ExecDevice
+            xx.m_exec_target = device_caps.device_selected()
+                                   ? ASR::exec_targetType::ExecDevice
                                    : host_exec_target(pass_options);
         }
         ASR::BaseWalkVisitor<ParallelDispatchVisitor>::visit_OMPRegion(x);
