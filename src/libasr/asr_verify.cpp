@@ -2378,6 +2378,41 @@ public:
                 "' the device reads it as has rank " +
                 std::to_string(ASRUtils::extract_n_dims_from_ttype(
                     dummy->m_type)));
+        require_id(ASRUtils::is_class_type(arg_element) ==
+                ASRUtils::is_class_type(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_polymorphism", mismatch);
+        if (ASRUtils::is_class_type(arg_element)) {
+            verify_gpu_kernel_launch_class_argument(x, at, arg, arg_type);
+        }
+    }
+
+    // A polymorphic argument is represented by a class container -- a type
+    // descriptor beside a pointer to the data -- while the kernel is
+    // generated against the declared type, so the launch hands the kernel a
+    // copy of the declared type's own components rather than the container
+    // itself. A container the launch cannot make that copy of would be
+    // uploaded as it stands and read as the declared type, which is the
+    // descriptor read as data: an unlimited polymorphic argument has no
+    // declared type to copy, an array of a polymorphic type has one container
+    // per element, and a declared type the launch cannot look up has no
+    // components to copy. `gpu_offload` keeps such a loop on the host rather
+    // than launching it, and that is what is required here.
+    void verify_gpu_kernel_launch_class_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg, ASR::ttype_t *arg_type) {
+        require_id(!ASRUtils::is_unlimited_polymorphic_type(arg_type),
+            "asr.verify.gpu_kernel_launch.unlimited_polymorphic_argument",
+            at + " is unlimited polymorphic, which has no declared type for "
+                "the device to read it as");
+        require_id(!ASRUtils::is_array(arg_type),
+            "asr.verify.gpu_kernel_launch.polymorphic_array_argument",
+            at + " is an array of a polymorphic type, which the device would "
+                "read as an array of class containers");
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(arg));
+        require_id(struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym),
+            "asr.verify.gpu_kernel_launch.polymorphic_declared_type",
+            at + " is polymorphic and its declared type is not known, so the "
+                "device has no layout to read it as");
     }
 
     // TODO: also verify that a Device function only calls Device
