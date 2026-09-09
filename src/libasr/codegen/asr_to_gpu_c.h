@@ -1752,35 +1752,16 @@ public:
                 size_ss << dim_size;
                 last_section_dim_sizes.push_back(dim_size);
             }
-            // Update stride for next dimension
+            // Update stride for next dimension. The extent is the one
+            // dim_extent_str() settles on, the same one an ArrayItem is
+            // strided by: an array bound to a workspace carries no extents
+            // in its own type and reads them off the workspace the host
+            // sized the buffer from, and one that carries an extent *and*
+            // has a workspace must not be strided by one here and sized by
+            // the other there.
             if (arr && d < arr->n_dims) {
-                ASR::expr_t *dim_len = arr->m_dims[d].m_length;
-                std::string len_str = "0";
-                if (dim_len) {
-                    if (ASR::is_a<ASR::IntegerConstant_t>(*dim_len)) {
-                        len_str = std::to_string(
-                            ASR::down_cast<ASR::IntegerConstant_t>(
-                                dim_len)->m_n);
-                    } else {
-                        std::stringstream save;
-                        save << src.str();
-                        src.str("");
-                        visit_expr(dim_len);
-                        len_str = src.str();
-                        src.str("");
-                        src << save.str();
-                    }
-                } else if (!arr_name.empty()) {
-                    // An array bound to a workspace has no extents in its
-                    // own type -- they live on the workspace, which is what
-                    // the host sized the buffer from. Index it by the same
-                    // extent, or the stride here and the buffer there
-                    // disagree.
-                    len_str = workspace_dim_str(arr_name, d);
-                    if (len_str.empty()) {
-                        len_str = GpuNames::dim_size(arr_name, d);
-                    }
-                }
+                std::string len_str = dim_extent_str(arr, d, arr_name,
+                    as->base.base.loc);
                 if (stride == "1") {
                     stride = len_str;
                 } else {
