@@ -6581,17 +6581,28 @@ public:
                                     int64_t anchor_element_size =
                                         ASRUtils::get_type_byte_size(
                                             anchor_arr->m_type);
-                                    // Use the larger array as backing storage so
-                                    // that the equivalenced alias cannot overrun it.
-                                    if (n_set == 2 &&
+                                    // Only a local variable can be turned into a
+                                    // pointer, so it is the only thing that can
+                                    // play the alias role.
+                                    bool source_is_local = ASR::is_a<ASR::Var_t>(
+                                        *array_item1->m_v);
+                                    // A COMMON block member is storage owned by
+                                    // the block, so it has to be the source even
+                                    // when it is written in the anchor position.
+                                    bool anchor_in_common = !ASR::is_a<ASR::Var_t>(
+                                        *array_item2->m_v);
+                                    // Otherwise use the larger array as backing
+                                    // storage so that the equivalenced alias
+                                    // cannot overrun it.
+                                    bool anchor_is_larger = n_set == 2 &&
                                         offset1 == offset2 &&
                                         source_size > 0 &&
                                         anchor_size > source_size &&
                                         source_element_size > 0 &&
                                         source_element_size ==
-                                            anchor_element_size &&
-                                        ASR::is_a<ASR::Var_t>(
-                                            *array_item1->m_v)) {
+                                            anchor_element_size;
+                                    if (source_is_local &&
+                                        (anchor_in_common || anchor_is_larger)) {
                                         std::swap(asr_eq1, asr_eq2);
                                         std::swap(array_item1, array_item2);
                                         std::swap(source_arr, anchor_arr);
@@ -6631,6 +6642,15 @@ public:
                                         ASRUtils::type_get_past_array(arg_type1));
 
                                     target_var_ref = array_item2->m_v;
+                                    if (!ASR::is_a<ASR::Var_t>(*target_var_ref)) {
+                                        // Both sides live in a COMMON block:
+                                        // neither can be made an alias of the
+                                        // other, so there is nothing to emit.
+                                        diag.semantic_warning_label(
+                                            "This equivalence statement is not implemented yet, for now we will ignore it",
+                                            {x.base.base.loc}, "ignored for now");
+                                        continue;
+                                    }
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(target_var_ref);
                                     target_variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     target_elem_type = type_unwrap(ASRUtils::expr_type(asr_eq2));
