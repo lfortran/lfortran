@@ -1644,9 +1644,8 @@ class DeviceLaunchExpandVisitor :
                 ASR::Array_t *kernel_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(kparam->m_type));
                 for (size_t d = 0; d < kernel_arr->n_dims; d++) {
-                    scalar_fields.push_back({"__size_"
-                        + std::string(kparam->m_name) + "_dim"
-                        + std::to_string(d + 1), int32});
+                    scalar_fields.push_back({GpuNames::dim_size(
+                        kparam->m_name, d), int32});
                     scalar_values.push_back(
                         b.ArraySize(arg, b.i32(d + 1), int32));
                 }

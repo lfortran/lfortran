@@ -9021,7 +9021,7 @@ public:
             if (!ASR::is_a<ASR::Array_t>(*type)) continue;
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
             for (size_t d = 0; d < arr->n_dims; d++) {
-                arg_names.push_back(gpu_dim_arg_name(sym.first, d));
+                arg_names.push_back(GpuNames::dim_arg(sym.first, d));
             }
         }
     }
@@ -10979,7 +10979,7 @@ public:
 
                 for (size_t d = 0; d < arr->n_dims; d++) {
                     std::string dim_name =
-                        gpu_dim_arg_name(di.param_name, d);
+                        GpuNames::dim_arg(di.param_name, d);
                     ASR::symbol_t *dim_sym = gpu_new_variable(al, loc,
                         kernel_scope, dim_name, ASRUtils::duplicate_type(al,
                             int_type_dim), ASR::intentType::InOut);
@@ -11004,8 +11004,8 @@ public:
                         ASR::make_Var_t(al, loc, dim_sym));
                     if (!k_arr->m_dims[d].m_start) {
                         // Pass lower bound as kernel parameter
-                        std::string lb_name = "__lb_" + di.param_name
-                            + "_" + std::to_string(d);
+                        std::string lb_name = GpuNames::lower_bound(
+                            di.param_name, d);
                         ASR::symbol_t *lb_sym = gpu_new_variable(al, loc,
                             kernel_scope, lb_name, ASRUtils::duplicate_type(al,
                                 int_type_dim), ASR::intentType::InOut);
@@ -11083,7 +11083,7 @@ public:
                             orig_arr->m_dims[d].m_length) != nullptr) {
                     continue;
                 }
-                std::string dim_name = gpu_dim_arg_name(sym_name, d);
+                std::string dim_name = GpuNames::dim_arg(sym_name, d);
                 ASR::symbol_t *dim_sym = gpu_new_variable(al, loc,
                     kernel_scope, dim_name, ASRUtils::duplicate_type(al,
                         int_type_dim), ASR::intentType::InOut);
@@ -11108,8 +11108,8 @@ public:
                     ASR::make_Var_t(al, loc, dim_sym));
                 if (!k_arr->m_dims[d].m_start) {
                     // Pass lower bound as kernel parameter
-                    std::string lb_name = "__lb_" + sym_name + "_"
-                        + std::to_string(d);
+                    std::string lb_name = GpuNames::lower_bound(
+                        sym_name, d);
                     ASR::symbol_t *lb_sym = gpu_new_variable(al, loc,
                         kernel_scope, lb_name, ASRUtils::duplicate_type(al,
                             int_type_dim), ASR::intentType::InOut);
@@ -11163,8 +11163,8 @@ public:
                 const std::string &mem_name = mem_entry.first;
                 ASR::Variable_t *mv = mem_entry.second;
                 ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
-                std::string size_name = "__size_" + sym_name + "_"
-                    + mem_name;
+                std::string size_name = GpuNames::member_size(
+                    sym_name, mem_name);
                 ASR::symbol_t *size_sym = gpu_new_variable(al, loc,
                     kernel_scope, size_name, ASRUtils::duplicate_type(al,
                         int_type_sz), ASR::intentType::InOut);
@@ -11274,8 +11274,8 @@ public:
                 ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 ASR::ttype_t *mem_inner =
                     ASRUtils::type_get_past_allocatable(mv->m_type);
-                std::string data_name = "__data_" + sym_name + "_"
-                    + mem_name;
+                std::string data_name = GpuNames::member_data(
+                    sym_name, mem_name);
                 ASR::ttype_t *data_type =
                     ASRUtils::duplicate_type(al, mem_inner);
                 ASR::symbol_t *data_type_decl = nullptr;

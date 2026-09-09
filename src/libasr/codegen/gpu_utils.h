@@ -492,12 +492,93 @@ inline bool try_resolve_alloc_dim_constant(
     return false;
 }
 
-// The kernel's scalar parameter carrying one extent of an array parameter.
-// The offload pass creates the parameter under this name and the resolvers
-// below look it up again by it, so both spell it here.
-inline std::string gpu_dim_arg_name(const std::string &name, size_t d) {
-    return "__dim_" + name + "_" + std::to_string(d);
+// The names the offload machinery gives to the symbols it synthesises.
+//
+// A generated name is a contract between two halves of the machinery: the
+// offload pass creates a symbol under it, and the device emitter -- another
+// file away -- writes that symbol out or looks it up again by the same name.
+// Spelled afresh at each site, the two halves can drift apart, and they
+// drift silently: a prefix typed one way here and another way there is a
+// parameter that is simply never found. So every spelling lives here, one
+// function per kind of synthesised symbol, and a name can only be built the
+// one way it is matched.
+//
+// Nothing in here decides *what* to generate -- only how the thing it is
+// given is spelled. Names with a single construction site and no matcher
+// (the kernel function itself, a loop temporary) do not need a contract and
+// stay where they are made.
+namespace GpuNames {
+
+// The kernel's scalar parameter carrying extent `d` (0-based) of the array
+// parameter `array`, as the offload pass creates it and the extent
+// resolvers look it up again.
+inline std::string dim_arg(const std::string &array, size_t d) {
+    return "__dim_" + array + "_" + std::to_string(d);
 }
+
+// The scalar parameter carrying extent `d` (0-based) of the array dummy
+// `array` of a kernel, or of a routine spliced into one: pass_array_by_data
+// names an assumed-shape dummy's extents after the dummy itself.
+inline std::string dim_size(const std::string &array, size_t d) {
+    return "__size_" + array + "_dim" + std::to_string(d + 1);
+}
+
+// The scalar parameter carrying the whole element count of the array dummy
+// `array`, for a dummy whose extents are not passed one by one.
+inline std::string array_size(const std::string &array) {
+    return "__size_" + array;
+}
+
+// The scalar parameter carrying the whole element count of the allocatable
+// array component `member` of the struct argument `var`.
+inline std::string member_size(const std::string &var,
+        const std::string &member) {
+    return "__size_" + var + "_" + member;
+}
+
+// The scalar parameter carrying extent `d` (0-based) of that component, so
+// that size(var%member, d) inside a spliced routine reads the extent rather
+// than the element count.
+inline std::string member_dim_size(const std::string &var,
+        const std::string &member, size_t d) {
+    return member_size(var, member) + "_dim" + std::to_string(d + 1);
+}
+
+// The device buffer holding the elements of that component.
+inline std::string member_data(const std::string &var,
+        const std::string &member) {
+    return "__data_" + var + "_" + member;
+}
+
+// Where each struct element's component starts in `member_data`, when the
+// argument is an array of structs and the components are flattened into one
+// buffer behind it.
+inline std::string member_offsets(const std::string &var,
+        const std::string &member) {
+    return "__offsets_" + var + "_" + member;
+}
+
+// How far each struct element's component runs there, one extent per
+// dimension per element.
+inline std::string member_sizes(const std::string &var,
+        const std::string &member) {
+    return "__sizes_" + var + "_" + member;
+}
+
+// The scalar parameter carrying the lower bound of dimension `d` (0-based)
+// of the array argument `array`, for an array whose subscripts are counted
+// from something other than one.
+inline std::string lower_bound(const std::string &array, size_t d) {
+    return "__lb_" + array + "_" + std::to_string(d);
+}
+
+// The device buffer backing the per-thread workspace of the kernel-local
+// allocatable array `var`, whose extent is only known once the kernel runs.
+inline std::string vla_workspace(const std::string &var) {
+    return "__vla_" + var;
+}
+
+} // namespace GpuNames
 
 // The array and the 0-based dimension whose extent `e` is, when `e` is one
 // dimension of an array designator however it is spelled: `size(a, d)`,
@@ -969,7 +1050,7 @@ inline bool resolve_extent_to_dim_arg(ASR::expr_t *e,
     std::string name;
     size_t dim = 0;
     if (!gpu_extent_of_array_dim(e, name, dim)) return false;
-    std::string want = gpu_dim_arg_name(name, dim);
+    std::string want = GpuNames::dim_arg(name, dim);
     for (size_t a = 0; a < arg_names.size(); a++) {
         if (arg_names[a] == want) {
             arg_index = a;

@@ -444,8 +444,8 @@ public:
     std::string struct_member_workspace_extent(const GpuVlaDim &dim) {
         std::string key = dim.struct_member_key;
         auto dot = key.find('.');
-        std::string sizes = "__sizes_" + key.substr(0, dot) + "_"
-            + key.substr(dot + 1);
+        std::string sizes = GpuNames::member_sizes(key.substr(0, dot),
+            key.substr(dot + 1));
         size_t rank = dim.struct_member_rank;
         if (rank == 0) rank = 1;
         int64_t idx = dim.struct_member_elem_index;
@@ -1517,8 +1517,8 @@ public:
                                     ASR::down_cast<ASR::Var_t>(
                                         ai->m_v)->m_v);
                             std::string sizes_key =
-                                "__sizes_" + arr_name + "_"
-                                + mem_name;
+                                GpuNames::member_sizes(arr_name,
+                                    mem_name);
                             alloc_array_size_exprs[out_name] =
                                 sizes_key + "[0]";
                         }
@@ -1538,7 +1538,7 @@ public:
                                 sizes_key + "[0]";
                         } else {
                             std::string size_key =
-                                "__size_" + sname + "_" + mem_name;
+                                GpuNames::member_size(sname, mem_name);
                             alloc_array_size_exprs[out_name] =
                                 size_key;
                         }
@@ -1810,8 +1810,7 @@ public:
                     // disagree.
                     len_str = workspace_dim_str(arr_name, d);
                     if (len_str.empty()) {
-                        len_str = "__size_" + arr_name + "_dim"
-                            + std::to_string(d + 1);
+                        len_str = GpuNames::dim_size(arr_name, d);
                     }
                 }
                 if (stride == "1") {
@@ -2066,13 +2065,11 @@ public:
                             if (eit != alloc_array_size_exprs.end()) {
                                 src << eit->second;
                             } else {
-                                src << "__size_" << vname << "_dim"
-                                    << (d + 1);
+                                src << GpuNames::dim_size(vname, d);
                             }
                         }
                     } else {
-                        src << "__size_" << vname << "_dim"
-                            << (d + 1);
+                        src << GpuNames::dim_size(vname, d);
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(
                         *actual_arg)) {
@@ -2136,8 +2133,7 @@ public:
     // Name of the kernel/function parameter holding that extent.
     static std::string struct_member_dim_param(const std::string &var_name,
             const std::string &mem_name, size_t d) {
-        return "__size_" + var_name + "_" + mem_name + "_dim"
-            + std::to_string(d + 1);
+        return GpuNames::member_dim_size(var_name, mem_name, d);
     }
 
     // The constant `dim` of a size() call, or -1 when absent or not a
@@ -2365,8 +2361,8 @@ public:
                     }
                 }
                 if (!found) {
-                    src << ", __size_" << var_name << "_"
-                        << mem_name;
+                    src << ", " << GpuNames::member_size(var_name,
+                        mem_name);
                 }
             }
         }
@@ -2444,8 +2440,8 @@ public:
                                 sit->second, idx_str, rank, d);
                         }
                     } else {
-                        src << ", __size_" << arr_name << "_"
-                            << mem_name;
+                        src << ", " << GpuNames::member_size(arr_name,
+                            mem_name);
                         for (size_t d = 0; rank > 1 && d < rank; d++) {
                             src << ", " << struct_member_dim_param(
                                 arr_name, mem_name, d);
@@ -2505,8 +2501,8 @@ public:
                         }
                     }
                     if (!found) {
-                        src << ", __data_" << var_name << "_"
-                            << mem_name;
+                        src << ", " << GpuNames::member_data(var_name,
+                            mem_name);
                     }
                 }
             }
@@ -2522,8 +2518,8 @@ public:
                     src << ", " << struct_member_total_size_expr(
                         sit->second, idx_str, rank);
                 } else {
-                    src << ", __size_" << var_name << "_"
-                        << mem_name;
+                    src << ", " << GpuNames::member_size(var_name,
+                        mem_name);
                 }
             } else {
                 std::string key = var_name + "." + mem_name;
@@ -2545,8 +2541,8 @@ public:
                         }
                     }
                     if (!found) {
-                        src << ", __size_" << var_name << "_"
-                            << mem_name;
+                        src << ", " << GpuNames::member_size(var_name,
+                            mem_name);
                     }
                 }
             }
@@ -2902,8 +2898,8 @@ public:
                             ASR::Array_t *mem_arr =
                                 ASR::down_cast<ASR::Array_t>(inner);
                             std::string data_name =
-                                "__data_" + std::string(arg->m_name)
-                                + "_" + mem_name;
+                                GpuNames::member_data(arg->m_name,
+                                    mem_name);
                             std::string elem_type_str;
                             if (is_struct_type(mem_arr->m_type)) {
                                 elem_type_str = get_struct_name(mv);
@@ -2916,8 +2912,8 @@ public:
                                 << "* " << data_name;
                             func_array_data_params[key] = data_name;
                             std::string size_name =
-                                "__size_" + std::string(arg->m_name)
-                                + "_" + mem_name;
+                                GpuNames::member_size(arg->m_name,
+                                    mem_name);
                             src << ", int " << size_name;
                             func_array_size_params[key] = size_name;
                             // Per-dimension extents, so that
@@ -2974,24 +2970,23 @@ public:
                     desc_per_dim = true;
                     std::string aname(arg->m_name);
                     for (size_t d = 0; d < arr->n_dims; d++) {
-                        std::string dim_name = "__size_" + aname
-                            + "_dim" + std::to_string(d + 1);
+                        std::string dim_name = GpuNames::dim_size(
+                            aname, d);
                         src << ", int " << dim_name;
                         func_array_size_params[aname + "__dim"
                             + std::to_string(d + 1)] = dim_name;
                     }
                     // Register total size as the product
-                    std::string total = "__size_" + aname + "_dim1";
+                    std::string total = GpuNames::dim_size(aname, 0);
                     for (size_t d = 1; d < arr->n_dims; d++) {
-                        total += " * __size_" + aname + "_dim"
-                            + std::to_string(d + 1);
+                        total += " * " + GpuNames::dim_size(aname, d);
                     }
                     func_array_size_params[aname] = "("
                         + total + ")";
                 }
                 if (!extents_explicit && !desc_per_dim) {
-                    std::string size_name = std::string("__size_")
-                        + arg->m_name;
+                    std::string size_name = GpuNames::array_size(
+                        arg->m_name);
                     src << ", int " << size_name;
                     func_array_size_params[std::string(arg->m_name)]
                         = size_name;
@@ -3021,8 +3016,8 @@ public:
                     std::string aname(arg->m_name);
                     std::string total;
                     for (size_t d = 0; d < aarr->n_dims; d++) {
-                        std::string dim_name = "__size_" + aname + "_dim"
-                            + std::to_string(d + 1);
+                        std::string dim_name = GpuNames::dim_size(
+                            aname, d);
                         src << ", int " << dim_name;
                         func_array_size_params[aname + "__dim"
                             + std::to_string(d + 1)] = dim_name;
@@ -3472,8 +3467,8 @@ public:
             }
             if (!has_null_dim) continue;
             for (size_t d = 0; d < arr->n_dims; d++) {
-                std::string dim_size_name = "__size_" + args[i].name
-                    + "_dim" + std::to_string(d + 1);
+                std::string dim_size_name = GpuNames::dim_size(
+                    args[i].name, d);
                 scalar_args.push_back({dim_size_name, "int"});
             }
         }
@@ -3574,18 +3569,18 @@ public:
                                 et = gpu_type(mem_arr->m_type);
                             }
                             std::string data_name =
-                                "__data_" + args[i].name + "_"
-                                + mem_name;
+                                GpuNames::member_data(args[i].name,
+                                    mem_name);
                             packed_arrays.push_back({
                                 data_name, et, false, "", 0, 0});
                             std::string off_name =
-                                "__offsets_" + args[i].name + "_"
-                                + mem_name;
+                                GpuNames::member_offsets(args[i].name,
+                                    mem_name);
                             packed_arrays.push_back({
                                 off_name, "int", false, "", 0, 0});
                             std::string sizes_name =
-                                "__sizes_" + args[i].name + "_"
-                                + mem_name;
+                                GpuNames::member_sizes(args[i].name,
+                                    mem_name);
                             packed_arrays.push_back({
                                 sizes_name, "int", false, "", 0, 0});
                         }
@@ -3669,8 +3664,8 @@ public:
                                     et = gpu_type(mem_arr->m_type);
                                 }
                                 std::string data_name =
-                                    "__data_" + args[i].name + "_"
-                                    + mem_name;
+                                    GpuNames::member_data(args[i].name,
+                                        mem_name);
                                 src << ",\n    " << global_prefix()
                                     << et << "* "
                                     << data_name
@@ -3680,8 +3675,8 @@ public:
                                     {et, data_name,
                                      GpuKernelParamKind::Buffer});
                                 std::string off_name =
-                                    "__offsets_" + args[i].name + "_"
-                                    + mem_name;
+                                    GpuNames::member_offsets(args[i].name,
+                                        mem_name);
                                 src << ",\n    " << global_prefix()
                                     << "int* "
                                     << off_name
@@ -3691,8 +3686,8 @@ public:
                                     {"int", off_name,
                                      GpuKernelParamKind::Buffer});
                                 std::string sizes_name =
-                                    "__sizes_" + args[i].name + "_"
-                                    + mem_name;
+                                    GpuNames::member_sizes(args[i].name,
+                                        mem_name);
                                 src << ",\n    " << global_prefix()
                                     << "int* "
                                     << sizes_name
@@ -3824,12 +3819,12 @@ public:
                             std::string key = args[i].name + "."
                                 + mem_name;
                             std::string size_name =
-                                "__size_" + args[i].name + "_"
-                                + mem_name;
+                                GpuNames::member_size(args[i].name,
+                                    mem_name);
                             func_array_size_params[key] = size_name;
                             std::string data_name =
-                                "__data_" + args[i].name + "_"
-                                + mem_name;
+                                GpuNames::member_data(args[i].name,
+                                    mem_name);
                             func_array_data_params[key] = data_name;
                             size_t rank = struct_member_rank(mv);
                             if (rank > 1) {
@@ -3860,16 +3855,15 @@ public:
                         std::string key = args[i].name + "."
                             + mem_name;
                         std::string data_name =
-                            "__data_" + args[i].name + "_"
-                            + mem_name;
+                            GpuNames::member_data(args[i].name, mem_name);
                         func_array_data_params[key] = data_name;
                         std::string off_name =
-                            "__offsets_" + args[i].name + "_"
-                            + mem_name;
+                            GpuNames::member_offsets(args[i].name,
+                                mem_name);
                         struct_array_offset_params[key] = off_name;
                         std::string sizes_name =
-                            "__sizes_" + args[i].name + "_"
-                            + mem_name;
+                            GpuNames::member_sizes(args[i].name,
+                                mem_name);
                         struct_array_sizes_params[key] = sizes_name;
                     }
                 }
@@ -3905,17 +3899,17 @@ public:
             for (size_t d = 0; d < arr->n_dims; d++) {
                 std::string dim_key = args[i].name + "__dim"
                     + std::to_string(d + 1);
-                std::string dim_var = "__size_" + args[i].name
-                    + "_dim" + std::to_string(d + 1);
+                std::string dim_var = GpuNames::dim_size(
+                    args[i].name, d);
                 func_array_size_params[dim_key] = dim_var;
             }
             // Also register the total flat size as the product of
             // per-dimension sizes so existing ArraySize lookups work.
-            std::string total_expr = "__size_" + args[i].name
-                + "_dim1";
+            std::string total_expr = GpuNames::dim_size(
+                args[i].name, 0);
             for (size_t d = 1; d < arr->n_dims; d++) {
-                total_expr += " * __size_" + args[i].name
-                    + "_dim" + std::to_string(d + 1);
+                total_expr += " * " + GpuNames::dim_size(
+                    args[i].name, d);
             }
             func_array_size_params[args[i].name] = "("
                 + total_expr + ")";
@@ -5780,7 +5774,7 @@ public:
         } else if (!arr_var_name.empty()) {
             // pass_array_by_data names the extents of an assumed shape dummy
             // after the dummy itself.
-            return "__size_" + arr_var_name + "_dim" + std::to_string(d + 1);
+            return GpuNames::dim_size(arr_var_name, d);
         }
         throw CodeGenError("gpu offload: the extent of dimension "
             + std::to_string(d + 1) + " of "
