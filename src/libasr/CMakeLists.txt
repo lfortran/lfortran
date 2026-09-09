@@ -91,6 +91,7 @@ set(SRC
     pass/gpu_offload_intrinsics.cpp
     pass/gpu_offload_array_ops.cpp
     pass/gpu_offload_import.cpp
+    pass/gpu_offload_kernel_scope.cpp
     pass/device_partition.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
