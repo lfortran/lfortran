@@ -2307,6 +2307,37 @@ public:
         }
     }
 
+    // A launch and the kernel it launches are made together, and the passes
+    // between the two rewrite both: what one of them does to a kernel dummy
+    // it has to do to the argument the launch passes in that position. The
+    // launch is laid out argument by argument against the kernel's own
+    // dummies, so the two lists have to stay the same length, and each dummy
+    // has to be a variable to read that layout from.
+    void verify_gpu_kernel_launch_signature(const GpuKernelLaunch_t &x,
+            const ASR::Function_t &kernel) {
+        std::string kernel_name(kernel.m_name);
+        require_id(x.n_args == kernel.n_args,
+            "asr.verify.gpu_kernel_launch.argument_count",
+            "GpuKernelLaunch passes " + std::to_string(x.n_args) +
+                " arguments to kernel '" + kernel_name + "', which declares " +
+                std::to_string(kernel.n_args));
+        for (size_t i = 0; i < x.n_args; i++) {
+            std::string at = "GpuKernelLaunch argument " +
+                std::to_string(i + 1) + " of '" + kernel_name + "'";
+            require_id(x.m_args[i].m_value != nullptr,
+                "asr.verify.gpu_kernel_launch.argument_present",
+                at + " is absent; a kernel launch has no optional argument");
+            ASR::symbol_t *dummy = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*kernel.m_args[i])) {
+                dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
+            }
+            require_id(dummy && ASR::is_a<ASR::Variable_t>(*dummy),
+                "asr.verify.gpu_kernel_launch.dummy_is_a_variable",
+                "the kernel dummy for " + at + " is not a variable");
+        }
+    }
+
     // TODO: also verify that a Device function only calls Device
     // or HostDevice functions. That invariant does not hold yet: a kernel body
     // is copied verbatim from the host loop, so it still calls Host functions
@@ -2317,6 +2348,8 @@ public:
             "GpuKernelLaunch::m_kernel '" +
                 std::string(ASRUtils::symbol_name(x.m_kernel)) +
                 "' must be a function that runs on the device");
+        verify_gpu_kernel_launch_signature(x,
+            *ASR::down_cast<ASR::Function_t>(x.m_kernel));
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 

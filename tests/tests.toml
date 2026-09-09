@@ -5764,3 +5764,7 @@ asr = true
 [[test]]
 filename = "asr/verify/implicit_interface_call_target.asr"
 asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_argument_count.asr"
+asr = true
