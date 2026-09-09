@@ -5561,25 +5561,11 @@ public:
             }
             case ASR::exprType::ArraySize: {
                 ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(expr);
-                // An elementwise array expression records no shape of its
-                // own; it has the shape of its array operand, so walk down
-                // to the operand that carries it. The offload pre-flight
-                // resolves such an extent the same way, so the count the
-                // device works out here is the one the host sized the
-                // buffer with.
-                ASR::expr_t *av = as->m_v;
-                for (int hop = 0; hop < 8 && av != nullptr; hop++) {
-                    if (ASR::is_a<ASR::Var_t>(*av)
-                            || ASR::is_a<ASR::StructInstanceMember_t>(*av)
-                            || !gpu_section_extent_ranges(av,
-                                as->m_dim).empty()) {
-                        break;
-                    }
-                    ASR::expr_t *next = gpu_elementwise_shape_source(av);
-                    if (next == nullptr) break;
-                    av = next;
-                }
-                if (av == nullptr) av = as->m_v;
+                // Which operand carries the shape is settled once, by
+                // gpu_shape_source(); the offload pre-flight and the launch
+                // read it off the same operand, so the count the device
+                // works out here is the one the host sized the buffer with.
+                ASR::expr_t *av = gpu_shape_source(as->m_v, as->m_dim);
                 if (as->m_value) {
                     visit_expr(as->m_value);
                 } else if (ASR::is_a<ASR::Var_t>(*av)) {

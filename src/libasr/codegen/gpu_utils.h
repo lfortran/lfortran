@@ -1165,6 +1165,29 @@ public:
     }
 };
 
+// The operand a `size()` over `e` reads its shape off.
+//
+// An elementwise array expression carries no shape of its own, so the walk
+// descends through its operands until it reaches something that does: a
+// name, a struct component, or a section, whose ranges span the extent by
+// themselves whatever the base is. Every consumer walks down to the same
+// operand, so the count the device works out and the count the host sized
+// a buffer with are read off the same expression.
+inline ASR::expr_t* gpu_shape_source(ASR::expr_t *e, ASR::expr_t *dim) {
+    ASR::expr_t *out = e;
+    for (int hop = 0; hop < 8 && out != nullptr; hop++) {
+        if (ASR::is_a<ASR::Var_t>(*out)
+                || ASR::is_a<ASR::StructInstanceMember_t>(*out)
+                || !gpu_section_extent_ranges(out, dim).empty()) {
+            break;
+        }
+        ASR::expr_t *next = gpu_elementwise_shape_source(out);
+        if (next == nullptr) break;
+        out = next;
+    }
+    return out == nullptr ? e : out;
+}
+
 // The value bound to the integer scalar `name` in `body`, or nullptr when
 // the name is not defined exactly once there. This is how a workspace
 // extent reaches through an ASSOCIATE name: once the offload pass splices
