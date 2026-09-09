@@ -10518,6 +10518,18 @@ public:
         // launches on, so this holds for every dialect: an extent written
         // in terms of a spliced callee's own dummy names a symbol that no
         // longer exists once the callee is gone.
+        //
+        // What this cannot see, and what nothing here can: the workspaces
+        // the passes after this one create. `subroutine_from_function`
+        // turns a call whose result is an array into a temporary at the
+        // call site, `array_struct_temporary` and `array_op` lower array
+        // expressions into temporaries of their own, and every one of
+        // those is a local of the kernel that does not exist yet. Over the
+        // GPU corpus a third of the launches that carry a workspace at all
+        // reach `device_launch_expand` with more of them than were counted
+        // here. So this pre-flight is a filter, not a verdict: it keeps on
+        // the host the loops it can already tell apart, and the launch
+        // layout asks the same question again of the kernel that exists.
         {
             std::vector<std::string> kernel_arg_names;
             collect_kernel_arg_names(work, enclosing_block_scopes,

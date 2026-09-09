@@ -1772,20 +1772,15 @@ class DeviceLaunchExpandVisitor :
                         if (sit != member_sizes_bufs.end()) {
                             size_t rank = dim.struct_member_rank;
                             if (rank == 0) rank = 1;
-                            // The element the extent names, or the
-                            // first one when the index is the loop
-                            // variable and so has no value on the host --
-                            // which is what the device sizes its own slice
-                            // from, so both sides step through the buffer
-                            // together. While the loop still exists
-                            // gpu_launch_is_supported() declines that
-                            // second shape rather than assume every
-                            // element is alike; by here the loop is gone
-                            // and matching the device is all that is left.
-                            int64_t elem = dim.struct_member_elem_index;
-                            if (elem < 0) elem = 0;
+                            // The element the extent names. An extent
+                            // that names the loop variable instead has no
+                            // element the host can point at, and the check
+                            // this expansion runs first turns such a launch
+                            // down, so what reaches here is an index the
+                            // device strides by too.
                             extent = b.i2i_t(member_element_count(loc,
-                                sit->second, b.i32((int) elem + 1),
+                                sit->second,
+                                b.i32((int) dim.struct_member_elem_index + 1),
                                 rank), int64);
                         }
                     } else {
