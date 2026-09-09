@@ -259,6 +259,11 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "a workspace sized from a struct element "
                 "whose shape may differ per thread";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
+            if (!decline.name.empty()) {
+                return unsupported + "the per-thread workspace for `" +
+                    decline.name + "`, whose extent cannot be rebuilt on "
+                    "the host";
+            }
             return unsupported + "a variable length array whose extent "
                 "cannot be rebuilt on the host";
         case GpuDeclineReason::KernelArgumentCountMismatch:

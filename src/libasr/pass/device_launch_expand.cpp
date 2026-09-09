@@ -10,6 +10,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <functional>
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -531,13 +532,33 @@ class DeviceLaunchExpandVisitor :
     public:
 
         DeviceLaunchExpandVisitor(Allocator &al_,
-                ASR::TranslationUnit_t &unit_) :
-            PassVisitor(al_, nullptr), unit(unit_) {}
+                ASR::TranslationUnit_t &unit_,
+                const PassOptions &pass_options_) :
+            PassVisitor(al_, nullptr), unit(unit_),
+            pass_options(pass_options_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            // `gpu_offload` asked this same question before it committed the
+            // loop, but it asked it of a draft kernel: the passes between
+            // the two turn function results into temporaries, array
+            // expressions into element loops and array extents into extra
+            // arguments, so the kernel that reaches here is not the one the
+            // decision was made about. Ask again, of the kernel the device
+            // code generator will actually see, rather than lay out a launch
+            // whose shape was never checked.
+            GpuDecline decline;
+            if (!gpu_launch_is_supported(al, x.m_kernel, x.m_args, x.n_args,
+                    decline)) {
+                report_launch_declined(x.base.base.loc, decline);
+                remove_original_stmt = true;
+                return;
+            }
             Vec<ASR::stmt_t*> stmts;
             stmts.reserve(al, 8);
-            expand_launch(x, stmts);
+            if (!expand_launch(x, stmts)) {
+                remove_original_stmt = true;
+                return;
+            }
             pass_result.reserve(al, stmts.size());
             for (size_t i = 0; i < stmts.size(); i++) {
                 pass_result.push_back(al, stmts[i]);
@@ -561,6 +582,7 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
+        const PassOptions &pass_options;
         // Scalar argument struct created for each kernel, by kernel name.
         std::map<std::string, ASR::symbol_t*> scalar_arg_structs;
         // Size of the first element of a decomposed struct member, by
@@ -570,6 +592,29 @@ class DeviceLaunchExpandVisitor :
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
         std::map<std::string, ASR::expr_t*> member_sizes_bufs;
+
+        // A launch this pass cannot lay out, found once the loop it came
+        // from is gone. `gpu_offload` answers the same question while the
+        // loop is still there and leaves it on the host; there is nothing
+        // left to leave it on here, so this is an error whether or not the
+        // CPU fallback was asked for. The wording is the one every decline
+        // is phrased in, so that the two stages cannot describe the same
+        // limitation differently.
+        void report_launch_declined(const Location &where,
+                const GpuDecline &decline) {
+            if (pass_options.diagnostics == nullptr) return;
+            std::string why = gpu_decline_message(decline);
+            if (pass_options.gpu_decline_stats) {
+                std::cerr << "gpu-decline: " << gpu_decline_class_name(
+                    gpu_decline_class(decline,
+                        gpu_device_capabilities(pass_options)))
+                    << ": " << why << std::endl;
+            }
+            pass_options.diagnostics->message_label(
+                "this parallel loop was offloaded to the gpu, but its "
+                "launch cannot be laid out: " + why,
+                {where}, why, diag::Level::Error, diag::Stage::ASRPass);
+        }
 
         ASR::call_arg_t call_arg(const Location &loc, ASR::expr_t *value) {
             ASR::call_arg_t arg;
@@ -1510,7 +1555,10 @@ class DeviceLaunchExpandVisitor :
             return false;
         }
 
-        void expand_launch(const ASR::GpuKernelLaunch_t &x,
+        // False when a shape only the passes after `gpu_offload` create
+        // stops the layout part way; the caller then drops the launch and
+        // the reported error fails the build.
+        bool expand_launch(const ASR::GpuKernelLaunch_t &x,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
@@ -1751,14 +1799,14 @@ class DeviceLaunchExpandVisitor :
                         // Nothing is left to fall back on: the loop this
                         // launch came from is gone, so a workspace the host
                         // cannot size has to be reported rather than
-                        // guessed at. gpu_launch_is_supported() declines
-                        // such a launch while the loop is still there;
-                        // this is the backstop for a shape only the later
-                        // passes create.
-                        throw LCompilersException("the gpu backend cannot "
-                            "size the per-thread workspace for '"
-                            + workspace.var_name + "': its extent is not "
-                            "known on the host");
+                        // guessed at. The check above this expansion turns
+                        // down every extent it can rebuild nothing for, so
+                        // what reaches here is a workspace sized from a
+                        // struct member with no sizes buffer of its own.
+                        report_launch_declined(loc, GpuDecline(
+                            GpuDeclineReason::LaunchVlaExtentNotRebuildable,
+                            workspace.var_name));
+                        return false;
                     }
                     n_elements = b.Mul(n_elements, extent);
                 }
@@ -1802,6 +1850,7 @@ class DeviceLaunchExpandVisitor :
             for (ASR::expr_t *workspace : workspaces) {
                 out.push_back(al, b.Deallocate(workspace));
             }
+            return true;
         }
 
         void fill_geometry(const Location &loc, Vec<ASR::stmt_t*> &out,
@@ -1843,7 +1892,7 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!gpu_device_capabilities(pass_options).device_selected()) {
         return;
     }
-    DeviceLaunchExpandVisitor v(al, unit);
+    DeviceLaunchExpandVisitor v(al, unit, pass_options);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
