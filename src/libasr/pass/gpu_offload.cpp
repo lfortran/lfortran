@@ -2571,20 +2571,24 @@ private:
 // owns them rather than each exit remembering to.
 class GpuKernelDraftGuard {
 public:
-    GpuKernelDraftGuard(SymbolTable *scope, std::vector<std::string> &names,
-            int &counter)
-        : scope_(scope), names_(names), counter_(counter),
+    GpuKernelDraftGuard(SymbolTable *scope,
+            std::vector<ASR::symbol_t*> &blocks, int &counter)
+        : scope_(scope), blocks_(blocks), counter_(counter),
           saved_counter_(counter) {}
 
     ~GpuKernelDraftGuard() {
         if (committed_) return;
-        for (const std::string &n : names_) {
-            // One already moved into the kernel goes with it.
-            if (scope_ != nullptr && scope_->get_symbol(n) != nullptr) {
-                scope_->erase_symbol(n);
+        for (ASR::symbol_t *b : blocks_) {
+            if (scope_ == nullptr) continue;
+            // One already moved into the kernel goes with it, and a name
+            // the scope has since given to something else is not this
+            // block's to drop.
+            std::string name = ASRUtils::symbol_name(b);
+            if (scope_->get_symbol(name) == b) {
+                scope_->erase_symbol(name);
             }
         }
-        names_.clear();
+        blocks_.clear();
         counter_ = saved_counter_;
     }
 
@@ -2592,7 +2596,7 @@ public:
 
 private:
     SymbolTable *scope_;
-    std::vector<std::string> &names_;
+    std::vector<ASR::symbol_t*> &blocks_;
     int &counter_;
     int saved_counter_;
     bool committed_ = false;
@@ -4212,7 +4216,7 @@ public:
         block_scope->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         current_scope->add_symbol(block_name, block_sym);
-        kernel_block_names.push_back(block_name);
+        kernel_blocks.push_back(block_sym);
         return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
             block_sym));
     }
@@ -7154,7 +7158,7 @@ public:
             ASR::symbol_t *block_sym =
                 ASR::down_cast<ASR::symbol_t>(block);
             current_scope->add_symbol(block_name, block_sym);
-            kernel_block_names.push_back(block_name);
+            kernel_blocks.push_back(block_sym);
             new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
                 al, loc, -1, block_sym)));
             changed = true;
@@ -8169,7 +8173,7 @@ public:
                 ASR::down_cast<ASR::symbol_t>(block);
             scope->add_symbol(block_name, block_sym);
             if (scope == current_scope) {
-                kernel_block_names.push_back(block_name);
+                kernel_blocks.push_back(block_sym);
             }
             new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
                 al, stmt->base.loc, -1, block_sym)));
@@ -9105,7 +9109,7 @@ public:
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         parent_scope->add_symbol(block_name, block_sym);
         if (parent_scope == current_scope) {
-            kernel_block_names.push_back(block_name);
+            kernel_blocks.push_back(block_sym);
         }
         return ASRUtils::STMT(ASR::make_BlockCall_t(al, ab->base.base.loc,
             -1, block_sym));
@@ -9143,7 +9147,7 @@ public:
             parent_scope->add_symbol(name, item.second);
             if (ASR::is_a<ASR::Block_t>(*item.second)
                     && parent_scope == current_scope) {
-                kernel_block_names.push_back(name);
+                kernel_blocks.push_back(item.second);
             }
         }
     }
@@ -9321,9 +9325,16 @@ public:
             && ASRUtils::symbol_get_past_external(found) == sym;
     }
 
-    // The BLOCKs and ASSOCIATEs the kernel was given copies of, so that
-    // a declined offload can drop them again.
-    std::vector<std::string> kernel_block_names;
+    // The BLOCKs and ASSOCIATEs the kernel was given copies of, so that a
+    // declined offload can drop them again, and so that only a copy this
+    // pass made is moved into the kernel.
+    //
+    // The blocks are held as the symbols themselves rather than as their
+    // names. A name says which entry of a scope a block is filed under
+    // today, which is not the same question as which block it is: a scope
+    // renames what it takes in, and one spelling can belong to two
+    // different blocks in two different scopes.
+    std::vector<ASR::symbol_t*> kernel_blocks;
 
     // Copies a loop nest so that the pass can rewrite it without touching
     // the loop the host would run if the offload is declined.
@@ -9351,7 +9362,7 @@ public:
                 std::string(orig->m_name) + "_gpu");
             blk->m_name = s2c(al, name);
             current_scope->add_symbol(name, copy);
-            kernel_block_names.push_back(name);
+            kernel_blocks.push_back(copy);
             return ASRUtils::STMT(ASR::make_BlockCall_t(al,
                 stmt->base.loc, bc->m_label, copy));
         }
@@ -9375,7 +9386,7 @@ public:
                 std::string(orig->m_name) + "_gpu");
             ab->m_name = s2c(al, name);
             current_scope->add_symbol(name, copy);
-            kernel_block_names.push_back(name);
+            kernel_blocks.push_back(copy);
             return ASRUtils::STMT(ASR::make_AssociateBlockCall_t(al,
                 stmt->base.loc, copy));
         }
@@ -9711,13 +9722,13 @@ public:
         // way to a kernel cannot reach the host, and a decline has
         // nothing to put back.
         ParallelLoopNest work;
-        kernel_block_names.clear();
+        kernel_blocks.clear();
         // From here on the pass is drafting a kernel: it copies the blocks of
         // the nest into this scope and takes a kernel number. Every exit
         // below that leaves the loop on the host drops both, whichever exit
         // it is; the draft is handed to the kernel by committing the guard
         // once the launch is known to be supported.
-        GpuKernelDraftGuard draft_guard(current_scope, kernel_block_names,
+        GpuKernelDraftGuard draft_guard(current_scope, kernel_blocks,
             gpu_kernel_counter);
         {
             ASRUtils::ExprStmtDuplicator dup(al);
@@ -12715,15 +12726,15 @@ public:
                         // would steal the host nest if the launch is then
                         // declined.
                         bool is_copy = false;
-                        for (const std::string &n : kernel_block_names) {
-                            if (n == block_name) {
+                        for (ASR::symbol_t *b : kernel_blocks) {
+                            if (b == bc->m_m) {
                                 is_copy = true;
                                 break;
                             }
                         }
                         if (!is_copy) continue;
                         process_block_for_kernel(block, true);
-                        if (orig_scope->get_symbol(block_name)) {
+                        if (orig_scope->get_symbol(block_name) == bc->m_m) {
                             orig_scope->erase_symbol(block_name);
                         }
                         if (!kernel_scope->get_symbol(block_name)) {
