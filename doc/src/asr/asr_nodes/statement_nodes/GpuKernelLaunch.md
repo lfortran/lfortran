@@ -37,6 +37,14 @@ The kernel is an ordinary [Function](../symbol_nodes/Function.md); what makes
 it launchable is that its signature has `exec_space = Kernel`, and a kernel
 has no result. See [exec_space](../enum_nodes/exec_space.md).
 
+Before creating a launch, GPU offload checks the allocation of allocatable
+array results in callees that remain out of line. Nested or multiple allocation
+sites must agree with a buffer shape established by an unconditional fixed
+allocation. Otherwise the loop is rejected while the original loop is still
+available; `--gpu-allow-cpu-fallback` instead runs that loop on the CPU.
+Reallocation and conditional assignments remain eligible when they preserve
+every extent, not just the total element count.
+
 ## Examples
 
 ```clojure

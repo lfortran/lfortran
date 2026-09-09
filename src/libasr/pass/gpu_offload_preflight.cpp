@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -289,6 +291,121 @@ bool gpu_block_workspace_extents_resolvable(
             }
         });
     return ok;
+}
+
+// An out-of-line result becomes a caller-owned buffer. An unconditional
+// allocation may establish its shape, but every other allocation must
+// agree: selecting one branch or the last allocation is not sound.
+class GpuResultAllocationChecker :
+        public ASRUtils::BlockBodyWalkVisitor<GpuResultAllocationChecker> {
+    ASR::symbol_t *result;
+    size_t depth = 0;
+    size_t allocations = 0;
+    std::vector<int64_t> buffer_shape;
+
+    bool is_result(ASR::expr_t *target) const {
+        target = ASRUtils::get_past_array_physical_cast(target);
+        return target && ASR::is_a<ASR::Var_t>(*target) &&
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(target)->m_v) == result;
+    }
+
+    static std::vector<ASR::expr_t*> lengths_of(const ASR::alloc_arg_t &arg) {
+        std::vector<ASR::expr_t*> lengths;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            lengths.push_back(arg.m_dims[d].m_length);
+        }
+        return lengths;
+    }
+
+    static std::vector<int64_t> constant_shape(
+            const std::vector<ASR::expr_t*> &lengths) {
+        std::vector<int64_t> shape;
+        for (ASR::expr_t *length : lengths) {
+            int64_t extent = 0;
+            if (!try_eval_int_constant(length, extent)) return {};
+            shape.push_back(std::max<int64_t>(extent, 0));
+        }
+        return shape;
+    }
+
+    void record(const std::vector<ASR::expr_t*> &lengths) {
+        allocations++;
+        if (!buffer_shape.empty()) {
+            // Equal element counts alone are insufficient when individual
+            // dimensions have different lengths.
+            if (constant_shape(lengths) != buffer_shape) supported = false;
+        } else if (depth != 1 || allocations > 1) {
+            supported = false;
+        }
+    }
+
+    void record(const ASR::alloc_arg_t &arg) {
+        if (is_result(arg.m_a)) record(lengths_of(arg));
+    }
+
+public:
+    bool supported = true;
+
+    GpuResultAllocationChecker(ASR::symbol_t *result,
+            ASR::stmt_t **body, size_t n_body) : result(result) {
+        // The out-of-line call path propagates an explicit top-level
+        // allocation to the caller's result buffer.
+        for (size_t i = 0; i < n_body; i++) {
+            if (!ASR::is_a<ASR::Allocate_t>(*body[i])) continue;
+            ASR::Allocate_t *alloc = ASR::down_cast<ASR::Allocate_t>(body[i]);
+            for (size_t j = 0; j < alloc->n_args; j++) {
+                if (!is_result(alloc->m_args[j].m_a)) continue;
+                buffer_shape = constant_shape(lengths_of(alloc->m_args[j]));
+                if (!buffer_shape.empty()) return;
+            }
+        }
+    }
+
+    void visit_stmt(const ASR::stmt_t &stmt) {
+        depth++;
+        ASR::BaseWalkVisitor<GpuResultAllocationChecker>::visit_stmt(stmt);
+        depth--;
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) record(x.m_args[i]);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) record(x.m_args[i]);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_result(x.m_target)) return;
+        ASR::expr_t *value = ASRUtils::get_past_array_physical_cast(x.m_value);
+        // Scalar broadcast changes the elements, not the allocation.
+        if ((x.m_realloc_lhs || x.m_move_allocation) &&
+                ASRUtils::is_array(ASRUtils::expr_type(value)) &&
+                !ASR::is_a<ASR::ArrayBroadcast_t>(*value)) {
+            std::vector<ASR::expr_t*> lengths;
+            if (!gpu_expr_shape_extents(value, nullptr, lengths)) {
+                lengths.clear();
+            }
+            record(lengths);
+        }
+    }
+};
+
+bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn) {
+    if (!fn.m_return_var ||
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(fn.m_return_var)) ||
+            !ASRUtils::is_array(ASRUtils::expr_type(fn.m_return_var))) {
+        return true;
+    }
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*fn.m_return_var));
+    GpuResultAllocationChecker checker(ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(fn.m_return_var)->m_v),
+        fn.m_body, fn.n_body);
+    for (size_t i = 0; i < fn.n_body; i++) {
+        checker.visit_stmt(*fn.m_body[i]);
+    }
+    return checker.supported;
 }
 
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,

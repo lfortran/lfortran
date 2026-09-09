@@ -117,6 +117,7 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
         case GpuDeclineReason::UngatherableStridedSection:
         case GpuDeclineReason::DeviceFunctionInlining:
+        case GpuDeclineReason::FunctionResultAllocation:
         case GpuDeclineReason::NestedArraySection:
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
         case GpuDeclineReason::StructDeclarationUnknown:
@@ -182,6 +183,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "a strided section cannot be gathered for the gpu";
         case GpuDeclineReason::DeviceFunctionInlining:
             return "a device function cannot be inlined";
+        case GpuDeclineReason::FunctionResultAllocation:
+            return "the allocatable array result of '" + decline.name +
+                "' has no single allocation the gpu can use";
         case GpuDeclineReason::NestedArraySection:
             return "a nested array section cannot be addressed on the gpu";
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
