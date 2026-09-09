@@ -2223,7 +2223,7 @@ public:
                 + " are not available inside a gpu kernel",
                 ai->base.base.loc);
         }
-        std::string out, stride;
+        std::vector<std::string> subscripts;
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right
                 ? ai->m_args[d].m_right : ai->m_args[d].m_left;
@@ -2233,21 +2233,17 @@ public:
                     + " has no subscript a gpu kernel can evaluate",
                     ai->base.base.loc);
             }
-            std::string term = "((int)(" + expr_str(idx) + ") - ("
-                + get_lower_bound_str(mem_arr, d,
-                    arr_name + "%" + mem_name) + "))";
-            if (!stride.empty()) {
-                term = "(" + stride + " * " + term + ")";
-            }
-            out += out.empty() ? term : (" + " + term);
-            if (d + 1 < ai->n_args) {
-                std::string ext = struct_member_extent_expr(sizes_param,
-                    arr_idx_str, rank, d);
-                stride = stride.empty() ? ext
-                    : ("(" + stride + " * " + ext + ")");
-            }
+            subscripts.push_back(expr_str(idx));
         }
-        return out;
+        return gpu_linearized_index_str(subscripts,
+            [&](size_t d) {
+                return get_lower_bound_str(mem_arr, d,
+                    arr_name + "%" + mem_name);
+            },
+            [&](size_t d) {
+                return struct_member_extent_expr(sizes_param, arr_idx_str,
+                    rank, d);
+            });
     }
 
     // Emit the array size for a StructInstanceMember expression whose
@@ -5744,9 +5740,6 @@ public:
 
     void emit_linearized_index(ASR::ArrayItem_t *ai,
                                ASR::ttype_t *arr_type) {
-        // Column-major linearization: index = sum_d( (idx_d - lb_d) * stride_d )
-        // stride_0 = 1, stride_1 = dim[0], stride_2 = dim[0]*dim[1], ...
-        // Strides are built as string expressions to handle variable dims.
         ASR::Array_t *arr = nullptr;
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(arr_type));
@@ -5759,36 +5752,23 @@ public:
             arr_var_name = ASRUtils::symbol_name(
                 ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
         }
-        bool first = true;
-        std::string stride = "1";
+        std::vector<std::string> subscripts;
         for (size_t d = 0; d < ai->n_args; d++) {
-            ASR::expr_t *idx = ai->m_args[d].m_right ?
-                ai->m_args[d].m_right : ai->m_args[d].m_left;
-            if (!idx) continue;
-            if (!first) src << " + ";
-            first = false;
-            std::string lb = get_lower_bound_str(arr, d, arr_var_name);
-            if (stride == "1") {
-                src << "((int)(";
-                visit_expr(idx);
-                src << ") - (" << lb << "))";
-            } else {
-                src << "(" << stride << " * ((int)(";
-                visit_expr(idx);
-                src << ") - (" << lb << ")))";
-            }
-            // Only the dimensions a later subscript is strided by need an
-            // extent; the last one is never counted past.
-            if (arr && d < arr->n_dims && d + 1 < ai->n_args) {
-                std::string len_str = dim_extent_str(arr, d, arr_var_name,
-                    ai->base.base.loc);
-                if (stride == "1") {
-                    stride = len_str;
-                } else {
-                    stride = "(" + stride + " * " + len_str + ")";
-                }
-            }
+            ASR::expr_t *idx = ai->m_args[d].m_right
+                ? ai->m_args[d].m_right : ai->m_args[d].m_left;
+            subscripts.push_back(idx ? expr_str(idx) : "");
         }
+        src << gpu_linearized_index_str(subscripts,
+            [&](size_t d) {
+                return get_lower_bound_str(arr, d, arr_var_name);
+            },
+            [&](size_t d) -> std::string {
+                // Only a dimension a later subscript is strided by needs
+                // an extent, and only an array type has one to give.
+                if (arr == nullptr || d >= arr->n_dims) return "";
+                return dim_extent_str(arr, d, arr_var_name,
+                    ai->base.base.loc);
+            });
     }
 
     void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {

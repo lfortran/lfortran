@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <functional>
 #include <set>
 #include <string>
 #include <vector>
@@ -335,6 +336,41 @@ struct GpuKernelParam {
 // linearize `a(i)%m(p,q)`, which needs the extent of every dimension but the
 // last. The host fills the buffer in device_launch_expand and the device
 // reads it in asr_to_gpu_c.h; this is the one place the two agree.
+// The column-major position of the element `subscripts` selects, as device
+// source: the sum over every dimension of its subscript counted from its
+// lower bound, times the extents of the dimensions before it.
+//
+// This is the one position both sides count elements by: the host lays a
+// struct component's data out in array element order and the shader reads
+// it back in that order, and an ordinary array is indexed the same way.
+// Written once, so the two orders cannot come apart.
+//
+// `lower(d)` and `extent(d)` say how those are spelled where the caller
+// reads them -- off the array's own type, or out of the sizes buffer a
+// component's extents travel in. The last dimension is never counted past,
+// so it needs no extent; an empty `extent(d)` says the caller has none for
+// that dimension either, and an empty subscript that it has none for it.
+inline std::string gpu_linearized_index_str(
+        const std::vector<std::string> &subscripts,
+        const std::function<std::string(size_t)> &lower,
+        const std::function<std::string(size_t)> &extent) {
+    std::string out, stride;
+    for (size_t d = 0; d < subscripts.size(); d++) {
+        if (subscripts[d].empty()) continue;
+        std::string term = "((int)(" + subscripts[d] + ") - ("
+            + lower(d) + "))";
+        if (!stride.empty()) term = "(" + stride + " * " + term + ")";
+        out += out.empty() ? term : (" + " + term);
+        if (d + 1 < subscripts.size()) {
+            std::string ext = extent(d);
+            if (ext.empty()) continue;
+            stride = stride.empty() ? ext
+                : ("(" + stride + " * " + ext + ")");
+        }
+    }
+    return out;
+}
+
 // The symbol `name` on `struct_sym` or a type it extends. Inherited
 // components live in the parent Struct, so a lookup that only reads
 // the child's table misses them.
