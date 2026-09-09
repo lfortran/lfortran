@@ -2335,7 +2335,49 @@ public:
             require_id(dummy && ASR::is_a<ASR::Variable_t>(*dummy),
                 "asr.verify.gpu_kernel_launch.dummy_is_a_variable",
                 "the kernel dummy for " + at + " is not a variable");
+            verify_gpu_kernel_launch_argument(x, at, x.m_args[i].m_value,
+                ASR::down_cast<ASR::Variable_t>(dummy));
         }
+    }
+
+    // The block of bytes the host hands over for an argument is the one the
+    // device reads for the dummy in that position, so the two have to
+    // describe the same value. Not the same type: a kernel dummy carries the
+    // data and not the descriptor, so it drops the allocatable or pointer
+    // wrapper the argument may have, and the passes between the launch and
+    // its expansion give the two sides different array physical types and put
+    // the kernel's own arrays in a device address space. What is left, and
+    // what the layout is read from, is the element type, its kind and the
+    // rank.
+    void verify_gpu_kernel_launch_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg,
+            ASR::Variable_t *dummy) {
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *arg_element = ASRUtils::extract_type(arg_type);
+        ASR::ttype_t *dummy_element = ASRUtils::extract_type(dummy->m_type);
+        std::string mismatch = at + " is " +
+            ASRUtils::type_to_str_fortran_symbol(arg_element,
+                ASR::is_a<ASR::StructType_t>(*arg_element)
+                    ? ASRUtils::get_struct_sym_from_struct_expr(arg)
+                    : nullptr, true) +
+            ", but the dummy '" + std::string(dummy->m_name) +
+            "' the device reads it as is " +
+            ASRUtils::type_to_str_fortran_symbol(dummy_element,
+                dummy->m_type_declaration, true);
+        require_id(arg_element->type == dummy_element->type,
+            "asr.verify.gpu_kernel_launch.argument_element_type", mismatch);
+        require_id(ASRUtils::extract_kind_from_ttype_t(arg_element) ==
+                ASRUtils::extract_kind_from_ttype_t(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_element_kind", mismatch);
+        require_id(ASRUtils::extract_n_dims_from_ttype(arg_type) ==
+                ASRUtils::extract_n_dims_from_ttype(dummy->m_type),
+            "asr.verify.gpu_kernel_launch.argument_rank",
+            at + " has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(arg_type)) +
+                ", but the dummy '" + std::string(dummy->m_name) +
+                "' the device reads it as has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(
+                    dummy->m_type)));
     }
 
     // TODO: also verify that a Device function only calls Device
