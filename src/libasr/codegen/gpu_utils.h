@@ -800,7 +800,7 @@ inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
 // the last one. A name written exactly once stands for that value
 // everywhere.
 class GpuScalarBindingCounter :
-        public ASR::BaseWalkVisitor<GpuScalarBindingCounter> {
+        public ASRUtils::BlockBodyWalkVisitor<GpuScalarBindingCounter> {
 public:
     ASR::symbol_t *target;
     size_t n_writes = 0;
@@ -841,27 +841,6 @@ public:
         }
         ASR::BaseWalkVisitor<GpuScalarBindingCounter>
             ::visit_SubroutineCall(x);
-    }
-
-    // The generated walker stops at a BLOCK or ASSOCIATE call, but a write
-    // hidden inside one must still be seen.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
     }
 };
 

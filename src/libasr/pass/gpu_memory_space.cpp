@@ -41,7 +41,8 @@ namespace {
 
 // Every routine a body calls, with the call node itself so the caller can be
 // retargeted at a clone.
-class GpuCallCollector : public ASR::BaseWalkVisitor<GpuCallCollector> {
+class GpuCallCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuCallCollector> {
 public:
     std::vector<ASR::FunctionCall_t*> function_calls;
     std::vector<ASR::SubroutineCall_t*> subroutine_calls;
@@ -55,53 +56,17 @@ public:
         subroutine_calls.push_back(const_cast<ASR::SubroutineCall_t*>(&x));
         ASR::BaseWalkVisitor<GpuCallCollector>::visit_SubroutineCall(x);
     }
-
-    // The base walker stops at a block, whose body is where a kernel keeps
-    // most of its work.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
 };
 
 // Every Associate of a body, so a pointer can take the space of what it
 // points at.
 class GpuAssociateCollector
-        : public ASR::BaseWalkVisitor<GpuAssociateCollector> {
+        : public ASRUtils::BlockBodyWalkVisitor<GpuAssociateCollector> {
 public:
     std::vector<ASR::Associate_t*> associates;
 
     void visit_Associate(const ASR::Associate_t &x) {
         associates.push_back(const_cast<ASR::Associate_t*>(&x));
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
     }
 };
 

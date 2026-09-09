@@ -513,7 +513,8 @@ static std::string struct_member_owner_name(ASR::symbol_t *member,
 }
 
 // Collects all symbols referenced in expressions/statements
-class GpuSymbolCollector : public ASR::BaseWalkVisitor<GpuSymbolCollector> {
+class GpuSymbolCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuSymbolCollector> {
 public:
     Allocator &al;
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols;
@@ -548,14 +549,6 @@ public:
         }
         for (size_t i = 0; i < block->n_body; i++) {
             visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
-            x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
         }
     }
 
@@ -1350,7 +1343,7 @@ public:
 // lowering introduces, which is written repeatedly and therefore must
 // not be folded into a constant.
 class AssignmentTargetCounter :
-    public ASR::BaseWalkVisitor<AssignmentTargetCounter> {
+    public ASRUtils::BlockBodyWalkVisitor<AssignmentTargetCounter> {
 public:
     ASR::symbol_t *target;
     size_t count;
@@ -1388,21 +1381,6 @@ public:
         }
         ASR::BaseWalkVisitor<AssignmentTargetCounter>::visit_SubroutineCall(x);
     }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
 };
 
 // True if `sym` is written exactly once across `body` — the shape of a
@@ -1419,7 +1397,8 @@ static bool is_single_assignment_binding(ASR::symbol_t *sym,
 
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
-class GpuLocalVarCollector : public ASR::BaseWalkVisitor<GpuLocalVarCollector> {
+class GpuLocalVarCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuLocalVarCollector> {
 public:
     std::set<std::string> &local_vars;
     std::set<std::string> &assigned_vars;
@@ -1428,21 +1407,6 @@ public:
     GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av,
         const std::set<SymbolTable*> &scopes = {})
         : local_vars(lv), assigned_vars(av), enclosing_scopes(scopes) {}
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
-            x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         // Check if target is a simple Var (not ArrayItem)
@@ -1498,7 +1462,8 @@ public:
 
 // Collects all Function symbols referenced by FunctionCall/SubroutineCall
 // nodes in the loop body so they can be imported into the kernel.
-class GpuFunctionCollector : public ASR::BaseWalkVisitor<GpuFunctionCollector> {
+class GpuFunctionCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuFunctionCollector> {
 public:
     std::map<std::string, ASR::symbol_t*> functions;
 
@@ -1531,21 +1496,6 @@ public:
         }
         ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_SubroutineCall(x);
     }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
 };
 
 // A statement the device has no way to run. A kernel that held one would
@@ -1574,7 +1524,7 @@ static GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
 
 // The first statement of a body that the device cannot run, and where it is.
 class GpuUnsupportedStatementFinder
-        : public ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder> {
+        : public ASRUtils::BlockBodyWalkVisitor<GpuUnsupportedStatementFinder> {
 public:
     GpuDeclineReason reason;
     Location loc;
@@ -1591,29 +1541,12 @@ public:
         }
         ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder>::visit_stmt(s);
     }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *ab =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
 };
 
 // The routines a body calls directly, past external symbols and type bound
 // procedure declarations.
 class GpuDirectCalleeCollector
-        : public ASR::BaseWalkVisitor<GpuDirectCalleeCollector> {
+        : public ASRUtils::BlockBodyWalkVisitor<GpuDirectCalleeCollector> {
 public:
     std::set<ASR::Function_t*> callees;
 
@@ -1635,23 +1568,6 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         add(x.m_name);
         ASR::BaseWalkVisitor<GpuDirectCalleeCollector>::visit_SubroutineCall(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *ab =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
     }
 };
 
@@ -1689,7 +1605,7 @@ static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is
 // seen too.
 class GpuParallelRegionCollector :
-        public ASR::BaseWalkVisitor<GpuParallelRegionCollector> {
+        public ASRUtils::BlockBodyWalkVisitor<GpuParallelRegionCollector> {
 public:
     std::set<ASR::OMPRegion_t*> loops;
 
@@ -1698,25 +1614,6 @@ public:
             loops.insert(const_cast<ASR::OMPRegion_t*>(&x));
         }
         ASR::BaseWalkVisitor<GpuParallelRegionCollector>::visit_OMPRegion(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
     }
 };
 
@@ -1749,7 +1646,7 @@ public:
 // allocatable with constant ALLOCATE bounds are fine: the Metal backend
 // resolves those extents from the ALLOCATE statement.
 class GpuDeviceFunctionArrayTempChecker :
-        public ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker> {
+        public ASRUtils::BlockBodyWalkVisitor<GpuDeviceFunctionArrayTempChecker> {
 private:
 
     // Entities of the function being checked whose extent is not a
@@ -1780,7 +1677,7 @@ private:
     // compile-time constants, descending into BLOCK and ASSOCIATE
     // scopes so an allocation nested there is seen too.
     class RuntimeAllocCollector :
-            public ASR::BaseWalkVisitor<RuntimeAllocCollector> {
+            public ASRUtils::BlockBodyWalkVisitor<RuntimeAllocCollector> {
     public:
         std::set<ASR::symbol_t*> vars;
 
@@ -1801,24 +1698,6 @@ private:
             }
         }
 
-        void visit_BlockCall(const ASR::BlockCall_t &x) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-            if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
-            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-            for (size_t i = 0; i < blk->n_body; i++) {
-                visit_stmt(*blk->m_body[i]);
-            }
-        }
-
-        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-            if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-            ASR::AssociateBlock_t *blk =
-                ASR::down_cast<ASR::AssociateBlock_t>(b);
-            for (size_t i = 0; i < blk->n_body; i++) {
-                visit_stmt(*blk->m_body[i]);
-            }
-        }
     };
 
 public:
@@ -1899,25 +1778,6 @@ public:
         }
         ASR::BaseWalkVisitor<GpuDeviceFunctionArrayTempChecker>::
             visit_ArrayConstructor(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) {
-            visit_stmt(*blk->m_body[i]);
-        }
     }
 };
 
@@ -2006,7 +1866,8 @@ public:
 
 // Fixes dangling Var references in function bodies by resolving symbol
 // names through the function's scope chain and replacing the Var target.
-class DanglingVarFixer : public ASR::BaseWalkVisitor<DanglingVarFixer> {
+class DanglingVarFixer :
+        public ASRUtils::BlockBodyWalkVisitor<DanglingVarFixer> {
 public:
     SymbolTable *func_scope;
     std::set<std::string> &target_names;
@@ -2021,19 +1882,6 @@ public:
             }
         }
     }
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
 };
 
 // Collects StructInstanceMember references to allocatable array members
@@ -2041,33 +1889,22 @@ public:
 // parameters into separate flat array buffers for Metal.
 // Collects all variable names referenced (read) in a set of statements.
 // Used to determine which variables are live after a parallel loop.
-class PostLoopVarCollector : public ASR::BaseWalkVisitor<PostLoopVarCollector> {
+class PostLoopVarCollector :
+        public ASRUtils::BlockBodyWalkVisitor<PostLoopVarCollector> {
 public:
     std::set<std::string> &referenced_vars;
     PostLoopVarCollector(std::set<std::string> &rv) : referenced_vars(rv) {}
     void visit_Var(const ASR::Var_t &x) {
         referenced_vars.insert(ASRUtils::symbol_name(x.m_v));
     }
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
-            x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
 };
 
 // Collects the symbols targeted by Var nodes in a set of statements,
-// descending into nested Block and AssociateBlock bodies (which the base
-// walker does not enter on its own). Used to decide whether a scope is
-// still needed after its associate aliases have been inlined.
-class VarSymbolCollector : public ASR::BaseWalkVisitor<VarSymbolCollector> {
+// including the bodies of nested Block and AssociateBlock scopes. Used to
+// decide whether a scope is still needed after its associate aliases have
+// been inlined.
+class VarSymbolCollector :
+        public ASRUtils::BlockBodyWalkVisitor<VarSymbolCollector> {
 public:
     std::set<ASR::symbol_t*> &referenced_syms;
     VarSymbolCollector(std::set<ASR::symbol_t*> &rs) : referenced_syms(rs) {}
@@ -2075,25 +1912,10 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         referenced_syms.insert(x.m_v);
     }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
-            x.m_m);
-        for (size_t i = 0; i < ab->n_body; i++) {
-            visit_stmt(*ab->m_body[i]);
-        }
-    }
 };
 
 class GpuAllocStructMemberCollector :
-    public ASR::BaseWalkVisitor<GpuAllocStructMemberCollector> {
+    public ASRUtils::BlockBodyWalkVisitor<GpuAllocStructMemberCollector> {
 public:
     // Maps struct_var_name -> { member_name -> (member_sym, member_type) }
     std::map<std::string,
@@ -2101,13 +1923,6 @@ public:
             alloc_members;
     // Struct var names that have any non-allocatable-array member access
     std::set<std::string> has_non_alloc_access;
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
@@ -2514,7 +2329,7 @@ public:
 // dummy that is not `intent(in)`, or to a callee that cannot be
 // resolved, counts as written.
 class GpuWrittenRootCollector :
-        public ASR::BaseWalkVisitor<GpuWrittenRootCollector> {
+        public ASRUtils::BlockBodyWalkVisitor<GpuWrittenRootCollector> {
 public:
     std::set<ASR::symbol_t*> roots;
     // Every designator that was written, kept alongside the roots so a
@@ -2620,21 +2435,6 @@ public:
         note_call_args(x.m_name, x.m_args, x.n_args);
         ASR::BaseWalkVisitor<GpuWrittenRootCollector>::visit_FunctionCall(x);
     }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
-    }
 };
 
 // `x%c_(k)`: one element of an array of derived type that is itself a
@@ -2653,7 +2453,7 @@ public:
 // An element reached directly from a variable, `c(k)`, is deliberately
 // not collected: that shape is marshalled correctly today.
 class GpuStructElementGatherCollector :
-        public ASR::BaseWalkVisitor<GpuStructElementGatherCollector> {
+        public ASRUtils::BlockBodyWalkVisitor<GpuStructElementGatherCollector> {
 public:
     std::vector<ASR::ArrayItem_t*> found;
 
@@ -2682,21 +2482,6 @@ public:
         }
         ASR::BaseWalkVisitor<GpuStructElementGatherCollector>
             ::visit_ArrayItem(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::Block_t>(*b)) return;
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!b || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
     }
 };
 

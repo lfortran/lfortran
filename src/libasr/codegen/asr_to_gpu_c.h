@@ -48,7 +48,8 @@ static int struct_parent_depth(ASR::Struct_t *st,
     return -1;
 }
 
-class GpuFuncCallCollector : public ASR::BaseWalkVisitor<GpuFuncCallCollector> {
+class GpuFuncCallCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuFuncCallCollector> {
 public:
     std::set<std::string> called;
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -58,15 +59,6 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         called.insert(ASRUtils::symbol_name(x.m_name));
         ASR::BaseWalkVisitor<GpuFuncCallCollector>::visit_SubroutineCall(x);
-    }
-    // A block is part of the routine that calls it.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (ASR::is_a<ASR::Block_t>(*x.m_m)) {
-            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-            for (size_t i = 0; i < block->n_body; i++) {
-                visit_stmt(*block->m_body[i]);
-            }
-        }
     }
 };
 

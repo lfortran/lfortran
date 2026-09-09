@@ -45,7 +45,8 @@ namespace {
 // a type bound procedure declaration counts as a call to what it resolves to,
 // and a routine handed over as an argument counts as one too, because
 // whoever receives it can call it.
-class CalleeCollector : public ASR::BaseWalkVisitor<CalleeCollector> {
+class CalleeCollector :
+        public ASRUtils::BlockBodyWalkVisitor<CalleeCollector> {
 public:
     std::set<ASR::Function_t*> callees;
 
@@ -71,25 +72,6 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         add(x.m_v);
-    }
-
-    // The base walker stops at a block, whose body is where a kernel keeps
-    // most of its work.
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
-        ASR::AssociateBlock_t *block =
-            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
     }
 };
 

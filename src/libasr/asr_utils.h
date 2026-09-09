@@ -330,6 +330,39 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
     }
 }
 
+// A walk visitor that also walks the body of a BLOCK or ASSOCIATE construct.
+//
+// `BlockCall` and `AssociateBlockCall` name their construct through a symbol,
+// and the generated `BaseWalkVisitor` does not follow a symbol out of a
+// statement, so a plain walk stops at the construct and never sees the
+// statements inside it. A visitor that has to see the whole executable part
+// of a scope -- most collectors and most checkers do -- says so by deriving
+// from this instead, rather than by carrying its own copy of the descent.
+template <class StructType>
+class BlockBodyWalkVisitor : public ASR::BaseWalkVisitor<StructType> {
+public:
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s == nullptr || !ASR::is_a<ASR::Block_t>(*s)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(s);
+        for (size_t i = 0; i < block->n_body; i++) {
+            this->visit_stmt(*block->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*s)) return;
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(s);
+        for (size_t i = 0; i < block->n_body; i++) {
+            this->visit_stmt(*block->m_body[i]);
+        }
+    }
+
+};
+
 static inline ASR::symbol_t* symbol_get_past_StructMethodDeclaration(ASR::symbol_t* f){
     LCOMPILERS_ASSERT(f != nullptr);
     if(ASR::is_a<ASR::StructMethodDeclaration_t>(*f)){
