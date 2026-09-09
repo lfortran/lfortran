@@ -228,6 +228,111 @@ public:
         in_workspace_extent = outer;
     }
 
+    // Write a derived extent as device source. What the extent *is* was
+    // settled once, by gpu_derive_extent(): which operand of an elementwise
+    // expression carries the shape, which subscripts of a section span a
+    // range, what a name the kernel body binds stands for, which local
+    // array's own extent an extent reads through. This only writes that one
+    // answer in the names the shader knows, as the launch writes the same
+    // answer in the names the caller knows -- so the stride a thread walks
+    // and the buffer the host allocated cannot be different quantities.
+    void emit_derived_extent(const GpuExtent &e) {
+        switch (e.kind) {
+            case GpuExtentKind::None: {
+                src << "/* unresolved extent */";
+                return;
+            }
+            case GpuExtentKind::Constant: {
+                src << e.int_value;
+                return;
+            }
+            case GpuExtentKind::BinOp: {
+                src << "(";
+                emit_derived_extent(e.children[0]);
+                src << " " << binop_str(e.binop) << " ";
+                emit_derived_extent(e.children[1]);
+                src << ")";
+                return;
+            }
+            case GpuExtentKind::Neg: {
+                src << "(-";
+                emit_derived_extent(e.children[0]);
+                src << ")";
+                return;
+            }
+            case GpuExtentKind::Compare: {
+                src << "(";
+                emit_derived_extent(e.children[0]);
+                src << " " << cmpop_str(e.cmpop) << " ";
+                emit_derived_extent(e.children[1]);
+                src << ")";
+                return;
+            }
+            case GpuExtentKind::Select: {
+                src << "((";
+                emit_derived_extent(e.children[0]);
+                src << ") ? (";
+                emit_derived_extent(e.children[1]);
+                src << ") : (";
+                emit_derived_extent(e.children[2]);
+                src << "))";
+                return;
+            }
+            case GpuExtentKind::Product: {
+                // Parenthesised as a whole: a product of section extents
+                // may itself be an operand of the extent around it.
+                src << "(";
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    if (i > 0) src << " * ";
+                    emit_derived_extent(e.children[i]);
+                }
+                src << ")";
+                return;
+            }
+            case GpuExtentKind::ArrayDim: {
+                // The kernel is handed the extents of an array parameter as
+                // scalar parameters of its own; the dimension asked for
+                // picks one of them.
+                std::string len = looked_up_dim_extent_str(e.name,
+                    (size_t) e.int_value);
+                if (!len.empty()) {
+                    src << len;
+                    return;
+                }
+                break;
+            }
+            case GpuExtentKind::ArgScalar:
+            case GpuExtentKind::ArgMember:
+            case GpuExtentKind::ArgElement:
+            case GpuExtentKind::Size:
+            case GpuExtentKind::Bound: {
+                break;
+            }
+        }
+        // A leaf: a parameter, a component or an element of one, or the
+        // shape of one. The shader names those in its own way, so the leaf
+        // is written by the ordinary lowering -- under the rule that a name
+        // the body binds stands for its value, a pointer into a workspace
+        // being computed before the body gives that name one.
+        bool outer = in_workspace_extent;
+        in_workspace_extent = true;
+        visit_expr(e.expr);
+        in_workspace_extent = outer;
+    }
+
+    // The element count of one thread's slice of a workspace: the product
+    // of its extents, as the shader spells them. Empty when the shader
+    // cannot spell one of them.
+    std::string workspace_extent_str(const GpuVlaWorkspace &ws) {
+        std::string out;
+        for (size_t d = 0; d < ws.dims.size(); d++) {
+            std::string one = workspace_dim_str(ws.var_name, d);
+            if (one.empty()) return "";
+            out = out.empty() ? one : out + " * " + one;
+        }
+        return out;
+    }
+
     // The extent of one dimension of an array backed by a workspace, as the
     // shader spells it, or "" when the array has no workspace.
     std::string workspace_dim_str(const std::string &name, size_t d) {
@@ -239,11 +344,11 @@ public:
             if (dim.is_struct_member_size) {
                 return struct_member_workspace_extent(dim);
             }
-            if (dim.dim_expr == nullptr) return "";
+            if (!dim.derived.ok()) return "";
             std::stringstream save;
             save << src.str();
             src.str("");
-            emit_workspace_extent(dim.dim_expr);
+            emit_derived_extent(dim.derived);
             std::string out = src.str();
             src.str("");
             src << save.str();
@@ -682,49 +787,22 @@ public:
                         return ws.var_name == vname;
                     });
                 if (vla_it != current_vla_infos.end()) {
+                    std::string extent = workspace_extent_str(*vla_it);
                     src << get_indent() << global_prefix() << elem_type
                         << "* " << vname << " = __vla_" << vname
-                        << " + " << dialect.global_thread_id() << " * (";
+                        << " + " << dialect.global_thread_id() << " * ("
+                        << extent << ");\n";
+                    local_alloc_arrays.insert(vname);
                     int64_t total_const_size = 1;
                     bool all_const = true;
-                    for (size_t d = 0; d < vla_it->dims.size(); d++) {
-                        if (d > 0) src << " * ";
-                        if (vla_it->dims[d].is_constant) {
-                            src << vla_it->dims[d].constant_value;
-                            total_const_size *= vla_it->dims[d].constant_value;
-                        } else if (vla_it->dims[d].is_struct_member_size) {
-                            src << struct_member_workspace_extent(
-                                vla_it->dims[d]);
-                            all_const = false;
-                        } else {
-                            emit_workspace_extent(
-                                vla_it->dims[d].dim_expr);
-                            all_const = false;
-                        }
+                    for (const GpuVlaDim &dim : vla_it->dims) {
+                        if (!dim.is_constant) { all_const = false; break; }
+                        total_const_size *= dim.constant_value;
                     }
-                    src << ");\n";
-                    local_alloc_arrays.insert(vname);
                     if (all_const) {
                         alloc_array_sizes[vname] = total_const_size;
                     } else {
-                        std::stringstream save;
-                        save << src.str();
-                        src.str("");
-                        for (size_t d = 0; d < vla_it->dims.size(); d++) {
-                            if (d > 0) src << " * ";
-                            if (vla_it->dims[d].is_constant) {
-                                src << vla_it->dims[d].constant_value;
-                            } else if (vla_it->dims[d].is_struct_member_size) {
-                                src << struct_member_workspace_extent(
-                                    vla_it->dims[d]);
-                            } else {
-                                emit_workspace_extent(
-                                    vla_it->dims[d].dim_expr);
-                            }
-                        }
-                        alloc_array_size_exprs[vname] = src.str();
-                        src.str("");
-                        src << save.str();
+                        alloc_array_size_exprs[vname] = extent;
                     }
                     return;
                 }
@@ -4613,68 +4691,23 @@ public:
                                 "' has no gpu type of the same width");
                         }
                         // Emit a device pointer into the per-thread slice
+                        std::string extent =
+                            workspace_extent_str(*vla_it);
                         src << get_indent() << global_prefix()
                             << elem_type_str << "* " << vname
                             << " = __vla_" << vname
                             << " + " << dialect.global_thread_id()
                             << " * ";
                         if (vla_it->dims.size() == 1) {
-                            if (vla_it->dims[0].is_constant) {
-                                src << vla_it->dims[0].constant_value;
-                            } else if (vla_it->dims[0].is_struct_member_size) {
-                                src << struct_member_workspace_extent(
-                                    vla_it->dims[0]);
-                            } else {
-                                emit_workspace_extent(
-                                    vla_it->dims[0].dim_expr);
-                            }
+                            src << extent;
                         } else {
-                            src << "(";
-                            for (size_t d = 0;
-                                    d < vla_it->dims.size(); d++) {
-                                if (d > 0) src << " * ";
-                                if (vla_it->dims[d].is_constant) {
-                                    src << vla_it->dims[d].constant_value;
-                                } else if (vla_it->dims[d].is_struct_member_size) {
-                                    src << struct_member_workspace_extent(
-                                        vla_it->dims[d]);
-                                } else {
-                                    emit_workspace_extent(
-                                    vla_it->dims[d].dim_expr);
-                                }
-                            }
-                            src << ")";
+                            src << "(" << extent << ")";
                         }
                         src << ";\n";
                         local_alloc_arrays.insert(vname);
                         // Record the size expression for alloc-assign
                         // and copy-loop codegen
-                        {
-                            std::stringstream size_ss;
-                            for (size_t d = 0;
-                                    d < vla_it->dims.size(); d++) {
-                                if (d > 0) size_ss << " * ";
-                                if (vla_it->dims[d].is_constant) {
-                                    size_ss << vla_it->dims[d]
-                                        .constant_value;
-                                } else if (vla_it->dims[d]
-                                        .is_struct_member_size) {
-                                    size_ss << struct_member_workspace_extent(
-                                        vla_it->dims[d]);
-                                } else {
-                                    std::stringstream tmp;
-                                    tmp << src.str();
-                                    src.str("");
-                                    emit_workspace_extent(
-                                        vla_it->dims[d].dim_expr);
-                                    size_ss << src.str();
-                                    src.str("");
-                                    src << tmp.str();
-                                }
-                            }
-                            alloc_array_size_exprs[vname] =
-                                size_ss.str();
-                        }
+                        alloc_array_size_exprs[vname] = extent;
                     } else {
                         emit_local_var_decl(v);
                     }
