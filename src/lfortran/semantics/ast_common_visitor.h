@@ -16777,21 +16777,36 @@ public:
     }
 
     ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"X"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
-        ASR::expr_t *arg = args[0];
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-        ASR::ttype_t *size_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, x.base.base.loc, 8));
-        ASR::expr_t *value = nullptr;
-        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
-        if (type_size > 0) {
-            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, x.base.base.loc, type_size, size_type));
+       Vec<ASR::expr_t*> args;
+       std::vector<std::string> kwarg_names = {"X"};
+       handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+       ASR::expr_t *arg = args[0];
+       ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+       ASR::ttype_t *size_type = ASRUtils::TYPE(
+       ASR::make_Integer_t(al, x.base.base.loc, 8));
+       ASR::expr_t *value = nullptr;
+    
+       int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+       if (type_size > 0) {
+          value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, x.base.base.loc, type_size, size_type));
+        } else if (ASR::is_a<ASR::Array_t>(*arg_type)) {
+           ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(arg_type);
+           int64_t elem_size = ASRUtils::get_type_byte_size(elem_type);
+           if (elem_size > 0) {
+               ASR::expr_t* elem_size_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, elem_size, size_type));
+            
+               ASR::expr_t* array_size_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, x.base.base.loc, arg, nullptr, size_type, nullptr));
+            
+               value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, x.base.base.loc, array_size_expr, ASR::binopType::Mul, elem_size_expr, size_type, nullptr));
+            }
         }
+    
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, value);
+           size_type, value);
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {
