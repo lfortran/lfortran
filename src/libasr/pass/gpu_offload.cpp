@@ -21,6 +21,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -677,33 +678,16 @@ public:
 };
 
 // Answers whether the Metal Shading Language can represent `t` with the
-// same in-memory width the host uses. MSL has no 64-bit floating point
-// type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no complex
-// type, so the Metal backend lowers all of those to a narrower (or bogus)
-// type. Offloading a `do concurrent` that touches such data would make the
-// kernel reinterpret the host buffers and the by-value scalar-argument
-// struct at the wrong element size, silently producing wrong results, so
-// such a loop has to stay on the CPU.
+// same in-memory width the host uses. Offloading a `do concurrent` that
+// touches data it cannot would make the kernel reinterpret the host buffers
+// and the by-value scalar-argument struct at the wrong element size,
+// silently producing wrong results, so such a loop has to stay on the CPU.
 //
-// Note: kind-8 integers are representable (MSL `long` is 8 bytes), but are
-// rejected here to preserve the pre-existing bail-out behaviour.
+// The rule itself is gpu_device_has_scalar_type, so that the decline this
+// raises and the class that decline is given cannot disagree about what
+// Metal has a type for.
 static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
-    switch (base_t->type) {
-        case ASR::ttypeType::Real: {
-            // gpu_scalar_width_supported is the host/device width table;
-            // Metal also has no 64-bit float.
-            int kind = ASR::down_cast<ASR::Real_t>(base_t)->m_kind;
-            return gpu_scalar_width_supported(base_t) && kind != 8;
-        }
-        case ASR::ttypeType::Integer: {
-            int kind = ASR::down_cast<ASR::Integer_t>(base_t)->m_kind;
-            return gpu_scalar_width_supported(base_t) && kind != 8;
-        }
-        case ASR::ttypeType::Logical:
-            return gpu_scalar_width_supported(base_t);
-        default:
-            return false;
-    }
+    return gpu_device_has_scalar_type(GpuDevice::Metal, base_t);
 }
 
 // A derived type is representable only when every one of its data members
@@ -776,6 +760,17 @@ static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
             ASRUtils::get_struct_sym_from_struct_expr(e), visited);
     }
     return is_metal_representable_scalar_type(base_t);
+}
+
+// The scalar element type behind `t`, for a decline that has to be
+// classified against what the device has a type for. A derived type has no
+// single element type -- the width that offends is one member's -- so it
+// answers with nothing, and the decline is classified on its reason alone.
+static ASR::ttype_t* scalar_type_of(ASR::ttype_t *t) {
+    if (!t) return nullptr;
+    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
+    if (ASR::is_a<ASR::StructType_t>(*base_t)) return nullptr;
+    return base_t;
 }
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
@@ -881,9 +876,13 @@ class GpuLocalWidthChecker :
 public:
     bool unsupported = false;
     std::string bad_name;
+    // The element type that was turned down, when it is a scalar one. A
+    // derived type leaves this null: the width that offends is a member's,
+    // and the message names the local rather than a type.
+    ASR::ttype_t *bad_type = nullptr;
     bool metal = false;
 
-    bool type_ok(ASR::Variable_t *var) {
+    bool type_ok(ASR::Variable_t *var, ASR::ttype_t *&offending) {
         ASR::ttype_t *base = ASRUtils::extract_type(var->m_type);
         if (ASR::is_a<ASR::StructType_t>(*base)) {
             // A BLOCK-local is not a kernel argument, so the symbol
@@ -900,6 +899,7 @@ public:
             return gpu_struct_members_ok(var->m_type_declaration, visited,
                 gpu_scalar_width_supported);
         }
+        offending = base;
         if (metal) {
             return is_metal_representable_scalar_type(base);
         }
@@ -912,9 +912,13 @@ public:
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                 item.second);
-            if (!type_ok(var)) {
+            ASR::ttype_t *offending = nullptr;
+            if (!type_ok(var, offending)) {
                 unsupported = true;
-                if (bad_name.empty()) bad_name = item.first;
+                if (bad_name.empty()) {
+                    bad_name = item.first;
+                    bad_type = offending;
+                }
             }
         }
     }
@@ -9391,6 +9395,17 @@ public:
             return;
         }
         std::string why = gpu_decline_message(decline);
+        // The class is what tells a gap in this compiler apart from a limit
+        // of the device. The policy below does not act on it yet -- today a
+        // decline of either class is an error unless the fallback is asked
+        // for -- but `--gpu-decline-stats` makes the two countable, so that
+        // the gaps can be worked through and the waiver list stays honest.
+        if (pass_options.gpu_decline_stats) {
+            std::cerr << "gpu-decline: " << gpu_decline_class_name(
+                gpu_decline_class(decline,
+                    gpu_device_selected(pass_options)))
+                << ": " << why << std::endl;
+        }
         if (pass_options.gpu_allow_cpu_fallback) {
             pass_options.diagnostics->message_label(
                 "parallel loop not offloaded to the GPU, "
@@ -10494,7 +10509,7 @@ public:
             if (width_checker.unsupported) {
                 report_not_offloaded(loc,
                     GpuDecline(GpuDeclineReason::LocalTypeWidth,
-                        width_checker.bad_name));
+                        width_checker.bad_name, width_checker.bad_type));
                 return;
             }
         }
@@ -10514,7 +10529,7 @@ public:
                         sym.second.second)) {
                     report_not_offloaded(loc, GpuDecline(
                         GpuDeclineReason::SymbolTypeNotRepresentable,
-                        sym.first));
+                        sym.first, scalar_type_of(sym.second.first)));
                     return;
                 }
             }

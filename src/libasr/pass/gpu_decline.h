@@ -4,6 +4,7 @@
 #include <string>
 
 #include <libasr/asr.h>
+#include <libasr/utils.h>
 
 namespace LCompilers {
 
@@ -14,7 +15,30 @@ lays out the launch (device_launch_expand.cpp) both raise these; the wording
 the user sees is built in one place, from the reason and what little it
 quotes, so that the decision and its phrasing cannot drift apart.
 
+Every reason is classified, and the classification is what the offload policy
+is meant to act on: a `NotImplemented` decline is a gap in this compiler and
+one day will not be raised at all, while a `BackendCannot` decline is a fact
+about the device that no amount of work here would change.
 */
+
+// The device dialect a loop is being offloaded to. The classification depends
+// on it: `real(8)` data is something the Metal device has no type for at all,
+// while the very same loop offloads onto CUDA.
+enum class GpuDevice {
+    None,
+    Metal,
+    Cuda,
+};
+
+// What a decline says about the compiler and about the device.
+enum class GpuDeclineClass {
+    // LFortran could lower this onto the selected device, but does not yet.
+    // Every one of these is a gap to be closed.
+    NotImplemented,
+    // The selected device genuinely cannot express it, so no amount of work
+    // in this pass would put this loop on this device.
+    BackendCannot,
+};
 
 enum class GpuDeclineReason {
     None,
@@ -86,8 +110,10 @@ struct GpuDecline {
     // The name the message names: a local, a workspace, a component, or the
     // routine an unsupported statement was found in.
     std::string name;
-    // The element type the decline is about, when the reason names one:
-    // `a scalar of real(16), which has no gpu type of the same width`.
+    // The element type the decline is about, when the reason is about a
+    // type. The classification asks the selected device whether it has a
+    // type of that width, so that the same reason can be a limit of the
+    // device on one backend and a gap in this pass on another.
     ASR::ttype_t *type = nullptr;
 
     GpuDecline() = default;
@@ -101,9 +127,28 @@ struct GpuDecline {
     bool declined() const { return reason != GpuDeclineReason::None; }
 };
 
+// Which device the pass options select, if any.
+GpuDevice gpu_device_selected(const PassOptions &pass_options);
+
+// The one backend capability the classification needs today: whether `device`
+// has a scalar type of the same in-memory width as `t`. A buffer reaches the
+// device as bytes sized from the host element type, so a device without a
+// type of that width would stride through it wrongly.
+//
+// This is deliberately the smallest query that answers the question, and not
+// a description of a backend. When backend capabilities grow a home of their
+// own, this function is the seam that moves into it.
+bool gpu_device_has_scalar_type(GpuDevice device, ASR::ttype_t *t);
+
+// Whether this decline is a gap in LFortran or a limit of the device.
+GpuDeclineClass gpu_decline_class(const GpuDecline &decline, GpuDevice device);
+
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.
 std::string gpu_decline_message(const GpuDecline &decline);
+
+// A stable, greppable name for a class, for `--gpu-decline-stats`.
+const char* gpu_decline_class_name(GpuDeclineClass cls);
 
 } // namespace LCompilers
 

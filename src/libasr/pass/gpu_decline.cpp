@@ -4,6 +4,104 @@
 
 namespace LCompilers {
 
+GpuDevice gpu_device_selected(const PassOptions &pass_options) {
+    if (pass_options.gpu_offload_metal) return GpuDevice::Metal;
+    if (pass_options.gpu_offload_cuda) return GpuDevice::Cuda;
+    return GpuDevice::None;
+}
+
+bool gpu_device_has_scalar_type(GpuDevice device, ASR::ttype_t *t) {
+    if (t == nullptr) return false;
+    // The width table every device we emit for shares: a kind the table
+    // turns down has no device type of the host's width anywhere.
+    if (!gpu_scalar_width_supported(t)) return false;
+    if (device == GpuDevice::Metal) {
+        // The Metal Shading Language has `float`, `half` and `bfloat` but no
+        // 64-bit floating point type, and the emitter has no 64-bit integer
+        // of its own either, so data of that width has no Metal type.
+        switch (t->type) {
+            case ASR::ttypeType::Real:
+                return ASR::down_cast<ASR::Real_t>(t)->m_kind != 8;
+            case ASR::ttypeType::Integer:
+                return ASR::down_cast<ASR::Integer_t>(t)->m_kind != 8;
+            default:
+                return true;
+        }
+    }
+    return true;
+}
+
+GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
+        GpuDevice device) {
+    switch (decline.reason) {
+        // A type the device has none of its own of the same width. Whether
+        // that is the device's limit or this pass's gap is the device's
+        // answer, not ours: `real(8)` has no Metal type, and has a CUDA one.
+        // A decline that named no scalar type -- a derived type, whose
+        // offending width is one member's -- is the device's limit too: the
+        // check that raised it is exactly this question, asked of a member.
+        case GpuDeclineReason::LocalTypeWidth:
+        case GpuDeclineReason::SymbolTypeNotRepresentable:
+        case GpuDeclineReason::WideTypeNotOnDevice:
+        case GpuDeclineReason::StructMemberTypeWidth:
+        case GpuDeclineReason::ArrayElementTypeWidth:
+        case GpuDeclineReason::ScalarTypeWidth:
+            if (gpu_device_has_scalar_type(device, decline.type)) {
+                return GpuDeclineClass::NotImplemented;
+            }
+            return GpuDeclineClass::BackendCannot;
+
+        // Not a number at all: character and the rest have no device type in
+        // any of the dialects, whichever one was selected.
+        case GpuDeclineReason::StructMemberNotNumeric:
+        case GpuDeclineReason::ArrayElementNotNumeric:
+        case GpuDeclineReason::ScalarNotNumeric:
+            return GpuDeclineClass::BackendCannot;
+
+        // A statement the device has no way to run: there are no Fortran
+        // units, formats or exit codes on a device.
+        case GpuDeclineReason::StatementIo:
+        case GpuDeclineReason::StatementStop:
+            return GpuDeclineClass::BackendCannot;
+
+        // Everything else is a lowering this pass has not written yet.
+        case GpuDeclineReason::None:
+        case GpuDeclineReason::ReductionClause:
+        case GpuDeclineReason::LoopWithoutIndex:
+        case GpuDeclineReason::IncompleteLoopHead:
+        case GpuDeclineReason::StridedLoop:
+        case GpuDeclineReason::StructElementGather:
+        case GpuDeclineReason::UnsizedLocalArray:
+        case GpuDeclineReason::AliasTemporaryRuntimeSized:
+        case GpuDeclineReason::UngatherableStridedSection:
+        case GpuDeclineReason::DeviceFunctionInlining:
+        case GpuDeclineReason::NestedArraySection:
+        case GpuDeclineReason::WorkspaceNotSizeableOnHost:
+        case GpuDeclineReason::VlaExtentNotRebuildableOnHost:
+        case GpuDeclineReason::StructDeclarationUnknown:
+        case GpuDeclineReason::StructNonDataMember:
+        case GpuDeclineReason::StructPointerMember:
+        case GpuDeclineReason::StructAllocatableArrayMember:
+        case GpuDeclineReason::StructAllocatableScalarMember:
+        case GpuDeclineReason::StructAssumedShapeArrayMember:
+        case GpuDeclineReason::ClassComponentArrayRank:
+        case GpuDeclineReason::ClassComponentArrayExtents:
+        case GpuDeclineReason::ClassDeclarationUnknown:
+        case GpuDeclineReason::ClassNonDataComponent:
+        case GpuDeclineReason::ClassAllocatableComponent:
+        case GpuDeclineReason::UnlimitedPolymorphicArgument:
+        case GpuDeclineReason::PolymorphicArrayArgument:
+        case GpuDeclineReason::WorkspaceStructElementShape:
+        case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
+        case GpuDeclineReason::KernelArgumentCountMismatch:
+        case GpuDeclineReason::NestedAllocatableComponent:
+        case GpuDeclineReason::MissingArgument:
+        case GpuDeclineReason::ScalarKindMismatch:
+            return GpuDeclineClass::NotImplemented;
+    }
+    return GpuDeclineClass::NotImplemented;
+}
+
 // The routine an unsupported statement was found in, when it was reached
 // through a call rather than written in the loop body.
 static std::string in_routine(const GpuDecline &decline) {
@@ -141,6 +239,14 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 "a scalar whose kind differs from the kernel parameter";
     }
     return "";
+}
+
+const char* gpu_decline_class_name(GpuDeclineClass cls) {
+    switch (cls) {
+        case GpuDeclineClass::NotImplemented: return "not-implemented";
+        case GpuDeclineClass::BackendCannot: return "backend-cannot";
+    }
+    return "unknown";
 }
 
 } // namespace LCompilers
