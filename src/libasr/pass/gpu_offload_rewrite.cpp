@@ -57,7 +57,7 @@ ASR::expr_t* gpu_array_size_from_type(Allocator &al,
     if (arr->n_dims == 0) return nullptr;
     size_t begin = 0, end = arr->n_dims;
     if (sz->m_dim) {
-        int64_t d;
+        int64_t d = 0;
         if (!ASRUtils::extract_value(ASRUtils::expr_value(sz->m_dim), d)) {
             return nullptr;
         }
