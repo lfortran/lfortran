@@ -81,6 +81,7 @@ set(SRC
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/conditional_expr.cpp
     pass/replace_with_compile_time_values.cpp
+    pass/gpu_decline.cpp
     pass/gpu_offload.cpp
     pass/device_partition.cpp
     pass/device_launch_expand.cpp

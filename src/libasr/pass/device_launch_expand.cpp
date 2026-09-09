@@ -5,6 +5,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -39,10 +40,10 @@ can lay out every argument of a launch the same way as the device code
 generator, and keeps the loop on the host when it cannot, rather than
 building a launch that would read the wrong bytes.
 */
-// Why the last rejected launch could not be expanded, for the warning.
-static std::string unsupported_reason;
-static bool unsupported(const std::string &why) {
-    unsupported_reason = why;
+// Why the last rejected launch could not be expanded, for the diagnostic.
+static GpuDecline unsupported_decline;
+static bool unsupported(const GpuDecline &why) {
+    unsupported_decline = why;
     return false;
 }
 
@@ -101,31 +102,34 @@ static ASR::Struct_t* get_struct(ASR::symbol_t *struct_sym) {
 static bool struct_is_plain(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) {
-        return unsupported("a derived type whose declaration is not known");
+        return unsupported(
+            GpuDecline(GpuDeclineReason::StructDeclarationUnknown));
     }
     if (st->m_parent && !struct_is_plain(st->m_parent)) return false;
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
         if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
-            return unsupported("a derived type with a non-data member");
+            return unsupported(
+                GpuDecline(GpuDeclineReason::StructNonDataMember));
         }
         if (is_decomposed_member(member)) continue;
         ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
         if (ASRUtils::is_pointer(type)) {
-            return unsupported("a derived type with a pointer member");
+            return unsupported(
+                GpuDecline(GpuDeclineReason::StructPointerMember));
         }
         if (ASRUtils::is_allocatable(type)) {
             if (ASRUtils::is_array(type)) {
-                return unsupported("a derived type with an allocatable array "
-                    "member the gpu backend cannot decompose");
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::StructAllocatableArrayMember));
             }
-            return unsupported(
-                "a derived type with an allocatable scalar member");
+            return unsupported(GpuDecline(
+                GpuDeclineReason::StructAllocatableScalarMember));
         }
         if (ASRUtils::is_array(type) &&
                 ASRUtils::get_fixed_size_of_array(type) <= 0) {
-            return unsupported(
-                "a derived type with an assumed shape array member");
+            return unsupported(GpuDecline(
+                GpuDeclineReason::StructAssumedShapeArrayMember));
         }
         ASR::ttype_t *base = ASRUtils::type_get_past_array(type);
         if (ASR::is_a<ASR::StructType_t>(*base)) {
@@ -138,12 +142,11 @@ static bool struct_is_plain(ASR::symbol_t *struct_sym) {
         }
         if (!is_plain_scalar(base)) {
             if (is_numeric_scalar(base)) {
-                return unsupported("a derived type with a "
-                    + gpu_scalar_type_name(base)
-                    + " member, which has no gpu type of the same width");
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::StructMemberTypeWidth, "", base));
             }
             return unsupported(
-                "a derived type with a member that is not a number");
+                GpuDecline(GpuDeclineReason::StructMemberNotNumeric));
         }
     }
     return true;
@@ -215,13 +218,13 @@ static bool class_component_can_be_copied(ASR::ttype_t *type,
     ASR::dimension_t *dims = nullptr;
     int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
     if (rank <= 0) {
-        return unsupported("a polymorphic argument with a component array "
-            "of no rank the gpu backend can copy");
+        return unsupported(
+            GpuDecline(GpuDeclineReason::ClassComponentArrayRank));
     }
     for (int d = 0; d < rank; d++) {
         if (dims[d].m_start == nullptr || dims[d].m_length == nullptr) {
-            return unsupported("a polymorphic argument with a component "
-                "array whose extents are not known where it is passed");
+            return unsupported(
+                GpuDecline(GpuDeclineReason::ClassComponentArrayExtents));
         }
     }
     return class_argument_can_be_copied(decl);
@@ -230,21 +233,21 @@ static bool class_component_can_be_copied(ASR::ttype_t *type,
 static bool class_argument_can_be_copied(ASR::symbol_t *struct_sym) {
     ASR::Struct_t *st = get_struct(struct_sym);
     if (!st) {
-        return unsupported("a polymorphic argument whose declared type is "
-            "not known");
+        return unsupported(
+            GpuDecline(GpuDeclineReason::ClassDeclarationUnknown));
     }
     std::vector<ASR::symbol_t*> members;
     collect_data_members(st, members);
     for (ASR::symbol_t *member : members) {
         if (!member || !ASR::is_a<ASR::Variable_t>(*member)) {
-            return unsupported("a polymorphic argument with a non-data "
-                "component");
+            return unsupported(
+                GpuDecline(GpuDeclineReason::ClassNonDataComponent));
         }
         ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
         if (ASRUtils::is_allocatable_or_pointer(member_type)) {
             if (is_decomposed_member(member)) continue;
-            return unsupported("a polymorphic argument with an allocatable "
-                "or pointer component the gpu backend cannot copy");
+            return unsupported(
+                GpuDecline(GpuDeclineReason::ClassAllocatableComponent));
         }
         ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(
             member)->m_type_declaration;
@@ -336,10 +339,12 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
             // launch has to hand over the declared type's own data rather
             // than the class container holding it.
             if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) {
-                return unsupported("an unlimited polymorphic argument");
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::UnlimitedPolymorphicArgument));
             }
             if (ASRUtils::is_array(arg_type)) {
-                return unsupported("an array of a polymorphic type");
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::PolymorphicArrayArgument));
             }
             if (!class_argument_can_be_copied(struct_sym)) return false;
         }
@@ -351,10 +356,11 @@ static bool is_supported_buffer(ASR::expr_t *arg) {
     }
     if (is_plain_scalar(base)) return true;
     if (is_numeric_scalar(base)) {
-        return unsupported("an array of " + gpu_scalar_type_name(base)
-            + ", which has no gpu type of the same width");
+        return unsupported(GpuDecline(
+            GpuDeclineReason::ArrayElementTypeWidth, "", base));
     }
-    return unsupported("an array whose elements are not numbers");
+    return unsupported(
+        GpuDecline(GpuDeclineReason::ArrayElementNotNumeric));
 }
 
 static bool is_supported_scalar(ASR::ttype_t *type) {
@@ -379,8 +385,8 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
     if (dim.is_struct_member_size) {
         if (dim.struct_member_key.empty()) return false;
         if (dim.struct_member_elem_index < 0) {
-            return unsupported("a workspace sized from a struct element "
-                "whose shape may differ per thread");
+            return unsupported(GpuDecline(
+                GpuDeclineReason::WorkspaceStructElementShape));
         }
         std::string::size_type dot = dim.struct_member_key.find('.');
         if (dot == std::string::npos) return false;
@@ -458,30 +464,32 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
         ASR::call_arg_t *call_args, size_t n_call_args) {
     ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
     if (n_call_args != kernel->n_args) {
-        return unsupported("a kernel that takes a different number of "
-            "arguments");
+        return unsupported(
+            GpuDecline(GpuDeclineReason::KernelArgumentCountMismatch));
     }
     NestedAllocatableReadFinder nested;
     for (size_t i = 0; i < kernel->n_body; i++) {
         nested.visit_stmt(*kernel->m_body[i]);
     }
     if (nested.found) {
-        return unsupported("an allocatable component `" + nested.member_name
-            + "` reached through another component, which has no buffer of "
-            "its own");
+        return unsupported(GpuDecline(
+            GpuDeclineReason::NestedAllocatableComponent,
+            nested.member_name));
     }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
             if (!workspace_dim_can_expand(dim, kernel)) {
-                if (!unsupported_reason.empty()) return false;
-                return unsupported("a variable length array whose extent "
-                    "cannot be rebuilt on the host");
+                if (unsupported_decline.declined()) return false;
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::LaunchVlaExtentNotRebuildable));
             }
         }
     }
     for (size_t i = 0; i < n_call_args; i++) {
         ASR::expr_t *arg = call_args[i].m_value;
-        if (!arg) return unsupported("a missing argument");
+        if (!arg) {
+            return unsupported(GpuDecline(GpuDeclineReason::MissingArgument));
+        }
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
             ASRUtils::symbol_get_past_external(
@@ -494,16 +502,15 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
             if (!is_supported_scalar(arg_type)) {
                 ASR::ttype_t *t = ASRUtils::extract_type(arg_type);
                 if (is_numeric_scalar(t)) {
-                    return unsupported("a scalar of "
-                        + gpu_scalar_type_name(t)
-                        + ", which has no gpu type of the same width");
+                    return unsupported(GpuDecline(
+                        GpuDeclineReason::ScalarTypeWidth, "", t));
                 }
-                return unsupported("a scalar that is not an integer, a "
-                    "real, or a logical");
+                return unsupported(
+                    GpuDecline(GpuDeclineReason::ScalarNotNumeric));
             }
             if (!same_scalar_type(arg_type, kparam->m_type)) {
-                return unsupported("a scalar whose kind differs from the "
-                    "kernel parameter");
+                return unsupported(
+                    GpuDecline(GpuDeclineReason::ScalarKindMismatch));
             }
         }
     }
@@ -511,10 +518,10 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
 }
 
 bool gpu_launch_is_supported(Allocator &al, ASR::symbol_t *kernel,
-        ASR::call_arg_t *args, size_t n_args, std::string &reason) {
-    unsupported_reason.clear();
+        ASR::call_arg_t *args, size_t n_args, GpuDecline &decline) {
+    unsupported_decline = GpuDecline();
     if (launch_is_supported(al, kernel, args, n_args)) return true;
-    reason = unsupported_reason;
+    decline = unsupported_decline;
     return false;
 }
 
@@ -1823,8 +1830,8 @@ static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
             if (dim.is_struct_member_size) continue;
             if (DeviceLaunchExpandVisitor::build_host_extent(al, loc,
                     kernel, call_args, n_call_args, dim.derived) == nullptr) {
-                return unsupported("a variable length array whose extent "
-                    "cannot be rebuilt on the host");
+                return unsupported(GpuDecline(
+                    GpuDeclineReason::LaunchVlaExtentNotRebuildable));
             }
         }
     }

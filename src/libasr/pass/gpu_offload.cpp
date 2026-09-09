@@ -12,6 +12,7 @@
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 #include <libasr/pass/pass_utils.h>
@@ -1654,7 +1655,7 @@ public:
 // A statement the device has no way to run. A kernel that held one would
 // simply not run it, so the effect the program asked for would go missing
 // with nothing to show for it.
-static const char* unsupported_on_device(const ASR::stmt_t &s) {
+static GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
     switch (s.type) {
         case ASR::stmtType::Print:
         case ASR::stmtType::FileWrite:
@@ -1666,12 +1667,12 @@ static const char* unsupported_on_device(const ASR::stmt_t &s) {
         case ASR::stmtType::FileRewind:
         case ASR::stmtType::FileEndfile:
         case ASR::stmtType::Flush:
-            return "input or output";
+            return GpuDeclineReason::StatementIo;
         case ASR::stmtType::Stop:
         case ASR::stmtType::ErrorStop:
-            return "stop";
+            return GpuDeclineReason::StatementStop;
         default:
-            return nullptr;
+            return GpuDeclineReason::None;
     }
 }
 
@@ -1679,15 +1680,15 @@ static const char* unsupported_on_device(const ASR::stmt_t &s) {
 class GpuUnsupportedStatementFinder
         : public ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder> {
 public:
-    const char *reason;
+    GpuDeclineReason reason;
     Location loc;
 
-    GpuUnsupportedStatementFinder() : reason(nullptr) {}
+    GpuUnsupportedStatementFinder() : reason(GpuDeclineReason::None) {}
 
     void visit_stmt(const ASR::stmt_t &s) {
-        if (reason != nullptr) return;
-        const char *why = unsupported_on_device(s);
-        if (why != nullptr) {
+        if (reason != GpuDeclineReason::None) return;
+        GpuDeclineReason why = unsupported_on_device(s);
+        if (why != GpuDeclineReason::None) {
             reason = why;
             loc = s.base.loc;
             return;
@@ -9382,12 +9383,14 @@ public:
     // into host execution with --gpu-allow-cpu-fallback. Every declining loop
     // in the unit is reported before the compilation is stopped, so one run
     // lists all of the gaps rather than only the first.
-    void report_not_offloaded(const Location &where, const std::string &why) {
+    void report_not_offloaded(const Location &where,
+            const GpuDecline &decline) {
         if (pass_options.diagnostics == nullptr) return;
         if (region_being_decided != nullptr &&
                 !reported_regions.insert(region_being_decided).second) {
             return;
         }
+        std::string why = gpu_decline_message(decline);
         if (pass_options.gpu_allow_cpu_fallback) {
             pass_options.diagnostics->message_label(
                 "parallel loop not offloaded to the GPU, "
@@ -10103,7 +10106,7 @@ public:
             if (region.m_clauses[i]->type ==
                     ASR::omp_clauseType::OMPReduction) {
                 report_not_offloaded(loc,
-                    "a reduction has no gpu lowering yet");
+                    GpuDecline(GpuDeclineReason::ReductionClause));
                 return;
             }
         }
@@ -10114,14 +10117,16 @@ public:
         // 3-D shape of the underlying dispatch grid therefore does not limit
         // the number of loop indices.
         if (n_dims == 0) {
-            report_not_offloaded(loc, "the loop has no index");
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::LoopWithoutIndex));
             return;
         }
 
         for (size_t d = 0; d < n_dims; d++) {
             if (!nest.head(d).m_v || !nest.head(d).m_start ||
                     !nest.head(d).m_end) {
-                report_not_offloaded(loc, "the loop head is incomplete");
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::IncompleteLoopHead));
                 return;
             }
         }
@@ -10139,8 +10144,7 @@ public:
                     !ASRUtils::extract_value(step_value, step_constant) ||
                     step_constant != 1) {
                 report_not_offloaded(loc,
-                    "the loop has a stride the gpu index arithmetic "
-                    "cannot express");
+                    GpuDecline(GpuDeclineReason::StridedLoop));
                 return;
             }
         }
@@ -10431,7 +10435,7 @@ public:
             // the wrong element, which is a wrong number and no
             // diagnostic, so decline the loop instead.
             report_not_offloaded(loc,
-                "a derived-type element cannot be gathered for the gpu");
+                GpuDecline(GpuDeclineReason::StructElementGather));
             return;
         }
 
@@ -10456,8 +10460,8 @@ public:
             }
             if (local_array_checker.has_unsized_local_array) {
                 report_not_offloaded(loc,
-                    "local array '" + local_array_checker.unsized_name +
-                    "' has no extent the gpu can use");
+                    GpuDecline(GpuDeclineReason::UnsizedLocalArray,
+                        local_array_checker.unsized_name));
                 return;
             }
             // An array assignment whose two sides overlap the same array
@@ -10470,7 +10474,7 @@ public:
             if (body_needs_unsupported_alias_temp(work.body, work.n_body,
                     true, alias_arg_names)) {
                 report_not_offloaded(loc,
-                    "an aliased assignment needs a run-time sized temporary");
+                    GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
                 return;
             }
             // A strided section actual argument is gathered into a
@@ -10479,7 +10483,7 @@ public:
             // and passing the section on would silently drop its stride.
             if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
                 report_not_offloaded(loc,
-                    "a strided section cannot be gathered for the gpu");
+                    GpuDecline(GpuDeclineReason::UngatherableStridedSection));
                 return;
             }
             GpuLocalWidthChecker width_checker;
@@ -10489,8 +10493,8 @@ public:
             }
             if (width_checker.unsupported) {
                 report_not_offloaded(loc,
-                    "local '" + width_checker.bad_name +
-                    "' has no gpu type of the same width");
+                    GpuDecline(GpuDeclineReason::LocalTypeWidth,
+                        width_checker.bad_name));
                 return;
             }
         }
@@ -10508,9 +10512,9 @@ public:
             for (auto &sym : candidate_syms) {
                 if (!is_metal_representable_type(sym.second.first,
                         sym.second.second)) {
-                    report_not_offloaded(loc,
-                        "the type of '" + sym.first +
-                        "' is not representable on the gpu");
+                    report_not_offloaded(loc, GpuDecline(
+                        GpuDeclineReason::SymbolTypeNotRepresentable,
+                        sym.first));
                     return;
                 }
             }
@@ -10534,7 +10538,7 @@ public:
                     // would be worse than not offloading at all.
                     functions_to_inline.clear();
                     report_not_offloaded(loc,
-                        "a device function cannot be inlined");
+                        GpuDecline(GpuDeclineReason::DeviceFunctionInlining));
                     return;
                 }
             }
@@ -10556,7 +10560,7 @@ public:
             if (!inline_device_function_calls(work.body, work.n_body)) {
                 functions_to_inline.clear();
                 report_not_offloaded(loc,
-                    "a device function cannot be inlined");
+                    GpuDecline(GpuDeclineReason::DeviceFunctionInlining));
                 return;
             }
             functions_to_inline.clear();
@@ -10590,8 +10594,8 @@ public:
             if (!gpu_block_workspace_extents_resolvable(work.body,
                     work.n_body, kernel_arg_names, unresolved_name)) {
                 report_not_offloaded(loc,
-                    "workspace '" + unresolved_name +
-                    "' cannot be sized on the host");
+                    GpuDecline(GpuDeclineReason::WorkspaceNotSizeableOnHost,
+                        unresolved_name));
                 return;
             }
             GpuUnsizeableResultCallFinder unsized_result(
@@ -10600,9 +10604,8 @@ public:
                 unsized_result.visit_stmt(*work.body[i]);
             }
             if (unsized_result.found) {
-                report_not_offloaded(loc,
-                    "a variable length array whose extent "
-                    "cannot be rebuilt on the host");
+                report_not_offloaded(loc, GpuDecline(
+                    GpuDeclineReason::VlaExtentNotRebuildableOnHost));
                 return;
             }
         }
@@ -10613,7 +10616,7 @@ public:
             }
             if (nested_section.found) {
                 report_not_offloaded(loc,
-                    "a nested array section cannot be addressed on the gpu");
+                    GpuDecline(GpuDeclineReason::NestedArraySection));
                 return;
             }
         }
@@ -10953,19 +10956,14 @@ public:
             for (auto &sym : involved_syms) {
                 ASR::ttype_t *t = sym.second.first;
                 ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-                std::string unsupported_kind;
-                if (base_t->type == ASR::ttypeType::Real &&
-                    ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8) {
-                    unsupported_kind = "real(8)";
-                } else if (base_t->type == ASR::ttypeType::Integer &&
-                    ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8) {
-                    unsupported_kind = "integer(8)";
-                }
-                if (!unsupported_kind.empty()) {
+                bool wide = (base_t->type == ASR::ttypeType::Real &&
+                        ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8)
+                    || (base_t->type == ASR::ttypeType::Integer &&
+                        ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8);
+                if (wide) {
                     report_not_offloaded(loc,
-                        "the Metal backend does not support " +
-                            unsupported_kind + ", used by '" +
-                            sym.first + "'");
+                        GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
+                            sym.first, base_t));
                     return;
                 }
             }
@@ -10979,24 +10977,23 @@ public:
                 finder.visit_stmt(*work.body[i]);
             }
             std::string in_routine;
-            if (finder.reason == nullptr) {
+            if (finder.reason == GpuDeclineReason::None) {
                 for (ASR::Function_t *fn : reachable_routines(work.body,
                         work.n_body)) {
                     GpuUnsupportedStatementFinder callee_finder;
                     for (size_t i = 0; i < fn->n_body; i++) {
                         callee_finder.visit_stmt(*fn->m_body[i]);
                     }
-                    if (callee_finder.reason != nullptr) {
+                    if (callee_finder.reason != GpuDeclineReason::None) {
                         finder = callee_finder;
-                        in_routine = std::string(" in '") + fn->m_name + "'";
+                        in_routine = fn->m_name;
                         break;
                     }
                 }
             }
-            if (finder.reason != nullptr) {
+            if (finder.reason != GpuDeclineReason::None) {
                 report_not_offloaded(finder.loc,
-                    std::string("the gpu backend does not support ") +
-                        finder.reason + in_routine);
+                    GpuDecline(finder.reason, in_routine));
                 return;
             }
         }
@@ -13384,12 +13381,11 @@ public:
         // ordinary Fortran semantics always apply. The kernel is checked
         // before it enters the symbol table, so nothing is left behind.
         {
-            std::string reason;
+            GpuDecline decline;
             if (!gpu_launch_is_supported(al,
                     ASR::down_cast<ASR::symbol_t>(kernel_func),
-                    call_args.p, call_args.n, reason)) {
-                report_not_offloaded(loc,
-                    "the gpu backend does not support " + reason);
+                    call_args.p, call_args.n, decline)) {
+                report_not_offloaded(loc, decline);
                 for (auto it = member_extent_undo.rbegin();
                         it != member_extent_undo.rend(); ++it) {
                     *it->first = it->second;
