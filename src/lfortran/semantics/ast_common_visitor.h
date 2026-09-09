@@ -14015,9 +14015,9 @@ public:
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
                         intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
-                           diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to this intrinsic",
-                                 {arg_expr->base.loc}, "");
-                           throw SemanticAbort();
+                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to this intrinsic",
+                                {arg_expr->base.loc}, "");
+                        throw SemanticAbort();
                     }
                 }
             }
@@ -16777,17 +16777,16 @@ public:
     }
 
     ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
-       Vec<ASR::expr_t*> args;
-       std::vector<std::string> kwarg_names = {"X"};
-       handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
-       ASR::expr_t *arg = args[0];
-       ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-       ASR::ttype_t *size_type = ASRUtils::TYPE(
-       ASR::make_Integer_t(al, x.base.base.loc, 8));
-       ASR::expr_t *value = nullptr;
-    
-       int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
-       if (type_size > 0) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"X"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+        ASR::expr_t *arg = args[0];
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *size_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *value = nullptr;
+        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
+        if (type_size > 0) {
           value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, x.base.base.loc, type_size, size_type));
         } else if (ASR::is_a<ASR::Array_t>(*arg_type)) {
