@@ -3,8 +3,6 @@
 
 #include "libasr/containers.h"
 #include <libasr/assert.h>
-#include <libasr/exception.h>
-#include <lfortran/semantics/semantic_exception.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
