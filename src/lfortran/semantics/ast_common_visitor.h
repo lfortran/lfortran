@@ -4,6 +4,7 @@
 #include "libasr/containers.h"
 #include <libasr/assert.h>
 #include <libasr/exception.h>
+#include <lfortran/semantics/semantic_exception.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <lfortran/ast.h>
@@ -17810,7 +17811,7 @@ public:
         ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
         if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
-            throw SemanticError("Arguments to the 'shifta' intrinsic must be of type INTEGER", loc);
+            throw LCompilers::LFortran::SemanticError("Arguments to the 'shifta' intrinsic must be of type INTEGER", loc);
         }
 
         ASR::ttype_t* cast_target_for_w = base_n;
