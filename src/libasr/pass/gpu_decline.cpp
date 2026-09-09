@@ -32,9 +32,11 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // CUDA C++ has `double` and `long long`, so it narrows nothing
             // the shared width table permits.
             //
-            // Run-time sized locals in a device function are left as the
-            // pass has always treated them for this device; whether CUDA can
-            // in fact declare one is a question of its own.
+            // CUDA C++ has no variable-length arrays either -- a device
+            // function's locals are laid out in registers and local memory
+            // whose size the compiler has to know -- so a run-time sized
+            // local has to be moved to kernel scope here too.
+            caps.device_function_runtime_sized_locals = false;
             break;
         case GpuDevice::None:
             break;

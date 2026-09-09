@@ -5225,7 +5225,7 @@ RUN(NAME gpu_metal_314 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allo
 RUN(NAME gpu_metal_315 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_316 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_317 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_318 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_318 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_319 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_320 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_metal_321 LABELS gfortran llvm metal cuda_cpu)
