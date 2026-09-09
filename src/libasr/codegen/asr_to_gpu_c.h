@@ -442,10 +442,8 @@ public:
     // Element count of the first struct-array element, from the sizes
     // buffer: the product of that element's per-dimension extents.
     std::string struct_member_workspace_extent(const GpuVlaDim &dim) {
-        std::string key = dim.struct_member_key;
-        auto dot = key.find('.');
-        std::string sizes = GpuNames::member_sizes(key.substr(0, dot),
-            key.substr(dot + 1));
+        std::string sizes = GpuNames::member_sizes(
+            dim.struct_member_key.base, dim.struct_member_key.member);
         size_t rank = dim.struct_member_rank;
         if (rank == 0) rank = 1;
         int64_t idx = dim.struct_member_elem_index;

@@ -85,16 +85,45 @@ struct GpuExtentScope {
 // of exactly three things: a compile-time constant, the extents of a
 // struct member the device reads out of a sizes buffer, or `derived` --
 // which covers everything the host can work out for itself.
+// An allocatable component of a struct variable: which variable, and which
+// component of it.
+//
+// This is a key, not a designator: the same component of the same variable
+// has to be recognised again in another routine and in another file, so it
+// is carried by name rather than by symbol. The variable is a callee's dummy
+// in one context and the kernel's own array in another, and the component is
+// re-resolved against whichever struct type the reader is holding -- which
+// may be a different Struct_t, or the parent one the component is inherited
+// from. Neither name is a symbol the two sides could compare.
+//
+// What they can share is the shape of the key. Glued into one "a.b" string
+// it was built at five places and taken back apart at three, each with its
+// own find('.') and substr; kept as two fields it cannot be taken apart
+// wrongly, and a component whose name has a dot in it is no longer a key
+// that reads as a different component.
+struct GpuStructMemberKey {
+    std::string base;    // the struct variable
+    std::string member;  // its allocatable array component
+
+    bool empty() const { return base.empty() || member.empty(); }
+    bool operator==(const GpuStructMemberKey &o) const {
+        return base == o.base && member == o.member;
+    }
+    bool operator<(const GpuStructMemberKey &o) const {
+        if (base != o.base) return base < o.base;
+        return member < o.member;
+    }
+};
+
 struct GpuVlaDim {
     bool is_constant = true;
     int64_t constant_value = 1;
     // When true, size is read from a struct member's allocatable
     // array size, resolved at dispatch time from the struct array's
-    // per-element sizes. struct_member_key is "arr_name.member_name".
-    // Such an extent names the loop index, so it has no form the host
-    // could evaluate and `derived` is empty for it.
+    // per-element sizes. Such an extent names the loop index, so it has
+    // no form the host could evaluate and `derived` is empty for it.
     bool is_struct_member_size = false;
-    std::string struct_member_key;
+    GpuStructMemberKey struct_member_key;
     // Rank of that component. The sizes buffer holds this many extents
     // per element, so the element count is their product, not [0].
     size_t struct_member_rank = 1;
@@ -1455,9 +1484,9 @@ inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
     return false;
 }
 
-// The "struct_array.member" key of an array expression that is a
-// deferred-shape component, such as `a(i)%v` or a section of one.
-inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
+// The struct component an array expression names, when it is a
+// deferred-shape component such as `a(i)%v` or a section of one.
+inline bool expr_struct_member_key(ASR::expr_t *e, GpuStructMemberKey &key,
         size_t *rank = nullptr, int64_t *elem_index = nullptr) {
     if (e == nullptr) return false;
     e = ASRUtils::get_past_array_physical_cast(e);
@@ -1536,8 +1565,9 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
         return false;
     }
     if (!ASR::is_a<ASR::Var_t>(*base)) return false;
-    key = std::string(ASRUtils::symbol_name(
-        ASR::down_cast<ASR::Var_t>(base)->m_v)) + "." + member;
+    key.base = ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(base)->m_v);
+    key.member = member;
     if (rank != nullptr) {
         *rank = 1;
         if (ASR::is_a<ASR::Variable_t>(*ms)) {
@@ -1555,7 +1585,7 @@ inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
 // share a guessed size.
 inline bool find_struct_member_key_from_assignments(
         ASR::stmt_t **body, size_t n_body, const std::string &var_name,
-        std::string &key) {
+        GpuStructMemberKey &key) {
     if (body == nullptr) return false;
     for (size_t i = 0; i < n_body; i++) {
         ASR::stmt_t *stmt = body[i];
@@ -1612,11 +1642,12 @@ inline bool find_struct_member_key_from_assignments(
     return false;
 }
 
-// The "struct_array.member" key of an extent that reads the size of a
-// deferred-shape component, such as `size(a(i)%v)`. The host cannot evaluate
-// such an extent itself, because the element index only exists on the device;
-// it sizes the workspace from the component's own sizes instead.
-inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key,
+// The struct component an extent reads the size of, such as
+// `size(a(i)%v)`. The host cannot evaluate such an extent itself, because
+// the element index only exists on the device; it sizes the workspace from
+// the component's own sizes instead.
+inline bool dim_expr_struct_member_key(ASR::expr_t *dim,
+        GpuStructMemberKey &key,
         size_t *rank = nullptr, int64_t *elem_index = nullptr) {
     if (dim == nullptr) return false;
     ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
@@ -1661,7 +1692,7 @@ inline bool classify_vla_dim(ASR::expr_t *dim, const GpuExtentScope &scope,
         GpuVlaDim &vd) {
     vd.is_constant = false;
     vd.constant_value = 0;
-    std::string member_key;
+    GpuStructMemberKey member_key;
     if (dim_expr_struct_member_key(dim, member_key, &vd.struct_member_rank,
             &vd.struct_member_elem_index)) {
         vd.is_struct_member_size = true;
@@ -1754,13 +1785,13 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
 
 // A per-thread workspace for an allocatable array whose size is only known
 // on the device, sized from the struct member the array is copied from.
-// The unique "arr.member" key when the kernel has exactly one
-// allocatable array component of exactly one struct-array argument.
-// Two members cannot share a size; those must be named by an assignment.
+// The one allocatable array component of the kernel's arguments, when the
+// kernel has exactly one. Two members cannot share a size; those must be
+// named by an assignment.
 inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
-        std::string &key) {
+        GpuStructMemberKey &key) {
     int n = 0;
-    std::string found;
+    GpuStructMemberKey found;
     for (size_t ai = 0; ai < kernel.n_args; ai++) {
         ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
         ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
@@ -1778,7 +1809,7 @@ inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
         for (auto &mem :
                 ASRUtils::collect_allocatable_array_members(stype)) {
             n++;
-            found = std::string(avar->m_name) + "." + mem.first;
+            found = GpuStructMemberKey{avar->m_name, mem.first};
             if (n > 1) return false;
         }
     }
@@ -1788,11 +1819,10 @@ inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
 }
 
 inline size_t gpu_struct_member_rank_from_key(const ASR::Function_t &kernel,
-        const std::string &key) {
-    std::string::size_type dot = key.find('.');
-    if (dot == std::string::npos) return 1;
-    std::string arr = key.substr(0, dot);
-    std::string mem = key.substr(dot + 1);
+        const GpuStructMemberKey &key) {
+    if (key.empty()) return 1;
+    const std::string &arr = key.base;
+    const std::string &mem = key.member;
     for (size_t ai = 0; ai < kernel.n_args; ai++) {
         ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
         ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
@@ -1816,7 +1846,7 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
         ASR::Array_t *arr, const std::string &var_name,
         GpuVlaWorkspace &ws, ASR::stmt_t **scope_body = nullptr,
         size_t scope_n_body = 0) {
-    std::string struct_key;
+    GpuStructMemberKey struct_key;
     if (scope_body != nullptr
             && find_struct_member_key_from_assignments(scope_body,
                 scope_n_body, var_name, struct_key)) {
@@ -2090,7 +2120,7 @@ class StructMemberShapeCollector:
     public ASR::BaseWalkVisitor<StructMemberShapeCollector> {
     public:
 
-        std::map<std::string, ASR::alloc_arg_t*> shapes;
+        std::map<GpuStructMemberKey, ASR::alloc_arg_t*> shapes;
 
         void collect(ASR::alloc_arg_t *args, size_t n_args) {
             for (size_t i = 0; i < n_args; i++) {
@@ -2107,11 +2137,11 @@ class StructMemberShapeCollector:
                     base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
                 }
                 if (!ASR::is_a<ASR::Var_t>(*base)) continue;
-                std::string key =
-                    std::string(ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(base)->m_v))
-                    + "." + std::string(ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(sm->m_m)));
+                GpuStructMemberKey key{
+                    ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(base)->m_v),
+                    ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(sm->m_m))};
                 shapes.emplace(key, &args[i]);
             }
         }
@@ -2129,7 +2159,7 @@ class StructMemberShapeCollector:
         }
 };
 
-inline std::map<std::string, ASR::alloc_arg_t*> struct_member_shapes(
+inline std::map<GpuStructMemberKey, ASR::alloc_arg_t*> struct_member_shapes(
         ASR::stmt_t **body, size_t n_body) {
     StructMemberShapeCollector collector;
     for (size_t i = 0; i < n_body; i++) {
@@ -2264,10 +2294,10 @@ inline bool gpu_extent_value(ASR::expr_t *e, const GpuExtentContext &ctx,
     return false;
 }
 
-// The "struct_array.component" an extent reads its size from, when the size
-// is only known once the host has measured that component.
+// The struct component an extent reads its size from, when the size is only
+// known once the host has measured that component.
 inline bool gpu_extent_member_key(ASR::expr_t *e, const GpuExtentContext &ctx,
-        std::string &key) {
+        GpuStructMemberKey &key) {
     if (e == nullptr) return false;
     ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
     while (ASR::is_a<ASR::Cast_t>(*v)) {
@@ -2301,10 +2331,10 @@ inline bool gpu_extent_member_key(ASR::expr_t *e, const GpuExtentContext &ctx,
         base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
     }
     if (!ASR::is_a<ASR::Var_t>(*base)) return false;
-    key = std::string(ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(base)->m_v))
-        + "." + std::string(ASRUtils::symbol_name(
-            ASRUtils::symbol_get_past_external(sm->m_m)));
+    key.base = ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(base)->m_v);
+    key.member = ASRUtils::symbol_name(
+        ASRUtils::symbol_get_past_external(sm->m_m));
     return true;
 }
 
@@ -2316,8 +2346,8 @@ class KernelStructMemberShapes:
     public:
 
         // key -> (shape, the context that reads the shape's extents)
-        std::map<std::string, std::pair<ASR::alloc_arg_t*, GpuExtentContext>>
-            shapes;
+        std::map<GpuStructMemberKey,
+            std::pair<ASR::alloc_arg_t*, GpuExtentContext>> shapes;
         const std::map<std::string, const GpuVlaWorkspace*> *workspaces;
 
         KernelStructMemberShapes(
@@ -2328,7 +2358,7 @@ class KernelStructMemberShapes:
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_name);
             if (!ASR::is_a<ASR::Function_t>(*sym)) return;
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-            std::map<std::string, ASR::alloc_arg_t*> callee_shapes =
+            std::map<GpuStructMemberKey, ASR::alloc_arg_t*> callee_shapes =
                 struct_member_shapes(fn->m_body, fn->n_body);
             if (callee_shapes.empty()) return;
             for (size_t i = 0; i < x.n_args && i < fn->n_args; i++) {
@@ -2349,14 +2379,17 @@ class KernelStructMemberShapes:
                 std::string formal_name = ASRUtils::symbol_name(
                     ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
                 for (auto &shape: callee_shapes) {
-                    size_t dot = shape.first.find('.');
-                    if (shape.first.substr(0, dot) != formal_name) continue;
+                    // The callee shapes a component of its own dummy; the
+                    // same component of the kernel's array is what the
+                    // launch has to size.
+                    if (shape.first.base != formal_name) continue;
                     GpuExtentContext ctx;
                     ctx.callee = fn;
                     ctx.args = x.m_args;
                     ctx.n_args = x.n_args;
                     ctx.workspaces = workspaces;
-                    shapes.emplace(array_name + shape.first.substr(dot),
+                    shapes.emplace(
+                        GpuStructMemberKey{array_name, shape.first.member},
                         std::make_pair(shape.second, ctx));
                 }
             }
@@ -2370,7 +2403,7 @@ class KernelStructMemberShapes:
 // The shape of every component of a kernel's struct arrays that the kernel
 // writes without the caller having allocated it, gathered from the Allocate
 // and ReAlloc statements that give the component its extents.
-inline std::map<std::string,
+inline std::map<GpuStructMemberKey,
         std::pair<ASR::alloc_arg_t*, GpuExtentContext>>
     kernel_struct_member_shapes(const ASR::Function_t &kernel,
         const std::map<std::string, const GpuVlaWorkspace*> &ws_by_name) {
@@ -2391,14 +2424,15 @@ inline std::map<std::string,
 // The number of elements a kernel writes into each component of its struct
 // arrays that the caller left unallocated, where that number is known before
 // the kernel is dispatched.
-inline std::map<std::string, int64_t> find_struct_member_vla_write_sizes(
+inline std::map<GpuStructMemberKey, int64_t>
+    find_struct_member_vla_write_sizes(
         const ASR::Function_t &kernel,
         const std::vector<GpuVlaWorkspace> &vla_workspaces) {
     std::map<std::string, const GpuVlaWorkspace*> ws_by_name;
     for (auto &ws : vla_workspaces) {
         ws_by_name[ws.var_name] = &ws;
     }
-    std::map<std::string, int64_t> result;
+    std::map<GpuStructMemberKey, int64_t> result;
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
         int64_t total = 1;
         bool known = true;
@@ -2419,15 +2453,15 @@ inline std::map<std::string, int64_t> find_struct_member_vla_write_sizes(
 }
 
 // The components whose size a kernel only learns from another component of a
-// struct array, as a map from the written "struct.component" to the one it is
-// sized from.
-inline std::map<std::string, std::string>
+// struct array, as a map from the written component to the one it is sized
+// from.
+inline std::map<GpuStructMemberKey, GpuStructMemberKey>
     find_struct_member_vla_runtime_sources(const ASR::Function_t &kernel) {
     std::map<std::string, const GpuVlaWorkspace*> ws_by_name;
-    std::map<std::string, std::string> result;
+    std::map<GpuStructMemberKey, GpuStructMemberKey> result;
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
         if (shape.second.first->n_dims != 1) continue;
-        std::string source;
+        GpuStructMemberKey source;
         if (gpu_extent_member_key(shape.second.first->m_dims[0].m_length,
                 shape.second.second, source)) {
             result[shape.first] = source;

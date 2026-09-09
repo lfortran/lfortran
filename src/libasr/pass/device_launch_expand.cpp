@@ -389,10 +389,8 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
             return unsupported(GpuDecline(
                 GpuDeclineReason::WorkspaceStructElementShape));
         }
-        std::string::size_type dot = dim.struct_member_key.find('.');
-        if (dot == std::string::npos) return false;
-        std::string arr = dim.struct_member_key.substr(0, dot);
-        std::string mem = dim.struct_member_key.substr(dot + 1);
+        const std::string &arr = dim.struct_member_key.base;
+        const std::string &mem = dim.struct_member_key.member;
         for (size_t i = 0; i < kernel->n_args; i++) {
             ASR::Variable_t *kparam = ASR::down_cast<ASR::Variable_t>(
                 ASRUtils::symbol_get_past_external(
@@ -585,13 +583,13 @@ class DeviceLaunchExpandVisitor :
         const PassOptions &pass_options;
         // Scalar argument struct created for each kernel, by kernel name.
         std::map<std::string, ASR::symbol_t*> scalar_arg_structs;
-        // Size of the first element of a decomposed struct member, by
-        // "<array>.<member>". A member sized at run time from another one,
-        // and a workspace sized from a member, both read it.
-        std::map<std::string, ASR::expr_t*> member_first_sizes;
+        // Size of the first element of a decomposed struct member. A
+        // member sized at run time from another one, and a workspace sized
+        // from a member, both read it.
+        std::map<GpuStructMemberKey, ASR::expr_t*> member_first_sizes;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
-        std::map<std::string, ASR::expr_t*> member_sizes_bufs;
+        std::map<GpuStructMemberKey, ASR::expr_t*> member_sizes_bufs;
 
         // A launch this pass cannot lay out, found once the loop it came
         // from is gone. `gpu_offload` answers the same question while the
@@ -831,10 +829,10 @@ class DeviceLaunchExpandVisitor :
             ASR::Struct_t *st = get_struct(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
-            std::map<std::string, int64_t> write_sizes =
+            std::map<GpuStructMemberKey, int64_t> write_sizes =
                 find_struct_member_vla_write_sizes(kernel,
                     analyze_gpu_vla_workspaces(kernel));
-            std::map<std::string, std::string> runtime_sources =
+            std::map<GpuStructMemberKey, GpuStructMemberKey> runtime_sources =
                 find_struct_member_vla_runtime_sources(kernel);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
@@ -864,7 +862,7 @@ class DeviceLaunchExpandVisitor :
 
                 // The kernel writes into a member the caller never allocated,
                 // so the host has to give it storage first.
-                std::string key = arg_name + "." + member_name;
+                GpuStructMemberKey key{arg_name, member_name};
                 ASR::expr_t *missing_size = nullptr;
                 auto write_size = write_sizes.find(key);
                 if (write_size != write_sizes.end()) {
