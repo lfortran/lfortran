@@ -183,12 +183,15 @@ public:
         workspace_extent_expanding.erase(sym);
     }
 
-    // Render one extent of a per-thread workspace. The pointer into the
-    // workspace is computed on entry to the scope that declares the array,
-    // ahead of the statements that give the scope's own names their values,
-    // so a name that stands for one value -- an ASSOCIATE selector, once
-    // the construct is spliced in -- is rendered as the value it is bound
-    // to. The host sizes the buffer by the same rule.
+    // Render one extent of an array the scope declares in thread memory.
+    // The declaration is emitted on entry to the scope, ahead of the
+    // statements that give the scope's own names their values, so a name
+    // that stands for one value -- an ASSOCIATE selector, once the
+    // construct is spliced in -- is rendered as the value it is bound to.
+    //
+    // An array backed by a workspace buffer is not sized here: its extent
+    // is the one derivation the host sized the buffer from, written out by
+    // emit_derived_extent().
     void emit_workspace_extent(ASR::expr_t *e) {
         if (e != nullptr && ASR::is_a<ASR::Var_t>(*e)) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
@@ -882,10 +885,9 @@ public:
     // The element count an `allocate` gives an array, as the shader spells
     // it, used when compile-time constant evaluation fails. The string is
     // pasted into declarations the scope emits on entry, ahead of the
-    // statements that give the scope's own names their values, so it is
-    // rendered by the same rule a workspace extent is: a name the kernel
-    // body binds stands for the value it is bound to, never for the
-    // variable, which is not written yet at that point.
+    // statements that give the scope's own names their values, so a name
+    // the kernel body binds stands for the value it is bound to, never for
+    // the variable, which is not written yet at that point.
     std::string compute_alloc_size_expr(ASR::alloc_arg_t &arg) {
         std::stringstream save;
         save << src.str();

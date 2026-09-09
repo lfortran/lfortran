@@ -374,7 +374,7 @@ static bool same_scalar_type(ASR::ttype_t *a, ASR::ttype_t *b) {
 // fine": skipping it would size the buffer short while the device still
 // multiplies the extent in.
 static bool workspace_dim_can_expand(const GpuVlaDim &dim,
-        const ASR::Function_t *kernel, size_t n_call_args) {
+        const ASR::Function_t *kernel) {
     if (dim.is_constant) return true;
     if (dim.is_struct_member_size) {
         if (dim.struct_member_key.empty()) return false;
@@ -404,8 +404,7 @@ static bool workspace_dim_can_expand(const GpuVlaDim &dim,
         }
         return false;
     }
-    if (dim.is_host_expr) return dim.dim_expr != nullptr;
-    return dim.call_arg_index < n_call_args;
+    return dim.derived.ok();
 }
 
 // Defined after DeviceLaunchExpandVisitor so it can rebuild a host-evaluable
@@ -473,7 +472,7 @@ static bool launch_is_supported_args(ASR::symbol_t *kernel_sym,
     }
     for (auto &workspace : analyze_gpu_vla_workspaces(*kernel)) {
         for (auto &dim : workspace.dims) {
-            if (!workspace_dim_can_expand(dim, kernel, n_call_args)) {
+            if (!workspace_dim_can_expand(dim, kernel)) {
                 if (!unsupported_reason.empty()) return false;
                 return unsupported("a variable length array whose extent "
                     "cannot be rebuilt on the host");
@@ -1734,36 +1733,12 @@ class DeviceLaunchExpandVisitor :
                                 sit->second, b.i32((int) elem + 1),
                                 rank), int64);
                         }
-                    } else if (dim.is_host_expr) {
+                    } else {
                         ASR::expr_t *host = build_host_extent(al, loc, kernel,
                             x.m_args, x.n_args, dim.derived);
                         if (host != nullptr) {
                             extent = b.i2i_t(host, int64);
                         }
-                    } else if (!dim.member_path.empty()) {
-                        // A scalar component of a struct argument. The
-                        // struct reaches the kernel as a buffer, so the
-                        // host reads the component here instead.
-                        if (dim.call_arg_index < x.n_args) {
-                            ASR::expr_t *e =
-                                x.m_args[dim.call_arg_index].m_value;
-                            bool ok = true;
-                            for (const std::string &m : dim.member_path) {
-                                ASR::symbol_t *st =
-                                    ASRUtils::get_struct_sym_from_struct_expr(e);
-                                ASR::symbol_t *member =
-                                    gpu_struct_lookup_member(st, m);
-                                if (member == nullptr) { ok = false; break; }
-                                e = ASRUtils::EXPR(
-                                    ASR::make_StructInstanceMember_t(al, loc, e,
-                                        member, ASRUtils::symbol_type(member),
-                                        nullptr));
-                            }
-                            if (ok) extent = b.i2i_t(e, int64);
-                        }
-                    } else if (dim.call_arg_index < x.n_args) {
-                        extent = b.i2i_t(
-                            x.m_args[dim.call_arg_index].m_value, int64);
                     }
                     if (extent == nullptr) {
                         // Nothing is left to fall back on: the loop this
@@ -1846,7 +1821,6 @@ static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
         for (auto &dim : workspace.dims) {
             if (dim.is_constant) continue;
             if (dim.is_struct_member_size) continue;
-            if (dim.dim_expr == nullptr) continue;
             if (DeviceLaunchExpandVisitor::build_host_extent(al, loc,
                     kernel, call_args, n_call_args, dim.derived) == nullptr) {
                 return unsupported("a variable length array whose extent "

@@ -81,15 +81,18 @@ struct GpuExtentScope {
     }
 };
 
-// Describes one dimension of a VLA workspace buffer.
+// Describes one dimension of a VLA workspace buffer. Every extent is one
+// of exactly three things: a compile-time constant, the extents of a
+// struct member the device reads out of a sizes buffer, or `derived` --
+// which covers everything the host can work out for itself.
 struct GpuVlaDim {
-    bool is_constant;
-    int64_t constant_value;
-    size_t call_arg_index;
-    ASR::expr_t *dim_expr; // original ASR dimension expression
+    bool is_constant = true;
+    int64_t constant_value = 1;
     // When true, size is read from a struct member's allocatable
     // array size, resolved at dispatch time from the struct array's
     // per-element sizes. struct_member_key is "arr_name.member_name".
+    // Such an extent names the loop index, so it has no form the host
+    // could evaluate and `derived` is empty for it.
     bool is_struct_member_size = false;
     std::string struct_member_key;
     // Rank of that component. The sizes buffer holds this many extents
@@ -100,22 +103,9 @@ struct GpuVlaDim {
     // workspace cannot be strided by one element's product if another
     // thread may need a larger one.
     int64_t struct_member_elem_index = -1;
-    // When non-empty, the size is the scalar component chain
-    // arg%member_path[0]%member_path[1]%... of the kernel argument at
-    // `call_arg_index`. A struct is handed to the kernel as a buffer, so
-    // the host reads the component out of it to size the workspace.
-    std::vector<std::string> member_path;
-    // When true, the size is the whole of `dim_expr`, which is arithmetic
-    // over the kernel's parameters and nothing else. The launch rebuilds
-    // it over the actual arguments rather than collapsing it onto one of
-    // them -- `op%m_ + 1` is not `op%m_`.
-    bool is_host_expr = false;
-    // The one derivation of this extent, from `dim_expr`. The launch builds
-    // the buffer size from it and the emitter the per-thread stride, so
-    // neither works the extent out for itself and neither can disagree
-    // with the other about it. Empty for a dimension sized from a struct
-    // member's own extents, which names the loop index and so has no form
-    // the host could evaluate.
+    // The one derivation of this extent. The launch builds the buffer size
+    // from it and the emitter the per-thread stride, so neither works the
+    // extent out for itself and neither can disagree with the other.
     GpuExtent derived;
 };
 
@@ -1546,6 +1536,27 @@ inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
     return nullptr;
 }
 
+// How a workspace dimension that is not a compile-time constant is sized.
+// An extent that reads the extents of an allocatable struct component names
+// the loop index, so only the device can evaluate it and it is read from
+// the per-element sizes buffer; anything else is the one derivation, which
+// the host and the device then render each in its own names. False when the
+// extent is neither.
+inline bool classify_vla_dim(ASR::expr_t *dim, const GpuExtentScope &scope,
+        GpuVlaDim &vd) {
+    vd.is_constant = false;
+    vd.constant_value = 0;
+    std::string member_key;
+    if (dim_expr_struct_member_key(dim, member_key, &vd.struct_member_rank,
+            &vd.struct_member_elem_index)) {
+        vd.is_struct_member_size = true;
+        vd.struct_member_key = member_key;
+        return true;
+    }
+    vd.derived = gpu_derive_extent(dim, scope);
+    return vd.derived.ok();
+}
+
 // Describes, as a per-thread workspace, the shape an `allocate` gives an
 // array. Returns false when every extent is known at compile time, in which
 // case the array needs no workspace: the device code declares it in thread
@@ -1569,10 +1580,6 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
     for (size_t d = 0; d < alloc_arg.n_dims; d++) {
         ASR::expr_t *dim = alloc_arg.m_dims[d].m_length;
         GpuVlaDim vd;
-        vd.dim_expr = dim;
-        vd.is_constant = true;
-        vd.constant_value = 1;
-        vd.call_arg_index = 0;
         if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
             vd.constant_value =
                 ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
@@ -1581,30 +1588,11 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
             if (try_resolve_alloc_dim_constant(dim, scope.body,
                     scope.n_body, const_val)) {
                 vd.constant_value = const_val;
-            } else {
-                vd.is_constant = false;
-                vd.constant_value = 0;
-                vd.derived = gpu_derive_extent(dim, scope);
-                size_t idx = 0;
-                std::string member_key;
-                if (resolve_extent_to_dim_arg(dim, scope.arg_names, idx)) {
-                    vd.call_arg_index = idx;
-                } else if (resolve_extent_to_arg_member(dim, scope.arg_names,
-                        idx, vd.member_path)) {
-                    vd.call_arg_index = idx;
-                } else if (dim_expr_struct_member_key(dim, member_key,
-                        &vd.struct_member_rank,
-                        &vd.struct_member_elem_index)) {
-                    vd.is_struct_member_size = true;
-                    vd.struct_member_key = member_key;
-                } else if (vd.derived.ok()) {
-                    vd.is_host_expr = true;
-                } else {
-                    // The host cannot size a workspace it cannot measure.
-                    // Leave the array to the device language, which either
-                    // declares it or reports that it cannot.
-                    return false;
-                }
+            } else if (!classify_vla_dim(dim, scope, vd)) {
+                // The host cannot size a workspace it cannot measure.
+                // Leave the array to the device language, which either
+                // declares it or reports that it cannot.
+                return false;
             }
         }
         ws.dims.push_back(vd);
@@ -1635,37 +1623,14 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
     for (size_t d = 0; d < arr->n_dims; d++) {
         ASR::expr_t *dim = arr->m_dims[d].m_length;
         GpuVlaDim vd;
-        vd.dim_expr = dim;
-        vd.is_constant = true;
-        vd.constant_value = 1;
-        vd.call_arg_index = 0;
         if (dim && ASR::is_a<ASR::IntegerConstant_t>(*dim)) {
             vd.constant_value =
                 ASR::down_cast<ASR::IntegerConstant_t>(dim)->m_n;
-        } else if (dim) {
-            vd.is_constant = false;
-            vd.constant_value = 0;
-            vd.derived = gpu_derive_extent(dim, scope);
-            size_t idx = 0;
-            std::string member_key;
-            if (resolve_extent_to_dim_arg(dim, scope.arg_names, idx)) {
-                vd.call_arg_index = idx;
-            } else if (resolve_extent_to_arg_member(dim, scope.arg_names,
-                    idx, vd.member_path)) {
-                vd.call_arg_index = idx;
-            } else if (dim_expr_struct_member_key(dim, member_key,
-                    &vd.struct_member_rank,
-                    &vd.struct_member_elem_index)) {
-                vd.is_struct_member_size = true;
-                vd.struct_member_key = member_key;
-            } else if (vd.derived.ok()) {
-                vd.is_host_expr = true;
-            } else {
-                // The host cannot size a workspace it cannot measure. Leave
-                // the array to the device language, which either declares it
-                // or reports that it cannot.
-                return false;
-            }
+        } else if (dim && !classify_vla_dim(dim, scope, vd)) {
+            // The host cannot size a workspace it cannot measure. Leave
+            // the array to the device language, which either declares it
+            // or reports that it cannot.
+            return false;
         }
         ws.dims.push_back(vd);
     }
@@ -1751,10 +1716,8 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     ws.elem_size = gpu_vla_elem_size(arr);
     if (ws.elem_size <= 0) return false;
     GpuVlaDim vd;
-    vd.dim_expr = nullptr;
     vd.is_constant = false;
     vd.constant_value = 0;
-    vd.call_arg_index = 0;
     vd.is_struct_member_size = true;
     vd.struct_member_key = struct_key;
     vd.struct_member_rank = gpu_struct_member_rank_from_key(kernel,
