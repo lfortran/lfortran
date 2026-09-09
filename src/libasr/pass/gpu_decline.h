@@ -21,13 +21,71 @@ one day will not be raised at all, while a `BackendCannot` decline is a fact
 about the device that no amount of work here would change.
 */
 
-// The device dialect a loop is being offloaded to. The classification depends
-// on it: `real(8)` data is something the Metal device has no type for at all,
-// while the very same loop offloads onto CUDA.
+// The device dialect a loop is being offloaded to. Nothing outside
+// gpu_device_capabilities() below branches on this: it is the key the
+// capability table is written against, not a thing to test for.
 enum class GpuDevice {
     None,
     Metal,
     Cuda,
+};
+
+// What the selected device can do, in the terms the offload passes need to
+// reason in. Those passes ask what the device is capable of and never which
+// device it is, so that everything a dialect can and cannot do is written
+// down once -- in gpu_device_capabilities() -- and adding a dialect does not
+// mean finding every place that named the old ones.
+struct GpuDeviceCapabilities {
+    // The dialect these answers describe. Nothing outside this struct
+    // branches on it.
+    GpuDevice device = GpuDevice::None;
+
+    // Whether a device was selected at all. When none was, the offload
+    // passes have nothing to do.
+    bool device_selected() const { return device != GpuDevice::None; }
+
+    // The widest integer and real kind the device has a scalar type of, in
+    // the kind numbers a Fortran program writes. A buffer reaches the device
+    // as a block of bytes sized from the host element type, so a device
+    // whose widest type is narrower than the host's would stride through
+    // that buffer at the wrong size: it would read and write the wrong
+    // elements, and nothing would say so. A loop touching data wider than
+    // this stays on the host.
+    int max_integer_kind = 8;
+    int max_real_kind = 8;
+
+    // Whether a device function may declare a local array whose extent is
+    // only known once the kernel runs. Where it may not, the pass splices
+    // such a callee into the kernel body instead, so that the local becomes
+    // a kernel-level one and the per-thread workspace machinery can bind it
+    // to a slice of a device buffer.
+    bool device_function_runtime_sized_locals = true;
+
+    // Whether the device has a scalar type of the same in-memory width as
+    // `t`. Every dialect shares a floor -- the widths in
+    // gpu_scalar_width_supported() -- and the kinds above narrow it further.
+    bool has_scalar_type(ASR::ttype_t *t) const;
+
+    // Whether `t` is a width the shared floor has and this device has not.
+    // This is the question "does this device narrow it", which is not the
+    // same as "can this device take it": a type the shared floor already
+    // turns down is nothing this device narrowed.
+    bool narrows_scalar_type(ASR::ttype_t *t) const;
+
+    // Whether this device narrows the shared floor at all. When it does not,
+    // a sweep of every symbol reaching the kernel against this device's type
+    // set would only ask again what the kernel-argument and kernel-local
+    // checks already ask on every device.
+    bool narrows_scalar_types() const;
+
+    // Whether the pass splices device callees into the kernel body for this
+    // device. It does so exactly when a device function may not declare a
+    // run-time sized local. The splice is also what can leave a section of a
+    // section in the body -- an address no device pointer can express -- so
+    // the pass looks for that shape exactly when it splices.
+    bool splices_device_functions() const {
+        return !device_function_runtime_sized_locals;
+    }
 };
 
 // What a decline says about the compiler and about the device.
@@ -130,18 +188,14 @@ struct GpuDecline {
 // Which device the pass options select, if any.
 GpuDevice gpu_device_selected(const PassOptions &pass_options);
 
-// The one backend capability the classification needs today: whether `device`
-// has a scalar type of the same in-memory width as `t`. A buffer reaches the
-// device as bytes sized from the host element type, so a device without a
-// type of that width would stride through it wrongly.
-//
-// This is deliberately the smallest query that answers the question, and not
-// a description of a backend. When backend capabilities grow a home of their
-// own, this function is the seam that moves into it.
-bool gpu_device_has_scalar_type(GpuDevice device, ASR::ttype_t *t);
+// What that device is capable of. The one place a dialect's name decides
+// anything.
+GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
+GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
 
 // Whether this decline is a gap in LFortran or a limit of the device.
-GpuDeclineClass gpu_decline_class(const GpuDecline &decline, GpuDevice device);
+GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
+        const GpuDeviceCapabilities &caps);
 
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.

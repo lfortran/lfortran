@@ -10,29 +10,69 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options) {
     return GpuDevice::None;
 }
 
-bool gpu_device_has_scalar_type(GpuDevice device, ASR::ttype_t *t) {
+// Everything the offload machinery knows about a dialect, in one table. A
+// pass that needs a new answer about a device grows a field here rather than
+// a test of `device` where the question is asked.
+GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
+    GpuDeviceCapabilities caps;
+    caps.device = device;
+    switch (device) {
+        case GpuDevice::Metal:
+            // The Metal Shading Language has `float`, `half` and `bfloat`
+            // but no 64-bit floating point type, and the emitter has no
+            // 64-bit integer of its own either.
+            caps.max_integer_kind = 4;
+            caps.max_real_kind = 4;
+            // Metal shaders have neither variable-length arrays nor a heap,
+            // so a device function cannot declare a local whose extent is
+            // only known once the kernel runs.
+            caps.device_function_runtime_sized_locals = false;
+            break;
+        case GpuDevice::Cuda:
+            // CUDA C++ has `double` and `long long`, so it narrows nothing
+            // the shared width table permits.
+            //
+            // Run-time sized locals in a device function are left as the
+            // pass has always treated them for this device; whether CUDA can
+            // in fact declare one is a question of its own.
+            break;
+        case GpuDevice::None:
+            break;
+    }
+    return caps;
+}
+
+GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
+    return gpu_device_capabilities(gpu_device_selected(pass_options));
+}
+
+bool GpuDeviceCapabilities::has_scalar_type(ASR::ttype_t *t) const {
     if (t == nullptr) return false;
     // The width table every device we emit for shares: a kind the table
     // turns down has no device type of the host's width anywhere.
     if (!gpu_scalar_width_supported(t)) return false;
-    if (device == GpuDevice::Metal) {
-        // The Metal Shading Language has `float`, `half` and `bfloat` but no
-        // 64-bit floating point type, and the emitter has no 64-bit integer
-        // of its own either, so data of that width has no Metal type.
-        switch (t->type) {
-            case ASR::ttypeType::Real:
-                return ASR::down_cast<ASR::Real_t>(t)->m_kind != 8;
-            case ASR::ttypeType::Integer:
-                return ASR::down_cast<ASR::Integer_t>(t)->m_kind != 8;
-            default:
-                return true;
-        }
+    switch (t->type) {
+        case ASR::ttypeType::Real:
+            return ASR::down_cast<ASR::Real_t>(t)->m_kind <= max_real_kind;
+        case ASR::ttypeType::Integer:
+            return ASR::down_cast<ASR::Integer_t>(t)->m_kind
+                <= max_integer_kind;
+        default:
+            return true;
     }
-    return true;
+}
+
+bool GpuDeviceCapabilities::narrows_scalar_type(ASR::ttype_t *t) const {
+    if (t == nullptr) return false;
+    return gpu_scalar_width_supported(t) && !has_scalar_type(t);
+}
+
+bool GpuDeviceCapabilities::narrows_scalar_types() const {
+    return max_integer_kind < 8 || max_real_kind < 8;
 }
 
 GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
-        GpuDevice device) {
+        const GpuDeviceCapabilities &caps) {
     switch (decline.reason) {
         // A type the device has none of its own of the same width. Whether
         // that is the device's limit or this pass's gap is the device's
@@ -46,7 +86,7 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::StructMemberTypeWidth:
         case GpuDeclineReason::ArrayElementTypeWidth:
         case GpuDeclineReason::ScalarTypeWidth:
-            if (gpu_device_has_scalar_type(device, decline.type)) {
+            if (caps.has_scalar_type(decline.type)) {
                 return GpuDeclineClass::NotImplemented;
             }
             return GpuDeclineClass::BackendCannot;
@@ -157,8 +197,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "the type of '" + decline.name +
                 "' is not representable on the gpu";
         case GpuDeclineReason::WideTypeNotOnDevice:
-            return "the Metal backend does not support " + type_name +
-                ", used by '" + decline.name + "'";
+            return unsupported + type_name + ", used by '" +
+                decline.name + "'";
 
         case GpuDeclineReason::StatementIo:
             return unsupported + "input or output" + in_routine(decline);

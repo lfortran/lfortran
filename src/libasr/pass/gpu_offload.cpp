@@ -677,19 +677,6 @@ public:
     }
 };
 
-// Answers whether the Metal Shading Language can represent `t` with the
-// same in-memory width the host uses. Offloading a `do concurrent` that
-// touches data it cannot would make the kernel reinterpret the host buffers
-// and the by-value scalar-argument struct at the wrong element size,
-// silently producing wrong results, so such a loop has to stay on the CPU.
-//
-// The rule itself is gpu_device_has_scalar_type, so that the decline this
-// raises and the class that decline is given cannot disagree about what
-// Metal has a type for.
-static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
-    return gpu_device_has_scalar_type(GpuDevice::Metal, base_t);
-}
-
 // A derived type is representable only when every one of its data members
 // is, because the device struct is laid out member by member: a single
 // unsupported member anywhere in the type changes the element size the
@@ -701,7 +688,7 @@ static bool is_metal_representable_scalar_type(ASR::ttype_t *base_t) {
 // member graph is cyclic.
 static bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
-        bool (*scalar_ok)(ASR::ttype_t*)) {
+        const GpuDeviceCapabilities &caps) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
     if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
         // The derived type cannot be inspected, so it cannot be shown to
@@ -714,7 +701,7 @@ static bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         return true;
     }
     if (st->m_parent
-            && !gpu_struct_members_ok(st->m_parent, visited, scalar_ok)) {
+            && !gpu_struct_members_ok(st->m_parent, visited, caps)) {
         return false;
     }
     for (size_t i = 0; i < st->n_members; i++) {
@@ -727,39 +714,38 @@ static bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         if (ASR::is_a<ASR::StructType_t>(*mtype)) {
             if (!mvar->m_type_declaration
                     || !gpu_struct_members_ok(
-                        mvar->m_type_declaration, visited, scalar_ok)) {
+                        mvar->m_type_declaration, visited, caps)) {
                 return false;
             }
-        } else if (!scalar_ok(mtype)) {
+        } else if (!caps.has_scalar_type(mtype)) {
             return false;
         }
     }
     return true;
 }
 
-static bool is_metal_representable_struct(ASR::symbol_t *struct_sym,
-        std::set<ASR::Struct_t*> &visited) {
-    return gpu_struct_members_ok(struct_sym, visited,
-        is_metal_representable_scalar_type);
-}
-
-// Answers whether the Metal Shading Language can represent the type of `e`
-// with the same in-memory width the host uses. MSL has no 64-bit floating
-// point type (`float`/`half`/`bfloat` only), no 64-bit boolean, and no
-// complex type, so the Metal backend lowers all of those to a narrower (or
-// bogus) type. Offloading a `do concurrent` that touches such data would
-// make the kernel reinterpret the host buffers and the by-value
-// scalar-argument struct at the wrong element size, silently producing
-// wrong results, so such a loop has to stay on the CPU.
-static bool is_metal_representable_type(ASR::ttype_t *t, ASR::expr_t *e) {
+// Answers whether the selected device can represent the type of `e` with
+// the same in-memory width the host uses. A device whose type set is
+// narrower than the host's -- no 64-bit floating point type, no 64-bit
+// boolean, no complex type -- lowers such data to a narrower (or bogus)
+// type. Offloading a `do concurrent` that touches it would make the kernel
+// reinterpret the host buffers and the by-value scalar-argument struct at
+// the wrong element size, silently producing wrong results, so such a loop
+// has to stay on the CPU.
+//
+// The rule itself is the capability descriptor's, so that the decline this
+// raises and the class that decline is given cannot disagree about what the
+// device has a type for.
+static bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
+        ASR::ttype_t *t, ASR::expr_t *e) {
     ASR::ttype_t *base_t = ASRUtils::extract_type(t);
     if (ASR::is_a<ASR::StructType_t>(*base_t)) {
         if (!e) return false;
         std::set<ASR::Struct_t*> visited;
-        return is_metal_representable_struct(
-            ASRUtils::get_struct_sym_from_struct_expr(e), visited);
+        return gpu_struct_members_ok(
+            ASRUtils::get_struct_sym_from_struct_expr(e), visited, caps);
     }
-    return is_metal_representable_scalar_type(base_t);
+    return caps.has_scalar_type(base_t);
 }
 
 // The scalar element type behind `t`, for a decline that has to be
@@ -867,10 +853,10 @@ public:
 };
 
 // A BLOCK-local is not a kernel argument, so GpuSymbolCollector skips it
-// and the Metal representability sweep never sees it. The width table still
-// has to apply: a real(16) local used to compile as float at a 16-byte
-// host stride, and a derived-type local whose member is real(8) or
-// complex is the same hole.
+// and the representability sweep over kernel-reaching symbols never sees
+// it. The device's type set still has to apply: a real(16) local used to
+// compile as float at a 16-byte host stride, and a derived-type local whose
+// member is real(8) or complex is the same hole.
 class GpuLocalWidthChecker :
         public ASR::BaseWalkVisitor<GpuLocalWidthChecker> {
 public:
@@ -880,30 +866,24 @@ public:
     // derived type leaves this null: the width that offends is a member's,
     // and the message names the local rather than a type.
     ASR::ttype_t *bad_type = nullptr;
-    bool metal = false;
+    // What the selected device has a scalar type of.
+    GpuDeviceCapabilities caps;
 
     bool type_ok(ASR::Variable_t *var, ASR::ttype_t *&offending) {
         ASR::ttype_t *base = ASRUtils::extract_type(var->m_type);
         if (ASR::is_a<ASR::StructType_t>(*base)) {
             // A BLOCK-local is not a kernel argument, so the symbol
             // collector never hands this type to
-            // is_metal_representable_type. Walk the members here: a
+            // gpu_device_can_represent_type. Walk the members here: a
             // real(8) or complex component is the same silent-wrong-width
             // hole the scalar path already closed.
             if (!var->m_type_declaration) return false;
             std::set<ASR::Struct_t*> visited;
-            if (metal) {
-                return is_metal_representable_struct(
-                    var->m_type_declaration, visited);
-            }
             return gpu_struct_members_ok(var->m_type_declaration, visited,
-                gpu_scalar_width_supported);
+                caps);
         }
         offending = base;
-        if (metal) {
-            return is_metal_representable_scalar_type(base);
-        }
-        return gpu_scalar_width_supported(base);
+        return caps.has_scalar_type(base);
     }
 
     void check_scope(SymbolTable *symtab) {
@@ -2984,6 +2964,9 @@ class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
     PassOptions pass_options;
+    // What the selected device can do. Every question this pass asks about
+    // the device goes through here, so that none of it names a dialect.
+    GpuDeviceCapabilities device_caps;
     ASR::TranslationUnit_t &tu;
     // Scalar variables that receive the result of an inlined all()
     // reduction. These need to be passed back from the GPU kernel.
@@ -2991,7 +2974,8 @@ public:
 
     GpuOffloadVisitor(Allocator &al, PassOptions pass_options_,
                       ASR::TranslationUnit_t &tu_)
-        : StatementWalkVisitor(al), pass_options(pass_options_), tu(tu_) {}
+        : StatementWalkVisitor(al), pass_options(pass_options_),
+          device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
 
     // Load any module dependencies of a loaded submodule TU into
     // the main TU's symbol table so that fix_external_symbols can
@@ -9402,8 +9386,7 @@ public:
         // the gaps can be worked through and the waiver list stays honest.
         if (pass_options.gpu_decline_stats) {
             std::cerr << "gpu-decline: " << gpu_decline_class_name(
-                gpu_decline_class(decline,
-                    gpu_device_selected(pass_options)))
+                gpu_decline_class(decline, device_caps))
                 << ": " << why << std::endl;
         }
         if (pass_options.gpu_allow_cpu_fallback) {
@@ -10088,8 +10071,7 @@ public:
 
     void visit_OMPRegion(const ASR::OMPRegion_t &region) {
         DecisionScope decision(*this, &region);
-        if (!pass_options.gpu_offload_metal &&
-                !pass_options.gpu_offload_cuda) {
+        if (!device_caps.device_selected()) {
             decline(region);
             return;
         }
@@ -10502,7 +10484,7 @@ public:
                 return;
             }
             GpuLocalWidthChecker width_checker;
-            width_checker.metal = pass_options.gpu_offload_metal;
+            width_checker.caps = device_caps;
             for (size_t i = 0; i < work.n_body; i++) {
                 width_checker.visit_stmt(*work.body[i]);
             }
@@ -10514,9 +10496,11 @@ public:
             }
         }
 
-        // What the Metal Shading Language in particular cannot represent, and
-        // the splicing that only its lowering does.
-        if (pass_options.gpu_offload_metal) {
+        // A device whose scalar type set is narrower than the shared width
+        // table has to be asked about every symbol that reaches the kernel:
+        // where the two sets are the same, the kernel-argument and
+        // kernel-local checks that run on every device already ask it.
+        if (device_caps.narrows_scalar_types()) {
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
                 candidate_syms;
             collect_involved_syms(work, enclosing_block_scopes, candidate_syms);
@@ -10525,37 +10509,37 @@ public:
             // temporaries alike — is collected here, so a single sweep
             // covers all of them.
             for (auto &sym : candidate_syms) {
-                if (!is_metal_representable_type(sym.second.first,
-                        sym.second.second)) {
+                if (!gpu_device_can_represent_type(device_caps,
+                        sym.second.first, sym.second.second)) {
                     report_not_offloaded(loc, GpuDecline(
                         GpuDeclineReason::SymbolTypeNotRepresentable,
                         sym.first, scalar_type_of(sym.second.first)));
                     return;
                 }
             }
-            // A device function may need a run-time sized local -- an
-            // array-constructor temporary sized from an assumed-shape
-            // dummy, say -- which Metal cannot declare. Work out here
-            // which callees have to be spliced into the kernel body to
-            // move those locals to kernel scope, where the VLA workspace
-            // machinery applies. This is analysis only; the splice
-            // itself happens below, after the offload decision.
-            functions_to_inline.clear();
-            {
-                std::map<ASR::Function_t*, bool> needs_inline_memo;
-                std::set<ASR::Function_t*> on_stack;
-                if (!plan_device_function_inlining(work.body, work.n_body,
-                        needs_inline_memo, on_stack)) {
-                    // Some callee that must be inlined cannot be
-                    // (recursive, early `return`, nested scopes, or
-                    // called from a position with nowhere to put the
-                    // result). Emitting a shader that cannot compile
-                    // would be worse than not offloading at all.
-                    functions_to_inline.clear();
-                    report_not_offloaded(loc,
-                        GpuDecline(GpuDeclineReason::DeviceFunctionInlining));
-                    return;
-                }
+        }
+
+        // A device function may need a run-time sized local -- an
+        // array-constructor temporary sized from an assumed-shape dummy,
+        // say -- which a device that has no variable-length arrays cannot
+        // declare. Work out here which callees have to be spliced into the
+        // kernel body to move those locals to kernel scope, where the VLA
+        // workspace machinery applies. This is analysis only; the splice
+        // itself happens below, after the offload decision.
+        functions_to_inline.clear();
+        if (device_caps.splices_device_functions()) {
+            std::map<ASR::Function_t*, bool> needs_inline_memo;
+            std::set<ASR::Function_t*> on_stack;
+            if (!plan_device_function_inlining(work.body, work.n_body,
+                    needs_inline_memo, on_stack)) {
+                // Some callee that must be inlined cannot be (recursive,
+                // early `return`, nested scopes, or called from a position
+                // with nowhere to put the result). Emitting a kernel that
+                // cannot compile would be worse than not offloading at all.
+                functions_to_inline.clear();
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::DeviceFunctionInlining));
+                return;
             }
         }
 
@@ -10624,7 +10608,9 @@ public:
                 return;
             }
         }
-        if (pass_options.gpu_offload_metal) {
+        // Splicing a callee is what can leave a section of a section in the
+        // body, so the shape is only possible where the pass splices.
+        if (device_caps.splices_device_functions()) {
             GpuNestedSectionFinder nested_section;
             for (size_t i = 0; i < work.n_body; i++) {
                 nested_section.visit_stmt(*work.body[i]);
@@ -10967,20 +10953,17 @@ public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
         collect_involved_syms(work, enclosing_block_scopes, involved_syms);
 
-        if (pass_options.gpu_offload_metal) {
-            for (auto &sym : involved_syms) {
-                ASR::ttype_t *t = sym.second.first;
-                ASR::ttype_t *base_t = ASRUtils::type_get_past_array(t);
-                bool wide = (base_t->type == ASR::ttypeType::Real &&
-                        ASR::down_cast<ASR::Real_t>(base_t)->m_kind == 8)
-                    || (base_t->type == ASR::ttypeType::Integer &&
-                        ASR::down_cast<ASR::Integer_t>(base_t)->m_kind == 8);
-                if (wide) {
-                    report_not_offloaded(loc,
-                        GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
-                            sym.first, base_t));
-                    return;
-                }
+        // The rewrites above can bring in symbols the sweep before them
+        // never saw, so ask again of the widths this device narrows. A
+        // device that narrows none of them answers no to every symbol.
+        for (auto &sym : involved_syms) {
+            ASR::ttype_t *base_t =
+                ASRUtils::type_get_past_array(sym.second.first);
+            if (device_caps.narrows_scalar_type(base_t)) {
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
+                        sym.first, base_t));
+                return;
             }
         }
 
@@ -13737,7 +13720,7 @@ public:
 
 void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
-    if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) return;
+    if (!gpu_device_capabilities(pass_options).device_selected()) return;
     GpuOffloadVisitor v(al, pass_options, unit);
     v.asr_changed = true;
     while (v.asr_changed) {

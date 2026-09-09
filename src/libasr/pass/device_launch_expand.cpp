@@ -1840,7 +1840,7 @@ static bool launch_is_supported(Allocator &al, ASR::symbol_t *kernel_sym,
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
-    if (!pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) {
         return;
     }
     DeviceLaunchExpandVisitor v(al, unit);
