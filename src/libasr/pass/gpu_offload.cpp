@@ -1549,58 +1549,21 @@ public:
     }
 };
 
-// The routines a body calls directly, past external symbols and type bound
-// procedure declarations.
-class GpuDirectCalleeCollector
-        : public ASRUtils::BlockBodyWalkVisitor<GpuDirectCalleeCollector> {
-public:
-    std::set<ASR::Function_t*> callees;
-
-    void add(ASR::symbol_t *sym) {
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
-        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
-            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
-        }
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuDirectCalleeCollector>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuDirectCalleeCollector>::visit_SubroutineCall(x);
-    }
-};
-
-static std::set<ASR::Function_t*> direct_callees(ASR::stmt_t **body,
-        size_t n_body) {
-    GpuDirectCalleeCollector collector;
-    for (size_t i = 0; i < n_body; i++) {
-        collector.visit_stmt(*body[i]);
-    }
-    return collector.callees;
-}
-
 // Every routine a loop body reaches, however deep.
 static std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
         size_t n_body) {
     std::vector<ASR::Function_t*> order;
     std::set<ASR::Function_t*> seen;
     std::deque<ASR::Function_t*> work;
-    for (ASR::Function_t *fn : direct_callees(body, n_body)) {
+    for (ASR::Function_t *fn : gpu_callees(body, n_body, false)) {
         if (seen.insert(fn).second) work.push_back(fn);
     }
     while (!work.empty()) {
         ASR::Function_t *fn = work.front();
         work.pop_front();
         order.push_back(fn);
-        for (ASR::Function_t *callee : direct_callees(fn->m_body,
-                fn->n_body)) {
+        for (ASR::Function_t *callee : gpu_callees(fn->m_body,
+                fn->n_body, false)) {
             if (seen.insert(callee).second) work.push_back(callee);
         }
     }

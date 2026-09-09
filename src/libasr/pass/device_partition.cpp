@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/pass_utils.h>
@@ -41,40 +42,6 @@ that runs well after `gpu_offload`, and so is only visible to a later run.
 
 namespace {
 
-// Every routine a body reaches directly. A call through an external symbol or
-// a type bound procedure declaration counts as a call to what it resolves to,
-// and a routine handed over as an argument counts as one too, because
-// whoever receives it can call it.
-class CalleeCollector :
-        public ASRUtils::BlockBodyWalkVisitor<CalleeCollector> {
-public:
-    std::set<ASR::Function_t*> callees;
-
-    void add(ASR::symbol_t *sym) {
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
-        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
-            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
-        }
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<CalleeCollector>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<CalleeCollector>::visit_SubroutineCall(x);
-    }
-
-    void visit_Var(const ASR::Var_t &x) {
-        add(x.m_v);
-    }
-};
-
 class DevicePartition {
 public:
     void partition(ASR::TranslationUnit_t &unit) {
@@ -103,23 +70,23 @@ public:
         // not take is host code itself, and so is a starting point.
         std::set<ASR::Function_t*> host;
         for (ASR::Program_t *program : programs) {
-            for (ASR::Function_t *callee : called_by(program->m_body,
-                    program->n_body)) {
+            for (ASR::Function_t *callee : gpu_callees(program->m_body,
+                    program->n_body, true)) {
                 if (host.insert(callee).second) work.push_back(callee);
             }
         }
         for (ASR::Function_t *fn : functions) {
             if (device.count(fn) > 0) continue;
-            for (ASR::Function_t *callee : called_by(fn->m_body,
-                    fn->n_body)) {
+            for (ASR::Function_t *callee : gpu_callees(fn->m_body,
+                    fn->n_body, true)) {
                 if (host.insert(callee).second) work.push_back(callee);
             }
         }
         while (!work.empty()) {
             ASR::Function_t *fn = work.front();
             work.pop_front();
-            for (ASR::Function_t *callee : called_by(fn->m_body,
-                    fn->n_body)) {
+            for (ASR::Function_t *callee : gpu_callees(fn->m_body,
+                    fn->n_body, true)) {
                 if (host.insert(callee).second) work.push_back(callee);
             }
         }
@@ -168,20 +135,11 @@ private:
         }
     }
 
-    static std::set<ASR::Function_t*> called_by(ASR::stmt_t **body,
-            size_t n_body) {
-        CalleeCollector collector;
-        for (size_t i = 0; i < n_body; i++) {
-            collector.visit_stmt(*body[i]);
-        }
-        return collector.callees;
-    }
-
     // What device code inside `fn` reaches: what its body calls, and the
     // routines it contains, which are reachable from nowhere else.
     static std::set<ASR::Function_t*> reached_by(ASR::Function_t *fn) {
-        std::set<ASR::Function_t*> reached = called_by(fn->m_body,
-            fn->n_body);
+        std::set<ASR::Function_t*> reached = gpu_callees(fn->m_body,
+            fn->n_body, true);
         for (auto &item : fn->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 reached.insert(ASR::down_cast<ASR::Function_t>(item.second));

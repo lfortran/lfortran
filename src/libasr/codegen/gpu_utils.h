@@ -796,6 +796,57 @@ inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
     }
 }
 
+// Every routine a statement list calls, past external symbols and type bound
+// procedure declarations.
+//
+// `procedure_values` says whether naming a routine without calling it --
+// handing it over as an actual argument, say -- counts. It does when the
+// question is what device code can reach, because whoever receives the
+// routine can call it; it does not when the question is what a kernel body
+// has to have spliced into it, which is only what that body actually calls.
+class GpuCalleeCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuCalleeCollector> {
+public:
+    std::set<ASR::Function_t*> callees;
+    const bool procedure_values;
+
+    explicit GpuCalleeCollector(bool procedure_values_)
+        : procedure_values(procedure_values_) {}
+
+    void add(ASR::symbol_t *sym) {
+        if (sym == nullptr) return;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr) return;
+        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
+        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
+            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        add(x.m_name);
+        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        add(x.m_name);
+        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (procedure_values) add(x.m_v);
+    }
+};
+
+inline std::set<ASR::Function_t*> gpu_callees(ASR::stmt_t **body,
+        size_t n_body, bool procedure_values) {
+    GpuCalleeCollector collector(procedure_values);
+    for (size_t i = 0; i < n_body; i++) {
+        collector.visit_stmt(*body[i]);
+    }
+    return collector.callees;
+}
+
 // Counts the writes to one scalar in a statement list, keeping the value of
 // the last one. A name written exactly once stands for that value
 // everywhere.
