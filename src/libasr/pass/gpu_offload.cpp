@@ -411,8 +411,9 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
                 }
             }
             if (!runtime) continue;
-            if (declared_shape_to_vla_workspace(arr, vname, arg_names, ws,
-                    symtab, root_body, root_n)) {
+            if (declared_shape_to_vla_workspace(arr, vname,
+                    GpuExtentScope{nullptr, arg_names, symtab, root_body,
+                        root_n}, ws)) {
                 continue;
             }
             unresolved_name = vname;
@@ -432,8 +433,9 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
             }
         }
         if (!runtime) continue;
-        if (alloc_shape_to_vla_workspace(*target, arr, vname, root_body,
-                root_n, arg_names, ws, symtab)) {
+        if (alloc_shape_to_vla_workspace(*target, arr, vname,
+                GpuExtentScope{nullptr, arg_names, symtab, root_body,
+                    root_n}, ws)) {
             continue;
         }
         unresolved_name = vname;
@@ -478,8 +480,8 @@ public:
 
     bool host_readable(ASR::expr_t *e) {
         if (e == nullptr) return true;
-        return gpu_designator_is_host_readable(e, arg_names, nullptr,
-            body, n_body);
+        return gpu_designator_is_host_readable(e,
+            GpuExtentScope{nullptr, arg_names, nullptr, body, n_body});
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -7357,7 +7359,7 @@ public:
         GpuVlaWorkspace ws;
         return declared_shape_to_vla_workspace(
             ASR::down_cast<ASR::Array_t>(arr_type), "__gpu_alias",
-            arg_names, ws);
+            GpuExtentScope{nullptr, arg_names, nullptr, nullptr, 0}, ws);
     }
 
     bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
