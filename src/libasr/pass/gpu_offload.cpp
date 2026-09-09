@@ -500,35 +500,14 @@ static void set_loop_head_bounds(Allocator &al, const Location &loc,
     head.m_end = bounds.second;
 }
 
-static ASR::symbol_t* get_struct_member_recursive(ASR::Struct_t *s,
-        const std::string &name) {
-    std::set<ASR::Struct_t*> seen;
-    while (s != nullptr) {
-        if (!seen.insert(s).second) break;
-        ASR::symbol_t *member = s->m_symtab->get_symbol(name);
-        if (member) return member;
-        if (!s->m_parent) break;
-        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
-            s->m_parent);
-        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
-        s = ASR::down_cast<ASR::Struct_t>(parent);
-    }
-    return nullptr;
-}
-
 // Name of the Struct that owns `member`, used as the m_module_name of an
 // ExternalSymbol pointing at it. For an inherited member this is the
 // ancestor type, not the type the reference was written through.
 static std::string struct_member_owner_name(ASR::symbol_t *member,
         const std::string &fallback) {
-    SymbolTable *owner_st = ASRUtils::symbol_parent_symtab(member);
-    if (owner_st && owner_st->asr_owner &&
-            owner_st->asr_owner->type == ASR::asrType::symbol) {
-        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-            owner_st->asr_owner);
-        if (ASR::is_a<ASR::Struct_t>(*owner)) {
-            return std::string(ASRUtils::symbol_name(owner));
-        }
+    ASR::symbol_t *owner = ASRUtils::get_asr_owner(member);
+    if (owner && ASR::is_a<ASR::Struct_t>(*owner)) {
+        return std::string(ASRUtils::symbol_name(owner));
     }
     return fallback;
 }
@@ -3121,8 +3100,7 @@ public:
         if (sym && is_a<ASR::Struct_t>(*sym)) return sym;
         for (auto &item : kernel_scope->get_scope()) {
             if (!is_a<ASR::Struct_t>(*item.second)) continue;
-            ASR::Struct_t *s = down_cast<ASR::Struct_t>(item.second);
-            if (get_struct_member_recursive(s, member_name)) {
+            if (gpu_struct_lookup_member(item.second, member_name)) {
                 return item.second;
             }
         }
@@ -3247,8 +3225,7 @@ public:
                     ASR::symbol_t *es_struct_owner =
                         down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                     if (is_a<ASR::Struct_t>(*es_struct_owner) &&
-                            get_struct_member_recursive(
-                                down_cast<ASR::Struct_t>(kernel_struct),
+                            gpu_struct_lookup_member(kernel_struct,
                                 es->m_original_name)) {
                         is_member = true;
                     }
@@ -3257,8 +3234,7 @@ public:
                     std::string es_name = item.first;
                     if (kernel_scope->get_symbol(es_name)) continue;
                     ASR::symbol_t *new_member_in_struct =
-                        get_struct_member_recursive(
-                            down_cast<ASR::Struct_t>(kernel_struct),
+                        gpu_struct_lookup_member(kernel_struct,
                             es->m_original_name);
                     if (!new_member_in_struct) continue;
                     std::string owner_name = struct_member_owner_name(
@@ -12130,10 +12106,8 @@ public:
                                     is_a<ASR::Struct_t>(*kernel_struct)) {
                                 struct_name = down_cast<ASR::Struct_t>(
                                     kernel_struct)->m_name;
-                                ASR::Struct_t *ks =
-                                    down_cast<ASR::Struct_t>(kernel_struct);
                                 ASR::symbol_t *kernel_method =
-                                    get_struct_member_recursive(ks,
+                                    gpu_struct_lookup_member(kernel_struct,
                                         orig_name);
                                 if (kernel_method) {
                                     struct_name = struct_member_owner_name(
