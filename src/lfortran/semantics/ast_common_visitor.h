@@ -17258,6 +17258,12 @@ public:
         ASR::ttype_t* n_type = ASRUtils::expr_type(n);
         ASR::ttype_t* w_type = ASRUtils::expr_type(w);
 
+        ASR::ttype_t* base_n = ASRUtils::type_get_past_array(n_type);
+        ASR::ttype_t* base_w = ASRUtils::type_get_past_array(w_type);
+        if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
+            throw SemanticError("Arguments to the 'shifta' intrinsic must be of type INTEGER", loc);
+        }
+
         if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
                 w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr, nullptr));
@@ -17266,7 +17272,7 @@ public:
 
         return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift,
                             n, w, n_type);
-    }
+}
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
         std::string var_name = to_lower(x.m_func);
