@@ -1845,8 +1845,7 @@ public:
         std::string total;
         for (size_t d = 0; d < arr->n_dims; d++) {
             std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
-            func_array_size_params[name + "__dim"
-                + std::to_string(d + 1)] = len;
+            func_array_size_params[dim_size_key(name, d)] = len;
             total += total.empty() ? len : (" * " + len);
         }
         func_array_size_params[name] = "(" + total + ")";
@@ -2009,7 +2008,7 @@ public:
                     std::string vname = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
                     auto dit = func_array_size_params.find(
-                        vname + "__dim" + std::to_string(d + 1));
+                        dim_size_key(vname, d));
                     auto sect = ptr_section_dim_sizes.find(vname);
                     if (dit != func_array_size_params.end()) {
                         src << dit->second;
@@ -2084,11 +2083,58 @@ public:
         return "(" + res + ")";
     }
 
-    // Key under which the extent of dimension `d` (0-based) of a struct
-    // component is registered in func_array_size_params.
-    static std::string struct_member_dim_key(const std::string &base_key,
-            size_t d) {
-        return base_key + "__dim" + std::to_string(d + 1);
+    // What separates an array from the dimension of it that a
+    // func_array_size_params entry describes.
+    static constexpr const char *dim_key_mark = "__dim";
+
+    // Key under which the extent of dimension `d` (0-based) of an array is
+    // registered in func_array_size_params. `base_key` is the array's own
+    // name, or "struct.component" for an allocatable component of a struct
+    // argument.
+    static std::string dim_size_key(const std::string &base_key, size_t d) {
+        return base_key + dim_key_mark + std::to_string(d + 1);
+    }
+
+    // The array a per-dimension entry belongs to, and which dimension of it
+    // the entry is. This is the only place a key is read back apart, so it
+    // can only read what dim_size_key wrote; `false` for a key that is not
+    // a per-dimension entry at all.
+    static bool dim_size_key_parts(const std::string &key,
+            std::string &base_key, size_t &d) {
+        std::string mark(dim_key_mark);
+        size_t at = key.rfind(mark);
+        if (at == std::string::npos) return false;
+        size_t digits = at + mark.size();
+        if (digits >= key.size()) return false;
+        int64_t n = 0;
+        for (size_t i = digits; i < key.size(); i++) {
+            if (key[i] < '0' || key[i] > '9') return false;
+            n = n * 10 + (key[i] - '0');
+        }
+        if (n < 1) return false;
+        base_key = key.substr(0, at);
+        d = (size_t)(n - 1);
+        return true;
+    }
+
+    // Let the extents registered for `from` describe `to` as well, one
+    // dimension at a time. A pointer bound to an array, or a local copy of
+    // a dummy, reads its extents from the array it stands for; the entries
+    // are found by the key shape above rather than by scanning for a
+    // spelling, so the two sides cannot disagree about what a key looks
+    // like.
+    void copy_dim_size_keys(const std::string &from, const std::string &to) {
+        std::vector<std::pair<std::string, std::string>> copied;
+        for (auto &entry : func_array_size_params) {
+            std::string base;
+            size_t d = 0;
+            if (!dim_size_key_parts(entry.first, base, d)) continue;
+            if (base != from) continue;
+            copied.push_back({dim_size_key(to, d), entry.second});
+        }
+        for (auto &e : copied) {
+            func_array_size_params[e.first] = e.second;
+        }
     }
 
     // Name of the kernel/function parameter holding that extent.
@@ -2241,7 +2287,7 @@ public:
             std::string key = struct_name + "." + mem_name;
             if (dim_value > 0) {
                 auto dit = func_array_size_params.find(
-                    struct_member_dim_key(key, (size_t)(dim_value - 1)));
+                    dim_size_key(key, (size_t)(dim_value - 1)));
                 if (dit != func_array_size_params.end()) {
                     src << dit->second;
                     return;
@@ -2528,7 +2574,7 @@ public:
                 std::string key = var_name + "." + mem_name;
                 for (size_t d = 0; d < rank; d++) {
                     auto dit = func_array_size_params.find(
-                        struct_member_dim_key(key, d));
+                        dim_size_key(key, d));
                     if (dit != func_array_size_params.end()) {
                         src << ", " << dit->second;
                     } else {
@@ -2889,7 +2935,7 @@ public:
                                             arg->m_name, mem_name, d);
                                     src << ", int " << dim_name;
                                     func_array_size_params[
-                                        struct_member_dim_key(key, d)]
+                                        dim_size_key(key, d)]
                                         = dim_name;
                                 }
                             }
@@ -2934,8 +2980,8 @@ public:
                         std::string dim_name = GpuNames::dim_size(
                             aname, d);
                         src << ", int " << dim_name;
-                        func_array_size_params[aname + "__dim"
-                            + std::to_string(d + 1)] = dim_name;
+                        func_array_size_params[dim_size_key(aname, d)]
+                            = dim_name;
                     }
                     // Register total size as the product
                     std::string total = GpuNames::dim_size(aname, 0);
@@ -2980,8 +3026,8 @@ public:
                         std::string dim_name = GpuNames::dim_size(
                             aname, d);
                         src << ", int " << dim_name;
-                        func_array_size_params[aname + "__dim"
-                            + std::to_string(d + 1)] = dim_name;
+                        func_array_size_params[dim_size_key(aname, d)]
+                            = dim_name;
                         total += total.empty()
                             ? dim_name : (" * " + dim_name);
                     }
@@ -3132,21 +3178,7 @@ public:
                     if (spit != func_array_size_params.end() &&
                             !func_array_size_params.count(tgt_name)) {
                         func_array_size_params[tgt_name] = spit->second;
-                        // Collect per-dimension size entries to add
-                        std::vector<std::pair<std::string, std::string>>
-                            new_entries;
-                        std::string prefix = val_name + "__dim";
-                        for (auto &entry : func_array_size_params) {
-                            if (entry.first.find(prefix) == 0) {
-                                std::string suffix = entry.first.substr(
-                                    val_name.size());
-                                new_entries.push_back(
-                                    {tgt_name + suffix, entry.second});
-                            }
-                        }
-                        for (auto &e : new_entries) {
-                            func_array_size_params[e.first] = e.second;
-                        }
+                        copy_dim_size_keys(val_name, tgt_name);
                     }
                 }
             }
@@ -3790,7 +3822,7 @@ public:
                             if (rank > 1) {
                                 for (size_t d = 0; d < rank; d++) {
                                     func_array_size_params[
-                                        struct_member_dim_key(key, d)]
+                                        dim_size_key(key, d)]
                                         = struct_member_dim_param(
                                             args[i].name, mem_name, d);
                                 }
@@ -3857,11 +3889,8 @@ public:
                 continue;
             }
             for (size_t d = 0; d < arr->n_dims; d++) {
-                std::string dim_key = args[i].name + "__dim"
-                    + std::to_string(d + 1);
-                std::string dim_var = GpuNames::dim_size(
-                    args[i].name, d);
-                func_array_size_params[dim_key] = dim_var;
+                func_array_size_params[dim_size_key(args[i].name, d)]
+                    = GpuNames::dim_size(args[i].name, d);
             }
             // Also register the total flat size as the product of
             // per-dimension sizes so existing ArraySize lookups work.
@@ -3988,24 +4017,7 @@ public:
                             if (spit != func_array_size_params.end()) {
                                 func_array_size_params[tgt_name]
                                     = spit->second;
-                                std::vector<std::pair<std::string,
-                                    std::string>> new_entries;
-                                std::string pfx = val_name + "__dim";
-                                for (auto &entry :
-                                        func_array_size_params) {
-                                    if (entry.first.find(pfx) == 0) {
-                                        std::string sfx =
-                                            entry.first.substr(
-                                                val_name.size());
-                                        new_entries.push_back(
-                                            {tgt_name + sfx,
-                                             entry.second});
-                                    }
-                                }
-                                for (auto &e : new_entries) {
-                                    func_array_size_params[e.first]
-                                        = e.second;
-                                }
+                                copy_dim_size_keys(val_name, tgt_name);
                             }
                         }
                     }
@@ -4885,25 +4897,7 @@ public:
                                     func_array_size_params.end()) {
                                 func_array_size_params[tgt_name]
                                     = spit->second;
-                                std::vector<std::pair<std::string,
-                                    std::string>> new_entries;
-                                std::string pfx =
-                                    val_name + "__dim";
-                                for (auto &entry :
-                                        func_array_size_params) {
-                                    if (entry.first.find(pfx) == 0) {
-                                        std::string sfx =
-                                            entry.first.substr(
-                                                val_name.size());
-                                        new_entries.push_back(
-                                            {tgt_name + sfx,
-                                             entry.second});
-                                    }
-                                }
-                                for (auto &e : new_entries) {
-                                    func_array_size_params[e.first]
-                                        = e.second;
-                                }
+                                copy_dim_size_keys(val_name, tgt_name);
                             }
                         }
                     }
@@ -5130,12 +5124,10 @@ public:
                                     } else {
                                         // Try per-dimension key first
                                         // (for assumed-shape kernel args)
-                                        std::string dim_key = vname
-                                            + "__dim"
-                                            + std::to_string(dim_idx + 1);
                                         auto dpit =
                                             func_array_size_params.find(
-                                                dim_key);
+                                                dim_size_key(vname,
+                                                    dim_idx));
                                         if (dpit !=
                                                 func_array_size_params
                                                     .end()) {
@@ -5173,11 +5165,10 @@ public:
                                         if (pit != ptr_section_sizes.end()) {
                                             src << pit->second;
                                         } else {
-                                            std::string dim_key = vname
-                                                + "__dim"
-                                                + std::to_string(dim_idx + 1);
                                             auto dpit =
-                                                func_array_size_params.find(dim_key);
+                                                func_array_size_params.find(
+                                                    dim_size_key(vname,
+                                                        dim_idx));
                                             if (dpit != func_array_size_params.end()) {
                                                 src << dpit->second;
                                             } else {
@@ -5683,8 +5674,8 @@ public:
     std::string looked_up_dim_extent_str(const std::string &arr_var_name,
             size_t d) {
         if (arr_var_name.empty()) return "";
-        auto pit = func_array_size_params.find(arr_var_name + "__dim"
-            + std::to_string(d + 1));
+        auto pit = func_array_size_params.find(
+            dim_size_key(arr_var_name, d));
         if (pit != func_array_size_params.end()) return pit->second;
         auto sit = ptr_section_dim_sizes.find(arr_var_name);
         if (sit != ptr_section_dim_sizes.end() && d < sit->second.size()) {
