@@ -111,6 +111,10 @@ struct GpuVlaDim {
 
 // Describes a VLA workspace buffer required by a GPU kernel.
 struct GpuVlaWorkspace {
+    // The array the workspace stands in for. Null only for a workspace
+    // built to ask whether some array *would* be offloadable -- there is
+    // no variable behind that question yet.
+    ASR::symbol_t *var = nullptr;
     std::string var_name;
     int buffer_index;
     int elem_size;
@@ -1860,6 +1864,7 @@ inline void scan_kernel_scope_alloc_vlas(
         if (arg_set.count(vname)) continue;
         if (handled_names.count(vname)) continue;
         GpuVlaWorkspace ws;
+        ws.var = item.second;
         bool have = false;
         if (!ASRUtils::is_allocatable(var->m_type)) {
             // An array declared with extents the device cannot evaluate
@@ -1981,6 +1986,7 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
 
                 GpuVlaWorkspace ws;
+                ws.var = item.second;
                 if (!declared_shape_to_vla_workspace(arr, var->m_name,
                         GpuExtentScope{&kernel, arg_names, symtab,
                             kernel.m_body, kernel.n_body}, ws)) {
@@ -2010,6 +2016,7 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 }
                 if (already) continue;
                 GpuVlaWorkspace ws;
+                ws.var = item2.second;
                 bool have = false;
                 ASR::Allocate_t *alloc = find_allocate_for_var(
                     body, n_body, vname);

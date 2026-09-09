@@ -401,6 +401,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
         std::string vname(var->m_name);
         GpuVlaWorkspace ws;
+        ws.var = item.second;
         if (!ASRUtils::is_allocatable(var->m_type)) {
             // An automatic array: every extent is in its own type. One
             // that is a compile-time constant needs no workspace at all.

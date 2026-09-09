@@ -519,25 +519,30 @@ public:
     // section's extents rather than its total size.
     std::map<std::string, std::vector<std::string>> ptr_section_dim_sizes;
 
-    // Tracks pointer variables that are associated with local
-    // (thread-space) arrays rather than device buffer arrays.
-    std::set<std::string> ptr_to_local_alloc;
+    // Which address space a variable lives in is a property of the
+    // variable, not of what it is called: a routine spliced into a kernel
+    // brings locals of its own, and one of them may be spelled like a
+    // kernel argument without being one. So these four are sets of the
+    // variables themselves.
 
-    // Kernel argument names (device buffer parameters). Used to
-    // distinguish device-space arrays from thread-local arrays when
-    // determining pointer address spaces.
-    std::set<std::string> kernel_arg_names;
+    // Pointer variables associated with local (thread-space) arrays
+    // rather than with device buffer arrays.
+    std::set<ASR::symbol_t*> ptr_to_local_alloc;
 
-    // Names of allocatable array variables in Block scopes that have
-    // non-constant dimensions (VLA workspaces). These are backed by
-    // device buffers and must keep device address space.
-    std::set<std::string> vla_workspace_names;
+    // The kernel's arguments: the device buffer parameters, which
+    // distinguish device-space arrays from thread-local ones.
+    std::set<ASR::symbol_t*> kernel_arg_vars;
 
-    // Names of allocatable array variables in kernel/block scope that
-    // are NOT kernel args and NOT VLA workspaces. These are emitted as
-    // fixed-size thread-local arrays and should be treated as
-    // thread-space for pointer tracking purposes during prescan.
-    std::set<std::string> prescan_local_allocs;
+    // Allocatable arrays of Block scopes with non-constant dimensions
+    // (VLA workspaces). These are backed by device buffers and must keep
+    // device address space.
+    std::set<ASR::symbol_t*> vla_workspace_vars;
+
+    // Allocatable arrays of kernel/block scope that are NOT kernel args
+    // and NOT VLA workspaces. These are emitted as fixed-size
+    // thread-local arrays, so the prescan treats them as thread-space
+    // when it tracks pointers.
+    std::set<ASR::symbol_t*> prescan_local_allocs;
 
     // Tracks function names already emitted across all kernels in the
     // current translation unit, preventing duplicate definitions when
@@ -749,7 +754,7 @@ public:
             if (ASR::is_a<ASR::Array_t>(*ptr_inner)) {
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(ptr_inner);
                 std::string vname(var->m_name);
-                if (ptr_to_local_alloc.count(vname)) {
+                if (ptr_to_local_alloc.count((ASR::symbol_t*)var)) {
                     src << get_indent()
                         << space_prefix(ASR::memory_spaceType::Thread)
                         << gpu_type(arr->m_type)
@@ -1035,13 +1040,14 @@ public:
         alloc_array_size_exprs.clear();
         array_size_source_expr.clear();
         ptr_to_local_alloc.clear();
-        kernel_arg_names.clear();
-        vla_workspace_names.clear();
+        kernel_arg_vars.clear();
+        vla_workspace_vars.clear();
         prescan_local_allocs.clear();
         // Collect kernel argument names (device buffer parameters)
         for (size_t i = 0; i < kf.n_args; i++) {
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kf.m_args[i]);
-            kernel_arg_names.insert(ASRUtils::symbol_name(v->m_v));
+            kernel_arg_vars.insert(
+                ASRUtils::symbol_get_past_external(v->m_v));
         }
         // Collect VLA workspace variable names (allocatable arrays
         // with non-constant dimensions in Block scopes). These are
@@ -1061,8 +1067,7 @@ public:
                     if (arr->m_dims[d].m_length &&
                             !ASR::is_a<ASR::IntegerConstant_t>(
                                 *arr->m_dims[d].m_length)) {
-                        vla_workspace_names.insert(
-                            std::string(var->m_name));
+                        vla_workspace_vars.insert(item.second);
                         break;
                     }
                 }
@@ -1072,7 +1077,7 @@ public:
         // current_vla_infos, which covers allocatable arrays with
         // runtime Allocate dimensions). These get device buffers.
         for (const auto &ws : current_vla_infos) {
-            vla_workspace_names.insert(ws.var_name);
+            if (ws.var) vla_workspace_vars.insert(ws.var);
         }
         // Step 1: For each function in kernel scope, find Allocate
         // stmts and record param_index → size. Also detect assignments
@@ -1221,10 +1226,9 @@ public:
                 ASR::ttype_t *inner =
                     ASRUtils::type_get_past_allocatable(var->m_type);
                 if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
-                std::string vname(var->m_name);
-                if (kernel_arg_names.count(vname)) continue;
-                if (vla_workspace_names.count(vname)) continue;
-                prescan_local_allocs.insert(vname);
+                if (kernel_arg_vars.count(item.second)) continue;
+                if (vla_workspace_vars.count(item.second)) continue;
+                prescan_local_allocs.insert(item.second);
             }
         };
         mark_local_allocs(kf.m_symtab);
@@ -1531,13 +1535,18 @@ public:
             ASR::Associate_t *assoc =
                 ASR::down_cast<ASR::Associate_t>(stmt);
             if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
-                std::string tgt = ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
+                ASR::symbol_t *tgt_sym =
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(
+                            assoc->m_target)->m_v);
+                std::string tgt = ASRUtils::symbol_name(tgt_sym);
                 // Case 1: Associate target = Var (direct variable)
                 if (ASR::is_a<ASR::Var_t>(*assoc->m_value)) {
-                    std::string val = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(
-                            assoc->m_value)->m_v);
+                    ASR::symbol_t *val_sym =
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(
+                                assoc->m_value)->m_v);
+                    std::string val = ASRUtils::symbol_name(val_sym);
                     // Propagate alloc size info to the pointer target
                     if (local_alloc_arrays.count(val) ||
                             alloc_array_sizes.count(val) ||
@@ -1562,25 +1571,22 @@ public:
                     // local_alloc_arrays) are also thread-space.
                     // VLA workspaces backed by device buffers stay
                     // device.
-                    if (!kernel_arg_names.count(val)) {
-                        if (!vla_workspace_names.count(val) &&
+                    if (!kernel_arg_vars.count(val_sym)) {
+                        if (!vla_workspace_vars.count(val_sym) &&
                                 (local_alloc_arrays.count(val) ||
                                 alloc_array_sizes.count(val) ||
                                 alloc_array_size_exprs.count(val))) {
-                            ptr_to_local_alloc.insert(tgt);
+                            ptr_to_local_alloc.insert(tgt_sym);
                         } else {
-                            ASR::symbol_t *val_sym =
-                                ASR::down_cast<ASR::Var_t>(
-                                    assoc->m_value)->m_v;
                             if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
                                 ASR::ttype_t *vt =
                                     ASR::down_cast<ASR::Variable_t>(
                                         val_sym)->m_type;
-                                if (prescan_local_allocs.count(val) ||
-                                        (!ASRUtils::is_allocatable(vt)
-                                        && !vla_workspace_names.count(
-                                            val))) {
-                                    ptr_to_local_alloc.insert(tgt);
+                                if (prescan_local_allocs.count(val_sym)
+                                        || (!ASRUtils::is_allocatable(vt)
+                                        && !vla_workspace_vars.count(
+                                            val_sym))) {
+                                    ptr_to_local_alloc.insert(tgt_sym);
                                 }
                             }
                         }
@@ -1614,23 +1620,22 @@ public:
                         array_size_source_expr[tgt] = assoc->m_value;
                     }
                     if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
-                        std::string base = ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(
-                                as->m_v)->m_v);
-                        if (!kernel_arg_names.count(base)) {
+                        ASR::symbol_t *base_sym =
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(
+                                    as->m_v)->m_v);
+                        std::string base = ASRUtils::symbol_name(base_sym);
+                        if (!kernel_arg_vars.count(base_sym)) {
                             // Sections of pointer-to-local or
                             // local-alloc arrays are thread-space.
-                            if (!vla_workspace_names.count(base) &&
-                                    (ptr_to_local_alloc.count(base) ||
+                            if (!vla_workspace_vars.count(base_sym) &&
+                                    (ptr_to_local_alloc.count(base_sym) ||
                                     local_alloc_arrays.count(base) ||
                                     alloc_array_sizes.count(base) ||
                                     alloc_array_size_exprs.count(
                                         base))) {
-                                ptr_to_local_alloc.insert(tgt);
+                                ptr_to_local_alloc.insert(tgt_sym);
                             } else {
-                                ASR::symbol_t *base_sym =
-                                    ASR::down_cast<ASR::Var_t>(
-                                        as->m_v)->m_v;
                                 if (ASR::is_a<ASR::Variable_t>(
                                         *base_sym)) {
                                     ASR::ttype_t *bt =
@@ -1638,13 +1643,13 @@ public:
                                             ASR::Variable_t>(
                                                 base_sym)->m_type;
                                     if (prescan_local_allocs.count(
-                                                base) ||
+                                                base_sym) ||
                                             (!ASRUtils::is_allocatable(
                                                 bt) &&
-                                            !vla_workspace_names
-                                                .count(base))) {
+                                            !vla_workspace_vars
+                                                .count(base_sym))) {
                                         ptr_to_local_alloc.insert(
-                                            tgt);
+                                            tgt_sym);
                                     }
                                 }
                             }
