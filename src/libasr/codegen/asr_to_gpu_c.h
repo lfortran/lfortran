@@ -5093,41 +5093,12 @@ public:
                                         ab->m_dim ? (int64_t)(dim_idx + 1)
                                                   : (int64_t)-1);
                                 } else if (ASR::is_a<ASR::Var_t>(*ab->m_v)) {
-                                    std::string vname = ASRUtils::symbol_name(
-                                        ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v);
-                                    auto pit = ptr_section_sizes.find(vname);
-                                    if (pit != ptr_section_sizes.end()) {
-                                        src << pit->second;
-                                    } else {
-                                        // Try per-dimension key first
-                                        // (for assumed-shape kernel args)
-                                        auto dpit =
-                                            func_array_size_params.find(
-                                                dim_size_key(vname,
-                                                    dim_idx));
-                                        if (dpit !=
-                                                func_array_size_params
-                                                    .end()) {
-                                            src << dpit->second;
-                                        } else {
-                                        auto fpit = func_array_size_params.find(vname);
-                                        if (fpit != func_array_size_params.end()) {
-                                            src << fpit->second;
-                                        } else {
-                                            auto eit = alloc_array_size_exprs.find(vname);
-                                            if (eit != alloc_array_size_exprs.end()) {
-                                                src << eit->second;
-                                            } else {
-                                                auto sit = alloc_array_sizes.find(vname);
-                                                if (sit != alloc_array_sizes.end()) {
-                                                    src << sit->second;
-                                                } else {
-                                                    unresolved_upper_bound(ab->base.base.loc, vname);
-                                                }
-                                            }
-                                        }
-                                        }
-                                    }
+                                    emit_var_upper_bound(
+                                        ASRUtils::symbol_name(
+                                            ASR::down_cast<ASR::Var_t>(
+                                                ab->m_v)->m_v),
+                                        (size_t) dim_idx,
+                                        ab->base.base.loc);
                                 } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*ab->m_v)) {
                                     // Unwrap ArrayPhysicalCast to get
                                     // the underlying Var
@@ -5136,27 +5107,12 @@ public:
                                         inner = ASR::down_cast<ASR::ArrayPhysicalCast_t>(inner)->m_arg;
                                     }
                                     if (ASR::is_a<ASR::Var_t>(*inner)) {
-                                        std::string vname = ASRUtils::symbol_name(
-                                            ASR::down_cast<ASR::Var_t>(inner)->m_v);
-                                        auto pit = ptr_section_sizes.find(vname);
-                                        if (pit != ptr_section_sizes.end()) {
-                                            src << pit->second;
-                                        } else {
-                                            auto dpit =
-                                                func_array_size_params.find(
-                                                    dim_size_key(vname,
-                                                        dim_idx));
-                                            if (dpit != func_array_size_params.end()) {
-                                                src << dpit->second;
-                                            } else {
-                                                auto fpit = func_array_size_params.find(vname);
-                                                if (fpit != func_array_size_params.end()) {
-                                                    src << fpit->second;
-                                                } else {
-                                                    unresolved_upper_bound(ab->base.base.loc, vname);
-                                                }
-                                            }
-                                        }
+                                        emit_var_upper_bound(
+                                            ASRUtils::symbol_name(
+                                                ASR::down_cast<ASR::Var_t>(
+                                                    inner)->m_v),
+                                            (size_t) dim_idx,
+                                            ab->base.base.loc);
                                     } else {
                                         unresolved_upper_bound(ab->base.base.loc, "");
                                     }
@@ -5556,9 +5512,23 @@ public:
                                 as->m_dim);
                         }
                     }
+                    // `size(a, d)` asks for one dimension. The array's
+                    // whole-array entry is the product of every extent, so
+                    // reading it here would answer with the element count
+                    // of `a` whichever dimension was asked for; ask the one
+                    // lookup that knows how a single dimension is spelled,
+                    // as the ArrayBound and struct-component cases do.
+                    std::string dim_len;
+                    int64_t dim_value = constant_dim(as->m_dim);
+                    if (dim_value > 0) {
+                        dim_len = looked_up_dim_extent_str(arr_name,
+                            (size_t)(dim_value - 1));
+                    }
                     auto it = func_array_size_params.find(arr_name);
                     if (!ws_size.empty()) {
                         src << ws_size;
+                    } else if (!dim_len.empty()) {
+                        src << dim_len;
                     } else if (it != func_array_size_params.end()) {
                         src << it->second;
                     } else {
@@ -5645,6 +5615,41 @@ public:
             return sit->second[d];
         }
         return workspace_dim_str(arr_var_name, d);
+    }
+
+    // The upper bound of dimension `d` of the array named `arr_var_name`,
+    // whose type carries no length of its own. The bound of one dimension
+    // is that dimension's extent: an entry that measures the whole array
+    // is the product of every extent, and answering with it counts a loop
+    // over one dimension by the element count of all of them.
+    void emit_var_upper_bound(const std::string &arr_var_name, size_t d,
+            const Location &loc) {
+        std::string len = looked_up_dim_extent_str(arr_var_name, d);
+        if (!len.empty()) {
+            src << len;
+            return;
+        }
+        auto pit = ptr_section_sizes.find(arr_var_name);
+        if (pit != ptr_section_sizes.end()) {
+            src << pit->second;
+            return;
+        }
+        auto fpit = func_array_size_params.find(arr_var_name);
+        if (fpit != func_array_size_params.end()) {
+            src << fpit->second;
+            return;
+        }
+        auto eit = alloc_array_size_exprs.find(arr_var_name);
+        if (eit != alloc_array_size_exprs.end()) {
+            src << eit->second;
+            return;
+        }
+        auto sit = alloc_array_sizes.find(arr_var_name);
+        if (sit != alloc_array_sizes.end()) {
+            src << sit->second;
+            return;
+        }
+        unresolved_upper_bound(loc, arr_var_name);
     }
 
     // A name for an array in a message, when one is known.

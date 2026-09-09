@@ -5236,6 +5236,7 @@ RUN(NAME gpu_metal_323 LABELS gfortran llvm metal cuda_cpu)
 # `--gpu=metal`.
 RUN(NAME gpu_metal_324 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_325 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_326 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
