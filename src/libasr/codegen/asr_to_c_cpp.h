@@ -2761,11 +2761,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     continue; 
                 }
                 
-                std::string var_name = std::string(root_v->m_name);
-                if (root_v->m_storage == ASR::storage_typeType::Local && 
-                    (var_name.find("__") == 0 || var_name.find("~") == 0)) {
-                    continue;
-                }
             }
 
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
