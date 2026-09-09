@@ -4219,6 +4219,9 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_288.f90"
 gpu_cuda_kernel = true
+# A GPU backend is strict: this loop cannot be offloaded, so the compilation
+# fails unless --gpu-allow-cpu-fallback is given.
+gpu_offload_strict = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_289.f90"
@@ -4263,6 +4266,9 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_303.f90"
 gpu_cuda_kernel = true
+# A GPU backend is strict: this loop cannot be offloaded, so the compilation
+# fails unless --gpu-allow-cpu-fallback is given.
+gpu_offload_strict = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_304.f90"
