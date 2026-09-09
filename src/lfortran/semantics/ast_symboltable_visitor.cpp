@@ -3876,26 +3876,23 @@ public:
             bool any_error = false;
             for (auto &pname : proc.second) {
                 std::string name = to_lower(pname.first);
-                ASR::symbol_t *x = nullptr;
-                if( name == proc.first ) {
-                    // A specific procedure declared in this scope under its
-                    // generic interface's name is stored with the
-                    // genericprocedure suffix, see the comment where the
-                    // suffix is added.
-                    x = current_scope->resolve_symbol(
-                        name + ASRUtils::genericprocedure_suffix);
-                    if (!x) {
-                        // Otherwise it comes from another scope (e.g. it is
-                        // use associated), where it keeps its plain name. The
-                        // generic interface itself is not a candidate.
-                        x = current_scope->resolve_symbol(name);
-                        if (x && ASR::is_a<ASR::GenericProcedure_t>(
-                                *ASRUtils::symbol_get_past_external(x))) {
-                            x = nullptr;
-                        }
-                    }
-                } else {
+                // A specific procedure declared in this scope under the name
+                // of a generic interface is stored with the genericprocedure
+                // suffix, see the comment where the suffix is added. That
+                // generic interface is not necessarily the one being built
+                // here, so always look for the suffixed name first.
+                ASR::symbol_t *x = current_scope->resolve_symbol(
+                    name + ASRUtils::genericprocedure_suffix);
+                if (!x) {
+                    // Otherwise it keeps its plain name, e.g. it comes from
+                    // another scope (it is use associated). The generic
+                    // interface being built is not a candidate for itself.
                     x = current_scope->resolve_symbol(name);
+                    if (name == proc.first && x &&
+                            ASR::is_a<ASR::GenericProcedure_t>(
+                                *ASRUtils::symbol_get_past_external(x))) {
+                        x = nullptr;
+                    }
                 }
                 if (!x) {
                     diag.add(Diagnostic(
