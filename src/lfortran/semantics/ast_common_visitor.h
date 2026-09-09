@@ -14014,10 +14014,10 @@ public:
                         intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
-                        intrinsic_name == "c_sizeof")) {
-                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
-                            {arg_expr->base.loc}, "");
-                        throw SemanticAbort();
+                        intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
+                           diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to this intrinsic",
+                                 {arg_expr->base.loc}, "");
+                           throw SemanticAbort();
                     }
                 }
             }
