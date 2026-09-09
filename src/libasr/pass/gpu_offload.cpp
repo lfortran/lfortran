@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_builder.h>
 #include <libasr/pickle.h>
 #include <libasr/asr_verify.h>
 #include <libasr/diagnostics.h>
@@ -464,10 +465,22 @@ static bool gpu_block_workspace_extents_resolvable(
     return ok;
 }
 
-// Look up a member (component or type-bound procedure) by name in a
-// Struct's symbol table, walking the inheritance chain: a component
-// inherited from a parent type lives in the parent Struct's symtab, not
-// in the extending type's own scope.
+// A new variable named `name` in `scope`, added to it.
+//
+// This pass creates a great many variables: loop indices, temporaries for
+// intrinsic results, per-thread workspaces, kernel parameters. What such a
+// variable looks like -- default storage, public access, required presence,
+// no initialiser -- is the shared builder's answer rather than this pass's,
+// so that a variable the offload path declares and one a host pass declares
+// cannot come out differently.
+static ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
+        SymbolTable *scope, const std::string &name, ASR::ttype_t *type,
+        ASR::intentType intent = ASR::intentType::Local,
+        ASR::symbol_t *type_decl = nullptr) {
+    return ASR::down_cast<ASR::Var_t>(ASRUtils::ASRBuilder(al, loc).Variable(
+        scope, name, type, intent, type_decl))->m_v;
+}
+
 // Fill in the `start`/`end` bounds of a synthesized `do` loop head for
 // dimension `d` of `arr_expr`. Descriptor arrays (allocatables, pointers,
 // assumed-shape dummies and the temporaries created for array-valued
@@ -1193,16 +1206,9 @@ public:
         } else {
             std::string param_name = kernel_scope->get_unique_name(
                 "__memdim_" + key);
-            sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, param_name), nullptr, 0,
-                    ASR::intentType::InOut, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, size_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            kernel_scope->add_symbol(param_name, sym);
+            sym = gpu_new_variable(al, loc, kernel_scope, param_name,
+                ASRUtils::duplicate_type(al, size_type),
+                ASR::intentType::InOut);
             ASR::expr_t *host_item = ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, host_arr));
             if (ai != nullptr) {
@@ -3353,31 +3359,16 @@ public:
         for (size_t d = 0; d < dim_bounds.size(); d++) {
             std::string loop_var_name = var_scope->get_unique_name(
                 "__gpu_all_i" + std::to_string(d));
-            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                    s2c(al, loop_var_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, int_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            var_scope->add_symbol(loop_var_name, loop_var_sym);
+            ASR::symbol_t *loop_var_sym = gpu_new_variable(al, loc, var_scope,
+                loop_var_name, ASRUtils::duplicate_type(al, int_type));
             loop_vars.push_back(ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, loop_var_sym)));
         }
 
         // Create result variable
         std::string res_var_name = var_scope->get_unique_name("__gpu_all_res");
-        ASR::symbol_t *res_var_sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                s2c(al, res_var_name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default,
-                ASRUtils::duplicate_type(al, logical_type),
-                nullptr, ASR::abiType::Source,
-                ASR::accessType::Public, ASR::presenceType::Required, false));
-        var_scope->add_symbol(res_var_name, res_var_sym);
+        ASR::symbol_t *res_var_sym = gpu_new_variable(al, loc, var_scope,
+            res_var_name, ASRUtils::duplicate_type(al, logical_type));
         ASR::expr_t *res_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, res_var_sym));
 
@@ -4566,16 +4557,8 @@ public:
 
             auto make_loop_var = [&](const std::string &prefix) -> ASR::expr_t* {
                 std::string name = var_scope->get_unique_name(prefix);
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(name, sym);
+                ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                    ASRUtils::duplicate_type(al, int_type));
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             };
 
@@ -5218,14 +5201,8 @@ public:
                     : ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         std::string name = var_scope->get_unique_name("__gpu_matmul_tmp");
-        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                nullptr, nullptr, ASR::storage_typeType::Default,
-                tmp_type, nullptr, ASR::abiType::Source,
-                ASR::accessType::Public,
-                ASR::presenceType::Required, false));
-        var_scope->add_symbol(name, sym);
+        ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+            tmp_type);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
@@ -5614,16 +5591,8 @@ public:
 
             std::string tmp_name =
                 var_scope->get_unique_name("__gpu_sum_tmp");
-            ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                    s2c(al, tmp_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, sum_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            var_scope->add_symbol(tmp_name, tmp_sym);
+            ASR::symbol_t *tmp_sym = gpu_new_variable(al, loc, var_scope,
+                tmp_name, ASRUtils::duplicate_type(al, sum_type));
             ASR::expr_t *tmp_var = ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, tmp_sym));
 
@@ -5747,16 +5716,8 @@ public:
             auto make_var = [&](const std::string &prefix,
                     ASR::ttype_t *type) -> ASR::expr_t* {
                 std::string name = var_scope->get_unique_name(prefix);
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(name, sym);
+                ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                    ASRUtils::duplicate_type(al, type));
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             };
 
@@ -6497,16 +6458,8 @@ public:
             auto make_var = [&](const std::string &prefix,
                     ASR::ttype_t *type) -> ASR::expr_t* {
                 std::string name = var_scope->get_unique_name(prefix);
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(name, sym);
+                ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                    ASRUtils::duplicate_type(al, type));
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             };
 
@@ -6652,16 +6605,8 @@ public:
 
             auto make_var = [&](const std::string &prefix) -> ASR::expr_t* {
                 std::string name = var_scope->get_unique_name(prefix);
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(name, sym);
+                ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                    ASRUtils::duplicate_type(al, int_type));
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             };
 
@@ -6905,14 +6850,8 @@ public:
                     : ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         std::string name = var_scope->get_unique_name(prefix);
-        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                nullptr, nullptr, ASR::storage_typeType::Default,
-                tmp_type, nullptr, ASR::abiType::Source,
-                ASR::accessType::Public, ASR::presenceType::Required,
-                false));
-        var_scope->add_symbol(name, sym);
+        ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+            tmp_type);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
@@ -7499,16 +7438,9 @@ public:
             for (size_t ri = 0; ri < range_dims.size(); ri++) {
                 std::string loop_var_name = var_scope->get_unique_name(
                     "__gpu_sec_i");
-                ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                        s2c(al, loop_var_name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                var_scope->add_symbol(loop_var_name, loop_var_sym);
+                ASR::symbol_t *loop_var_sym = gpu_new_variable(al, loc,
+                    var_scope, loop_var_name, ASRUtils::duplicate_type(al,
+                        int_type));
                 loop_vars[ri] = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, loop_var_sym));
             }
@@ -7945,14 +7877,8 @@ public:
         std::vector<ASR::expr_t*> counters(range_dims.size());
         for (size_t ri = 0; ri < range_dims.size(); ri++) {
             std::string name = var_scope->get_unique_name("__gpu_gather_i");
-            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                    nullptr, nullptr, ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, int_type), nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            var_scope->add_symbol(name, sym);
+            ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                ASRUtils::duplicate_type(al, int_type));
             counters[ri] = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         }
         ASR::ttype_t *elem_type = ASRUtils::extract_type(
@@ -8476,17 +8402,9 @@ public:
                         [&](const std::string &prefix) -> ASR::expr_t* {
                         std::string name =
                             var_scope->get_unique_name(prefix);
-                        ASR::symbol_t *sym =
-                            ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, loc,
-                                var_scope, s2c(al, name), nullptr, 0,
-                                ASR::intentType::Local, nullptr, nullptr,
-                                ASR::storage_typeType::Default,
-                                ASRUtils::duplicate_type(al, int_type),
-                                nullptr, ASR::abiType::Source,
-                                ASR::accessType::Public,
-                                ASR::presenceType::Required, false));
-                        var_scope->add_symbol(name, sym);
+                        ASR::symbol_t *sym = gpu_new_variable(al, loc,
+                            var_scope, name, ASRUtils::duplicate_type(al,
+                                int_type));
                         return ASRUtils::EXPR(
                             ASR::make_Var_t(al, loc, sym));
                     };
@@ -8598,17 +8516,8 @@ public:
                     [&](const std::string &prefix) -> ASR::expr_t* {
                     std::string name =
                         var_scope->get_unique_name(prefix);
-                    ASR::symbol_t *sym =
-                        ASR::down_cast<ASR::symbol_t>(
-                        ASRUtils::make_Variable_t_util(al, loc,
-                            var_scope, s2c(al, name), nullptr, 0,
-                            ASR::intentType::Local, nullptr, nullptr,
-                            ASR::storage_typeType::Default,
-                            ASRUtils::duplicate_type(al, int_type),
-                            nullptr, ASR::abiType::Source,
-                            ASR::accessType::Public,
-                            ASR::presenceType::Required, false));
-                    var_scope->add_symbol(name, sym);
+                    ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope,
+                        name, ASRUtils::duplicate_type(al, int_type));
                     return ASRUtils::EXPR(
                         ASR::make_Var_t(al, loc, sym));
                 };
@@ -8861,16 +8770,8 @@ public:
             }
             std::string loop_var_name = var_scope->get_unique_name(
                 "__gpu_elem_i");
-            ASR::symbol_t *loop_var_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, var_scope,
-                    s2c(al, loop_var_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, int_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            var_scope->add_symbol(loop_var_name, loop_var_sym);
+            ASR::symbol_t *loop_var_sym = gpu_new_variable(al, loc, var_scope,
+                loop_var_name, ASRUtils::duplicate_type(al, int_type));
             ASR::expr_t *loop_var = ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, loop_var_sym));
 
@@ -9414,16 +9315,10 @@ public:
                 : std::string(ASRUtils::symbol_name(base.members.front()));
             std::string name = current_scope->get_unique_name(
                 "__gpu_gather_" + stem);
-            ASR::symbol_t *temp = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, gloc, current_scope,
-                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                    nullptr, nullptr, ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al,
-                        ASRUtils::expr_type(g.chain)),
-                    ASRUtils::get_struct_sym_from_struct_expr(g.chain),
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            current_scope->add_symbol(name, temp);
+            ASR::symbol_t *temp = gpu_new_variable(al, gloc, current_scope,
+                name, ASRUtils::duplicate_type(al,
+                    ASRUtils::expr_type(g.chain)), ASR::intentType::Local,
+                ASRUtils::get_struct_sym_from_struct_expr(g.chain));
             temp_names.push_back(name);
             g.temp = temp;
             ASRUtils::ExprStmtDuplicator dup(al);
@@ -10859,17 +10754,9 @@ public:
 
                 std::string buf_name = current_scope->get_unique_name(
                     "__gpu_buf_" + name);
-                ASR::symbol_t *buf_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, current_scope,
-                        s2c(al, buf_name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, arr_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                current_scope->add_symbol(buf_name, buf_sym);
-
+                ASR::symbol_t *buf_sym = gpu_new_variable(al, loc,
+                    current_scope, buf_name, ASRUtils::duplicate_type(al,
+                        arr_type));
                 it->second.first = arr_type;
 
                 liveout_scalars.push_back(
@@ -11130,20 +11017,9 @@ public:
                 for (size_t d = 0; d < arr->n_dims; d++) {
                     std::string dim_name =
                         gpu_dim_arg_name(di.param_name, d);
-                    ASR::symbol_t *dim_sym =
-                        ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, loc,
-                                kernel_scope, s2c(al, dim_name),
-                                nullptr, 0,
-                                ASR::intentType::InOut, nullptr,
-                                nullptr,
-                                ASR::storage_typeType::Default,
-                                ASRUtils::duplicate_type(al,
-                                    int_type_dim),
-                                nullptr, ASR::abiType::Source,
-                                ASR::accessType::Public,
-                                ASR::presenceType::Required, false));
-                    kernel_scope->add_symbol(dim_name, dim_sym);
+                    ASR::symbol_t *dim_sym = gpu_new_variable(al, loc,
+                        kernel_scope, dim_name, ASRUtils::duplicate_type(al,
+                            int_type_dim), ASR::intentType::InOut);
                     kernel_args.push_back(al,
                         ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                             dim_sym)));
@@ -11167,16 +11043,9 @@ public:
                         // Pass lower bound as kernel parameter
                         std::string lb_name = "__lb_" + di.param_name
                             + "_" + std::to_string(d);
-                        ASR::symbol_t *lb_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                                s2c(al, lb_name), nullptr, 0,
-                                ASR::intentType::InOut, nullptr, nullptr,
-                                ASR::storage_typeType::Default,
-                                ASRUtils::duplicate_type(al, int_type_dim),
-                                nullptr, ASR::abiType::Source,
-                                ASR::accessType::Public,
-                                ASR::presenceType::Required, false));
-                        kernel_scope->add_symbol(lb_name, lb_sym);
+                        ASR::symbol_t *lb_sym = gpu_new_variable(al, loc,
+                            kernel_scope, lb_name, ASRUtils::duplicate_type(al,
+                                int_type_dim), ASR::intentType::InOut);
                         kernel_args.push_back(al,
                             ASRUtils::EXPR(ASR::make_Var_t(al, loc, lb_sym)));
                         // Host-side value: lbound(struct%member, dim=d+1)
@@ -11252,16 +11121,9 @@ public:
                     continue;
                 }
                 std::string dim_name = gpu_dim_arg_name(sym_name, d);
-                ASR::symbol_t *dim_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                        s2c(al, dim_name), nullptr, 0,
-                        ASR::intentType::InOut, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type_dim),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                kernel_scope->add_symbol(dim_name, dim_sym);
+                ASR::symbol_t *dim_sym = gpu_new_variable(al, loc,
+                    kernel_scope, dim_name, ASRUtils::duplicate_type(al,
+                        int_type_dim), ASR::intentType::InOut);
                 kernel_args.push_back(al,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, dim_sym)));
 
@@ -11285,16 +11147,9 @@ public:
                     // Pass lower bound as kernel parameter
                     std::string lb_name = "__lb_" + sym_name + "_"
                         + std::to_string(d);
-                    ASR::symbol_t *lb_sym = ASR::down_cast<ASR::symbol_t>(
-                        ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                            s2c(al, lb_name), nullptr, 0,
-                            ASR::intentType::InOut, nullptr, nullptr,
-                            ASR::storage_typeType::Default,
-                            ASRUtils::duplicate_type(al, int_type_dim),
-                            nullptr, ASR::abiType::Source,
-                            ASR::accessType::Public,
-                            ASR::presenceType::Required, false));
-                    kernel_scope->add_symbol(lb_name, lb_sym);
+                    ASR::symbol_t *lb_sym = gpu_new_variable(al, loc,
+                        kernel_scope, lb_name, ASRUtils::duplicate_type(al,
+                            int_type_dim), ASR::intentType::InOut);
                     kernel_args.push_back(al,
                         ASRUtils::EXPR(ASR::make_Var_t(al, loc, lb_sym)));
                     // Host-side value: lbound(arr, dim=d+1)
@@ -11347,19 +11202,9 @@ public:
                 ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
                 std::string size_name = "__size_" + sym_name + "_"
                     + mem_name;
-                ASR::symbol_t *size_sym =
-                    ASR::down_cast<ASR::symbol_t>(
-                        ASRUtils::make_Variable_t_util(al, loc,
-                            kernel_scope, s2c(al, size_name),
-                            nullptr, 0,
-                            ASR::intentType::InOut, nullptr,
-                            nullptr,
-                            ASR::storage_typeType::Default,
-                            ASRUtils::duplicate_type(al, int_type_sz),
-                            nullptr, ASR::abiType::Source,
-                            ASR::accessType::Public,
-                            ASR::presenceType::Required, false));
-                kernel_scope->add_symbol(size_name, size_sym);
+                ASR::symbol_t *size_sym = gpu_new_variable(al, loc,
+                    kernel_scope, size_name, ASRUtils::duplicate_type(al,
+                        int_type_sz), ASR::intentType::InOut);
                 kernel_args.push_back(al,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                         size_sym)));
@@ -11410,21 +11255,10 @@ public:
                 for (size_t d = 0; d < rank; d++) {
                     std::string dim_size_name = size_name + "_dim"
                         + std::to_string(d + 1);
-                    ASR::symbol_t *dim_size_sym =
-                        ASR::down_cast<ASR::symbol_t>(
-                            ASRUtils::make_Variable_t_util(al, loc,
-                                kernel_scope, s2c(al, dim_size_name),
-                                nullptr, 0,
-                                ASR::intentType::InOut, nullptr,
-                                nullptr,
-                                ASR::storage_typeType::Default,
-                                ASRUtils::duplicate_type(al,
-                                    int_type_sz),
-                                nullptr, ASR::abiType::Source,
-                                ASR::accessType::Public,
-                                ASR::presenceType::Required, false));
-                    kernel_scope->add_symbol(dim_size_name,
-                        dim_size_sym);
+                    ASR::symbol_t *dim_size_sym = gpu_new_variable(al, loc,
+                        kernel_scope, dim_size_name,
+                        ASRUtils::duplicate_type(al, int_type_sz),
+                        ASR::intentType::InOut);
                     kernel_args.push_back(al,
                         ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                             dim_size_sym)));
@@ -11548,15 +11382,8 @@ public:
             ASR::Var_t *lv = down_cast<ASR::Var_t>(work.head(d).m_v);
             ASR::ttype_t *loop_var_type = ASRUtils::symbol_type(lv->m_v);
             std::string lvn = loop_var_names[d];
-            ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, lvn), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, loop_var_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public, ASR::presenceType::Required, false));
-            kernel_scope->add_symbol(lvn, param);
+            gpu_new_variable(al, loc, kernel_scope, lvn,
+                ASRUtils::duplicate_type(al, loop_var_type));
         }
 
         // Create local scalar temporaries in kernel scope
@@ -11566,15 +11393,9 @@ public:
             ASR::ttype_t *type = ASRUtils::symbol_type(it_orig);
             ASR::symbol_t *type_decl = import_struct_type(it_orig,
                 orig_scope, kernel_scope, loc);
-            ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, type),
-                    type_decl, ASR::abiType::Source,
-                    ASR::accessType::Public, ASR::presenceType::Required, false));
-            kernel_scope->add_symbol(name, param);
+            gpu_new_variable(al, loc, kernel_scope, name,
+                ASRUtils::duplicate_type(al, type),
+                ASR::intentType::Local, type_decl);
         }
 
         // Import functions/subroutines called in the loop body
@@ -12494,16 +12315,9 @@ public:
                 kernel_starts.push_back(dup_expr_to_scope(host_start, kernel_scope));
             } else {
                 std::string name = "__loop_start_" + std::to_string(d);
-                ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::InOut, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                kernel_scope->add_symbol(name, param);
+                ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,
+                    name, ASRUtils::duplicate_type(al, int_type),
+                    ASR::intentType::InOut);
                 kernel_args.push_back(al,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
                 ASR::call_arg_t carg;
@@ -12518,16 +12332,9 @@ public:
                 kernel_ends.push_back(dup_expr_to_scope(host_end, kernel_scope));
             } else {
                 std::string name = "__loop_end_" + std::to_string(d);
-                ASR::symbol_t *param = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                        s2c(al, name), nullptr, 0,
-                        ASR::intentType::InOut, nullptr, nullptr,
-                        ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, int_type),
-                        nullptr, ASR::abiType::Source,
-                        ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                kernel_scope->add_symbol(name, param);
+                ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,
+                    name, ASRUtils::duplicate_type(al, int_type),
+                    ASR::intentType::InOut);
                 kernel_args.push_back(al,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
                 ASR::call_arg_t carg;
@@ -12605,15 +12412,8 @@ public:
         // We need a "remaining" variable in kernel scope
         std::string remain_name = "__flat_idx";
         {
-            ASR::symbol_t *remain_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, kernel_scope,
-                    s2c(al, remain_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default,
-                    ASRUtils::duplicate_type(al, int_type),
-                    nullptr, ASR::abiType::Source,
-                    ASR::accessType::Public, ASR::presenceType::Required, false));
-            kernel_scope->add_symbol(remain_name, remain_sym);
+            gpu_new_variable(al, loc, kernel_scope, remain_name,
+                ASRUtils::duplicate_type(al, int_type));
         }
         ASR::expr_t *remain_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, kernel_scope->get_symbol(remain_name)));
@@ -12777,21 +12577,9 @@ public:
                                 ASRUtils::duplicate_type(al,
                                     ASRUtils::expr_type(
                                         *dim_ptrs[e]));
-                            ASR::symbol_t *psym =
-                                ASR::down_cast<ASR::symbol_t>(
-                                    ASRUtils::make_Variable_t_util(
-                                        al, loc, kernel_scope,
-                                        s2c(al, pname),
-                                        nullptr, 0,
-                                        ASR::intentType::InOut,
-                                        nullptr, nullptr,
-                                        ASR::storage_typeType::Default,
-                                        ptype, nullptr,
-                                        ASR::abiType::Source,
-                                        ASR::accessType::Public,
-                                        ASR::presenceType::Required,
-                                        false));
-                            kernel_scope->add_symbol(pname, psym);
+                            ASR::symbol_t *psym = gpu_new_variable(al, loc,
+                                kernel_scope, pname, ptype,
+                                ASR::intentType::InOut);
                             kernel_args.push_back(al,
                                 ASRUtils::EXPR(ASR::make_Var_t(
                                     al, loc, psym)));
