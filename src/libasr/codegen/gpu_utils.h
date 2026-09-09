@@ -150,6 +150,162 @@ struct GpuVlaWorkspace {
     std::vector<GpuVlaDim> dims;
 };
 
+// Every name of `names` that an expression reads. Used to order a scope's
+// declarations by what they depend on rather than by what they are called.
+class GpuScopeNameReader : public ASR::BaseWalkVisitor<GpuScopeNameReader> {
+public:
+    const std::set<std::string> &names;
+    std::set<std::string> &found;
+
+    GpuScopeNameReader(const std::set<std::string> &names,
+        std::set<std::string> &found) : names(names), found(found) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        std::string name = ASRUtils::symbol_name(x.m_v);
+        if (names.count(name)) found.insert(name);
+    }
+};
+
+inline void gpu_read_scope_names(ASR::expr_t *e,
+        const std::set<std::string> &names, std::set<std::string> &found) {
+    if (e == nullptr || names.empty()) return;
+    GpuScopeNameReader reader(names, found);
+    reader.visit_expr(*e);
+}
+
+// The names a derived extent reads once it is written out. Only a leaf is
+// written through the ASR node it came from; everything above a leaf is
+// written from the derivation itself, so the names an operand mentioned
+// before it was reduced away are not read.
+inline void gpu_read_extent_names(const GpuExtent &e,
+        const std::set<std::string> &names, std::set<std::string> &found) {
+    switch (e.kind) {
+        case GpuExtentKind::Constant:
+            return;
+        case GpuExtentKind::BinOp:
+        case GpuExtentKind::Neg:
+        case GpuExtentKind::Compare:
+        case GpuExtentKind::Select:
+        case GpuExtentKind::Product: {
+            for (const GpuExtent &c : e.children) {
+                gpu_read_extent_names(c, names, found);
+            }
+            return;
+        }
+        default: break;
+    }
+    gpu_read_scope_names(e.expr, names, found);
+    gpu_read_scope_names(e.array, names, found);
+    gpu_read_scope_names(e.dim, names, found);
+    for (const GpuExtent &c : e.children) {
+        gpu_read_extent_names(c, names, found);
+    }
+}
+
+// The names one declaration of `symtab` reads from that same scope.
+//
+// A declaration is not always self-contained: the extent of a per-thread
+// workspace slice, the length of a run-time sized local array and the value
+// of a named constant are all expressions the scope's own names can appear
+// in.
+inline std::set<std::string> gpu_declaration_reads(ASR::Variable_t *var,
+        const std::set<std::string> &names,
+        const std::vector<GpuVlaWorkspace> &workspaces) {
+    std::set<std::string> found;
+    if (var->m_storage == ASR::storage_typeType::Parameter && var->m_value) {
+        gpu_read_scope_names(var->m_value, names, found);
+        return found;
+    }
+    std::string var_name(var->m_name);
+    for (const GpuVlaWorkspace &ws : workspaces) {
+        if (ws.var_name != var_name) continue;
+        for (const GpuVlaDim &dim : ws.dims) {
+            if (dim.is_constant) continue;
+            if (dim.is_struct_member_size) {
+                if (names.count(dim.struct_member_key.base)) {
+                    found.insert(dim.struct_member_key.base);
+                }
+                continue;
+            }
+            gpu_read_extent_names(dim.derived, names, found);
+        }
+        return found;
+    }
+    ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+        var->m_type);
+    if (ASR::is_a<ASR::Array_t>(*type)) {
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            gpu_read_scope_names(arr->m_dims[d].m_length, names, found);
+            gpu_read_scope_names(arr->m_dims[d].m_start, names, found);
+        }
+    }
+    return found;
+}
+
+// The order a scope's declarations are emitted in.
+//
+// A declaration written over another name of the same scope has to follow
+// it. Emitted in name order, whether it does is decided by the spelling of
+// the two names: sorted one way the shader does not compile, sorted the
+// other it reads a local that holds nothing yet -- and a per-thread
+// workspace slice strided by that is a wrong answer with no diagnostic.
+//
+// `defined_ahead` names the scope's own variables that already hold their
+// values when its declarations begin -- a kernel's parameters, unpacked at
+// the head of the body. They are not declared here and nothing waits for
+// them.
+//
+// Names that read nothing of each other keep the order they had, so a
+// scope whose declarations are all self-contained is emitted unchanged.
+// A cycle cannot be ordered at all; the names in it keep their order too,
+// so that the scope is still emitted in full and in a fixed order.
+inline std::vector<ASR::Variable_t*> gpu_scope_declaration_order(
+        SymbolTable *symtab,
+        const std::vector<GpuVlaWorkspace> &workspaces,
+        const std::set<std::string> &defined_ahead = {}) {
+    std::vector<ASR::Variable_t*> vars;
+    std::set<std::string> names;
+    for (auto &item : symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (defined_ahead.count(std::string(var->m_name))) continue;
+        vars.push_back(var);
+        names.insert(std::string(var->m_name));
+    }
+    std::vector<std::set<std::string>> reads;
+    reads.reserve(vars.size());
+    for (ASR::Variable_t *var : vars) {
+        reads.push_back(gpu_declaration_reads(var, names, workspaces));
+    }
+    std::vector<ASR::Variable_t*> ordered;
+    std::vector<bool> done(vars.size(), false);
+    std::set<std::string> emitted;
+    for (size_t n = 0; n < vars.size(); n++) {
+        size_t pick = vars.size();
+        for (size_t i = 0; i < vars.size(); i++) {
+            if (done[i]) continue;
+            bool ready = true;
+            for (const std::string &r : reads[i]) {
+                if (r != std::string(vars[i]->m_name) && !emitted.count(r)) {
+                    ready = false;
+                    break;
+                }
+            }
+            if (ready) { pick = i; break; }
+        }
+        if (pick == vars.size()) {
+            for (size_t i = 0; i < vars.size(); i++) {
+                if (!done[i]) { pick = i; break; }
+            }
+        }
+        done[pick] = true;
+        emitted.insert(std::string(vars[pick]->m_name));
+        ordered.push_back(vars[pick]);
+    }
+    return ordered;
+}
+
 // How the host runtime's argument slot holds one kernel parameter.
 enum class GpuKernelParamKind {
     Buffer,           // slot points at the buffer pointer

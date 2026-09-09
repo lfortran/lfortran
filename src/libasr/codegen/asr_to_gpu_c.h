@@ -3914,20 +3914,13 @@ public:
         }
 
         // Declare local variables (non-argument variables in kernel scope)
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
-                bool is_arg = false;
-                for (size_t i = 0; i < args.size(); i++) {
-                    if (args[i].name == std::string(var->m_name)) {
-                        is_arg = true;
-                        break;
-                    }
-                }
-                if (!is_arg) {
-                    emit_local_var_decl(var);
-                }
-            }
+        std::set<std::string> arg_names;
+        for (size_t i = 0; i < args.size(); i++) {
+            arg_names.insert(args[i].name);
+        }
+        for (ASR::Variable_t *var : gpu_scope_declaration_order(
+                x.m_symtab, current_vla_infos, arg_names)) {
+            emit_local_var_decl(var);
         }
 
         for (size_t i = 0; i < x.n_body; i++) {
@@ -4633,10 +4626,8 @@ public:
                 ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
                 src << get_indent() << "{\n";
                 indent_level++;
-                for (auto &item : block->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                        item.second);
+                for (ASR::Variable_t *v : gpu_scope_declaration_order(
+                        block->m_symtab, current_vla_infos)) {
                     // Check if this variable is a VLA backed by a workspace
                     // buffer (populated during kernel signature generation).
                     std::string vname(v->m_name);
@@ -4697,10 +4688,8 @@ public:
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
                 src << get_indent() << "{\n";
                 indent_level++;
-                for (auto &item : ab->m_symtab->get_scope()) {
-                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                        item.second);
+                for (ASR::Variable_t *v : gpu_scope_declaration_order(
+                        ab->m_symtab, current_vla_infos)) {
                     emit_local_var_decl(v);
                 }
                 for (size_t i = 0; i < ab->n_body; i++) {
