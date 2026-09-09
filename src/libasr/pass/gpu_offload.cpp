@@ -9375,17 +9375,31 @@ public:
         ~DecisionScope() { v.region_being_decided = saved; }
     };
 
+    // A GPU backend was asked for, so a loop left on the host is a failure to
+    // deliver what was asked for: report it as an error and let the user opt
+    // into host execution with --gpu-allow-cpu-fallback. Every declining loop
+    // in the unit is reported before the compilation is stopped, so one run
+    // lists all of the gaps rather than only the first.
     void report_not_offloaded(const Location &where, const std::string &why) {
         if (pass_options.diagnostics == nullptr) return;
         if (region_being_decided != nullptr &&
                 !reported_regions.insert(region_being_decided).second) {
             return;
         }
-        pass_options.diagnostics->message_label(
-            "parallel loop not offloaded to the GPU, "
-            "it runs on the CPU instead",
-            {where}, why,
-            diag::Level::Warning, diag::Stage::ASRPass);
+        if (pass_options.gpu_allow_cpu_fallback) {
+            pass_options.diagnostics->message_label(
+                "parallel loop not offloaded to the GPU, "
+                "it runs on the CPU instead",
+                {where}, why,
+                diag::Level::Warning, diag::Stage::ASRPass);
+        } else {
+            pass_options.diagnostics->message_label(
+                "parallel loop cannot be offloaded to the GPU: " + why
+                    + "; pass `--gpu-allow-cpu-fallback` to run it on the "
+                      "CPU instead",
+                {where}, why,
+                diag::Level::Error, diag::Stage::ASRPass);
+        }
     }
 
     // A clause a kernel launch has no way to honour. The loop still runs on

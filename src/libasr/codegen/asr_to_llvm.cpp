@@ -26611,7 +26611,14 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
     auto t1 = std::chrono::high_resolution_clock::now();
+    // A pass reports a hard error by adding it to the diagnostics, so the
+    // pipeline has to stop here: continuing would emit an object file for a
+    // program the passes just refused to translate.
+    bool had_error_before_passes = diagnostics.has_error();
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    if (!had_error_before_passes && diagnostics.has_error()) {
+        return Error();
+    }
     auto t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {
