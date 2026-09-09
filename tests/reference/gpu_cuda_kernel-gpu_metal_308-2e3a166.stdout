@@ -1,0 +1,42 @@
+#include <stdint.h>
+
+struct leaf_t {
+    long m_;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    leaf_t* c,
+    float* __data_c_m_,
+    int* __offsets_c_m_,
+    int* __sizes_c_m_,
+    float* o,
+    float* __vla_w)
+{
+    int __flat_idx;
+    int i;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        int k;
+        float* w = __vla_w + (blockIdx.x * blockDim.x + threadIdx.x) * (__sizes_c_m_[(1) * 2 + 0] * __sizes_c_m_[(1) * 2 + 1]);
+        __do_loop_end = (__sizes_c_m_[(((int)(2) - (1))) * 2 + 0] * __sizes_c_m_[(((int)(2) - (1))) * 2 + 1]);
+        k = (1 - 1);
+        while (((k + 1) <= __do_loop_end)) {
+            k = (k + 1);
+            w[((int)(k) - (1))] = ((float)((1000 * i) + k));
+        }
+        o[((int)(i) - (1))] =   0.00000000000000000e+00f;
+        __do_loop_end1 = (__sizes_c_m_[(((int)(2) - (1))) * 2 + 0] * __sizes_c_m_[(((int)(2) - (1))) * 2 + 1]);
+        k = (1 - 1);
+        while (((k + 1) <= __do_loop_end1)) {
+            k = (k + 1);
+            o[((int)(i) - (1))] = (o[((int)(i) - (1))] + w[((int)(k) - (1))]);
+        }
+    }
+}
+

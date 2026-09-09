@@ -14037,7 +14037,17 @@ public:
 
         this->visit_expr(*x);
 
-        if (load_ref &&
+        // A fixed size array member is stored inline in the struct, so what
+        // the member selects is the block of storage itself. Loading it
+        // would hand back the aggregate by value, which has no address to
+        // copy from or index through.
+        bool inline_array_member =
+            ASR::is_a<ASR::StructInstanceMember_t>(*x) &&
+            ASRUtils::is_array(ASRUtils::expr_type(x)) &&
+            ASRUtils::extract_physical_type(ASRUtils::expr_type(x)) ==
+                ASR::array_physical_typeType::FixedSizeArray;
+
+        if (load_ref && !inline_array_member &&
                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x))) &&
                 ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
             llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
@@ -14055,7 +14065,7 @@ public:
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
-            if( load_ref &&
+            if( load_ref && !inline_array_member &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 tmp = logical_load_val(tmp, x, is_volatile);
@@ -26601,7 +26611,14 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
     auto t1 = std::chrono::high_resolution_clock::now();
+    // A pass reports a hard error by adding it to the diagnostics, so the
+    // pipeline has to stop here: continuing would emit an object file for a
+    // program the passes just refused to translate.
+    bool had_error_before_passes = diagnostics.has_error();
     pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    if (!had_error_before_passes && diagnostics.has_error()) {
+        return Error();
+    }
     auto t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {

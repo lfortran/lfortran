@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,24 @@ struct GpuVlaDim {
     // per-element sizes. struct_member_key is "arr_name.member_name".
     bool is_struct_member_size = false;
     std::string struct_member_key;
+    // Rank of that component. The sizes buffer holds this many extents
+    // per element, so the element count is their product, not [0].
+    size_t struct_member_rank = 1;
+    // 0-based index of the struct-array element the extent names, or -1
+    // when that index is not a compile-time constant. A per-thread
+    // workspace cannot be strided by one element's product if another
+    // thread may need a larger one.
+    int64_t struct_member_elem_index = -1;
+    // When non-empty, the size is the scalar component chain
+    // arg%member_path[0]%member_path[1]%... of the kernel argument at
+    // `call_arg_index`. A struct is handed to the kernel as a buffer, so
+    // the host reads the component out of it to size the workspace.
+    std::vector<std::string> member_path;
+    // When true, the size is the whole of `dim_expr`, which is arithmetic
+    // over the kernel's parameters and nothing else. The launch rebuilds
+    // it over the actual arguments rather than collapsing it onto one of
+    // them -- `op%m_ + 1` is not `op%m_`.
+    bool is_host_expr = false;
 };
 
 // Describes a VLA workspace buffer required by a GPU kernel.
@@ -46,6 +65,97 @@ struct GpuKernelParam {
     GpuKernelParamKind kind;
 };
 
+// An allocatable array component of a kernel argument that is an array of a
+// derived type reaches the device as three buffers: the elements' data laid
+// out end to end, the per-element offsets into it, and the per-element sizes.
+// The sizes buffer holds the *extents* of the component, one entry per
+// dimension per element, in dimension order: element `k` of a rank `R`
+// component occupies entries `k*R .. k*R + R - 1`. A rank-one component
+// therefore keeps the single entry per element it has always had, that
+// element's number of elements, and the buffer accounting below is unchanged;
+// for a higher rank the element count is the product of the R entries.
+// Carrying the extents rather than only the total is what lets the shader
+// linearize `a(i)%m(p,q)`, which needs the extent of every dimension but the
+// last. The host fills the buffer in device_launch_expand and the device
+// reads it in asr_to_gpu_c.h; this is the one place the two agree.
+// The symbol `name` on `struct_sym` or a type it extends. Inherited
+// components live in the parent Struct, so a lookup that only reads
+// the child's table misses them.
+inline ASR::symbol_t* gpu_struct_lookup_member(ASR::symbol_t *struct_sym,
+        const std::string &name) {
+    if (struct_sym == nullptr) return nullptr;
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) return nullptr;
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    std::set<ASR::Struct_t*> seen;
+    while (st != nullptr) {
+        if (!seen.insert(st).second) break;
+        ASR::symbol_t *member = st->m_symtab->get_symbol(name);
+        if (member) return member;
+        if (!st->m_parent) break;
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+        st = ASR::down_cast<ASR::Struct_t>(parent);
+    }
+    return nullptr;
+}
+
+inline size_t gpu_struct_member_rank(const ASR::Variable_t *var) {
+    ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*inner)) return 0;
+    return ASR::down_cast<ASR::Array_t>(inner)->n_dims;
+}
+
+// The integer, real and logical kinds the device languages have a type of the
+// same width for. A buffer reaches the device as a block of bytes sized from
+// the host element type, so a device type of a different width makes the
+// kernel stride through it at the wrong size: it reads and writes the wrong
+// elements, and nothing says so. `logical(8)` is the case that bites -- the
+// emitter has no 64-bit boolean and used to fall back to a 4-byte `int`.
+//
+// The launch (device_launch_expand.cpp) and the emitter (asr_to_gpu_c.h) both
+// go through this, so a scalar type either has one width on both sides or the
+// loop is not offloaded at all.  What a dialect can represent on top of this
+// is narrower still -- Metal has no 64-bit floating point type -- and is
+// checked where the dialect is known.
+inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
+    switch (t->type) {
+        case ASR::ttypeType::Integer:
+            switch (ASR::down_cast<ASR::Integer_t>(t)->m_kind) {
+                case 4: case 8: return true;
+                default: return false;
+            }
+        case ASR::ttypeType::Real:
+            switch (ASR::down_cast<ASR::Real_t>(t)->m_kind) {
+                case 4: case 8: return true;
+                default: return false;
+            }
+        case ASR::ttypeType::Logical:
+            switch (ASR::down_cast<ASR::Logical_t>(t)->m_kind) {
+                case 1: case 2: case 4: return true;
+                default: return false;
+            }
+        default:
+            return false;
+    }
+}
+
+// The type as a user would write it, for a diagnostic that has to name the
+// kind it is turning down: `logical(8)`, `real(16)`.
+inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {
+    std::string base;
+    switch (t->type) {
+        case ASR::ttypeType::Integer: base = "integer"; break;
+        case ASR::ttypeType::Real: base = "real"; break;
+        case ASR::ttypeType::Logical: base = "logical"; break;
+        case ASR::ttypeType::Complex: base = "complex"; break;
+        default: return "that type";
+    }
+    return base + "(" +
+        std::to_string(ASRUtils::extract_kind_from_ttype_t(t)) + ")";
+}
+
 // Classify kernel arguments into buffer (array/struct) and scalar categories.
 // Returns the count of buffer args and scalar args respectively.
 // For struct array args with allocatable array members, counts 3 extra
@@ -66,23 +176,11 @@ inline std::pair<int, int> classify_gpu_kernel_args(
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                     var->m_type_declaration);
                 if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
-                    for (size_t m = 0; m < st->n_members; m++) {
-                        ASR::symbol_t *mem =
-                            st->m_symtab->get_symbol(st->m_members[m]);
-                        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem))
-                            continue;
-                        ASR::Variable_t *mv =
-                            ASR::down_cast<ASR::Variable_t>(mem);
-                        if (!ASRUtils::is_allocatable(mv->m_type))
-                            continue;
-                        ASR::ttype_t *inner =
-                            ASRUtils::type_get_past_allocatable(
-                                mv->m_type);
-                        if (!ASR::is_a<ASR::Array_t>(*inner))
-                            continue;
-                        n_buffer += 3;
-                    }
+                    // Members inherited from the types this one extends are
+                    // decomposed like its own, so they count here too.
+                    n_buffer += 3 *
+                        (int)ASRUtils::collect_allocatable_array_members(
+                            ASR::down_cast<ASR::Struct_t>(s)).size();
                 }
             }
         } else {
@@ -131,9 +229,36 @@ inline ASR::Allocate_t* find_allocate_for_var(
             r = find_allocate_for_var(if_s->m_orelse, if_s->n_orelse,
                 var_name);
             if (r) return r;
+        } else if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(stmts[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            auto *r = find_allocate_for_var(blk->m_body, blk->n_body,
+                var_name);
+            if (r) return r;
         }
     }
     return nullptr;
+}
+
+// A Fortran named constant carries its value on the symbol, not in the
+// expression node: `integer, parameter :: end_point = 1` reaches the
+// backends as a `Var` whose `Variable` holds an `IntegerConstant` in
+// `m_value`. Such a name is as knowable ahead of the launch as the literal
+// `1` is, so an extent that mentions one is host-evaluable. Returns the
+// constant the expression folds to, or nullptr when it does not fold.
+//
+// The pre-flight, the host-side rebuild of the extent and the device-side
+// rendering of it all ask this one question, so that the size the host
+// allocates and the stride the device walks cannot disagree.
+inline ASR::expr_t* gpu_folded_int_constant(ASR::expr_t *e) {
+    if (e == nullptr) return nullptr;
+    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) return e;
+    ASR::expr_t *val = ASRUtils::expr_value(e);
+    if (val == nullptr || val == e) return nullptr;
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*val)) return nullptr;
+    return val;
 }
 
 // Try to evaluate an ASR integer expression as a compile-time constant.
@@ -251,6 +376,35 @@ inline bool try_resolve_array_size_via_associate(
     return false;
 }
 
+// The extent an ArraySize reads straight off the type of what it measures.
+// `size(a(i)%m)`, where the component is declared `real :: m(2)`, is 2
+// whatever `i` is: the index is never evaluated, so the extent is the same
+// for every thread and the workspace it sizes is a compile-time constant.
+// A deferred shape carries no lengths in its type, so this says nothing
+// about an allocatable or a pointer.
+inline bool try_resolve_array_size_from_type(ASR::ArraySize_t *as,
+        int64_t &result) {
+    if (as->m_v == nullptr) return false;
+    ASR::ttype_t *t = ASRUtils::expr_type(as->m_v);
+    if (t == nullptr) return false;
+    if (ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)) return false;
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, dims);
+    if (n_dims == 0 || dims == nullptr) return false;
+    if (as->m_dim != nullptr) {
+        int64_t d = 0;
+        if (!try_eval_int_constant(as->m_dim, d)) return false;
+        if (d < 1 || (size_t)d > n_dims) return false;
+        if (dims[d - 1].m_length == nullptr) return false;
+        return ASRUtils::extract_value(
+            ASRUtils::expr_value(dims[d - 1].m_length), result);
+    }
+    int64_t total = ASRUtils::get_fixed_size_of_array(dims, n_dims);
+    if (total < 0) return false;
+    result = total;
+    return true;
+}
+
 // Try to resolve an Allocate dimension to a compile-time constant,
 // including tracing ArraySize through Associate statements.
 inline bool try_resolve_alloc_dim_constant(
@@ -258,232 +412,879 @@ inline bool try_resolve_alloc_dim_constant(
         ASR::stmt_t **body, size_t n_body,
         int64_t &result) {
     if (try_eval_int_constant(dim, result)) return true;
-    if (ASR::is_a<ASR::ArraySize_t>(*dim)) {
-        return try_resolve_array_size_via_associate(
-            ASR::down_cast<ASR::ArraySize_t>(dim), body, n_body, result);
+    ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
+    while (ASR::is_a<ASR::Cast_t>(*e)) {
+        e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+    }
+    if (ASR::is_a<ASR::ArraySize_t>(*e)) {
+        ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(e);
+        if (try_resolve_array_size_from_type(as, result)) return true;
+        return try_resolve_array_size_via_associate(as, body, n_body, result);
     }
     return false;
 }
 
-// Helper to extract a kernel argument reference from a complex Allocate
-// dimension expression.
-inline bool find_arg_var_in_expr(ASR::expr_t *expr,
+// The kernel's scalar parameter carrying one extent of an array parameter.
+// The offload pass creates the parameter under this name and the resolvers
+// below look it up again by it, so both spell it here.
+inline std::string gpu_dim_arg_name(const std::string &name, size_t d) {
+    return "__dim_" + name + "_" + std::to_string(d);
+}
+
+// The array and the 0-based dimension whose extent `e` is, when `e` is one
+// dimension of an array designator however it is spelled: `size(a, d)`,
+// `size(a)` on a rank-1 array, or the `ubound(a,d) - lbound(a,d) + 1` that
+// a whole dimension of an assumed-shape array is lowered to.
+inline bool gpu_extent_of_array_dim(ASR::expr_t *e, std::string &name,
+        size_t &dim) {
+    if (e == nullptr) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    while (ASR::is_a<ASR::Cast_t>(*v)) {
+        v = ASR::down_cast<ASR::Cast_t>(v)->m_arg;
+    }
+    auto array_name = [](ASR::expr_t *a, std::string &out) {
+        ASR::expr_t *b = ASRUtils::get_past_array_physical_cast(a);
+        if (!b || !ASR::is_a<ASR::Var_t>(*b)) return false;
+        out = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(b)->m_v);
+        return true;
+    };
+    if (ASR::is_a<ASR::ArraySize_t>(*v)) {
+        ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
+        if (!array_name(sz->m_v, name)) return false;
+        if (sz->m_dim == nullptr) {
+            // Only unambiguous on a rank-1 array, where the total size is
+            // the one dimension's extent.
+            ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(sz->m_v));
+            if (!t || !ASR::is_a<ASR::Array_t>(*t)) return false;
+            if (ASR::down_cast<ASR::Array_t>(t)->n_dims != 1) return false;
+            dim = 0;
+            return true;
+        }
+        int64_t d;
+        if (!try_eval_int_constant(sz->m_dim, d) || d < 1) return false;
+        dim = (size_t)d - 1;
+        return true;
+    }
+    // (ubound(a,d) - lbound(a,d)) + 1
+    if (!ASR::is_a<ASR::IntegerBinOp_t>(*v)) return false;
+    ASR::IntegerBinOp_t *add = ASR::down_cast<ASR::IntegerBinOp_t>(v);
+    int64_t one;
+    if (add->m_op != ASR::binopType::Add) return false;
+    if (!try_eval_int_constant(add->m_right, one) || one != 1) return false;
+    ASR::expr_t *l = ASRUtils::get_past_array_physical_cast(add->m_left);
+    if (!ASR::is_a<ASR::IntegerBinOp_t>(*l)) return false;
+    ASR::IntegerBinOp_t *sub = ASR::down_cast<ASR::IntegerBinOp_t>(l);
+    if (sub->m_op != ASR::binopType::Sub) return false;
+    if (!ASR::is_a<ASR::ArrayBound_t>(*sub->m_left)) return false;
+    if (!ASR::is_a<ASR::ArrayBound_t>(*sub->m_right)) return false;
+    ASR::ArrayBound_t *ub = ASR::down_cast<ASR::ArrayBound_t>(sub->m_left);
+    ASR::ArrayBound_t *lb = ASR::down_cast<ASR::ArrayBound_t>(sub->m_right);
+    if (ub->m_bound != ASR::arrayboundType::UBound) return false;
+    if (lb->m_bound != ASR::arrayboundType::LBound) return false;
+    std::string lname;
+    if (!array_name(ub->m_v, name) || !array_name(lb->m_v, lname)) {
+        return false;
+    }
+    if (name != lname) return false;
+    int64_t ud, ld;
+    if (!try_eval_int_constant(ub->m_dim, ud)) return false;
+    if (!try_eval_int_constant(lb->m_dim, ld)) return false;
+    if (ud != ld || ud < 1) return false;
+    dim = (size_t)ud - 1;
+    return true;
+}
+
+// The kernel argument and component chain an extent reads, when the extent
+// is a scalar component of a derived-type kernel argument -- `s%m_`, or
+// `s%in_%k_`. The kernel is handed `s` as a buffer, so the extent is not a
+// scalar parameter it could be read from; the host reads the component
+// itself before it launches.
+inline bool resolve_extent_to_arg_member(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names, size_t &arg_index,
+        std::vector<std::string> &member_path) {
+    if (e == nullptr) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    while (ASR::is_a<ASR::Cast_t>(*v)) {
+        v = ASR::down_cast<ASR::Cast_t>(v)->m_arg;
+    }
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*v)) return false;
+    std::vector<std::string> reversed;
+    while (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+        ASR::StructInstanceMember_t *sm =
+            ASR::down_cast<ASR::StructInstanceMember_t>(v);
+        reversed.push_back(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(sm->m_m)));
+        v = ASRUtils::get_past_array_physical_cast(sm->m_v);
+    }
+    // Only a chain rooted at a whole kernel argument: a subscript in the
+    // middle names an element the host cannot pick, because the index only
+    // exists on the device.
+    if (!ASR::is_a<ASR::Var_t>(*v)) return false;
+    std::string root = ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(v)->m_v);
+    for (size_t a = 0; a < arg_names.size(); a++) {
+        if (arg_names[a] != root) continue;
+        member_path.assign(reversed.rbegin(), reversed.rend());
+        arg_index = a;
+        return true;
+    }
+    return false;
+}
+
+// The extent expression of one dimension of a local array of `symtab`,
+// taken from the array's own type or from the `allocate` that gives it a
+// shape. An extent written over another local -- `size(t) + 1` -- is
+// resolved by asking this and carrying on through the answer.
+inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
+        const std::string &var_name);
+
+inline ASR::expr_t* gpu_local_array_extent(SymbolTable *symtab,
+        ASR::stmt_t **body, size_t n_body, const std::string &name,
+        size_t dim) {
+    if (symtab == nullptr) return nullptr;
+    ASR::symbol_t *sym = symtab->resolve_symbol(name);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_allocatable(var->m_type)) {
+        ASR::Allocate_t *alloc = find_allocate_for_var(body, n_body, name);
+        if (alloc == nullptr) return nullptr;
+        ASR::alloc_arg_t *arg = find_alloc_arg_for_var(alloc, name);
+        if (arg == nullptr || dim >= arg->n_dims) return nullptr;
+        return arg->m_dims[dim].m_length;
+    }
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*t)) return nullptr;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    if (dim >= arr->n_dims) return nullptr;
+    return arr->m_dims[dim].m_length;
+}
+
+// The subscripts of an array section that span a range, in order. The
+// section's rank is their number, and the extent of its `d`-th dimension is
+// `(right - left) / step + 1` -- a value the host can work out whenever
+// those three are, whatever the scalar subscripts alongside them are.
+inline std::vector<ASR::array_index_t*> gpu_section_ranges(
+        ASR::ArraySection_t *sec) {
+    std::vector<ASR::array_index_t*> ranges;
+    for (size_t i = 0; i < sec->n_args; i++) {
+        if (sec->m_args[i].m_left == nullptr
+                && sec->m_args[i].m_step == nullptr) {
+            continue;
+        }
+        if (sec->m_args[i].m_left == nullptr
+                || sec->m_args[i].m_right == nullptr) {
+            return {};
+        }
+        ranges.push_back(&sec->m_args[i]);
+    }
+    return ranges;
+}
+
+// The range subscripts `size(section, dim)` stands for: one for a given
+// dimension, all of them -- whose extents multiply to the element count --
+// without one. Empty when the section has no shape to read this way.
+inline std::vector<ASR::array_index_t*> gpu_section_extent_ranges(
+        ASR::expr_t *array, ASR::expr_t *dim) {
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(array);
+    if (v == nullptr || !ASR::is_a<ASR::ArraySection_t>(*v)) return {};
+    std::vector<ASR::array_index_t*> ranges = gpu_section_ranges(
+        ASR::down_cast<ASR::ArraySection_t>(v));
+    if (ranges.empty()) return {};
+    if (dim == nullptr) return ranges;
+    int64_t d;
+    if (!try_eval_int_constant(dim, d) || d < 1
+            || (size_t)d > ranges.size()) {
+        return {};
+    }
+    return {ranges[(size_t)d - 1]};
+}
+
+// The extents `size(array, dim)` stands for, read from the shape in the
+// expression's own type. An expression that is not a designator still
+// carries its shape there: a function result declared `real :: r(n)`
+// records `n` as the extent of its one dimension, and semantics has already
+// rewritten that in terms of the actual arguments, so the extent is written
+// in symbols of the scope the call is made from -- which is the scope the
+// kernel arguments come from. Whether the host can reproduce those
+// expressions is then the same question as for any other extent.
+// `dim` selects one dimension; without it the answer is every dimension,
+// whose product is the element count.
+inline bool gpu_expr_shape_extents(ASR::expr_t *array, ASR::expr_t *dim,
+        std::vector<ASR::expr_t*> &lengths) {
+    if (array == nullptr) return false;
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(array));
+    if (t == nullptr || !ASR::is_a<ASR::Array_t>(*t)) return false;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    if (arr->n_dims == 0) return false;
+    size_t begin = 0, end = arr->n_dims;
+    if (dim != nullptr) {
+        int64_t d;
+        if (!try_eval_int_constant(dim, d) || d < 1
+                || (size_t)d > arr->n_dims) {
+            return false;
+        }
+        begin = (size_t)d - 1;
+        end = begin + 1;
+    }
+    for (size_t d = begin; d < end; d++) {
+        if (!arr->m_dims[d].m_length) return false;
+        lengths.push_back(arr->m_dims[d].m_length);
+    }
+    return true;
+}
+
+// The sub-expression an elementwise array expression takes its shape from,
+// or nullptr when `e` is not one.
+//
+// An elementwise operator conforms with its array operands, so
+// `0.5*(a(1:n-1) + a(2:n))` has exactly the shape of `a(1:n-1)`, and a
+// scalar broadcast into such an expression carries the shape it was
+// broadcast against rather than one of its own. An expression like that has
+// no shape in its own type -- the array constructor lowering writes the
+// extent of its temporary as `size(<that expression>)` -- so a caller that
+// wants the extent walks down to an operand that does carry it. Both the
+// pre-flight in the offload pass and the launch that rebuilds the extent on
+// the host walk it the same way, so they cannot disagree about the size.
+inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
+    if (e == nullptr) return nullptr;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    if (v == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(v))) {
+        return nullptr;
+    }
+    // An operand that is itself an array. A broadcast scalar is one too,
+    // but it borrows its shape from the operand beside it, so it is only
+    // taken when nothing else is there -- and then it has no shape to give.
+    auto pick = [](ASR::expr_t *left, ASR::expr_t *right) -> ASR::expr_t* {
+        ASR::expr_t *operands[2] = {left, right};
+        for (ASR::expr_t *o : operands) {
+            if (o == nullptr) continue;
+            ASR::expr_t *b = ASRUtils::get_past_array_physical_cast(o);
+            if (b == nullptr || ASR::is_a<ASR::ArrayBroadcast_t>(*b)) {
+                continue;
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(b))) return b;
+        }
+        return nullptr;
+    };
+    auto unary = [](ASR::expr_t *arg) -> ASR::expr_t* {
+        if (arg == nullptr) return nullptr;
+        ASR::expr_t *b = ASRUtils::get_past_array_physical_cast(arg);
+        if (b == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(b))) {
+            return nullptr;
+        }
+        return b;
+    };
+    switch (v->type) {
+        case ASR::exprType::Cast:
+            return unary(ASR::down_cast<ASR::Cast_t>(v)->m_arg);
+        case ASR::exprType::IntegerUnaryMinus:
+            return unary(ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::RealUnaryMinus:
+            return unary(ASR::down_cast<ASR::RealUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::ComplexUnaryMinus:
+            return unary(ASR::down_cast<ASR::ComplexUnaryMinus_t>(v)->m_arg);
+        case ASR::exprType::LogicalNot:
+            return unary(ASR::down_cast<ASR::LogicalNot_t>(v)->m_arg);
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *o = ASR::down_cast<ASR::IntegerBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t *o = ASR::down_cast<ASR::RealBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::ComplexBinOp: {
+            ASR::ComplexBinOp_t *o = ASR::down_cast<ASR::ComplexBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::LogicalBinOp: {
+            ASR::LogicalBinOp_t *o = ASR::down_cast<ASR::LogicalBinOp_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::IntegerCompare: {
+            ASR::IntegerCompare_t *o =
+                ASR::down_cast<ASR::IntegerCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::RealCompare: {
+            ASR::RealCompare_t *o = ASR::down_cast<ASR::RealCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::ComplexCompare: {
+            ASR::ComplexCompare_t *o =
+                ASR::down_cast<ASR::ComplexCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        case ASR::exprType::LogicalCompare: {
+            ASR::LogicalCompare_t *o =
+                ASR::down_cast<ASR::LogicalCompare_t>(v);
+            return pick(o->m_left, o->m_right);
+        }
+        default:
+            return nullptr;
+    }
+}
+
+// Counts the writes to one scalar in a statement list, keeping the value of
+// the last one. A name written exactly once stands for that value
+// everywhere.
+class GpuScalarBindingCounter :
+        public ASR::BaseWalkVisitor<GpuScalarBindingCounter> {
+public:
+    ASR::symbol_t *target;
+    size_t n_writes = 0;
+    ASR::expr_t *value = nullptr;
+
+    GpuScalarBindingCounter(ASR::symbol_t *target_) : target(target_) {}
+
+    bool is_target(ASR::expr_t *e) {
+        return e != nullptr && ASR::is_a<ASR::Var_t>(*e) &&
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v) == target;
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (is_target(x.m_target)) {
+            n_writes++;
+            value = x.m_value;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (is_target(x.m_head.m_v)) n_writes++;
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>::visit_DoLoop(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (is_target(x.m_args[i].m_value)) n_writes++;
+        }
+        ASR::BaseWalkVisitor<GpuScalarBindingCounter>
+            ::visit_SubroutineCall(x);
+    }
+
+    // The generated walker stops at a BLOCK or ASSOCIATE call, but a write
+    // hidden inside one must still be seen.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) return;
+        ASR::AssociateBlock_t *blk =
+            ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) {
+            visit_stmt(*blk->m_body[i]);
+        }
+    }
+};
+
+// The value bound to the integer scalar `name` in `body`, or nullptr when
+// the name is not defined exactly once there. This is how a workspace
+// extent reaches through an ASSOCIATE name: once the offload pass splices
+// the construct in, `associate(rows => self%m_ + 2)` shows up as a local
+// `rows` assigned `self%m_ + 2` once, and only the selector expression is
+// something the host can evaluate.
+inline ASR::expr_t* gpu_local_scalar_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    if (sym == nullptr) return nullptr;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_array(var->m_type)) return nullptr;
+    if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(var->m_type))) {
+        return nullptr;
+    }
+    GpuScalarBindingCounter counter(sym);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    if (counter.n_writes != 1) return nullptr;
+    return counter.value;
+}
+
+// The selector bound to the array name `sym` in `body`, or nullptr when
+// the name is not defined exactly once there. An ASSOCIATE array name is
+// a pointer; its selector is the section or designator whose extents
+// `size(name)` actually stands for.
+inline ASR::expr_t* gpu_local_array_binding(ASR::symbol_t *sym,
+        ASR::stmt_t **body, size_t n_body) {
+    if (sym == nullptr || body == nullptr) return nullptr;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        var->m_type);
+    if (t == nullptr || !ASR::is_a<ASR::Array_t>(*t)) return nullptr;
+    GpuScalarBindingCounter counter(sym);
+    for (size_t i = 0; i < n_body; i++) {
+        counter.visit_stmt(*body[i]);
+    }
+    if (counter.n_writes != 1) return nullptr;
+    return counter.value;
+}
+
+// Whether the host can read the designator `e`: a kernel parameter, or a
+// component or element reached from one, with every subscript something the
+// host can work out too. `self%points_(1,1,1,1)%values_` is such a
+// designator; `a(i)` for a loop index `i` is not, the index existing only
+// once the kernel runs.
+inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
         const std::vector<std::string> &arg_names,
-        size_t &arg_index) {
-    if (!expr) return false;
-    if (ASR::is_a<ASR::Var_t>(*expr)) {
+        SymbolTable *symtab = nullptr, ASR::stmt_t **body = nullptr,
+        size_t n_body = 0);
+
+// Whether the host could evaluate `e` itself, given that it can read every
+// kernel parameter. Arithmetic over integer literals, scalar parameters,
+// scalar components of parameters and the extents of array parameters is
+// evaluable; anything else -- a call, a subscript that only exists on the
+// device -- is not.
+inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab = nullptr, ASR::stmt_t **body = nullptr,
+        size_t n_body = 0, int depth = 0);
+
+// The kernel argument supplying that extent. An array parameter's extents
+// are handed to the kernel as scalar parameters of their own, so an extent
+// written over the array itself is read on the host from the same
+// parameter the device reads it from.
+inline bool resolve_extent_to_dim_arg(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names, size_t &arg_index) {
+    std::string name;
+    size_t dim = 0;
+    if (!gpu_extent_of_array_dim(e, name, dim)) return false;
+    std::string want = gpu_dim_arg_name(name, dim);
+    for (size_t a = 0; a < arg_names.size(); a++) {
+        if (arg_names[a] == want) {
+            arg_index = a;
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool gpu_extent_is_host_evaluable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab, ASR::stmt_t **body, size_t n_body,
+        int depth) {
+    if (e == nullptr) return false;
+    if (depth > 8) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    // A compile-time constant -- a literal, or a name declared `parameter`
+    // -- is known before the launch, so the host can size a workspace by
+    // it. The value lives on the symbol rather than in the node, so a
+    // `Var` has to be asked for it explicitly.
+    if (gpu_folded_int_constant(v) != nullptr) return true;
+    if (ASR::is_a<ASR::Cast_t>(*v)) {
+        return gpu_extent_is_host_evaluable(
+            ASR::down_cast<ASR::Cast_t>(v)->m_arg, arg_names, symtab,
+            body, n_body, depth);
+    }
+    size_t idx = 0;
+    std::vector<std::string> path;
+    if (resolve_extent_to_dim_arg(v, arg_names, idx)) return true;
+    if (resolve_extent_to_arg_member(v, arg_names, idx, path)) return true;
+    if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
+        ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(v);
+        switch (op->m_op) {
+            case ASR::binopType::Add:
+            case ASR::binopType::Sub:
+            case ASR::binopType::Mul:
+            case ASR::binopType::Div:
+                break;
+            default: return false;
+        }
+        return gpu_extent_is_host_evaluable(op->m_left, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(op->m_right, arg_names, symtab,
+                body, n_body, depth);
+    }
+    if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*v)) {
+        return gpu_extent_is_host_evaluable(
+            ASR::down_cast<ASR::IntegerUnaryMinus_t>(v)->m_arg, arg_names,
+            symtab, body, n_body, depth);
+    }
+    if (ASR::is_a<ASR::IntegerCompare_t>(*v)) {
+        ASR::IntegerCompare_t *cmp =
+            ASR::down_cast<ASR::IntegerCompare_t>(v);
+        return gpu_extent_is_host_evaluable(cmp->m_left, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(cmp->m_right, arg_names, symtab,
+                body, n_body, depth);
+    }
+    if (ASR::is_a<ASR::IfExp_t>(*v)) {
+        ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(v);
+        return gpu_extent_is_host_evaluable(ie->m_test, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(ie->m_body, arg_names, symtab,
+                body, n_body, depth)
+            && gpu_extent_is_host_evaluable(ie->m_orelse, arg_names, symtab,
+                body, n_body, depth);
+    }
+    // An element of an array parameter, at a subscript the host can work
+    // out too. The loop index is not a parameter, so an element the
+    // iteration picks is correctly not evaluable here.
+    if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(
+            item->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*base)) return false;
         std::string name = ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(expr)->m_v);
-        for (size_t a = 0; a < arg_names.size(); a++) {
-            if (arg_names[a] == name) {
-                arg_index = a;
+            ASR::down_cast<ASR::Var_t>(base)->m_v);
+        bool is_arg = false;
+        for (const std::string &a : arg_names) {
+            if (a == name) { is_arg = true; break; }
+        }
+        if (!is_arg) return false;
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step) {
+                return false;
+            }
+            if (!gpu_extent_is_host_evaluable(item->m_args[i].m_right,
+                    arg_names, symtab, body, n_body, depth)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // `size(<designator>, d)` where the host can read the designator.
+    if (ASR::is_a<ASR::ArraySize_t>(*v)) {
+        ASR::ArraySize_t *sz = ASR::down_cast<ASR::ArraySize_t>(v);
+        ASR::expr_t *array = sz->m_v;
+        // The shape asked for may sit one or more elementwise operators
+        // below the expression itself, so walk down to the operand that
+        // carries it. The rank is the same all the way down, so the
+        // dimension asked for stays the same too.
+        for (int hop = 0; hop < 8 && array != nullptr; hop++) {
+            // `size(slice)` of an ASSOCIATE name is the size of the
+            // selector.
+            if (ASR::is_a<ASR::Var_t>(*array)) {
+                ASR::expr_t *bound = gpu_local_array_binding(
+                    ASR::down_cast<ASR::Var_t>(array)->m_v, body, n_body);
+                if (bound != nullptr) array = bound;
+            }
+            if (gpu_designator_is_host_readable(array, arg_names, symtab,
+                    body, n_body)) {
+                return sz->m_dim == nullptr
+                    || gpu_extent_is_host_evaluable(sz->m_dim, arg_names,
+                        symtab, body, n_body, depth);
+            }
+            // A section whose base the host cannot read as it stands -- one
+            // subscript is the loop index -- still has extents the host can
+            // work out, because they come from the ranges alone.
+            std::vector<ASR::array_index_t*> ranges =
+                gpu_section_extent_ranges(array, sz->m_dim);
+            if (!ranges.empty()) {
+                for (ASR::array_index_t *range : ranges) {
+                    if (!gpu_extent_is_host_evaluable(range->m_left,
+                                arg_names, symtab, body, n_body, depth + 1)
+                            || !gpu_extent_is_host_evaluable(range->m_right,
+                                arg_names, symtab, body, n_body, depth + 1)
+                            || (range->m_step != nullptr
+                                && !gpu_extent_is_host_evaluable(
+                                    range->m_step, arg_names, symtab, body,
+                                    n_body, depth + 1))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // Not a designator the host can read -- a function call, say --
+            // but its type still records its shape.
+            std::vector<ASR::expr_t*> lengths;
+            if (gpu_expr_shape_extents(array, sz->m_dim, lengths)) {
+                for (ASR::expr_t *length : lengths) {
+                    if (!gpu_extent_is_host_evaluable(length, arg_names,
+                            symtab, body, n_body, depth + 1)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // An elementwise array expression records no shape of its own;
+            // it has the shape of its array operand.
+            array = gpu_elementwise_shape_source(array);
+        }
+    }
+    if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
+        ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
+        if (gpu_designator_is_host_readable(bd->m_v, arg_names, symtab,
+                body, n_body)) {
+            return gpu_extent_is_host_evaluable(bd->m_dim, arg_names,
+                symtab, body, n_body, depth);
+        }
+    }
+    std::string local_name;
+    size_t local_dim = 0;
+    if (gpu_extent_of_array_dim(v, local_name, local_dim)) {
+        bool is_arg = false;
+        for (const std::string &a : arg_names) {
+            if (a == local_name) { is_arg = true; break; }
+        }
+        if (!is_arg) {
+            return gpu_extent_is_host_evaluable(
+                gpu_local_array_extent(symtab, body, n_body, local_name,
+                    local_dim),
+                arg_names, symtab, body, n_body, depth + 1);
+        }
+    }
+    if (ASR::is_a<ASR::Var_t>(*v)) {
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+        for (const std::string &a : arg_names) {
+            if (a == name) return true;
+        }
+        // A name of the kernel's own that stands for one value: what an
+        // ASSOCIATE selector becomes once the construct is spliced in.
+        // The value it is bound to is what the host evaluates.
+        ASR::expr_t *bound = gpu_local_scalar_binding(
+            ASR::down_cast<ASR::Var_t>(v)->m_v, body, n_body);
+        if (bound != nullptr) {
+            return gpu_extent_is_host_evaluable(bound, arg_names, symtab,
+                body, n_body, depth + 1);
+        }
+    }
+    return false;
+}
+
+inline bool gpu_designator_is_host_readable(ASR::expr_t *e,
+        const std::vector<std::string> &arg_names,
+        SymbolTable *symtab, ASR::stmt_t **body, size_t n_body) {
+    if (e == nullptr) return false;
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+    if (ASR::is_a<ASR::Var_t>(*v)) {
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+        for (const std::string &a : arg_names) {
+            if (a == name) return true;
+        }
+        ASR::expr_t *bound = gpu_local_array_binding(
+            ASR::down_cast<ASR::Var_t>(v)->m_v, body, n_body);
+        if (bound != nullptr) {
+            return gpu_designator_is_host_readable(bound, arg_names,
+                symtab, body, n_body);
+        }
+        return false;
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+        return gpu_designator_is_host_readable(
+            ASR::down_cast<ASR::StructInstanceMember_t>(v)->m_v, arg_names,
+            symtab, body, n_body);
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step) return false;
+            if (!gpu_extent_is_host_evaluable(item->m_args[i].m_right,
+                    arg_names, symtab, body, n_body, 0)) {
+                return false;
+            }
+        }
+        return gpu_designator_is_host_readable(item->m_v, arg_names, symtab,
+            body, n_body);
+    }
+    return false;
+}
+
+// The "struct_array.member" key of an array expression that is a
+// deferred-shape component, such as `a(i)%v` or a section of one.
+inline bool expr_struct_member_key(ASR::expr_t *e, std::string &key,
+        size_t *rank = nullptr, int64_t *elem_index = nullptr) {
+    if (e == nullptr) return false;
+    e = ASRUtils::get_past_array_physical_cast(e);
+    while (ASR::is_a<ASR::Cast_t>(*e)) {
+        e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+    }
+    if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+        e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+        e = ASRUtils::get_past_array_physical_cast(e);
+    }
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return false;
+    ASR::StructInstanceMember_t *sm =
+        ASR::down_cast<ASR::StructInstanceMember_t>(e);
+    ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(sm->m_m);
+    std::string member = ASRUtils::symbol_name(ms);
+    ASR::expr_t *base = sm->m_v;
+    int64_t index = 0;
+    if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+        // The column-major position of the element, which is the position
+        // the flattened component buffers are laid out and read by. An
+        // array of any rank has one as long as every subscript, lower
+        // bound and extent it takes is known here.
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(base);
+        index = -1;
+        ASR::Array_t *arr = nullptr;
+        ASR::ttype_t *at = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(
+                ASRUtils::expr_type(item->m_v)));
+        if (ASR::is_a<ASR::Array_t>(*at)) {
+            arr = ASR::down_cast<ASR::Array_t>(at);
+        }
+        size_t known_dims = arr != nullptr ? arr->n_dims : 1;
+        if (known_dims == item->n_args) {
+            int64_t position = 0, stride = 1;
+            bool known = true;
+            for (size_t d = 0; d < item->n_args && known; d++) {
+                ASR::expr_t *ie = item->m_args[d].m_right
+                    ? item->m_args[d].m_right : item->m_args[d].m_left;
+                int64_t v = 0;
+                if (ie == nullptr || ASRUtils::expr_value(ie) == nullptr
+                        || !ASRUtils::extract_value(
+                            ASRUtils::expr_value(ie), v)) {
+                    known = false;
+                    break;
+                }
+                int64_t lb = 1;
+                if (arr != nullptr && arr->m_dims[d].m_start != nullptr
+                        && ASRUtils::expr_value(arr->m_dims[d].m_start)
+                            != nullptr) {
+                    ASRUtils::extract_value(ASRUtils::expr_value(
+                        arr->m_dims[d].m_start), lb);
+                }
+                position += stride * (v - lb);
+                if (d + 1 < item->n_args) {
+                    int64_t extent = 0;
+                    if (arr == nullptr || arr->m_dims[d].m_length == nullptr
+                            || ASRUtils::expr_value(arr->m_dims[d].m_length)
+                                == nullptr
+                            || !ASRUtils::extract_value(ASRUtils::expr_value(
+                                arr->m_dims[d].m_length), extent)) {
+                        known = false;
+                        break;
+                    }
+                    stride *= extent;
+                }
+            }
+            if (known) index = position;
+        }
+        base = item->m_v;
+    } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
+        index = -1;
+        base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
+    } else {
+        // size(x%v) on a scalar struct is not an element of a struct
+        // array: the host reads that extent from the argument itself.
+        return false;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*base)) return false;
+    key = std::string(ASRUtils::symbol_name(
+        ASR::down_cast<ASR::Var_t>(base)->m_v)) + "." + member;
+    if (rank != nullptr) {
+        *rank = 1;
+        if (ASR::is_a<ASR::Variable_t>(*ms)) {
+            size_t r = gpu_struct_member_rank(
+                ASR::down_cast<ASR::Variable_t>(ms));
+            if (r > 0) *rank = r;
+        }
+    }
+    if (elem_index != nullptr) *elem_index = index;
+    return true;
+}
+
+// The member a workspace was copied from, taken from the assignment that
+// writes `var_name`. Two allocatable members of the same type must not
+// share a guessed size.
+inline bool find_struct_member_key_from_assignments(
+        ASR::stmt_t **body, size_t n_body, const std::string &var_name,
+        std::string &key) {
+    if (body == nullptr) return false;
+    for (size_t i = 0; i < n_body; i++) {
+        ASR::stmt_t *stmt = body[i];
+        if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
+            ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+            if (!ASR::is_a<ASR::Var_t>(*asgn->m_target)) continue;
+            std::string tname = ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(asgn->m_target)->m_v);
+            if (tname != var_name) continue;
+            if (expr_struct_member_key(asgn->m_value, key)) return true;
+        } else if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            if (find_struct_member_key_from_assignments(
+                    blk->m_body, blk->n_body, var_name, key)) {
+                return true;
+            }
+        } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                continue;
+            }
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            if (find_struct_member_key_from_assignments(
+                    ab->m_body, ab->n_body, var_name, key)) {
+                return true;
+            }
+        } else if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+            if (find_struct_member_key_from_assignments(
+                    dl->m_body, dl->n_body, var_name, key)) {
+                return true;
+            }
+        } else if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
+            ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+            if (find_struct_member_key_from_assignments(
+                    wl->m_body, wl->n_body, var_name, key)) {
+                return true;
+            }
+        } else if (ASR::is_a<ASR::If_t>(*stmt)) {
+            ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmt);
+            if (find_struct_member_key_from_assignments(
+                    ifs->m_body, ifs->n_body, var_name, key)
+                    || find_struct_member_key_from_assignments(
+                        ifs->m_orelse, ifs->n_orelse, var_name, key)) {
                 return true;
             }
         }
-        return false;
-    }
-    if (ASR::is_a<ASR::IntegerBinOp_t>(*expr)) {
-        ASR::IntegerBinOp_t *op =
-            ASR::down_cast<ASR::IntegerBinOp_t>(expr);
-        if (find_arg_var_in_expr(op->m_left, arg_names, arg_index))
-            return true;
-        return find_arg_var_in_expr(op->m_right, arg_names, arg_index);
-    }
-    if (ASR::is_a<ASR::IfExp_t>(*expr)) {
-        ASR::IfExp_t *ie = ASR::down_cast<ASR::IfExp_t>(expr);
-        if (find_arg_var_in_expr(ie->m_body, arg_names, arg_index))
-            return true;
-        return find_arg_var_in_expr(ie->m_orelse, arg_names, arg_index);
-    }
-    if (ASR::is_a<ASR::IntegerCompare_t>(*expr)) {
-        ASR::IntegerCompare_t *cmp =
-            ASR::down_cast<ASR::IntegerCompare_t>(expr);
-        if (find_arg_var_in_expr(cmp->m_left, arg_names, arg_index))
-            return true;
-        return find_arg_var_in_expr(cmp->m_right, arg_names, arg_index);
-    }
-    if (ASR::is_a<ASR::Cast_t>(*expr)) {
-        return find_arg_var_in_expr(
-            ASR::down_cast<ASR::Cast_t>(expr)->m_arg,
-            arg_names, arg_index);
     }
     return false;
-}
-
-// Try to resolve an ArraySize expression through Associate statements
-// to find a kernel argument that determines the dimension size.
-// Handles the pattern: ArraySize(temp, dim) where temp is associated
-// with ArraySection(array_arg, [start:end:step, ...]).
-// When start == 1 and step == 1, the section size equals end, and we
-// look for a kernel arg reference in end.
-inline bool try_resolve_array_size_to_arg_var(
-        ASR::expr_t *dim_expr,
-        ASR::stmt_t **body, size_t n_body,
-        const std::vector<std::string> &arg_names,
-        size_t &arg_index) {
-    if (!ASR::is_a<ASR::ArraySize_t>(*dim_expr)) return false;
-    ASR::ArraySize_t *as = ASR::down_cast<ASR::ArraySize_t>(dim_expr);
-    if (!as->m_v || !ASR::is_a<ASR::Var_t>(*as->m_v)) return false;
-
-    std::string var_name = ASRUtils::symbol_name(
-        ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
-    int64_t target_dim = 1;
-    if (as->m_dim) {
-        if (!try_eval_int_constant(as->m_dim, target_dim)) return false;
-    }
-
-    for (size_t i = 0; i < n_body; i++) {
-        if (!ASR::is_a<ASR::Associate_t>(*body[i])) continue;
-        ASR::Associate_t *assoc =
-            ASR::down_cast<ASR::Associate_t>(body[i]);
-        if (!ASR::is_a<ASR::Var_t>(*assoc->m_target)) continue;
-        std::string tname = ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
-        if (tname != var_name) continue;
-        if (!ASR::is_a<ASR::ArraySection_t>(*assoc->m_value))
-            return false;
-        ASR::ArraySection_t *sec =
-            ASR::down_cast<ASR::ArraySection_t>(assoc->m_value);
-        int range_dim = 0;
-        for (size_t d = 0; d < sec->n_args; d++) {
-            ASR::array_index_t &idx = sec->m_args[d];
-            if (idx.m_left == nullptr) continue;
-            range_dim++;
-            if (range_dim == target_dim) {
-                int64_t start_val = 0;
-                bool start_is_one =
-                    try_eval_int_constant(idx.m_left, start_val)
-                    && start_val == 1;
-                bool step_is_one = true;
-                if (idx.m_step) {
-                    int64_t sv;
-                    step_is_one =
-                        try_eval_int_constant(idx.m_step, sv) && sv == 1;
-                }
-                if (start_is_one && step_is_one && idx.m_right) {
-                    return find_arg_var_in_expr(
-                        idx.m_right, arg_names, arg_index);
-                }
-                // When the section spans a full dimension (e.g.
-                // m(lbound(m,1):ubound(m,1):1, ...)), the size
-                // equals the array's dimension size.  Look for the
-                // __dim_<base>_<d> kernel arg directly.
-                if (step_is_one && ASR::is_a<ASR::Var_t>(*sec->m_v)) {
-                    std::string base_name = ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(sec->m_v)->m_v);
-                    std::string dim_arg = "__dim_" + base_name
-                        + "_" + std::to_string(d);
-                    for (size_t a = 0; a < arg_names.size(); a++) {
-                        if (arg_names[a] == dim_arg) {
-                            arg_index = a;
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-        }
-        return false;
-    }
-
-    // No Associate found — try tracing through an Allocate whose
-    // dimension is itself an ArraySize that can be resolved.
-    ASR::Allocate_t *alloc = find_allocate_for_var(
-        body, n_body, var_name);
-    if (alloc) {
-        for (size_t ai = 0; ai < alloc->n_args; ai++) {
-            if (!alloc->m_args[ai].m_a) continue;
-            if (!ASR::is_a<ASR::Var_t>(*alloc->m_args[ai].m_a))
-                continue;
-            std::string aname = ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(
-                    alloc->m_args[ai].m_a)->m_v);
-            if (aname != var_name) continue;
-            ASR::alloc_arg_t &targ = alloc->m_args[ai];
-            if (target_dim < 1 || (size_t)target_dim > targ.n_dims)
-                return false;
-            ASR::expr_t *inner_dim =
-                targ.m_dims[target_dim - 1].m_length;
-            if (!inner_dim) return false;
-            return try_resolve_array_size_to_arg_var(
-                inner_dim, body, n_body, arg_names, arg_index);
-        }
-    }
-    return false;
-}
-
-// Find the first struct array kernel arg that has an allocatable array
-// member.  Returns "arr_name.member_name" or "" if none found.
-inline std::string find_struct_alloc_member_key(
-        const ASR::Function_t &kernel) {
-    for (size_t ai = 0; ai < kernel.n_args; ai++) {
-        ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
-        ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(av->m_v));
-        ASR::ttype_t *atype =
-            ASRUtils::type_get_past_allocatable(avar->m_type);
-        if (!ASR::is_a<ASR::Array_t>(*atype)) continue;
-        ASR::Array_t *arr_t = ASR::down_cast<ASR::Array_t>(atype);
-        if (!ASR::is_a<ASR::StructType_t>(*arr_t->m_type)) continue;
-        if (!avar->m_type_declaration) continue;
-        ASR::symbol_t *decl_sym = ASRUtils::symbol_get_past_external(
-            avar->m_type_declaration);
-        if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) continue;
-        ASR::Struct_t *stype = ASR::down_cast<ASR::Struct_t>(decl_sym);
-        for (auto &mem : stype->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*mem.second)) continue;
-            ASR::Variable_t *mv =
-                ASR::down_cast<ASR::Variable_t>(mem.second);
-            if (!ASRUtils::is_allocatable(mv->m_type)) continue;
-            ASR::ttype_t *mt =
-                ASRUtils::type_get_past_allocatable(mv->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*mt)) continue;
-            return std::string(avar->m_name)
-                + "." + std::string(mv->m_name);
-        }
-    }
-    return "";
 }
 
 // The "struct_array.member" key of an extent that reads the size of a
 // deferred-shape component, such as `size(a(i)%v)`. The host cannot evaluate
 // such an extent itself, because the element index only exists on the device;
 // it sizes the workspace from the component's own sizes instead.
-inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key) {
+inline bool dim_expr_struct_member_key(ASR::expr_t *dim, std::string &key,
+        size_t *rank = nullptr, int64_t *elem_index = nullptr) {
     if (dim == nullptr) return false;
     ASR::expr_t *e = ASRUtils::get_past_array_physical_cast(dim);
     while (ASR::is_a<ASR::Cast_t>(*e)) {
         e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
     }
     if (!ASR::is_a<ASR::ArraySize_t>(*e)) return false;
-    ASR::expr_t *arg = ASRUtils::get_past_array_physical_cast(
-        ASR::down_cast<ASR::ArraySize_t>(e)->m_v);
-    if (!ASR::is_a<ASR::StructInstanceMember_t>(*arg)) return false;
-    ASR::StructInstanceMember_t *sm =
-        ASR::down_cast<ASR::StructInstanceMember_t>(arg);
-    std::string member = ASRUtils::symbol_name(
-        ASRUtils::symbol_get_past_external(sm->m_m));
-    ASR::expr_t *base = sm->m_v;
-    if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
-        base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
-    } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
-        base = ASR::down_cast<ASR::ArraySection_t>(base)->m_v;
-    }
-    if (!ASR::is_a<ASR::Var_t>(*base)) return false;
-    key = std::string(ASRUtils::symbol_name(
-        ASR::down_cast<ASR::Var_t>(base)->m_v)) + "." + member;
-    return true;
+    return expr_struct_member_key(
+        ASR::down_cast<ASR::ArraySize_t>(e)->m_v, key, rank, elem_index);
 }
 
-// The size in bytes of an array's element.
+// The size in bytes of an array's element, or 0 when the element type is
+// not in the shared host/device width table. A default of 4 used to
+// disagree with logical(1)/logical(2), which the table allows and the
+// emitter maps to 1- and 2-byte types.
 inline int gpu_vla_elem_size(ASR::Array_t *arr) {
-    if (ASR::is_a<ASR::Real_t>(*arr->m_type)) {
-        return ASR::down_cast<ASR::Real_t>(arr->m_type)->m_kind;
-    }
-    if (ASR::is_a<ASR::Integer_t>(*arr->m_type)) {
-        return ASR::down_cast<ASR::Integer_t>(arr->m_type)->m_kind;
-    }
-    return 4;
+    ASR::ttype_t *t = ASRUtils::extract_type(arr->m_type);
+    if (!gpu_scalar_width_supported(t)) return 0;
+    return ASRUtils::extract_kind_from_ttype_t(t);
 }
 
 // The argument of an Allocate statement that gives `var_name` its shape.
@@ -507,7 +1308,7 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
         ASR::Array_t *arr, const std::string &var_name,
         ASR::stmt_t **body, size_t n_body,
         const std::vector<std::string> &arg_names,
-        GpuVlaWorkspace &ws) {
+        GpuVlaWorkspace &ws, SymbolTable *symtab = nullptr) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < alloc_arg.n_dims; d++) {
         if (alloc_arg.m_dims[d].m_length &&
@@ -520,6 +1321,7 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
     if (!has_runtime_dim) return false;
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
+    if (ws.elem_size <= 0) return false;
     for (size_t d = 0; d < alloc_arg.n_dims; d++) {
         ASR::expr_t *dim = alloc_arg.m_dims[d].m_length;
         GpuVlaDim vd;
@@ -540,14 +1342,19 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
                 vd.constant_value = 0;
                 size_t idx = 0;
                 std::string member_key;
-                if (find_arg_var_in_expr(dim, arg_names, idx)) {
+                if (resolve_extent_to_dim_arg(dim, arg_names, idx)) {
                     vd.call_arg_index = idx;
-                } else if (try_resolve_array_size_to_arg_var(dim, body,
-                        n_body, arg_names, idx)) {
+                } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
+                        vd.member_path)) {
                     vd.call_arg_index = idx;
-                } else if (dim_expr_struct_member_key(dim, member_key)) {
+                } else if (dim_expr_struct_member_key(dim, member_key,
+                        &vd.struct_member_rank,
+                        &vd.struct_member_elem_index)) {
                     vd.is_struct_member_size = true;
                     vd.struct_member_key = member_key;
+                } else if (gpu_extent_is_host_evaluable(dim, arg_names,
+                        symtab, body, n_body)) {
+                    vd.is_host_expr = true;
                 } else {
                     // The host cannot size a workspace it cannot measure.
                     // Leave the array to the device language, which either
@@ -568,7 +1375,8 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
 inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
         const std::string &var_name,
         const std::vector<std::string> &arg_names,
-        GpuVlaWorkspace &ws) {
+        GpuVlaWorkspace &ws, SymbolTable *symtab = nullptr,
+        ASR::stmt_t **body = nullptr, size_t n_body = 0) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < arr->n_dims; d++) {
         if (arr->m_dims[d].m_length &&
@@ -581,6 +1389,7 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
     if (!has_runtime_dim) return false;
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
+    if (ws.elem_size <= 0) return false;
     for (size_t d = 0; d < arr->n_dims; d++) {
         ASR::expr_t *dim = arr->m_dims[d].m_length;
         GpuVlaDim vd;
@@ -596,11 +1405,19 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             vd.constant_value = 0;
             size_t idx = 0;
             std::string member_key;
-            if (find_arg_var_in_expr(dim, arg_names, idx)) {
+            if (resolve_extent_to_dim_arg(dim, arg_names, idx)) {
                 vd.call_arg_index = idx;
-            } else if (dim_expr_struct_member_key(dim, member_key)) {
+            } else if (resolve_extent_to_arg_member(dim, arg_names, idx,
+                    vd.member_path)) {
+                vd.call_arg_index = idx;
+            } else if (dim_expr_struct_member_key(dim, member_key,
+                    &vd.struct_member_rank,
+                    &vd.struct_member_elem_index)) {
                 vd.is_struct_member_size = true;
                 vd.struct_member_key = member_key;
+            } else if (gpu_extent_is_host_evaluable(dim, arg_names,
+                    symtab, body, n_body)) {
+                vd.is_host_expr = true;
             } else {
                 // The host cannot size a workspace it cannot measure. Leave
                 // the array to the device language, which either declares it
@@ -615,13 +1432,82 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
 
 // A per-thread workspace for an allocatable array whose size is only known
 // on the device, sized from the struct member the array is copied from.
+// The unique "arr.member" key when the kernel has exactly one
+// allocatable array component of exactly one struct-array argument.
+// Two members cannot share a size; those must be named by an assignment.
+inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
+        std::string &key) {
+    int n = 0;
+    std::string found;
+    for (size_t ai = 0; ai < kernel.n_args; ai++) {
+        ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
+        ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(av->m_v));
+        ASR::ttype_t *atype =
+            ASRUtils::type_get_past_allocatable(avar->m_type);
+        if (!ASR::is_a<ASR::Array_t>(*atype)) continue;
+        ASR::Array_t *arr_t = ASR::down_cast<ASR::Array_t>(atype);
+        if (!ASR::is_a<ASR::StructType_t>(*arr_t->m_type)) continue;
+        if (!avar->m_type_declaration) continue;
+        ASR::symbol_t *decl_sym = ASRUtils::symbol_get_past_external(
+            avar->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*decl_sym)) continue;
+        ASR::Struct_t *stype = ASR::down_cast<ASR::Struct_t>(decl_sym);
+        for (auto &mem :
+                ASRUtils::collect_allocatable_array_members(stype)) {
+            n++;
+            found = std::string(avar->m_name) + "." + mem.first;
+            if (n > 1) return false;
+        }
+    }
+    if (n != 1) return false;
+    key = found;
+    return true;
+}
+
+inline size_t gpu_struct_member_rank_from_key(const ASR::Function_t &kernel,
+        const std::string &key) {
+    std::string::size_type dot = key.find('.');
+    if (dot == std::string::npos) return 1;
+    std::string arr = key.substr(0, dot);
+    std::string mem = key.substr(dot + 1);
+    for (size_t ai = 0; ai < kernel.n_args; ai++) {
+        ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
+        ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(av->m_v));
+        if (std::string(avar->m_name) != arr) continue;
+        if (!avar->m_type_declaration) continue;
+        ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(
+            avar->m_type_declaration);
+        if (!ASR::is_a<ASR::Struct_t>(*decl)) continue;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(decl);
+        for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
+            if (m.first != mem) continue;
+            size_t r = gpu_struct_member_rank(m.second);
+            return r > 0 ? r : 1;
+        }
+    }
+    return 1;
+}
+
 inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
         ASR::Array_t *arr, const std::string &var_name,
-        GpuVlaWorkspace &ws) {
-    std::string struct_key = find_struct_alloc_member_key(kernel);
-    if (struct_key.empty()) return false;
+        GpuVlaWorkspace &ws, ASR::stmt_t **scope_body = nullptr,
+        size_t scope_n_body = 0) {
+    std::string struct_key;
+    if (scope_body != nullptr
+            && find_struct_member_key_from_assignments(scope_body,
+                scope_n_body, var_name, struct_key)) {
+        // The assignment in this scope names the member.
+    } else if (find_struct_member_key_from_assignments(kernel.m_body,
+            kernel.n_body, var_name, struct_key)) {
+        // The assignment in the kernel body names the member.
+    } else if (!unique_struct_alloc_member_key(kernel, struct_key)) {
+        return false;
+    }
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
+    if (ws.elem_size <= 0) return false;
     GpuVlaDim vd;
     vd.dim_expr = nullptr;
     vd.is_constant = false;
@@ -629,6 +1515,9 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     vd.call_arg_index = 0;
     vd.is_struct_member_size = true;
     vd.struct_member_key = struct_key;
+    vd.struct_member_rank = gpu_struct_member_rank_from_key(kernel,
+        struct_key);
+    vd.struct_member_elem_index = -1;
     ws.dims.push_back(vd);
     return true;
 }
@@ -659,7 +1548,8 @@ inline void scan_kernel_scope_alloc_vlas(
         if (!ASRUtils::is_allocatable(var->m_type)) {
             // An array declared with extents the device cannot evaluate
             // when it enters the kernel.
-            have = declared_shape_to_vla_workspace(arr, vname, arg_names, ws);
+            have = declared_shape_to_vla_workspace(arr, vname, arg_names,
+                ws, kernel.m_symtab, kernel.m_body, kernel.n_body);
             if (!have) continue;
             ws.buffer_index = buffer_idx++;
             result.push_back(std::move(ws));
@@ -672,16 +1562,76 @@ inline void scan_kernel_scope_alloc_vlas(
                 alloc, vname);
             if (!target_arg) continue;
             have = alloc_shape_to_vla_workspace(*target_arg, arr, vname,
-                kernel.m_body, kernel.n_body, arg_names, ws);
+                kernel.m_body, kernel.n_body, arg_names, ws,
+                kernel.m_symtab);
         } else {
             // No Allocate: this is a function-call result temporary whose
             // size depends on a struct member's allocatable array.
-            have = struct_member_vla_workspace(kernel, arr, vname, ws);
+            have = struct_member_vla_workspace(kernel, arr, vname, ws,
+                kernel.m_body, kernel.n_body);
         }
         if (!have) continue;
         ws.buffer_index = buffer_idx++;
         result.push_back(std::move(ws));
     }
+}
+
+// Every BLOCK and ASSOCIATE the statement list opens, at whatever depth,
+// including those nested in `if` / serial `do` / `while`. The pre-flight
+// and the workspace collector ask the same question of the same scopes.
+template <typename F>
+inline void gpu_walk_scopes(ASR::stmt_t **stmts, size_t n, F &&fn) {
+    if (stmts == nullptr) return;
+    for (size_t i = 0; i < n; i++) {
+        if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(stmts[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::Block_t>(*b)) continue;
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            fn(blk->m_symtab, blk->m_body, blk->n_body);
+            gpu_walk_scopes(blk->m_body, blk->n_body, fn);
+        } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmts[i])) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(stmts[i])->m_m);
+            if (b == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+                continue;
+            }
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            fn(ab->m_symtab, ab->m_body, ab->n_body);
+            gpu_walk_scopes(ab->m_body, ab->n_body, fn);
+        } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
+            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
+            gpu_walk_scopes(dl->m_body, dl->n_body, fn);
+        } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
+            ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
+            gpu_walk_scopes(wl->m_body, wl->n_body, fn);
+        } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
+            ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
+            gpu_walk_scopes(ifs->m_body, ifs->n_body, fn);
+            gpu_walk_scopes(ifs->m_orelse, ifs->n_orelse, fn);
+        }
+    }
+}
+
+inline ASR::Variable_t* find_gpu_vla_variable(const ASR::Function_t &kernel,
+        const std::string &name) {
+    ASR::Variable_t *found = nullptr;
+    gpu_walk_scopes(kernel.m_body, kernel.n_body,
+        [&](SymbolTable *symtab, ASR::stmt_t **, size_t) {
+            if (found != nullptr || symtab == nullptr) return;
+            ASR::symbol_t *sym = symtab->get_symbol(name);
+            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
+                found = ASR::down_cast<ASR::Variable_t>(sym);
+            }
+        });
+    if (found == nullptr) {
+        ASR::symbol_t *sym = kernel.m_symtab->resolve_symbol(name);
+        if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
+            found = ASR::down_cast<ASR::Variable_t>(sym);
+        }
+    }
+    return found;
 }
 
 // Every per-thread workspace a GPU kernel needs, with buffer indices assigned
@@ -700,70 +1650,70 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
 
     std::vector<GpuVlaWorkspace> result;
 
-    for (size_t i = 0; i < kernel.n_body; i++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*kernel.m_body[i])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            kernel.m_body[i]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+    gpu_walk_scopes(kernel.m_body, kernel.n_body,
+        [&](SymbolTable *symtab, ASR::stmt_t **body, size_t n_body) {
+            if (symtab == nullptr) return;
 
-        // An automatic array of the block, whose extents the device cannot
-        // declare because they are not compile-time constants.
-        for (auto &item : block->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-                item.second);
-            if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            // An automatic array of the scope, whose extents the device
+            // cannot declare because they are not compile-time constants.
+            for (auto &item : symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
+                ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
 
-            GpuVlaWorkspace ws;
-            if (!declared_shape_to_vla_workspace(arr, var->m_name,
-                    arg_names, ws)) {
-                continue;
-            }
-            ws.buffer_index = buffer_idx++;
-            result.push_back(std::move(ws));
-        }
-
-        // An allocatable array of the block: its shape comes from the
-        // `allocate` that gives it one, or, for a temporary the
-        // subroutine_from_function pass created, from the struct member it
-        // is copied from.
-        for (auto &item2 : block->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item2.second)) continue;
-            ASR::Variable_t *var2 = ASR::down_cast<ASR::Variable_t>(
-                item2.second);
-            if (!ASRUtils::is_allocatable(var2->m_type)) continue;
-            ASR::ttype_t *inner =
-                ASRUtils::type_get_past_allocatable(var2->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
-            ASR::Array_t *arr2 = ASR::down_cast<ASR::Array_t>(inner);
-            std::string vname(var2->m_name);
-            bool already = false;
-            for (auto &r : result) {
-                if (r.var_name == vname) { already = true; break; }
-            }
-            if (already) continue;
-            GpuVlaWorkspace ws;
-            bool have = false;
-            ASR::Allocate_t *alloc = find_allocate_for_var(
-                block->m_body, block->n_body, vname);
-            if (alloc) {
-                ASR::alloc_arg_t *target_arg = find_alloc_arg_for_var(
-                    alloc, vname);
-                if (target_arg) {
-                    have = alloc_shape_to_vla_workspace(*target_arg, arr2,
-                        vname, block->m_body, block->n_body, arg_names, ws);
+                GpuVlaWorkspace ws;
+                if (!declared_shape_to_vla_workspace(arr, var->m_name,
+                        arg_names, ws, symtab, kernel.m_body,
+                        kernel.n_body)) {
+                    continue;
                 }
+                ws.buffer_index = buffer_idx++;
+                result.push_back(std::move(ws));
             }
-            if (!have) {
-                have = struct_member_vla_workspace(kernel, arr2, vname, ws);
+
+            // An allocatable array of the scope: its shape comes from the
+            // `allocate` that gives it one, or, for a temporary the
+            // subroutine_from_function pass created, from the struct member
+            // it is copied from.
+            for (auto &item2 : symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item2.second)) continue;
+                ASR::Variable_t *var2 = ASR::down_cast<ASR::Variable_t>(
+                    item2.second);
+                if (!ASRUtils::is_allocatable(var2->m_type)) continue;
+                ASR::ttype_t *inner =
+                    ASRUtils::type_get_past_allocatable(var2->m_type);
+                if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
+                ASR::Array_t *arr2 = ASR::down_cast<ASR::Array_t>(inner);
+                std::string vname(var2->m_name);
+                bool already = false;
+                for (auto &r : result) {
+                    if (r.var_name == vname) { already = true; break; }
+                }
+                if (already) continue;
+                GpuVlaWorkspace ws;
+                bool have = false;
+                ASR::Allocate_t *alloc = find_allocate_for_var(
+                    body, n_body, vname);
+                if (alloc) {
+                    ASR::alloc_arg_t *target_arg = find_alloc_arg_for_var(
+                        alloc, vname);
+                    if (target_arg) {
+                        have = alloc_shape_to_vla_workspace(*target_arg, arr2,
+                            vname, kernel.m_body, kernel.n_body, arg_names,
+                            ws, symtab);
+                    }
+                }
+                if (!have) {
+                    have = struct_member_vla_workspace(kernel, arr2, vname, ws,
+                        body, n_body);
+                }
+                if (!have) continue;
+                ws.buffer_index = buffer_idx++;
+                result.push_back(std::move(ws));
             }
-            if (!have) continue;
-            ws.buffer_index = buffer_idx++;
-            result.push_back(std::move(ws));
-        }
-    }
+        });
 
     scan_kernel_scope_alloc_vlas(kernel, arg_names, buffer_idx, result);
 

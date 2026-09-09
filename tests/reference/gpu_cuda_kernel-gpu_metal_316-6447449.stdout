@@ -1,0 +1,71 @@
+#include <stdint.h>
+
+struct t {
+    long v;
+};
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_p_0;
+    int __lb_p_0;
+    int __dim_p_1;
+    int __lb_p_1;
+    int __dim_p_2;
+    int __lb_p_2;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    t* p,
+    float* __data_p_v,
+    int* __offsets_p_v,
+    int* __sizes_p_v,
+    float* r,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __dim_p_0 = __scalar_args.__dim_p_0;
+    int __lb_p_0 = __scalar_args.__lb_p_0;
+    int __dim_p_1 = __scalar_args.__dim_p_1;
+    int __lb_p_1 = __scalar_args.__lb_p_1;
+    int __dim_p_2 = __scalar_args.__dim_p_2;
+    int __lb_p_2 = __scalar_args.__lb_p_2;
+    int __flat_idx;
+    int i;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((1 - 0) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 0);
+    r[((int)((i + 1)) - (1))] = __data_p_v[__offsets_p_v[(((int)(i) - (__lb_p_0)) + (__dim_p_0 * ((int)(3) - (__lb_p_1))) + ((__dim_p_0 * __dim_p_1) * ((int)(0) - (__lb_p_2))))] + ((int)(2) - (1)) + (__sizes_p_v[((((int)(i) - (__lb_p_0)) + (__dim_p_0 * ((int)(3) - (__lb_p_1))) + ((__dim_p_0 * __dim_p_1) * ((int)(0) - (__lb_p_2))))) * 2 + 0] * ((int)(3) - (1)))];
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __dim_p_0;
+    int __lb_p_0;
+    int __dim_p_1;
+    int __lb_p_1;
+    int __dim_p_2;
+    int __lb_p_2;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    t* p,
+    float* __data_p_v,
+    int* __offsets_p_v,
+    int* __sizes_p_v,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __dim_p_0 = __scalar_args.__dim_p_0;
+    int __lb_p_0 = __scalar_args.__lb_p_0;
+    int __dim_p_1 = __scalar_args.__dim_p_1;
+    int __lb_p_1 = __scalar_args.__lb_p_1;
+    int __dim_p_2 = __scalar_args.__dim_p_2;
+    int __lb_p_2 = __scalar_args.__lb_p_2;
+    int __flat_idx;
+    int i;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((1 - 0) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 0);
+    __data_p_v[__offsets_p_v[(((int)(i) - (__lb_p_0)) + (__dim_p_0 * ((int)(3) - (__lb_p_1))) + ((__dim_p_0 * __dim_p_1) * ((int)(0) - (__lb_p_2))))] + ((int)(1) - (1)) + (__sizes_p_v[((((int)(i) - (__lb_p_0)) + (__dim_p_0 * ((int)(3) - (__lb_p_1))) + ((__dim_p_0 * __dim_p_1) * ((int)(0) - (__lb_p_2))))) * 2 + 0] * ((int)(2) - (1)))] = ((float)(7000 + i));
+}
+
