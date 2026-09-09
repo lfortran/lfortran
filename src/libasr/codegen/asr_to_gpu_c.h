@@ -181,42 +181,19 @@ public:
     // that stands for one value -- an ASSOCIATE selector, once the
     // construct is spliced in -- is rendered as the value it is bound to.
     //
+    // The extent is written by the ordinary expression lowering, under
+    // that rule: substituting a bound name is what the rule *is*, and the
+    // `Var` case applies it wherever the name appears, however deeply it
+    // is nested. Walking the expression a second time here only gave the
+    // two walks a chance to disagree -- and they did, over how a negation
+    // is parenthesised, over an explicit conversion the second walk
+    // dropped, and over whether a name being indexed as an array may stand
+    // for an integer at all.
+    //
     // An array backed by a workspace buffer is not sized here: its extent
     // is the one derivation the host sized the buffer from, written out by
     // emit_derived_extent().
     void emit_workspace_extent(ASR::expr_t *e) {
-        if (e != nullptr && ASR::is_a<ASR::Var_t>(*e)) {
-            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
-            ASR::expr_t *bound = workspace_extent_binding(sym);
-            if (bound != nullptr) {
-                emit_workspace_binding(sym, bound);
-                return;
-            }
-        }
-        if (e != nullptr && ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
-            ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(e);
-            src << "(";
-            emit_workspace_extent(op->m_left);
-            src << " " << binop_str(op->m_op) << " ";
-            emit_workspace_extent(op->m_right);
-            src << ")";
-            return;
-        }
-        if (e != nullptr && ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
-            src << "(-";
-            emit_workspace_extent(
-                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
-            src << ")";
-            return;
-        }
-        if (e != nullptr && ASR::is_a<ASR::Cast_t>(*e)) {
-            emit_workspace_extent(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
-            return;
-        }
-        // Anything else is rendered the ordinary way, but still under the
-        // rule above: a name the body binds is worth nothing yet at the
-        // point the pointer is computed, so it has to stand for its value
-        // however deeply it is nested.
         bool outer = in_workspace_extent;
         in_workspace_extent = true;
         visit_expr(e);
@@ -309,10 +286,7 @@ public:
         // is written by the ordinary lowering -- under the rule that a name
         // the body binds stands for its value, a pointer into a workspace
         // being computed before the body gives that name one.
-        bool outer = in_workspace_extent;
-        in_workspace_extent = true;
-        visit_expr(e.expr);
-        in_workspace_extent = outer;
+        emit_workspace_extent(e.expr);
     }
 
     // The element count of one thread's slice of a workspace: the product
