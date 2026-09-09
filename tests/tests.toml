@@ -4263,6 +4263,14 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_302.f90"
 gpu_cuda_kernel = true
 
+# The loop is offloaded, but the device code generator cannot size one of its
+# workspaces. That failure used to be dropped: no shader was written, the host
+# still emitted the launch, and the program died at run time looking for a
+# kernel that was never generated. It is a compile error now.
+[[test]]
+filename = "../integration_tests/gpu_metal_318.f90"
+gpu_offload_strict = true
+
 [[test]]
 filename = "../integration_tests/gpu_metal_303.f90"
 gpu_cuda_kernel = true

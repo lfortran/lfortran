@@ -26639,21 +26639,35 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // GPU Metal: generate Metal shader source after passes have created the kernel functions
     // Always regenerate for each translation unit so that separate compilation
     // picks up the correct kernel names for every file.
+    // Device code generation is not optional once the passes have created
+    // kernels: the host code emits a launch for each one, so a shader that
+    // was never generated becomes a kernel missing from the registry at run
+    // time. Report the failure here instead of dropping it on the floor.
     if (co.gpu_backend == "metal") {
         diag::Diagnostics metal_diag;
         Result<std::string> metal_res = asr_to_metal(al, asr, metal_diag, co);
-        if (metal_res.ok) {
-            co.gpu_metal_source = metal_res.result;
+        if (!metal_res.ok) {
+            for (auto &d : metal_diag.diagnostics) {
+                diagnostics.add(d);
+            }
+            Error error;
+            return error;
         }
+        co.gpu_metal_source = metal_res.result;
     }
 
     // GPU CUDA: generate CUDA kernel source after passes have created the kernel functions
     if (co.gpu_backend == "cuda" && co.gpu_cuda_source.empty()) {
         diag::Diagnostics cuda_diag;
         Result<std::string> cuda_res = asr_to_cuda(al, asr, cuda_diag, co);
-        if (cuda_res.ok) {
-            co.gpu_cuda_source = cuda_res.result;
+        if (!cuda_res.ok) {
+            for (auto &d : cuda_diag.diagnostics) {
+                diagnostics.add(d);
+            }
+            Error error;
+            return error;
         }
+        co.gpu_cuda_source = cuda_res.result;
     }
 
     t1 = std::chrono::high_resolution_clock::now();
