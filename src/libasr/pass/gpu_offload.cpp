@@ -464,73 +464,6 @@ static bool gpu_block_workspace_extents_resolvable(
     return ok;
 }
 
-// FunctionCalls whose result is an allocatable array become a VLA
-// temporary at the call site after subroutine_from_function, which
-// runs after gpu_offload. If an actual is not a host-readable
-// designator, that temporary cannot be sized on the host.
-class GpuUnsizeableResultCallFinder :
-        public ASR::BaseWalkVisitor<GpuUnsizeableResultCallFinder> {
-public:
-    bool found = false;
-    const std::vector<std::string> &arg_names;
-    ASR::stmt_t **body;
-    size_t n_body;
-
-    GpuUnsizeableResultCallFinder(const std::vector<std::string> &names,
-            ASR::stmt_t **b, size_t n) :
-        arg_names(names), body(b), n_body(n) {}
-
-    bool host_readable(ASR::expr_t *e) {
-        if (e == nullptr) return true;
-        return gpu_designator_is_host_readable(e,
-            GpuExtentScope{nullptr, arg_names, nullptr, body, n_body});
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        if (found) return;
-        ASR::ttype_t *t = x.m_type;
-        if (t && ASRUtils::is_allocatable(t) &&
-                ASRUtils::is_array(
-                    ASRUtils::type_get_past_allocatable(t))) {
-            if (!host_readable(x.m_dt)) {
-                found = true;
-                return;
-            }
-            for (size_t i = 0; i < x.n_args; i++) {
-                if (!host_readable(x.m_args[i].m_value)) {
-                    found = true;
-                    return;
-                }
-            }
-        }
-        ASR::BaseWalkVisitor<GpuUnsizeableResultCallFinder>::
-            visit_FunctionCall(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (found) return;
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (b && ASR::is_a<ASR::Block_t>(*b)) {
-            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-            for (size_t i = 0; i < blk->n_body; i++) {
-                visit_stmt(*blk->m_body[i]);
-            }
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (found) return;
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
-            ASR::AssociateBlock_t *blk =
-                ASR::down_cast<ASR::AssociateBlock_t>(b);
-            for (size_t i = 0; i < blk->n_body; i++) {
-                visit_stmt(*blk->m_body[i]);
-            }
-        }
-    }
-};
-
 // Look up a member (component or type-bound procedure) by name in a
 // Struct's symbol table, walking the inheritance chain: a component
 // inherited from a parent type lives in the parent Struct's symtab, not
@@ -10595,16 +10528,6 @@ public:
                 report_not_offloaded(loc,
                     GpuDecline(GpuDeclineReason::WorkspaceNotSizeableOnHost,
                         unresolved_name));
-                return;
-            }
-            GpuUnsizeableResultCallFinder unsized_result(
-                kernel_arg_names, work.body, work.n_body);
-            for (size_t i = 0; i < work.n_body; i++) {
-                unsized_result.visit_stmt(*work.body[i]);
-            }
-            if (unsized_result.found) {
-                report_not_offloaded(loc, GpuDecline(
-                    GpuDeclineReason::VlaExtentNotRebuildableOnHost));
                 return;
             }
         }

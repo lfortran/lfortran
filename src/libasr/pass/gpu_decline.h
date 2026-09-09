@@ -115,7 +115,6 @@ enum class GpuDeclineReason {
     DeviceFunctionInlining,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
-    VlaExtentNotRebuildableOnHost,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -151,8 +150,10 @@ enum class GpuDeclineReason {
     ArrayElementTypeWidth,
     ArrayElementNotNumeric,
     WorkspaceStructElementShape,
-    // The same limitation as VlaExtentNotRebuildableOnHost above, reached by
-    // the launch layout rather than by the host pre-flight in gpu_offload.
+    // A per-thread workspace the launch layout cannot size, found when the
+    // launch is expanded. The host pre-flight in gpu_offload asks the same
+    // question of the loop, but of the loop as it stands before the passes
+    // that create such a workspace have run.
     LaunchVlaExtentNotRebuildable,
     KernelArgumentCountMismatch,
     NestedAllocatableComponent,

@@ -119,7 +119,6 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::DeviceFunctionInlining:
         case GpuDeclineReason::NestedArraySection:
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
-        case GpuDeclineReason::VlaExtentNotRebuildableOnHost:
         case GpuDeclineReason::StructDeclarationUnknown:
         case GpuDeclineReason::StructNonDataMember:
         case GpuDeclineReason::StructPointerMember:
@@ -188,9 +187,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
-        case GpuDeclineReason::VlaExtentNotRebuildableOnHost:
-            return "a variable length array whose extent "
-                "cannot be rebuilt on the host";
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +
