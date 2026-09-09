@@ -17808,20 +17808,24 @@ public:
         ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
         ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
+        if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
+            throw SemanticError("Arguments to the 'shifta' intrinsic must be of type INTEGER", loc);
+        }
+
         ASR::ttype_t* cast_target_for_w = base_n;
 
         if (ASRUtils::is_array(type_w)) {
             ASR::Array_t* w_arr = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable_pointer(type_w));
             cast_target_for_w = ASRUtils::make_Array_t_util(al, loc, base_n, 
-                                                            w_arr->m_dims, w_arr->n_dims);
+                                                        w_arr->m_dims, w_arr->n_dims);
         }
 
         if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
                 w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
-                                   ASR::cast_kindType::IntegerToInteger, 
-                                   cast_target_for_w, nullptr, nullptr));
+                                 ASR::cast_kindType::IntegerToInteger, 
+                                 cast_target_for_w, nullptr, nullptr));
             }
         }
 
