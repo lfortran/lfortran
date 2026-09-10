@@ -433,6 +433,10 @@ public:
     bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
             ParallelLoopNest &nest);
 
+    bool offloadable_before_rewrites(const ParallelLoopNest &work,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            const Location &loc);
+
     void visit_OMPRegion(const ASR::OMPRegion_t &region);
 };
 

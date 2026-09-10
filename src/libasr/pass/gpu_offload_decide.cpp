@@ -1,6 +1,8 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
@@ -87,6 +89,120 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
             return false;
         }
     }
+
+    return true;
+}
+
+// Whether the loop is one the launch can run, asked of the loop as it was
+// found. Every check here is analysis only, so a loop turned down is left
+// exactly as it was; false means the decline has already been reported and
+// the caller stops. The one thing it leaves behind is the splice plan in
+// functions_to_inline, which the rewrites below the call consume.
+bool GpuOffloadVisitor::offloadable_before_rewrites(
+        const ParallelLoopNest &work,
+        const std::set<SymbolTable*> &enclosing_block_scopes,
+        const Location &loc) {
+    // What the pass's own lowering can and cannot do, which is the same
+    // whichever device the launch targets: a local with no extent, an
+    // aliased assignment that would need a run-time sized temporary, and
+    // a strided actual that has to be gathered into a contiguous one.
+    // These used to run for Metal only, so the CUDA path went on to build
+    // a kernel that read the wrong elements and said nothing.
+    {
+        GpuLocalArrayChecker local_array_checker;
+        for (size_t i = 0; i < work.n_body; i++) {
+            local_array_checker.visit_stmt(*work.body[i]);
+        }
+        if (local_array_checker.has_unsized_local_array) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::UnsizedLocalArray,
+                    local_array_checker.unsized_name));
+            return false;
+        }
+        // An array assignment whose two sides overlap the same array
+        // needs a temporary (see materialize_aliased_assignments).
+        // If that temporary cannot be fixed-size, decline here,
+        // while the body is still untouched.
+        std::vector<std::string> alias_arg_names;
+        collect_kernel_arg_names(work, enclosing_block_scopes,
+            alias_arg_names);
+        if (body_needs_unsupported_alias_temp(work.body, work.n_body,
+                true, alias_arg_names)) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
+            return false;
+        }
+        // A strided section actual argument is gathered into a
+        // contiguous kernel-local temporary below. When that temporary
+        // cannot be sized at compile time the gather is impossible,
+        // and passing the section on would silently drop its stride.
+        if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::UngatherableStridedSection));
+            return false;
+        }
+        GpuLocalWidthChecker width_checker;
+        width_checker.caps = device_caps;
+        for (size_t i = 0; i < work.n_body; i++) {
+            width_checker.visit_stmt(*work.body[i]);
+        }
+        if (width_checker.unsupported) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::LocalTypeWidth,
+                    width_checker.bad_name, width_checker.bad_type));
+            return false;
+        }
+    }
+
+    // A device whose scalar type set is narrower than the shared width
+    // table has to be asked about every symbol that reaches the kernel:
+    // where the two sets are the same, the kernel-argument and
+    // kernel-local checks that run on every device already ask it.
+    if (device_caps.narrows_scalar_types()) {
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+            candidate_syms;
+        collect_involved_syms(work, enclosing_block_scopes, candidate_syms);
+        // Every symbol reaching the kernel — buffer parameters,
+        // by-value members of the __ScalarArgs struct and kernel-local
+        // temporaries alike — is collected here, so a single sweep
+        // covers all of them.
+        for (auto &sym : candidate_syms) {
+            ASR::ttype_t *unsupported_type = nullptr;
+            if (!gpu_device_can_represent_type(device_caps,
+                    sym.second.first, sym.second.second, &unsupported_type)) {
+                report_not_offloaded(loc, GpuDecline(
+                    GpuDeclineReason::SymbolTypeNotRepresentable,
+                    sym.first, unsupported_type));
+                return false;
+            }
+        }
+    }
+
+    // A device function may need a run-time sized local -- an
+    // array-constructor temporary sized from an assumed-shape dummy,
+    // say -- which a device that has no variable-length arrays cannot
+    // declare. Work out here which callees have to be spliced into the
+    // kernel body to move those locals to kernel scope, where the VLA
+    // workspace machinery applies. This is analysis only; the splice
+    // itself happens below, after the offload decision.
+    functions_to_inline.clear();
+    if (device_caps.splices_device_functions()) {
+        std::map<ASR::Function_t*, bool> needs_inline_memo;
+        std::set<ASR::Function_t*> on_stack;
+        GpuDecline decline;
+        if (!plan_device_function_inlining(work.body, work.n_body,
+                needs_inline_memo, on_stack, decline)) {
+            // Decline before destructive rewrites if a callee cannot be
+            // spliced or its result allocation cannot reach the device.
+            functions_to_inline.clear();
+            if (!decline.declined()) {
+                decline = GpuDecline(GpuDeclineReason::DeviceFunctionInlining);
+            }
+            report_not_offloaded(loc, decline);
+            return false;
+        }
+    }
+
     return true;
 }
 
