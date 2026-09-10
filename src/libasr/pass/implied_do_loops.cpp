@@ -987,6 +987,49 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return false;
         }
 
+        // Check if the values of an implied do loop hold character values that
+        // do not all share one and the same compile time length. Such a loop
+        // must not be gathered into a temporary array: an array has a single
+        // element length, so every character value would be padded (or
+        // truncated) to it. Each value has to be emitted at its own length
+        // instead.
+        bool implied_do_loop_has_varying_string_length(ASR::ImpliedDoLoop_t* idl) {
+            size_t string_values = 0;
+            int64_t common_len = -1;
+            bool has_runtime_len = false;
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* value = idl->m_values[i];
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    // A nested loop carries its own values, leave it alone.
+                    return false;
+                }
+                ASR::ttype_t* value_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(value));
+                if (!ASR::is_a<ASR::String_t>(*value_type)) {
+                    continue;
+                }
+                string_values += 1;
+                ASR::expr_t* len = ASR::down_cast<ASR::String_t>(value_type)->m_len;
+                int64_t len_value = -1;
+                if (len == nullptr ||
+                    !ASRUtils::extract_value(ASRUtils::expr_value(len), len_value)) {
+                    has_runtime_len = true;
+                    continue;
+                }
+                if (common_len == -1) {
+                    common_len = len_value;
+                } else if (common_len != len_value) {
+                    return true;
+                }
+            }
+            if (string_values < 2) {
+                return false;
+            }
+            // A length known only at runtime cannot be shown to agree with the
+            // lengths of the other values.
+            return has_runtime_len;
+        }
+
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
@@ -1367,6 +1410,30 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t* value = x.m_args[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
                     ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                    // Character values of differing lengths cannot share one
+                    // temporary array, so expand the loop and keep every value
+                    // at its own length.
+                    if (implied_do_loop_has_varying_string_length(implied_do_loop)) {
+                        Vec<ASR::expr_t*> expanded_values;
+                        expanded_values.reserve(al, 16);
+                        if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
+                            Vec<ASR::expr_t*> new_args;
+                            new_args.reserve(al, x.n_args + expanded_values.size());
+                            for (size_t j = 0; j < i; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            for (size_t j = 0; j < expanded_values.size(); j++) {
+                                new_args.push_back(al, expanded_values.p[j]);
+                            }
+                            for (size_t j = i + 1; j < x.n_args; j++) {
+                                new_args.push_back(al, x.m_args[j]);
+                            }
+                            string_format_stmt->m_args = new_args.p;
+                            string_format_stmt->n_args = new_args.size();
+                            i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                    }
                     // Use do-loop approach ONLY for formatted I/O (not list-directed)
                     // with Tuple types or when values contain StringTrim
                     // (to preserve variable-length trimmed strings instead of storing in fixed-length array)
