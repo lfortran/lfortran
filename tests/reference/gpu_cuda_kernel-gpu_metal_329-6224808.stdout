@@ -36,6 +36,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_bc_i = (__gpu_bc_i + 1);
             work[((int)(__gpu_bc_i) - (1))] = ((float)i);
         }
+        __gpu_bc_i = (__gpu_bc_i + 1);
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = (1 + n - 1);
         __gpu_sum_k = (1 - 1);
@@ -43,6 +44,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
         }
+        __gpu_sum_k = (__gpu_sum_k + 1);
         result[((int)(1) - (1)) + (2 * ((int)(i) - (1)))] = __gpu_sum_res;
     }
     {
@@ -57,6 +59,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_bc_i1 = (__gpu_bc_i1 + 1);
             work[((int)(__gpu_bc_i1) - (1))] = ((float)(2 * i));
         }
+        __gpu_bc_i1 = (__gpu_bc_i1 + 1);
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = (1 + (n + 1) - 1);
         __gpu_sum_k = (1 - 1);
@@ -64,6 +67,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
         }
+        __gpu_sum_k = (__gpu_sum_k + 1);
         result[((int)(2) - (1)) + (2 * ((int)(i) - (1)))] = __gpu_sum_res;
     }
 }
