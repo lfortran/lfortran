@@ -18323,6 +18323,40 @@ public:
         builder->SetInsertPoint(loop_end);
     }
 
+    // Lower a DECIMAL= specifier value to the runtime decimal edit mode
+    // (0 = point, 1 = comma).
+    llvm::Value* emit_decimal_mode_from_specifier(ASR::expr_t* decimal_expr) {
+        llvm::Value *decimal_data, *decimal_len;
+        std::tie(decimal_data, decimal_len) = get_string_data_and_length(decimal_expr);
+        std::string func_name = "_lfortran_decimal_mode_from_str";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        character_type, llvm::Type::getInt64Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        return builder->CreateCall(fn, {decimal_data, decimal_len});
+    }
+
+    // Request a decimal edit mode for the data transfer statement that is
+    // about to run; -1 restores the mode of the connection.
+    void emit_set_transfer_decimal_mode(llvm::Value* mode) {
+        std::string func_name = "_lfortran_set_transfer_decimal_mode";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        builder->CreateCall(fn, {mode});
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
@@ -18549,6 +18583,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+        }
+
+        if (x.m_decimal) {
+            // A DECIMAL= specifier on the statement selects the decimal edit
+            // mode for this transfer only.
+            emit_set_transfer_decimal_mode(emit_decimal_mode_from_specifier(x.m_decimal));
         }
 
         llvm::Value *iomsg_data = nullptr;
@@ -19255,6 +19295,10 @@ public:
             builder->CreateStore(extended, iostat_user);
         }
         emit_set_read_iomsg();
+        if (x.m_decimal) {
+            emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
+        }
     }
 
     void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
@@ -21503,7 +21547,13 @@ public:
             }
             this->current_round_mode = builder->CreateCall(round_fn, {unit});
         }
-        
+
+        if (x.m_decimal) {
+            // A DECIMAL= specifier on the statement selects the decimal edit
+            // mode for this transfer only, for internal files too.
+            this->current_decimal_mode = emit_decimal_mode_from_specifier(x.m_decimal);
+        }
+
         if (x.m_rec && !is_string) {
             emit_seek_record_from_rec(x.m_rec, unit, iostat);
         }
