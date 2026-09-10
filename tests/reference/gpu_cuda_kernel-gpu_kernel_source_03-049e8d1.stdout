@@ -38,6 +38,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         b1 = b0;
         b0 = (((twox * b1) - b2) + cs[((int)(((nc - j) + 1)) - (1))]);
     }
+    j = (j + 1);
     y[((int)(i) - (1))] = (  5.00000000000000000e-01f * (b0 - b2));
 }
 

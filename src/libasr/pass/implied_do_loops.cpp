@@ -1337,9 +1337,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
                 bool prev_skip = replacer.skip_idl_save_restore;
-                if (pass_options.use_loop_variable_after_loop) {
-                    replacer.skip_idl_save_restore = true;
-                }
+                replacer.skip_idl_save_restore = true;
                 this->call_replacer();
                 current_expr = current_expr_copy_9;
                 if( !remove_original_statement ) {
@@ -1552,9 +1550,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 write(*,*) [(i, i=1, 10)]
             */
             bool prev_skip = replacer.skip_idl_save_restore;
-            if (pass_options.use_loop_variable_after_loop) {
-                replacer.skip_idl_save_restore = true;
-            }
+            replacer.skip_idl_save_restore = true;
             ASR::FileWrite_t* write_stmt = const_cast<ASR::FileWrite_t*>(&x);
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];

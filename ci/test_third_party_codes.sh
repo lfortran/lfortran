@@ -350,7 +350,7 @@ time_section "🧪 Testing jonquil" '
   micromamba install -c conda-forge fpm
 
   git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
   print_success "Done with jonquil"
   cd ..
@@ -446,8 +446,8 @@ time_section "🧪 Testing FPM" '
   micromamba install -c conda-forge fpm
   git checkout v0.13.0
   assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
-  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays --use-loop-variable-after-loop"
+  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
 
   print_success "Done with FPM"
   cd ..
@@ -813,7 +813,7 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
     cmake -S . -B build -G Ninja \
       $TOOLCHAIN_OPT \
       -DCMAKE_Fortran_COMPILER=lfortran \
-      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop" \
+      -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation" \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_INDEX64=OFF \
       -DBUILD_INDEX64_EXT_API=OFF \
@@ -835,7 +835,7 @@ time_section "🧪 Testing Reference-LAPACK v3.12.1 Full Test Suite" '
         cmake -S . -B build -G Ninja \
           $TOOLCHAIN_OPT \
           -DCMAKE_Fortran_COMPILER=lfortran \
-          -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation --use-loop-variable-after-loop -fdefault-integer-8" \
+          -DCMAKE_Fortran_FLAGS="--fixed-form-infer --implicit-interface --implicit-typing --legacy-array-sections --separate-compilation -fdefault-integer-8" \
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_INDEX64=ON \
           -DBUILD_INDEX64_EXT_API=OFF \

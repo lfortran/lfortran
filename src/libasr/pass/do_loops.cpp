@@ -36,13 +36,12 @@ The comparison is >= for c<0.
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
 public:
-    bool use_loop_variable_after_loop = false;
     PassOptions pass_options;
     DoLoopVisitor(Allocator &al, PassOptions pass_options_) :
         StatementWalkVisitor(al), pass_options(pass_options_) { }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop, this->current_scope);
+        pass_result = PassUtils::replace_doloop(al, x, -1, this->current_scope);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
@@ -57,7 +56,7 @@ public:
         }
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
         const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
-        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop, this->current_scope);
+        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, this->current_scope);
     }
 };
 
@@ -67,7 +66,6 @@ void pass_replace_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
     // Each call transforms only one layer of nested loops, so we call it twice
     // to transform doubly nested loops:
     v.asr_changed = true;
-    v.use_loop_variable_after_loop = pass_options.use_loop_variable_after_loop;
     while( v.asr_changed ) {
         v.asr_changed = false;
         v.visit_TranslationUnit(unit);

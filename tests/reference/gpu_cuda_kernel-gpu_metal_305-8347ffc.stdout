@@ -30,6 +30,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             k = (k + 1);
             w[((int)(k) - (1))] = ((float)((100 * i) + k));
         }
+        k = (k + 1);
         p[((int)(i) - (1))] =   0.00000000000000000e+00f;
         __do_loop_end1 = (__sizes_c_m_[(((int)(1) - (1))) * 2 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 2 + 1]);
         k = (1 - 1);
@@ -37,6 +38,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             k = (k + 1);
             p[((int)(i) - (1))] = (p[((int)(i) - (1))] + w[((int)(k) - (1))]);
         }
+        k = (k + 1);
     }
 }
 

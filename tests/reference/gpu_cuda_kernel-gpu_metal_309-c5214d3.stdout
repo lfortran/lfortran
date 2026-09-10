@@ -44,6 +44,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             k = (k + 1);
             work[((int)(k) - (1))] = ((float)(k * i));
         }
+        k = (k + 1);
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = self.__parent.n;
         __gpu_sum_k = (1 - 1);
@@ -51,6 +52,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
         }
+        __gpu_sum_k = (__gpu_sum_k + 1);
         r[((int)(i) - (__lb_r_0))] = __gpu_sum_res;
     }
 }

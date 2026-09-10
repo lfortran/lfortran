@@ -275,7 +275,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--logical-short-circuit", compiler_options.po.logical_short_circuit, "Short-circuit evaluation of logical .and./.or. (permitted, not required, by the standard)")->group(group_language_options);
-        app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required")->group(group_language_options);
         app.add_flag("--coarray", compiler_options.po.coarray, "Enable coarray")->group(group_language_options);
 
@@ -476,7 +475,6 @@ namespace LCompilers::CommandLineInterface {
             // legacy options
             compiler_options.fixed_form = true;
             compiler_options.legacy_array_sections = true;
-            compiler_options.use_loop_variable_after_loop = true;
             compiler_options.separate_compilation = true;
         } else {
             throw lc::LCompilersException(

@@ -49,7 +49,6 @@ struct PassOptions {
     bool pass_cumulative = false; // Apply passes cumulatively
     bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
-    bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
@@ -163,7 +162,6 @@ struct CompilerOptions {
     bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
-    bool use_loop_variable_after_loop = false;
     std::string target = "";
     std::string march = "";
     std::string mcpu = "";

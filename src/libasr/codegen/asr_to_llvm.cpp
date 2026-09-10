@@ -19648,7 +19648,7 @@ public:
                 builder->CreateBr(loop_cond_bb);
 
                 builder->SetInsertPoint(loop_end_bb);
-                if (compiler_options.po.use_loop_variable_after_loop) {
+                {
                     llvm::Value* cur_val = builder->CreateLoad(
                         llvm::Type::getInt64Ty(context), loop_var_alloca);
                     llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
@@ -20468,7 +20468,7 @@ public:
 
                     var_size = builder->CreateMul(var_size, count);
 
-                    if (compiler_options.po.use_loop_variable_after_loop) {
+                    {
                         llvm::Value* final_val = builder->CreateAdd(
                             loop_start, builder->CreateMul(count, loop_step));
                         llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(

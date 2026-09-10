@@ -69,7 +69,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     document_symbols = is_included("document_symbols")
     syntax_only_cc = is_included("syntax_only_cc")
     show_asr_with_cc = is_included("show_asr_with_cc")
-    asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
@@ -422,16 +421,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-    if asr_use_loop_variable_after_loop:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
-
     if asr_implicit_argument_casting:
         run_test(
             filename,

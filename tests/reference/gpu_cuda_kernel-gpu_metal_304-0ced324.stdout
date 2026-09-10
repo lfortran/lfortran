@@ -27,6 +27,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
                 __gpu_elem_i = (__gpu_elem_i + 1);
                 r[((int)(__gpu_elem_i) - (1))] = (x[((int)(__gpu_elem_i) - (1))] + ((float)i));
             }
+            __gpu_elem_i = (__gpu_elem_i + 1);
             a[((int)(i) - (1))] = r[((int)(i) - (1))];
         }
     }

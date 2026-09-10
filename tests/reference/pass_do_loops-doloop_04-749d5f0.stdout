@@ -273,6 +273,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_loop_inc)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -421,6 +434,19 @@
                         )]
                         []
                     )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_loop_inc1)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
@@ -516,12 +542,38 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(Exit
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Exit
                                 a
                             )]
                             []
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -607,12 +659,38 @@
                                 (Logical 4)
                                 ()
                             )
-                            [(Exit
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                            )
+                            (Exit
                                 b
                             )]
                             []
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -806,6 +884,19 @@
                             100
                         )]
                         []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (Var 2 __do_loop_inc2)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
                     )]
                 )
         })

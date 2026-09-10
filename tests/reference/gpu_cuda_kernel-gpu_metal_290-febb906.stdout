@@ -40,7 +40,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
                 work[((int)(p) - (1)) + ((nn + 1) * ((int)(q) - (1)))] = ((float)i);
                 acc = (acc + work[((int)(p) - (1)) + ((nn + 1) * ((int)(q) - (1)))]);
             }
+            p = (p + 1);
         }
+        q = (q + 1);
         r[((int)(i) - (__lb_r_0))] = acc;
     }
 }

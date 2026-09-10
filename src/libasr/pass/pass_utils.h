@@ -222,8 +222,7 @@ namespace LCompilers {
             SymbolTable*& global_scope, Location& loc);
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp=-1, bool use_loop_variable_after_loop=false,
-                                         SymbolTable* current_scope=nullptr);
+                                         int comp=-1, SymbolTable* current_scope=nullptr);
 
         ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
@@ -905,9 +904,9 @@ namespace LCompilers {
             // within an array constructor is local to the implied-DO and should
             // not affect any outer variable with the same name. To implement this,
             // we save the loop variable's value before the loop and restore it after.
-            // However, for I/O implied-do loops with use_loop_variable_after_loop,
-            // Section 12.6.3 of F2023 says the loop variable retains its final value,
-            // so we skip the save/restore in that case.
+            // An I/O implied-do is different: Section 12.6.3 of F2023 says its
+            // loop variable retains its final value, so the save/restore is
+            // skipped for those.
             ASR::ttype_t* loop_var_type = ASRUtils::expr_type(idoloop->m_var);
             const Location& loc = idoloop->m_var->base.loc;
 

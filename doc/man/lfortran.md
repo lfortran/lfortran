@@ -72,7 +72,6 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--openmp`: Enable OpenMP
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
-- `--use-loop-variable-after-loop`: Allow using loop variable after the loop
 - `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target

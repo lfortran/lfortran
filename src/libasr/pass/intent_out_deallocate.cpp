@@ -196,8 +196,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 ASR::make_DoLoop_t(al, loc, nullptr, head, current_body.p,
                     current_body.size(), nullptr, 0));
             Vec<ASR::stmt_t*> init_and_while = PassUtils::replace_doloop(al,
-                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, false,
-                current_scope);
+                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, current_scope);
 
             current_body.reserve(al, init_and_while.size());
             current_body.n = 0;

@@ -26,6 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sec_i = (__gpu_sec_i + 1);
         d[((int)((((int)__lb_d_0) + (__gpu_sec_i - 1))) - (__lb_d_0))] =   1.00000000000000000e+00;
     }
+    __gpu_sec_i = (__gpu_sec_i + 1);
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
@@ -104,6 +105,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
         j = (j + 1);
         m[((int)(i) - (__lb_m_0)) + (__dim_m_0 * ((int)(j) - (__lb_m_1)))] =   1.50000000000000000e+00;
     }
+    j = (j + 1);
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_4 {
