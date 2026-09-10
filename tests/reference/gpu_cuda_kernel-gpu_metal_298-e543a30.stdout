@@ -6,9 +6,143 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* a,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    int* __workspace_2)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        int __gpu_sum_k;
+        int __gpu_sum_res;
+        int k;
+        int s;
+        int* tmp = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * 4;
+        __do_loop_end = n;
+        k = (1 - 1);
+        while (((k + 1) <= __do_loop_end)) {
+            k = (k + 1);
+            tmp[((int)(k) - (1))] = 2;
+        }
+        __gpu_sum_res = 0;
+        __do_loop_end1 = (1 + n - 1);
+        __gpu_sum_k = (1 - 1);
+        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+            __gpu_sum_k = (__gpu_sum_k + 1);
+            __gpu_sum_res = (__gpu_sum_res + tmp[((int)(__gpu_sum_k) - (1))]);
+        }
+        s = __gpu_sum_res;
+        a[((int)(i) - (1))] = s;
+    }
+    if ((i < 0)) {
+        __trap();
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* b,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    b[((int)(i) - (1))] = (i * 2);
+    if ((i < 0)) {
+        __trap();
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    int* d,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int __gpu_elem_i;
+    int i;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    {
+        {
+            int __1__libasr_index_;
+            int __libasr__created__var__0__array_constructor_[2];
+            int t[2];
+            __1__libasr_index_ = 1;
+            __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = i;
+            __1__libasr_index_ = (__1__libasr_index_ + 1);
+            __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = (i + 1);
+            __1__libasr_index_ = (__1__libasr_index_ + 1);
+            __gpu_elem_i = (1 - 1);
+            while (((__gpu_elem_i + 1) <= 2)) {
+                __gpu_elem_i = (__gpu_elem_i + 1);
+                t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
+            }
+            d[((int)(i) - (1))] = (t[((int)(1) - (1))] + t[((int)(2) - (1))]);
+        }
+    }
+    if ((i < 0)) {
+        __trap();
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_3 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_3(
+    int* e,
+    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    e[((int)(i) - (1))] = ((i + 1) + 1);
+    if ((i < 0)) {
+        __trap();
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_4 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_4(
+    int* a,
     int* b,
     int* c,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;

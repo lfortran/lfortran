@@ -12,6 +12,7 @@
 // compiles as host C++.
 
 #include <math.h>
+#include <stdlib.h>
 
 // Device execution configuration
 typedef struct {
@@ -50,6 +51,13 @@ void lfortran_gpu_cpu_barrier_unsupported(void);
 #define __constant__
 #define __shared__ static
 #define __forceinline__ inline
+
+// A trap ends the launch. On a real device the thread raises one and the
+// launch fails; the emulation has one process and no launch to fail, so it
+// ends that instead, which is the same thing seen from the program.
+static inline void __trap(void) {
+    abort();
+}
 
 // A barrier is only correct when the threads of one block really do run
 // concurrently, which is the case exactly when the runtime was built with

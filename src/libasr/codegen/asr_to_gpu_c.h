@@ -3768,6 +3768,22 @@ public:
                 }
                 break;
             }
+            case ASR::stmtType::Stop:
+            case ASR::stmtType::ErrorStop: {
+                // A Fortran STOP inside a kernel has no exit code to
+                // deliver -- a grid returns no status -- so what is left of
+                // the statement is the stopping, which the dialect spells
+                // as a trap. A device with no trap of its own never gets
+                // here: pass_replace_gpu_offload declines a loop holding a
+                // STOP unless the device says it can abort.
+                std::string trap = dialect.abort_stmt();
+                if (trap.empty()) {
+                    throw CodeGenError("gpu offload: this device has no way "
+                        "to stop a running kernel", stmt->base.loc);
+                }
+                src << get_indent() << trap << "\n";
+                break;
+            }
             case ASR::stmtType::Return: {
                 // A Fortran RETURN in a function hands back the result
                 // variable, which the device language spells out.

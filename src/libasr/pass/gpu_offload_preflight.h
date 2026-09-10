@@ -272,10 +272,13 @@ public:
     }
 };
 
-// A statement the device has no way to run. A kernel that held one would
+// A statement this device has no way to run. A kernel that held one would
 // simply not run it, so the effect the program asked for would go missing
-// with nothing to show for it.
-GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s);
+// with nothing to show for it. What "no way" means is the device's answer,
+// not a fixed list: a statement one dialect can be given a lowering for is
+// one another dialect has nothing to lower it onto.
+GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
+    const GpuDeviceCapabilities &caps);
 
 // The first statement of a body that the device cannot run, and where it is.
 class GpuUnsupportedStatementFinder
@@ -283,12 +286,16 @@ class GpuUnsupportedStatementFinder
 public:
     GpuDeclineReason reason;
     Location loc;
+    // Held by value: the finder for a callee is copied over the one for
+    // the loop body when the callee is where the statement was found.
+    GpuDeviceCapabilities caps;
 
-    GpuUnsupportedStatementFinder() : reason(GpuDeclineReason::None) {}
+    explicit GpuUnsupportedStatementFinder(const GpuDeviceCapabilities &caps_)
+        : reason(GpuDeclineReason::None), caps(caps_) {}
 
     void visit_stmt(const ASR::stmt_t &s) {
         if (reason != GpuDeclineReason::None) return;
-        GpuDeclineReason why = unsupported_on_device(s);
+        GpuDeclineReason why = unsupported_on_device(s, caps);
         if (why != GpuDeclineReason::None) {
             reason = why;
             loc = s.base.loc;

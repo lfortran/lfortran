@@ -54,6 +54,13 @@ struct MetalDialect {
         return double_to_scientific(value);
     }
 
+    // A Metal shader has no trap and no way to end the program, so there is
+    // nothing to spell here. The offload pass declines a loop holding a
+    // STOP for this device, so no such statement reaches the emitter.
+    std::string abort_stmt() const {
+        return "";
+    }
+
     // The grid position already accounts for the block, so a kernel that
     // asks for its block coordinates is asking about a grid Metal does not
     // divide up: the block is the whole grid and its index is zero.

@@ -936,7 +936,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // A statement no device can run keeps the loop on the CPU whichever
     // backend is selected.
     {
-        GpuUnsupportedStatementFinder finder;
+        GpuUnsupportedStatementFinder finder(device_caps);
         for (size_t i = 0; i < work.n_body; i++) {
             finder.visit_stmt(*work.body[i]);
         }
@@ -944,7 +944,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         if (finder.reason == GpuDeclineReason::None) {
             for (ASR::Function_t *fn : reachable_routines(work.body,
                     work.n_body)) {
-                GpuUnsupportedStatementFinder callee_finder;
+                GpuUnsupportedStatementFinder callee_finder(device_caps);
                 for (size_t i = 0; i < fn->n_body; i++) {
                     callee_finder.visit_stmt(*fn->m_body[i]);
                 }
