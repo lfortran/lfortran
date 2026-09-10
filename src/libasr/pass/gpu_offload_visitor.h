@@ -468,6 +468,9 @@ public:
         GpuGatherGuard *gather_guard = nullptr;
     };
 
+    void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
+            std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
     void rewrite_loop_body_for_kernel(ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*>
                 &enclosing_assoc_map);
