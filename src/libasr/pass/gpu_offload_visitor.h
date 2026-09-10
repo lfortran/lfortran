@@ -488,6 +488,11 @@ public:
             const std::set<SymbolTable*> &enclosing_block_scopes,
             const Location &loc);
 
+    bool offloadable_after_rewrites(const ParallelLoopNest &work,
+            const std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
+            const Location &loc);
+
     void visit_OMPRegion(const ASR::OMPRegion_t &region);
 };
 

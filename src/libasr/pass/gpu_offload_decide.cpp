@@ -206,4 +206,59 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     return true;
 }
 
+// The last questions a decline can be based on: the ones the rewrites above
+// the call made answerable, on symbols and statements that only exist once
+// the body has been lowered. False means the decline has been reported and
+// the caller stops, which leaves the loop on the host -- the guards it holds
+// put back everything the rewrites did to the pass's copy of the nest.
+bool GpuOffloadVisitor::offloadable_after_rewrites(
+        const ParallelLoopNest &work,
+        const std::map<std::string,
+            std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
+        const Location &loc) {
+    // The rewrites above can bring in symbols the sweep before them
+    // never saw, so ask again of the widths this device narrows. A
+    // device that narrows none of them answers no to every symbol.
+    for (auto &sym : involved_syms) {
+        ASR::ttype_t *base_t =
+            ASRUtils::type_get_past_array(sym.second.first);
+        if (device_caps.narrows_scalar_type(base_t)) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
+                    sym.first, base_t));
+            return false;
+        }
+    }
+
+    // A statement no device can run keeps the loop on the CPU whichever
+    // backend is selected.
+    {
+        GpuUnsupportedStatementFinder finder(device_caps);
+        for (size_t i = 0; i < work.n_body; i++) {
+            finder.visit_stmt(*work.body[i]);
+        }
+        std::string in_routine;
+        if (finder.reason == GpuDeclineReason::None) {
+            for (ASR::Function_t *fn : reachable_routines(work.body,
+                    work.n_body)) {
+                GpuUnsupportedStatementFinder callee_finder(device_caps);
+                for (size_t i = 0; i < fn->n_body; i++) {
+                    callee_finder.visit_stmt(*fn->m_body[i]);
+                }
+                if (callee_finder.reason != GpuDeclineReason::None) {
+                    finder = callee_finder;
+                    in_routine = fn->m_name;
+                    break;
+                }
+            }
+        }
+        if (finder.reason != GpuDeclineReason::None) {
+            report_not_offloaded(finder.loc,
+                GpuDecline(finder.reason, in_routine));
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace LCompilers
