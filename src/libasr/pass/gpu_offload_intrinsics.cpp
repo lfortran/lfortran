@@ -487,8 +487,12 @@ void GpuOffloadVisitor::inline_intrinsic_all(ParallelLoopNest &nest) {
 // Replaces:
 //   c = matmul(a, b)
 // With nested DoLoops that compute the matrix multiplication directly.
-// This avoids generating a call to _lcompilers_matmul which is not
-// available inside Metal GPU kernels.
+// The ordinary lowering would leave a call to the `_lcompilers_matmul`
+// helper the intrinsic pass instantiates. That helper does reach the
+// device -- `device_partition` marks whatever a kernel calls as device
+// code, and the shader carries a definition of it -- but the call it
+// leaves behind does not always carry an extent for every argument,
+// and the loops below avoid the question.
 // The MatMul shapes `inline_matmul_stmts` lowers on an Assignment:
 // the matmul is either the whole right-hand side, or a direct operand
 // of a RealBinOp on the right-hand side (`z = matmul(w, a) + b`). On a
@@ -1096,12 +1100,14 @@ void GpuOffloadVisitor::inline_matmul_stmts(
 // A matmul that `inline_matmul_stmts` does not match -- one nested
 // inside a unary minus, inside another intrinsic, inside a call
 // argument, inside an array constructor (`r = [0.0, matmul(a, b)]`)
-// or as an argument of another matmul -- survives into the shader as
-// a call to the host runtime helper `_lcompilers_matmul*`, which does
-// not exist on the device. Hoist every such matmul into its own
-// temporary first, so the existing whole-right-hand-side lowering
-// applies to it and the enclosing expression is left with a plain
-// array variable (a shape the Metal backend already handles).
+// or as an argument of another matmul -- is left to the ordinary
+// lowering, which turns it into a call to the `_lcompilers_matmul`
+// helper. The helper itself is emitted into the shader, but the call
+// is not always given the extent of every actual argument, and the
+// answer is wrong where it is emitted at all. Hoist every such matmul
+// into its own temporary first, so the existing whole-right-hand-side
+// lowering applies to it and the enclosing expression is left with a
+// plain array variable (a shape the Metal backend already handles).
 void GpuOffloadVisitor::hoist_nested_matmuls(ParallelLoopNest &nest) {
     SymbolTable *var_scope = current_scope;
     while (var_scope && var_scope->asr_owner &&
