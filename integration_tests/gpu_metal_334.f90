@@ -1,4 +1,4 @@
-program gpu_metal_333
+program gpu_metal_334
   ! Test: a `stop` in a concurrent body is a device trap where the device
   ! has one.
   !
@@ -41,4 +41,4 @@ program gpu_metal_333
   if (b(n) /= 16) error stop "stop loop last"
 
   print *, "PASS"
-end program gpu_metal_333
+end program gpu_metal_334

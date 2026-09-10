@@ -4360,7 +4360,7 @@ options = "--realloc-lhs-arrays"
 # A `stop` in the concurrent body is a trap in the emitted kernel, which is
 # what lets the loop offload to CUDA at all.
 [[test]]
-filename = "../integration_tests/gpu_metal_333.f90"
+filename = "../integration_tests/gpu_metal_334.f90"
 gpu_cuda_kernel = true
 
 [[test]]
