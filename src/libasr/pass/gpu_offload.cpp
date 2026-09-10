@@ -12,7 +12,6 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/string_utils.h>
-#include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -42,31 +41,7 @@ void GpuOffloadVisitor::report_not_offloaded(const Location &where,
             !reported_regions.insert(region_being_decided).second) {
         return;
     }
-    std::string why = gpu_decline_message(decline);
-    // The class is what tells a gap in this compiler apart from a limit
-    // of the device. The policy below does not act on it yet -- today a
-    // decline of either class is an error unless the fallback is asked
-    // for -- but `--gpu-decline-stats` makes the two countable, so that
-    // the gaps can be worked through and the waiver list stays honest.
-    if (pass_options.gpu_decline_stats) {
-        std::cerr << "gpu-decline: " << gpu_decline_class_name(
-            gpu_decline_class(decline, device_caps))
-            << ": " << why << std::endl;
-    }
-    if (pass_options.gpu_allow_cpu_fallback) {
-        pass_options.diagnostics->message_label(
-            "parallel loop not offloaded to the GPU, "
-            "it runs on the CPU instead",
-            {where}, why,
-            diag::Level::Warning, diag::Stage::ASRPass);
-    } else {
-        pass_options.diagnostics->message_label(
-            "parallel loop cannot be offloaded to the GPU: " + why
-                + "; pass `--gpu-allow-cpu-fallback` to run it on the "
-                  "CPU instead",
-            {where}, why,
-            diag::Level::Error, diag::Stage::ASRPass);
-    }
+    report_gpu_decline(pass_options, where, decline);
 }
 
 // A clause a kernel launch has no way to honour. The loop still runs on
@@ -541,11 +516,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         // temporaries alike — is collected here, so a single sweep
         // covers all of them.
         for (auto &sym : candidate_syms) {
+            ASR::ttype_t *unsupported_type = nullptr;
             if (!gpu_device_can_represent_type(device_caps,
-                    sym.second.first, sym.second.second)) {
+                    sym.second.first, sym.second.second, &unsupported_type)) {
                 report_not_offloaded(loc, GpuDecline(
                     GpuDeclineReason::SymbolTypeNotRepresentable,
-                    sym.first, scalar_type_of(sym.second.first)));
+                    sym.first, unsupported_type));
                 return;
             }
         }
@@ -604,45 +580,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             scope_dims_undo);
     }
 
-    // Each run-time sized local of a kernel BLOCK becomes a per-thread
-    // workspace buffer, which the host has to size before it launches
-    // the kernel. An extent the host cannot work out from the kernel
-    // arguments is a code generation error -- raised long after the
-    // pass has committed to offloading, and so a hard build failure.
-    // Run the backend's own resolution here instead, while the loop
-    // can still be left on the host. This is the last point at which
-    // it can be: the workspaces only exist once the callees are
-    // spliced in, and the rewrites below are not reversible.
-    //
-    // The host sizes the workspace the same way whichever device it
-    // launches on, so this holds for every dialect: an extent written
-    // in terms of a spliced callee's own dummy names a symbol that no
-    // longer exists once the callee is gone.
-    //
-    // What this cannot see, and what nothing here can: the workspaces
-    // the passes after this one create. `subroutine_from_function`
-    // turns a call whose result is an array into a temporary at the
-    // call site, `array_struct_temporary` and `array_op` lower array
-    // expressions into temporaries of their own, and every one of
-    // those is a local of the kernel that does not exist yet. Over the
-    // GPU corpus a third of the launches that carry a workspace at all
-    // reach `device_launch_expand` with more of them than were counted
-    // here. So this pre-flight is a filter, not a verdict: it keeps on
-    // the host the loops it can already tell apart, and the launch
-    // layout asks the same question again of the kernel that exists.
-    {
-        std::vector<std::string> kernel_arg_names;
-        collect_kernel_arg_names(work, enclosing_block_scopes,
-            kernel_arg_names);
-        std::string unresolved_name;
-        if (!gpu_block_workspace_extents_resolvable(work.body,
-                work.n_body, kernel_arg_names, unresolved_name)) {
-            report_not_offloaded(loc,
-                GpuDecline(GpuDeclineReason::WorkspaceNotSizeableOnHost,
-                    unresolved_name));
-            return;
-        }
-    }
     // Splicing a callee is what can leave a section of a section in the
     // body, so the shape is only possible where the pass splices.
     if (device_caps.splices_device_functions()) {
@@ -3297,31 +3234,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_args.p, kernel_args.n,
         kernel_body.p, kernel_body.n,
         nullptr, ASR::accessType::Public, false, false,
-        nullptr, nullptr, nullptr);
+        nullptr, nullptr, nullptr, nullptr);
 
-    // `device_launch_expand` builds the host side of the launch, laying
-    // every argument out exactly as the device code generator does. An
-    // argument shape it cannot lay out keeps the loop on the host, where
-    // ordinary Fortran semantics always apply. The kernel is checked
-    // before it enters the symbol table, so nothing is left behind.
-    {
-        GpuDecline decline;
-        if (!gpu_launch_is_supported(al,
-                ASR::down_cast<ASR::symbol_t>(kernel_func),
-                call_args.p, call_args.n, decline)) {
-            report_not_offloaded(loc, decline);
-            for (auto it = member_extent_undo.rbegin();
-                    it != member_extent_undo.rend(); ++it) {
-                *it->first = it->second;
-            }
-            member_extent_undo.clear();
-            // The host's own blocks were never touched: the kernel was
-            // given copies, which the draft guard drops.
-            return;
-        }
-    }
-    // The launch stands, so the blocks, the spliced shape, and the
-    // kernel number are the kernel's from here on.
+    // This commits the draft, not the offload decision. GpuOffload retains
+    // the host alternative until the lowered kernel has a verified layout.
     draft_guard.commit();
     splice_guard.commit();
 
@@ -3584,6 +3500,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // launch block in if(present(v1) .and. present(v2) ...) so
     // the host never tries to read a null descriptor or compute
     // ArraySize on an absent argument.
+    Vec<ASR::stmt_t*> device_body;
+    device_body.reserve(al, launch_stmts.n);
     if (!optional_syms.empty()) {
         ASR::ttype_t *log_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
@@ -3610,17 +3528,22 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
         Vec<ASR::stmt_t*> empty_else;
         empty_else.reserve(al, 0);
-        pass_result.reserve(al, 1);
-        pass_result.push_back(al, ASRUtils::STMT(
+        device_body.push_back(al, ASRUtils::STMT(
             ASR::make_If_t(al, loc, nullptr, guard,
                 launch_stmts.p, launch_stmts.n,
                 empty_else.p, empty_else.n)));
     } else {
-        pass_result.reserve(al, launch_stmts.n);
         for (size_t i = 0; i < launch_stmts.n; i++) {
-            pass_result.push_back(al, launch_stmts.p[i]);
+            device_body.push_back(al, launch_stmts.p[i]);
         }
     }
+    Vec<ASR::stmt_t*> fallback;
+    fallback.reserve(al, 1);
+    fallback.push_back(al, const_cast<ASR::stmt_t*>(&region.base));
+    pass_result.reserve(al, 1);
+    pass_result.push_back(al, ASRUtils::STMT(ASR::make_GpuOffload_t(al,
+        loc, ASR::down_cast<ASR::symbol_t>(kernel_func),
+        device_body.p, device_body.n, fallback.p, fallback.n)));
 }
 
 // A loop the offload pass turned down is still a parallel loop, so it goes

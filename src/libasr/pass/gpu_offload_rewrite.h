@@ -9,6 +9,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/exception.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -171,49 +172,6 @@ public:
 };
 
 // Resolves associate variable references to their original targets.
-// When a parallel loop is inside an AssociateBlock, variables like `nn`
-// (associated with `n`) must be resolved to their associate value before
-// kernel extraction, because the kernel scope cannot access the
-// AssociateBlock's symbol table. The mapped expression may be a simple
-// Var (e.g., associate(nn => n)) or a complex expression such as
-// ArrayPhysicalCast(StructInstanceMember(...)) for derived-type components.
-class AssociateVarResolver : public ASR::BaseExprReplacer<AssociateVarResolver> {
-public:
-    Allocator &al;
-    std::map<ASR::symbol_t*, ASR::expr_t*> &assoc_map;
-    AssociateVarResolver(Allocator &al_,
-                         std::map<ASR::symbol_t*, ASR::expr_t*> &map)
-        : al(al_), assoc_map(map) {}
-
-    void replace_Var(ASR::Var_t *x) {
-        auto it = assoc_map.find(x->m_v);
-        if (it != assoc_map.end()) {
-            // Deep-copy so the original Associate expression is not
-            // modified when GpuReplaceSymbolsVisitor remaps symbols later
-            ASRUtils::ExprStmtDuplicator dup(al);
-            dup.success = true;
-            ASR::expr_t *copy = dup.duplicate_expr(it->second);
-            if (copy) {
-                *current_expr = copy;
-            }
-        }
-    }
-};
-
-class AssociateVarResolverVisitor :
-    public ASR::CallReplacerOnExpressionsVisitor<AssociateVarResolverVisitor> {
-public:
-    AssociateVarResolver replacer;
-    AssociateVarResolverVisitor(Allocator &al,
-                                std::map<ASR::symbol_t*, ASR::expr_t*> &map)
-        : replacer(al, map) {}
-
-    void call_replacer() {
-        replacer.current_expr = current_expr;
-        replacer.replace_expr(*current_expr);
-    }
-};
-
 // A workspace extent written as `size(a(i)%m, d)` -- the extent of an
 // allocatable array component reached through a subscript into an array
 // of derived types -- can be reproduced on neither side of the launch as

@@ -10,8 +10,8 @@ A function or a subroutine, with or without a body.
 Function(symbol_table symtab, identifier name,
     ttype function_signature, identifier* dependencies, expr* args,
     stmt* body, expr? return_var, access access, bool deterministic,
-    bool side_effect_free, string? module_file, location start_name,
-    location end_name)
+    bool side_effect_free, string? module_file, gpu_kernel_layout? gpu,
+    location start_name, location end_name)
 ```
 
 ### Arguments
@@ -29,6 +29,7 @@ Function(symbol_table symtab, identifier name,
 | `deterministic` | `true` when the procedure returns the same result for the same arguments. Reserved for optimizations that need to duplicate or eliminate calls. |
 | `side_effect_free` | `true` when a call has no effect other than its result. Reserved for the same optimizations. |
 | `module_file` | the module file the procedure was loaded from, when it was; `nil` otherwise. |
+| `gpu` | the finalized GPU kernel layout, or `nil`. Records buffer and scalar bindings, workspace extents and parameters, and the device call graph. |
 | `start_name` | the source span of the name in the `function` or `subroutine` statement. |
 | `end_name` | the source span of the name in the matching `end` statement. |
 
@@ -52,6 +53,18 @@ result variable of a function is likewise owned by `symtab`, with
 `deterministic` and `side_effect_free` are declarations about the procedure,
 not consequences of its body. A frontend that cannot prove them must leave
 them `false`.
+
+Only a kernel may own `gpu` metadata. It is produced after shared array and
+procedure lowering, before host launch expansion. Runtime workspace extents
+are expressions over the original kernel arguments; the host evaluates each
+once and passes the result in an additional scalar argument. The device uses
+that same scalar for its workspace slice. Buffer order and device-procedure
+identity are explicit rather than inferred from generated names.
+
+ASR verification checks binding identities, ranks, workspace slots, extent
+dependencies and the ordered device-call closure. Absent optional aggregate
+metadata is omitted from readable ASR, so ordinary procedures retain their
+existing text representation.
 
 ## Examples
 
