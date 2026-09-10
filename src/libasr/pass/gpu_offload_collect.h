@@ -387,36 +387,6 @@ public:
     }
 };
 
-// Counts Return statements so a device function with early returns --
-// control flow a straight-line splice cannot reproduce -- is rejected.
-class GpuReturnCounter : public ASR::BaseWalkVisitor<GpuReturnCounter> {
-public:
-    size_t count = 0;
-
-    void visit_Return(const ASR::Return_t & /*x*/) {
-        count++;
-    }
-};
-
-// Counts the BLOCK and ASSOCIATE constructs a statement enters. The
-// splice can only flatten a nested scope that sits directly in a
-// statement list, so one reached from inside an IF or a loop -- where
-// the ASR holds a single statement, not a list -- makes the callee
-// un-spliceable.
-class GpuNestedScopeCounter :
-        public ASR::BaseWalkVisitor<GpuNestedScopeCounter> {
-public:
-    size_t count = 0;
-
-    void visit_BlockCall(const ASR::BlockCall_t & /*x*/) {
-        count++;
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t & /*x*/) {
-        count++;
-    }
-};
-
 // Collects every FunctionCall in a statement, so the inliner can tell a
 // call in a spliceable position (the whole right-hand side of an
 // assignment) from one buried inside a larger expression.

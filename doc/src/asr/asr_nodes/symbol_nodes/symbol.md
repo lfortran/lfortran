@@ -10,7 +10,7 @@ The symbols of ASR.
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
-    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, location start_name, location end_name)
+    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
@@ -67,4 +67,3 @@ appears in.
 [ASR overview](../../asr.md)
 
 ## Symbol Nodes
-

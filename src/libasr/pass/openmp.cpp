@@ -3,6 +3,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/asr_verify.h>
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
@@ -588,7 +589,8 @@ class ParallelRegionVisitor :
         PassOptions pass_options;
         int current_stmt_index = -1;
         int nesting_lvl = 0;
-        ASR::stmt_t** current_m_body; size_t current_n_body;
+        ASR::stmt_t** current_m_body = nullptr;
+        size_t current_n_body = 0;
         std::vector<ASR::stmt_t*> nested_lowered_body={};
         std::vector<std::string> reduction_variables;
         std::map<int,std::vector<ASR::omp_clause_t*>> clauses_heirarchial;
@@ -3402,6 +3404,7 @@ class RepointCallArguments: public PassUtils::PassVisitor<RepointCallArguments> 
 
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
+    if (has_pending_gpu_offload(unit)) return;
     if (pass_options.openmp) {
         ParallelRegionVisitor v(al, pass_options);
         v.visit_TranslationUnit(unit);

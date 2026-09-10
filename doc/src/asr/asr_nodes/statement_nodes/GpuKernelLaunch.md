@@ -37,6 +37,14 @@ The kernel is an ordinary [Function](../symbol_nodes/Function.md); what makes
 it launchable is that its signature has `exec_space = Kernel`, and a kernel
 has no result. See [exec_space](../enum_nodes/exec_space.md).
 
+During extraction a launch belongs to a [GpuOffload](GpuOffload.md) candidate
+alongside the original CPU alternative. `gpu_kernel_finalize` makes the
+definitive decision after shared lowering and records the accepted kernel's
+`Function.gpu` layout. `device_launch_expand` and both device emitters consume
+that layout. Workspace sizes are evaluated once on the host and passed as
+explicit scalar arguments, so host allocation and device indexing use the
+same values.
+
 Before creating a launch, GPU offload checks the allocation of allocatable
 array results in callees that remain out of line. Nested or multiple allocation
 sites must agree with a buffer shape established by an unconditional fixed
@@ -44,6 +52,12 @@ allocation. Otherwise the loop is rejected while the original loop is still
 available; `--gpu-allow-cpu-fallback` instead runs that loop on the CPU.
 Reallocation and conditional assignments remain eligible when they preserve
 every extent, not just the total element count.
+
+An unimplemented lowering is an error unless `--gpu-allow-cpu-fallback` is
+enabled. A backend capability limitation warns and selects the CPU alternative.
+`--gpu-decline-stats` reports the corresponding `not-implemented` or
+`backend-cannot` category. A manually constructed launch without a CPU
+alternative cannot use fallback.
 
 ## Examples
 

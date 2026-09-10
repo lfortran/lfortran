@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-__device__ inline void fixed_result_t(int n, float* r) {
+__device__ inline void fixed_result_device_t_gpu_33(int n, float* r) {
     const int width = 2;
     int __1__libasr_index_;
     int __do_loop_end;
@@ -58,13 +58,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= 2)) {
         __gpu_sum_k = (__gpu_sum_k + 1);
-        fixed_result_t(i, __libasr_created__function_call_fixed_result);
+        fixed_result_device_t_gpu_33(i, __libasr_created__function_call_fixed_result);
         __gpu_sum_res = (__gpu_sum_res + __libasr_created__function_call_fixed_result[((int)(__gpu_sum_k) - (1))]);
     }
     results[((int)(i) - (1))] = __gpu_sum_res;
 }
 
-__device__ inline void reallocated_result_t(int n, float* r, int __size_r_dim1) {
+__device__ inline void reallocated_result_device_t_gpu_34(int n, float* r, int __size_r_dim1) {
     int __do_loop_end;
     int __do_loop_end1;
     int __libasr_index_0_;
@@ -103,7 +103,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __gpu_sum_k1 = (1 - 1);
     while (((__gpu_sum_k1 + 1) <= 2)) {
         __gpu_sum_k1 = (__gpu_sum_k1 + 1);
-        reallocated_result_t(i, __libasr_created__subroutine_from_function_, 2);
+        reallocated_result_device_t_gpu_34(i, __libasr_created__subroutine_from_function_, 2);
         __libasr_created__function_call_reallocated_result[0] = __libasr_created__subroutine_from_function_[0];
         __libasr_created__function_call_reallocated_result[1] = __libasr_created__subroutine_from_function_[1];
         __gpu_sum_res1 = (__gpu_sum_res1 + __libasr_created__function_call_reallocated_result[((int)(__gpu_sum_k1) - (1))]);
