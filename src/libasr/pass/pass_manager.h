@@ -65,6 +65,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -130,6 +131,7 @@ namespace LCompilers {
             {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_memory_space", &pass_gpu_memory_space},
+            {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -205,7 +207,9 @@ namespace LCompilers {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
                 bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
@@ -274,19 +278,8 @@ namespace LCompilers {
                 "parallel_canonicalize",
                 "parallel_dispatch",
                 "implied_do_loops",
-                // The device gets first refusal: a loop it declines is
-                // handed back as a host-thread loop, which the OpenMP pass
-                // below then picks up.
-                //
-                // This is the only point at which a loop can still be
-                // handed back, so the decision has to be taken here even
-                // though the passes below it -- `array_struct_temporary`,
-                // `array_op`, `subroutine_from_function` -- create
-                // temporaries the kernel will have and the decision cannot
-                // see. What the decision therefore cannot answer for
-                // itself, `device_launch_expand` asks again of the kernel
-                // that exists, and reports rather than lays out a launch it
-                // cannot lay out.
+                // Extract candidates without discarding their CPU alternatives.
+                // OpenMP outlining and flattening defer while a candidate exists.
                 "gpu_offload",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
@@ -331,14 +324,9 @@ namespace LCompilers {
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.
                 "gpu_memory_space",
-                // Expanding a kernel launch reads the kernel signature and
-                // body, so it has to run once both are in the shape the
-                // device code generators see: after pass_array_by_data has
-                // turned array extents into explicit kernel arguments, and
-                // after array_dim_intrinsics_update has rewritten the size
-                // intrinsics that read them. This is also where the
-                // question `gpu_offload` answered about a draft kernel is
-                // asked again about the real one.
+                // Decide on the normalized kernel, freeze its ABI and select
+                // an alternative before lowering the remaining host OpenMP.
+                "gpu_kernel_finalize",
                 "device_launch_expand",
                 "do_loops",
                 "while_else",
@@ -438,7 +426,9 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
+                bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
+                if (!had_error && diagnostics.has_error()) return;
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(pass_cnt_asr_dump+1);
                     if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;

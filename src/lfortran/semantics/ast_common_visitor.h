@@ -1658,8 +1658,11 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
         }
         
         bool had_repeat_count = false;
+        size_t repeat_count = 0;
         while (i < content.length() && std::isdigit(content[i])) {
             had_repeat_count = true;
+            repeat_count = std::min(content.length(),
+                repeat_count * 10 + static_cast<size_t>(content[i] - '0'));
             i++;
         }
         while (i < content.length() && std::isspace(content[i])) {
@@ -1669,6 +1672,16 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
         
         c = content[i];
         
+        if (had_repeat_count && (c == 'h' || c == 'H')) {
+            // Hollerith edit descriptor `nH<n characters>`: the n characters
+            // following the `H` are literal text and must not be scanned as
+            // edit descriptors.
+            i++;
+            i += std::min(repeat_count, content.length() - i);
+            prev_desc = DescType::DATA;
+            continue;
+        }
+
         DescType current_desc = DescType::NONE;
         
         char c_upper = std::toupper(c);

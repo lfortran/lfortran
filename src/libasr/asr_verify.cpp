@@ -822,6 +822,7 @@ public:
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
         verify_argument_memory_spaces(x);
+        if (x.m_gpu) verify_gpu_kernel_layout(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
@@ -2415,10 +2416,242 @@ public:
                 "device has no layout to read it as");
     }
 
-    // TODO: also verify that a Device function only calls Device
-    // or HostDevice functions. That invariant does not hold yet: a kernel body
-    // is copied verbatim from the host loop, so it still calls Host functions
-    // until the device call-graph closure pass exists.
+    void verify_gpu_kernel_layout(const Function_t &x) {
+        const Function_t &kernel = x;
+        require_id(ASRUtils::is_device_kernel(&kernel.base),
+            "asr.verify.gpu_layout.kernel",
+            "only a kernel may own a GPU launch layout");
+        const auto &layout = *kernel.m_gpu;
+        std::set<ASR::symbol_t*> device_functions;
+        for (size_t i = 0; i < layout.n_device_functions; i++) {
+            ASR::symbol_t *procedure = layout.m_device_functions[i];
+            require_id(procedure && ASR::is_a<ASR::Function_t>(*procedure) &&
+                    ASRUtils::runs_on_device(
+                        *ASR::down_cast<ASR::Function_t>(procedure)) &&
+                    device_functions.insert(procedure).second,
+                "asr.verify.gpu_layout.device_function",
+                "the GPU call graph must contain distinct device procedures");
+            const auto *function = ASR::down_cast<ASR::Function_t>(procedure);
+            for (auto *callee : ASRUtils::get_called_functions(function->m_body,
+                    function->n_body, true)) {
+                require_id(device_functions.count(&callee->base) != 0,
+                    "asr.verify.gpu_layout.device_call_order",
+                    "GPU callees must precede their callers in the device call graph");
+            }
+        }
+        for (auto *callee : ASRUtils::get_called_functions(kernel.m_body,
+                kernel.n_body, true)) {
+            require_id(device_functions.count(&callee->base) != 0,
+                "asr.verify.gpu_layout.device_call",
+                "every kernel callee must belong to the verified device call graph");
+        }
+        require_id(layout.m_source_argument_count >= 0 &&
+                (size_t)layout.m_source_argument_count <= kernel.n_args,
+            "asr.verify.gpu_layout.source_arguments",
+            "GPU layout has an invalid source argument count");
+        std::set<ASR::symbol_t*> bound;
+        size_t offset_count = 0;
+        auto verify_argument = [&](const gpu_kernel_argument_t &arg,
+                bool buffer) {
+            require_id(arg.m_argument_index >= 0 &&
+                    (size_t)arg.m_argument_index < kernel.n_args,
+                "asr.verify.gpu_layout.argument_index",
+                "GPU layout argument index is outside the kernel signature");
+            require_id(ASR::is_a<ASR::Var_t>(
+                    *kernel.m_args[arg.m_argument_index]) &&
+                    ASR::down_cast<ASR::Var_t>(
+                        kernel.m_args[arg.m_argument_index])->m_v ==
+                        arg.m_variable,
+                "asr.verify.gpu_layout.argument_identity",
+                "GPU layout must refer to the kernel dummy in its argument slot");
+            require_id(arg.m_type != nullptr,
+                "asr.verify.gpu_layout.argument_type",
+                "GPU layout argument must have an explicit element type");
+            if (arg.m_kind == gpu_argument_kindType::GpuPackedOffset) {
+                require_id(!buffer && layout.m_packed &&
+                        arg.m_dimension >= 0 &&
+                        (size_t)arg.m_dimension < layout.n_buffers,
+                    "asr.verify.gpu_layout.packed_offset",
+                    "GPU packed offset must identify a buffer in a packed layout");
+                offset_count++;
+            } else if (arg.m_kind == gpu_argument_kindType::GpuArrayExtent) {
+                require_id(!buffer && arg.m_dimension >= 0 &&
+                        arg.m_dimension < ASRUtils::extract_n_dims_from_ttype(
+                            ASRUtils::symbol_type(arg.m_variable)),
+                    "asr.verify.gpu_layout.array_dimension",
+                    "GPU array extent must identify a dimension of its argument");
+            } else if (!arg.m_member) {
+                require_id(buffer
+                        ? (arg.m_kind == gpu_argument_kindType::GpuArray ||
+                           arg.m_kind == gpu_argument_kindType::GpuStruct ||
+                           arg.m_kind == gpu_argument_kindType::GpuClass)
+                        : arg.m_kind == gpu_argument_kindType::GpuScalar,
+                    "asr.verify.gpu_layout.argument_role",
+                    "a primary GPU binding must have an array, struct, class or scalar role");
+                require_id(bound.insert(arg.m_variable).second,
+                    "asr.verify.gpu_layout.duplicate_argument",
+                    "a GPU argument may have only one primary binding");
+                bool array = ASRUtils::is_array(
+                    ASRUtils::symbol_type(arg.m_variable));
+                bool structure = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::symbol_type(arg.m_variable)));
+                require_id(buffer == (array || structure),
+                    "asr.verify.gpu_layout.argument_storage",
+                    "GPU arrays and derived types must have buffer bindings");
+                if (buffer) {
+                    bool polymorphic = ASRUtils::is_class_type(
+                        ASRUtils::extract_type(ASRUtils::symbol_type(arg.m_variable)));
+                    require_id(array
+                            ? arg.m_kind == gpu_argument_kindType::GpuArray
+                            : arg.m_kind == (polymorphic
+                                ? gpu_argument_kindType::GpuClass
+                                : gpu_argument_kindType::GpuStruct),
+                        "asr.verify.gpu_layout.buffer_role",
+                        "a GPU buffer role must match its declared argument representation");
+                }
+            } else {
+                require_id(buffer && ASR::is_a<ASR::Variable_t>(*arg.m_member) &&
+                        (arg.m_kind == gpu_argument_kindType::GpuMemberData ||
+                         arg.m_kind == gpu_argument_kindType::GpuMemberOffsets ||
+                         arg.m_kind == gpu_argument_kindType::GpuMemberSizes),
+                    "asr.verify.gpu_layout.member_binding",
+                    "a GPU component buffer must have a component and a buffer role");
+                auto *variable = ASR::down_cast<ASR::Variable_t>(arg.m_variable);
+                ASR::symbol_t *declaration = ASRUtils::symbol_get_past_external(
+                    variable->m_type_declaration);
+                require_id(ASRUtils::is_array(variable->m_type) && declaration &&
+                        ASR::is_a<ASR::Struct_t>(*declaration),
+                    "asr.verify.gpu_layout.member_owner",
+                    "a GPU component buffer must belong to a declared derived-type array");
+                bool found = false;
+                for (auto &member : ASRUtils::collect_allocatable_array_members(
+                        ASR::down_cast<ASR::Struct_t>(declaration))) {
+                    found |= &member.second->base == arg.m_member;
+                }
+                require_id(found, "asr.verify.gpu_layout.member_identity",
+                    "a GPU component binding must refer to a member of its argument's type");
+            }
+        };
+        for (size_t i = 0; i < layout.n_buffers; i++) {
+            verify_argument(layout.m_buffers[i], true);
+        }
+        for (size_t i = 0; i < layout.n_scalars; i++) {
+            verify_argument(layout.m_scalars[i], false);
+        }
+        require_id(bound.size() == kernel.n_args,
+            "asr.verify.gpu_layout.complete_arguments",
+            "every kernel dummy must have a GPU layout binding");
+        require_id(offset_count == (layout.m_packed ? layout.n_buffers : 0),
+            "asr.verify.gpu_layout.complete_offsets",
+            "a packed GPU layout must have one offset per buffer");
+
+        struct ExtentVariables : ASR::BaseWalkVisitor<ExtentVariables> {
+            std::set<ASR::symbol_t*> variables;
+            bool host_evaluable = true;
+            void visit_expr(const ASR::expr_t &expression) {
+                switch (expression.type) {
+                    case ASR::exprType::IntegerConstant:
+                    case ASR::exprType::LogicalConstant:
+                    case ASR::exprType::Var:
+                    case ASR::exprType::IntegerBinOp:
+                    case ASR::exprType::IntegerUnaryMinus:
+                    case ASR::exprType::IntegerCompare:
+                    case ASR::exprType::IfExp:
+                    case ASR::exprType::Cast:
+                    case ASR::exprType::ArraySize:
+                    case ASR::exprType::ArrayBound:
+                    case ASR::exprType::ArrayItem:
+                    case ASR::exprType::ArrayPhysicalCast:
+                    case ASR::exprType::StructInstanceMember:
+                        ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
+                        break;
+                    default: host_evaluable = false;
+                }
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                variables.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_ttype(const ASR::ttype_t &) {}
+        };
+        std::set<ASR::symbol_t*> source_arguments;
+        for (int64_t i = 0; i < layout.m_source_argument_count; i++) {
+            source_arguments.insert(
+                ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
+        }
+        std::set<ASR::symbol_t*> workspaces, extent_parameters;
+        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+            (layout.n_scalars > 0);
+        for (size_t i = 0; i < layout.n_workspaces; i++) {
+            const auto &workspace = layout.m_workspaces[i];
+            require_id(workspace.m_variable &&
+                    ASR::is_a<ASR::Variable_t>(*workspace.m_variable) &&
+                    workspaces.insert(workspace.m_variable).second,
+                "asr.verify.gpu_layout.workspace_identity",
+                "a GPU workspace must identify a distinct local variable");
+            require_id(workspace.n_dims == (size_t)
+                    ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::symbol_type(workspace.m_variable)),
+                "asr.verify.gpu_layout.workspace_rank",
+                "GPU workspace dimensions must match the local array rank");
+            require_id(workspace.m_buffer_index == slot++,
+                "asr.verify.gpu_layout.workspace_slot",
+                "GPU workspace slots must follow the argument buffers");
+            require_id(workspace.m_element_size ==
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(
+                        ASRUtils::symbol_type(workspace.m_variable))),
+                "asr.verify.gpu_layout.workspace_element_size",
+                "GPU workspace element size must match its array element kind");
+            for (size_t d = 0; d < workspace.n_dims; d++) {
+                const auto &dim = workspace.m_dims[d];
+                require_id(dim.m_extent && ASRUtils::is_integer(
+                        *ASRUtils::expr_type(dim.m_extent)) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(dim.m_extent)),
+                    "asr.verify.gpu_layout.workspace_extent",
+                    "a GPU workspace extent must be an integer scalar expression");
+                ExtentVariables refs;
+                refs.visit_expr(*dim.m_extent);
+                require_id(refs.host_evaluable,
+                    "asr.verify.gpu_layout.host_evaluable_expression",
+                    "a GPU workspace extent must contain only host-evaluable operations");
+                for (ASR::symbol_t *symbol : refs.variables) {
+                    require_id(source_arguments.count(symbol) != 0,
+                        "asr.verify.gpu_layout.host_evaluable_extent",
+                        "a GPU workspace extent may reference only source kernel arguments");
+                }
+                if (dim.m_parameter) {
+                    require_id(bound.count(dim.m_parameter) &&
+                            !source_arguments.count(dim.m_parameter) &&
+                            extent_parameters.insert(dim.m_parameter).second,
+                        "asr.verify.gpu_layout.extent_parameter",
+                        "a runtime GPU extent must have a distinct generated kernel parameter");
+                    require_id(ASRUtils::check_equal_type(
+                            ASRUtils::symbol_type(dim.m_parameter),
+                            ASRUtils::expr_type(dim.m_extent), nullptr, nullptr),
+                        "asr.verify.gpu_layout.extent_parameter_type",
+                        "a GPU extent parameter must preserve the extent expression type");
+                } else {
+                    require_id(ASRUtils::expr_value(dim.m_extent) != nullptr,
+                        "asr.verify.gpu_layout.constant_extent",
+                        "a GPU extent without a parameter must be constant");
+                }
+            }
+        }
+        require_id(extent_parameters.size() + layout.m_source_argument_count ==
+                kernel.n_args,
+            "asr.verify.gpu_layout.complete_extent_parameters",
+            "every generated GPU parameter must belong to a workspace dimension");
+    }
+
+    void visit_GpuOffload(const GpuOffload_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_offload.kernel",
+            "a GPU offload candidate must name a kernel");
+        require_id(x.n_body > 0 && x.n_fallback > 0,
+            "asr.verify.gpu_offload.alternatives",
+            "a GPU offload candidate must retain both execution alternatives");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuOffload(x);
+    }
+
     void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
         require_id(ASRUtils::is_device_kernel(x.m_kernel),
             "asr.verify.gpu_kernel_launch.kernel_runs_on_device",

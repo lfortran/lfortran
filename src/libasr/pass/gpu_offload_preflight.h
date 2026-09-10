@@ -68,6 +68,9 @@ bool gpu_block_workspace_extents_resolvable(
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name);
 
+bool gpu_kernel_workspace_extents_resolvable(const ASR::Function_t &kernel,
+    std::string &unresolved_name);
+
 bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 
 // A derived type is representable only when every one of its data members
@@ -81,7 +84,7 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 // member graph is cyclic.
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
-        const GpuDeviceCapabilities &caps);
+        const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type = nullptr);
 
 // Answers whether the selected device can represent the type of `e` with
 // the same in-memory width the host uses. A device whose type set is
@@ -96,13 +99,12 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
 // raises and the class that decline is given cannot disagree about what the
 // device has a type for.
 bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e);
+        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type = nullptr);
 
 // The scalar element type behind `t`, for a decline that has to be
 // classified against what the device has a type for. A derived type has no
 // single element type -- the width that offends is one member's -- so it
 // answers with nothing, and the decline is classified on its reason alone.
-ASR::ttype_t* scalar_type_of(ASR::ttype_t *t);
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a

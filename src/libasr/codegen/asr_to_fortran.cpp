@@ -1916,6 +1916,21 @@ public:
         src = r;
     }
 
+    void visit_GpuOffload(const ASR::GpuOffload_t &x) {
+        std::string r = indent + "! gpu offload candidate\n";
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += src;
+        }
+        r += indent + "! cpu alternative\n";
+        for (size_t i = 0; i < x.n_fallback; i++) {
+            visit_stmt(*x.m_fallback[i]);
+            r += src;
+        }
+        r += indent + "! end gpu offload candidate\n";
+        src = r;
+    }
+
     void visit_Where(const ASR::Where_t &x) {
         std::string r;
         r = indent;
