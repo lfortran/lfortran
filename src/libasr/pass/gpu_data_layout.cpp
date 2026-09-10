@@ -1,9 +1,71 @@
+#include <map>
+
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
 
 namespace LCompilers {
 
 static ASR::ttype_t* struct_layout_type(Allocator &al, ASR::symbol_t *symbol);
+
+std::string GpuComponentLayout::name() const {
+    return ASRUtils::symbol_name(component);
+}
+
+std::vector<GpuComponentLayout> gpu_component_layouts(
+        const ASR::gpu_kernel_layout_t &layout, ASR::symbol_t *variable,
+        ASR::Struct_t *in_struct) {
+    std::vector<GpuComponentLayout> components;
+    if (!variable) return components;
+    variable = ASRUtils::symbol_get_past_external(variable);
+    std::map<std::string, size_t> found;
+    for (size_t i = 0; i < layout.n_buffers; i++) {
+        const ASR::gpu_kernel_argument_t &entry = layout.m_buffers[i];
+        if (!entry.m_member) continue;
+        if (ASRUtils::symbol_get_past_external(entry.m_variable) != variable) {
+            continue;
+        }
+        std::string name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(entry.m_member));
+        if (entry.m_kind == ASR::gpu_argument_kindType::GpuMemberData) {
+            ASR::symbol_t *component = in_struct
+                ? gpu_struct_lookup_member(&in_struct->base, name)
+                : entry.m_member;
+            if (!component) continue;
+            GpuComponentLayout component_layout;
+            component_layout.component = component;
+            component_layout.allocatable = ASRUtils::is_allocatable(
+                ASRUtils::symbol_type(component));
+            component_layout.type = ASRUtils::type_get_past_allocatable(
+                ASRUtils::symbol_type(component));
+            component_layout.element_type = ASRUtils::type_get_past_array(
+                component_layout.type);
+            component_layout.rank = gpu_struct_member_rank(
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(component)));
+            component_layout.element_struct = gpu_struct_definition(
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(component))
+                        ->m_type_declaration);
+            component_layout.element_is_empty =
+                ASR::is_a<ASR::StructType_t>(*component_layout.element_type)
+                && component_layout.element_struct
+                && component_layout.element_struct->n_members == 0;
+            component_layout.data = &entry;
+            found[name] = components.size();
+            components.push_back(component_layout);
+            continue;
+        }
+        auto it = found.find(name);
+        if (it == found.end()) continue;
+        if (entry.m_kind == ASR::gpu_argument_kindType::GpuMemberOffsets) {
+            components[it->second].offsets = &entry;
+        } else if (entry.m_kind == ASR::gpu_argument_kindType::GpuMemberSizes) {
+            components[it->second].sizes = &entry;
+        }
+    }
+    return components;
+}
 
 ASR::Struct_t* gpu_struct_definition(ASR::symbol_t *struct_sym) {
     if (!struct_sym) return nullptr;
