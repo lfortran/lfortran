@@ -12,6 +12,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -1570,11 +1571,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
         ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
-        for (auto &mem_entry :
-                ASRUtils::collect_allocatable_array_members(st)) {
-            const std::string &mem_name = mem_entry.first;
-            ASR::Variable_t *mv = mem_entry.second;
-            ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
+        for (auto &component : gpu_decomposed_components(st)) {
+            std::string mem_name = component.name();
+            ASR::symbol_t *mem_sym = component.component;
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem_sym);
             std::string size_name = GpuNames::member_size(
                 sym_name, mem_name);
             ASR::symbol_t *size_sym = gpu_new_variable(al, loc,
@@ -1679,13 +1679,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 orig_var->m_type_declaration);
         if (!is_a<ASR::Struct_t>(*struct_sym)) continue;
         ASR::Struct_t *st = down_cast<ASR::Struct_t>(struct_sym);
-        for (auto &mem_entry :
-                ASRUtils::collect_allocatable_array_members(st)) {
-            const std::string &mem_name = mem_entry.first;
-            ASR::Variable_t *mv = mem_entry.second;
-            ASR::symbol_t *mem_sym = (ASR::symbol_t*)mv;
-            ASR::ttype_t *mem_inner =
-                ASRUtils::type_get_past_allocatable(mv->m_type);
+        for (auto &component : gpu_decomposed_components(st)) {
+            std::string mem_name = component.name();
+            ASR::symbol_t *mem_sym = component.component;
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem_sym);
+            ASR::ttype_t *mem_inner = component.type;
             std::string data_name = GpuNames::member_data(
                 sym_name, mem_name);
             ASR::ttype_t *data_type =

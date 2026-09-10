@@ -42,6 +42,18 @@ struct GpuComponentLayout {
     std::string name() const;
 };
 
+// The components of `definition` that a derived-type kernel argument's
+// device layout hands over as device buffers of their own, in the order
+// they are laid out: the components it inherits first, then its own.
+//
+// This is where the GPU path decides which components are decomposed.
+// Widening it -- to an allocatable scalar component, a pointer component,
+// or an allocatable component of an allocatable component -- is a change
+// here and in what the launch and the emitters make of a descriptor,
+// rather than in each place that walks a derived type of its own accord.
+std::vector<GpuComponentLayout> gpu_decomposed_components(
+    ASR::Struct_t *definition);
+
 // The components of `variable`'s derived type that `layout` hands over as
 // device buffers of their own, in the order the layout lists them.
 //

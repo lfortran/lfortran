@@ -212,9 +212,8 @@ public:
                 if (!ASRUtils::is_array(kparam->m_type)) return false;
                 ASR::Struct_t *st = gpu_struct_definition(kparam->m_type_declaration);
                 if (!st) return false;
-                for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
-                    if (m.first == mem && is_decomposed_member(
-                            &m.second->base)) {
+                for (auto &m : gpu_decomposed_components(st)) {
+                    if (m.name() == mem && is_decomposed_member(m.component)) {
                         return true;
                     }
                 }
@@ -705,11 +704,11 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             ASR::Struct_t *st = array ? gpu_struct_definition(var->m_type_declaration)
                                      : nullptr;
             if (!st) continue;
-            for (auto &member : ASRUtils::collect_allocatable_array_members(st)) {
+            for (auto &member : gpu_decomposed_components(st)) {
                 for (auto kind : {ASR::gpu_argument_kindType::GpuMemberData,
                         ASR::gpu_argument_kindType::GpuMemberOffsets,
                         ASR::gpu_argument_kindType::GpuMemberSizes}) {
-                    buffers.push_back(al, argument(i, kind, &member.second->base));
+                    buffers.push_back(al, argument(i, kind, member.component));
                 }
             }
         } else {

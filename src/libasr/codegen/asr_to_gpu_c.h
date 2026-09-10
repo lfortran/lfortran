@@ -2312,10 +2312,10 @@ public:
                 }
                 // A member inherited from a type this one extends is
                 // stored and handed over exactly like one of its own.
-                for (auto &mem_entry :
-                        ASRUtils::collect_allocatable_array_members(st)) {
-                    const std::string &mem_name = mem_entry.first;
-                    ASR::Variable_t *mv = mem_entry.second;
+                for (auto &described : gpu_decomposed_components(st)) {
+                    std::string mem_name = described.name();
+                    ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(
+                        described.component);
                     std::string key = arr_name + "."
                         + mem_name;
                     std::string data;
@@ -2366,10 +2366,10 @@ public:
 
         // A member inherited from a type this one extends is
         // stored and handed over exactly like one of its own.
-        for (auto &mem_entry :
-                ASRUtils::collect_allocatable_array_members(st)) {
-            const std::string &mem_name = mem_entry.first;
-            ASR::Variable_t *mv = mem_entry.second;
+        for (auto &described : gpu_decomposed_components(st)) {
+            std::string mem_name = described.name();
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(
+                described.component);
 
             // Emit data pointer for this member
             if (arr_it != struct_from_array_elem.end()) {
@@ -2606,7 +2606,7 @@ public:
     // Check if a Struct_t has any allocatable array members, including the
     // ones inherited from the types it extends
     bool struct_has_allocatable_members(ASR::Struct_t *st) {
-        return !ASRUtils::collect_allocatable_array_members(st).empty();
+        return !gpu_decomposed_components(st).empty();
     }
 
     // Emit a device struct definition for a Struct symbol
@@ -2808,12 +2808,13 @@ public:
                             ASR::down_cast<ASR::Struct_t>(st_sym);
                         // A member inherited from a type this one extends is
                         // stored and handed over exactly like one of its own.
-                        for (auto &mem_entry :
-                                ASRUtils::collect_allocatable_array_members(st)) {
-                            const std::string &mem_name = mem_entry.first;
-                            ASR::Variable_t *mv = mem_entry.second;
-                            ASR::ttype_t *inner =
-                                ASRUtils::type_get_past_allocatable(mv->m_type);
+                        for (auto &described :
+                                gpu_decomposed_components(st)) {
+                            std::string mem_name = described.name();
+                            ASR::Variable_t *mv =
+                                ASR::down_cast<ASR::Variable_t>(
+                                    described.component);
+                            ASR::ttype_t *inner = described.type;
                             std::string key =
                                 std::string(arg->m_name) + "."
                                 + mem_name;
