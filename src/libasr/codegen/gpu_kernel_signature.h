@@ -108,16 +108,15 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     func_array_data_params.clear();
     struct_array_offset_params.clear();
     struct_array_sizes_params.clear();
+    struct_array_data_params.clear();
     struct_from_array_elem.clear();
     for (size_t i = 0; i < layout.n_buffers; i++) {
         const auto &arg = layout.m_buffers[i];
         std::string name = ASRUtils::symbol_name(arg.m_variable);
         if (arg.m_member) {
-            std::string key = name + "." + ASRUtils::symbol_name(arg.m_member);
-            std::string parameter = gpu_argument_name(arg, layout);
             switch (arg.m_kind) {
                 case ASR::gpu_argument_kindType::GpuMemberData:
-                    func_array_data_params[key] = parameter;
+                    struct_array_data_params.add(&arg);
                     break;
                 case ASR::gpu_argument_kindType::GpuMemberOffsets:
                     struct_array_offset_params.add(&arg);
