@@ -468,30 +468,35 @@ public:
         GpuGatherGuard *gather_guard = nullptr;
     };
 
-    void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
-            std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
-
-    void rewrite_loop_body_for_kernel(ParallelLoopNest &work,
-            const std::map<ASR::symbol_t*, ASR::expr_t*>
-                &enclosing_assoc_map);
-
-    void build_kernel_launch(const ASR::OMPRegion_t &region,
-            const ParallelLoopNest &work, const Location &loc,
-            GpuLaunchPlan &plan);
-
     void decline(const ASR::OMPRegion_t &x);
 
+    // The phases visit_OMPRegion walks a region through, in the order it
+    // calls them. The three that return a bool can leave the loop on the
+    // host: false means the decline is already reported or the region
+    // already walked into, and the caller stops there rather than going on
+    // with the offload.
     bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
             ParallelLoopNest &nest);
+
+    void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
+            std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
     bool offloadable_before_rewrites(const ParallelLoopNest &work,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             const Location &loc);
 
+    void rewrite_loop_body_for_kernel(ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*>
+                &enclosing_assoc_map);
+
     bool offloadable_after_rewrites(const ParallelLoopNest &work,
             const std::map<std::string,
                 std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
             const Location &loc);
+
+    void build_kernel_launch(const ASR::OMPRegion_t &region,
+            const ParallelLoopNest &work, const Location &loc,
+            GpuLaunchPlan &plan);
 
     void visit_OMPRegion(const ASR::OMPRegion_t &region);
 };
