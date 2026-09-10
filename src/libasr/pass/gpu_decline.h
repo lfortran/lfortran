@@ -113,6 +113,7 @@ enum class GpuDeclineReason {
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
     DeviceFunctionInlining,
+    FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
 

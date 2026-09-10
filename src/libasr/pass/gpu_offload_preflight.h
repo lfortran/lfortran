@@ -68,6 +68,8 @@ bool gpu_block_workspace_extents_resolvable(
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name);
 
+bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
+
 // A derived type is representable only when every one of its data members
 // is, because the device struct is laid out member by member: a single
 // unsupported member anywhere in the type changes the element size the

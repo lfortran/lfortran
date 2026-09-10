@@ -364,10 +364,13 @@ bool GpuOffloadVisitor::can_inline_device_function(ASR::Function_t *fn,
 }
 
 // True when `fn` itself needs a run-time sized temporary, or reaches
-// a function that does. Memoized; `visiting` breaks call cycles.
+// a function that does. Also check the results of callees that will remain
+// out of line, before later passes create their caller-owned temporaries.
+// Memoized; `visiting` breaks call cycles.
 bool GpuOffloadVisitor::device_function_needs_inlining(ASR::Function_t *fn,
         std::map<ASR::Function_t*, bool> &memo,
-        std::set<ASR::Function_t*> &visiting) {
+        std::set<ASR::Function_t*> &visiting,
+        GpuDecline &decline) {
     auto it = memo.find(fn);
     if (it != memo.end()) return it->second;
     if (visiting.count(fn)) return false;
@@ -375,22 +378,28 @@ bool GpuOffloadVisitor::device_function_needs_inlining(ASR::Function_t *fn,
     GpuDeviceFunctionArrayTempChecker checker;
     checker.check_function(fn);
     bool result = checker.has_runtime_sized_temp;
-    if (!result) {
-        GpuFunctionCollector fc;
-        for (size_t i = 0; i < fn->n_body; i++) {
-            fc.visit_stmt(*fn->m_body[i]);
-        }
-        for (auto &[name, sym] : fc.functions) {
-            ASR::Function_t *callee = resolve_device_function(sym);
-            if (callee && callee != fn &&
-                    device_function_needs_inlining(callee, memo,
-                        visiting)) {
-                result = true;
-                break;
+    GpuFunctionCollector fc;
+    for (size_t i = 0; i < fn->n_body; i++) {
+        fc.visit_stmt(*fn->m_body[i]);
+    }
+    for (auto &[name, sym] : fc.functions) {
+        ASR::Function_t *callee = resolve_device_function(sym);
+        if (callee && callee != fn) {
+            bool callee_needs_inlining = device_function_needs_inlining(
+                callee, memo, visiting, decline);
+            if (decline.declined()) {
+                visiting.erase(fn);
+                return false;
             }
+            result = result || callee_needs_inlining;
         }
     }
     visiting.erase(fn);
+    if (!result && !gpu_function_result_allocation_is_supported(*fn)) {
+        decline = GpuDecline(GpuDeclineReason::FunctionResultAllocation,
+            fn->m_name);
+        return false;
+    }
     memo[fn] = result;
     return result;
 }
@@ -398,12 +407,13 @@ bool GpuOffloadVisitor::device_function_needs_inlining(ASR::Function_t *fn,
 // Walk the statements that will become the kernel body and work out
 // which callees have to be spliced in. Purely analytical: nothing is
 // rewritten here, so the offload decision stays ahead of any
-// destructive change. Returns false when some callee that must be
-// inlined cannot be, in which case the loop is not offloaded.
+// destructive change. A callee that cannot be spliced or whose out-of-line
+// result allocation is unsupported keeps the loop on the host.
 bool GpuOffloadVisitor::plan_device_function_inlining(
         ASR::stmt_t **stmts, size_t n_stmts,
         std::map<ASR::Function_t*, bool> &memo,
         std::set<ASR::Function_t*> &on_stack,
+        GpuDecline &decline,
         bool spliceable) {
     for (size_t si = 0; si < n_stmts; si++) {
         ASR::stmt_t *stmt = stmts[si];
@@ -413,7 +423,7 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
             if (b && ASR::is_a<ASR::Block_t>(*b)) {
                 ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                 if (!plan_device_function_inlining(blk->m_body,
-                        blk->n_body, memo, on_stack, spliceable)) {
+                        blk->n_body, memo, on_stack, decline, spliceable)) {
                     return false;
                 }
             }
@@ -429,7 +439,7 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
                 // scope. An ASSOCIATE-local actual would leave a
                 // BlockCall whose Vars point outside that table.
                 if (!plan_device_function_inlining(blk->m_body,
-                        blk->n_body, memo, on_stack, false)) {
+                        blk->n_body, memo, on_stack, decline, false)) {
                     return false;
                 }
             }
@@ -442,8 +452,10 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
             ASR::Function_t *callee = resolve_device_function(
                 call->m_name);
             if (!callee) continue;
-            if (!device_function_needs_inlining(callee, memo,
-                    on_stack)) continue;
+            bool needs_inlining = device_function_needs_inlining(callee,
+                memo, on_stack, decline);
+            if (decline.declined()) return false;
+            if (!needs_inlining) continue;
             // Only a call that *is* the assignment's value can be
             // spliced; one nested inside a larger expression would
             // need a temporary the caller does not have. ASSOCIATE
@@ -458,7 +470,7 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
             functions_to_inline.insert(callee);
             on_stack.insert(callee);
             bool ok = plan_device_function_inlining(callee->m_body,
-                callee->n_body, memo, on_stack, spliceable);
+                callee->n_body, memo, on_stack, decline, spliceable);
             on_stack.erase(callee);
             if (!ok) return false;
         }

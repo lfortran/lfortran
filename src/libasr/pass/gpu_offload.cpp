@@ -562,15 +562,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     if (device_caps.splices_device_functions()) {
         std::map<ASR::Function_t*, bool> needs_inline_memo;
         std::set<ASR::Function_t*> on_stack;
+        GpuDecline decline;
         if (!plan_device_function_inlining(work.body, work.n_body,
-                needs_inline_memo, on_stack)) {
-            // Some callee that must be inlined cannot be (recursive,
-            // early `return`, nested scopes, or called from a position
-            // with nowhere to put the result). Emitting a kernel that
-            // cannot compile would be worse than not offloading at all.
+                needs_inline_memo, on_stack, decline)) {
+            // Decline before destructive rewrites if a callee cannot be
+            // spliced or its result allocation cannot reach the device.
             functions_to_inline.clear();
-            report_not_offloaded(loc,
-                GpuDecline(GpuDeclineReason::DeviceFunctionInlining));
+            if (!decline.declined()) {
+                decline = GpuDecline(GpuDeclineReason::DeviceFunctionInlining);
+            }
+            report_not_offloaded(loc, decline);
             return;
         }
     }

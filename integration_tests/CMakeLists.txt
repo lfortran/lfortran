@@ -5238,6 +5238,8 @@ RUN(NAME gpu_metal_323 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_324 LABELS gfortran llvm metal)
 RUN(NAME gpu_metal_325 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_326 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_327 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback --realloc-lhs-arrays)
+RUN(NAME gpu_metal_328 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)

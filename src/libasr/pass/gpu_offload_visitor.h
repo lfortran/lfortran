@@ -153,11 +153,13 @@ public:
 
     bool device_function_needs_inlining(ASR::Function_t *fn,
             std::map<ASR::Function_t*, bool> &memo,
-            std::set<ASR::Function_t*> &visiting);
+            std::set<ASR::Function_t*> &visiting,
+            GpuDecline &decline);
 
     bool plan_device_function_inlining(ASR::stmt_t **stmts, size_t n_stmts,
             std::map<ASR::Function_t*, bool> &memo,
             std::set<ASR::Function_t*> &on_stack,
+            GpuDecline &decline,
             bool spliceable = true);
 
     void substitute_in_type(ASR::ttype_t *t,
