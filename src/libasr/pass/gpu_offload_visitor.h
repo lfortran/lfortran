@@ -428,6 +428,50 @@ public:
 
     void retarget_block_calls_in(ASR::Block_t *block);
 
+    // A scalar the loop assigns that the host reads again afterwards. It
+    // is passed to the kernel as a writable 1-element device buffer, and
+    // the launch copies it in before the dispatch and out again after.
+    struct LiveoutScalarInfo {
+        std::string orig_name;
+        std::string buf_name;
+        ASR::symbol_t *host_buf_sym;
+        ASR::symbol_t *orig_scalar_sym;
+        ASR::ttype_t *scalar_type;
+    };
+
+    // A loop head as the host still spells it, saved before the kernel
+    // extraction replaces the head expressions in place. The launch sizes
+    // the grid from these.
+    struct DimInfo {
+        ASR::expr_t *host_start;
+        ASR::expr_t *host_end;
+    };
+
+    // What the launch is built out of. The kernel draft hands this to the
+    // launch as a value rather than leaving it on the visitor: a member
+    // would outlive the region and one region's bindings would reach the
+    // next.
+    struct GpuLaunchPlan {
+        ASR::asr_t *kernel_func = nullptr;
+        std::string kernel_name;
+        SymbolTable *tu_symtab = nullptr;
+        ASR::ttype_t *int_type = nullptr;
+        size_t n_dims = 0;
+        Vec<ASR::call_arg_t> call_args;
+        Vec<ASR::stmt_t*> gather_stmts;
+        Vec<ASR::stmt_t*> scatter_stmts;
+        std::vector<LiveoutScalarInfo> liveout_scalars;
+        std::vector<DimInfo> dim_info;
+        std::vector<ASR::symbol_t*> optional_syms;
+        // Committed where the offload becomes certain, which is inside the
+        // launch construction, so the guard itself has to reach it.
+        GpuGatherGuard *gather_guard = nullptr;
+    };
+
+    void build_kernel_launch(const ASR::OMPRegion_t &region,
+            const ParallelLoopNest &work, const Location &loc,
+            GpuLaunchPlan &plan);
+
     void decline(const ASR::OMPRegion_t &x);
 
     bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
