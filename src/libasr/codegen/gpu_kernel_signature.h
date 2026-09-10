@@ -109,6 +109,7 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     struct_array_offset_params.clear();
     struct_array_sizes_params.clear();
     struct_array_data_params.clear();
+    array_extent_params.clear();
     struct_from_array_elem.clear();
     for (size_t i = 0; i < layout.n_buffers; i++) {
         const auto &arg = layout.m_buffers[i];
@@ -154,8 +155,7 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
         const auto &arg = layout.m_scalars[i];
         if (arg.m_kind != ASR::gpu_argument_kindType::GpuArrayExtent) continue;
         std::string name = ASRUtils::symbol_name(arg.m_variable);
-        func_array_size_params[dim_size_key(name, arg.m_dimension)] =
-            gpu_argument_name(arg, layout);
+        array_extent_params.add(&arg);
         if (arg.m_dimension != 0) continue;
         int rank = ASRUtils::extract_n_dims_from_ttype(
             ASRUtils::symbol_type(arg.m_variable));

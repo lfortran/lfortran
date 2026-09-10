@@ -46,29 +46,38 @@ public:
     void clear() { values.clear(); }
 };
 
-// The kernel arguments that carry one component of one struct-typed
-// dummy, found by the dummy and the component rather than by the name
-// the signature spells the two into and matches back on.
-//
-// The dummy is a symbol: it is the same symbol on both sides, so a
-// same-named variable in another scope cannot answer for it. The
-// component is a name, because it is not -- the offload passes leave the
-// kernel holding two copies of the derived type's definition, one that
-// the dummy's `m_type_declaration` reaches and one that the member
-// accesses in its body do, so the two halves never see the same
-// `Variable_t` for a component. A component name is unique within a
-// derived type and its parents, so within one dummy the name settles it.
-class GpuMemberArgumentMap {
+// Shared plumbing for the maps that answer with an entry of the kernel
+// layout. The dummy is always identified by its symbol -- it is the same
+// symbol on both sides, so a same-named variable in another scope cannot
+// answer for it -- and a caller holding only a name has it resolved
+// through the scope being emitted.
+class GpuArgumentLookup {
+protected:
     SymbolTable **scope;
-    std::map<std::pair<ASR::symbol_t*, std::string>,
-        const ASR::gpu_kernel_argument_t*> values;
 
+    explicit GpuArgumentLookup(SymbolTable **scope) : scope(scope) {}
     static ASR::symbol_t* canonical(ASR::symbol_t *symbol) {
         return symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr;
     }
     ASR::symbol_t* resolve(const std::string &name) const {
         return *scope ? canonical((*scope)->resolve_symbol(name)) : nullptr;
     }
+};
+
+// The kernel arguments that carry one component of one struct-typed
+// dummy, found by the dummy and the component rather than by the name
+// the signature spells the two into and matches back on.
+//
+// The component is a name, not a symbol, because the offload passes leave
+// the kernel holding two copies of the derived type's definition: one
+// that the dummy's `m_type_declaration` reaches and one that the member
+// accesses in its body do, so the two halves never see the same
+// `Variable_t` for a component. A component name is unique within a
+// derived type and its parents, so within one dummy the name settles it.
+class GpuMemberArgumentMap : public GpuArgumentLookup {
+    std::map<std::pair<ASR::symbol_t*, std::string>,
+        const ASR::gpu_kernel_argument_t*> values;
+
     const ASR::gpu_kernel_argument_t* lookup(ASR::symbol_t *variable,
             ASR::symbol_t *member) const {
         if (!variable || !member) return nullptr;
@@ -77,7 +86,8 @@ class GpuMemberArgumentMap {
         return it == values.end() ? nullptr : it->second;
     }
 public:
-    explicit GpuMemberArgumentMap(SymbolTable **scope) : scope(scope) {}
+    explicit GpuMemberArgumentMap(SymbolTable **scope)
+        : GpuArgumentLookup(scope) {}
     void add(const ASR::gpu_kernel_argument_t *argument) {
         LCOMPILERS_ASSERT(argument->m_variable && argument->m_member);
         values[{canonical(argument->m_variable),
@@ -90,6 +100,38 @@ public:
     const ASR::gpu_kernel_argument_t* find(const std::string &variable,
             ASR::symbol_t *member) const {
         return lookup(resolve(variable), member);
+    }
+    void clear() { values.clear(); }
+};
+
+// The kernel arguments that carry one dimension's extent of an array
+// dummy whose type states no extent of its own, found by the dummy and
+// the 0-based dimension.
+class GpuExtentArgumentMap : public GpuArgumentLookup {
+    std::map<std::pair<ASR::symbol_t*, size_t>,
+        const ASR::gpu_kernel_argument_t*> values;
+
+    const ASR::gpu_kernel_argument_t* lookup(ASR::symbol_t *variable,
+            size_t dimension) const {
+        if (!variable) return nullptr;
+        auto it = values.find({variable, dimension});
+        return it == values.end() ? nullptr : it->second;
+    }
+public:
+    explicit GpuExtentArgumentMap(SymbolTable **scope)
+        : GpuArgumentLookup(scope) {}
+    void add(const ASR::gpu_kernel_argument_t *argument) {
+        LCOMPILERS_ASSERT(argument->m_variable && argument->m_dimension >= 0);
+        values[{canonical(argument->m_variable),
+            (size_t)argument->m_dimension}] = argument;
+    }
+    const ASR::gpu_kernel_argument_t* find(ASR::symbol_t *variable,
+            size_t dimension) const {
+        return lookup(canonical(variable), dimension);
+    }
+    const ASR::gpu_kernel_argument_t* find(const std::string &variable,
+            size_t dimension) const {
+        return lookup(resolve(variable), dimension);
     }
     void clear() { values.clear(); }
 };

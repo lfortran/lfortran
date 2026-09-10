@@ -348,6 +348,10 @@ public:
     // The data buffer, likewise.
     GpuMemberArgumentMap struct_array_data_params{&active_scope};
 
+    // The scalar the kernel layout hands over for one dimension's extent
+    // of an array argument whose type states no extent of its own.
+    GpuExtentArgumentMap array_extent_params{&active_scope};
+
     // The device buffer holding an allocatable array component of a
     // struct. `argument` is what the layout has to say -- an
     // array-of-struct argument's components are described there -- and
@@ -1908,10 +1912,14 @@ public:
                         ASRUtils::symbol_get_past_external(
                             ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
                     std::string vname = ASRUtils::symbol_name(vsym);
+                    const ASR::gpu_kernel_argument_t *extent =
+                        array_extent_params.find(vsym, d);
                     auto dit = func_array_size_params.find(
                         dim_size_key(vname, d));
                     auto sect = ptr_section_dim_sizes.find(vname);
-                    if (dit != func_array_size_params.end()) {
+                    if (extent) {
+                        src << kernel_parameter(extent);
+                    } else if (dit != func_array_size_params.end()) {
                         src << dit->second;
                     } else if (sect != ptr_section_dim_sizes.end()
                             && d < sect->second.size()) {
@@ -2704,6 +2712,7 @@ public:
         struct_array_offset_params.clear();
         struct_array_sizes_params.clear();
         struct_array_data_params.clear();
+        array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
@@ -3060,6 +3069,7 @@ public:
         struct_array_offset_params.clear();
         struct_array_sizes_params.clear();
         struct_array_data_params.clear();
+        array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
     }
@@ -4884,6 +4894,10 @@ public:
     std::string looked_up_dim_extent_str(const std::string &arr_var_name,
             size_t d) {
         if (arr_var_name.empty()) return "";
+        if (const ASR::gpu_kernel_argument_t *extent =
+                array_extent_params.find(arr_var_name, d)) {
+            return kernel_parameter(extent);
+        }
         auto pit = func_array_size_params.find(
             dim_size_key(arr_var_name, d));
         if (pit != func_array_size_params.end()) return pit->second;
