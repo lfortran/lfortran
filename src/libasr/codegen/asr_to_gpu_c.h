@@ -346,6 +346,31 @@ public:
         emit_derived_extent(gpu_device_range_extent(range));
     }
 
+    // The element count a section spans: the product of the extents of its
+    // range subscripts, whatever the scalar subscripts alongside them are.
+    // Writes nothing when `e` names no range in the dimension asked for.
+    void emit_section_extent(ASR::expr_t *e, ASR::expr_t *dim) {
+        bool first = true;
+        for (ASR::array_index_t *range : gpu_section_extent_ranges(e, dim)) {
+            if (!first) src << " * ";
+            first = false;
+            emit_section_range_extent(range);
+        }
+    }
+
+    // That same count as a string, for the callers that cache it rather
+    // than write it where they stand.
+    std::string section_extent_str(ASR::expr_t *e, ASR::expr_t *dim) {
+        std::stringstream save;
+        save << src.str();
+        src.str("");
+        emit_section_extent(e, dim);
+        std::string out = src.str();
+        src.str("");
+        src << save.str();
+        return out;
+    }
+
     // The element count of a local pointer associated with a section,
     // rendered again from the section itself rather than from the cached
     // string, so that a name the block binds stands for its value. Used
@@ -355,22 +380,7 @@ public:
             ASR::expr_t *dim) {
         auto it = array_size_source_expr.find(name);
         if (it == array_size_source_expr.end()) return "";
-        std::vector<ASR::array_index_t*> ranges =
-            gpu_section_extent_ranges(it->second, dim);
-        if (ranges.empty()) return "";
-        std::stringstream save;
-        save << src.str();
-        src.str("");
-        bool first = true;
-        for (ASR::array_index_t *range : ranges) {
-            if (!first) src << " * ";
-            first = false;
-            emit_section_range_extent(range);
-        }
-        std::string out = src.str();
-        src.str("");
-        src << save.str();
-        return out;
+        return section_extent_str(it->second, dim);
     }
 
     // Maps array parameter names to their synthesized size parameter
@@ -1581,20 +1591,8 @@ public:
                     ASR::ArraySection_t *as =
                         ASR::down_cast<ASR::ArraySection_t>(
                             assoc->m_value);
-                    std::vector<ASR::array_index_t*> ranges =
-                        gpu_section_extent_ranges(assoc->m_value, nullptr);
-                    std::stringstream save;
-                    save << src.str();
-                    src.str("");
-                    bool first_sz = true;
-                    for (ASR::array_index_t *range : ranges) {
-                        if (!first_sz) src << " * ";
-                        first_sz = false;
-                        emit_section_range_extent(range);
-                    }
-                    std::string size_str = src.str();
-                    src.str("");
-                    src << save.str();
+                    std::string size_str = section_extent_str(
+                        assoc->m_value, nullptr);
                     if (!size_str.empty()) {
                         alloc_array_size_exprs[tgt] = size_str;
                         array_size_source_expr[tgt] = assoc->m_value;
@@ -4913,15 +4911,7 @@ public:
                     emit_struct_member_array_size(av, as->m_dim);
                 } else if (!gpu_section_extent_ranges(av,
                         as->m_dim).empty()) {
-                    // A section spans as many elements as its ranges do,
-                    // whatever the scalar subscripts alongside them are.
-                    bool first_range = true;
-                    for (ASR::array_index_t *range :
-                            gpu_section_extent_ranges(av, as->m_dim)) {
-                        if (!first_range) src << " * ";
-                        first_range = false;
-                        emit_section_range_extent(range);
-                    }
+                    emit_section_extent(av, as->m_dim);
                 } else {
                     src << "/* unsupported ArraySize */";
                 }
