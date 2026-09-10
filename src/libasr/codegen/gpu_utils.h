@@ -453,40 +453,6 @@ inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {
         std::to_string(ASRUtils::extract_kind_from_ttype_t(t)) + ")";
 }
 
-// Classify kernel arguments into buffer (array/struct) and scalar categories.
-// Returns the count of buffer args and scalar args respectively.
-// For struct array args with allocatable array members, counts 3 extra
-// buffers per member (data, offsets, sizes) as emitted by Metal codegen.
-inline std::pair<int, int> classify_gpu_kernel_args(
-        const ASR::Function_t &kernel) {
-    int n_buffer = 0, n_scalar = 0;
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
-        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(v->m_v));
-        ASR::ttype_t *type = var->m_type;
-        if (ASRUtils::is_array(type) ||
-                ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(type))) {
-            n_buffer++;
-            if (ASRUtils::is_array(type) && var->m_type_declaration) {
-                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-                    var->m_type_declaration);
-                if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    // Members inherited from the types this one extends are
-                    // decomposed like its own, so they count here too.
-                    n_buffer += 3 *
-                        (int)ASRUtils::collect_allocatable_array_members(
-                            ASR::down_cast<ASR::Struct_t>(s)).size();
-                }
-            }
-        } else {
-            n_scalar++;
-        }
-    }
-    return {n_buffer, n_scalar};
-}
-
 // Helper to recursively find the first Allocate statement for a given
 // variable name within a statement list.
 inline ASR::Allocate_t* find_allocate_for_var(
@@ -2294,41 +2260,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
     return result;
 }
 
-// Count VLA workspaces in a kernel without assigning buffer indices.
-inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
-    return static_cast<int>(collect_gpu_vla_workspaces(kernel, 0).size());
-}
-
 static const int MAX_METAL_BUFFERS = 31;
 static const int PACKED_BUFFER_ALIGN = 16;
-
-// Determine whether a kernel needs buffer packing because its total
-// buffer count exceeds Metal's 31-slot limit.
-inline bool gpu_kernel_needs_buffer_packing(
-        const ASR::Function_t &kernel) {
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
-    return total > MAX_METAL_BUFFERS;
-}
-
-// Compute the Metal buffer index where VLA workspace buffers start.
-// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
-// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
-inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
-    if (gpu_kernel_needs_buffer_packing(kernel)) {
-        return 2;
-    }
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    return n_buffer + (n_scalar > 0 ? 1 : 0);
-}
-
-// Analyze a GPU kernel function for the per-thread workspaces it needs, with
-// buffer indices assigned sequentially after the kernel's packed arguments.
-inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
-        const ASR::Function_t &kernel) {
-    return collect_gpu_vla_workspaces(kernel, gpu_vla_buffer_start(kernel));
-}
 
 // Scan a kernel body for alloc-assign statements that write a VLA workspace
 // array to a struct array member.  Returns a map from
