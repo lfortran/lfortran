@@ -2,6 +2,7 @@
 #define LIBASR_CODEGEN_GPU_SYMBOL_MAP_H
 
 #include <libasr/asr_utils.h>
+#include <libasr/pass/gpu_data_layout.h>
 #include <map>
 
 namespace LCompilers {
@@ -64,37 +65,46 @@ protected:
     }
 };
 
-// The kernel arguments that carry one component of one struct-typed
-// dummy, found by the dummy and the component rather than by the name
-// the signature spells the two into and matches back on.
+// How the kernel layout hands over the components of a struct-typed dummy
+// that get device buffers of their own, found by the dummy and the
+// component rather than by the name the signature spells the two into and
+// matches back on.
 //
 // Both halves are symbols: the offload pass gives the kernel its own copy
 // of every derived-type definition it needs, and a body that reached a
 // component through the host's copy would describe the dummy's component
 // through a `Variable_t` the dummy's `m_type_declaration` cannot reach.
-class GpuMemberArgumentMap : public GpuArgumentLookup {
+//
+// One description answers for the component's data buffer, its per-element
+// offsets and its per-element extents, and for what its elements are and
+// how many dimensions index them, so the emitter cannot end up asking for
+// those separately and getting answers that disagree.
+class GpuComponentMap : public GpuArgumentLookup {
     std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
-        const ASR::gpu_kernel_argument_t*> values;
+        GpuComponentLayout> values;
 
-    const ASR::gpu_kernel_argument_t* lookup(ASR::symbol_t *variable,
+    const GpuComponentLayout* lookup(ASR::symbol_t *variable,
             ASR::symbol_t *member) const {
         if (!variable || !member) return nullptr;
         auto it = values.find({variable, canonical(member)});
-        return it == values.end() ? nullptr : it->second;
+        return it == values.end() ? nullptr : &it->second;
     }
 public:
-    explicit GpuMemberArgumentMap(SymbolTable **scope)
+    explicit GpuComponentMap(SymbolTable **scope)
         : GpuArgumentLookup(scope) {}
-    void add(const ASR::gpu_kernel_argument_t *argument) {
-        LCOMPILERS_ASSERT(argument->m_variable && argument->m_member);
-        values[{canonical(argument->m_variable),
-            canonical(argument->m_member)}] = argument;
+    void add(const ASR::gpu_kernel_layout_t &layout,
+            ASR::symbol_t *variable) {
+        for (const GpuComponentLayout &component :
+                gpu_component_layouts(layout, variable)) {
+            values[{canonical(variable),
+                canonical(component.component)}] = component;
+        }
     }
-    const ASR::gpu_kernel_argument_t* find(ASR::symbol_t *variable,
+    const GpuComponentLayout* find(ASR::symbol_t *variable,
             ASR::symbol_t *member) const {
         return lookup(canonical(variable), member);
     }
-    const ASR::gpu_kernel_argument_t* find(const std::string &variable,
+    const GpuComponentLayout* find(const std::string &variable,
             ASR::symbol_t *member) const {
         return lookup(resolve(variable), member);
     }

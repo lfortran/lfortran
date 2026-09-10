@@ -106,31 +106,16 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     current_kernel_layout = &layout;
     func_array_size_params.clear();
     func_array_data_params.clear();
-    struct_array_offset_params.clear();
-    struct_array_sizes_params.clear();
-    struct_array_data_params.clear();
+    struct_components.clear();
     array_extent_params.clear();
     struct_from_array_elem.clear();
     for (size_t i = 0; i < layout.n_buffers; i++) {
         const auto &arg = layout.m_buffers[i];
         std::string name = ASRUtils::symbol_name(arg.m_variable);
-        if (arg.m_member) {
-            switch (arg.m_kind) {
-                case ASR::gpu_argument_kindType::GpuMemberData:
-                    struct_array_data_params.add(&arg);
-                    break;
-                case ASR::gpu_argument_kindType::GpuMemberOffsets:
-                    struct_array_offset_params.add(&arg);
-                    break;
-                case ASR::gpu_argument_kindType::GpuMemberSizes:
-                    struct_array_sizes_params.add(&arg);
-                    break;
-                default: LCOMPILERS_ASSERT(false);
-            }
-            continue;
-        }
+        if (arg.m_member) continue;
         ASR::Variable_t *var = gpu_argument_variable(arg);
         if (arg.m_kind == ASR::gpu_argument_kindType::GpuArray) {
+            struct_components.add(layout, arg.m_variable);
             if (array_extents_are_explicit(var->m_type)) {
                 register_array_extents(name, var->m_type);
             }
