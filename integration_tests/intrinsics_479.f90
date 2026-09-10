@@ -1,4 +1,4 @@
-program intrinsics_478
+program intrinsics_479
 ! date_and_time(): VALUES(4) is the difference between local time and UTC in
 ! minutes, i.e. exactly the offset that ZONE reports as "Shhmm". The two must
 ! agree for any time zone, including half-hour zones such as +0530.
@@ -67,4 +67,4 @@ contains
         two_digits = 10*(iachar(s(1:1)) - iachar('0')) + (iachar(s(2:2)) - iachar('0'))
     end function two_digits
 
-end program intrinsics_478
+end program intrinsics_479
