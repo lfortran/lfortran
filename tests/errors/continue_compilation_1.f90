@@ -1183,3 +1183,21 @@ contains
         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
     end function
 end module
+
+! A type bound procedure of a derived type declared outside a module must
+! still name a module procedure or an external procedure with an explicit
+! interface. Two program units declaring a derived type of the same name with
+! the same binding must each be diagnosed on their own.
+subroutine binding_outside_module_1
+    type :: t_binding_outside_module
+    contains
+        procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+    end type t_binding_outside_module
+end subroutine binding_outside_module_1
+
+subroutine binding_outside_module_2
+    type :: t_binding_outside_module
+    contains
+        procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+    end type t_binding_outside_module
+end subroutine binding_outside_module_2

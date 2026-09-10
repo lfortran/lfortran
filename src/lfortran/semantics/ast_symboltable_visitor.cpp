@@ -27,6 +27,28 @@ public:
         std::string name;
         Location loc;
     };
+    // Type bound procedure bindings are collected while the specification part
+    // of a program unit is visited and are turned into symbols once that unit
+    // is complete. A nested program unit must not consume the bindings of its
+    // host, so this guard sets the host's bindings aside for the duration of
+    // the nested unit and puts them back afterwards.
+    struct ClassProcedureScope {
+        SymbolTableVisitor &v;
+        std::map<std::string, std::map<std::string,
+            std::map<std::string, ClassProcInfo>>> class_procedures;
+        std::map<std::string, std::map<std::string,
+            std::map<std::string, Location>>> class_deferred_procedures;
+
+        ClassProcedureScope(SymbolTableVisitor &v_) : v(v_) {
+            class_procedures.swap(v.class_procedures);
+            class_deferred_procedures.swap(v.class_deferred_procedures);
+        }
+
+        ~ClassProcedureScope() {
+            class_procedures.swap(v.class_procedures);
+            class_deferred_procedures.swap(v.class_deferred_procedures);
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -578,6 +600,7 @@ public:
         }
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
         // Isolate this program's externals from a previous program unit.
@@ -729,6 +752,11 @@ public:
              }
         }
         pending_proc_placeholders.clear();
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
         in_program = false;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
@@ -1326,6 +1354,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ClassProcedureScope class_procedure_scope(*this);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated subroutines
@@ -1756,6 +1785,11 @@ public:
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, false, sym_name);
         }
         entry_function_args.clear();
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
         if (x.n_temp_args > 0) {
             current_scope = grandparent_scope;
         } else {
@@ -1877,6 +1911,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        ClassProcedureScope class_procedure_scope(*this);
         check_global_procedure_and_enable_separate_compilation(parent_scope);
 
         // Handle templated functions
@@ -2551,6 +2586,11 @@ public:
             std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
 
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, true, sym_name);
+        }
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
         }
         if (x.n_temp_args > 0) {
             add_overloaded_procedures();
