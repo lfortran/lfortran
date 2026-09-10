@@ -430,6 +430,9 @@ public:
 
     void decline(const ASR::OMPRegion_t &x);
 
+    bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &nest);
+
     void visit_OMPRegion(const ASR::OMPRegion_t &region);
 };
 
