@@ -68,21 +68,18 @@ protected:
 // dummy, found by the dummy and the component rather than by the name
 // the signature spells the two into and matches back on.
 //
-// The component is a name, not a symbol, because the offload passes leave
-// the kernel holding two copies of the derived type's definition: one
-// that the dummy's `m_type_declaration` reaches and one that the member
-// accesses in its body do, so the two halves never see the same
-// `Variable_t` for a component. A component name is unique within a
-// derived type and its parents, so within one dummy the name settles it.
+// Both halves are symbols: the offload pass gives the kernel its own copy
+// of every derived-type definition it needs, and a body that reached a
+// component through the host's copy would describe the dummy's component
+// through a `Variable_t` the dummy's `m_type_declaration` cannot reach.
 class GpuMemberArgumentMap : public GpuArgumentLookup {
-    std::map<std::pair<ASR::symbol_t*, std::string>,
+    std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
         const ASR::gpu_kernel_argument_t*> values;
 
     const ASR::gpu_kernel_argument_t* lookup(ASR::symbol_t *variable,
             ASR::symbol_t *member) const {
         if (!variable || !member) return nullptr;
-        auto it = values.find({variable,
-            ASRUtils::symbol_name(canonical(member))});
+        auto it = values.find({variable, canonical(member)});
         return it == values.end() ? nullptr : it->second;
     }
 public:
@@ -91,7 +88,7 @@ public:
     void add(const ASR::gpu_kernel_argument_t *argument) {
         LCOMPILERS_ASSERT(argument->m_variable && argument->m_member);
         values[{canonical(argument->m_variable),
-            ASRUtils::symbol_name(canonical(argument->m_member))}] = argument;
+            canonical(argument->m_member)}] = argument;
     }
     const ASR::gpu_kernel_argument_t* find(ASR::symbol_t *variable,
             ASR::symbol_t *member) const {
