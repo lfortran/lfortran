@@ -10983,11 +10983,67 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                 builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         }
+                        // A scalar allocatable member of intrinsic type is a bare
+                        // pointer in the struct layout, so copying the member as-is
+                        // would make source and destination share one allocation
+                        // (and free it twice). Give the destination its own storage
+                        // and copy the value into it.
+                        ASR::ttype_t* mem_elem_type = ASRUtils::extract_type(member_type);
+                        bool is_alloc_scalar_intrinsic =
+                            ASRUtils::is_allocatable(member_type) &&
+                            !ASRUtils::is_array(member_type) &&
+                            (ASR::is_a<ASR::Integer_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::UnsignedInteger_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Real_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Complex_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Logical_t>(*mem_elem_type));
+                        llvm::Type* mem_elem_llvm_type = nullptr;
+                        if (is_alloc_scalar_intrinsic) {
+                            mem_elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                ASRUtils::get_expr_from_sym(al, mem_sym), mem_elem_type, module);
+                        }
                         llvm_utils->create_if_else(is_allocated, [&]() {
+                            if (is_alloc_scalar_intrinsic) {
+                                llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                llvm::Value* dest_is_null = builder->CreateICmpEQ(
+                                    builder->CreatePtrToInt(dest_data, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                llvm_utils->create_if_else(dest_is_null, [&]() {
+                                    llvm::DataLayout data_layout(module->getDataLayout());
+                                    llvm::Value* alloc_size = llvm::ConstantInt::get(
+                                        llvm_utils->getIntType(4), llvm::APInt(32,
+                                            data_layout.getTypeAllocSize(mem_elem_llvm_type)));
+                                    llvm::Value* new_data = LLVMArrUtils::lfortran_malloc(
+                                        context, *module, *builder, alloc_size);
+                                    builder->CreateStore(builder->CreateBitCast(new_data,
+                                        mem_elem_llvm_type->getPointerTo()), dest_member);
+                                }, [](){});
+                                dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                builder->CreateStore(llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type, src_member), dest_data);
+                                return;
+                            }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
                             module);
                         }, [&]() {
+                            if (is_alloc_scalar_intrinsic) {
+                                // The source component is unallocated, so the
+                                // destination component must become unallocated too.
+                                llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                llvm::Value* dest_not_null = builder->CreateICmpNE(
+                                    builder->CreatePtrToInt(dest_data, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                llvm_utils->create_if_else(dest_not_null, [&]() {
+                                    llvm_utils->lfortran_free(dest_data);
+                                }, [](){});
+                                builder->CreateStore(llvm::ConstantPointerNull::get(
+                                    mem_elem_llvm_type->getPointerTo()), dest_member);
+                                return;
+                            }
                             if (is_alloc_str_only) {
                                 // If source allocatable string is not allocated, then
                                 // deallocate the destination allocatable string
