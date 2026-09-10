@@ -2713,6 +2713,15 @@ public:
         func_array_size_params.clear();
         func_array_data_params.clear();
         func_array_params.clear();
+        // A device function is emitted before the kernel that calls it
+        // binds its own arguments, so whatever the previous kernel left
+        // behind is still standing here. None of it describes this
+        // function's parameters -- the loop below registers those -- and a
+        // stale entry hit by name spells a parameter of another kernel
+        // into this body, which the device compiler then rejects.
+        struct_array_offset_params.clear();
+        struct_array_sizes_params.clear();
+        struct_from_array_elem.clear();
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -3064,6 +3073,9 @@ public:
         func_array_data_params.clear();
         alloc_pointer_params.clear();
         func_array_params.clear();
+        struct_array_offset_params.clear();
+        struct_array_sizes_params.clear();
+        struct_from_array_elem.clear();
     }
 
     void emit_kernel_signature(const ASR::Function_t &x);
