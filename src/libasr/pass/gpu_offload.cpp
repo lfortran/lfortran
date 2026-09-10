@@ -1628,8 +1628,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 mem_inner)->n_dims;
             if (rank <= 1) continue;
             for (size_t d = 0; d < rank; d++) {
-                std::string dim_size_name = size_name + "_dim"
-                    + std::to_string(d + 1);
+                std::string dim_size_name = GpuNames::member_dim_size(
+                    sym_name, mem_name, d);
                 ASR::symbol_t *dim_size_sym = gpu_new_variable(al, loc,
                     kernel_scope, dim_size_name,
                     ASRUtils::duplicate_type(al, int_type_sz),
