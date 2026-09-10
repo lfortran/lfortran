@@ -4263,6 +4263,17 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_302.f90"
 gpu_cuda_kernel = true
 
+# The callee builds its array result with an array constructor, so its own
+# local has to be moved to kernel scope before the workspace machinery can
+# size it. CUDA used to be left out of that splice and the device code
+# generator then had no extent for the local, which is a compile error. The
+# splice applies to every device that cannot declare a run-time sized local
+# in a device function, CUDA included, so this now compiles with no
+# diagnostic at all.
+[[test]]
+filename = "../integration_tests/gpu_metal_318.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_metal_303.f90"
 gpu_cuda_kernel = true
@@ -5752,4 +5763,16 @@ asr = true
 
 [[test]]
 filename = "asr/verify/implicit_interface_call_target.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_argument_count.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true

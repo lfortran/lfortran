@@ -277,6 +277,16 @@ namespace LCompilers {
                 // The device gets first refusal: a loop it declines is
                 // handed back as a host-thread loop, which the OpenMP pass
                 // below then picks up.
+                //
+                // This is the only point at which a loop can still be
+                // handed back, so the decision has to be taken here even
+                // though the passes below it -- `array_struct_temporary`,
+                // `array_op`, `subroutine_from_function` -- create
+                // temporaries the kernel will have and the decision cannot
+                // see. What the decision therefore cannot answer for
+                // itself, `device_launch_expand` asks again of the kernel
+                // that exists, and reports rather than lays out a launch it
+                // cannot lay out.
                 "gpu_offload",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
@@ -326,7 +336,9 @@ namespace LCompilers {
                 // device code generators see: after pass_array_by_data has
                 // turned array extents into explicit kernel arguments, and
                 // after array_dim_intrinsics_update has rewritten the size
-                // intrinsics that read them.
+                // intrinsics that read them. This is also where the
+                // question `gpu_offload` answered about a draft kernel is
+                // asked again about the real one.
                 "device_launch_expand",
                 "do_loops",
                 "while_else",

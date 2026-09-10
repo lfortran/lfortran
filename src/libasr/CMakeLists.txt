@@ -81,7 +81,17 @@ set(SRC
     pass/promote_allocatable_to_nonallocatable.cpp
     pass/conditional_expr.cpp
     pass/replace_with_compile_time_values.cpp
+    pass/gpu_decline.cpp
     pass/gpu_offload.cpp
+    pass/gpu_offload_designator.cpp
+    pass/gpu_offload_preflight.cpp
+    pass/gpu_offload_rewrite.cpp
+    pass/gpu_offload_collect.cpp
+    pass/gpu_offload_device_fn.cpp
+    pass/gpu_offload_intrinsics.cpp
+    pass/gpu_offload_array_ops.cpp
+    pass/gpu_offload_import.cpp
+    pass/gpu_offload_kernel_scope.cpp
     pass/device_partition.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp

@@ -2307,6 +2307,114 @@ public:
         }
     }
 
+    // A launch and the kernel it launches are made together, and the passes
+    // between the two rewrite both: what one of them does to a kernel dummy
+    // it has to do to the argument the launch passes in that position. The
+    // launch is laid out argument by argument against the kernel's own
+    // dummies, so the two lists have to stay the same length, and each dummy
+    // has to be a variable to read that layout from.
+    void verify_gpu_kernel_launch_signature(const GpuKernelLaunch_t &x,
+            const ASR::Function_t &kernel) {
+        std::string kernel_name(kernel.m_name);
+        require_id(x.n_args == kernel.n_args,
+            "asr.verify.gpu_kernel_launch.argument_count",
+            "GpuKernelLaunch passes " + std::to_string(x.n_args) +
+                " arguments to kernel '" + kernel_name + "', which declares " +
+                std::to_string(kernel.n_args));
+        for (size_t i = 0; i < x.n_args; i++) {
+            std::string at = "GpuKernelLaunch argument " +
+                std::to_string(i + 1) + " of '" + kernel_name + "'";
+            require_id(x.m_args[i].m_value != nullptr,
+                "asr.verify.gpu_kernel_launch.argument_present",
+                at + " is absent; a kernel launch has no optional argument");
+            ASR::symbol_t *dummy = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*kernel.m_args[i])) {
+                dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
+            }
+            require_id(dummy && ASR::is_a<ASR::Variable_t>(*dummy),
+                "asr.verify.gpu_kernel_launch.dummy_is_a_variable",
+                "the kernel dummy for " + at + " is not a variable");
+            verify_gpu_kernel_launch_argument(x, at, x.m_args[i].m_value,
+                ASR::down_cast<ASR::Variable_t>(dummy));
+        }
+    }
+
+    // The block of bytes the host hands over for an argument is the one the
+    // device reads for the dummy in that position, so the two have to
+    // describe the same value. Not the same type: a kernel dummy carries the
+    // data and not the descriptor, so it drops the allocatable or pointer
+    // wrapper the argument may have, and the passes between the launch and
+    // its expansion give the two sides different array physical types and put
+    // the kernel's own arrays in a device address space. What is left, and
+    // what the layout is read from, is the element type, its kind and the
+    // rank.
+    void verify_gpu_kernel_launch_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg,
+            ASR::Variable_t *dummy) {
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *arg_element = ASRUtils::extract_type(arg_type);
+        ASR::ttype_t *dummy_element = ASRUtils::extract_type(dummy->m_type);
+        std::string mismatch = at + " is " +
+            ASRUtils::type_to_str_fortran_symbol(arg_element,
+                ASR::is_a<ASR::StructType_t>(*arg_element)
+                    ? ASRUtils::get_struct_sym_from_struct_expr(arg)
+                    : nullptr, true) +
+            ", but the dummy '" + std::string(dummy->m_name) +
+            "' the device reads it as is " +
+            ASRUtils::type_to_str_fortran_symbol(dummy_element,
+                dummy->m_type_declaration, true);
+        require_id(arg_element->type == dummy_element->type,
+            "asr.verify.gpu_kernel_launch.argument_element_type", mismatch);
+        require_id(ASRUtils::extract_kind_from_ttype_t(arg_element) ==
+                ASRUtils::extract_kind_from_ttype_t(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_element_kind", mismatch);
+        require_id(ASRUtils::extract_n_dims_from_ttype(arg_type) ==
+                ASRUtils::extract_n_dims_from_ttype(dummy->m_type),
+            "asr.verify.gpu_kernel_launch.argument_rank",
+            at + " has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(arg_type)) +
+                ", but the dummy '" + std::string(dummy->m_name) +
+                "' the device reads it as has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(
+                    dummy->m_type)));
+        require_id(ASRUtils::is_class_type(arg_element) ==
+                ASRUtils::is_class_type(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_polymorphism", mismatch);
+        if (ASRUtils::is_class_type(arg_element)) {
+            verify_gpu_kernel_launch_class_argument(x, at, arg, arg_type);
+        }
+    }
+
+    // A polymorphic argument is represented by a class container -- a type
+    // descriptor beside a pointer to the data -- while the kernel is
+    // generated against the declared type, so the launch hands the kernel a
+    // copy of the declared type's own components rather than the container
+    // itself. A container the launch cannot make that copy of would be
+    // uploaded as it stands and read as the declared type, which is the
+    // descriptor read as data: an unlimited polymorphic argument has no
+    // declared type to copy, an array of a polymorphic type has one container
+    // per element, and a declared type the launch cannot look up has no
+    // components to copy. `gpu_offload` keeps such a loop on the host rather
+    // than launching it, and that is what is required here.
+    void verify_gpu_kernel_launch_class_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg, ASR::ttype_t *arg_type) {
+        require_id(!ASRUtils::is_unlimited_polymorphic_type(arg_type),
+            "asr.verify.gpu_kernel_launch.unlimited_polymorphic_argument",
+            at + " is unlimited polymorphic, which has no declared type for "
+                "the device to read it as");
+        require_id(!ASRUtils::is_array(arg_type),
+            "asr.verify.gpu_kernel_launch.polymorphic_array_argument",
+            at + " is an array of a polymorphic type, which the device would "
+                "read as an array of class containers");
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(arg));
+        require_id(struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym),
+            "asr.verify.gpu_kernel_launch.polymorphic_declared_type",
+            at + " is polymorphic and its declared type is not known, so the "
+                "device has no layout to read it as");
+    }
+
     // TODO: also verify that a Device function only calls Device
     // or HostDevice functions. That invariant does not hold yet: a kernel body
     // is copied verbatim from the host loop, so it still calls Host functions
@@ -2317,6 +2425,8 @@ public:
             "GpuKernelLaunch::m_kernel '" +
                 std::string(ASRUtils::symbol_name(x.m_kernel)) +
                 "' must be a function that runs on the device");
+        verify_gpu_kernel_launch_signature(x,
+            *ASR::down_cast<ASR::Function_t>(x.m_kernel));
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
