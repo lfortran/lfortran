@@ -61,6 +61,9 @@ free_done:                                        ; preds = %free_nonnull, %loop
   br label %loop.head
 
 loop.end:                                         ; preds = %loop.head
+  %23 = load i32, i32* %z, align 4
+  %24 = add i32 %23, 1
+  store i32 %24, i32* %z, align 4
   br label %return
 
 return:                                           ; preds = %loop.end
