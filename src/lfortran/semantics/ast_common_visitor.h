@@ -17128,6 +17128,24 @@ public:
                     ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+                    // Dropping the actual's allocatable or pointer wrapper leaves a
+                    // deferred length on the element type, which only an allocatable
+                    // or pointer entity may carry. The dummy of an external procedure
+                    // takes the length from the string descriptor at run time, so it
+                    // is an assumed length, exactly like `character(len=*)`.
+                    if (ASR::is_a<ASR::String_t>(*array_type->m_type)) {
+                        ASR::String_t* elem_str = ASR::down_cast<ASR::String_t>(array_type->m_type);
+                        if (elem_str->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                            ASR::ttype_t* assumed_len_type = ASRUtils::TYPE(ASR::make_String_t(
+                                al, array_type->m_type->base.loc, elem_str->m_kind, nullptr,
+                                ASR::string_length_kindType::AssumedLength,
+                                elem_str->m_physical_type));
+                            array_var_type = ASRUtils::make_Array_t_util(al, array_var_type->base.loc,
+                                assumed_len_type, array_type->m_dims, array_type->n_dims,
+                                ASR::abiType::Source, true, array_type->m_physical_type, true);
+                            array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+                        }
+                    }
                     ASR::array_physical_typeType phys_type;
                     if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                         phys_type = array_type->m_physical_type;
