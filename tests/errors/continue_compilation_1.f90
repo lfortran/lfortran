@@ -1184,6 +1184,13 @@ contains
     end function
 end module
 
+! A statement label is a positive integer, so a leading zero is not a label at
+! all and must be rejected by the tokenizer.
+subroutine zero_statement_label_1()
+    implicit none
+    0 print *, "unreachable"  ! {Error} Zero is not a valid statement label
+end subroutine
+
 ! A type bound procedure of a derived type declared outside a module must
 ! still name a module procedure or an external procedure with an explicit
 ! interface. Two program units declaring a derived type of the same name with
