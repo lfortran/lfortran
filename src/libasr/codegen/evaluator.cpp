@@ -1138,20 +1138,39 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
         fn->setName(unique_stem + "_program");
 
-    // Symbols qualified by their cell (__cell<N>_...) are named per session,
-    // so two executors in one process emit the same names. The wasm dynamic
-    // linker has one global namespace, so the second definition collides with
-    // the first -- and if their signatures differ, a module importing the name
-    // fails to link. Give each instance its own, the same way the run function
-    // above is made unique. Renaming here covers definitions and the
-    // declarations other modules of this instance import them through, so they
-    // still resolve to each other.
+    // A session names its symbols after the cell they come from, and the first
+    // cell is deliberately unqualified, so two executors in one process emit
+    // the same names -- both sessions call the first cell's `i` just `i`. The
+    // wasm dynamic linker has one global namespace, so the second definition
+    // collides with the first: a reference binds to the earlier session's
+    // symbol and reads its value instead of this session's, and if their
+    // signatures differ, a module importing the name fails to link. Give each
+    // instance its own names, the same way the run function above is made
+    // unique. Everything a module of this session defines belongs to the
+    // session; a name it only declares is either one an earlier module of this
+    // instance defined -- a reference that has to follow the renamed
+    // definition -- or a runtime library symbol, which keeps its own name.
     {
-        const std::string cell_prefix = "__cell";
+        const std::string eval_prefix = "__lfortran_evaluate_";
         const std::string instance = "__e" + std::to_string(m_id) + "_";
         auto qualify = [&](llvm::GlobalValue &g) {
             std::string n = g.getName().str();
-            if (n.rfind(cell_prefix, 0) == 0) g.setName(instance + n);
+            // The run function and its program unit are renamed above and are
+            // looked up through get_symbol_address() by that name.
+            if (n.rfind(eval_prefix, 0) == 0) return;
+            // "llvm." is reserved: llvm.global_ctors and friends are read by
+            // name, and an intrinsic renamed is an intrinsic lost.
+            if (n.rfind("llvm.", 0) == 0) return;
+            // A symbol with local linkage is private to its module, so it
+            // neither collides with another instance nor is referred to from
+            // one of this instance's later modules.
+            if (g.hasLocalLinkage()) return;
+            if (g.isDeclaration()) {
+                if (m_owned.find(n) == m_owned.end()) return;
+            } else {
+                m_owned.insert(n);
+            }
+            g.setName(instance + n);
         };
         for (llvm::Function &f : mod->functions()) qualify(f);
         for (llvm::GlobalVariable &g : mod->globals()) qualify(g);

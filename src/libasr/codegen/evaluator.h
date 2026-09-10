@@ -4,6 +4,7 @@
 #include <complex>
 #include <iostream>
 #include <memory>
+#include <set>
 
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
@@ -151,6 +152,11 @@ private:
     // This allows dlsym(RTLD_DEFAULT) to always find the right symbol without
     // needing to track per-module dlopen handles.
     int m_id;
+    // Names this instance's modules define. A later module of the same
+    // instance refers to them through declarations, which have to be renamed
+    // the same way the definitions were; a name that is only ever declared
+    // comes from the runtime library and keeps its own name.
+    std::set<std::string> m_owned;
 };
 
 #endif // __EMSCRIPTEN__
