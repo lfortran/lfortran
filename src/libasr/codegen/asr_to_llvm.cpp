@@ -15706,10 +15706,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left_val = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right_val = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left_val);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_complex(*x.m_type));
         llvm::Type *type;
         int a_kind;
@@ -15718,11 +15724,13 @@ public:
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
         if( left_val->getType()->isPointerTy() ) {
-            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left, ASRUtils::expr_type(x.m_left), module.get());
+            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left,
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_left)), module.get());
             left_val = llvm_utils->CreateLoad2(left_type, left_val);
         }
         if( right_val->getType()->isPointerTy() ) {
-            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
+            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right,
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_right)), module.get());
             right_val = llvm_utils->CreateLoad2(right_type, right_val);
         }
         std::string fn_name;
@@ -15839,10 +15847,14 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Type *type = tmp->getType();
-        llvm::Value *re = complex_re(tmp, type);
-        llvm::Value *im = complex_im(tmp, type);
+        this->visit_expr_load_wrapper(x.m_arg,
+            LLVM::is_llvm_pointer(*expr_type(x.m_arg)) ? 2 : 1,
+            true);
+        llvm::Value *arg_val = tmp;
+        load_non_array_non_character_pointers(x.m_arg, ASRUtils::expr_type(x.m_arg), arg_val);
+        llvm::Type *type = arg_val->getType();
+        llvm::Value *re = complex_re(arg_val, type);
+        llvm::Value *im = complex_im(arg_val, type);
         re = builder->CreateFNeg(re);
         im = builder->CreateFNeg(im);
         tmp = complex_from_floats(re, im, type);
