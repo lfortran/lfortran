@@ -331,6 +331,12 @@ public:
                 break;
             }
             default: {
+                // Every other kind is a leaf: the node it was derived from
+                // is what the shader writes it as.
+                if (e.expr == nullptr) {
+                    src << "/* unsupported extent */";
+                    break;
+                }
                 src << "(";
                 visit_expr(e.expr);
                 src << ")";
