@@ -5,17 +5,19 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_r_0;
     int __lb_r_0;
     int __loop_end_0;
+    int __workspace_extent;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __vla_work)
+    float* __workspace_2)
 {
     int nn = __scalar_args.nn;
     int __dim_r_0 = __scalar_args.__dim_r_0;
     int __lb_r_0 = __scalar_args.__lb_r_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
     int i;
     int k;
@@ -29,7 +31,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __do_loop_end1;
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* work = __vla_work + (blockIdx.x * blockDim.x + threadIdx.x) * nn;
+        float* work = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = nn;
         k = (1 - 1);
         while (((k + 1) <= __do_loop_end)) {
@@ -38,7 +40,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
         k = (k + 1);
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = nn;
+        __do_loop_end1 = __workspace_extent;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);

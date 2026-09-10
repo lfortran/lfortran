@@ -2,19 +2,29 @@
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0;
+    int __workspace_extent;
+    int __workspace_extent1;
+    int __workspace_extent2;
+    int __workspace_extent3;
+    int __workspace_extent4;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* centers,
     float* faces,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __vla_faces_1,
-    float* __vla___libasr__created__var__0__array_constructor_,
-    float* __vla___libasr_created__array_size_v,
-    float* __vla___libasr_created__array_size_v1,
-    float* __vla___libasr_created__array_size_v2)
+    float* __workspace_3,
+    float* __workspace_4,
+    float* __workspace_5,
+    float* __workspace_6,
+    float* __workspace_7)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __workspace_extent1 = __scalar_args.__workspace_extent1;
+    int __workspace_extent2 = __scalar_args.__workspace_extent2;
+    int __workspace_extent3 = __scalar_args.__workspace_extent3;
+    int __workspace_extent4 = __scalar_args.__workspace_extent4;
     int __flat_idx;
     int __gpu_elem_i;
     int __gpu_sec_i;
@@ -37,10 +47,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __do_loop_end6;
         float __gpu_arg[4];
         int __gpu_gather_i;
-        float* __libasr__created__var__0__array_constructor_ = __vla___libasr__created__var__0__array_constructor_ + (blockIdx.x * blockDim.x + threadIdx.x) * (((((4 - 1) - 1) / 1) + 1) + 2);
-        float* __libasr_created__array_size_v = __vla___libasr_created__array_size_v + (blockIdx.x * blockDim.x + threadIdx.x) * ((((4 - 1) - 1) / 1) + 1);
-        float* __libasr_created__array_size_v1 = __vla___libasr_created__array_size_v1 + (blockIdx.x * blockDim.x + threadIdx.x) * ((((4 - 1) - 1) / 1) + 1);
-        float* __libasr_created__array_size_v2 = __vla___libasr_created__array_size_v2 + (blockIdx.x * blockDim.x + threadIdx.x) * ((((4 - 1) - 1) / 1) + 1);
+        float* __libasr__created__var__0__array_constructor_ = __workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
+        float* __libasr_created__array_size_v = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
+        float* __libasr_created__array_size_v1 = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent3;
+        float* __libasr_created__array_size_v2 = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent4;
         float* __libasr_created_real_binop_left_;
         float* __libasr_created_real_binop_left_1;
         float* __libasr_created_real_binop_left_2;
@@ -56,7 +66,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __libasr_index_0_6;
         int __libasr_index_0_7;
         int __libasr_index_0_8;
-        float* faces_1 = __vla_faces_1 + (blockIdx.x * blockDim.x + threadIdx.x) * (4 + 1);
+        float* faces_1 = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         int n;
         __do_loop_end = ((4 + 1) - 1);
         __gpu_gather_i = (1 - 1);
@@ -64,13 +74,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_gather_i = (__gpu_gather_i + 1);
             __gpu_arg[((int)(__gpu_gather_i) - (1))] = centers[((int)(__gpu_gather_i) - (1)) + (4 * ((int)(k) - (1)))];
         }
-        __gpu_gather_i = (__gpu_gather_i + 1);
         n = (4);
         __libasr_created_real_binop_left_ = __gpu_arg + ((int)(1) - (1));
         __libasr_created_real_binop_right_ = __gpu_arg + ((int)(2) - (1));
         __libasr_index_0_1 = 1;
         __libasr_index_0_2 = 1;
-        __do_loop_end1 = ((((4 - 1) - 1) / 1) + 1);
+        __do_loop_end1 = __workspace_extent2;
         __libasr_index_0_ = (1 - 1);
         while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
@@ -78,7 +87,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
             __libasr_index_0_2 = (__libasr_index_0_2 + 1);
         }
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
         __1__libasr_index_ = 1;
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = __gpu_arg[((int)(1) - (1))];
         __1__libasr_index_ = (__1__libasr_index_ + 1);
@@ -86,7 +94,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_created_real_binop_right_1 = __gpu_arg + ((int)(2) - (1));
         __libasr_index_0_4 = 1;
         __libasr_index_0_5 = 1;
-        __do_loop_end2 = ((((4 - 1) - 1) / 1) + 1);
+        __do_loop_end2 = __workspace_extent3;
         __libasr_index_0_3 = (1 - 1);
         while (((__libasr_index_0_3 + 1) <= __do_loop_end2)) {
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);
@@ -94,19 +102,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __libasr_index_0_4 = (__libasr_index_0_4 + 1);
             __libasr_index_0_5 = (__libasr_index_0_5 + 1);
         }
-        __libasr_index_0_3 = (__libasr_index_0_3 + 1);
-        __do_loop_end3 = ((((__1__libasr_index_ + ((((4 - 1) - 1) / 1) + 1)) - 1) - __1__libasr_index_) + 1);
+        __do_loop_end3 = ((((__1__libasr_index_ + __workspace_extent3) - 1) - __1__libasr_index_) + 1);
         __gpu_sec_i = (1 - 1);
         while (((__gpu_sec_i + 1) <= __do_loop_end3)) {
             __gpu_sec_i = (__gpu_sec_i + 1);
             __libasr__created__var__0__array_constructor_[((int)((__1__libasr_index_ + (__gpu_sec_i - 1))) - (1))] = (  5.00000000000000000e-01f * (__gpu_arg[((int)(__gpu_sec_i) - (1))] + __gpu_arg[((int)((2 + (__gpu_sec_i - 1))) - (1))]));
         }
-        __gpu_sec_i = (__gpu_sec_i + 1);
         __libasr_created_real_binop_left_2 = __gpu_arg + ((int)(1) - (1));
         __libasr_created_real_binop_right_2 = __gpu_arg + ((int)(2) - (1));
         __libasr_index_0_7 = 1;
         __libasr_index_0_8 = 1;
-        __do_loop_end4 = ((((4 - 1) - 1) / 1) + 1);
+        __do_loop_end4 = __workspace_extent4;
         __libasr_index_0_6 = (1 - 1);
         while (((__libasr_index_0_6 + 1) <= __do_loop_end4)) {
             __libasr_index_0_6 = (__libasr_index_0_6 + 1);
@@ -114,8 +120,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __libasr_index_0_7 = (__libasr_index_0_7 + 1);
             __libasr_index_0_8 = (__libasr_index_0_8 + 1);
         }
-        __libasr_index_0_6 = (__libasr_index_0_6 + 1);
-        __1__libasr_index_ = (__1__libasr_index_ + ((((4 - 1) - 1) / 1) + 1));
+        __1__libasr_index_ = (__1__libasr_index_ + __workspace_extent4);
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = __gpu_arg[((int)(n) - (1))];
         __1__libasr_index_ = (__1__libasr_index_ + 1);
         __do_loop_end5 = ((4) + 1);
@@ -124,14 +129,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_elem_i = (__gpu_elem_i + 1);
             faces_1[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
         }
-        __gpu_elem_i = (__gpu_elem_i + 1);
         __do_loop_end6 = ((5 + 1) - 1);
         __gpu_sec_i1 = (1 - 1);
         while (((__gpu_sec_i1 + 1) <= __do_loop_end6)) {
             __gpu_sec_i1 = (__gpu_sec_i1 + 1);
             faces[((int)(__gpu_sec_i1) - (1)) + (5 * ((int)(k) - (1)))] = faces_1[((int)(__gpu_sec_i1) - (1))];
         }
-        __gpu_sec_i1 = (__gpu_sec_i1 + 1);
     }
 }
 

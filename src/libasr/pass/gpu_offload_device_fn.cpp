@@ -11,6 +11,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
+#include <libasr/pass/scoped_inlining.h>
 
 namespace LCompilers {
 
@@ -205,162 +206,10 @@ const ASR::FunctionCall_t* GpuOffloadVisitor::spliceable_call(
     return ASR::down_cast<ASR::FunctionCall_t>(value);
 }
 
-// The BLOCK or ASSOCIATE construct `stmt` enters, or nullptr when
-// the statement does not enter one.
-ASR::symbol_t* GpuOffloadVisitor::nested_scope_entered(ASR::stmt_t *stmt) {
-    if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
-        if (b && ASR::is_a<ASR::Block_t>(*b)) return b;
-    } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
-        if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) return b;
-    }
-    return nullptr;
-}
-
-// The symbol table and body of a BLOCK or ASSOCIATE construct.
-void GpuOffloadVisitor::nested_scope_contents(
-        ASR::symbol_t *b, SymbolTable *&st,
-        ASR::stmt_t **&body, size_t &n_body) {
-    if (ASR::is_a<ASR::Block_t>(*b)) {
-        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-        st = blk->m_symtab;
-        body = blk->m_body;
-        n_body = blk->n_body;
-    } else {
-        ASR::AssociateBlock_t *blk =
-            ASR::down_cast<ASR::AssociateBlock_t>(b);
-        st = blk->m_symtab;
-        body = blk->m_body;
-        n_body = blk->n_body;
-    }
-}
-
-// Collect, in body order, the nested BLOCK and ASSOCIATE scopes that
-// the splice will flatten into the single kernel-level block.
-// Returns false when one is entered from a position the flattening
-// walk cannot rebuild -- inside an IF or a loop, where the ASR holds
-// a single statement rather than a statement list.
-bool GpuOffloadVisitor::collect_flattened_scopes(ASR::stmt_t **stmts, size_t n,
-        std::vector<ASR::symbol_t*> &scopes) {
-    for (size_t i = 0; i < n; i++) {
-        ASR::symbol_t *b = nested_scope_entered(stmts[i]);
-        if (b) {
-            scopes.push_back(b);
-            SymbolTable *st = nullptr;
-            ASR::stmt_t **body = nullptr;
-            size_t n_body = 0;
-            nested_scope_contents(b, st, body, n_body);
-            if (!collect_flattened_scopes(body, n_body, scopes)) {
-                return false;
-            }
-            continue;
-        }
-        GpuNestedScopeCounter nc;
-        nc.visit_stmt(*stmts[i]);
-        if (nc.count > 0) return false;
-    }
-    return true;
-}
-
-// Can this callee's body be spliced verbatim into the caller?
 bool GpuOffloadVisitor::can_inline_device_function(ASR::Function_t *fn,
-        const ASR::FunctionCall_t *fc) {
-    if (!fn || !fn->m_return_var || fn->n_body == 0) {
-        return false;
-    }
-    ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(
-        fn->m_function_signature);
-    if (ft->m_abi != ASR::abiType::Source) {
-        return false;
-    }
-    if (ft->m_deftype != ASR::deftypeType::Implementation) {
-        return false;
-    }
-    if (fn->n_args != fc->n_args) {
-        return false;
-    }
-    for (size_t i = 0; i < fc->n_args; i++) {
-        // An absent optional actual has no expression to substitute.
-        if (!fc->m_args[i].m_value) {
-            return false;
-        }
-    }
-    for (size_t i = 0; i < fn->n_args; i++) {
-        if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
-            return false;
-        }
-    }
-    std::vector<ASR::symbol_t*> nested;
-    if (!collect_flattened_scopes(fn->m_body, fn->n_body, nested)) {
-        return false;
-    }
-    std::set<ASR::symbol_t*> flattened(nested.begin(), nested.end());
-    // Every symbol the callee owns, in its own scope and in each
-    // nested scope, must be something the splice can carry over.
-    std::vector<SymbolTable*> scopes;
-    scopes.push_back(fn->m_symtab);
-    for (ASR::symbol_t *b : nested) {
-        SymbolTable *st = nullptr;
-        ASR::stmt_t **body = nullptr;
-        size_t n_body = 0;
-        nested_scope_contents(b, st, body, n_body);
-        scopes.push_back(st);
-    }
-    for (SymbolTable *st : scopes) {
-        for (auto &item : st->get_scope()) {
-            // An ExternalSymbol only names an entity owned by another
-            // module -- a derived-type component, a type, a
-            // procedure. It resolves through that module from
-            // wherever the cloned body ends up, so it needs no
-            // re-homing.
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            // A nested scope is re-homed by flattening its variables
-            // and statements into the spliced block, but only when
-            // the walk above reached it.
-            if (ASR::is_a<ASR::Block_t>(*item.second) ||
-                    ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-                if (!flattened.count(item.second)) {
-                    return false;
-                }
-                continue;
-            }
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
-                return false;
-            }
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                item.second);
-            // SAVE state must persist across calls; inlining would
-            // give every call site its own copy.
-            if (v->m_storage == ASR::storage_typeType::Save) {
-                return false;
-            }
-        }
-    }
-    // A `return` anywhere but as the final statement needs control
-    // flow the splice cannot express. A `return` inside a nested
-    // scope is one such place: flattening would drop it silently.
-    GpuReturnCounter rc;
-    for (size_t i = 0; i < fn->n_body; i++) {
-        rc.visit_stmt(*fn->m_body[i]);
-    }
-    for (ASR::symbol_t *b : nested) {
-        SymbolTable *st = nullptr;
-        ASR::stmt_t **body = nullptr;
-        size_t n_body = 0;
-        nested_scope_contents(b, st, body, n_body);
-        for (size_t i = 0; i < n_body; i++) {
-            rc.visit_stmt(*body[i]);
-        }
-    }
-    if (rc.count > 1) return false;
-    if (rc.count == 1 &&
-            !ASR::is_a<ASR::Return_t>(*fn->m_body[fn->n_body - 1])) {
-        return false;
-    }
-    return true;
+        const ASR::FunctionCall_t *call) {
+    return fn && fn->m_return_var &&
+        PassUtils::can_inline_in_block(*fn, call->m_args, call->n_args);
 }
 
 // True when `fn` itself needs a run-time sized temporary, or reaches
@@ -478,57 +327,6 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
     return true;
 }
 
-// Rewrite the dimension expressions of a cloned local's type through
-// `subst`, so an extent written in terms of the callee's dummies is
-// expressed in terms of the actual arguments instead.
-void GpuOffloadVisitor::substitute_in_type(ASR::ttype_t *t,
-        std::map<ASR::symbol_t*, ASR::expr_t*> &subst) {
-    if (!t) return;
-    ASR::ttype_t *bare = ASRUtils::type_get_past_allocatable_pointer(t);
-    if (!bare || !ASR::is_a<ASR::Array_t>(*bare)) return;
-    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(bare);
-    AssociateVarResolver resolver(al, subst);
-    for (size_t d = 0; d < arr->n_dims; d++) {
-        if (arr->m_dims[d].m_start) {
-            resolver.current_expr = &(arr->m_dims[d].m_start);
-            resolver.replace_expr(arr->m_dims[d].m_start);
-        }
-        if (arr->m_dims[d].m_length) {
-            resolver.current_expr = &(arr->m_dims[d].m_length);
-            resolver.replace_expr(arr->m_dims[d].m_length);
-        }
-    }
-}
-
-// Clone `stmts` into `out`, flattening every BLOCK and ASSOCIATE it
-// enters into the same statement list. An ASSOCIATE construct opens
-// its body with plain assignments that define its associate names,
-// so once those names are cloned as ordinary locals of the spliced
-// block the body needs no further rewriting.
-bool GpuOffloadVisitor::flatten_device_function_body(
-        ASR::stmt_t **stmts, size_t n_stmts,
-        ASRUtils::ExprStmtDuplicator &dup, Vec<ASR::stmt_t*> &out) {
-    for (size_t i = 0; i < n_stmts; i++) {
-        ASR::symbol_t *b = nested_scope_entered(stmts[i]);
-        if (b) {
-            SymbolTable *st = nullptr;
-            ASR::stmt_t **body = nullptr;
-            size_t n_body = 0;
-            nested_scope_contents(b, st, body, n_body);
-            if (!flatten_device_function_body(body, n_body, dup, out)) {
-                return false;
-            }
-            continue;
-        }
-        if (ASR::is_a<ASR::Return_t>(*stmts[i])) continue;
-        dup.success = true;
-        ASR::stmt_t *c = dup.duplicate_stmt(stmts[i]);
-        if (!c || !dup.success) return false;
-        out.push_back(al, c);
-    }
-    return true;
-}
-
 // Copy a sectioned actual argument into a contiguous array owned by
 // the spliced block, and return that array; nullptr when the actual is
 // not a section, when the callee never sections the dummy, or when the
@@ -605,29 +403,15 @@ ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
     return tmp;
 }
 
-// Splice `fn`'s body into a BLOCK, rewritten for this call site,
-// and assign its result to `target` inside that block.
-//
-// The BLOCK is what makes this work: the callee's locals land in the
-// block's own symbol table, so after kernel extraction they are
-// block-scope locals of the kernel -- exactly where
-// analyze_gpu_vla_workspaces() looks for run-time sized arrays and
-// binds a device buffer for each. Putting them in the enclosing
-// scope instead would make them kernel *arguments*, and an ALLOCATE
-// of a kernel argument is not valid ASR.
-//
-// That machinery only inspects the symbol table of a top-level
-// block, so the callee's own nested BLOCK and ASSOCIATE scopes are
-// flattened into this one block rather than rebuilt inside it: a
-// run-time sized temporary left one level down would be invisible to
-// it and reach the shader as a variable-length array.
+// Prepare device-specific section arguments, then use the shared scoped
+// inliner. The block keeps per-call locals separate from captured arguments;
+// final kernel planning assigns their workspace storage.
 ASR::stmt_t* GpuOffloadVisitor::splice_device_function(ASR::Function_t *fn,
         const ASR::FunctionCall_t *fc, ASR::expr_t *target,
         const Location &loc) {
     SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
 
     std::map<ASR::symbol_t*, ASR::expr_t*> subst;
-    std::set<ASR::symbol_t*> dummies;
     std::vector<ASR::stmt_t*> arg_gathers, arg_scatters;
     for (size_t i = 0; i < fn->n_args; i++) {
         ASR::symbol_t *d = ASR::down_cast<ASR::Var_t>(
@@ -642,127 +426,13 @@ ASR::stmt_t* GpuOffloadVisitor::splice_device_function(ASR::Function_t *fn,
             fn, d, actual, dummy_is_written(fn, i), arg_gathers,
             arg_scatters);
         subst[d] = gathered ? gathered : actual;
-        dummies.insert(d);
     }
 
-    // The callee's own scope plus every nested BLOCK and ASSOCIATE
-    // scope, all of which are flattened into this one block.
-    std::vector<ASR::symbol_t*> nested;
-    if (!collect_flattened_scopes(fn->m_body, fn->n_body, nested)) {
-        return nullptr;
-    }
-    std::vector<SymbolTable*> scopes;
-    scopes.push_back(fn->m_symtab);
-    for (ASR::symbol_t *b : nested) {
-        SymbolTable *st = nullptr;
-        ASR::stmt_t **body = nullptr;
-        size_t n_body = 0;
-        nested_scope_contents(b, st, body, n_body);
-        scopes.push_back(st);
-    }
-
-    // Clone the callee's locals (its result variable included) into
-    // the block. Two phases, so that an extent written in terms of
-    // another local is substituted too.
-    ASR::symbol_t *ret_sym = ASR::down_cast<ASR::Var_t>(
-        fn->m_return_var)->m_v;
-    std::vector<ASR::symbol_t*> cloned_locals;
-    for (SymbolTable *st : scopes) {
-        for (auto &item : st->get_scope()) {
-            ASR::symbol_t *sym = item.second;
-            if (dummies.count(sym)) continue;
-            // ExternalSymbols keep resolving through their owning
-            // module; the cloned body may reference them as they are.
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) continue;
-            // The nested scopes themselves are dissolved by the
-            // flattening, so nothing stands in for them here.
-            if (ASR::is_a<ASR::Block_t>(*sym) ||
-                    ASR::is_a<ASR::AssociateBlock_t>(*sym)) continue;
-            if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-            // A named constant carries its value on the declaration
-            // rather than at every reference, so a clone that drops
-            // it leaves the name standing for nothing -- neither the
-            // shape resolver nor the backend can say what it is. A
-            // value that is not a self-contained constant would name
-            // the callee's own symbols, so only a folded one is
-            // carried over.
-            ASR::expr_t *param_value = nullptr;
-            if (v->m_storage == ASR::storage_typeType::Parameter &&
-                    v->m_value != nullptr &&
-                    ASRUtils::is_value_constant(v->m_value)) {
-                ASRUtils::ExprStmtDuplicator value_dup(al);
-                param_value = value_dup.duplicate_expr(v->m_value);
-            }
-            // The block the splice creates is nested inside the
-            // scope the call was made from, so a clone that keeps a
-            // name something enclosing already uses shadows it in the
-            // device source: the callee's result variable `faces`
-            // would hide the caller's array of the same name, and the
-            // copy-out would write the per-thread workspace instead
-            // of the array. get_unique_name only looks at the block's
-            // own scope, so the enclosing chain is asked as well.
-            std::string name = block_scope->get_unique_name(v->m_name);
-            for (int attempt = 1;
-                    block_scope->resolve_symbol(name) != nullptr;
-                    attempt++) {
-                name = block_scope->get_unique_name(
-                    std::string(v->m_name) + "_"
-                    + std::to_string(attempt));
-            }
-            ASR::symbol_t *ns = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, block_scope,
-                    s2c(al, name), nullptr, 0, ASR::intentType::Local,
-                    param_value, param_value, v->m_storage,
-                    ASRUtils::duplicate_type(al, v->m_type),
-                    v->m_type_declaration, ASR::abiType::Source,
-                    ASR::accessType::Public, ASR::presenceType::Required,
-                    false));
-            block_scope->add_symbol(name, ns);
-            subst[sym] = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ns));
-            cloned_locals.push_back(ns);
-        }
-    }
-    for (ASR::symbol_t *ns : cloned_locals) {
-        substitute_in_type(
-            ASR::down_cast<ASR::Variable_t>(ns)->m_type, subst);
-    }
-
-    ASRUtils::ExprStmtDuplicator dup(al);
-    Vec<ASR::stmt_t*> cloned;
-    cloned.reserve(al, fn->n_body + arg_gathers.size()
-        + arg_scatters.size() + 1);
-    // The gathers read the caller's own expressions, so they are not
-    // subject to the dummy substitution and go in ahead of it.
-    for (ASR::stmt_t *g : arg_gathers) cloned.push_back(al, g);
-    size_t body_start = cloned.n;
-    if (!flatten_device_function_body(fn->m_body, fn->n_body, dup,
-            cloned)) {
-        return nullptr;
-    }
-    AssociateVarResolverVisitor resolver(al, subst);
-    for (size_t i = body_start; i < cloned.n; i++) {
-        resolver.visit_stmt(*cloned[i]);
-    }
-    for (ASR::stmt_t *sc : arg_scatters) cloned.push_back(al, sc);
-
-    auto rit = subst.find(ret_sym);
-    if (rit == subst.end()) return nullptr;
-    cloned.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-        al, loc, target, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-            ASR::down_cast<ASR::Var_t>(rit->second)->m_v)),
-        nullptr, false, false)));
-
-    std::string block_name = current_scope->get_unique_name(
-        "__gpu_inl_" + std::string(fn->m_name));
-    ASR::asr_t *block = ASR::make_Block_t(al, loc, block_scope,
-        s2c(al, block_name), cloned.p, cloned.n);
-    block_scope->asr_owner = block;
-    ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
-    current_scope->add_symbol(block_name, block_sym);
-    kernel_blocks.push_back(block_sym);
-    return ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
-        block_sym));
+    ASR::stmt_t *call = PassUtils::inline_in_block(al, loc, *fn,
+        block_scope, std::move(subst), target, arg_gathers, arg_scatters);
+    if (!call) return nullptr;
+    kernel_blocks.push_back(ASR::down_cast<ASR::BlockCall_t>(call)->m_m);
+    return call;
 }
 
 // Splice every planned callee into `stmts`, repeating until no call
@@ -784,8 +454,12 @@ bool GpuOffloadVisitor::inline_device_function_calls(ASR::stmt_t **&stmts,
                     ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                    if (!inline_device_function_calls(blk->m_body,
-                            blk->n_body)) return false;
+                    SymbolTable *outer_scope = current_scope;
+                    current_scope = blk->m_symtab;
+                    bool inlined = inline_device_function_calls(blk->m_body,
+                        blk->n_body);
+                    current_scope = outer_scope;
+                    if (!inlined) return false;
                 }
                 new_body.push_back(al, stmt);
                 continue;

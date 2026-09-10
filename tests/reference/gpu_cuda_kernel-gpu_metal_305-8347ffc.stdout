@@ -4,14 +4,20 @@ struct leaf_t {
     long m_;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
     leaf_t* c,
     float* __data_c_m_,
     int* __offsets_c_m_,
     int* __sizes_c_m_,
     float* p,
-    float* __vla_w)
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    float* __workspace_6)
 {
+    int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
     int i;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
@@ -23,7 +29,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __do_loop_end;
         int __do_loop_end1;
         int k;
-        float* w = __vla_w + (blockIdx.x * blockDim.x + threadIdx.x) * (__sizes_c_m_[(0) * 2 + 0] * __sizes_c_m_[(0) * 2 + 1]);
+        float* w = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = (__sizes_c_m_[(((int)(1) - (1))) * 2 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 2 + 1]);
         k = (1 - 1);
         while (((k + 1) <= __do_loop_end)) {
