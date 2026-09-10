@@ -24,6 +24,7 @@
 #include <queue>
 #include <limits>
 #include <utility>
+#include <cstring>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -13972,17 +13973,8 @@ public:
                 throw SemanticAbort();
             }
             LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
-            // Handle BOZ constants in real() function
-            ASR::ttype_t* temp_current_variable_type = current_variable_type_;
-            if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
-                AST::is_a<AST::BOZ_t>(*x.m_args[i].m_end)) {
-                // Set current_variable_type to Real for BOZ conversion in real() function
-                current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 
-                    compiler_options.po.default_integer_kind));
-            }
             AST::expr_t* arg_expr = x.m_args[i].m_end;
             this->visit_expr(*x.m_args[i].m_end);
-            current_variable_type_ = temp_current_variable_type;
             ASR::expr_t* temp = ASRUtils::EXPR(tmp);
             if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(temp))) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(temp);
@@ -16551,6 +16543,7 @@ public:
                             args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, 0.0, real8_type));
                         }
                     }
+                    convert_boz_args_to_real(var_name, args);
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
@@ -16891,6 +16884,11 @@ public:
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        // `dble` accepts a BOZ literal constant: its bits are the internal
+        // representation of the real(8) result, no numeric conversion happens
+        if (is_boz_literal_constant(arg)) {
+            return (ASR::asr_t *)boz_literal_to_real(arg, 8);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -21011,6 +21009,83 @@ public:
         }
     }
 
+    // A binary, octal or hexadecimal literal constant has no type; it is an
+    // ordered sequence of bits (F2023 7.7). Where such a constant supplies the
+    // value of a real, those bits are used directly as the internal
+    // representation of the result, they are not converted from an integer
+    // value. Reinterpret the low `kind` bytes of `bits` accordingly; `kind` is
+    // 4 or 8, the kinds a 64 bit BOZ literal can fill.
+    static double boz_bits_as_real(uint64_t bits, int kind) {
+        if( kind == 4 ) {
+            uint32_t bits_32 = static_cast<uint32_t>(bits);
+            float value_32 = 0.0f;
+            std::memcpy(&value_32, &bits_32, sizeof(value_32));
+            return static_cast<double>(value_32);
+        }
+        double value_64 = 0.0;
+        std::memcpy(&value_64, &bits, sizeof(value_64));
+        return value_64;
+    }
+
+    // True when `e` is a BOZ literal constant. BOZ literals are represented as
+    // an IntegerConstant carrying a non-Decimal boz kind, which is what marks
+    // them as typeless.
+    static bool is_boz_literal_constant(ASR::expr_t* e) {
+        return e != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*e) &&
+            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_intboz_type !=
+                ASR::integerbozType::Decimal;
+    }
+
+    // Reinterpret a BOZ literal constant as a real of the given kind. Any other
+    // expression, and any kind whose representation a BOZ literal cannot fill,
+    // is returned unchanged.
+    ASR::expr_t* boz_literal_to_real(ASR::expr_t* e, int kind) {
+        if( !is_boz_literal_constant(e) || (kind != 4 && kind != 8) ) {
+            return e;
+        }
+        const Location& loc = e->base.loc;
+        uint64_t bits = static_cast<uint64_t>(
+            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
+            boz_bits_as_real(bits, kind), real_type));
+    }
+
+    // `real` and `cmplx` accept BOZ literal constants, whose bits become the
+    // representation of the (real part of the) result. Replace such arguments
+    // with the real constant they denote, at the kind the intrinsic returns, so
+    // that no numeric integer-to-real conversion is performed downstream.
+    void convert_boz_args_to_real(const std::string& intrinsic_name,
+            Vec<ASR::expr_t*>& args) {
+        size_t n_boz_args = 0, kind_arg_index = 0;
+        if( intrinsic_name == "real" ) {
+            n_boz_args = 1;
+            kind_arg_index = 1;
+        } else if( intrinsic_name == "cmplx" ) {
+            n_boz_args = 2;
+            kind_arg_index = 2;
+        } else {
+            return;
+        }
+        if( args.size() <= kind_arg_index ) {
+            return;
+        }
+        bool has_boz_arg = false;
+        for( size_t i = 0; i < n_boz_args; i++ ) {
+            has_boz_arg |= is_boz_literal_constant(args[i]);
+        }
+        if( !has_boz_arg ) {
+            return;
+        }
+        int kind = 4;
+        if( args[kind_arg_index] != nullptr ) {
+            kind = static_cast<int>(handle_kind(args[kind_arg_index]));
+        }
+        for( size_t i = 0; i < n_boz_args; i++ ) {
+            args.p[i] = boz_literal_to_real(args[i], kind);
+        }
+    }
+
     void visit_BOZ(const AST::BOZ_t& x) {
         std::string s = std::string(x.m_s);
         int base = -1;
@@ -21049,16 +21124,16 @@ public:
             );
         }
         uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
-        //If current_variable_type is Real Type, convert BOZ String to ASR::Real 
+        //If current_variable_type is Real Type, the bits of the BOZ literal are
+        //the internal representation of the real value
+        int real_kind = 0;
         if ((current_variable_type_ != nullptr) && (ASR::is_a<ASR::Real_t>(*current_variable_type_)) ){
-            
-            // We need the smallest positive real value, and scale the bits accordingly
-            double min_boz = std::numeric_limits<float>::denorm_min();
-            // Scale the BOZ value: each bit represents smallest_subnormal
-            double boz_double = static_cast<double>(boz_unsigned_int) * min_boz;
-            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            tmp = ASR::make_RealConstant_t(al, x.base.base.loc, boz_double,
-                    real_type);
+            real_kind = ASRUtils::extract_kind_from_ttype_t(current_variable_type_);
+        }
+        if (real_kind == 4 || real_kind == 8) {
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, real_kind));
+            tmp = ASR::make_RealConstant_t(al, x.base.base.loc,
+                    boz_bits_as_real(boz_unsigned_int, real_kind), real_type);
         }
 
         //If current_variable_type is Null or INT Type, default to INT 
