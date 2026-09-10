@@ -235,8 +235,6 @@ public:
     void inline_dot_product_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
                                      SymbolTable *scope);
 
-    void inline_intrinsic_dot_product(ParallelLoopNest &nest);
-
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
 
     static bool is_int_literal(ASR::expr_t *e, int64_t value);

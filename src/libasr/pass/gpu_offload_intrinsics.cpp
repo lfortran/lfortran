@@ -2656,11 +2656,6 @@ void GpuOffloadVisitor::inline_dot_product_in_stmts(
     }
 }
 
-void GpuOffloadVisitor::inline_intrinsic_dot_product(ParallelLoopNest &nest) {
-    NestBodyWriteBack back(nest);
-    inline_dot_product_in_stmts(back.body, back.n_body, current_scope);
-}
-
 // Inline IntrinsicArrayFunction Transpose inside a parallel loop body.
 // Replaces:
 //   b = transpose(a)

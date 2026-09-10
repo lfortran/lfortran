@@ -605,10 +605,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Inline IntrinsicArrayFunction MatMul before kernel extraction
     inline_intrinsic_matmul(work);
 
-    // Inline IntrinsicArrayFunction DotProduct before kernel
-    // extraction
-    inline_intrinsic_dot_product(work);
-
     // Inline IntrinsicArrayFunction Sum before kernel extraction
     inline_intrinsic_sum(work);
 
