@@ -1371,8 +1371,8 @@ public:
                         auto oit = struct_origin_array.find(sname);
                         if (oit != struct_origin_array.end()) {
                             std::string sizes_key =
-                                "__sizes_" + oit->second + "_"
-                                + mem_name;
+                                GpuNames::member_sizes(oit->second,
+                                    mem_name);
                             alloc_array_size_exprs[out_name] =
                                 sizes_key + "[0]";
                         } else {
@@ -2289,8 +2289,8 @@ public:
                         src << ", " << dit->second << " + "
                             << oit->second << "[" << idx_str << "]";
                     } else {
-                        src << ", __data_" << arr_name << "_"
-                            << mem_name;
+                        src << ", " << GpuNames::member_data(arr_name,
+                            mem_name);
                     }
                     size_t rank = struct_member_rank(mv);
                     auto sit = struct_array_sizes_params.find(key);
@@ -2343,8 +2343,8 @@ public:
                     src << ", " << dit->second << " + "
                         << oit->second << "[" << idx_str << "]";
                 } else {
-                    src << ", __data_" << var_name << "_"
-                        << mem_name;
+                    src << ", " << GpuNames::member_data(var_name,
+                        mem_name);
                 }
             } else {
                 std::string key = var_name + "." + mem_name;
