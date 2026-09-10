@@ -188,12 +188,10 @@ end program
 TEST_CASE("GPU specialization preserves imported host interfaces") {
     const std::string source = R"(
 module gpu_test_interface
-    use iso_c_binding, only: c_int
     interface
         pure function c_abs(i) bind(c, name="abs") result(r)
-            import c_int
-            integer(c_int), value :: i
-            integer(c_int) :: r
+            integer(4), value :: i
+            integer(4) :: r
         end function
     end interface
 end module
@@ -204,7 +202,6 @@ subroutine invoke(x)
 end subroutine
 )";
     CompilerOptions options;
-    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
     LocationManager::FileLocations file;
