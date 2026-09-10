@@ -320,9 +320,23 @@ public:
     // for allocatable array members passed alongside the struct.
     std::map<std::string, std::string> func_array_data_params;
 
-    // Maps "struct_arr.member" to the offsets-buffer parameter name
-    // for allocatable array members of array-of-struct kernel arguments.
-    std::map<std::string, std::string> struct_array_offset_params;
+    // The layout of the kernel whose arguments are currently bound, the
+    // one `emit_kernel_signature` wrote the parameter list from.
+    const ASR::gpu_kernel_layout_t *current_kernel_layout = nullptr;
+
+    // How the signature spelled a layout entry. The body asks the layout
+    // for the name rather than rebuilding it, so the two halves cannot
+    // disagree about what a parameter is called.
+    std::string kernel_parameter(
+            const ASR::gpu_kernel_argument_t *argument) const {
+        LCOMPILERS_ASSERT(current_kernel_layout != nullptr);
+        return gpu_argument_name(*argument, *current_kernel_layout);
+    }
+
+    // The offsets buffer the kernel layout hands over for an allocatable
+    // array component of an array-of-struct argument, found by the array
+    // and the component rather than by the name the two are spelled into.
+    GpuMemberArgumentMap struct_array_offset_params{&active_scope};
 
     // Maps "struct_arr.member" to the sizes-buffer parameter name
     // for allocatable array members of array-of-struct kernel arguments.
@@ -2210,11 +2224,13 @@ public:
                     std::string key = arr_name + "."
                         + mem_name;
                     auto dit = func_array_data_params.find(key);
-                    auto oit = struct_array_offset_params.find(key);
-                    if (dit != func_array_data_params.end() &&
-                            oit != struct_array_offset_params.end()) {
+                    const ASR::gpu_kernel_argument_t *offsets =
+                        struct_array_offset_params.find(&arr_var->base,
+                            &mv->base);
+                    if (dit != func_array_data_params.end() && offsets) {
                         src << ", " << dit->second << " + "
-                            << oit->second << "[" << idx_str << "]";
+                            << kernel_parameter(offsets) << "["
+                            << idx_str << "]";
                     } else {
                         src << ", " << GpuNames::member_data(arr_name,
                             mem_name);
@@ -2264,11 +2280,12 @@ public:
                 std::string idx_str = arr_it->second.second;
                 std::string key = arr_name + "." + mem_name;
                 auto dit = func_array_data_params.find(key);
-                auto oit = struct_array_offset_params.find(key);
-                if (dit != func_array_data_params.end() &&
-                        oit != struct_array_offset_params.end()) {
+                const ASR::gpu_kernel_argument_t *offsets =
+                    struct_array_offset_params.find(arr_name, &mv->base);
+                if (dit != func_array_data_params.end() && offsets) {
                     src << ", " << dit->second << " + "
-                        << oit->second << "[" << idx_str << "]";
+                        << kernel_parameter(offsets) << "["
+                        << idx_str << "]";
                 } else {
                     src << ", " << GpuNames::member_data(var_name,
                         mem_name);
@@ -2649,6 +2666,7 @@ public:
         struct_array_offset_params.clear();
         struct_array_sizes_params.clear();
         struct_from_array_elem.clear();
+        current_kernel_layout = nullptr;
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -3003,6 +3021,7 @@ public:
         struct_array_offset_params.clear();
         struct_array_sizes_params.clear();
         struct_from_array_elem.clear();
+        current_kernel_layout = nullptr;
     }
 
     void emit_kernel_signature(const ASR::Function_t &x);
@@ -3315,12 +3334,13 @@ public:
                                 std::string key = sname + "." + mem_name;
                                 auto data_it =
                                     func_array_data_params.find(key);
-                                auto off_it =
-                                    struct_array_offset_params.find(key);
+                                const ASR::gpu_kernel_argument_t *off_arg =
+                                    struct_array_offset_params.find(
+                                        ASR::down_cast<ASR::Var_t>(
+                                            ai->m_v)->m_v, sm->m_m);
                                 if (data_it !=
                                         func_array_data_params.end() &&
-                                    off_it !=
-                                        struct_array_offset_params.end()) {
+                                        off_arg) {
                                     std::string rname =
                                         ASRUtils::symbol_name(
                                             ASR::down_cast<ASR::Var_t>(
@@ -3341,7 +3361,7 @@ public:
                                     src << "{\n";
                                     indent_level++;
                                     src << get_indent() << "int __off = "
-                                        << off_it->second << "["
+                                        << kernel_parameter(off_arg) << "["
                                         << idx_str << "];\n";
                                     if (sit != alloc_array_sizes.end()) {
                                         int64_t sz = sit->second;
@@ -4518,9 +4538,12 @@ public:
                                     arr_ai->m_v)->m_v);
                             std::string key = arr_name + "." + mem_name;
                             auto dit = func_array_data_params.find(key);
-                            auto oit = struct_array_offset_params.find(key);
+                            const ASR::gpu_kernel_argument_t *offsets =
+                                struct_array_offset_params.find(
+                                    ASR::down_cast<ASR::Var_t>(
+                                        arr_ai->m_v)->m_v, sm->m_m);
                             if (dit != func_array_data_params.end() &&
-                                    oit != struct_array_offset_params.end()) {
+                                    offsets) {
                                 // Emit: data[offsets[arr_idx] + member_idx]
                                 std::string arr_idx_str =
                                     struct_array_element_index_str(arr_ai);
@@ -4540,7 +4563,8 @@ public:
                                     struct_member_element_index_str(
                                         ai, arr_name, mem_name,
                                         arr_idx_str, sizes_param);
-                                src << dit->second << "[" << oit->second
+                                src << dit->second << "["
+                                    << kernel_parameter(offsets)
                                     << "[" << arr_idx_str << "] + "
                                     << mem_idx_str << "]";
                                 // Skip the normal indexing path below
@@ -4639,10 +4663,12 @@ public:
                                 arr_ai->m_v)->m_v);
                         std::string key = arr_name + "." + mem_name;
                         auto dit = func_array_data_params.find(key);
-                        auto oit =
-                            struct_array_offset_params.find(key);
+                        const ASR::gpu_kernel_argument_t *offsets =
+                            struct_array_offset_params.find(
+                                ASR::down_cast<ASR::Var_t>(
+                                    arr_ai->m_v)->m_v, sm->m_m);
                         if (dit != func_array_data_params.end() &&
-                                oit != struct_array_offset_params.end()) {
+                                offsets) {
                             std::string arr_idx_str =
                                 struct_array_element_index_str(arr_ai);
                             if (arr_idx_str.empty()) {
@@ -4653,8 +4679,8 @@ public:
                                     sm->base.base.loc);
                             }
                             src << "(" << dit->second << " + "
-                                << oit->second << "[" << arr_idx_str
-                                << "])";
+                                << kernel_parameter(offsets) << "["
+                                << arr_idx_str << "])";
                             break;
                         }
                     }

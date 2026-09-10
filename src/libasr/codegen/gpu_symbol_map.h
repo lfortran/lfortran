@@ -46,6 +46,54 @@ public:
     void clear() { values.clear(); }
 };
 
+// The kernel arguments that carry one component of one struct-typed
+// dummy, found by the dummy and the component rather than by the name
+// the signature spells the two into and matches back on.
+//
+// The dummy is a symbol: it is the same symbol on both sides, so a
+// same-named variable in another scope cannot answer for it. The
+// component is a name, because it is not -- the offload passes leave the
+// kernel holding two copies of the derived type's definition, one that
+// the dummy's `m_type_declaration` reaches and one that the member
+// accesses in its body do, so the two halves never see the same
+// `Variable_t` for a component. A component name is unique within a
+// derived type and its parents, so within one dummy the name settles it.
+class GpuMemberArgumentMap {
+    SymbolTable **scope;
+    std::map<std::pair<ASR::symbol_t*, std::string>,
+        const ASR::gpu_kernel_argument_t*> values;
+
+    static ASR::symbol_t* canonical(ASR::symbol_t *symbol) {
+        return symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr;
+    }
+    ASR::symbol_t* resolve(const std::string &name) const {
+        return *scope ? canonical((*scope)->resolve_symbol(name)) : nullptr;
+    }
+    const ASR::gpu_kernel_argument_t* lookup(ASR::symbol_t *variable,
+            ASR::symbol_t *member) const {
+        if (!variable || !member) return nullptr;
+        auto it = values.find({variable,
+            ASRUtils::symbol_name(canonical(member))});
+        return it == values.end() ? nullptr : it->second;
+    }
+public:
+    explicit GpuMemberArgumentMap(SymbolTable **scope) : scope(scope) {}
+    void add(const ASR::gpu_kernel_argument_t *argument) {
+        LCOMPILERS_ASSERT(argument->m_variable && argument->m_member);
+        values[{canonical(argument->m_variable),
+            ASRUtils::symbol_name(canonical(argument->m_member))}] = argument;
+    }
+    const ASR::gpu_kernel_argument_t* find(ASR::symbol_t *variable,
+            ASR::symbol_t *member) const {
+        return lookup(canonical(variable), member);
+    }
+    const ASR::gpu_kernel_argument_t* find(const std::string &variable,
+            ASR::symbol_t *member) const {
+        return lookup(resolve(variable), member);
+    }
+    void clear() { values.clear(); }
+};
+
 } // namespace LCompilers
 
 #endif

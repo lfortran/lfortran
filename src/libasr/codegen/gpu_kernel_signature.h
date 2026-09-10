@@ -103,6 +103,7 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
 template <typename D>
 void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     const auto &layout = *kernel.m_gpu;
+    current_kernel_layout = &layout;
     func_array_size_params.clear();
     func_array_data_params.clear();
     struct_array_offset_params.clear();
@@ -119,7 +120,7 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
                     func_array_data_params[key] = parameter;
                     break;
                 case ASR::gpu_argument_kindType::GpuMemberOffsets:
-                    struct_array_offset_params[key] = parameter;
+                    struct_array_offset_params.add(&arg);
                     break;
                 case ASR::gpu_argument_kindType::GpuMemberSizes:
                     struct_array_sizes_params[key] = parameter;
