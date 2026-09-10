@@ -11209,44 +11209,8 @@ public:
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
-        // Special-case: transfer(character, int8_array, size) lowered as BitCast.
-        // When scalarized into element-wise assignments, extract the corresponding
-        // byte from the source string.
         if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
-            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
-                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)) &&
-                ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_target))->m_kind == 1 &&
-                ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source))) {
-                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
-                if (ai->n_args == 1 && ai->m_args[0].m_right) {
-                    bool is_assignment_target_copy = is_assignment_target;
-                    is_assignment_target = true;
-                    visit_expr(*x.m_target);
-                    is_assignment_target = is_assignment_target_copy;
-                    llvm::Value* dest_ptr = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
-
-                    int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 0;
-                    visit_expr_wrapper(bc->m_source, true);
-                    ptr_loads = ptr_loads_copy;
-                    llvm::Value* src_desc = tmp;
-                    llvm::Value* src_data = llvm_utils->get_string_data(
-                        ASRUtils::get_string_type(bc->m_source), src_desc);
-                    src_data = builder->CreateBitCast(src_data, llvm_utils->i8_ptr);
-
-                    visit_expr_wrapper(ai->m_args[0].m_right, true);
-                    llvm::Value* idx = tmp;
-                    idx = builder->CreateZExtOrTrunc(idx, llvm::Type::getInt64Ty(context));
-                    llvm::Value* zero_based = builder->CreateSub(idx, llvm::ConstantInt::get(idx->getType(), 1));
-                    llvm::Value* src_byte_ptr = builder->CreateGEP(
-                        llvm::Type::getInt8Ty(context), src_data, zero_based);
-                    llvm::Value* byte_val = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt8Ty(context), src_byte_ptr);
-                    builder->CreateStore(byte_val, dest_ptr);
-                    return;
-                }
-            }
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* target_type_past_alloc =
