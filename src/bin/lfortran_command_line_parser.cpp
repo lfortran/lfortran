@@ -352,6 +352,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
         app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Allow a `do concurrent` that cannot be offloaded to run on the CPU instead of failing the compilation")->group(group_backend_codegen_options);
+        app.add_flag("--gpu-decline-stats", compiler_options.po.gpu_decline_stats, "Print one line per `do concurrent` that was not offloaded, classified as not-implemented or backend-cannot")->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);

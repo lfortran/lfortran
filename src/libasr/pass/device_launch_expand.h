@@ -2,6 +2,7 @@
 #define LIBASR_PASS_DEVICE_LAUNCH_EXPAND_H
 
 #include <libasr/asr.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/utils.h>
 
 namespace LCompilers {
@@ -10,11 +11,12 @@ namespace LCompilers {
                                    const PassOptions &pass_options);
 
     // True when this pass can lay out every argument of a launch of `kernel`
-    // exactly as the device code generator does. When it cannot, `reason`
-    // says why, so that the caller can keep the loop on the host and warn.
+    // exactly as the device code generator does. When it cannot, `decline`
+    // says why, so that the caller can keep the loop on the host and report
+    // it.
     bool gpu_launch_is_supported(Allocator &al, ASR::symbol_t *kernel,
                                  ASR::call_arg_t *args, size_t n_args,
-                                 std::string &reason);
+                                 GpuDecline &decline);
 
 } // namespace LCompilers
 

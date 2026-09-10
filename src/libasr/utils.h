@@ -80,6 +80,9 @@ struct PassOptions {
     // A GPU backend was asked for, so a loop that cannot be offloaded is an
     // error. Set this to let such a loop fall back to the host instead.
     bool gpu_allow_cpu_fallback = false;
+    // Print one line per declined loop, naming the class of the decline, so
+    // that a corpus can be swept and the gaps counted.
+    bool gpu_decline_stats = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
