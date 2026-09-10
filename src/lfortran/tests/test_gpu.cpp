@@ -24,6 +24,16 @@ TEST_CASE("GPU declines require explicit fallback regardless of category") {
     CHECK(gpu_decline_class(GpuDecline(GpuDeclineReason::ScalarNotNumeric),
         cuda) == GpuDeclineClass::NotImplemented);
 
+    // A statement is classified by what the device has to run it with: CUDA
+    // has a printf and a trap of its own, so what is missing there is the
+    // lowering; Metal has neither, so no lowering would help.
+    GpuDecline device_stop(GpuDeclineReason::StatementStop);
+    GpuDecline device_io(GpuDeclineReason::StatementIo);
+    CHECK(gpu_decline_class(device_stop, cuda) == GpuDeclineClass::NotImplemented);
+    CHECK(gpu_decline_class(device_stop, metal) == GpuDeclineClass::BackendCannot);
+    CHECK(gpu_decline_class(device_io, cuda) == GpuDeclineClass::NotImplemented);
+    CHECK(gpu_decline_class(device_io, metal) == GpuDeclineClass::BackendCannot);
+
     PassOptions options;
     options.gpu_offload_cuda = true;
     diag::Diagnostics strict;
