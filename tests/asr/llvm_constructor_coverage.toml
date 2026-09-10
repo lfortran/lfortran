@@ -15,6 +15,7 @@
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"
 "stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
+"stmt.GpuOffload" = "lowered:gpu_kernel_finalize"
 "stmt.ForAllSingle" = "lowered:for_all"
 "stmt.ForEach" = "helper:container iteration"
 "stmt.IfArithmetic" = "helper:branch lowering"

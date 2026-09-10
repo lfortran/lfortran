@@ -4223,8 +4223,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_288.f90"
 gpu_cuda_kernel = true
-# A GPU backend is strict: this loop cannot be offloaded, so the compilation
-# fails unless --gpu-allow-cpu-fallback is given.
+# Backend limitations also require an explicit CPU fallback waiver.
 gpu_offload_strict = true
 
 [[test]]
@@ -4337,6 +4336,19 @@ options = "--realloc-lhs-arrays --gpu-decline-stats"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_328.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_329.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_331.f90"
+gpu_cuda_kernel = true
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_332.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 

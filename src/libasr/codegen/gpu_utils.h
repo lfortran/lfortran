@@ -25,6 +25,7 @@ namespace LCompilers {
 enum class GpuExtentKind {
     None,       // nothing could be derived: the extent is not offloadable
     Constant,   // the integer `int_value`
+    Cast,       // an explicit integer conversion of children[0]
     BinOp,      // children[0] `binop` children[1]
     Neg,        // -children[0]
     Compare,    // children[0] `cmpop` children[1]
@@ -117,6 +118,8 @@ struct GpuStructMemberKey {
 };
 
 struct GpuVlaDim {
+    ASR::expr_t *source_extent = nullptr;
+    ASR::symbol_t *extent_parameter = nullptr;
     bool is_constant = true;
     int64_t constant_value = 1;
     // When true, size is read from a struct member's allocatable
@@ -219,7 +222,7 @@ inline std::set<std::string> gpu_declaration_reads(ASR::Variable_t *var,
     }
     std::string var_name(var->m_name);
     for (const GpuVlaWorkspace &ws : workspaces) {
-        if (ws.var_name != var_name) continue;
+        if (ws.var != &var->base) continue;
         for (const GpuVlaDim &dim : ws.dims) {
             if (dim.is_constant) continue;
             if (dim.is_struct_member_size) {
@@ -1110,47 +1113,9 @@ inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
 // question is what device code can reach, because whoever receives the
 // routine can call it; it does not when the question is what a kernel body
 // has to have spliced into it, which is only what that body actually calls.
-class GpuCalleeCollector :
-        public ASRUtils::BlockBodyWalkVisitor<GpuCalleeCollector> {
-public:
-    std::set<ASR::Function_t*> callees;
-    const bool procedure_values;
-
-    explicit GpuCalleeCollector(bool procedure_values_)
-        : procedure_values(procedure_values_) {}
-
-    void add(ASR::symbol_t *sym) {
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
-        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
-            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
-        }
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_SubroutineCall(x);
-    }
-
-    void visit_Var(const ASR::Var_t &x) {
-        if (procedure_values) add(x.m_v);
-    }
-};
-
 inline std::set<ASR::Function_t*> gpu_callees(ASR::stmt_t **body,
         size_t n_body, bool procedure_values) {
-    GpuCalleeCollector collector(procedure_values);
-    for (size_t i = 0; i < n_body; i++) {
-        collector.visit_stmt(*body[i]);
-    }
-    return collector.callees;
+    return ASRUtils::get_called_functions(body, n_body, procedure_values);
 }
 
 // Counts the writes to one scalar in a statement list, keeping the value of
@@ -1430,8 +1395,14 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         return out;
     }
     if (ASR::is_a<ASR::Cast_t>(*v)) {
-        return gpu_derive_extent(ASR::down_cast<ASR::Cast_t>(v)->m_arg,
-            scope, depth);
+        GpuExtent argument = gpu_derive_extent(
+            ASR::down_cast<ASR::Cast_t>(v)->m_arg, scope, depth);
+        if (!argument.ok()) return none;
+        GpuExtent out;
+        out.kind = GpuExtentKind::Cast;
+        out.expr = v;
+        out.children.push_back(std::move(argument));
+        return out;
     }
     // One dimension of an array, however it is spelled: `size(a, d)`, or
     // the `ubound(a,d) - lbound(a,d) + 1` an assumed-shape dummy is lowered
@@ -1905,6 +1876,7 @@ inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
 // extent is neither.
 inline bool classify_vla_dim(ASR::expr_t *dim, const GpuExtentScope &scope,
         GpuVlaDim &vd) {
+    vd.source_extent = dim;
     vd.is_constant = false;
     vd.constant_value = 0;
     GpuStructMemberKey member_key;
@@ -2094,8 +2066,8 @@ inline void scan_kernel_scope_alloc_vlas(
         int &buffer_idx,
         std::vector<GpuVlaWorkspace> &result) {
     std::set<std::string> arg_set(arg_names.begin(), arg_names.end());
-    std::set<std::string> handled_names;
-    for (auto &ws : result) handled_names.insert(ws.var_name);
+    std::set<ASR::symbol_t*> handled;
+    for (auto &ws : result) handled.insert(ws.var);
 
     for (auto &item : kernel.m_symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -2107,7 +2079,7 @@ inline void scan_kernel_scope_alloc_vlas(
         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
         std::string vname(var->m_name);
         if (arg_set.count(vname)) continue;
-        if (handled_names.count(vname)) continue;
+        if (handled.count(item.second)) continue;
         GpuVlaWorkspace ws;
         ws.var = item.second;
         bool have = false;
@@ -2257,7 +2229,7 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 std::string vname(var2->m_name);
                 bool already = false;
                 for (auto &r : result) {
-                    if (r.var_name == vname) { already = true; break; }
+                    if (r.var == item2.second) { already = true; break; }
                 }
                 if (already) continue;
                 GpuVlaWorkspace ws;
