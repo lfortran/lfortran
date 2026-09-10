@@ -9,7 +9,7 @@
 
 using namespace LCompilers;
 
-TEST_CASE("GPU decline policy distinguishes lowering gaps from backend limits") {
+TEST_CASE("GPU declines require explicit fallback regardless of category") {
     Allocator allocator(1024 * 1024);
     Location loc{0, 0};
     ASR::ttype_t *real8 = ASRUtils::TYPE(ASR::make_Real_t(allocator, loc, 8));
@@ -44,8 +44,20 @@ TEST_CASE("GPU decline policy distinguishes lowering gaps from backend limits") 
     options.gpu_offload_cuda = false;
     options.gpu_offload_metal = true;
     report_gpu_decline(options, loc, wide_real);
-    CHECK_FALSE(limited.has_error());
+    CHECK(limited.has_error());
     CHECK(limited.diagnostics.size() == 1);
+
+    diag::Diagnostics limited_waived;
+    options.diagnostics = &limited_waived;
+    options.gpu_allow_cpu_fallback = true;
+    report_gpu_decline(options, loc, wide_real);
+    CHECK_FALSE(limited_waived.has_error());
+    CHECK(limited_waived.diagnostics.size() == 1);
+
+    diag::Diagnostics no_alternative;
+    options.diagnostics = &no_alternative;
+    report_gpu_decline(options, loc, wide_real, false);
+    CHECK(no_alternative.has_error());
 }
 
 TEST_CASE("GPU layouts preserve identity, extents and device closure") {

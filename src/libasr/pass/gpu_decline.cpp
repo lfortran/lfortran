@@ -16,8 +16,7 @@ void report_gpu_decline(const PassOptions &options, const Location &where,
         std::cerr << "gpu-decline: " << gpu_decline_class_name(category)
             << ": " << why << std::endl;
     }
-    bool fallback = has_fallback && (options.gpu_allow_cpu_fallback ||
-        category == GpuDeclineClass::BackendCannot);
+    bool fallback = has_fallback && options.gpu_allow_cpu_fallback;
     if (fallback) {
         options.diagnostics->message_label(
             "parallel loop not offloaded to the GPU, "

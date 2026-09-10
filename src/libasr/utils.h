@@ -77,8 +77,8 @@ struct PassOptions {
     // `!$omp parallel do` asks for host threads. Offloading one onto a device
     // is a choice the user has to make, so it is off unless asked for.
     bool gpu_offload_omp_loops = false;
-    // Permit CPU fallback for implementation gaps. Native backend limitations
-    // already warn and select the host alternative.
+    // Explicitly permit CPU fallback for any declined offload, including
+    // native backend limitations. Every decline is an error by default.
     bool gpu_allow_cpu_fallback = false;
     // Print one line per declined loop, naming the class of the decline, so
     // that a corpus can be swept and the gaps counted.

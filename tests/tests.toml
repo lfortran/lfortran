@@ -4223,7 +4223,8 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_288.f90"
 gpu_cuda_kernel = true
-# STOP is a backend limitation: it warns and keeps the CPU alternative.
+# Backend limitations also require an explicit CPU fallback waiver.
+gpu_offload_strict = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_289.f90"

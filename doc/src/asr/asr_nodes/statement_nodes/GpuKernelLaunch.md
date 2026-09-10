@@ -53,11 +53,12 @@ available; `--gpu-allow-cpu-fallback` instead runs that loop on the CPU.
 Reallocation and conditional assignments remain eligible when they preserve
 every extent, not just the total element count.
 
-An unimplemented lowering is an error unless `--gpu-allow-cpu-fallback` is
-enabled. A backend capability limitation warns and selects the CPU alternative.
-`--gpu-decline-stats` reports the corresponding `not-implemented` or
-`backend-cannot` category. A manually constructed launch without a CPU
-alternative cannot use fallback.
+Every declined offload is a compile-time error unless
+`--gpu-allow-cpu-fallback` is explicitly enabled, including native backend
+limitations. With that flag, a decline warns and selects the CPU alternative.
+`--gpu-decline-stats` reports the `not-implemented` or `backend-cannot`
+category without changing this policy. A manually constructed launch without
+a CPU alternative cannot use fallback even with the flag.
 
 ## Examples
 
