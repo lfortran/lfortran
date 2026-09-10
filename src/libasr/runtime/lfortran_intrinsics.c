@@ -5222,28 +5222,30 @@ LFORTRAN_API void _lfortran_strcpy_alloc(
 
 
 
-int strlen_without_trailing_space(char *str, int64_t len) {
-    int end = len - 1;
-    while(end >= 0 && str[end] == ' ') end--;
-    return end + 1;
-}
-
 int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
-    int s1_len_ = strlen_without_trailing_space(s1, s1_len);
-    int s2_len_ = strlen_without_trailing_space(s2, s2_len);
-    int lim = MIN(s1_len_, s2_len_);
-    int res = 0;
-    int i ;
+    /* If the operands are of different lengths, the shorter one is treated
+       as if it were blank padded on the right to the length of the longer
+       one before the comparison takes place. Characters are ordered by their
+       position in the collating sequence, so compare them as unsigned
+       values. */
+    int64_t lim = MIN(s1_len, s2_len);
+    int64_t i;
     for (i = 0; i < lim; i++) {
         if (s1[i] != s2[i]) {
-            /* Characters are ordered by their position in the collating
-               sequence, so compare them as unsigned values */
-            res = (unsigned char)s1[i] - (unsigned char)s2[i];
-            break;
+            return (unsigned char)s1[i] - (unsigned char)s2[i];
         }
     }
-    res = (i == lim)? s1_len_ - s2_len_ : res;
-    return res;
+    for (i = lim; i < s1_len; i++) {
+        if (s1[i] != ' ') {
+            return (unsigned char)s1[i] - (unsigned char)' ';
+        }
+    }
+    for (i = lim; i < s2_len; i++) {
+        if (s2[i] != ' ') {
+            return (unsigned char)' ' - (unsigned char)s2[i];
+        }
+    }
+    return 0;
 }
 
 LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num)
