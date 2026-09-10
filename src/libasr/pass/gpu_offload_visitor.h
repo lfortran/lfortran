@@ -226,15 +226,6 @@ public:
 
     void inline_intrinsic_sum(ParallelLoopNest &nest);
 
-    ASR::expr_t* dot_product_operand_element(ASR::expr_t *arg,
-            ASR::expr_t *k, ASR::ttype_t *elem_type, const Location &loc);
-
-    ASR::expr_t* dot_product_extent(ASR::expr_t *arg, const Location &loc,
-            bool allow_bound);
-
-    void inline_dot_product_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
-                                     SymbolTable *scope);
-
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
 
     static bool is_int_literal(ASR::expr_t *e, int64_t value);

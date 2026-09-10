@@ -647,8 +647,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (ASR::is_a<ASR::Function_t>(*resolved)) {
                 ASR::Function_t *fn =
                     ASR::down_cast<ASR::Function_t>(resolved);
-                inline_dot_product_in_stmts(fn->m_body, fn->n_body,
-                    fn->m_symtab);
                 inline_sum_in_stmts(fn->m_body, fn->n_body,
                     fn->m_symtab);
             }
