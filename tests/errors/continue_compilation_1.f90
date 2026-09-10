@@ -1183,3 +1183,10 @@ contains
         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
     end function
 end module
+
+! A statement label is a positive integer, so a leading zero is not a label at
+! all and must be rejected by the tokenizer.
+subroutine zero_statement_label_1()
+    implicit none
+    0 print *, "unreachable"  ! {Error} Zero is not a valid statement label
+end subroutine
