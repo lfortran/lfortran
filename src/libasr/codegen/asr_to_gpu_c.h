@@ -338,9 +338,9 @@ public:
     // and the component rather than by the name the two are spelled into.
     GpuMemberArgumentMap struct_array_offset_params{&active_scope};
 
-    // Maps "struct_arr.member" to the sizes-buffer parameter name
-    // for allocatable array members of array-of-struct kernel arguments.
-    std::map<std::string, std::string> struct_array_sizes_params;
+    // The sizes buffer the kernel layout hands over for an allocatable
+    // array component of an array-of-struct argument, found the same way.
+    GpuMemberArgumentMap struct_array_sizes_params{&active_scope};
 
     // Tracks local struct variables that were assigned from an element
     // of an array-of-struct. Maps local_var_name -> (array_name, index_expr_string).
@@ -2136,19 +2136,21 @@ public:
             if (ASR::is_a<ASR::Var_t>(*arr_ai->m_v)) {
                 std::string arr_name = ASRUtils::symbol_name(
                     ASR::down_cast<ASR::Var_t>(arr_ai->m_v)->m_v);
-                std::string key = arr_name + "." + mem_name;
-                auto sit = struct_array_sizes_params.find(key);
+                const ASR::gpu_kernel_argument_t *sizes =
+                    struct_array_sizes_params.find(
+                        ASR::down_cast<ASR::Var_t>(arr_ai->m_v)->m_v,
+                        sm->m_m);
                 std::string idx_str =
                     struct_array_element_index_str(arr_ai);
-                if (sit != struct_array_sizes_params.end()
-                        && !idx_str.empty()) {
+                if (sizes && !idx_str.empty()) {
+                    std::string buffer = kernel_parameter(sizes);
                     size_t rank = struct_member_rank(sm->m_m);
                     if (dim_value > 0 && (size_t)dim_value <= rank) {
-                        src << struct_member_extent_expr(sit->second,
+                        src << struct_member_extent_expr(buffer,
                             idx_str, rank, (size_t)(dim_value - 1));
                     } else {
                         src << struct_member_total_size_expr(
-                            sit->second, idx_str, rank);
+                            buffer, idx_str, rank);
                     }
                     return;
                 }
@@ -2236,16 +2238,19 @@ public:
                             mem_name);
                     }
                     size_t rank = struct_member_rank(mv);
-                    auto sit = struct_array_sizes_params.find(key);
-                    if (sit != struct_array_sizes_params.end()) {
+                    const ASR::gpu_kernel_argument_t *sizes =
+                        struct_array_sizes_params.find(&arr_var->base,
+                            &mv->base);
+                    if (sizes) {
+                        std::string buffer = kernel_parameter(sizes);
                         src << ", " << struct_member_total_size_expr(
-                            sit->second, idx_str, rank);
+                            buffer, idx_str, rank);
                         // Per-dimension extents, matching the callee
                         // signature. They come from the same buffer, one
                         // entry per dimension of this element.
                         for (size_t d = 0; rank > 1 && d < rank; d++) {
                             src << ", " << struct_member_extent_expr(
-                                sit->second, idx_str, rank, d);
+                                buffer, idx_str, rank, d);
                         }
                     } else {
                         src << ", " << GpuNames::member_size(arr_name,
@@ -2321,11 +2326,11 @@ public:
             if (arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
-                std::string key = arr_name + "." + mem_name;
-                auto sit = struct_array_sizes_params.find(key);
-                if (sit != struct_array_sizes_params.end()) {
+                const ASR::gpu_kernel_argument_t *sizes =
+                    struct_array_sizes_params.find(arr_name, &mv->base);
+                if (sizes) {
                     src << ", " << struct_member_total_size_expr(
-                        sit->second, idx_str, rank);
+                        kernel_parameter(sizes), idx_str, rank);
                 } else {
                     src << ", " << GpuNames::member_size(var_name,
                         mem_name);
@@ -2360,9 +2365,9 @@ public:
             if (rank > 1 && arr_it != struct_from_array_elem.end()) {
                 std::string arr_name = arr_it->second.first;
                 std::string idx_str = arr_it->second.second;
-                std::string key = arr_name + "." + mem_name;
-                auto sit = struct_array_sizes_params.find(key);
-                if (sit == struct_array_sizes_params.end()) {
+                const ASR::gpu_kernel_argument_t *sizes =
+                    struct_array_sizes_params.find(arr_name, &mv->base);
+                if (!sizes) {
                     throw CodeGenError("gpu offload: the extents of the "
                         "rank-" + std::to_string(rank) + " component `"
                         + mem_name + "` of `" + arr_name + "` are not "
@@ -2370,7 +2375,7 @@ public:
                 }
                 for (size_t d = 0; d < rank; d++) {
                     src << ", " << struct_member_extent_expr(
-                        sit->second, idx_str, rank, d);
+                        kernel_parameter(sizes), idx_str, rank, d);
                 }
             } else if (rank > 1) {
                 std::string key = var_name + "." + mem_name;
@@ -4554,11 +4559,13 @@ public:
                                         "inside a gpu kernel",
                                         ai->base.base.loc);
                                 }
-                                auto sit =
-                                    struct_array_sizes_params.find(key);
-                                std::string sizes_param =
-                                    sit != struct_array_sizes_params.end()
-                                    ? sit->second : std::string();
+                                const ASR::gpu_kernel_argument_t *sizes =
+                                    struct_array_sizes_params.find(
+                                        ASR::down_cast<ASR::Var_t>(
+                                            arr_ai->m_v)->m_v, sm->m_m);
+                                std::string sizes_param = sizes
+                                    ? kernel_parameter(sizes)
+                                    : std::string();
                                 std::string mem_idx_str =
                                     struct_member_element_index_str(
                                         ai, arr_name, mem_name,

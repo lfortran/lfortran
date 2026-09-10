@@ -123,7 +123,7 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
                     struct_array_offset_params.add(&arg);
                     break;
                 case ASR::gpu_argument_kindType::GpuMemberSizes:
-                    struct_array_sizes_params[key] = parameter;
+                    struct_array_sizes_params.add(&arg);
                     break;
                 default: LCOMPILERS_ASSERT(false);
             }
