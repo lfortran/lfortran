@@ -42,6 +42,8 @@ public:
         : StatementWalkVisitor(al), pass_options(pass_options_),
           device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
 
+    void visit_GpuOffload(const ASR::GpuOffload_t &) {}
+
     void load_submodule_deps(ASR::TranslationUnit_t &sub_tu);
 
     void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu);
@@ -140,14 +142,6 @@ public:
 
     static const ASR::FunctionCall_t* spliceable_call(ASR::stmt_t *stmt);
 
-    static ASR::symbol_t* nested_scope_entered(ASR::stmt_t *stmt);
-
-    static void nested_scope_contents(ASR::symbol_t *b, SymbolTable *&st,
-            ASR::stmt_t **&body, size_t &n_body);
-
-    static bool collect_flattened_scopes(ASR::stmt_t **stmts, size_t n,
-            std::vector<ASR::symbol_t*> &scopes);
-
     static bool can_inline_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc);
 
@@ -161,12 +155,6 @@ public:
             std::set<ASR::Function_t*> &on_stack,
             GpuDecline &decline,
             bool spliceable = true);
-
-    void substitute_in_type(ASR::ttype_t *t,
-            std::map<ASR::symbol_t*, ASR::expr_t*> &subst);
-
-    bool flatten_device_function_body(ASR::stmt_t **stmts, size_t n_stmts,
-            ASRUtils::ExprStmtDuplicator &dup, Vec<ASR::stmt_t*> &out);
 
     ASR::expr_t* gather_section_actual(const Location &loc,
             SymbolTable *block_scope, ASR::Function_t *fn,

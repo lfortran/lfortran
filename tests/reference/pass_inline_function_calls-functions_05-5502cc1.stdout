@@ -7,6 +7,304 @@
                     (SymbolTable
                         2
                         {
+                            __inlined_f:
+                                (Block
+                                    (SymbolTable
+                                        7
+                                        {
+                                            a_1:
+                                                (Variable
+                                                    7
+                                                    a_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            b_1:
+                                                (Variable
+                                                    7
+                                                    b_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x_1:
+                                                (Variable
+                                                    7
+                                                    x_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __inlined_f
+                                    [(Assignment
+                                        (Var 7 a_1)
+                                        (Var 2 x)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 7 x_1)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 7 b_1)
+                                        (IntegerBinOp
+                                            (Var 7 a_1)
+                                            Add
+                                            (Var 7 x_1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 2 f_result)
+                                        (Var 7 b_1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            __inlined_signr32:
+                                (Block
+                                    (SymbolTable
+                                        8
+                                        {
+                                            r:
+                                                (Variable
+                                                    8
+                                                    r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x_1:
+                                                (Variable
+                                                    8
+                                                    x_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            y_1:
+                                                (Variable
+                                                    8
+                                                    y_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __inlined_signr32
+                                    [(Assignment
+                                        (Var 8 x_1)
+                                        (Var 2 a)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 8 y_1)
+                                        (Var 2 b)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 8 r)
+                                        (Var 8 x_1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (LogicalBinOp
+                                            (LogicalBinOp
+                                                (RealCompare
+                                                    (Var 8 x_1)
+                                                    GtE
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (RealCompare
+                                                    (Var 8 y_1)
+                                                    GtE
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            Or
+                                            (LogicalBinOp
+                                                (RealCompare
+                                                    (Var 8 x_1)
+                                                    LtE
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                And
+                                                (RealCompare
+                                                    (Var 8 y_1)
+                                                    LtE
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 8 r)
+                                            (Var 8 x_1)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        [(Assignment
+                                            (Var 8 r)
+                                            (RealUnaryMinus
+                                                (Var 8 x_1)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                    )
+                                    (Assignment
+                                        (Var 2 signr32_result)
+                                        (Var 8 r)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
                             a:
                                 (Variable
                                     2
@@ -31,30 +329,6 @@
                                     ()
                                     []
                                 ),
-                            a1:
-                                (Variable
-                                    2
-                                    a1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
                             b:
                                 (Variable
                                     2
@@ -65,30 +339,6 @@
                                     ()
                                     Default
                                     (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
-                            b1:
-                                (Variable
-                                    2
-                                    b1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -254,6 +504,193 @@
                                     (SymbolTable
                                         4
                                         {
+                                            __inlined_signr32:
+                                                (Block
+                                                    (SymbolTable
+                                                        6
+                                                        {
+                                                            r:
+                                                                (Variable
+                                                                    6
+                                                                    r
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            x_1:
+                                                                (Variable
+                                                                    6
+                                                                    x_1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                ),
+                                                            y_1:
+                                                                (Variable
+                                                                    6
+                                                                    y_1
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Real 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                )
+                                                        })
+                                                    __inlined_signr32
+                                                    [(Assignment
+                                                        (Var 6 x_1)
+                                                        (RealConstant
+                                                            1.000000
+                                                            (Real 4)
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 6 y_1)
+                                                        (Var 4 a)
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (Assignment
+                                                        (Var 6 r)
+                                                        (Var 6 x_1)
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (If
+                                                        ()
+                                                        (LogicalBinOp
+                                                            (LogicalBinOp
+                                                                (RealCompare
+                                                                    (Var 6 x_1)
+                                                                    GtE
+                                                                    (RealConstant
+                                                                        0.000000
+                                                                        (Real 4)
+                                                                    )
+                                                                    (Logical 4)
+                                                                    ()
+                                                                )
+                                                                And
+                                                                (RealCompare
+                                                                    (Var 6 y_1)
+                                                                    GtE
+                                                                    (RealConstant
+                                                                        0.000000
+                                                                        (Real 4)
+                                                                    )
+                                                                    (Logical 4)
+                                                                    ()
+                                                                )
+                                                                (Logical 4)
+                                                                ()
+                                                            )
+                                                            Or
+                                                            (LogicalBinOp
+                                                                (RealCompare
+                                                                    (Var 6 x_1)
+                                                                    LtE
+                                                                    (RealConstant
+                                                                        0.000000
+                                                                        (Real 4)
+                                                                    )
+                                                                    (Logical 4)
+                                                                    ()
+                                                                )
+                                                                And
+                                                                (RealCompare
+                                                                    (Var 6 y_1)
+                                                                    LtE
+                                                                    (RealConstant
+                                                                        0.000000
+                                                                        (Real 4)
+                                                                    )
+                                                                    (Logical 4)
+                                                                    ()
+                                                                )
+                                                                (Logical 4)
+                                                                ()
+                                                            )
+                                                            (Logical 4)
+                                                            ()
+                                                        )
+                                                        [(Assignment
+                                                            (Var 6 r)
+                                                            (Var 6 x_1)
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )]
+                                                        [(Assignment
+                                                            (Var 6 r)
+                                                            (RealUnaryMinus
+                                                                (Var 6 x_1)
+                                                                (Real 4)
+                                                                ()
+                                                            )
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                        )]
+                                                    )
+                                                    (Assignment
+                                                        (Var 4 signr32_result)
+                                                        (Var 6 r)
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                ),
                                             a:
                                                 (Variable
                                                     4
@@ -302,58 +739,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            r:
+                                            signr32_result:
                                                 (Variable
                                                     4
-                                                    r
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            x:
-                                                (Variable
-                                                    4
-                                                    x
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            y:
-                                                (Variable
-                                                    4
-                                                    y
+                                                    signr32_result
                                                     []
                                                     Local
                                                     ()
@@ -393,112 +782,16 @@
                                     )
                                     []
                                     [(Var 4 a)]
-                                    [(Assignment
-                                        (Var 4 x)
-                                        (RealConstant
-                                            1.000000
-                                            (Real 4)
-                                        )
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 4 y)
-                                        (Var 4 a)
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 4 r)
-                                        (Var 4 x)
-                                        ()
-                                        .false.
-                                        .false.
-                                    )
-                                    (If
-                                        ()
-                                        (LogicalBinOp
-                                            (LogicalBinOp
-                                                (RealCompare
-                                                    (Var 4 x)
-                                                    GtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                And
-                                                (RealCompare
-                                                    (Var 4 y)
-                                                    GtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            Or
-                                            (LogicalBinOp
-                                                (RealCompare
-                                                    (Var 4 x)
-                                                    LtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                And
-                                                (RealCompare
-                                                    (Var 4 y)
-                                                    LtE
-                                                    (RealConstant
-                                                        0.000000
-                                                        (Real 4)
-                                                    )
-                                                    (Logical 4)
-                                                    ()
-                                                )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        [(Assignment
-                                            (Var 4 r)
-                                            (Var 4 x)
-                                            ()
-                                            .false.
-                                            .false.
-                                        )]
-                                        [(Assignment
-                                            (Var 4 r)
-                                            (RealUnaryMinus
-                                                (Var 4 x)
-                                                (Real 4)
-                                                ()
-                                            )
-                                            ()
-                                            .false.
-                                            .false.
-                                        )]
+                                    [(BlockCall
+                                        -1
+                                        4 __inlined_signr32
                                     )
                                     (Assignment
                                         (Var 4 b)
                                         (RealBinOp
                                             (Var 4 a)
                                             Add
-                                            (Var 4 r)
+                                            (Var 4 signr32_result)
                                             (Real 4)
                                             ()
                                         )
@@ -511,6 +804,30 @@
                                     .true.
                                     .true.
                                     ()
+                                ),
+                            f_result:
+                                (Variable
+                                    2
+                                    f_result
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -552,30 +869,6 @@
                                 (Variable
                                     2
                                     q
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
-                            r:
-                                (Variable
-                                    2
-                                    r
                                     []
                                     Local
                                     ()
@@ -783,6 +1076,30 @@
                                     .true.
                                     ()
                                 ),
+                            signr32_result:
+                                (Variable
+                                    2
+                                    signr32_result
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             x:
                                 (Variable
                                     2
@@ -793,54 +1110,6 @@
                                     (IntegerConstant 5 (Integer 4) Decimal)
                                     Save
                                     (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
-                            x1:
-                                (Variable
-                                    2
-                                    x1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                ),
-                            x2:
-                                (Variable
-                                    2
-                                    x2
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
                                     ()
                                     Source
                                     Public
@@ -878,64 +1147,17 @@
                                     NotMethod
                                     ()
                                     []
-                                ),
-                            y1:
-                                (Variable
-                                    2
-                                    y1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
                                 )
                         })
                     functions_01
                     []
-                    [(Assignment
-                        (Var 2 a1)
-                        (Var 2 x)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 x1)
-                        (IntegerConstant 2 (Integer 4) Decimal)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 b1)
-                        (IntegerBinOp
-                            (Var 2 a1)
-                            Add
-                            (Var 2 x1)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
+                    [(BlockCall
+                        -1
+                        2 __inlined_f
                     )
                     (Assignment
                         (Var 2 y)
-                        (Var 2 b1)
+                        (Var 2 f_result)
                         ()
                         .false.
                         .false.
@@ -1003,106 +1225,13 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 x2)
-                        (Var 2 a)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 y1)
-                        (Var 2 b)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 r)
-                        (Var 2 x2)
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (If
-                        ()
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x2)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y1)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x2)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y1)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            (Logical 4)
-                            ()
-                        )
-                        [(Assignment
-                            (Var 2 r)
-                            (Var 2 x2)
-                            ()
-                            .false.
-                            .false.
-                        )]
-                        [(Assignment
-                            (Var 2 r)
-                            (RealUnaryMinus
-                                (Var 2 x2)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                        )]
+                    (BlockCall
+                        -1
+                        2 __inlined_signr32
                     )
                     (Assignment
                         (Var 2 c)
-                        (Var 2 r)
+                        (Var 2 signr32_result)
                         ()
                         .false.
                         .false.
