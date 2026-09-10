@@ -1186,6 +1186,10 @@ asr = true
 julia = true
 
 [[test]]
+filename = "../integration_tests/arrays_131.f90"
+cpp = true
+
+[[test]]
 filename = "../integration_tests/arrays_01_size.f90"
 asr = true
 llvm = true
