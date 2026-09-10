@@ -468,6 +468,10 @@ public:
         GpuGatherGuard *gather_guard = nullptr;
     };
 
+    void rewrite_loop_body_for_kernel(ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*>
+                &enclosing_assoc_map);
+
     void build_kernel_launch(const ASR::OMPRegion_t &region,
             const ParallelLoopNest &work, const Location &loc,
             GpuLaunchPlan &plan);
