@@ -26,18 +26,20 @@ public:
         return is_numeric_scalar(type) && gpu_scalar_width_supported(type);
     }
 
+    // Whether the layout hands this component over as a device buffer of
+    // its own and the device can work with what is in it. Which components
+    // are decomposed at all is not decided here -- it is one answer, in
+    // gpu_component_is_decomposed -- so that the components this accepts
+    // and the components the layout then goes on to describe are the same
+    // ones.
     bool is_decomposed_member(ASR::symbol_t *member) {
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
-        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
-        if (!ASRUtils::is_allocatable(variable->m_type)) return false;
-        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
-            variable->m_type);
-        if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
-        ASR::ttype_t *element = ASRUtils::type_get_past_array(inner);
-        if (ASR::is_a<ASR::StructType_t>(*element)) {
-            return struct_is_plain(variable->m_type_declaration);
+        if (!gpu_component_is_decomposed(member)) return false;
+        GpuComponentLayout component = gpu_component_layout(member);
+        if (ASR::is_a<ASR::StructType_t>(*component.element_type)) {
+            return struct_is_plain(ASR::down_cast<ASR::Variable_t>(member)
+                ->m_type_declaration);
         }
-        return is_plain_scalar(element);
+        return is_plain_scalar(component.element_type);
     }
 
     bool struct_is_plain(ASR::symbol_t *struct_sym) {

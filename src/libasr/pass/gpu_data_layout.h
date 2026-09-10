@@ -42,6 +42,15 @@ struct GpuComponentLayout {
     std::string name() const;
 };
 
+// Whether the device layout of a derived-type kernel argument hands this
+// component over as a device buffer of its own, rather than storing it
+// inline in the element. See `gpu_decomposed_components`.
+bool gpu_component_is_decomposed(ASR::symbol_t *component);
+
+// What `gpu_decomposed_components` records about one component, for a
+// caller holding the component and not the type it belongs to.
+GpuComponentLayout gpu_component_layout(ASR::symbol_t *component);
+
 // The components of `definition` that a derived-type kernel argument's
 // device layout hands over as device buffers of their own, in the order
 // they are laid out: the components it inherits first, then its own.

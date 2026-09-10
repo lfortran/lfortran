@@ -13,7 +13,7 @@ std::string GpuComponentLayout::name() const {
     return ASRUtils::symbol_name(component);
 }
 
-static GpuComponentLayout component_layout(ASR::symbol_t *component) {
+GpuComponentLayout gpu_component_layout(ASR::symbol_t *component) {
     ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(
         ASRUtils::symbol_get_past_external(component));
     GpuComponentLayout out;
@@ -28,7 +28,7 @@ static GpuComponentLayout component_layout(ASR::symbol_t *component) {
     return out;
 }
 
-static bool is_decomposed_component(ASR::symbol_t *component) {
+bool gpu_component_is_decomposed(ASR::symbol_t *component) {
     if (!component || !ASR::is_a<ASR::Variable_t>(*component)) return false;
     ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(component)->m_type;
     return ASRUtils::is_allocatable(type)
@@ -43,8 +43,8 @@ static void collect_decomposed_components(ASR::Struct_t *st,
         seen);
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *component = st->m_symtab->get_symbol(st->m_members[i]);
-        if (!is_decomposed_component(component)) continue;
-        out.push_back(component_layout(component));
+        if (!gpu_component_is_decomposed(component)) continue;
+        out.push_back(gpu_component_layout(component));
     }
 }
 
@@ -76,7 +76,7 @@ std::vector<GpuComponentLayout> gpu_component_layouts(
                 ? gpu_struct_lookup_member(&in_struct->base, name)
                 : entry.m_member;
             if (!component) continue;
-            GpuComponentLayout described = component_layout(component);
+            GpuComponentLayout described = gpu_component_layout(component);
             described.data = &entry;
             found[name] = components.size();
             components.push_back(described);
