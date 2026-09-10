@@ -139,7 +139,7 @@ end program
     }
     {
         Allocator restored_allocator(32 * 1024 * 1024);
-        auto *restored = ASR::down_cast<ASR::TranslationUnit_t>(
+        auto *restored = ASR::down_cast2<ASR::TranslationUnit_t>(
             deserialize_asr(restored_allocator, serialize(unit), true, 0));
         fix_external_symbols(*restored, *restored->m_symtab);
         diag::Diagnostics restored_diagnostics;
