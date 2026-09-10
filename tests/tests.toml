@@ -1963,6 +1963,13 @@ filename = "../integration_tests/format_02.f90"
 ast = true
 ast_f90 = true
 
+# Pins that a Hollerith edit descriptor emits no diagnostics: the n characters
+# it carries are literal text, so letters in them must not be scanned as edit
+# descriptors and reported as a missing comma (C1302).
+[[test]]
+filename = "../integration_tests/format_hollerith_02.f90"
+semantics_only_cc = true
+
 [[test]]
 filename = "format1.f90"
 run = true

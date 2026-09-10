@@ -400,6 +400,7 @@ RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
 
 RUN(NAME label_01 LABELS gfortran llvm)
 RUN(NAME format_hollerith_01 LABELS gfortran llvm)
+RUN(NAME format_hollerith_02 LABELS gfortran llvm)
 
 RUN(NAME print_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp llvm2 wasm fortran mlir)
 RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortran)
