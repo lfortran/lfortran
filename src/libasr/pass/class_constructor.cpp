@@ -100,8 +100,17 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
                 return ;
             }
 
+            // A structure constructor is a scalar value. When the target is an
+            // array (a whole array, or an array section), the constructor is
+            // broadcast over it, so its components cannot be written straight
+            // into the target: a component reference built on an array-valued
+            // base is itself an array, and the value being assigned is a
+            // scalar. Materialise the constructor in a scalar temporary
+            // instead and leave the original assignment in place, so the
+            // array passes lower the broadcast.
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-            if (ASR::is_a<ASR::Allocatable_t>(*target_type) && 
+            if ((ASR::is_a<ASR::Allocatable_t>(*target_type) ||
+                    ASRUtils::is_array(target_type)) &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))) {
                 replacer.result_var = nullptr;
             } else {
