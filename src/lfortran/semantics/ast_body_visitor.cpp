@@ -3239,6 +3239,13 @@ public:
                 create_associate_stmt = true;
             } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
                 create_associate_stmt = true;
+            } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
+                       ASRUtils::is_pointer(tmp_type)) {
+                // A reference to a function with a data pointer result is a
+                // variable, so the associate name must be associated with the
+                // target the pointer refers to instead of being assigned a
+                // copy of its value.
+                create_associate_stmt = true;
             }
 
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
