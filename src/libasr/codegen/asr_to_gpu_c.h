@@ -179,9 +179,10 @@ public:
     // dropped, and over whether a name being indexed as an array may stand
     // for an integer at all.
     //
-    // An array backed by a workspace buffer is not sized here: its extent
-    // is the one derivation the host sized the buffer from, written out by
-    // emit_derived_extent().
+    // An array backed by a workspace buffer is not sized here: the host
+    // evaluated the one derivation of that extent before the launch and
+    // handed the value over as a kernel parameter, which workspace_dim_str()
+    // names.
     void emit_workspace_extent(ASR::expr_t *e) {
         bool outer = in_workspace_extent;
         in_workspace_extent = true;
@@ -267,20 +268,82 @@ public:
         return out;
     }
 
-    // Fortran `(hi - lo) / step + 1`; a missing step is 1, matching the
-    // host rebuild of the same extent in device_launch_expand.
-    void emit_section_range_extent(ASR::array_index_t *range) {
-        src << "(((";
-        visit_expr(range->m_right);
-        src << ") - (";
-        visit_expr(range->m_left);
-        src << ")) / (";
-        if (range->m_step) {
-            visit_expr(range->m_step);
-        } else {
-            src << "1";
+    // Write out one derived extent. The shape comes from the derivation
+    // itself, so the shader cannot spell a different formula than the one
+    // the host sized the buffer by; only a leaf is written through the ASR
+    // node it came from, in the names the kernel binds.
+    void emit_derived_extent(const GpuExtent &e) {
+        switch (e.kind) {
+            case GpuExtentKind::None: {
+                src << "/* unsupported extent */";
+                break;
+            }
+            case GpuExtentKind::Constant: {
+                // A folded constant is written through its node, so that a
+                // named constant keeps the kind it was declared with; a
+                // literal the derivation introduced has no node.
+                if (e.expr != nullptr) {
+                    visit_expr(e.expr);
+                } else {
+                    src << e.int_value;
+                }
+                break;
+            }
+            case GpuExtentKind::BinOp: {
+                src << "(";
+                emit_derived_extent(e.children[0]);
+                src << " " << binop_str(e.binop) << " ";
+                emit_derived_extent(e.children[1]);
+                src << ")";
+                break;
+            }
+            case GpuExtentKind::Neg: {
+                src << "(-";
+                emit_derived_extent(e.children[0]);
+                src << ")";
+                break;
+            }
+            case GpuExtentKind::Compare: {
+                src << "(";
+                emit_derived_extent(e.children[0]);
+                src << " " << cmpop_str(e.cmpop) << " ";
+                emit_derived_extent(e.children[1]);
+                src << ")";
+                break;
+            }
+            case GpuExtentKind::Select: {
+                src << "((";
+                emit_derived_extent(e.children[0]);
+                src << ") ? (";
+                emit_derived_extent(e.children[1]);
+                src << ") : (";
+                emit_derived_extent(e.children[2]);
+                src << "))";
+                break;
+            }
+            case GpuExtentKind::Product: {
+                src << "(";
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    if (i > 0) src << " * ";
+                    emit_derived_extent(e.children[i]);
+                }
+                src << ")";
+                break;
+            }
+            default: {
+                src << "(";
+                visit_expr(e.expr);
+                src << ")";
+                break;
+            }
         }
-        src << ") + 1)";
+    }
+
+    // The extent one range subscript of a section spans, as the shader
+    // spells it. What that extent *is* was settled once, by
+    // gpu_range_extent_of(); this only writes that one answer out.
+    void emit_section_range_extent(ASR::array_index_t *range) {
+        emit_derived_extent(gpu_device_range_extent(range));
     }
 
     // The element count of a local pointer associated with a section,

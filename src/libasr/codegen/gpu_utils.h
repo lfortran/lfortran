@@ -25,6 +25,7 @@ namespace LCompilers {
 enum class GpuExtentKind {
     None,       // nothing could be derived: the extent is not offloadable
     Constant,   // the integer `int_value`
+    Opaque,     // the value of `expr`, spelled by whoever renders it
     Cast,       // an explicit integer conversion of children[0]
     BinOp,      // children[0] `binop` children[1]
     Neg,        // -children[0]
@@ -1348,17 +1349,25 @@ inline GpuExtent gpu_extent_literal(int64_t n) {
     return out;
 }
 
+// The value of `e`, left for whoever renders the extent to spell. A leaf
+// the host has no counterpart for: a section whose bounds are values the
+// kernel alone holds is still an extent the shader can write out, in the
+// names the kernel binds.
+inline GpuExtent gpu_extent_opaque(ASR::expr_t *e) {
+    GpuExtent out;
+    if (e == nullptr) return out;
+    out.kind = GpuExtentKind::Opaque;
+    out.expr = e;
+    return out;
+}
+
 // Fortran's `(hi - lo) / step + 1`, the extent one range subscript of a
-// section spans. Written once here, so that the buffer the host sizes by it
-// and the stride the device walks by it are the same formula.
-inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
-        const GpuExtentScope &scope, int depth) {
+// section spans, over three operands each side has already put in the form
+// it can render. Written once here, so that the buffer the host sizes by it
+// and the stride the device walks by it cannot be different formulas.
+inline GpuExtent gpu_range_extent_of(GpuExtent lo, GpuExtent hi,
+        GpuExtent step) {
     GpuExtent none;
-    GpuExtent lo = gpu_derive_extent(range->m_left, scope, depth);
-    GpuExtent hi = gpu_derive_extent(range->m_right, scope, depth);
-    GpuExtent step = range->m_step != nullptr
-        ? gpu_derive_extent(range->m_step, scope, depth)
-        : gpu_extent_literal(1);
     if (!lo.ok() || !hi.ok() || !step.ok()) return none;
     GpuExtent span;
     span.kind = GpuExtentKind::BinOp;
@@ -1376,6 +1385,30 @@ inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
     out.children.push_back(std::move(whole));
     out.children.push_back(gpu_extent_literal(1));
     return out;
+}
+
+// That extent as the host derives it: every operand has to be something the
+// host can work out for itself, or nothing derives at all.
+inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
+        const GpuExtentScope &scope, int depth) {
+    return gpu_range_extent_of(
+        gpu_derive_extent(range->m_left, scope, depth),
+        gpu_derive_extent(range->m_right, scope, depth),
+        range->m_step != nullptr
+            ? gpu_derive_extent(range->m_step, scope, depth)
+            : gpu_extent_literal(1));
+}
+
+// That same extent as the device spells it: each operand is written out
+// through the node the section holds, which the shader can always do -- it
+// is inside the kernel, where every name the bounds mention has a value.
+inline GpuExtent gpu_device_range_extent(ASR::array_index_t *range) {
+    return gpu_range_extent_of(
+        gpu_extent_opaque(range->m_left),
+        gpu_extent_opaque(range->m_right),
+        range->m_step != nullptr
+            ? gpu_extent_opaque(range->m_step)
+            : gpu_extent_literal(1));
 }
 
 inline GpuExtent gpu_derive_extent(ASR::expr_t *e,

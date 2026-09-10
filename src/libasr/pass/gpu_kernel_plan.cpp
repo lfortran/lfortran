@@ -434,6 +434,12 @@ public:
                 return e.expr != nullptr ? e.expr
                     : b.i32((int) e.int_value);
             }
+            case GpuExtentKind::Opaque: {
+                // A leaf only the device can spell. It reaches the host
+                // builder when a section's bounds are values the kernel
+                // alone holds, and there is nothing to build from it.
+                return nullptr;
+            }
             case GpuExtentKind::Cast: {
                 ASR::expr_t *argument = child(0);
                 if (!argument) return nullptr;
