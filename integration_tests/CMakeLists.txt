@@ -344,12 +344,12 @@ macro(COMPILE)
             add_custom_command(
                 OUTPUT ${name}_lfortran.mod
                 COMMAND lfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_library(${name}_lfortran OBJECT ${name}_lfortran.mod)
+            add_custom_target(${name}_lfortran ALL DEPENDS ${name}_lfortran.mod)
         elseif(compiler STREQUAL "gfortran" AND ${LFORTRAN_BACKEND} STREQUAL "no")
             add_custom_command(
                 OUTPUT ${name}_gfortran.mod
                 COMMAND gfortran -c ${CMAKE_CURRENT_SOURCE_DIR}/${name}.f90)
-            add_library(${name}_gfortran OBJECT ${name}_gfortran.mod)
+            add_custom_target(${name}_gfortran ALL DEPENDS ${name}_gfortran.mod)
         endif()
     endforeach()
 endmacro(COMPILE)
