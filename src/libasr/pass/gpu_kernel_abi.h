@@ -96,7 +96,7 @@ inline std::vector<GpuVlaWorkspace> gpu_kernel_workspaces(
             dim.extent_parameter = source.m_dims[d].m_parameter;
             dim.is_constant = dim.extent_parameter == nullptr;
             if (dim.is_constant) {
-                bool constant = ASRUtils::extract_value(
+                [[maybe_unused]] const bool constant = ASRUtils::extract_value(
                     ASRUtils::expr_value(dim.source_extent),
                     dim.constant_value);
                 LCOMPILERS_ASSERT(constant);

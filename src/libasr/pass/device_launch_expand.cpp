@@ -48,10 +48,8 @@ class DeviceLaunchExpandVisitor :
     public:
 
         DeviceLaunchExpandVisitor(Allocator &al_,
-                ASR::TranslationUnit_t &unit_,
-                const PassOptions &pass_options_) :
-            PassVisitor(al_, nullptr), unit(unit_),
-            pass_options(pass_options_) {}
+                ASR::TranslationUnit_t &unit_) :
+            PassVisitor(al_, nullptr), unit(unit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
             LCOMPILERS_ASSERT(ASR::down_cast<ASR::Function_t>(
@@ -85,7 +83,6 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
-        const PassOptions &pass_options;
         std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
         // Size of the first element of a decomposed struct member. A
         // member sized at run time from another one, and a workspace sized
@@ -1088,7 +1085,7 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!gpu_device_capabilities(pass_options).device_selected()) {
         return;
     }
-    DeviceLaunchExpandVisitor v(al, unit, pass_options);
+    DeviceLaunchExpandVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
