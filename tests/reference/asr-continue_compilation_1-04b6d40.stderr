@@ -640,6 +640,18 @@ semantic error: Symbol 'bad_op' not declared
 288 |         module procedure bad_op
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+    --> tests/errors/continue_compilation_1.f90:1201:9
+     |
+1201 |         procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+    --> tests/errors/continue_compilation_1.f90:1208:9
+     |
+1208 |         procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
