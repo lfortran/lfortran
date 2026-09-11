@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: recursive device procedure 'f' has no gpu lowering yet; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+ --> tests/../integration_tests/gpu_decline_04.f90:7:5 - 9:10
+  |
+7 |        do concurrent (i = 1:4)
+  |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |        end do
+  | ...^^^^^^^^^^ recursive device procedure 'f' has no gpu lowering yet
