@@ -4550,6 +4550,10 @@ filename = "errors/implicit_typing4.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "errors/implicit_typing5.f90"
+asr_implicit_typing = true
+
+[[test]]
 filename = "external2.f90"
 asr_implicit_interface_and_typing = true
 

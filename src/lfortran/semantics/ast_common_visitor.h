@@ -2956,7 +2956,8 @@ public:
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
-	    if (compiler_options.implicit_typing) {
+	    if (compiler_options.implicit_typing &&
+		implicit_dictionary.at(std::string(1,sym[0])) != nullptr) {
 		ASR::intentType intent;
 		if (is_proc_arg) {
 		    intent = ASRUtils::intent_unspecified;
@@ -8329,6 +8330,23 @@ public:
                     } else if ( is_implicitly_declared ) {
                         ASR::symbol_t* symbol = current_scope->get_symbol(sym);
                         ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
+                        ASR::ttype_t* existing_type = symbol_variable->m_type;
+                        if (existing_type != nullptr) {
+                            ASR::ttype_t* existing_elem_type = existing_type;
+                            if (ASR::is_a<ASR::Array_t>(*existing_type)) {
+                                existing_elem_type = ASR::down_cast<ASR::Array_t>(existing_type)->m_type;
+                            }
+                            if (existing_elem_type != nullptr &&
+                                !ASRUtils::check_equal_type(existing_elem_type, type, nullptr, nullptr)) {
+                                diag.add(Diagnostic(
+                                    "Symbol is already declared in the same scope",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("redeclaration",{s.loc}),
+                                        Label("original declaration",{symbol->base.loc}, false)
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
                         } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
