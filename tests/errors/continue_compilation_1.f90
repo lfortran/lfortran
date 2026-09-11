@@ -1208,3 +1208,9 @@ subroutine binding_outside_module_2
         procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
     end type t_binding_outside_module
 end subroutine binding_outside_module_2
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement

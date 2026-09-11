@@ -400,17 +400,17 @@ semantic error: LEN parameters in parameterized derived types are not supported 
 305 |         integer, len :: n
     |         ^^^^^^^^^^^^^^^^^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'out_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
    --> tests/errors/continue_compilation_1.f90:614:14
     |
 614 |     integer, intent(out) :: out_intent
-    |              ^^^^^^^^^^^ 
+    |              ^^^^^^^^^^^ 'out_intent' is not a dummy argument
 
-semantic error: Intent attribute can only be applied to procedure arguments
+semantic error: 'in_intent' has an intent attribute but is not a dummy argument of 'op_clash_f'
    --> tests/errors/continue_compilation_1.f90:615:14
     |
 615 |     integer, intent(in) :: in_intent
-    |              ^^^^^^^^^^ 
+    |              ^^^^^^^^^^ 'in_intent' is not a dummy argument
 
 semantic error: Parameterized derived type 'container' parameter 'ik' has no default value and must be specified
    --> tests/errors/continue_compilation_1.f90:626:5
@@ -651,6 +651,12 @@ semantic error: 'binding_outside_module_proc' must be a module procedure or an e
      |
 1208 |         procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+    --> tests/errors/continue_compilation_1.f90:1215:5
+     |
+1215 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+     |     ^^^^^^^^^^ 'y' is not a dummy argument
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
