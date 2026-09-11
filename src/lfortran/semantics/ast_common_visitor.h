@@ -14029,9 +14029,9 @@ public:
                         intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
-                        intrinsic_name == "c_loc")) {
-                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
-                            {arg_expr->base.loc}, "");
+                        intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
+                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to this intrinsic",
+                                {arg_expr->base.loc}, "");
                         throw SemanticAbort();
                     }
                 }
@@ -16803,8 +16803,21 @@ public:
         ASR::expr_t *value = nullptr;
         int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
         if (type_size > 0) {
-            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, x.base.base.loc, type_size, size_type));
+          value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, x.base.base.loc, type_size, size_type));
+        } else if (ASR::is_a<ASR::Array_t>(*arg_type)) {
+           ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(arg_type);
+           int64_t elem_size = ASRUtils::get_type_byte_size(elem_type);
+           if (elem_size > 0) {
+               ASR::expr_t* elem_size_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x.base.base.loc, elem_size, size_type));
+            
+               ASR::expr_t* array_size_expr = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                al, x.base.base.loc, arg, nullptr, size_type, nullptr));
+            
+               value = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                al, x.base.base.loc, array_size_expr, ASR::binopType::Mul, elem_size_expr, size_type, nullptr));
+            }
         }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
             size_type, value);
