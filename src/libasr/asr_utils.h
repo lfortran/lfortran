@@ -4163,7 +4163,17 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     bool override_physical_type=false, bool is_dimension_star=false, bool for_type=true,
     ASR::memory_spaceType memory_space=ASR::memory_spaceType::Global) {
     if( n_dims == 0 ) {
-        return type;
+        // An Array with no dimensions is a scalar, with one exception: an
+        // assumed-rank array is represented as an Array carrying no
+        // dimensions, because its rank is unknown until a `select rank`
+        // selects one. Asking for that physical type is therefore a request
+        // for an assumed-rank array, not for the element type.
+        if( physical_type != ASR::array_physical_typeType::AssumedRankArray ) {
+            return type;
+        }
+        // The detection below infers the physical type from the dimensions,
+        // and there are none here, so keep the one the caller asked for.
+        override_physical_type = true;
     }
 
     for( size_t i = 0; i < n_dims; i++ ) {
@@ -4360,6 +4370,19 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                     physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
                     override_physical_type = true;
                 }
+            }
+            // An assumed-rank array is the one Array that carries no
+            // dimensions, so duplicating it would otherwise hand
+            // make_Array_t_util zero dimensions and collapse it to its element
+            // type. Its physical type cannot be re-derived from dimensions
+            // that do not exist either, which is the same reason
+            // UnboundedPointerArray is preserved above. Only preserve it when
+            // the duplicate really ends up rankless: a caller supplying
+            // dimensions is selecting a rank, as `select rank` does.
+            if (!override_physical_type && dimsn == 0 &&
+                tnew->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+                physical_type = ASR::array_physical_typeType::AssumedRankArray;
+                override_physical_type = true;
             }
             return ASRUtils::make_Array_t_util(al, tnew->base.base.loc,
                 duplicated_element_type, dimsp, dimsn, ASR::abiType::Source,
