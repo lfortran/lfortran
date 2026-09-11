@@ -443,6 +443,47 @@ public:
         return true;
     }
 
+    // The entry of a "<struct>.<component>" table that describes component
+    // `member`, when the struct half of the key is not the name this
+    // argument is spelled with. Both tables are keyed by the name the
+    // parameters were registered under, and a struct reaching a callee
+    // under another spelling has no exact key to look up, so the component
+    // is matched on its own.
+    //
+    // That is only an answer while one struct in scope has such a
+    // component. Where several do, the component name alone does not say
+    // which buffer this argument is, and handing over whichever the map
+    // happened to order first is how a kernel reads another variable's
+    // elements and says nothing. Refuse instead.
+    const std::string* component_entry_by_member(
+            const std::map<std::string, std::string> &table,
+            const std::string &member, const std::string &what,
+            const Location &loc) {
+        const std::string suffix = "." + member;
+        const std::string *found = nullptr;
+        std::string owner, other;
+        for (auto &entry : table) {
+            if (entry.first.size() < suffix.size()) continue;
+            if (entry.first.compare(entry.first.size() - suffix.size(),
+                    suffix.size(), suffix) != 0) {
+                continue;
+            }
+            if (found != nullptr) {
+                other = entry.first.substr(
+                    0, entry.first.size() - suffix.size());
+                throw CodeGenError("gpu offload: the " + what + " of the "
+                    "component `" + member + "` cannot be told apart here: "
+                    "it could be the one of `" + owner + "` or of `" + other
+                    + "`, and a gpu kernel handed the wrong one would read "
+                    "another variable's elements", loc);
+            }
+            found = &entry.second;
+            owner = entry.first.substr(
+                0, entry.first.size() - suffix.size());
+        }
+        return found;
+    }
+
     // Tracks local struct variables that were assigned from an element
     // of an array-of-struct. Maps local_var_name -> (array_name, index_expr_string).
     // Used by emit_struct_member_data_ptrs/sizes to offset into flat buffers.
@@ -2451,20 +2492,12 @@ public:
                             &mv->base), key, data)) {
                     src << ", " << data;
                 } else {
-                    std::string suffix = std::string(".")
-                        + mem_name;
-                    bool found = false;
-                    for (auto &entry : func_array_data_params) {
-                        if (entry.first.size() >= suffix.size() &&
-                                entry.first.compare(
-                                    entry.first.size() - suffix.size(),
-                                    suffix.size(), suffix) == 0) {
-                            src << ", " << entry.second;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
+                    const std::string *entry = component_entry_by_member(
+                        func_array_data_params, mem_name, "device buffer",
+                        expr->base.loc);
+                    if (entry) {
+                        src << ", " << *entry;
+                    } else {
                         src << ", " << GpuNames::member_data(var_name,
                             mem_name);
                     }
@@ -2491,20 +2524,12 @@ public:
                 if (it != func_array_size_params.end()) {
                     src << ", " << it->second;
                 } else {
-                    std::string suffix = std::string(".")
-                        + mem_name;
-                    bool found = false;
-                    for (auto &entry : func_array_size_params) {
-                        if (entry.first.size() >= suffix.size() &&
-                                entry.first.compare(
-                                    entry.first.size() - suffix.size(),
-                                    suffix.size(), suffix) == 0) {
-                            src << ", " << entry.second;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
+                    const std::string *entry = component_entry_by_member(
+                        func_array_size_params, mem_name, "element count",
+                        expr->base.loc);
+                    if (entry) {
+                        src << ", " << *entry;
+                    } else {
                         src << ", " << GpuNames::member_size(var_name,
                             mem_name);
                     }
