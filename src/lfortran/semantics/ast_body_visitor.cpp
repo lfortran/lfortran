@@ -2704,10 +2704,14 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
-        // Don't use stringFormat with single character argument
+        // Don't use stringFormat with single character argument. An implied
+        // do loop is a list of output items rather than a single character
+        // value, even when all its items happen to be of character type, so
+        // it is excluded here and wrapped in a StringFormat below.
         if (!a_fmt
             && _type == AST::decl_stmtType::Write
             && a_values_vec.size() == 1
+            && !ASR::is_a<ASR::ImpliedDoLoop_t>(*a_values_vec[0])
             && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_values_vec[0]))){
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
