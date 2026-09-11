@@ -589,14 +589,20 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                 throw SemanticAbort();
             }
         }
-        std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
         size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
         for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
         ASRUtils::create_intrinsic_function create_func =
-                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
-        ASR::expr_t* intrinsic_expr = ASRUtils::EXPR(create_func(al, x.base.base.loc, args, diag));
-        ASR::IntrinsicElementalFunction_t *intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(intrinsic_expr);
-        this->visit_expr(*intrinsic_func->m_value);
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(x.m_intrinsic_id);
+        ASR::asr_t* intrinsic_asr = create_func == nullptr ? nullptr :
+                create_func(al, x.base.base.loc, args, diag);
+        ASR::expr_t* intrinsic_value = intrinsic_asr == nullptr ? nullptr :
+                ASRUtils::expr_value(ASRUtils::EXPR(intrinsic_asr));
+        if (intrinsic_value == nullptr) {
+            diag.add(Diagnostic("Intrinsic cannot be evaluated at compile time in implied do loop",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        this->visit_expr(*intrinsic_value);
     }
 };
 
