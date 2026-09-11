@@ -18304,28 +18304,39 @@ public:
                 // Which is a function call.
                 // We remove "x" from the symbol table and instead recreate it.
                 // We use the type of the old "x" as the return value type.
-                std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
-                bool in_current_scope = (scope_.find(var_name) != scope_.end());
-                SymbolTable* sym_scope = current_scope;
-                if (in_current_scope) {
-                    current_scope->erase_symbol(var_name);
-                } else {
-                    ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
-                    while(!sym_) {
-                        sym_scope = sym_scope->parent;
-                        sym_ = sym_scope->get_symbol(var_name);
+                // A second reference to the same external in this scope already
+                // resolves to the Interface synthesized for the first one, and
+                // `create_implicit_interface_function` above has reconciled
+                // this reference with it. Re-deriving it here would erase that
+                // symbol and put a fresh one in its place, leaving the earlier
+                // FunctionCall pointing outside the symbol table.
+                bool already_synthesized_here =
+                    current_scope->get_symbol(var_name) == v &&
+                    is_synthesized_implicit_interface(v);
+                if (!already_synthesized_here) {
+                    std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
+                    bool in_current_scope = (scope_.find(var_name) != scope_.end());
+                    SymbolTable* sym_scope = current_scope;
+                    if (in_current_scope) {
+                        current_scope->erase_symbol(var_name);
+                    } else {
+                        ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
+                        while(!sym_) {
+                            sym_scope = sym_scope->parent;
+                            sym_ = sym_scope->get_symbol(var_name);
+                        }
                     }
-                }
-                ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
-                create_implicit_interface_function(x, var_name, true, old_type);
-                v = current_scope->resolve_symbol(var_name);
-                LCOMPILERS_ASSERT(v!=nullptr);
-                if (!in_current_scope && is_external_procedure) {
-                    SymbolTable* temp_scope = current_scope;
-                    current_scope = sym_scope;
+                    ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
                     create_implicit_interface_function(x, var_name, true, old_type);
-                    current_scope = temp_scope;
-                    LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
+                    v = current_scope->resolve_symbol(var_name);
+                    LCOMPILERS_ASSERT(v!=nullptr);
+                    if (!in_current_scope && is_external_procedure) {
+                        SymbolTable* temp_scope = current_scope;
+                        current_scope = sym_scope;
+                        create_implicit_interface_function(x, var_name, true, old_type);
+                        current_scope = temp_scope;
+                        LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
+                    }
                 }
 
                 // erase from external_procedures_mapping
