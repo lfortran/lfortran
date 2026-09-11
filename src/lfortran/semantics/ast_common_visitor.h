@@ -11007,7 +11007,10 @@ public:
         return 1; // default
     }
 
-    bool is_boz_integer_constant(ASR::expr_t* expr) {
+    // True when `expr` is a BOZ literal constant. BOZ literals are represented
+    // as an IntegerConstant carrying a non-Decimal boz kind, which is what
+    // marks them as typeless.
+    bool is_boz_constant(ASR::expr_t* expr) {
         if (!expr || !ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
             return false;
         }
@@ -11154,7 +11157,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_left_expr)) {
+                    if (is_boz_constant(m_left_expr)) {
                         diag.add(Diagnostic("Substring start index must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
                         throw SemanticAbort();
@@ -11182,7 +11185,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_right_expr)) {
+                    if (is_boz_constant(m_right_expr)) {
                         diag.add(Diagnostic("Substring end index must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
                         throw SemanticAbort();
@@ -11199,7 +11202,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_step_expr)) {
+                    if (is_boz_constant(m_step_expr)) {
                         diag.add(Diagnostic("Substring stride must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
                         throw SemanticAbort();
@@ -16887,7 +16890,7 @@ public:
         }
         // `dble` accepts a BOZ literal constant: its bits are the internal
         // representation of the real(8) result, no numeric conversion happens
-        if (is_boz_literal_constant(arg)) {
+        if (is_boz_constant(arg)) {
             return (ASR::asr_t *)boz_literal_to_real(arg, 8);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
@@ -21027,20 +21030,11 @@ public:
         return value_64;
     }
 
-    // True when `e` is a BOZ literal constant. BOZ literals are represented as
-    // an IntegerConstant carrying a non-Decimal boz kind, which is what marks
-    // them as typeless.
-    static bool is_boz_literal_constant(ASR::expr_t* e) {
-        return e != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*e) &&
-            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_intboz_type !=
-                ASR::integerbozType::Decimal;
-    }
-
     // Reinterpret a BOZ literal constant as a real of the given kind. Any other
     // expression, and any kind whose representation a BOZ literal cannot fill,
     // is returned unchanged.
     ASR::expr_t* boz_literal_to_real(ASR::expr_t* e, int kind) {
-        if( !is_boz_literal_constant(e) || (kind != 4 && kind != 8) ) {
+        if( !is_boz_constant(e) || (kind != 4 && kind != 8) ) {
             return e;
         }
         const Location& loc = e->base.loc;
@@ -21072,7 +21066,7 @@ public:
         }
         bool has_boz_arg = false;
         for( size_t i = 0; i < n_boz_args; i++ ) {
-            has_boz_arg |= is_boz_literal_constant(args[i]);
+            has_boz_arg |= is_boz_constant(args[i]);
         }
         if( !has_boz_arg ) {
             return;
@@ -21124,24 +21118,16 @@ public:
             );
         }
         uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
-        //If current_variable_type is Real Type, the bits of the BOZ literal are
-        //the internal representation of the real value
-        int real_kind = 0;
-        if ((current_variable_type_ != nullptr) && (ASR::is_a<ASR::Real_t>(*current_variable_type_)) ){
-            real_kind = ASRUtils::extract_kind_from_ttype_t(current_variable_type_);
-        }
-        if (real_kind == 4 || real_kind == 8) {
-            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, real_kind));
-            tmp = ASR::make_RealConstant_t(al, x.base.base.loc,
-                    boz_bits_as_real(boz_unsigned_int, real_kind), real_type);
-        }
-
-        //If current_variable_type is Null or INT Type, default to INT 
-        else{            
-            int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
-                    int_type, boz_type);
+        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
+                int_type, boz_type);
+        // Where the literal supplies the value of a real, its bits are the
+        // internal representation of that real. boz_literal_to_real leaves the
+        // constant as it is for a kind those bits cannot fill.
+        if (current_variable_type_ != nullptr && ASR::is_a<ASR::Real_t>(*current_variable_type_)) {
+            tmp = (ASR::asr_t*)boz_literal_to_real(ASRUtils::EXPR(tmp),
+                    ASRUtils::extract_kind_from_ttype_t(current_variable_type_));
         }
     }
 
