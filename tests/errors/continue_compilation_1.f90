@@ -1208,3 +1208,11 @@ subroutine binding_outside_module_2
         procedure, pass(this) :: binding_outside_module_proc  ! {Error} 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
     end type t_binding_outside_module
 end subroutine binding_outside_module_2
+
+! `decimal=` on a data transfer statement takes a character value, and like any
+! other specifier it may appear at most once in the control list.
+subroutine decimal_specifier_1()
+    implicit none
+    write(*, *, decimal=1) 1.0
+    write(*, *, decimal="POINT", decimal="COMMA") 1.0
+end subroutine
