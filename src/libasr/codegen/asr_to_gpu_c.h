@@ -1672,6 +1672,18 @@ public:
             return;
         }
         ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(expr);
+        // A section of a name that is already stepping through its own base
+        // compounds the address this cannot express, so it is refused here
+        // as an indexed use would be.
+        reject_strided_section_use(as->m_v, as->base.base.loc);
+        last_section_dropped_step = false;
+        for (size_t d = 0; d < as->n_args; d++) {
+            bool is_range = as->m_args[d].m_left && as->m_args[d].m_right
+                && as->m_args[d].m_step;
+            if (is_range && !section_step_is_one(as->m_args[d].m_step)) {
+                last_section_dropped_step = true;
+            }
+        }
         std::string arr_name;
         if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
             arr_name = ASRUtils::symbol_name(
@@ -1756,6 +1768,48 @@ public:
     // emit_array_section_pointer, so that a routine the section is passed to
     // can be given them one by one.
     std::vector<std::string> last_section_dim_sizes;
+
+    // Whether the section last rendered by emit_array_section_pointer steps
+    // through its base array by something other than one.
+    bool last_section_dropped_step = false;
+
+    // The names an Associate bound to such a section. A device pointer is an
+    // address and nothing else: it cannot carry a step, so walking one reads
+    // consecutive elements of the base array rather than every step-th one.
+    // The element *count* is right -- an extent is derived through
+    // gpu_device_range_extent(), which does honour the step -- so the wrong
+    // elements get read exactly the right number of times, which is a wrong
+    // answer with nothing to show for it. Sizing such a name is still exact,
+    // and `size(p)` is what most of them are for, so the name is recorded
+    // here and only indexing it is refused.
+    std::set<ASR::symbol_t*> section_pointers_dropping_step;
+
+    // Whether `e` names a step the device pointer can express, which is a
+    // step of one: absent, or folding to the literal 1. A step only known at
+    // run time cannot be shown to be one, so it is not.
+    static bool section_step_is_one(ASR::expr_t *step) {
+        if (step == nullptr) return true;
+        int64_t value = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(step), value)) {
+            return false;
+        }
+        return value == 1;
+    }
+
+    // Refuses an indexed read or write through a name bound to a section the
+    // device pointer cannot express. Called wherever such a name could be
+    // subscripted, so that the shape is a compile error rather than a silent
+    // wrong answer.
+    void reject_strided_section_use(ASR::expr_t *base, const Location &loc) {
+        if (base == nullptr || !ASR::is_a<ASR::Var_t>(*base)) return;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(base)->m_v;
+        if (section_pointers_dropping_step.count(sym) == 0) return;
+        throw CodeGenError(std::string("gpu offload: '")
+            + ASRUtils::symbol_name(sym) + "' is associated with an array "
+            "section whose stride is not one, and a gpu kernel addresses it "
+            "with a pointer that cannot carry a stride; only its size can be "
+            "used inside the kernel", loc);
+    }
 
     // Renders an expression to device source without disturbing the output
     // being built.
@@ -4109,12 +4163,22 @@ public:
             case ASR::stmtType::Associate: {
                 ASR::Associate_t *assoc = ASR::down_cast<ASR::Associate_t>(stmt);
                 last_section_size.clear();
+                last_section_dropped_step = false;
                 src << get_indent();
                 visit_expr(assoc->m_target);
                 src << " = ";
                 emit_array_section_pointer(assoc->m_value);
                 src << ";\n";
                 if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
+                    // The pointer just written holds the address of the
+                    // section's first element. Where the section steps by
+                    // more than one that address is all it holds, so record
+                    // the name: its size is still exact, and every indexed
+                    // use of it is refused.
+                    if (last_section_dropped_step) {
+                        section_pointers_dropping_step.insert(
+                            ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
+                    }
                     std::string tgt_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
                     if (!last_section_size.empty()) {
@@ -4622,6 +4686,10 @@ public:
             }
             case ASR::exprType::ArrayItem: {
                 ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
+                // Refused here rather than in emit_linearized_index below:
+                // a rank-1 subscript is written out directly and never
+                // reaches it.
+                reject_strided_section_use(ai->m_v, ai->base.base.loc);
                 // For allocatable struct member access like s%a(i),
                 // use the separate data pointer parameter instead of
                 // the struct member (which is not a valid array in device code).
@@ -5050,6 +5118,7 @@ public:
 
     void emit_linearized_index(ASR::ArrayItem_t *ai,
                                ASR::ttype_t *arr_type) {
+        reject_strided_section_use(ai->m_v, ai->base.base.loc);
         ASR::Array_t *arr = nullptr;
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(arr_type));
