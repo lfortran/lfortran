@@ -154,6 +154,41 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
     }
 
+    // A statement no device can run keeps the loop on the CPU whichever
+    // backend is selected. This is asked before the width sweep below
+    // because that sweep answers for every symbol reaching the kernel,
+    // including the ones a lowering introduced: a `write` brings in an
+    // `iomsg` buffer of a type no device has, and reporting that buffer
+    // names something the user never wrote instead of the statement they
+    // did. Which of the two is the reason does not depend on the device,
+    // so it is settled first.
+    {
+        GpuUnsupportedStatementFinder finder(device_caps);
+        for (size_t i = 0; i < work.n_body; i++) {
+            finder.visit_stmt(*work.body[i]);
+        }
+        std::string in_routine;
+        if (finder.reason == GpuDeclineReason::None) {
+            for (ASR::Function_t *fn : reachable_routines(work.body,
+                    work.n_body)) {
+                GpuUnsupportedStatementFinder callee_finder(device_caps);
+                for (size_t i = 0; i < fn->n_body; i++) {
+                    callee_finder.visit_stmt(*fn->m_body[i]);
+                }
+                if (callee_finder.reason != GpuDeclineReason::None) {
+                    finder = callee_finder;
+                    in_routine = fn->m_name;
+                    break;
+                }
+            }
+        }
+        if (finder.reason != GpuDeclineReason::None) {
+            report_not_offloaded(finder.loc,
+                GpuDecline(finder.reason, in_routine));
+            return false;
+        }
+    }
+
     // A device whose scalar type set is narrower than the shared width
     // table has to be asked about every symbol that reaches the kernel:
     // where the two sets are the same, the kernel-argument and
@@ -230,34 +265,6 @@ bool GpuOffloadVisitor::offloadable_after_rewrites(
         }
     }
 
-    // A statement no device can run keeps the loop on the CPU whichever
-    // backend is selected.
-    {
-        GpuUnsupportedStatementFinder finder(device_caps);
-        for (size_t i = 0; i < work.n_body; i++) {
-            finder.visit_stmt(*work.body[i]);
-        }
-        std::string in_routine;
-        if (finder.reason == GpuDeclineReason::None) {
-            for (ASR::Function_t *fn : reachable_routines(work.body,
-                    work.n_body)) {
-                GpuUnsupportedStatementFinder callee_finder(device_caps);
-                for (size_t i = 0; i < fn->n_body; i++) {
-                    callee_finder.visit_stmt(*fn->m_body[i]);
-                }
-                if (callee_finder.reason != GpuDeclineReason::None) {
-                    finder = callee_finder;
-                    in_routine = fn->m_name;
-                    break;
-                }
-            }
-        }
-        if (finder.reason != GpuDeclineReason::None) {
-            report_not_offloaded(finder.loc,
-                GpuDecline(finder.reason, in_routine));
-            return false;
-        }
-    }
     return true;
 }
 

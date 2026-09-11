@@ -244,8 +244,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "local '" + decline.name +
                 "' has no gpu type of the same width";
         case GpuDeclineReason::SymbolTypeNotRepresentable:
-            return "the type of '" + decline.name +
-                "' is not representable on the gpu";
+            return unsupported + type_name + ", the type of '" +
+                decline.name + "'";
         case GpuDeclineReason::WideTypeNotOnDevice:
             return unsupported + type_name + ", used by '" +
                 decline.name + "'";
