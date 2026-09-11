@@ -1,0 +1,5 @@
+warning: 'error stop' in an offloaded loop does not deliver its stop code
+  --> tests/../integration_tests/gpu_metal_302.f90:17:16
+   |
+17 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the device halts the launch here and the program exits with a failure status

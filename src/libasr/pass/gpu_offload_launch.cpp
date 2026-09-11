@@ -4,6 +4,8 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
@@ -26,6 +28,27 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         if (!clause_name.empty()) {
             report_clause_ignored(region.m_clauses[i]->base.loc,
                 clause_name);
+        }
+    }
+
+    // A `stop` the kernel runs as a trap is reported for the same reason:
+    // the launch does halt where the program said to halt, but the stop
+    // code and the kind of termination do not survive the crossing. A
+    // device with no trap never gets here -- the loop was declined above
+    // and runs on the host, where the statement means all of what it says.
+    {
+        GpuStopStatementFinder stops;
+        for (size_t i = 0; i < work.n_body; i++) {
+            stops.visit_stmt(*work.body[i]);
+        }
+        for (ASR::Function_t *fn : reachable_routines(work.body,
+                work.n_body)) {
+            for (size_t i = 0; i < fn->n_body; i++) {
+                stops.visit_stmt(*fn->m_body[i]);
+            }
+        }
+        for (auto &stop : stops.stops) {
+            report_stop_degraded(stop.second, stop.first);
         }
     }
 

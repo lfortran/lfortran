@@ -378,6 +378,8 @@ public:
 
     void report_clause_ignored(const Location &where, const std::string &name);
 
+    void report_stop_degraded(const Location &where, const std::string &name);
+
     std::string unhonoured_clause(const ASR::omp_clause_t *clause);
 
     void collect_kernel_arg_names(const ParallelLoopNest &nest,

@@ -57,6 +57,22 @@ void GpuOffloadVisitor::report_clause_ignored(
         diag::Level::Warning, diag::Stage::ASRPass);
 }
 
+// A `stop` the device runs as a trap. The loop is offloaded and the
+// statement does halt the launch, which is the part of it a device can
+// honour, but a grid returns no status: the stop code is not delivered and
+// a normal termination cannot be told apart from an error one. The program
+// ends with a failure status either way, so say what was dropped rather
+// than let the difference go unmentioned.
+void GpuOffloadVisitor::report_stop_degraded(
+        const Location &where, const std::string &name) {
+    if (pass_options.diagnostics == nullptr) return;
+    pass_options.diagnostics->message_label(
+        "'" + name + "' in an offloaded loop does not deliver its stop code",
+        {where}, "the device halts the launch here and the program exits "
+            "with a failure status",
+        diag::Level::Warning, diag::Stage::ASRPass);
+}
+
 // What a clause a launch cannot honour is called, or an empty name for
 // one it can.
 std::string GpuOffloadVisitor::unhonoured_clause(

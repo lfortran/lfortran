@@ -305,6 +305,33 @@ public:
     }
 };
 
+// Every `stop` and `error stop` a body holds, in the order they are found.
+// A device that can trap runs one of these as a halt of the launch, which
+// is less than the statement asks for: a grid returns no status, so the
+// stop code goes nowhere and normal termination cannot be told apart from
+// error termination. Each one is collected so that what the device drops
+// is said where the statement stands, rather than lowered in silence.
+class GpuStopStatementFinder
+        : public ASRUtils::BlockBodyWalkVisitor<GpuStopStatementFinder> {
+public:
+    // How Fortran spells the statement, and where it is.
+    std::vector<std::pair<std::string, Location>> stops;
+
+    void visit_stmt(const ASR::stmt_t &s) {
+        switch (s.type) {
+            case ASR::stmtType::Stop:
+                stops.push_back({"stop", s.base.loc});
+                break;
+            case ASR::stmtType::ErrorStop:
+                stops.push_back({"error stop", s.base.loc});
+                break;
+            default:
+                break;
+        }
+        ASR::BaseWalkVisitor<GpuStopStatementFinder>::visit_stmt(s);
+    }
+};
+
 // Metal shaders have neither variable-length arrays nor a heap, so a
 // device function (an `inline` callee of a kernel) can only declare
 // locals whose extent the shader compiler can fold to a constant. An
