@@ -1705,6 +1705,13 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
                 while (j < content.length() && std::isspace(content[j])) j++;
                 if (j < content.length() && std::toupper(content[j]) == 'T') {
                     i = j;
+                } else if (j < content.length() &&
+                        (std::toupper(content[j]) == 'C' ||
+                         std::toupper(content[j]) == 'P')) {
+                    // DC and DP select the decimal edit mode; they are
+                    // control descriptors, not data edit descriptors.
+                    current_desc = DescType::CONTROL;
+                    i = j;
                 }
             }
         } else if (c_upper == 'B') {

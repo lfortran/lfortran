@@ -756,7 +756,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 x.m_iomsg, x.m_iostat, x.m_id,
                 x.m_values, x.n_values,
                 x.m_separator, x.m_end, x.m_overloaded,
-                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
+                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous, x.m_decimal)));
 
             // Copy back: do i = 0, section_size-1; c(start+i*step) = temp(i+1)
             pass_result.push_back(al, b.DoLoop(loop_var, zero, loop_end,
@@ -822,7 +822,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             x.m_iomsg, x.m_iostat, x.m_id,
             inner_vals.p, 1,
             x.m_separator, x.m_end, x.m_overloaded,
-            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous));
+            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous, x.m_decimal));
 
         // Wrap Scalar FileWrites in DoLoop
         Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
