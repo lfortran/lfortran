@@ -1446,47 +1446,52 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
 
     } else if (x.m_op == AST::unaryopType::USub) {
 
-        if (ASRUtils::is_integer(*operand_type)) {
+        // The result of a unary minus is a value, so it never carries the
+        // allocatable or pointer attribute of its operand.
+        ASR::ttype_t *result_type = ASRUtils::type_get_past_allocatable_pointer(
+            operand_type);
+
+        if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
                     int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                             ASRUtils::expr_value(operand))->m_n;
                     value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
-                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
                     if (kind == 4) {
-                        value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int32_t>());
+                        value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int32_t>());
                     } else if (kind == 8) {
-                        value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int64_t>());
+                        value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int64_t>());
                     }
                 }
             }
             asr = ASR::make_IntegerUnaryMinus_t(al, x.base.base.loc, operand,
-                                                    operand_type, value);
+                                                    result_type, value);
             return;
-        } else if (ASRUtils::is_real(*operand_type)) {
+        } else if (ASRUtils::is_real(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
                     double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                             ASRUtils::expr_value(operand))->m_r;
                     value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
-                        al, x.base.base.loc, -op_value, operand_type));
+                        al, x.base.base.loc, -op_value, result_type));
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
-                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
                     if (kind == 4) {
-                        value = eval_unary_array_const<float>(al, x.base.base.loc, arr_const, operand_type, USubOp<float>());
+                        value = eval_unary_array_const<float>(al, x.base.base.loc, arr_const, result_type, USubOp<float>());
                     } else if (kind == 8) {
-                        value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, operand_type, USubOp<double>());
+                        value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, result_type, USubOp<double>());
                     }
                 }
             }
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
-                                             operand_type, value);
+                                             result_type, value);
             return;
-        } else if (ASRUtils::is_complex(*operand_type)) {
+        } else if (ASRUtils::is_complex(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
@@ -1496,11 +1501,11 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                     result = -op_value;
                     value = ASR::down_cast<ASR::expr_t>(
                             ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
-                            std::imag(result), operand_type));
+                            std::imag(result), result_type));
                 }
             }
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
-                                                    operand_type, value);
+                                                    result_type, value);
             return;
         } else if( ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::type_get_past_allocatable_pointer(operand_type)) ) {
