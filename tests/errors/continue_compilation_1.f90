@@ -1228,3 +1228,10 @@ contains
         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
     end subroutine
 end module
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement
+
