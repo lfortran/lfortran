@@ -2132,3 +2132,15 @@ semantic error: Call to impure procedure 'conditional_expr_impure' is not allowe
      |
 1183 |         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
      |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `decimal` must be of type character
+    --> tests/errors/continue_compilation_1.f90:1216:25
+     |
+1216 |     write(*, *, decimal=1) 1.0
+     |                         ^ 
+
+semantic error: Duplicate value of `decimal` found
+    --> tests/errors/continue_compilation_1.f90:1217:42
+     |
+1217 |     write(*, *, decimal="POINT", decimal="COMMA") 1.0
+     |                                          ^^^^^^^ 
