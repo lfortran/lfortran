@@ -10,7 +10,7 @@ module gpu_metal_333_mod
         real, allocatable :: v(:)
     end type
 contains
-    real function inner(p) result(r)
+    pure real function inner(p) result(r)
         type(tensor_t), intent(in) :: p
         integer :: k
         r = 0.0
@@ -19,7 +19,7 @@ contains
         end do
     end function
 
-    real function helper(p) result(r)
+    pure real function helper(p) result(r)
         type(tensor_t), intent(in) :: p
         r = inner(p) * 2.0
     end function
