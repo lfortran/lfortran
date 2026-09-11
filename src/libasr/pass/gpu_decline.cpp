@@ -55,6 +55,11 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
+            // A Metal shader has no way to write text out and no way to
+            // halt the program: the shading language has neither a device
+            // `printf` nor a trap.
+            caps.device_printf = false;
+            caps.device_abort = false;
             break;
         case GpuDevice::Cuda:
             // CUDA C++ has `double` and `long long`, so it narrows nothing
@@ -65,6 +70,8 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
+            // A CUDA kernel has a `printf` of its own and a trap it can
+            // raise, so it keeps both of those defaults.
             break;
         case GpuDevice::None:
             break;
@@ -125,11 +132,20 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::ScalarNotNumeric:
             return GpuDeclineClass::NotImplemented;
 
-        // A statement the device has no way to run: there are no Fortran
-        // units, formats or exit codes on a device.
+        // A statement the device has no way to run. There are no Fortran
+        // units, formats or exit codes on any device, but that is not the
+        // whole question: a device with a `printf` of its own can be made to
+        // write what a print asked for, and a device that can raise a trap
+        // can be made to stop where a `stop` asked it to. Where the device
+        // has the means, what is missing is the lowering, not the device.
         case GpuDeclineReason::StatementIo:
+            return caps.device_printf
+                ? GpuDeclineClass::NotImplemented
+                : GpuDeclineClass::BackendCannot;
         case GpuDeclineReason::StatementStop:
-            return GpuDeclineClass::BackendCannot;
+            return caps.device_abort
+                ? GpuDeclineClass::NotImplemented
+                : GpuDeclineClass::BackendCannot;
 
         // Everything else is a lowering this pass has not written yet.
         case GpuDeclineReason::None:

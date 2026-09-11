@@ -4230,8 +4230,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_288.f90"
 gpu_cuda_kernel = true
-# Backend limitations also require an explicit CPU fallback waiver.
-gpu_offload_strict = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_289.f90"
@@ -4358,6 +4356,12 @@ gpu_offload_strict = true
 filename = "../integration_tests/gpu_metal_332.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
+
+# A `stop` in the concurrent body is a trap in the emitted kernel, which is
+# what lets the loop offload to CUDA at all.
+[[test]]
+filename = "../integration_tests/gpu_metal_334.f90"
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"

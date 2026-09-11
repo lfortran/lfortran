@@ -475,7 +475,8 @@ bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
     return caps.has_scalar_type(base_t);
 }
 
-GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
+GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
+        const GpuDeviceCapabilities &caps) {
     switch (s.type) {
         case ASR::stmtType::Print:
         case ASR::stmtType::FileWrite:
@@ -490,6 +491,11 @@ GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
             return GpuDeclineReason::StatementIo;
         case ASR::stmtType::Stop:
         case ASR::stmtType::ErrorStop:
+            // A device that can raise a trap stops the launch where the
+            // program said to stop. The exit code goes nowhere -- a grid
+            // returns no status -- but stopping is what the statement is
+            // for, and a thread that traps runs nothing after it.
+            if (caps.device_abort) return GpuDeclineReason::None;
             return GpuDeclineReason::StatementStop;
         default:
             return GpuDeclineReason::None;

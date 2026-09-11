@@ -123,6 +123,26 @@ public:
         }
     }
 
+    // A structure constructor names the derived type it builds. Left
+    // naming the host's copy of the definition, the later lowering of the
+    // constructor into per-component assignments takes the components from
+    // that copy, and the kernel ends up describing one component through
+    // two `Variable_t`s -- the dummy's through the kernel's copy, the
+    // assignment's through the host's.
+    void replace_StructConstructor(ASR::StructConstructor_t *x) {
+        ASR::symbol_t *type_sym = ASRUtils::symbol_get_past_external(
+            x->m_dt_sym);
+        if (type_sym && ASR::is_a<ASR::Struct_t>(*type_sym)) {
+            ASR::symbol_t *kernel_sym = lookup_symbol(
+                ASRUtils::symbol_name(type_sym));
+            if (kernel_sym && ASR::is_a<ASR::Struct_t>(
+                    *ASRUtils::symbol_get_past_external(kernel_sym))) {
+                x->m_dt_sym = kernel_sym;
+            }
+        }
+        ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_StructConstructor(x);
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t *x) {
         // Remap m_name to kernel scope symbol
         std::string name = ASRUtils::symbol_name(x->m_name);

@@ -54,6 +54,18 @@ struct GpuDeviceCapabilities {
     int max_integer_kind = 8;
     int max_real_kind = 8;
 
+    // Whether a kernel can write text out as it runs. A device that can is
+    // only waiting on the lowering for a Fortran print or write to be
+    // written here; a device that cannot has no way to run one at all, and
+    // no amount of work here would give it one.
+    bool device_printf = true;
+
+    // Whether a kernel can bring the program to a halt from a thread. There
+    // is no exit code to deliver either way -- a grid has no status to
+    // return -- but stopping is the part of a Fortran `stop` a device can
+    // honour, and a device that cannot stop can honour none of it.
+    bool device_abort = true;
+
     // Whether a device function may declare a local array whose extent is
     // only known once the kernel runs. Where it may not, the pass splices
     // such a callee into the kernel body instead, so that the local becomes

@@ -294,7 +294,7 @@ class DeviceLaunchExpandVisitor :
         // may have written to it.
         void decompose_struct_members(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                const std::string &arg_name,
+                ASR::symbol_t *parameter,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
                 const ASR::Function_t &kernel) {
@@ -302,6 +302,7 @@ class DeviceLaunchExpandVisitor :
             ASR::Struct_t *st = gpu_struct_definition(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
+            std::string arg_name = ASRUtils::symbol_name(parameter);
             std::map<GpuStructMemberKey, int64_t> write_sizes =
                 find_struct_member_vla_write_sizes(kernel,
                     gpu_kernel_workspaces(kernel));
@@ -309,30 +310,12 @@ class DeviceLaunchExpandVisitor :
                 find_struct_member_vla_runtime_sources(kernel);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
-            for (size_t i = 0; i < kernel.m_gpu->n_buffers; i++) {
-                const auto &entry = kernel.m_gpu->m_buffers[i];
-                if (entry.m_kind != ASR::gpu_argument_kindType::GpuMemberData ||
-                        arg_name != ASRUtils::symbol_name(entry.m_variable)) {
-                    continue;
-                }
-                std::string member_name = ASRUtils::symbol_name(entry.m_member);
-                ASR::symbol_t *member = gpu_struct_lookup_member(&st->base,
-                    member_name);
-                LCOMPILERS_ASSERT(member != nullptr);
-                ASR::ttype_t *member_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::symbol_type(member));
-                ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
-                    member_type);
-                // A struct with no data members occupies no bytes on the host
-                // but one byte in the device language; size the buffer so
-                // that every element stays addressable, and copy nothing,
-                // because there is nothing to copy.
-                ASR::Struct_t *element_struct = gpu_struct_definition(
-                    ASR::down_cast<ASR::Variable_t>(member)
-                        ->m_type_declaration);
-                bool element_is_empty = ASR::is_a<ASR::StructType_t>(
-                    *element_type) && element_struct &&
-                    element_struct->n_members == 0;
+            for (const GpuComponentLayout &component :
+                    gpu_component_layouts(*kernel.m_gpu, parameter, st)) {
+                std::string member_name = component.name();
+                ASR::symbol_t *member = component.component;
+                ASR::ttype_t *element_type = component.element_type;
+                bool element_is_empty = component.element_is_empty;
                 ASR::expr_t *element_bytes = element_is_empty
                     ? b.i64(1)
                     : ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
@@ -365,8 +348,7 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
                     b.allocatable(b.Array({-1}, int8)));
 
-                size_t rank = gpu_struct_member_rank(
-                    ASR::down_cast<ASR::Variable_t>(member));
+                size_t rank = component.rank;
                 out.push_back(al, b.Assignment(n,
                     b.ArraySize(arg, nullptr, int32)));
                 Vec<ASR::dimension_t> dims;
@@ -886,7 +868,7 @@ class DeviceLaunchExpandVisitor :
                         // the actual need not be a plain variable: a
                         // component chain names one array just as well.
                         decompose_struct_members(loc, out, arg,
-                            kparam->m_name, buffers, writebacks, *kernel);
+                            entry.m_variable, buffers, writebacks, *kernel);
                     }
                 }
             }

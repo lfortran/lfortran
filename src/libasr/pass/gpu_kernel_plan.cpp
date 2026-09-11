@@ -26,18 +26,20 @@ public:
         return is_numeric_scalar(type) && gpu_scalar_width_supported(type);
     }
 
+    // Whether the layout hands this component over as a device buffer of
+    // its own and the device can work with what is in it. Which components
+    // are decomposed at all is not decided here -- it is one answer, in
+    // gpu_component_is_decomposed -- so that the components this accepts
+    // and the components the layout then goes on to describe are the same
+    // ones.
     bool is_decomposed_member(ASR::symbol_t *member) {
-        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) return false;
-        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
-        if (!ASRUtils::is_allocatable(variable->m_type)) return false;
-        ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
-            variable->m_type);
-        if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
-        ASR::ttype_t *element = ASRUtils::type_get_past_array(inner);
-        if (ASR::is_a<ASR::StructType_t>(*element)) {
-            return struct_is_plain(variable->m_type_declaration);
+        if (!gpu_component_is_decomposed(member)) return false;
+        GpuComponentLayout component = gpu_component_layout(member);
+        if (ASR::is_a<ASR::StructType_t>(*component.element_type)) {
+            return struct_is_plain(ASR::down_cast<ASR::Variable_t>(member)
+                ->m_type_declaration);
         }
-        return is_plain_scalar(element);
+        return is_plain_scalar(component.element_type);
     }
 
     bool struct_is_plain(ASR::symbol_t *struct_sym) {
@@ -212,9 +214,8 @@ public:
                 if (!ASRUtils::is_array(kparam->m_type)) return false;
                 ASR::Struct_t *st = gpu_struct_definition(kparam->m_type_declaration);
                 if (!st) return false;
-                for (auto &m : ASRUtils::collect_allocatable_array_members(st)) {
-                    if (m.first == mem && is_decomposed_member(
-                            &m.second->base)) {
+                for (auto &m : gpu_decomposed_components(st)) {
+                    if (m.name() == mem && is_decomposed_member(m.component)) {
                         return true;
                     }
                 }
@@ -433,6 +434,12 @@ public:
                 // derivation introduced is a plain default integer.
                 return e.expr != nullptr ? e.expr
                     : b.i32((int) e.int_value);
+            }
+            case GpuExtentKind::Opaque: {
+                // A leaf only the device can spell. It reaches the host
+                // builder when a section's bounds are values the kernel
+                // alone holds, and there is nothing to build from it.
+                return nullptr;
             }
             case GpuExtentKind::Cast: {
                 ASR::expr_t *argument = child(0);
@@ -699,11 +706,11 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             ASR::Struct_t *st = array ? gpu_struct_definition(var->m_type_declaration)
                                      : nullptr;
             if (!st) continue;
-            for (auto &member : ASRUtils::collect_allocatable_array_members(st)) {
+            for (auto &member : gpu_decomposed_components(st)) {
                 for (auto kind : {ASR::gpu_argument_kindType::GpuMemberData,
                         ASR::gpu_argument_kindType::GpuMemberOffsets,
                         ASR::gpu_argument_kindType::GpuMemberSizes}) {
-                    buffers.push_back(al, argument(i, kind, &member.second->base));
+                    buffers.push_back(al, argument(i, kind, member.component));
                 }
             }
         } else {

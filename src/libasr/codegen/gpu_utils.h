@@ -25,6 +25,7 @@ namespace LCompilers {
 enum class GpuExtentKind {
     None,       // nothing could be derived: the extent is not offloadable
     Constant,   // the integer `int_value`
+    Opaque,     // the value of `expr`, spelled by whoever renders it
     Cast,       // an explicit integer conversion of children[0]
     BinOp,      // children[0] `binop` children[1]
     Neg,        // -children[0]
@@ -450,40 +451,6 @@ inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {
     }
     return base + "(" +
         std::to_string(ASRUtils::extract_kind_from_ttype_t(t)) + ")";
-}
-
-// Classify kernel arguments into buffer (array/struct) and scalar categories.
-// Returns the count of buffer args and scalar args respectively.
-// For struct array args with allocatable array members, counts 3 extra
-// buffers per member (data, offsets, sizes) as emitted by Metal codegen.
-inline std::pair<int, int> classify_gpu_kernel_args(
-        const ASR::Function_t &kernel) {
-    int n_buffer = 0, n_scalar = 0;
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
-        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(v->m_v));
-        ASR::ttype_t *type = var->m_type;
-        if (ASRUtils::is_array(type) ||
-                ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(type))) {
-            n_buffer++;
-            if (ASRUtils::is_array(type) && var->m_type_declaration) {
-                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-                    var->m_type_declaration);
-                if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    // Members inherited from the types this one extends are
-                    // decomposed like its own, so they count here too.
-                    n_buffer += 3 *
-                        (int)ASRUtils::collect_allocatable_array_members(
-                            ASR::down_cast<ASR::Struct_t>(s)).size();
-                }
-            }
-        } else {
-            n_scalar++;
-        }
-    }
-    return {n_buffer, n_scalar};
 }
 
 // Helper to recursively find the first Allocate statement for a given
@@ -1348,17 +1315,25 @@ inline GpuExtent gpu_extent_literal(int64_t n) {
     return out;
 }
 
+// The value of `e`, left for whoever renders the extent to spell. A leaf
+// the host has no counterpart for: a section whose bounds are values the
+// kernel alone holds is still an extent the shader can write out, in the
+// names the kernel binds.
+inline GpuExtent gpu_extent_opaque(ASR::expr_t *e) {
+    GpuExtent out;
+    if (e == nullptr) return out;
+    out.kind = GpuExtentKind::Opaque;
+    out.expr = e;
+    return out;
+}
+
 // Fortran's `(hi - lo) / step + 1`, the extent one range subscript of a
-// section spans. Written once here, so that the buffer the host sizes by it
-// and the stride the device walks by it are the same formula.
-inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
-        const GpuExtentScope &scope, int depth) {
+// section spans, over three operands each side has already put in the form
+// it can render. Written once here, so that the buffer the host sizes by it
+// and the stride the device walks by it cannot be different formulas.
+inline GpuExtent gpu_range_extent_of(GpuExtent lo, GpuExtent hi,
+        GpuExtent step) {
     GpuExtent none;
-    GpuExtent lo = gpu_derive_extent(range->m_left, scope, depth);
-    GpuExtent hi = gpu_derive_extent(range->m_right, scope, depth);
-    GpuExtent step = range->m_step != nullptr
-        ? gpu_derive_extent(range->m_step, scope, depth)
-        : gpu_extent_literal(1);
     if (!lo.ok() || !hi.ok() || !step.ok()) return none;
     GpuExtent span;
     span.kind = GpuExtentKind::BinOp;
@@ -1376,6 +1351,30 @@ inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
     out.children.push_back(std::move(whole));
     out.children.push_back(gpu_extent_literal(1));
     return out;
+}
+
+// That extent as the host derives it: every operand has to be something the
+// host can work out for itself, or nothing derives at all.
+inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
+        const GpuExtentScope &scope, int depth) {
+    return gpu_range_extent_of(
+        gpu_derive_extent(range->m_left, scope, depth),
+        gpu_derive_extent(range->m_right, scope, depth),
+        range->m_step != nullptr
+            ? gpu_derive_extent(range->m_step, scope, depth)
+            : gpu_extent_literal(1));
+}
+
+// That same extent as the device spells it: each operand is written out
+// through the node the section holds, which the shader can always do -- it
+// is inside the kernel, where every name the bounds mention has a value.
+inline GpuExtent gpu_device_range_extent(ASR::array_index_t *range) {
+    return gpu_range_extent_of(
+        gpu_extent_opaque(range->m_left),
+        gpu_extent_opaque(range->m_right),
+        range->m_step != nullptr
+            ? gpu_extent_opaque(range->m_step)
+            : gpu_extent_literal(1));
 }
 
 inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
@@ -2261,41 +2260,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
     return result;
 }
 
-// Count VLA workspaces in a kernel without assigning buffer indices.
-inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
-    return static_cast<int>(collect_gpu_vla_workspaces(kernel, 0).size());
-}
-
 static const int MAX_METAL_BUFFERS = 31;
 static const int PACKED_BUFFER_ALIGN = 16;
-
-// Determine whether a kernel needs buffer packing because its total
-// buffer count exceeds Metal's 31-slot limit.
-inline bool gpu_kernel_needs_buffer_packing(
-        const ASR::Function_t &kernel) {
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
-    return total > MAX_METAL_BUFFERS;
-}
-
-// Compute the Metal buffer index where VLA workspace buffers start.
-// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
-// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
-inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
-    if (gpu_kernel_needs_buffer_packing(kernel)) {
-        return 2;
-    }
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    return n_buffer + (n_scalar > 0 ? 1 : 0);
-}
-
-// Analyze a GPU kernel function for the per-thread workspaces it needs, with
-// buffer indices assigned sequentially after the kernel's packed arguments.
-inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
-        const ASR::Function_t &kernel) {
-    return collect_gpu_vla_workspaces(kernel, gpu_vla_buffer_start(kernel));
-}
 
 // Scan a kernel body for alloc-assign statements that write a VLA workspace
 // array to a struct array member.  Returns a map from

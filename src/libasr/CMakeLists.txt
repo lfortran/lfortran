@@ -84,6 +84,10 @@ set(SRC
     pass/replace_with_compile_time_values.cpp
     pass/gpu_decline.cpp
     pass/gpu_offload.cpp
+    pass/gpu_offload_associate.cpp
+    pass/gpu_offload_body.cpp
+    pass/gpu_offload_decide.cpp
+    pass/gpu_offload_launch.cpp
     pass/gpu_offload_designator.cpp
     pass/gpu_offload_preflight.cpp
     pass/gpu_offload_rewrite.cpp
