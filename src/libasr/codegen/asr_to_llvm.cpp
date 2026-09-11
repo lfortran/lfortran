@@ -11209,44 +11209,8 @@ public:
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
 
-        // Special-case: transfer(character, int8_array, size) lowered as BitCast.
-        // When scalarized into element-wise assignments, extract the corresponding
-        // byte from the source string.
         if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
-            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
-                ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target)) &&
-                ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(x.m_target))->m_kind == 1 &&
-                ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source))) {
-                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
-                if (ai->n_args == 1 && ai->m_args[0].m_right) {
-                    bool is_assignment_target_copy = is_assignment_target;
-                    is_assignment_target = true;
-                    visit_expr(*x.m_target);
-                    is_assignment_target = is_assignment_target_copy;
-                    llvm::Value* dest_ptr = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
-
-                    int64_t ptr_loads_copy = ptr_loads;
-                    ptr_loads = 0;
-                    visit_expr_wrapper(bc->m_source, true);
-                    ptr_loads = ptr_loads_copy;
-                    llvm::Value* src_desc = tmp;
-                    llvm::Value* src_data = llvm_utils->get_string_data(
-                        ASRUtils::get_string_type(bc->m_source), src_desc);
-                    src_data = builder->CreateBitCast(src_data, llvm_utils->i8_ptr);
-
-                    visit_expr_wrapper(ai->m_args[0].m_right, true);
-                    llvm::Value* idx = tmp;
-                    idx = builder->CreateZExtOrTrunc(idx, llvm::Type::getInt64Ty(context));
-                    llvm::Value* zero_based = builder->CreateSub(idx, llvm::ConstantInt::get(idx->getType(), 1));
-                    llvm::Value* src_byte_ptr = builder->CreateGEP(
-                        llvm::Type::getInt8Ty(context), src_data, zero_based);
-                    llvm::Value* byte_val = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt8Ty(context), src_byte_ptr);
-                    builder->CreateStore(byte_val, dest_ptr);
-                    return;
-                }
-            }
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* target_type_past_alloc =
@@ -15706,10 +15670,16 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left_val = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right_val = tmp;
+        load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left_val);
+        load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_complex(*x.m_type));
         llvm::Type *type;
         int a_kind;
@@ -15717,14 +15687,6 @@ public:
             ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
-        if( left_val->getType()->isPointerTy() ) {
-            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left, ASRUtils::expr_type(x.m_left), module.get());
-            left_val = llvm_utils->CreateLoad2(left_type, left_val);
-        }
-        if( right_val->getType()->isPointerTy() ) {
-            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
-            right_val = llvm_utils->CreateLoad2(right_type, right_val);
-        }
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
@@ -15839,10 +15801,14 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_arg, true);
-        llvm::Type *type = tmp->getType();
-        llvm::Value *re = complex_re(tmp, type);
-        llvm::Value *im = complex_im(tmp, type);
+        this->visit_expr_load_wrapper(x.m_arg,
+            LLVM::is_llvm_pointer(*expr_type(x.m_arg)) ? 2 : 1,
+            true);
+        llvm::Value *arg_val = tmp;
+        load_non_array_non_character_pointers(x.m_arg, ASRUtils::expr_type(x.m_arg), arg_val);
+        llvm::Type *type = arg_val->getType();
+        llvm::Value *re = complex_re(arg_val, type);
+        llvm::Value *im = complex_im(arg_val, type);
         re = builder->CreateFNeg(re);
         im = builder->CreateFNeg(im);
         tmp = complex_from_floats(re, im, type);
@@ -18323,6 +18289,40 @@ public:
         builder->SetInsertPoint(loop_end);
     }
 
+    // Lower a DECIMAL= specifier value to the runtime decimal edit mode
+    // (0 = point, 1 = comma).
+    llvm::Value* emit_decimal_mode_from_specifier(ASR::expr_t* decimal_expr) {
+        llvm::Value *decimal_data, *decimal_len;
+        std::tie(decimal_data, decimal_len) = get_string_data_and_length(decimal_expr);
+        std::string func_name = "_lfortran_decimal_mode_from_str";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {
+                        character_type, llvm::Type::getInt64Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        return builder->CreateCall(fn, {decimal_data, decimal_len});
+    }
+
+    // Request a decimal edit mode for the data transfer statement that is
+    // about to run; -1 restores the mode of the connection.
+    void emit_set_transfer_decimal_mode(llvm::Value* mode) {
+        std::string func_name = "_lfortran_set_transfer_decimal_mode";
+        llvm::Function *fn = module->getFunction(func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, func_name, module.get());
+        }
+        builder->CreateCall(fn, {mode});
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
@@ -18549,6 +18549,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+        }
+
+        if (x.m_decimal) {
+            // A DECIMAL= specifier on the statement selects the decimal edit
+            // mode for this transfer only.
+            emit_set_transfer_decimal_mode(emit_decimal_mode_from_specifier(x.m_decimal));
         }
 
         llvm::Value *iomsg_data = nullptr;
@@ -19255,6 +19261,10 @@ public:
             builder->CreateStore(extended, iostat_user);
         }
         emit_set_read_iomsg();
+        if (x.m_decimal) {
+            emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
+        }
     }
 
     void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
@@ -21503,7 +21513,13 @@ public:
             }
             this->current_round_mode = builder->CreateCall(round_fn, {unit});
         }
-        
+
+        if (x.m_decimal) {
+            // A DECIMAL= specifier on the statement selects the decimal edit
+            // mode for this transfer only, for internal files too.
+            this->current_decimal_mode = emit_decimal_mode_from_specifier(x.m_decimal);
+        }
+
         if (x.m_rec && !is_string) {
             emit_seek_record_from_rec(x.m_rec, unit, iostat);
         }

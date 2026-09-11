@@ -69,6 +69,7 @@ set(SRC
     pass/loop_vectorise.cpp
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
+    pass/scoped_inlining.cpp
     pass/loop_unroll.cpp
     pass/dead_code_removal.cpp
     pass/instantiate_template.cpp
@@ -83,6 +84,10 @@ set(SRC
     pass/replace_with_compile_time_values.cpp
     pass/gpu_decline.cpp
     pass/gpu_offload.cpp
+    pass/gpu_offload_associate.cpp
+    pass/gpu_offload_body.cpp
+    pass/gpu_offload_decide.cpp
+    pass/gpu_offload_launch.cpp
     pass/gpu_offload_designator.cpp
     pass/gpu_offload_preflight.cpp
     pass/gpu_offload_rewrite.cpp
@@ -93,6 +98,9 @@ set(SRC
     pass/gpu_offload_import.cpp
     pass/gpu_offload_kernel_scope.cpp
     pass/device_partition.cpp
+    pass/gpu_kernel_abi.cpp
+    pass/gpu_kernel_plan.cpp
+    pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
     pass/coarray.cpp

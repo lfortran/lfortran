@@ -6659,7 +6659,7 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header, m_start_name, m_end_name);
+        m_side_effect_free, m_c_header, nullptr, m_start_name, m_end_name);
 }
 
 
@@ -9664,6 +9664,37 @@ ASR::StructMethodDeclaration_t* overridden_binding(
 InterfaceMismatch binding_override_mismatch(
     const ASR::StructMethodDeclaration_t &x, ASR::Function_t *proc,
     const std::string &what, bool use_expr_context);
+
+inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
+        size_t n_body, bool procedure_values = false) {
+    struct Collector : BlockBodyWalkVisitor<Collector> {
+        std::set<ASR::Function_t*> callees;
+        bool procedure_values;
+        explicit Collector(bool values) : procedure_values(values) {}
+        void add(ASR::symbol_t *symbol) {
+            symbol = symbol_get_past_external(symbol);
+            if (!symbol) return;
+            symbol = symbol_get_past_StructMethodDeclaration(symbol);
+            if (symbol && ASR::is_a<ASR::Function_t>(*symbol)) {
+                callees.insert(ASR::down_cast<ASR::Function_t>(symbol));
+            }
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            add(x.m_name);
+            ASR::BaseWalkVisitor<Collector>::visit_FunctionCall(x);
+        }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            add(x.m_name);
+            ASR::BaseWalkVisitor<Collector>::visit_SubroutineCall(x);
+        }
+        void visit_Var(const ASR::Var_t &x) {
+            if (procedure_values) add(x.m_v);
+        }
+    };
+    Collector collector(procedure_values);
+    for (size_t i = 0; i < n_body; i++) collector.visit_stmt(*body[i]);
+    return collector.callees;
+}
 
 } // namespace ASRUtils
 

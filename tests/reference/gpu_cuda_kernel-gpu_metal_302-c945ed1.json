@@ -6,8 +6,8 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_cuda_kernel-gpu_metal_302-c945ed1.stdout",
-    "stdout_hash": "db48093542b30a523ade64cf9f50871a495bcd7fa8a6d14e099928e9",
+    "stdout_hash": "05026777972fd6609bde5e22a930e1a6863a9ab7c5c2816cfcaef775",
     "stderr": "gpu_cuda_kernel-gpu_metal_302-c945ed1.stderr",
-    "stderr_hash": "af50d6f30bd1b4941cc7d639d23ce2fc9ca763a194615080db06e961",
+    "stderr_hash": "856ba26c2ab8266eacf48682e2b8890ad23a9e8c7bda56ee6c963355",
     "returncode": 0
 }

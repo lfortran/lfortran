@@ -1,0 +1,13 @@
+{
+    "basename": "asr-format_hollerith_02-962b33a",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/format_hollerith_02.f90",
+    "infile_hash": "868be5d11cd5eecd9190720193c8b12874760a798474a56690884660",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

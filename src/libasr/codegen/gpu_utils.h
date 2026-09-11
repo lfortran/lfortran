@@ -25,6 +25,8 @@ namespace LCompilers {
 enum class GpuExtentKind {
     None,       // nothing could be derived: the extent is not offloadable
     Constant,   // the integer `int_value`
+    Opaque,     // the value of `expr`, spelled by whoever renders it
+    Cast,       // an explicit integer conversion of children[0]
     BinOp,      // children[0] `binop` children[1]
     Neg,        // -children[0]
     Compare,    // children[0] `cmpop` children[1]
@@ -117,6 +119,8 @@ struct GpuStructMemberKey {
 };
 
 struct GpuVlaDim {
+    ASR::expr_t *source_extent = nullptr;
+    ASR::symbol_t *extent_parameter = nullptr;
     bool is_constant = true;
     int64_t constant_value = 1;
     // When true, size is read from a struct member's allocatable
@@ -219,7 +223,7 @@ inline std::set<std::string> gpu_declaration_reads(ASR::Variable_t *var,
     }
     std::string var_name(var->m_name);
     for (const GpuVlaWorkspace &ws : workspaces) {
-        if (ws.var_name != var_name) continue;
+        if (ws.var != &var->base) continue;
         for (const GpuVlaDim &dim : ws.dims) {
             if (dim.is_constant) continue;
             if (dim.is_struct_member_size) {
@@ -447,40 +451,6 @@ inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {
     }
     return base + "(" +
         std::to_string(ASRUtils::extract_kind_from_ttype_t(t)) + ")";
-}
-
-// Classify kernel arguments into buffer (array/struct) and scalar categories.
-// Returns the count of buffer args and scalar args respectively.
-// For struct array args with allocatable array members, counts 3 extra
-// buffers per member (data, offsets, sizes) as emitted by Metal codegen.
-inline std::pair<int, int> classify_gpu_kernel_args(
-        const ASR::Function_t &kernel) {
-    int n_buffer = 0, n_scalar = 0;
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(kernel.m_args[i]);
-        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::symbol_get_past_external(v->m_v));
-        ASR::ttype_t *type = var->m_type;
-        if (ASRUtils::is_array(type) ||
-                ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(type))) {
-            n_buffer++;
-            if (ASRUtils::is_array(type) && var->m_type_declaration) {
-                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-                    var->m_type_declaration);
-                if (ASR::is_a<ASR::Struct_t>(*s)) {
-                    // Members inherited from the types this one extends are
-                    // decomposed like its own, so they count here too.
-                    n_buffer += 3 *
-                        (int)ASRUtils::collect_allocatable_array_members(
-                            ASR::down_cast<ASR::Struct_t>(s)).size();
-                }
-            }
-        } else {
-            n_scalar++;
-        }
-    }
-    return {n_buffer, n_scalar};
 }
 
 // Helper to recursively find the first Allocate statement for a given
@@ -1110,47 +1080,9 @@ inline ASR::expr_t* gpu_elementwise_shape_source(ASR::expr_t *e) {
 // question is what device code can reach, because whoever receives the
 // routine can call it; it does not when the question is what a kernel body
 // has to have spliced into it, which is only what that body actually calls.
-class GpuCalleeCollector :
-        public ASRUtils::BlockBodyWalkVisitor<GpuCalleeCollector> {
-public:
-    std::set<ASR::Function_t*> callees;
-    const bool procedure_values;
-
-    explicit GpuCalleeCollector(bool procedure_values_)
-        : procedure_values(procedure_values_) {}
-
-    void add(ASR::symbol_t *sym) {
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
-        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
-            callees.insert(ASR::down_cast<ASR::Function_t>(sym));
-        }
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        add(x.m_name);
-        ASR::BaseWalkVisitor<GpuCalleeCollector>::visit_SubroutineCall(x);
-    }
-
-    void visit_Var(const ASR::Var_t &x) {
-        if (procedure_values) add(x.m_v);
-    }
-};
-
 inline std::set<ASR::Function_t*> gpu_callees(ASR::stmt_t **body,
         size_t n_body, bool procedure_values) {
-    GpuCalleeCollector collector(procedure_values);
-    for (size_t i = 0; i < n_body; i++) {
-        collector.visit_stmt(*body[i]);
-    }
-    return collector.callees;
+    return ASRUtils::get_called_functions(body, n_body, procedure_values);
 }
 
 // Counts the writes to one scalar in a statement list, keeping the value of
@@ -1383,17 +1315,25 @@ inline GpuExtent gpu_extent_literal(int64_t n) {
     return out;
 }
 
+// The value of `e`, left for whoever renders the extent to spell. A leaf
+// the host has no counterpart for: a section whose bounds are values the
+// kernel alone holds is still an extent the shader can write out, in the
+// names the kernel binds.
+inline GpuExtent gpu_extent_opaque(ASR::expr_t *e) {
+    GpuExtent out;
+    if (e == nullptr) return out;
+    out.kind = GpuExtentKind::Opaque;
+    out.expr = e;
+    return out;
+}
+
 // Fortran's `(hi - lo) / step + 1`, the extent one range subscript of a
-// section spans. Written once here, so that the buffer the host sizes by it
-// and the stride the device walks by it are the same formula.
-inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
-        const GpuExtentScope &scope, int depth) {
+// section spans, over three operands each side has already put in the form
+// it can render. Written once here, so that the buffer the host sizes by it
+// and the stride the device walks by it cannot be different formulas.
+inline GpuExtent gpu_range_extent_of(GpuExtent lo, GpuExtent hi,
+        GpuExtent step) {
     GpuExtent none;
-    GpuExtent lo = gpu_derive_extent(range->m_left, scope, depth);
-    GpuExtent hi = gpu_derive_extent(range->m_right, scope, depth);
-    GpuExtent step = range->m_step != nullptr
-        ? gpu_derive_extent(range->m_step, scope, depth)
-        : gpu_extent_literal(1);
     if (!lo.ok() || !hi.ok() || !step.ok()) return none;
     GpuExtent span;
     span.kind = GpuExtentKind::BinOp;
@@ -1413,6 +1353,30 @@ inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
     return out;
 }
 
+// That extent as the host derives it: every operand has to be something the
+// host can work out for itself, or nothing derives at all.
+inline GpuExtent gpu_derive_range_extent(ASR::array_index_t *range,
+        const GpuExtentScope &scope, int depth) {
+    return gpu_range_extent_of(
+        gpu_derive_extent(range->m_left, scope, depth),
+        gpu_derive_extent(range->m_right, scope, depth),
+        range->m_step != nullptr
+            ? gpu_derive_extent(range->m_step, scope, depth)
+            : gpu_extent_literal(1));
+}
+
+// That same extent as the device spells it: each operand is written out
+// through the node the section holds, which the shader can always do -- it
+// is inside the kernel, where every name the bounds mention has a value.
+inline GpuExtent gpu_device_range_extent(ASR::array_index_t *range) {
+    return gpu_range_extent_of(
+        gpu_extent_opaque(range->m_left),
+        gpu_extent_opaque(range->m_right),
+        range->m_step != nullptr
+            ? gpu_extent_opaque(range->m_step)
+            : gpu_extent_literal(1));
+}
+
 inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         const GpuExtentScope &scope, int depth) {
     GpuExtent none;
@@ -1430,8 +1394,14 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         return out;
     }
     if (ASR::is_a<ASR::Cast_t>(*v)) {
-        return gpu_derive_extent(ASR::down_cast<ASR::Cast_t>(v)->m_arg,
-            scope, depth);
+        GpuExtent argument = gpu_derive_extent(
+            ASR::down_cast<ASR::Cast_t>(v)->m_arg, scope, depth);
+        if (!argument.ok()) return none;
+        GpuExtent out;
+        out.kind = GpuExtentKind::Cast;
+        out.expr = v;
+        out.children.push_back(std::move(argument));
+        return out;
     }
     // One dimension of an array, however it is spelled: `size(a, d)`, or
     // the `ubound(a,d) - lbound(a,d) + 1` an assumed-shape dummy is lowered
@@ -1905,6 +1875,7 @@ inline ASR::alloc_arg_t* find_alloc_arg_for_var(ASR::Allocate_t *alloc,
 // extent is neither.
 inline bool classify_vla_dim(ASR::expr_t *dim, const GpuExtentScope &scope,
         GpuVlaDim &vd) {
+    vd.source_extent = dim;
     vd.is_constant = false;
     vd.constant_value = 0;
     GpuStructMemberKey member_key;
@@ -2094,8 +2065,8 @@ inline void scan_kernel_scope_alloc_vlas(
         int &buffer_idx,
         std::vector<GpuVlaWorkspace> &result) {
     std::set<std::string> arg_set(arg_names.begin(), arg_names.end());
-    std::set<std::string> handled_names;
-    for (auto &ws : result) handled_names.insert(ws.var_name);
+    std::set<ASR::symbol_t*> handled;
+    for (auto &ws : result) handled.insert(ws.var);
 
     for (auto &item : kernel.m_symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -2107,7 +2078,7 @@ inline void scan_kernel_scope_alloc_vlas(
         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
         std::string vname(var->m_name);
         if (arg_set.count(vname)) continue;
-        if (handled_names.count(vname)) continue;
+        if (handled.count(item.second)) continue;
         GpuVlaWorkspace ws;
         ws.var = item.second;
         bool have = false;
@@ -2257,7 +2228,7 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 std::string vname(var2->m_name);
                 bool already = false;
                 for (auto &r : result) {
-                    if (r.var_name == vname) { already = true; break; }
+                    if (r.var == item2.second) { already = true; break; }
                 }
                 if (already) continue;
                 GpuVlaWorkspace ws;
@@ -2289,41 +2260,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
     return result;
 }
 
-// Count VLA workspaces in a kernel without assigning buffer indices.
-inline int count_gpu_vla_workspaces(const ASR::Function_t &kernel) {
-    return static_cast<int>(collect_gpu_vla_workspaces(kernel, 0).size());
-}
-
 static const int MAX_METAL_BUFFERS = 31;
 static const int PACKED_BUFFER_ALIGN = 16;
-
-// Determine whether a kernel needs buffer packing because its total
-// buffer count exceeds Metal's 31-slot limit.
-inline bool gpu_kernel_needs_buffer_packing(
-        const ASR::Function_t &kernel) {
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    int n_vla = count_gpu_vla_workspaces(kernel);
-    int total = n_buffer + (n_scalar > 0 ? 1 : 0) + n_vla;
-    return total > MAX_METAL_BUFFERS;
-}
-
-// Compute the Metal buffer index where VLA workspace buffers start.
-// Normal layout:  [buffer_args...] [scalar_struct?] [vla_workspaces...]
-// Packed layout:  [packed_arrays(0)] [scalar_struct(1)] [vla_workspaces...]
-inline int gpu_vla_buffer_start(const ASR::Function_t &kernel) {
-    if (gpu_kernel_needs_buffer_packing(kernel)) {
-        return 2;
-    }
-    auto [n_buffer, n_scalar] = classify_gpu_kernel_args(kernel);
-    return n_buffer + (n_scalar > 0 ? 1 : 0);
-}
-
-// Analyze a GPU kernel function for the per-thread workspaces it needs, with
-// buffer indices assigned sequentially after the kernel's packed arguments.
-inline std::vector<GpuVlaWorkspace> analyze_gpu_vla_workspaces(
-        const ASR::Function_t &kernel) {
-    return collect_gpu_vla_workspaces(kernel, gpu_vla_buffer_start(kernel));
-}
 
 // Scan a kernel body for alloc-assign statements that write a VLA workspace
 // array to a struct array member.  Returns a map from

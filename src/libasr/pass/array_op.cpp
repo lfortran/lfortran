@@ -756,7 +756,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 x.m_iomsg, x.m_iostat, x.m_id,
                 x.m_values, x.n_values,
                 x.m_separator, x.m_end, x.m_overloaded,
-                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous)));
+                x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous, x.m_decimal)));
 
             // Copy back: do i = 0, section_size-1; c(start+i*step) = temp(i+1)
             pass_result.push_back(al, b.DoLoop(loop_var, zero, loop_end,
@@ -822,7 +822,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             x.m_iomsg, x.m_iostat, x.m_id,
             inner_vals.p, 1,
             x.m_separator, x.m_end, x.m_overloaded,
-            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous));
+            x.m_is_formatted, x.m_nml, x.m_rec, x.m_pos, x.m_asynchronous, x.m_decimal));
 
         // Wrap Scalar FileWrites in DoLoop
         Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
@@ -1827,6 +1827,201 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    // Size in bytes of one element of `elem_type`, or -1 when it is not
+    // known at compile time.
+    int64_t get_element_byte_size(ASR::ttype_t* elem_type) {
+        if( ASR::is_a<ASR::String_t>(*elem_type) ) {
+            int64_t len = -1;
+            if( !ASRUtils::extract_value(
+                    ASR::down_cast<ASR::String_t>(elem_type)->m_len, len) ) {
+                return -1;
+            }
+            return len;
+        }
+        int64_t nbytes = ASRUtils::get_type_byte_size(elem_type);
+        return nbytes > 0 ? nbytes : -1;
+    }
+
+    // `transfer()` with CHARACTER on the array side cannot be scalarised into
+    // an element-wise loop. The bytes of result element `i` start at byte
+    // `i * storage_size(mold)/8` of the source, an offset that is not
+    // expressible as an element index of the source, so an element-wise loop
+    // would bit-cast every element from byte 0 of the source (and, for a
+    // CHARACTER result, hand the backend a whole-array source it cannot
+    // lower at all).
+    //
+    // Lower such an assignment into a loop over the result elements that
+    // slices a CHARACTER buffer holding the source bytes, one slice of
+    // `elem_bytes` characters per element. Returns false when the assignment
+    // is not of a shape handled here, and the caller then falls back to the
+    // generic lowering.
+    bool lower_character_bitcast(const ASR::Assignment_t& x,
+            ASR::BitCast_t* bc, const Location& loc) {
+        ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(
+            const_cast<ASR::expr_t*>(x.m_target));
+        if( !ASR::is_a<ASR::Var_t>(*target) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*target) ) {
+            return false;
+        }
+        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(target));
+        if( !ASRUtils::is_array(target_type) ||
+            ASRUtils::extract_n_dims_from_ttype(target_type) != 1 ) {
+            return false;
+        }
+        ASR::ttype_t* source_type = ASRUtils::expr_type(bc->m_source);
+        bool source_is_string = ASRUtils::is_string_only(source_type);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(target_type);
+        bool target_is_string = ASR::is_a<ASR::String_t>(*elem_type);
+        if( !source_is_string && !target_is_string ) {
+            return false;
+        }
+        // Only default character kind can be sliced byte by byte.
+        if( (source_is_string &&
+             ASRUtils::extract_kind_from_ttype_t(source_type) != 1) ||
+            (target_is_string &&
+             ASRUtils::extract_kind_from_ttype_t(elem_type) != 1) ) {
+            return false;
+        }
+        int64_t elem_bytes = get_element_byte_size(elem_type);
+        if( elem_bytes <= 0 ) {
+            return false;
+        }
+
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t* buffer = nullptr;
+        if( source_is_string ) {
+            buffer = bc->m_source;
+        } else {
+            // Materialise the source bytes into a CHARACTER buffer first;
+            // `buffer = transfer(source, buffer)` with a scalar CHARACTER
+            // result is already a plain byte copy in the backend.
+            int64_t n_elems = -1;
+            if( bc->m_size && ASRUtils::expr_value(bc->m_size) ) {
+                ASRUtils::extract_value(ASRUtils::expr_value(bc->m_size), n_elems);
+            }
+            if( n_elems <= 0 ) {
+                n_elems = ASRUtils::get_fixed_size_of_array(bc->m_type);
+            }
+            if( n_elems <= 0 ) {
+                n_elems = ASRUtils::get_fixed_size_of_array(target_type);
+            }
+            if( n_elems <= 0 ) {
+                return false;
+            }
+            ASR::ttype_t* buffer_type = b.String(b.i32(n_elems * elem_bytes),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString, 1);
+            std::string buffer_name = current_scope->get_unique_name(
+                "__libasr_bitcast_buf_");
+            ASR::symbol_t* buffer_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(
+                    al, loc, current_scope, s2c(al, buffer_name), nullptr, 0,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, buffer_type, nullptr,
+                    ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(buffer_name, buffer_sym);
+            buffer = ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer_sym));
+            ASR::expr_t* buffer_value = ASRUtils::EXPR(ASR::make_BitCast_t(
+                al, loc, bc->m_source, buffer, nullptr, buffer_type, nullptr));
+            pass_result.push_back(al, ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(al, loc, buffer, buffer_value,
+                    nullptr, false, false)));
+        }
+
+        int index_kind = get_index_kind();
+        ASR::ttype_t* index_type = get_index_type(loc);
+        std::string index_name = current_scope->get_unique_name(
+            "__libasr_index_0_");
+        ASR::symbol_t* index_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, index_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, index_type, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(index_name, index_sym);
+        ASR::expr_t* index = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index_sym));
+
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        // start = (index - lbound(target, 1)) * elem_bytes + 1
+        ASR::expr_t* offset = b.Mul(
+            b.Sub(index, PassUtils::get_bound(
+                    duplicator.duplicate_expr(target), 1, "lbound", al, index_kind)),
+            b.i_t(elem_bytes, index_type));
+        ASR::expr_t* start = b.Add(offset, b.i_t(1, index_type));
+        ASR::expr_t* end = b.Add(duplicator.duplicate_expr(start),
+            b.i_t(elem_bytes - 1, index_type));
+        ASR::ttype_t* section_type = b.String(b.i32(elem_bytes),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString, 1);
+        ASR::expr_t* section = ASRUtils::EXPR(ASR::make_StringSection_t(
+            al, loc, buffer, start, end, b.i_t(1, index_type),
+            section_type, nullptr));
+
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, 1);
+        ASR::array_index_t array_index;
+        array_index.loc = loc;
+        array_index.m_left = nullptr;
+        array_index.m_right = index;
+        array_index.m_step = nullptr;
+        indices.push_back(al, array_index);
+        ASR::expr_t* target_item = ASRUtils::EXPR(
+            ASRUtils::make_ArrayItem_t_util(al, loc,
+                duplicator.duplicate_expr(target), indices.p, indices.size(),
+                elem_type, ASR::arraystorageType::ColMajor, nullptr));
+
+        ASR::expr_t* value = section;
+        if( !target_is_string ) {
+            value = ASRUtils::EXPR(ASR::make_BitCast_t(al, loc, section,
+                duplicator.duplicate_expr(target_item), nullptr, elem_type,
+                nullptr));
+        }
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, target_item, value, nullptr, false, false));
+        // The standard leaves the trailing part of the result undefined when
+        // the source is shorter than the result. Skip those elements instead
+        // of slicing past the end of the buffer.
+        int64_t buffer_len = -1;
+        ASR::String_t* buffer_str_type = ASR::down_cast<ASR::String_t>(
+            ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(buffer)));
+        if( buffer_str_type->m_len ) {
+            ASRUtils::extract_value(
+                ASRUtils::expr_value(buffer_str_type->m_len), buffer_len);
+        }
+        int64_t n_target_elems = ASRUtils::get_fixed_size_of_array(target_type);
+        if( buffer_len < 0 || n_target_elems < 0 ||
+            n_target_elems * elem_bytes > buffer_len ) {
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, assign);
+            ASR::expr_t* buffer_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                al, loc, duplicator.duplicate_expr(buffer), index_type, nullptr));
+            assign = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+                b.LtE(duplicator.duplicate_expr(end), buffer_len_expr),
+                if_body.p, if_body.size(), nullptr, 0));
+        }
+        body.push_back(al, assign);
+
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = index;
+        head.m_start = PassUtils::get_bound(
+            duplicator.duplicate_expr(target), 1, "lbound", al, index_kind);
+        head.m_end = PassUtils::get_bound(
+            duplicator.duplicate_expr(target), 1, "ubound", al, index_kind);
+        head.m_increment = nullptr;
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+            al, loc, nullptr, head, body.p, body.size(), nullptr, 0)));
+        return true;
+    }
+
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         // A non-elemental defined assignment is entirely carried out by the
@@ -2059,6 +2254,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (ASR::is_a<ASR::BitCast_t>(*xx.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(xx.m_value);
             ASR::ttype_t* src_type = ASRUtils::expr_type(bc->m_source);
+
+            if (lower_character_bitcast(x, bc, loc)) {
+                return;
+            }
 
             if (bc->m_size != nullptr &&
                 ASRUtils::is_array(src_type) &&

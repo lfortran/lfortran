@@ -224,6 +224,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
     for (auto &item : symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
         ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (ASRUtils::is_arg_dummy(var->m_intent)) continue;
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             var->m_type);
         if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
@@ -291,6 +292,19 @@ bool gpu_block_workspace_extents_resolvable(
             }
         });
     return ok;
+}
+
+bool gpu_kernel_workspace_extents_resolvable(const ASR::Function_t &kernel,
+        std::string &unresolved_name) {
+    std::vector<std::string> arguments;
+    for (size_t i = 0; i < kernel.n_args; i++) {
+        arguments.push_back(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v));
+    }
+    return gpu_scope_workspaces_resolvable(kernel.m_symtab, kernel.m_body,
+        kernel.n_body, kernel.m_body, kernel.n_body, arguments, unresolved_name)
+        && gpu_block_workspace_extents_resolvable(kernel.m_body, kernel.n_body,
+            arguments, unresolved_name);
 }
 
 // An out-of-line result becomes a caller-owned buffer. An unconditional
@@ -410,7 +424,7 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn) {
 
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
-        const GpuDeviceCapabilities &caps) {
+        const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
     if (!s || !ASR::is_a<ASR::Struct_t>(*s)) {
         // The derived type cannot be inspected, so it cannot be shown to
@@ -423,7 +437,7 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         return true;
     }
     if (st->m_parent
-            && !gpu_struct_members_ok(st->m_parent, visited, caps)) {
+            && !gpu_struct_members_ok(st->m_parent, visited, caps, unsupported_type)) {
         return false;
     }
     for (size_t i = 0; i < st->n_members; i++) {
@@ -436,10 +450,11 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         if (ASR::is_a<ASR::StructType_t>(*mtype)) {
             if (!mvar->m_type_declaration
                     || !gpu_struct_members_ok(
-                        mvar->m_type_declaration, visited, caps)) {
+                        mvar->m_type_declaration, visited, caps, unsupported_type)) {
                 return false;
             }
         } else if (!caps.has_scalar_type(mtype)) {
+            if (unsupported_type) *unsupported_type = mtype;
             return false;
         }
     }
@@ -447,25 +462,21 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
 }
 
 bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e) {
+        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type) {
     ASR::ttype_t *base_t = ASRUtils::extract_type(t);
     if (ASR::is_a<ASR::StructType_t>(*base_t)) {
         if (!e) return false;
         std::set<ASR::Struct_t*> visited;
         return gpu_struct_members_ok(
-            ASRUtils::get_struct_sym_from_struct_expr(e), visited, caps);
+            ASRUtils::get_struct_sym_from_struct_expr(e), visited, caps,
+            unsupported_type);
     }
+    if (unsupported_type && !caps.has_scalar_type(base_t)) *unsupported_type = base_t;
     return caps.has_scalar_type(base_t);
 }
 
-ASR::ttype_t* scalar_type_of(ASR::ttype_t *t) {
-    if (!t) return nullptr;
-    ASR::ttype_t *base_t = ASRUtils::extract_type(t);
-    if (ASR::is_a<ASR::StructType_t>(*base_t)) return nullptr;
-    return base_t;
-}
-
-GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
+GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
+        const GpuDeviceCapabilities &caps) {
     switch (s.type) {
         case ASR::stmtType::Print:
         case ASR::stmtType::FileWrite:
@@ -480,6 +491,11 @@ GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s) {
             return GpuDeclineReason::StatementIo;
         case ASR::stmtType::Stop:
         case ASR::stmtType::ErrorStop:
+            // A device that can raise a trap stops the launch where the
+            // program said to stop. The exit code goes nowhere -- a grid
+            // returns no status -- but stopping is what the statement is
+            // for, and a thread that traps runs nothing after it.
+            if (caps.device_abort) return GpuDeclineReason::None;
             return GpuDeclineReason::StatementStop;
         default:
             return GpuDeclineReason::None;

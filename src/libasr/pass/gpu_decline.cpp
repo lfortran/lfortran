@@ -1,8 +1,36 @@
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
+#include <iostream>
 
 namespace LCompilers {
+
+void report_gpu_decline(const PassOptions &options, const Location &where,
+        const GpuDecline &decline, bool has_fallback) {
+    LCOMPILERS_ASSERT(decline.declined());
+    if (!options.diagnostics) return;
+    GpuDeclineClass category = gpu_decline_class(decline,
+        gpu_device_capabilities(options));
+    std::string why = gpu_decline_message(decline);
+    if (options.gpu_decline_stats) {
+        std::cerr << "gpu-decline: " << gpu_decline_class_name(category)
+            << ": " << why << std::endl;
+    }
+    bool fallback = has_fallback && options.gpu_allow_cpu_fallback;
+    if (fallback) {
+        options.diagnostics->message_label(
+            "parallel loop not offloaded to the GPU, "
+            "it runs on the CPU instead", {where}, why,
+            diag::Level::Warning, diag::Stage::ASRPass);
+    } else {
+        options.diagnostics->message_label(
+            "parallel loop cannot be offloaded to the GPU: " + why +
+                (has_fallback
+                    ? "; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead"
+                    : "; no CPU alternative is available for this launch"),
+            {where}, why, diag::Level::Error, diag::Stage::ASRPass);
+    }
+}
 
 GpuDevice gpu_device_selected(const PassOptions &pass_options) {
     if (pass_options.gpu_offload_metal) return GpuDevice::Metal;
@@ -27,6 +55,11 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
+            // A Metal shader has no way to write text out and no way to
+            // halt the program: the shading language has neither a device
+            // `printf` nor a trap.
+            caps.device_printf = false;
+            caps.device_abort = false;
             break;
         case GpuDevice::Cuda:
             // CUDA C++ has `double` and `long long`, so it narrows nothing
@@ -37,6 +70,8 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
+            // A CUDA kernel has a `printf` of its own and a trap it can
+            // raise, so it keeps both of those defaults.
             break;
         case GpuDevice::None:
             break;
@@ -76,35 +111,41 @@ bool GpuDeviceCapabilities::narrows_scalar_types() const {
 GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         const GpuDeviceCapabilities &caps) {
     switch (decline.reason) {
-        // A type the device has none of its own of the same width. Whether
-        // that is the device's limit or this pass's gap is the device's
-        // answer, not ours: `real(8)` has no Metal type, and has a CUDA one.
-        // A decline that named no scalar type -- a derived type, whose
-        // offending width is one member's -- is the device's limit too: the
-        // check that raised it is exactly this question, asked of a member.
+        // Native floating-point width is a backend limit. Missing integer,
+        // logical, character or aggregate lowering is compiler work, not a
+        // reason to silently waive strict mode.
         case GpuDeclineReason::LocalTypeWidth:
         case GpuDeclineReason::SymbolTypeNotRepresentable:
         case GpuDeclineReason::WideTypeNotOnDevice:
         case GpuDeclineReason::StructMemberTypeWidth:
         case GpuDeclineReason::ArrayElementTypeWidth:
         case GpuDeclineReason::ScalarTypeWidth:
-            if (caps.has_scalar_type(decline.type)) {
-                return GpuDeclineClass::NotImplemented;
+            if (decline.type && ASR::is_a<ASR::Real_t>(*decline.type) &&
+                    ASR::down_cast<ASR::Real_t>(decline.type)->m_kind >
+                        caps.max_real_kind) {
+                return GpuDeclineClass::BackendCannot;
             }
-            return GpuDeclineClass::BackendCannot;
+            return GpuDeclineClass::NotImplemented;
 
-        // Not a number at all: character and the rest have no device type in
-        // any of the dialects, whichever one was selected.
         case GpuDeclineReason::StructMemberNotNumeric:
         case GpuDeclineReason::ArrayElementNotNumeric:
         case GpuDeclineReason::ScalarNotNumeric:
-            return GpuDeclineClass::BackendCannot;
+            return GpuDeclineClass::NotImplemented;
 
-        // A statement the device has no way to run: there are no Fortran
-        // units, formats or exit codes on a device.
+        // A statement the device has no way to run. There are no Fortran
+        // units, formats or exit codes on any device, but that is not the
+        // whole question: a device with a `printf` of its own can be made to
+        // write what a print asked for, and a device that can raise a trap
+        // can be made to stop where a `stop` asked it to. Where the device
+        // has the means, what is missing is the lowering, not the device.
         case GpuDeclineReason::StatementIo:
+            return caps.device_printf
+                ? GpuDeclineClass::NotImplemented
+                : GpuDeclineClass::BackendCannot;
         case GpuDeclineReason::StatementStop:
-            return GpuDeclineClass::BackendCannot;
+            return caps.device_abort
+                ? GpuDeclineClass::NotImplemented
+                : GpuDeclineClass::BackendCannot;
 
         // Everything else is a lowering this pass has not written yet.
         case GpuDeclineReason::None:
@@ -117,6 +158,8 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
         case GpuDeclineReason::UngatherableStridedSection:
         case GpuDeclineReason::DeviceFunctionInlining:
+        case GpuDeclineReason::DeviceFunctionImplementation:
+        case GpuDeclineReason::RecursiveDeviceFunction:
         case GpuDeclineReason::FunctionResultAllocation:
         case GpuDeclineReason::NestedArraySection:
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
@@ -183,6 +226,11 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "a strided section cannot be gathered for the gpu";
         case GpuDeclineReason::DeviceFunctionInlining:
             return "a device function cannot be inlined";
+        case GpuDeclineReason::DeviceFunctionImplementation:
+            return "procedure '" + decline.name + "' has no device implementation";
+        case GpuDeclineReason::RecursiveDeviceFunction:
+            return "recursive device procedure '" + decline.name +
+                "' has no gpu lowering yet";
         case GpuDeclineReason::FunctionResultAllocation:
             return "the allocatable array result of '" + decline.name +
                 "' has no single allocation the gpu can use";

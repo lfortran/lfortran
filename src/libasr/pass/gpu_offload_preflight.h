@@ -68,6 +68,9 @@ bool gpu_block_workspace_extents_resolvable(
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name);
 
+bool gpu_kernel_workspace_extents_resolvable(const ASR::Function_t &kernel,
+    std::string &unresolved_name);
+
 bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 
 // A derived type is representable only when every one of its data members
@@ -81,7 +84,7 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 // member graph is cyclic.
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
-        const GpuDeviceCapabilities &caps);
+        const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type = nullptr);
 
 // Answers whether the selected device can represent the type of `e` with
 // the same in-memory width the host uses. A device whose type set is
@@ -96,13 +99,12 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
 // raises and the class that decline is given cannot disagree about what the
 // device has a type for.
 bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e);
+        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type = nullptr);
 
 // The scalar element type behind `t`, for a decline that has to be
 // classified against what the device has a type for. A derived type has no
 // single element type -- the width that offends is one member's -- so it
 // answers with nothing, and the decline is classified on its reason alone.
-ASR::ttype_t* scalar_type_of(ASR::ttype_t *t);
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a
@@ -270,10 +272,13 @@ public:
     }
 };
 
-// A statement the device has no way to run. A kernel that held one would
+// A statement this device has no way to run. A kernel that held one would
 // simply not run it, so the effect the program asked for would go missing
-// with nothing to show for it.
-GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s);
+// with nothing to show for it. What "no way" means is the device's answer,
+// not a fixed list: a statement one dialect can be given a lowering for is
+// one another dialect has nothing to lower it onto.
+GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
+    const GpuDeviceCapabilities &caps);
 
 // The first statement of a body that the device cannot run, and where it is.
 class GpuUnsupportedStatementFinder
@@ -281,18 +286,49 @@ class GpuUnsupportedStatementFinder
 public:
     GpuDeclineReason reason;
     Location loc;
+    // Held by value: the finder for a callee is copied over the one for
+    // the loop body when the callee is where the statement was found.
+    GpuDeviceCapabilities caps;
 
-    GpuUnsupportedStatementFinder() : reason(GpuDeclineReason::None) {}
+    explicit GpuUnsupportedStatementFinder(const GpuDeviceCapabilities &caps_)
+        : reason(GpuDeclineReason::None), caps(caps_) {}
 
     void visit_stmt(const ASR::stmt_t &s) {
         if (reason != GpuDeclineReason::None) return;
-        GpuDeclineReason why = unsupported_on_device(s);
+        GpuDeclineReason why = unsupported_on_device(s, caps);
         if (why != GpuDeclineReason::None) {
             reason = why;
             loc = s.base.loc;
             return;
         }
         ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder>::visit_stmt(s);
+    }
+};
+
+// Every `stop` and `error stop` a body holds, in the order they are found.
+// A device that can trap runs one of these as a halt of the launch, which
+// is less than the statement asks for: a grid returns no status, so the
+// stop code goes nowhere and normal termination cannot be told apart from
+// error termination. Each one is collected so that what the device drops
+// is said where the statement stands, rather than lowered in silence.
+class GpuStopStatementFinder
+        : public ASRUtils::BlockBodyWalkVisitor<GpuStopStatementFinder> {
+public:
+    // How Fortran spells the statement, and where it is.
+    std::vector<std::pair<std::string, Location>> stops;
+
+    void visit_stmt(const ASR::stmt_t &s) {
+        switch (s.type) {
+            case ASR::stmtType::Stop:
+                stops.push_back({"stop", s.base.loc});
+                break;
+            case ASR::stmtType::ErrorStop:
+                stops.push_back({"error stop", s.base.loc});
+                break;
+            default:
+                break;
+        }
+        ASR::BaseWalkVisitor<GpuStopStatementFinder>::visit_stmt(s);
     }
 };
 

@@ -24,6 +24,7 @@
 #include <queue>
 #include <limits>
 #include <utility>
+#include <cstring>
 
 using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
@@ -1445,47 +1446,52 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
 
     } else if (x.m_op == AST::unaryopType::USub) {
 
-        if (ASRUtils::is_integer(*operand_type)) {
+        // The result of a unary minus is a value, so it never carries the
+        // allocatable or pointer attribute of its operand.
+        ASR::ttype_t *result_type = ASRUtils::type_get_past_allocatable_pointer(
+            operand_type);
+
+        if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
                     int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
                                             ASRUtils::expr_value(operand))->m_n;
                     value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, operand_type));
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
-                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
                     if (kind == 4) {
-                        value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int32_t>());
+                        value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int32_t>());
                     } else if (kind == 8) {
-                        value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, operand_type, USubOp<int64_t>());
+                        value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int64_t>());
                     }
                 }
             }
             asr = ASR::make_IntegerUnaryMinus_t(al, x.base.base.loc, operand,
-                                                    operand_type, value);
+                                                    result_type, value);
             return;
-        } else if (ASRUtils::is_real(*operand_type)) {
+        } else if (ASRUtils::is_real(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
                     double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                             ASRUtils::expr_value(operand))->m_r;
                     value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
-                        al, x.base.base.loc, -op_value, operand_type));
+                        al, x.base.base.loc, -op_value, result_type));
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
-                    int kind = ASRUtils::extract_kind_from_ttype_t(operand_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
                     if (kind == 4) {
-                        value = eval_unary_array_const<float>(al, x.base.base.loc, arr_const, operand_type, USubOp<float>());
+                        value = eval_unary_array_const<float>(al, x.base.base.loc, arr_const, result_type, USubOp<float>());
                     } else if (kind == 8) {
-                        value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, operand_type, USubOp<double>());
+                        value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, result_type, USubOp<double>());
                     }
                 }
             }
             asr = ASR::make_RealUnaryMinus_t(al, x.base.base.loc, operand,
-                                             operand_type, value);
+                                             result_type, value);
             return;
-        } else if (ASRUtils::is_complex(*operand_type)) {
+        } else if (ASRUtils::is_complex(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::ComplexConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(
@@ -1495,11 +1501,11 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                     result = -op_value;
                     value = ASR::down_cast<ASR::expr_t>(
                             ASR::make_ComplexConstant_t(al, x.base.base.loc, std::real(result),
-                            std::imag(result), operand_type));
+                            std::imag(result), result_type));
                 }
             }
             asr = ASR::make_ComplexUnaryMinus_t(al, x.base.base.loc, operand,
-                                                    operand_type, value);
+                                                    result_type, value);
             return;
         } else if( ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::type_get_past_allocatable_pointer(operand_type)) ) {
@@ -1658,8 +1664,11 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
         }
         
         bool had_repeat_count = false;
+        size_t repeat_count = 0;
         while (i < content.length() && std::isdigit(content[i])) {
             had_repeat_count = true;
+            repeat_count = std::min(content.length(),
+                repeat_count * 10 + static_cast<size_t>(content[i] - '0'));
             i++;
         }
         while (i < content.length() && std::isspace(content[i])) {
@@ -1669,6 +1678,16 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
         
         c = content[i];
         
+        if (had_repeat_count && (c == 'h' || c == 'H')) {
+            // Hollerith edit descriptor `nH<n characters>`: the n characters
+            // following the `H` are literal text and must not be scanned as
+            // edit descriptors.
+            i++;
+            i += std::min(repeat_count, content.length() - i);
+            prev_desc = DescType::DATA;
+            continue;
+        }
+
         DescType current_desc = DescType::NONE;
         
         char c_upper = std::toupper(c);
@@ -1690,6 +1709,13 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
                 size_t j = i + 1;
                 while (j < content.length() && std::isspace(content[j])) j++;
                 if (j < content.length() && std::toupper(content[j]) == 'T') {
+                    i = j;
+                } else if (j < content.length() &&
+                        (std::toupper(content[j]) == 'C' ||
+                         std::toupper(content[j]) == 'P')) {
+                    // DC and DP select the decimal edit mode; they are
+                    // control descriptors, not data edit descriptors.
+                    current_desc = DescType::CONTROL;
                     i = j;
                 }
             }
@@ -11028,7 +11054,10 @@ public:
         return 1; // default
     }
 
-    bool is_boz_integer_constant(ASR::expr_t* expr) {
+    // True when `expr` is a BOZ literal constant. BOZ literals are represented
+    // as an IntegerConstant carrying a non-Decimal boz kind, which is what
+    // marks them as typeless.
+    bool is_boz_constant(ASR::expr_t* expr) {
         if (!expr || !ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
             return false;
         }
@@ -11175,7 +11204,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_left_expr)) {
+                    if (is_boz_constant(m_left_expr)) {
                         diag.add(Diagnostic("Substring start index must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_left_expr->base.loc})}));
                         throw SemanticAbort();
@@ -11203,7 +11232,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_right_expr)) {
+                    if (is_boz_constant(m_right_expr)) {
                         diag.add(Diagnostic("Substring end index must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_right_expr->base.loc})}));
                         throw SemanticAbort();
@@ -11220,7 +11249,7 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
                         throw SemanticAbort();
                     }
-                    if (is_boz_integer_constant(m_step_expr)) {
+                    if (is_boz_constant(m_step_expr)) {
                         diag.add(Diagnostic("Substring stride must be of type integer",
                             Level::Error, Stage::Semantic, {Label("", {m_step_expr->base.loc})}));
                         throw SemanticAbort();
@@ -13994,17 +14023,8 @@ public:
                 throw SemanticAbort();
             }
             LCOMPILERS_ASSERT(x.m_args[i].m_end != nullptr);
-            // Handle BOZ constants in real() function
-            ASR::ttype_t* temp_current_variable_type = current_variable_type_;
-            if (intrinsic_name == "real" && i == 0 && x.m_args[i].m_end && 
-                AST::is_a<AST::BOZ_t>(*x.m_args[i].m_end)) {
-                // Set current_variable_type to Real for BOZ conversion in real() function
-                current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 
-                    compiler_options.po.default_integer_kind));
-            }
             AST::expr_t* arg_expr = x.m_args[i].m_end;
             this->visit_expr(*x.m_args[i].m_end);
-            current_variable_type_ = temp_current_variable_type;
             ASR::expr_t* temp = ASRUtils::EXPR(tmp);
             if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(temp))) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(temp);
@@ -16573,6 +16593,7 @@ public:
                             args.p[1] = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, 0.0, real8_type));
                         }
                     }
+                    convert_boz_args_to_real(var_name, args);
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
@@ -16914,6 +16935,11 @@ public:
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
         }
+        // `dble` accepts a BOZ literal constant: its bits are the internal
+        // representation of the real(8) result, no numeric conversion happens
+        if (is_boz_constant(arg)) {
+            return (ASR::asr_t *)boz_literal_to_real(arg, 8);
+        }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
             to_type = ASRUtils::make_Array_t_util(al, loc, to_type,
@@ -17150,6 +17176,24 @@ public:
                     ASR::ttype_t* array_var_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var_type));
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+                    // Dropping the actual's allocatable or pointer wrapper leaves a
+                    // deferred length on the element type, which only an allocatable
+                    // or pointer entity may carry. The dummy of an external procedure
+                    // takes the length from the string descriptor at run time, so it
+                    // is an assumed length, exactly like `character(len=*)`.
+                    if (ASR::is_a<ASR::String_t>(*array_type->m_type)) {
+                        ASR::String_t* elem_str = ASR::down_cast<ASR::String_t>(array_type->m_type);
+                        if (elem_str->m_len_kind == ASR::string_length_kindType::DeferredLength) {
+                            ASR::ttype_t* assumed_len_type = ASRUtils::TYPE(ASR::make_String_t(
+                                al, array_type->m_type->base.loc, elem_str->m_kind, nullptr,
+                                ASR::string_length_kindType::AssumedLength,
+                                elem_str->m_physical_type));
+                            array_var_type = ASRUtils::make_Array_t_util(al, array_var_type->base.loc,
+                                assumed_len_type, array_type->m_dims, array_type->n_dims,
+                                ASR::abiType::Source, true, array_type->m_physical_type, true);
+                            array_type = ASR::down_cast<ASR::Array_t>(array_var_type);
+                        }
+                    }
                     ASR::array_physical_typeType phys_type;
                     if (array_type->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                         phys_type = array_type->m_physical_type;
@@ -17171,6 +17215,31 @@ public:
                         ASR::ttype_t *expected_arg_type = ASRUtils::expr_type(func->m_args[i]);
                         ASR::array_physical_typeType expected_phys = ASRUtils::extract_physical_type(expected_arg_type);
                         var_type = ASRUtils::duplicate_type_with_empty_dims(al, expected_arg_type, expected_phys, true);
+                    }
+                }
+                // A character *expression* actual argument (a concatenation with
+                // a runtime-length operand, a substring with computed bounds, ...)
+                // has a `DeferredLength` string type. A variable may only be
+                // `DeferredLength` when it is allocatable or a pointer, so the
+                // dummy synthesized for it takes the assumed-length form the
+                // callee would have declared: `character(len=*)`.
+                if (!ASRUtils::is_allocatable(var_type) && !ASRUtils::is_pointer(var_type)) {
+                    ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(var_type);
+                    if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+                        if (str_type->m_len_kind == ASR::DeferredLength) {
+                            ASR::ttype_t* assumed_len_type = ASRUtils::TYPE(ASR::make_String_t(
+                                al, elem_type->base.loc, str_type->m_kind, nullptr,
+                                ASR::AssumedLength, str_type->m_physical_type));
+                            if (ASRUtils::is_array(var_type)) {
+                                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var_type);
+                                var_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+                                    var_type->base.loc, assumed_len_type, arr_type->m_dims,
+                                    arr_type->n_dims, arr_type->m_physical_type, arr_type->m_memory_space));
+                            } else {
+                                var_type = assumed_len_type;
+                            }
+                        }
                     }
                 }
                 SetChar variable_dependencies_vec;
@@ -18262,28 +18331,39 @@ public:
                 // Which is a function call.
                 // We remove "x" from the symbol table and instead recreate it.
                 // We use the type of the old "x" as the return value type.
-                std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
-                bool in_current_scope = (scope_.find(var_name) != scope_.end());
-                SymbolTable* sym_scope = current_scope;
-                if (in_current_scope) {
-                    current_scope->erase_symbol(var_name);
-                } else {
-                    ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
-                    while(!sym_) {
-                        sym_scope = sym_scope->parent;
-                        sym_ = sym_scope->get_symbol(var_name);
+                // A second reference to the same external in this scope already
+                // resolves to the Interface synthesized for the first one, and
+                // `create_implicit_interface_function` above has reconciled
+                // this reference with it. Re-deriving it here would erase that
+                // symbol and put a fresh one in its place, leaving the earlier
+                // FunctionCall pointing outside the symbol table.
+                bool already_synthesized_here =
+                    current_scope->get_symbol(var_name) == v &&
+                    is_synthesized_implicit_interface(v);
+                if (!already_synthesized_here) {
+                    std::map<std::string, ASR::symbol_t*> scope_ = current_scope->get_scope();
+                    bool in_current_scope = (scope_.find(var_name) != scope_.end());
+                    SymbolTable* sym_scope = current_scope;
+                    if (in_current_scope) {
+                        current_scope->erase_symbol(var_name);
+                    } else {
+                        ASR::symbol_t* sym_ = current_scope->get_symbol(var_name);
+                        while(!sym_) {
+                            sym_scope = sym_scope->parent;
+                            sym_ = sym_scope->get_symbol(var_name);
+                        }
                     }
-                }
-                ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
-                create_implicit_interface_function(x, var_name, true, old_type);
-                v = current_scope->resolve_symbol(var_name);
-                LCOMPILERS_ASSERT(v!=nullptr);
-                if (!in_current_scope && is_external_procedure) {
-                    SymbolTable* temp_scope = current_scope;
-                    current_scope = sym_scope;
+                    ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
                     create_implicit_interface_function(x, var_name, true, old_type);
-                    current_scope = temp_scope;
-                    LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
+                    v = current_scope->resolve_symbol(var_name);
+                    LCOMPILERS_ASSERT(v!=nullptr);
+                    if (!in_current_scope && is_external_procedure) {
+                        SymbolTable* temp_scope = current_scope;
+                        current_scope = sym_scope;
+                        create_implicit_interface_function(x, var_name, true, old_type);
+                        current_scope = temp_scope;
+                        LCOMPILERS_ASSERT(sym_scope->resolve_symbol(var_name)!=nullptr);
+                    }
                 }
 
                 // erase from external_procedures_mapping
@@ -20990,6 +21070,74 @@ public:
         }
     }
 
+    // A binary, octal or hexadecimal literal constant has no type; it is an
+    // ordered sequence of bits (F2023 7.7). Where such a constant supplies the
+    // value of a real, those bits are used directly as the internal
+    // representation of the result, they are not converted from an integer
+    // value. Reinterpret the low `kind` bytes of `bits` accordingly; `kind` is
+    // 4 or 8, the kinds a 64 bit BOZ literal can fill.
+    static double boz_bits_as_real(uint64_t bits, int kind) {
+        if( kind == 4 ) {
+            uint32_t bits_32 = static_cast<uint32_t>(bits);
+            float value_32 = 0.0f;
+            std::memcpy(&value_32, &bits_32, sizeof(value_32));
+            return static_cast<double>(value_32);
+        }
+        double value_64 = 0.0;
+        std::memcpy(&value_64, &bits, sizeof(value_64));
+        return value_64;
+    }
+
+    // Reinterpret a BOZ literal constant as a real of the given kind. Any other
+    // expression, and any kind whose representation a BOZ literal cannot fill,
+    // is returned unchanged.
+    ASR::expr_t* boz_literal_to_real(ASR::expr_t* e, int kind) {
+        if( !is_boz_constant(e) || (kind != 4 && kind != 8) ) {
+            return e;
+        }
+        const Location& loc = e->base.loc;
+        uint64_t bits = static_cast<uint64_t>(
+            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+        ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc,
+            boz_bits_as_real(bits, kind), real_type));
+    }
+
+    // `real` and `cmplx` accept BOZ literal constants, whose bits become the
+    // representation of the (real part of the) result. Replace such arguments
+    // with the real constant they denote, at the kind the intrinsic returns, so
+    // that no numeric integer-to-real conversion is performed downstream.
+    void convert_boz_args_to_real(const std::string& intrinsic_name,
+            Vec<ASR::expr_t*>& args) {
+        size_t n_boz_args = 0, kind_arg_index = 0;
+        if( intrinsic_name == "real" ) {
+            n_boz_args = 1;
+            kind_arg_index = 1;
+        } else if( intrinsic_name == "cmplx" ) {
+            n_boz_args = 2;
+            kind_arg_index = 2;
+        } else {
+            return;
+        }
+        if( args.size() <= kind_arg_index ) {
+            return;
+        }
+        bool has_boz_arg = false;
+        for( size_t i = 0; i < n_boz_args; i++ ) {
+            has_boz_arg |= is_boz_constant(args[i]);
+        }
+        if( !has_boz_arg ) {
+            return;
+        }
+        int kind = 4;
+        if( args[kind_arg_index] != nullptr ) {
+            kind = static_cast<int>(handle_kind(args[kind_arg_index]));
+        }
+        for( size_t i = 0; i < n_boz_args; i++ ) {
+            args.p[i] = boz_literal_to_real(args[i], kind);
+        }
+    }
+
     void visit_BOZ(const AST::BOZ_t& x) {
         std::string s = std::string(x.m_s);
         int base = -1;
@@ -21028,24 +21176,16 @@ public:
             );
         }
         uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
-        //If current_variable_type is Real Type, convert BOZ String to ASR::Real 
-        if ((current_variable_type_ != nullptr) && (ASR::is_a<ASR::Real_t>(*current_variable_type_)) ){
-            
-            // We need the smallest positive real value, and scale the bits accordingly
-            double min_boz = std::numeric_limits<float>::denorm_min();
-            // Scale the BOZ value: each bit represents smallest_subnormal
-            double boz_double = static_cast<double>(boz_unsigned_int) * min_boz;
-            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            tmp = ASR::make_RealConstant_t(al, x.base.base.loc, boz_double,
-                    real_type);
-        }
-
-        //If current_variable_type is Null or INT Type, default to INT 
-        else{            
-            int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
-            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-            tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
-                    int_type, boz_type);
+        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
+                int_type, boz_type);
+        // Where the literal supplies the value of a real, its bits are the
+        // internal representation of that real. boz_literal_to_real leaves the
+        // constant as it is for a kind those bits cannot fill.
+        if (current_variable_type_ != nullptr && ASR::is_a<ASR::Real_t>(*current_variable_type_)) {
+            tmp = (ASR::asr_t*)boz_literal_to_real(ASRUtils::EXPR(tmp),
+                    ASRUtils::extract_kind_from_ttype_t(current_variable_type_));
         }
     }
 

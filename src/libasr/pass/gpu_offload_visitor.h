@@ -42,6 +42,8 @@ public:
         : StatementWalkVisitor(al), pass_options(pass_options_),
           device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
 
+    void visit_GpuOffload(const ASR::GpuOffload_t &) {}
+
     void load_submodule_deps(ASR::TranslationUnit_t &sub_tu);
 
     void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu);
@@ -140,14 +142,6 @@ public:
 
     static const ASR::FunctionCall_t* spliceable_call(ASR::stmt_t *stmt);
 
-    static ASR::symbol_t* nested_scope_entered(ASR::stmt_t *stmt);
-
-    static void nested_scope_contents(ASR::symbol_t *b, SymbolTable *&st,
-            ASR::stmt_t **&body, size_t &n_body);
-
-    static bool collect_flattened_scopes(ASR::stmt_t **stmts, size_t n,
-            std::vector<ASR::symbol_t*> &scopes);
-
     static bool can_inline_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc);
 
@@ -161,12 +155,6 @@ public:
             std::set<ASR::Function_t*> &on_stack,
             GpuDecline &decline,
             bool spliceable = true);
-
-    void substitute_in_type(ASR::ttype_t *t,
-            std::map<ASR::symbol_t*, ASR::expr_t*> &subst);
-
-    bool flatten_device_function_body(ASR::stmt_t **stmts, size_t n_stmts,
-            ASRUtils::ExprStmtDuplicator &dup, Vec<ASR::stmt_t*> &out);
 
     ASR::expr_t* gather_section_actual(const Location &loc,
             SymbolTable *block_scope, ASR::Function_t *fn,
@@ -237,17 +225,6 @@ public:
                              SymbolTable *scope);
 
     void inline_intrinsic_sum(ParallelLoopNest &nest);
-
-    ASR::expr_t* dot_product_operand_element(ASR::expr_t *arg,
-            ASR::expr_t *k, ASR::ttype_t *elem_type, const Location &loc);
-
-    ASR::expr_t* dot_product_extent(ASR::expr_t *arg, const Location &loc,
-            bool allow_bound);
-
-    void inline_dot_product_in_stmts(ASR::stmt_t** &stmts, size_t &n_stmts,
-                                     SymbolTable *scope);
-
-    void inline_intrinsic_dot_product(ParallelLoopNest &nest);
 
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
 
@@ -401,6 +378,8 @@ public:
 
     void report_clause_ignored(const Location &where, const std::string &name);
 
+    void report_stop_degraded(const Location &where, const std::string &name);
+
     std::string unhonoured_clause(const ASR::omp_clause_t *clause);
 
     void collect_kernel_arg_names(const ParallelLoopNest &nest,
@@ -451,7 +430,75 @@ public:
 
     void retarget_block_calls_in(ASR::Block_t *block);
 
+    // A scalar the loop assigns that the host reads again afterwards. It
+    // is passed to the kernel as a writable 1-element device buffer, and
+    // the launch copies it in before the dispatch and out again after.
+    struct LiveoutScalarInfo {
+        std::string orig_name;
+        std::string buf_name;
+        ASR::symbol_t *host_buf_sym;
+        ASR::symbol_t *orig_scalar_sym;
+        ASR::ttype_t *scalar_type;
+    };
+
+    // A loop head as the host still spells it, saved before the kernel
+    // extraction replaces the head expressions in place. The launch sizes
+    // the grid from these.
+    struct DimInfo {
+        ASR::expr_t *host_start;
+        ASR::expr_t *host_end;
+    };
+
+    // What the launch is built out of. The kernel draft hands this to the
+    // launch as a value rather than leaving it on the visitor: a member
+    // would outlive the region and one region's bindings would reach the
+    // next.
+    struct GpuLaunchPlan {
+        ASR::asr_t *kernel_func = nullptr;
+        std::string kernel_name;
+        SymbolTable *tu_symtab = nullptr;
+        ASR::ttype_t *int_type = nullptr;
+        size_t n_dims = 0;
+        Vec<ASR::call_arg_t> call_args;
+        Vec<ASR::stmt_t*> gather_stmts;
+        Vec<ASR::stmt_t*> scatter_stmts;
+        std::vector<LiveoutScalarInfo> liveout_scalars;
+        std::vector<DimInfo> dim_info;
+        std::vector<ASR::symbol_t*> optional_syms;
+        // Committed where the offload becomes certain, which is inside the
+        // launch construction, so the guard itself has to reach it.
+        GpuGatherGuard *gather_guard = nullptr;
+    };
+
     void decline(const ASR::OMPRegion_t &x);
+
+    // The phases visit_OMPRegion walks a region through, in the order it
+    // calls them. The three that return a bool can leave the loop on the
+    // host: false means the decline is already reported or the region
+    // already walked into, and the caller stops there rather than going on
+    // with the offload.
+    bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &nest);
+
+    void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
+            std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
+    bool offloadable_before_rewrites(const ParallelLoopNest &work,
+            const std::set<SymbolTable*> &enclosing_block_scopes,
+            const Location &loc);
+
+    void rewrite_loop_body_for_kernel(ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*>
+                &enclosing_assoc_map);
+
+    bool offloadable_after_rewrites(const ParallelLoopNest &work,
+            const std::map<std::string,
+                std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
+            const Location &loc);
+
+    void build_kernel_launch(const ASR::OMPRegion_t &region,
+            const ParallelLoopNest &work, const Location &loc,
+            GpuLaunchPlan &plan);
 
     void visit_OMPRegion(const ASR::OMPRegion_t &region);
 };

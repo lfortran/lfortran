@@ -12,6 +12,8 @@
 // compiles as host C++.
 
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // Device execution configuration
 typedef struct {
@@ -50,6 +52,18 @@ void lfortran_gpu_cpu_barrier_unsupported(void);
 #define __constant__
 #define __shared__ static
 #define __forceinline__ inline
+
+// A trap ends the launch. On a real device the thread raises one, the
+// launch fails, and `lfortran_gpu_launch` reports the failed synchronize
+// and exits 1. The emulation has one process and no launch to fail, so it
+// ends the process the same way: what a program sees of a trap is a
+// message on stderr and a status of 1, and it should see that here too.
+// Ending with `abort()` instead would raise SIGABRT, which is a different
+// thing for anything watching the process.
+static inline void __trap(void) {
+    fprintf(stderr, "lfortran_gpu_launch: kernel trapped\n");
+    exit(1);
+}
 
 // A barrier is only correct when the threads of one block really do run
 // concurrently, which is the case exactly when the runtime was built with
