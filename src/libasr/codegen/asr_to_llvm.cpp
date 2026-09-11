@@ -15723,16 +15723,6 @@ public:
             ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_pointer(x.m_type)))->m_kind;
         type = llvm_utils->getComplexType(a_kind);
-        if( left_val->getType()->isPointerTy() ) {
-            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left,
-                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_left)), module.get());
-            left_val = llvm_utils->CreateLoad2(left_type, left_val);
-        }
-        if( right_val->getType()->isPointerTy() ) {
-            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right,
-                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_right)), module.get());
-            right_val = llvm_utils->CreateLoad2(right_type, right_val);
-        }
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
