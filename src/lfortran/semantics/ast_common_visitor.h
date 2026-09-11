@@ -11928,6 +11928,9 @@ public:
                     
                     arr_ref_val = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
                         n_data, new_data, type, ASR::arraystorageType::ColMajor));
+                } else {
+                    type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                            &array_section_dims);
                 }
             } else {
                 type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
