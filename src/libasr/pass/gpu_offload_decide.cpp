@@ -41,14 +41,50 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
     Location loc = region.base.base.loc;
     size_t n_dims = nest.n_heads();
 
-    // A reduction combines what the threads computed, which the launch
-    // does not do yet, so the loop stays where that already works.
+    // A reduction is given one accumulator per thread and folded on the
+    // host afterwards, so what has to be true here is only that the
+    // accumulator is something a thread can hold and the operator is one
+    // the fold can spell. Anything else stays where it already works.
+    pending_reductions.clear();
     for (size_t i = 0; i < region.n_clauses; i++) {
-        if (region.m_clauses[i]->type ==
+        if (region.m_clauses[i]->type !=
                 ASR::omp_clauseType::OMPReduction) {
+            continue;
+        }
+        ASR::OMPReduction_t *clause = ASR::down_cast<ASR::OMPReduction_t>(
+            region.m_clauses[i]);
+        if (!gpu_reduction_op_supported(clause->m_operator)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::ReductionClause));
             return false;
+        }
+        for (size_t v = 0; v < clause->n_vars; v++) {
+            ASR::expr_t *var = clause->m_vars[v];
+            if (!ASR::is_a<ASR::Var_t>(*var)) {
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::ReductionClause));
+                return false;
+            }
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(var)->m_v;
+            ASR::ttype_t *type = ASRUtils::expr_type(var);
+            // An array accumulator would need one array per thread, which
+            // is a different shape of buffer than this builds.
+            if (ASRUtils::is_array(type) ||
+                    !device_caps.has_scalar_type(
+                        ASRUtils::type_get_past_array(type)) ||
+                    !gpu_reduction_identity_exists(clause->m_operator,
+                        type)) {
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::ReductionClause));
+                return false;
+            }
+            GpuReductionInfo info;
+            info.orig_name = ASRUtils::symbol_name(sym);
+            info.op = clause->m_operator;
+            info.orig_scalar_sym = sym;
+            info.scalar_type = type;
+            info.host_buf_sym = nullptr;
+            pending_reductions.push_back(info);
         }
     }
 

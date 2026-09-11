@@ -16,6 +16,7 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
@@ -387,9 +388,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::ttype_t *int4_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
         std::vector<std::string> liveout_names;
+        std::set<std::string> reduction_names;
+        for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
         for (auto &name : assigned_vars) {
             if (loop_var_set.count(name)) continue;
             if (local_scalar_names.count(name)) continue;
+            // A reduction accumulator is written by every thread. One
+            // shared slot would be a race, so it gets a slot per thread
+            // below instead of the single liveout buffer.
+            if (reduction_names.count(name)) continue;
             auto it = involved_syms.find(name);
             if (it != involved_syms.end()) {
                 ASR::ttype_t *type = it->second.first;
@@ -429,6 +436,38 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
             liveout_scalars.push_back(
                 {name, buf_name, buf_sym, orig_sym, scalar_type});
+        }
+
+        // One accumulator per iteration. The extent is only known when the
+        // launch has worked out how many threads it is dispatching, so the
+        // host array is deferred-shape and the launch allocates it.
+        for (auto &r : pending_reductions) {
+            auto it = involved_syms.find(r.orig_name);
+            if (it == involved_syms.end()) continue;
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            Vec<ASR::dimension_t> dims_vec;
+            dims_vec.reserve(al, 1);
+            dims_vec.push_back(al, dim);
+            ASR::ttype_t *arr_type = ASRUtils::TYPE(
+                ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, r.scalar_type),
+                    dims_vec.p, 1,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global));
+            ASR::ttype_t *alloc_type = ASRUtils::TYPE(
+                ASR::make_Allocatable_t(al, loc, arr_type));
+            r.buf_name = current_scope->get_unique_name(
+                "__gpu_red_" + r.orig_name);
+            r.host_buf_sym = gpu_new_variable(al, loc, current_scope,
+                r.buf_name, ASRUtils::duplicate_type(al, alloc_type));
+            // The kernel takes the accumulators, not the scalar. The host
+            // side is allocatable because the launch sizes it; the kernel
+            // side is a plain array dummy, which is what an allocatable
+            // actual is passed to anywhere else.
+            it->second.first = arr_type;
         }
     }
 
@@ -508,6 +547,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         // For struct-typed variables, import the Struct into kernel scope
         ASR::symbol_t *type_decl = nullptr;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (orig_sym == nullptr && sym_info.second != nullptr
                 && ASR::is_a<ASR::Var_t>(*sym_info.second)) {
             // A name the loop body reads that the enclosing scope
@@ -586,6 +634,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (ls.orig_name == sym_name) {
                 carg.m_value = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, ls.host_buf_sym));
+                is_liveout = true;
+                break;
+            }
+        }
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                carg.m_value = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, r.host_buf_sym));
                 is_liveout = true;
                 break;
             }
@@ -778,6 +834,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASRUtils::type_get_past_allocatable_pointer(k_type));
 
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
 
@@ -852,6 +917,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 *ASRUtils::extract_type(inner_t)))
             continue;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
         ASR::Variable_t *orig_var =
             down_cast<ASR::Variable_t>(orig_sym);
@@ -962,6 +1036,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 *ASRUtils::extract_type(inner_t)))
             continue;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
         ASR::Variable_t *orig_var =
             down_cast<ASR::Variable_t>(orig_sym);
@@ -1925,6 +2008,41 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // The accumulator slot this thread owns. Created here because the
+    // substitution below has to run before the body is remapped into
+    // kernel scope: the name being replaced is still the host's scalar,
+    // and what replaces it already names the kernel's buffer, so the
+    // replacement contains nothing that would be replaced again.
+    ASR::expr_t *slot_index = nullptr;
+    if (!pending_reductions.empty()) {
+        ASR::ttype_t *slot_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
+            ASRUtils::duplicate_type(al, slot_type));
+        slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                kernel_scope->get_symbol("__gpu_slot"))),
+            ASR::binopType::Add,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                ASRUtils::duplicate_type(al, slot_type),
+                ASR::integerbozType::Decimal)),
+            ASRUtils::duplicate_type(al, slot_type), nullptr));
+        std::map<ASR::symbol_t*, ASR::expr_t*> slot_map;
+        for (auto &r : pending_reductions) {
+            if (!r.host_buf_sym) continue;
+            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            if (!param) continue;
+            slot_map[r.orig_scalar_sym] = gpu_reduction_slot(al, loc,
+                param, slot_index, r.scalar_type);
+        }
+        if (!slot_map.empty()) {
+            AssociateVarResolverVisitor slot_replacer(al, slot_map);
+            for (size_t i = 0; i < body_copy.n; i++) {
+                slot_replacer.visit_stmt(*body_copy.p[i]);
+            }
+        }
+    }
+
     // 3. Replace Var references in copied body to point to kernel scope
     GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
     for (size_t i = 0; i < body_copy.n; i++) {
@@ -2082,6 +2200,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // __flat_idx = flat_idx (the raw thread index)
     kernel_body.push_back(al, ASRUtils::STMT(
         ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false)));
+
+    // The loop indices below are recovered by dividing __flat_idx down,
+    // which destroys it, so the thread keeps its own number separately.
+    // Every slot starts at the identity, so a thread whose body never
+    // reaches the accumulator still leaves something the fold can use.
+    if (slot_index != nullptr) {
+        kernel_body.push_back(al, ASRUtils::STMT(
+            ASR::make_Assignment_t(al, loc,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    kernel_scope->get_symbol("__gpu_slot"))),
+                remain_var, nullptr, false, false)));
+        for (auto &r : pending_reductions) {
+            if (!r.host_buf_sym) continue;
+            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            if (!param) continue;
+            kernel_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc,
+                    gpu_reduction_slot(al, loc, param, slot_index,
+                        r.scalar_type),
+                    gpu_reduction_identity(al, loc, r.op, r.scalar_type),
+                    nullptr, false, false)));
+        }
+    }
 
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *dim_range = ASRUtils::EXPR(
@@ -2531,6 +2672,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.gather_stmts = gather_stmts;
     plan.scatter_stmts = scatter_stmts;
     plan.liveout_scalars = liveout_scalars;
+    plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
     plan.gather_guard = &gather_guard;
