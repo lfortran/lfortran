@@ -653,9 +653,9 @@ semantic error: 'binding_outside_module_proc' must be a module procedure or an e
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
-    --> tests/errors/continue_compilation_1.f90:1215:5
+    --> tests/errors/continue_compilation_1.f90:1223:5
      |
-1215 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+1223 |     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
      |     ^^^^^^^^^^ 'y' is not a dummy argument
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
@@ -2138,3 +2138,15 @@ semantic error: Call to impure procedure 'conditional_expr_impure' is not allowe
      |
 1183 |         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
      |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `decimal` must be of type character
+    --> tests/errors/continue_compilation_1.f90:1216:25
+     |
+1216 |     write(*, *, decimal=1) 1.0
+     |                         ^ 
+
+semantic error: Duplicate value of `decimal` found
+    --> tests/errors/continue_compilation_1.f90:1217:42
+     |
+1217 |     write(*, *, decimal="POINT", decimal="COMMA") 1.0
+     |                                          ^^^^^^^ 
