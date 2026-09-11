@@ -6643,13 +6643,15 @@ public:
 
                                     target_var_ref = array_item2->m_v;
                                     if (!ASR::is_a<ASR::Var_t>(*target_var_ref)) {
-                                        // Both sides live in a COMMON block:
-                                        // neither can be made an alias of the
-                                        // other, so there is nothing to emit.
-                                        diag.semantic_warning_label(
-                                            "This equivalence statement is not implemented yet, for now we will ignore it",
-                                            {x.base.base.loc}, "ignored for now");
-                                        continue;
+                                        // Both sides are in a common block, which
+                                        // already fixes their storage: the
+                                        // equivalence either contradicts that
+                                        // layout or associates two different
+                                        // blocks, and both are prohibited.
+                                        diag.semantic_error_label(
+                                            "equivalence between two common block variables is not allowed",
+                                            {loc}, "both variables are in a common block");
+                                        throw SemanticAbort();
                                     }
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(target_var_ref);
                                     target_variable = ASR::down_cast<ASR::Variable_t>(var->m_v);

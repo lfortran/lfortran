@@ -1183,3 +1183,15 @@ contains
         conditional_expr_pure = ( c ? 1 : conditional_expr_impure() )  ! {Error} Call to impure procedure 'conditional_expr_impure' is not allowed inside a PURE procedure
     end function
 end module
+
+! A common block fixes the storage of its variables, so equivalencing two of
+! them either contradicts that layout or associates two different blocks.
+module equivalence_two_commons_1
+    implicit none
+contains
+    subroutine equivalence_two_common_arrays()
+        real :: lhs(4), rhs(4)
+        common /equivalence_two_commons/ lhs, rhs
+        equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
+    end subroutine
+end module

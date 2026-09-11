@@ -634,6 +634,12 @@ semantic error: Symbol 'bad_op' not declared
 288 |         module procedure bad_op
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: equivalence between two common block variables is not allowed
+    --> tests/errors/continue_compilation_1.f90:1195:22
+     |
+1195 |         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
+     |                      ^^^^^^ both variables are in a common block
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
