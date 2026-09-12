@@ -29,6 +29,15 @@ not, so the subroutine name comes from the file stem.
 Every test in one merged program must be compiled with the same flags, so the
 caller is responsible for grouping by flag set.
 
+One semantic difference is worth knowing about. A variable local to a main
+program is normally given static storage and so starts out zeroed in
+practice; the same variable in a subroutine is on the stack and starts out as
+whatever was there before. A test that reads a local it never wrote therefore
+changes behaviour when merged -- arrays_81 asserts on values derived from an
+uninitialized automatic array, and passed only because main-program storage
+happened to be zero. Such tests are quarantined (left unmerged) rather than
+worked around here, since the test itself is the thing that is wrong.
+
 Used by integration_tests/CMakeLists.txt at configure time, and runnable
 standalone to check a grouping:
 

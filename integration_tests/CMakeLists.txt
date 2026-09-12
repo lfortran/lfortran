@@ -945,7 +945,7 @@ RUN(NAME arrays_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_G
 RUN(NAME arrays_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP arrays_01)
 RUN(NAME arrays_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP arrays_01)
 RUN(NAME arrays_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP arrays_01)
-RUN(NAME arrays_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP arrays_01)
+RUN(NAME arrays_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_82 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP arrays_01)
 RUN(NAME arrays_83 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP arrays_01)
 RUN(NAME arrays_84 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP arrays_01)
@@ -2745,7 +2745,7 @@ RUN(NAME allocate_53 LABELS gfortran llvm MERGE_GROUP allocate_01)
 RUN(NAME allocate_54 LABELS gfortran llvm MERGE_GROUP allocate_01)
 RUN(NAME allocate_55 LABELS gfortran llvm MERGE_GROUP allocate_01)
 RUN(NAME allocate_56 LABELS gfortran llvm MERGE_GROUP allocate_01)
-RUN(NAME allocate_57 LABELS gfortran llvm MERGE_GROUP allocate_01)
+RUN(NAME allocate_57 LABELS gfortran llvm)
 RUN(NAME allocate_58 LABELS gfortran llvm MERGE_GROUP allocate_01)
 RUN(NAME allocate_59 LABELS gfortran llvm MERGE_GROUP allocate_01)
 RUN(NAME allocate_60 LABELS gfortran llvm MERGE_GROUP allocate_01)
@@ -4793,7 +4793,7 @@ RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP union_te
 
 RUN(NAME test_str LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP union_test_01) # No gfortran
 RUN(NAME test_ord LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP union_test_01) # No gfortran
-RUN(NAME test_rep LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP union_test_01) # No gfortran
+RUN(NAME test_rep LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME str_to_char LABELS gfortran llvm MERGE_GROUP union_test_01)
 
 # test for polymorphic select type
