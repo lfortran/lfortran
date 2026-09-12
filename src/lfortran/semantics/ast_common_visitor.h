@@ -11652,10 +11652,19 @@ public:
                 // Create substring type: String(r - l + 1)
                 ASR::ttype_t *string_tt;
                 {
-                    ASRUtils::ASRBuilder b(al, loc);
+                    ASR::expr_t* a_len_expr = nullptr;
+                    if (ASRUtils::is_value_constant(r) && ASRUtils::is_value_constant(l)) {
+                        int64_t a_len_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
+                                              ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n +
+                                              1;
+                        a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, sub_int_type));
+                    } else {
+                        ASRUtils::ASRBuilder b(al, loc);
+                        a_len_expr = b.Add(b.Sub(r, l), b.i_t(1, ASRUtils::expr_type(r)));
+                    }
                     string_tt = ASRUtils::TYPE(ASR::make_String_t(
                         al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type),
-                        b.Add(b.Sub(r, l), b.i_t(1, ASRUtils::expr_type(r))),
+                        a_len_expr,
                         ASR::ExpressionLength,
                         ASR::DescriptorString));
                 }
@@ -11689,8 +11698,105 @@ public:
                 ASR::ttype_t* result_type = ASRUtils::duplicate_type(
                     al, string_tt, &result_dims);
 
+                ASR::expr_t* arr_ref_val = nullptr;
+                ASR::expr_t* val_expr = ASRUtils::expr_value(v_Var);
+                
+                ASR::expr_t* l_val = l ? ASRUtils::expr_value(l) : nullptr;
+                ASR::expr_t* r_val = r ? ASRUtils::expr_value(r) : nullptr;
+                ASR::expr_t* do_lb_val = do_lb ? ASRUtils::expr_value(do_lb) : nullptr;
+                ASR::expr_t* do_ub_val = do_ub ? ASRUtils::expr_value(do_ub) : nullptr;
+                ASR::expr_t* do_step_val = do_step ? ASRUtils::expr_value(do_step) : nullptr;
+                ASR::expr_t* sub_step_val = step ? ASRUtils::expr_value(step) : nullptr;
+
+                if (val_expr && ASR::is_a<ASR::ArrayConstant_t>(*val_expr) &&
+                    l_val && ASRUtils::is_value_constant(l_val) &&
+                    r_val && ASRUtils::is_value_constant(r_val) &&
+                    do_lb_val && ASRUtils::is_value_constant(do_lb_val) &&
+                    do_ub_val && ASRUtils::is_value_constant(do_ub_val) &&
+                    do_step_val && ASRUtils::is_value_constant(do_step_val) &&
+                    (!step || (sub_step_val && ASRUtils::is_value_constant(sub_step_val)))) {
+
+                    int64_t start_l = ASR::down_cast<ASR::IntegerConstant_t>(l_val)->m_n;
+                    int64_t end_r = ASR::down_cast<ASR::IntegerConstant_t>(r_val)->m_n;
+                    int64_t lb = ASR::down_cast<ASR::IntegerConstant_t>(do_lb_val)->m_n;
+                    int64_t ub = ASR::down_cast<ASR::IntegerConstant_t>(do_ub_val)->m_n;
+                    int64_t step_i = ASR::down_cast<ASR::IntegerConstant_t>(do_step_val)->m_n;
+                    
+                    int64_t sub_step = 1;
+                    if (sub_step_val && ASRUtils::is_value_constant(sub_step_val)) {
+                        sub_step = ASR::down_cast<ASR::IntegerConstant_t>(sub_step_val)->m_n;
+                    }
+
+                    ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(val_expr);
+                    Vec<ASR::expr_t*> sliced_elements;
+                    sliced_elements.reserve(al, (ub - lb)/step_i + 1);
+                    int based_indexing = get_based_indexing(v);
+                    bool all_valid = true;
+                    
+                    for (int64_t i = lb; i <= ub; i += step_i) {
+                        int64_t idx = i - based_indexing;
+                        if (idx < 0 || idx >= (int64_t)arr_const->m_n_data) {
+                            all_valid = false;
+                            break;
+                        }
+                        ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, idx);
+                        if (elem && ASR::is_a<ASR::StringConstant_t>(*elem)) {
+                            ASR::StringConstant_t* s_const = ASR::down_cast<ASR::StringConstant_t>(elem);
+                            std::vector<std::string> chars = ASRUtils::string_value_characters(
+                                s_const->m_s, ASRUtils::extract_kind_from_ttype_t(s_const->m_type));
+                            int64_t orig_len = 0;
+                            if (ASRUtils::extract_value(ASRUtils::get_string_type(s_const->m_type)->m_len, orig_len)) {
+                                chars.resize(orig_len, " ");
+                            } else {
+                                all_valid = false;
+                                break;
+                            }
+                            if (start_l < 1 || end_r > orig_len) {
+                                all_valid = false;
+                                break;
+                            }
+                            std::string sliced_str;
+                            for (int64_t c = start_l - 1; c < end_r; c += sub_step) {
+                                sliced_str += chars[c];
+                            }
+                            Str str;
+                            str.from_str(al, sliced_str);
+                            ASR::expr_t* sliced_elem = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, str.c_str(al), string_tt));
+                            sliced_elements.push_back(al, sliced_elem);
+                        } else {
+                            all_valid = false;
+                            break;
+                        }
+                    }
+                    if (all_valid) {
+                        Vec<ASR::dimension_t> arr_const_dims;
+                        arr_const_dims.reserve(al, 1);
+                        ASR::dimension_t arr_dim;
+                        arr_dim.loc = loc;
+                        ASR::ttype_t* sub_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, loc, compiler_options.po.default_integer_kind));
+                        arr_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, sub_int_type));
+                        arr_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, sliced_elements.size(), sub_int_type));
+                        arr_const_dims.push_back(al, arr_dim);
+                        ASR::ttype_t* arr_const_type = ASRUtils::duplicate_type(al, string_tt, &arr_const_dims);
+                        void* new_data = ASRUtils::set_ArrayConstant_data(
+                            sliced_elements.p, sliced_elements.size(), string_tt);
+                        int64_t n_data = sliced_elements.size();
+                        if (ASRUtils::is_character(*string_tt)) {
+                            int len = 0;
+                            ASRUtils::extract_value(
+                                ASR::down_cast<ASR::String_t>(string_tt)->m_len, len);
+                            n_data = sliced_elements.size() * len;
+                        } else {
+                            n_data *= ASRUtils::extract_kind_from_ttype_t(string_tt);
+                        }
+                        
+                        arr_ref_val = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                            n_data, new_data, arr_const_type, ASR::arraystorageType::ColMajor));
+                    }
+                }
                 return ASR::make_ArrayConstructor_t(al, loc,
-                    ctor_args.p, ctor_args.size(), result_type, nullptr,
+                    ctor_args.p, ctor_args.size(), result_type, arr_ref_val,
                     ASR::arraystorageType::ColMajor, nullptr);
             }
 
@@ -11761,8 +11867,132 @@ public:
                     }
                 }
             }
-            type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
-                    &array_section_dims);
+            
+            // Try to evaluate the ArraySection if the base array and all bounds are constants
+            ASR::expr_t* val_expr = ASRUtils::expr_value(v_Var);
+            if (arr_ref_val == nullptr && val_expr && ASR::is_a<ASR::ArrayConstant_t>(*val_expr)) {
+                ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(val_expr);
+                ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(arr_const->m_type);
+                
+                struct DimRange {
+                    int64_t start, end, step;
+                    bool is_slice;
+                };
+                
+                std::vector<DimRange> ranges;
+                std::vector<int64_t> orig_lbs;
+                std::vector<int64_t> strides;
+                bool all_valid = true;
+                
+                int64_t current_stride = 1;
+
+                for (size_t d = 0; d < n_args; d++) {
+                    ASR::expr_t* orig_start_expr = ASRUtils::expr_value(arr_type->m_dims[d].m_start);
+                    ASR::expr_t* orig_len_expr = ASRUtils::expr_value(arr_type->m_dims[d].m_length);
+                    
+                    if (!orig_start_expr || !ASRUtils::is_value_constant(orig_start_expr) ||
+                        !orig_len_expr || !ASRUtils::is_value_constant(orig_len_expr)) {
+                        all_valid = false;
+                        break;
+                    }
+                    
+                    int64_t orig_lb = ASR::down_cast<ASR::IntegerConstant_t>(orig_start_expr)->m_n;
+                    int64_t orig_len = ASR::down_cast<ASR::IntegerConstant_t>(orig_len_expr)->m_n;
+                    
+                    orig_lbs.push_back(orig_lb);
+                    strides.push_back(current_stride);
+                    current_stride *= orig_len;
+                    
+                    if (args.p[d].m_step != nullptr) {
+                        ASR::expr_t* left_val = ASRUtils::expr_value(args.p[d].m_left);
+                        ASR::expr_t* right_val = ASRUtils::expr_value(args.p[d].m_right);
+                        ASR::expr_t* step_val = ASRUtils::expr_value(args.p[d].m_step);
+                        
+                        if (!left_val || !ASRUtils::is_value_constant(left_val) ||
+                            !right_val || !ASRUtils::is_value_constant(right_val) ||
+                            !step_val || !ASRUtils::is_value_constant(step_val)) {
+                            all_valid = false;
+                            break;
+                        }
+                        
+                        int64_t l = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
+                        int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
+                        int64_t s = ASR::down_cast<ASR::IntegerConstant_t>(step_val)->m_n;
+                        ranges.push_back({l, r, s, true});
+                    } else {
+                        ASR::expr_t* right_val = ASRUtils::expr_value(args.p[d].m_right);
+                        if (!right_val || !ASRUtils::is_value_constant(right_val)) {
+                            all_valid = false;
+                            break;
+                        }
+                        int64_t idx = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
+                        ranges.push_back({idx, idx, 1, false});
+                    }
+                }
+                
+                if (all_valid) {
+                    Vec<ASR::expr_t*> sliced_elements;
+                    sliced_elements.reserve(al, 1);
+                    
+                    std::function<void(int, int64_t)> fetch_elements = [&](int current_dim, int64_t flat_offset) {
+                        if (current_dim < 0) {
+                            ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, flat_offset);
+                            sliced_elements.push_back(al, elem);
+                            return;
+                        }
+                        
+                        int64_t orig_lb = orig_lbs[current_dim];
+                        int64_t stride = strides[current_dim];
+                        DimRange r = ranges[current_dim];
+                        
+                        for (int64_t i = r.start; (r.step > 0 ? i <= r.end : i >= r.end); i += r.step) {
+                            int64_t idx_offset = (i - orig_lb) * stride;
+                            fetch_elements(current_dim - 1, flat_offset + idx_offset);
+                        }
+                    };
+                    
+                    fetch_elements(n_args - 1, 0);
+                    
+                    ASR::ttype_t* sub_int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, loc, compiler_options.po.default_integer_kind));
+                    int dim_idx = 0;
+                    for (size_t d = 0; d < n_args; d++) {
+                        if (ranges[d].is_slice) {
+                            int64_t len = std::max((int64_t)0, (ranges[d].end - ranges[d].start + ranges[d].step) / ranges[d].step);
+                            array_section_dims.p[dim_idx].m_start = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, loc, 1, sub_int_type));
+                            array_section_dims.p[dim_idx].m_length = ASRUtils::EXPR(
+                                ASR::make_IntegerConstant_t(al, loc, len, sub_int_type));
+                            dim_idx++;
+                        }
+                    }
+                    
+                    type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                            &array_section_dims);
+                            
+                    void* new_data = ASRUtils::set_ArrayConstant_data(
+                        sliced_elements.p, sliced_elements.size(), ASRUtils::type_get_past_array(type));
+                    int64_t n_data = sliced_elements.size();
+                    if (ASRUtils::is_character(*type)) {
+                        int len = 0;
+                        ASRUtils::extract_value(
+                            ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type))->m_len, len);
+                        n_data = sliced_elements.size() * len;
+                    } else {
+                        n_data *= ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
+                    }
+                    
+                    arr_ref_val = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                        n_data, new_data, type, ASR::arraystorageType::ColMajor));
+                } else {
+                    type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                            &array_section_dims);
+                }
+            } else {
+                type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable(type),
+                        &array_section_dims);
+            }
+
             return ASR::make_ArraySection_t(al, loc,
                 v_Var, args.p, args.size(), type, arr_ref_val);
         }
