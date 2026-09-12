@@ -259,7 +259,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
     collect_involved_syms(work, enclosing_block_scopes, involved_syms);
 
-    if (!offloadable_after_rewrites(work, involved_syms, loc)) {
+    if (!offloadable_after_rewrites(involved_syms, loc)) {
         return;
     }
 

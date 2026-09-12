@@ -516,8 +516,7 @@ public:
             const std::map<ASR::symbol_t*, ASR::expr_t*>
                 &enclosing_assoc_map);
 
-    bool offloadable_after_rewrites(const ParallelLoopNest &work,
-            const std::map<std::string,
+    bool offloadable_after_rewrites(            const std::map<std::string,
                 std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
             const Location &loc);
 

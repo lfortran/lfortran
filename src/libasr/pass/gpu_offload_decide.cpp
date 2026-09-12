@@ -277,13 +277,16 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     return true;
 }
 
-// The last questions a decline can be based on: the ones the rewrites above
-// the call made answerable, on symbols and statements that only exist once
-// the body has been lowered. False means the decline has been reported and
-// the caller stops, which leaves the loop on the host -- the guards it holds
-// put back everything the rewrites did to the pass's copy of the nest.
+// The last question a decline can be based on: the one the rewrites above
+// the call made answerable, on symbols that only exist once the body has
+// been lowered. False means the decline has been reported and the caller
+// stops, which leaves the loop on the host -- the guards it holds put back
+// everything the rewrites did to the pass's copy of the nest.
+//
+// The nest itself is no longer asked about: what a statement needs of the
+// device does not depend on the rewrites, so that question is settled
+// before them, where it can name the statement the source wrote.
 bool GpuOffloadVisitor::offloadable_after_rewrites(
-        const ParallelLoopNest &work,
         const std::map<std::string,
             std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
         const Location &loc) {
