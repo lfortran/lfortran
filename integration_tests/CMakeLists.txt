@@ -4455,6 +4455,7 @@ RUN(NAME elemental_21 LABELS gfortran llvm)
 RUN(NAME elemental_22 LABELS gfortran llvm)
 RUN(NAME elemental_23 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_24 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME elemental_25 LABELS gfortran llvm)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
