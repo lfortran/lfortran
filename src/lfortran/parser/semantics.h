@@ -2020,6 +2020,20 @@ return make_Program_t(al, a_loc,
 
 #define LABEL(stmt, label) ((Print_t*)stmt)->m_label = label
 
+// A label on the closing `end if`/`endif` (end-if-stmt, R1138) of an
+// if construct, e.g. `86 endif`, is captured by the `endif` production and
+// attached here to the already-built If_t node; see `do_label` on DoLoop_t
+// for the analogous mechanism on `end do`.
+#define IF_END_LABEL(stmt, label) ((If_t*)stmt)->m_end_label = label
+
+// In an else/else-if chain the shared `endif` is consumed by the innermost
+// if_block/elseif_block production, but the label belongs to the whole
+// construct: hoist it from the inner If_t onto the outer one.
+#define IF_END_LABEL_HOIST(outer, inner) do { \
+        ((If_t*)outer)->m_end_label = ((If_t*)inner)->m_end_label; \
+        ((If_t*)inner)->m_end_label = 0; \
+    } while (0)
+
 ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         Vec<ast_t*> decl_stmts, LCompilers::diag::Diagnostics &diag) {
     check_decl_order(decl_stmts, DeclContext::Block, diag);
@@ -2036,7 +2050,7 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         syms.p, syms.size(), \
         STMTS(body), body.size(), trivia_cast(trivia), nullptr)
 
-#define IFSINGLE(cond, body, l) make_If_t(p.m_a, l, 0, nullptr, \
+#define IFSINGLE(cond, body, l) make_If_t(p.m_a, l, 0, nullptr, 0, \
         /*test*/ EXPR(cond), \
         /*body*/ IFSTMTS(p.m_a, body), \
         /*n_body*/ 1, \
@@ -2050,21 +2064,21 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*eq_label*/ eq_label, \
         /*gt_label*/ gt_label, nullptr)
 
-#define IF1(cond, trivia, body, l) make_If_t(p.m_a, l, 0, nullptr, \
+#define IF1(cond, trivia, body, l) make_If_t(p.m_a, l, 0, nullptr, 0, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ nullptr, \
         /*n_orelse*/ 0, trivia_cast(trivia), nullptr, nullptr)
 
-#define IF2(cond, trivia, body, orelse, l) make_If_t(p.m_a, l, 0, nullptr, \
+#define IF2(cond, trivia, body, orelse, l) make_If_t(p.m_a, l, 0, nullptr, 0, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \
         /*a_orelse*/ STMTS(orelse), \
         /*n_orelse*/ orelse.size(), nullptr, trivia_cast(trivia), nullptr)
 
-#define IF3(cond, trivia, body, ifblock, l) make_If_t(p.m_a, l, 0, nullptr, \
+#define IF3(cond, trivia, body, ifblock, l) make_If_t(p.m_a, l, 0, nullptr, 0, \
         /*test*/ EXPR(cond), \
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), \

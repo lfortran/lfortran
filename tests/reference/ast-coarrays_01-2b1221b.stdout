@@ -510,6 +510,7 @@
         (If
             0
             ()
+            0
             (== (FuncCallOrArray
                 this_image
                 []

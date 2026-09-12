@@ -99,6 +99,7 @@
         (If
             0
             ()
+            0
             (== (FuncCallOrArray
                 this_image
                 []
@@ -231,6 +232,7 @@
             (If
                 0
                 ()
+                0
                 (> job 0)
                 [(Assignment
                     0
