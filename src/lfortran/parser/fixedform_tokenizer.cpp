@@ -1698,7 +1698,15 @@ struct FixedFormRecursiveDescent {
         tokenize_line(cur); // tokenize rest of line where `do while` starts
         // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
         while (!next_is(cur, "enddo")) {
-            lex_body_statement(cur);
+            if (!lex_body_statement(cur)) {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a do while loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
         }
         push_token_advance(cur, "enddo");
         tokenize_line(cur);
