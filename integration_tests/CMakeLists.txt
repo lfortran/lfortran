@@ -1400,496 +1400,496 @@ RUN(NAME int_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # large i
 
 RUN(NAME intrinsics_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sqrt, abs, log
 RUN(NAME intrinsics_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
-RUN(NAME intrinsics_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cos
-RUN(NAME intrinsics_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # tan
+RUN(NAME intrinsics_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # cos
+RUN(NAME intrinsics_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # tan
 RUN(NAME intrinsics_04s LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ctan
 RUN(NAME intrinsics_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # hyperbolics
 RUN(NAME intrinsics_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # inverse trignometric
 RUN(NAME intrinsics_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # kind
-RUN(NAME intrinsics_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # tiny symboltable
-RUN(NAME intrinsics_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # tiny body
-RUN(NAME intrinsics_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # real body
-RUN(NAME intrinsics_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # real symboltable
-RUN(NAME intrinsics_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # kind body
-RUN(NAME intrinsics_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # kind symboltable
-RUN(NAME intrinsics_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_real,int_kind body
-RUN(NAME intrinsics_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # real
-RUN(NAME intrinsics_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # aimag
+RUN(NAME intrinsics_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # tiny symboltable
+RUN(NAME intrinsics_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # tiny body
+RUN(NAME intrinsics_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # real body
+RUN(NAME intrinsics_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # real symboltable
+RUN(NAME intrinsics_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # kind body
+RUN(NAME intrinsics_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # kind symboltable
+RUN(NAME intrinsics_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # selected_real,int_kind body
+RUN(NAME intrinsics_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # real
+RUN(NAME intrinsics_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # aimag
 RUN(NAME intrinsics_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp, log, erf
-RUN(NAME intrinsics_17b LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran) # log
+RUN(NAME intrinsics_17b LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran MERGE_GROUP intrinsics_01) # log
 RUN(NAME intrinsics_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trig
 RUN(NAME intrinsics_18c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trig
-RUN(NAME intrinsics_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # multiple intrinsics
+RUN(NAME intrinsics_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # multiple intrinsics
 RUN(NAME intrinsics_19c LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp, log, sqrt
 RUN(NAME intrinsics_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trig
 RUN(NAME intrinsics_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # modulo and mod
 RUN(NAME intrinsics_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # min, max
-RUN(NAME intrinsics_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # huge
-RUN(NAME intrinsics_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # System_clock
-RUN(NAME intrinsics_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ishft
-RUN(NAME intrinsics_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # btest
-RUN(NAME intrinsics_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shape
-RUN(NAME intrinsics_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # min, max
-RUN(NAME intrinsics_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # random_number
-RUN(NAME intrinsics_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # range
-RUN(NAME intrinsics_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # ceiling
-RUN(NAME intrinsics_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
-RUN(NAME intrinsics_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # new_line
-RUN(NAME intrinsics_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm) # epsilon refer: #5222
-RUN(NAME intrinsics_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # any
-RUN(NAME intrinsics_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # adjustl
-RUN(NAME intrinsics_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
-RUN(NAME intrinsics_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # adjustr
-RUN(NAME intrinsics_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # date_and_time
-RUN(NAME intrinsics_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # aint, anint
+RUN(NAME intrinsics_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # huge
+RUN(NAME intrinsics_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # System_clock
+RUN(NAME intrinsics_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # ishft
+RUN(NAME intrinsics_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # btest
+RUN(NAME intrinsics_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # shape
+RUN(NAME intrinsics_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # min, max
+RUN(NAME intrinsics_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # random_number
+RUN(NAME intrinsics_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # range
+RUN(NAME intrinsics_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # ceiling
+RUN(NAME intrinsics_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # merge
+RUN(NAME intrinsics_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # new_line
+RUN(NAME intrinsics_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm MERGE_GROUP intrinsics_01) # epsilon refer: #5222
+RUN(NAME intrinsics_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # any
+RUN(NAME intrinsics_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # adjustl
+RUN(NAME intrinsics_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # merge
+RUN(NAME intrinsics_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # adjustr
+RUN(NAME intrinsics_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) # date_and_time
+RUN(NAME intrinsics_40 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # aint, anint
 RUN(NAME intrinsics_41 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # command_argument_count
-RUN(NAME intrinsics_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # hypot
-RUN(NAME intrinsics_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dim
-RUN(NAME intrinsics_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cshift
-RUN(NAME intrinsics_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # iso_fortran_env
-RUN(NAME intrinsics_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ichar & iachar
-RUN(NAME intrinsics_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # all
-RUN(NAME intrinsics_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # log_gamma
-RUN(NAME intrinsics_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cmplx, sin
-RUN(NAME intrinsics_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #trig
+RUN(NAME intrinsics_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # hypot
+RUN(NAME intrinsics_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # dim
+RUN(NAME intrinsics_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) # cshift
+RUN(NAME intrinsics_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_01) # iso_fortran_env
+RUN(NAME intrinsics_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) # ichar & iachar
+RUN(NAME intrinsics_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # all
+RUN(NAME intrinsics_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # log_gamma
+RUN(NAME intrinsics_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) # cmplx, sin
+RUN(NAME intrinsics_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01)
+RUN(NAME intrinsics_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) #trig
 RUN(NAME intrinsics_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max0, min0
-RUN(NAME intrinsics_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # repeat
+RUN(NAME intrinsics_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # repeat
 RUN(NAME intrinsics_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max0
 RUN(NAME intrinsics_open_close_read_write LABELS gfortran llvm)
-RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #min
-RUN(NAME intrinsics_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
-RUN(NAME intrinsics_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # merge
-RUN(NAME intrinsics_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
-RUN(NAME intrinsics_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
+RUN(NAME intrinsics_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) #min
+RUN(NAME intrinsics_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # merge
+RUN(NAME intrinsics_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_01) # merge
+RUN(NAME intrinsics_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # sign
+RUN(NAME intrinsics_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # sign
 RUN(NAME intrinsics_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN intrinsics_60_data.txt) # iachar for extended ascii
-RUN(NAME intrinsics_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # char
-RUN(NAME intrinsics_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shape
-RUN(NAME intrinsics_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # any
-RUN(NAME intrinsics_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # sign
-RUN(NAME intrinsics_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # matmul
-RUN(NAME intrinsics_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
-RUN(NAME intrinsics_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dcosh, dsinh, dtanh, dtan
-RUN(NAME intrinsics_68 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dsign
-RUN(NAME intrinsics_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # radix
-RUN(NAME intrinsics_70 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # aint
-RUN(NAME intrinsics_71 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # matmul
+RUN(NAME intrinsics_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # char
+RUN(NAME intrinsics_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # shape
+RUN(NAME intrinsics_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_01) # any
+RUN(NAME intrinsics_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_02) # sign
+RUN(NAME intrinsics_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # matmul
+RUN(NAME intrinsics_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sign
+RUN(NAME intrinsics_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # dcosh, dsinh, dtanh, dtan
+RUN(NAME intrinsics_68 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # dsign
+RUN(NAME intrinsics_69 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # radix
+RUN(NAME intrinsics_70 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # aint
+RUN(NAME intrinsics_71 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # matmul
 RUN(NAME intrinsics_72 LABELS gfortran llvmImplicit) # datan2
-RUN(NAME intrinsics_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sngl
-RUN(NAME intrinsics_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran) # random_number
-RUN(NAME intrinsics_75 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp
-RUN(NAME intrinsics_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exp
-RUN(NAME intrinsics_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxval
-RUN(NAME intrinsics_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # mod
-RUN(NAME intrinsics_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # Trailz
-RUN(NAME intrinsics_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sum
-RUN(NAME intrinsics_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxval
-RUN(NAME intrinsics_82 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # array support tan, cosh, sinh, tanh
-RUN(NAME intrinsics_83 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
-RUN(NAME intrinsics_84 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minexponent
-RUN(NAME intrinsics_85 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxexponent
-RUN(NAME intrinsics_86 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
-RUN(NAME intrinsics_87 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # abs
-RUN(NAME intrinsics_88 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min for strings
-RUN(NAME intrinsics_89 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
-RUN(NAME intrinsics_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min
-RUN(NAME intrinsics_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # index
+RUN(NAME intrinsics_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sngl
+RUN(NAME intrinsics_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran MERGE_GROUP intrinsics_02) # random_number
+RUN(NAME intrinsics_75 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # exp
+RUN(NAME intrinsics_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # exp
+RUN(NAME intrinsics_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # maxval
+RUN(NAME intrinsics_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_02) # mod
+RUN(NAME intrinsics_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran MERGE_GROUP intrinsics_02) # Trailz
+RUN(NAME intrinsics_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sum
+RUN(NAME intrinsics_81 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # maxval
+RUN(NAME intrinsics_82 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # array support tan, cosh, sinh, tanh
+RUN(NAME intrinsics_83 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # kind
+RUN(NAME intrinsics_84 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # minexponent
+RUN(NAME intrinsics_85 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # maxexponent
+RUN(NAME intrinsics_86 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # kind
+RUN(NAME intrinsics_87 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # abs
+RUN(NAME intrinsics_88 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # min for strings
+RUN(NAME intrinsics_89 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sin
+RUN(NAME intrinsics_90 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # min
+RUN(NAME intrinsics_91 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # index
 RUN(NAME intrinsics_92 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # anint
-RUN(NAME intrinsics_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # digits
-RUN(NAME intrinsics_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # hypot
-RUN(NAME intrinsics_95 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
-RUN(NAME intrinsics_96 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # char
+RUN(NAME intrinsics_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # digits
+RUN(NAME intrinsics_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # hypot
+RUN(NAME intrinsics_95 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sign
+RUN(NAME intrinsics_96 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # char
 RUN(NAME intrinsics_97 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # tiny
-RUN(NAME intrinsics_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shape
+RUN(NAME intrinsics_98 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # shape
 RUN(NAME intrinsics_99 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # size
-RUN(NAME intrinsics_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # mod
-RUN(NAME intrinsics_101 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # repeat
-RUN(NAME intrinsics_102 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
-RUN(NAME intrinsics_103 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # char
-RUN(NAME intrinsics_104 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran)
-RUN(NAME intrinsics_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shape
+RUN(NAME intrinsics_100 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # mod
+RUN(NAME intrinsics_101 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # repeat
+RUN(NAME intrinsics_102 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sin
+RUN(NAME intrinsics_103 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # char
+RUN(NAME intrinsics_104 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm fortran MERGE_GROUP intrinsics_02)
+RUN(NAME intrinsics_105 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # shape
 RUN(NAME intrinsics_106 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge
-RUN(NAME intrinsics_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trailz
+RUN(NAME intrinsics_107 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # trailz
 RUN(NAME intrinsics_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftr
 RUN(NAME intrinsics_109 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # reshape, matmul
-RUN(NAME intrinsics_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min0
-RUN(NAME intrinsics_111 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min
-RUN(NAME intrinsics_112 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max0
-RUN(NAME intrinsics_113 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
-RUN(NAME intrinsics_114 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # aint
-RUN(NAME intrinsics_115 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # anint
-RUN(NAME intrinsics_116 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # atan2
-RUN(NAME intrinsics_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # mod
-RUN(NAME intrinsics_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # hypot
+RUN(NAME intrinsics_110 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # min0
+RUN(NAME intrinsics_111 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # min
+RUN(NAME intrinsics_112 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # max0
+RUN(NAME intrinsics_113 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # sign
+RUN(NAME intrinsics_114 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # aint
+RUN(NAME intrinsics_115 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # anint
+RUN(NAME intrinsics_116 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # atan2
+RUN(NAME intrinsics_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # mod
+RUN(NAME intrinsics_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # hypot
 RUN(NAME intrinsics_119 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sum
 RUN(NAME intrinsics_120 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # product
-RUN(NAME intrinsics_121 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # leadz
+RUN(NAME intrinsics_121 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # leadz
 RUN(NAME intrinsics_122 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # rank
 RUN(NAME intrinsics_123 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl
 RUN(NAME intrinsics_124 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lshift
-RUN(NAME intrinsics_125 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # random_number
-RUN(NAME intrinsics_126 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # random_number
-RUN(NAME intrinsics_127 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ifix
-RUN(NAME intrinsics_128 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # idint
-RUN(NAME intrinsics_129 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # abs
+RUN(NAME intrinsics_125 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_02) # random_number
+RUN(NAME intrinsics_126 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # random_number
+RUN(NAME intrinsics_127 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ifix
+RUN(NAME intrinsics_128 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # idint
+RUN(NAME intrinsics_129 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # abs
 RUN(NAME intrinsics_130 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ishft
-RUN(NAME intrinsics_131 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max for strings
-RUN(NAME intrinsics_132 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Floor
-RUN(NAME intrinsics_133 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Ceiling
-RUN(NAME intrinsics_134 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Adjustl
-RUN(NAME intrinsics_135 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nint
+RUN(NAME intrinsics_131 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # max for strings
+RUN(NAME intrinsics_132 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # Floor
+RUN(NAME intrinsics_133 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # Ceiling
+RUN(NAME intrinsics_134 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # Adjustl
+RUN(NAME intrinsics_135 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # nint
 RUN(NAME intrinsics_136 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # rshift
-RUN(NAME intrinsics_137 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # huge
-RUN(NAME intrinsics_138 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # precision
-RUN(NAME intrinsics_139 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # modulo
-RUN(NAME intrinsics_140 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_int_kind
-RUN(NAME intrinsics_141 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # scale
-RUN(NAME intrinsics_142 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
-RUN(NAME intrinsics_143 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dot_product
-RUN(NAME intrinsics_144 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
-RUN(NAME intrinsics_145 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
-RUN(NAME intrinsics_146 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dprod
-RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
-RUN(NAME intrinsics_148 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH) # pack
-RUN(NAME intrinsics_149 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # unpack
+RUN(NAME intrinsics_137 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # huge
+RUN(NAME intrinsics_138 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # precision
+RUN(NAME intrinsics_139 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # modulo
+RUN(NAME intrinsics_140 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # selected_int_kind
+RUN(NAME intrinsics_141 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # scale
+RUN(NAME intrinsics_142 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # dot_product
+RUN(NAME intrinsics_143 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # dot_product
+RUN(NAME intrinsics_144 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # dot_product
+RUN(NAME intrinsics_145 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # dot_product
+RUN(NAME intrinsics_146 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # dprod
+RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # pack
+RUN(NAME intrinsics_148 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH MERGE_GROUP intrinsics_03) # pack
+RUN(NAME intrinsics_149 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH MERGE_GROUP intrinsics_03) # unpack
 RUN(NAME unpack_scalar_field_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME unpack_scalar_field_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_150 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskr
-RUN(NAME intrinsics_151 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
-RUN(NAME intrinsics_152 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_real_kind
-RUN(NAME intrinsics_153 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dim
-RUN(NAME intrinsics_154 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # mod
-RUN(NAME intrinsics_155 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bgt
-RUN(NAME intrinsics_156 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # blt
-RUN(NAME intrinsics_157 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ble
-RUN(NAME intrinsics_158 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bge
-RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # matmul
-RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ior
-RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ieor
-RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Not
-RUN(NAME intrinsics_163 LABELS gfortran llvm fortran) # ishftc
-RUN(NAME intrinsics_164 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iand
-RUN(NAME intrinsics_165 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum
-RUN(NAME intrinsics_166 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ibset
-RUN(NAME intrinsics_167 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # btest
-RUN(NAME intrinsics_168 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ibclr
-RUN(NAME intrinsics_169 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # mod
-RUN(NAME intrinsics_170 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # exponent
+RUN(NAME intrinsics_150 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # maskr
+RUN(NAME intrinsics_151 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # maskl
+RUN(NAME intrinsics_152 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # selected_real_kind
+RUN(NAME intrinsics_153 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # dim
+RUN(NAME intrinsics_154 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # mod
+RUN(NAME intrinsics_155 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # bgt
+RUN(NAME intrinsics_156 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # blt
+RUN(NAME intrinsics_157 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ble
+RUN(NAME intrinsics_158 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # bge
+RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # matmul
+RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ior
+RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ieor
+RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # Not
+RUN(NAME intrinsics_163 LABELS gfortran llvm fortran MERGE_GROUP intrinsics_03) # ishftc
+RUN(NAME intrinsics_164 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # iand
+RUN(NAME intrinsics_165 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_03) # sum
+RUN(NAME intrinsics_166 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ibset
+RUN(NAME intrinsics_167 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # btest
+RUN(NAME intrinsics_168 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # ibclr
+RUN(NAME intrinsics_169 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # mod
+RUN(NAME intrinsics_170 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # exponent
 RUN(NAME intrinsics_171 LABELS llvm llvm_wasm llvm_wasm_emcc) # tolowercase
-RUN(NAME intrinsics_172 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # count
-RUN(NAME intrinsics_173 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # fraction
-RUN(NAME intrinsics_174 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shape
-RUN(NAME intrinsics_175 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
-RUN(NAME intrinsics_176 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # set_exponent
-RUN(NAME intrinsics_177 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # adjustr
-RUN(NAME intrinsics_178 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # rrspacing
-RUN(NAME intrinsics_179 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # sum
-RUN(NAME intrinsics_180 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # scan
-RUN(NAME intrinsics_181 LABELS gfortran llvm fortran) # repeat
-RUN(NAME intrinsics_182 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dshiftl
-RUN(NAME intrinsics_183 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ibits
-RUN(NAME intrinsics_184 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_char_kind
-RUN(NAME intrinsics_185 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # verify
-RUN(NAME intrinsics_186 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # verify
-RUN(NAME intrinsics_187 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # popcnt
-RUN(NAME intrinsics_188 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgt, lge, lle, llt
-RUN(NAME intrinsics_189 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # scan
-RUN(NAME intrinsics_190 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
-RUN(NAME intrinsics_191 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
-RUN(NAME intrinsics_192 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_j0
-RUN(NAME intrinsics_193 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # poppar
-RUN(NAME intrinsics_194 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min
-RUN(NAME intrinsics_195 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max
-RUN(NAME intrinsics_196 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_j1
-RUN(NAME intrinsics_197 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_y0
-RUN(NAME intrinsics_198 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sum
-RUN(NAME intrinsics_199 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # count
+RUN(NAME intrinsics_172 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # count
+RUN(NAME intrinsics_173 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # fraction
+RUN(NAME intrinsics_174 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # shape
+RUN(NAME intrinsics_175 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # pack
+RUN(NAME intrinsics_176 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # set_exponent
+RUN(NAME intrinsics_177 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # adjustr
+RUN(NAME intrinsics_178 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_03) # rrspacing
+RUN(NAME intrinsics_179 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH MERGE_GROUP intrinsics_04) # sum
+RUN(NAME intrinsics_180 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # scan
+RUN(NAME intrinsics_181 LABELS gfortran llvm fortran MERGE_GROUP intrinsics_04) # repeat
+RUN(NAME intrinsics_182 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # dshiftl
+RUN(NAME intrinsics_183 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # ibits
+RUN(NAME intrinsics_184 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # selected_char_kind
+RUN(NAME intrinsics_185 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # verify
+RUN(NAME intrinsics_186 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # verify
+RUN(NAME intrinsics_187 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # popcnt
+RUN(NAME intrinsics_188 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # lgt, lge, lle, llt
+RUN(NAME intrinsics_189 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # scan
+RUN(NAME intrinsics_190 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # kind
+RUN(NAME intrinsics_191 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # kind
+RUN(NAME intrinsics_192 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # bessel_j0
+RUN(NAME intrinsics_193 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # poppar
+RUN(NAME intrinsics_194 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # min
+RUN(NAME intrinsics_195 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # max
+RUN(NAME intrinsics_196 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # bessel_j1
+RUN(NAME intrinsics_197 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # bessel_y0
+RUN(NAME intrinsics_198 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # sum
+RUN(NAME intrinsics_199 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # count
 RUN(NAME intrinsics_200 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
     EXTRA_ARGS --realloc-lhs-arrays) # pack
-RUN(NAME intrinsics_201 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # any
-RUN(NAME intrinsics_202 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #parameter
-RUN(NAME intrinsics_203 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # asind
-RUN(NAME intrinsics_204 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_y1
-RUN(NAME intrinsics_205 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acosd
-RUN(NAME intrinsics_206 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # poppar
-RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # double precision intrinsics
-RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bit_size
-RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atand
+RUN(NAME intrinsics_201 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # any
+RUN(NAME intrinsics_202 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) #parameter
+RUN(NAME intrinsics_203 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # asind
+RUN(NAME intrinsics_204 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # bessel_y1
+RUN(NAME intrinsics_205 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # acosd
+RUN(NAME intrinsics_206 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # poppar
+RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # double precision intrinsics
+RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # bit_size
+RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # atand
 RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES lcompilers_test_module.f90) # bessel_jn
-RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_yn
-RUN(NAME intrinsics_212 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # specific type intrinsics
-RUN(NAME intrinsics_213 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cpu_time
-RUN(NAME intrinsics_214 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sind
-RUN(NAME intrinsics_215 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cosd
-RUN(NAME intrinsics_216 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tand
-RUN(NAME intrinsics_217 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # all
-RUN(NAME intrinsics_218 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # new_line
+RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # bessel_yn
+RUN(NAME intrinsics_212 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # specific type intrinsics
+RUN(NAME intrinsics_213 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # cpu_time
+RUN(NAME intrinsics_214 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # sind
+RUN(NAME intrinsics_215 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # cosd
+RUN(NAME intrinsics_216 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # tand
+RUN(NAME intrinsics_217 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # all
+RUN(NAME intrinsics_218 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # new_line
 RUN(NAME intrinsics_219 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #parameter, sum
-RUN(NAME intrinsics_220 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # merge_bits
-RUN(NAME intrinsics_221 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sum
-RUN(NAME intrinsics_222 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dreal
-RUN(NAME intrinsics_223 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # nearest
-RUN(NAME intrinsics_224 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spacing
-RUN(NAME intrinsics_225 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iany
-RUN(NAME intrinsics_226 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iall
-RUN(NAME intrinsics_227 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # norm2
-RUN(NAME intrinsics_228 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derf
-RUN(NAME intrinsics_229 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derfc
-RUN(NAME intrinsics_230 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bessel
-RUN(NAME intrinsics_231 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dgamma
-RUN(NAME intrinsics_232 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iparity
-RUN(NAME intrinsics_233 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # isnan
-RUN(NAME intrinsics_234 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # parity
-RUN(NAME intrinsics_235 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgamma algama dlgama
-RUN(NAME intrinsics_236 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bit_size, huge
-RUN(NAME intrinsics_237 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sngl
-RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl, idl
-RUN(NAME intrinsics_239 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # erfc_scaled
-RUN(NAME intrinsics_240 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dshiftr
-RUN(NAME intrinsics_241 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # logical
-RUN(NAME intrinsics_242 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nint
+RUN(NAME intrinsics_220 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # merge_bits
+RUN(NAME intrinsics_221 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # sum
+RUN(NAME intrinsics_222 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_04) # dreal
+RUN(NAME intrinsics_223 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # nearest
+RUN(NAME intrinsics_224 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # spacing
+RUN(NAME intrinsics_225 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # iany
+RUN(NAME intrinsics_226 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # iall
+RUN(NAME intrinsics_227 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # norm2
+RUN(NAME intrinsics_228 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # derf
+RUN(NAME intrinsics_229 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # derfc
+RUN(NAME intrinsics_230 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # bessel
+RUN(NAME intrinsics_231 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_04) # dgamma
+RUN(NAME intrinsics_232 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # iparity
+RUN(NAME intrinsics_233 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # isnan
+RUN(NAME intrinsics_234 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # parity
+RUN(NAME intrinsics_235 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # lgamma algama dlgama
+RUN(NAME intrinsics_236 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # bit_size, huge
+RUN(NAME intrinsics_237 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # sngl
+RUN(NAME intrinsics_238 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # maskl, idl
+RUN(NAME intrinsics_239 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # erfc_scaled
+RUN(NAME intrinsics_240 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # dshiftr
+RUN(NAME intrinsics_241 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # logical
+RUN(NAME intrinsics_242 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # nint
 RUN(NAME intrinsics_243 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sqrt, abs, log (all kind of real)
-RUN(NAME intrinsics_244 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_245 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
-RUN(NAME intrinsics_246 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # adjustl
-RUN(NAME intrinsics_247 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # adjustr
-RUN(NAME intrinsics_248 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # eoshift
-RUN(NAME intrinsics_249 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # nested_sum
-RUN(NAME intrinsics_250 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sum
-RUN(NAME intrinsics_251 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # erf
-RUN(NAME intrinsics_252 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derf
-RUN(NAME intrinsics_253 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # erfc
-RUN(NAME intrinsics_254 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derfc
-RUN(NAME intrinsics_255 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dbesjn, dbesyn
-RUN(NAME intrinsics_256 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minval
-RUN(NAME intrinsics_257 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # product
-RUN(NAME intrinsics_product_nodes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # product
-RUN(NAME intrinsics_258 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # abs
-RUN(NAME intrinsics_259 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # lgt, llt, lge, lle
-RUN(NAME intrinsics_260 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # sum
-RUN(NAME intrinsics_261 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ceiling
-RUN(NAME intrinsics_262 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # floor
-RUN(NAME intrinsics_263 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxval
-RUN(NAME intrinsics_264 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sin
-RUN(NAME intrinsics_265 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cos
-RUN(NAME intrinsics_266 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tan
-RUN(NAME intrinsics_267 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dsin, dcos, dtan
-RUN(NAME intrinsics_268 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # asin
-RUN(NAME intrinsics_269 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acos
-RUN(NAME intrinsics_270 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atan
-RUN(NAME intrinsics_271 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # leadz
-RUN(NAME intrinsics_272 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trailz
-RUN(NAME intrinsics_273 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dprod
-RUN(NAME intrinsics_274 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # epsilon refer: #5222
-RUN(NAME intrinsics_275 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # and
-RUN(NAME intrinsics_276 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # or
-RUN(NAME intrinsics_277 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # xor
-RUN(NAME intrinsics_278 LABELS gfortran llvm fortran) # tiny
-RUN(NAME intrinsics_279 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sinh
-RUN(NAME intrinsics_280 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cosh
-RUN(NAME intrinsics_281 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # tanh
-RUN(NAME intrinsics_282 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # hypot
-RUN(NAME intrinsics_283 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # asinh
-RUN(NAME intrinsics_284 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acosh
-RUN(NAME intrinsics_285 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # real
-RUN(NAME intrinsics_286 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atanh
-RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
-RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
-RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
-RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # gamma
+RUN(NAME intrinsics_244 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # cshift
+RUN(NAME intrinsics_245 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # cmplx
+RUN(NAME intrinsics_246 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # adjustl
+RUN(NAME intrinsics_247 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # adjustr
+RUN(NAME intrinsics_248 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # eoshift
+RUN(NAME intrinsics_249 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # nested_sum
+RUN(NAME intrinsics_250 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # sum
+RUN(NAME intrinsics_251 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # erf
+RUN(NAME intrinsics_252 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # derf
+RUN(NAME intrinsics_253 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # erfc
+RUN(NAME intrinsics_254 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # derfc
+RUN(NAME intrinsics_255 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # dbesjn, dbesyn
+RUN(NAME intrinsics_256 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # minval
+RUN(NAME intrinsics_257 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH MERGE_GROUP intrinsics_05) # product
+RUN(NAME intrinsics_product_nodes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # product
+RUN(NAME intrinsics_258 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # abs
+RUN(NAME intrinsics_259 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # lgt, llt, lge, lle
+RUN(NAME intrinsics_260 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH MERGE_GROUP intrinsics_05) # sum
+RUN(NAME intrinsics_261 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # ceiling
+RUN(NAME intrinsics_262 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # floor
+RUN(NAME intrinsics_263 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # maxval
+RUN(NAME intrinsics_264 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # sin
+RUN(NAME intrinsics_265 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # cos
+RUN(NAME intrinsics_266 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # tan
+RUN(NAME intrinsics_267 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # dsin, dcos, dtan
+RUN(NAME intrinsics_268 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # asin
+RUN(NAME intrinsics_269 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # acos
+RUN(NAME intrinsics_270 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # atan
+RUN(NAME intrinsics_271 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # leadz
+RUN(NAME intrinsics_272 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # trailz
+RUN(NAME intrinsics_273 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # dprod
+RUN(NAME intrinsics_274 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # epsilon refer: #5222
+RUN(NAME intrinsics_275 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # and
+RUN(NAME intrinsics_276 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # or
+RUN(NAME intrinsics_277 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_05) # xor
+RUN(NAME intrinsics_278 LABELS gfortran llvm fortran MERGE_GROUP intrinsics_05) # tiny
+RUN(NAME intrinsics_279 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # sinh
+RUN(NAME intrinsics_280 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # cosh
+RUN(NAME intrinsics_281 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_05) # tanh
+RUN(NAME intrinsics_282 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # hypot
+RUN(NAME intrinsics_283 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # asinh
+RUN(NAME intrinsics_284 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # acosh
+RUN(NAME intrinsics_285 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # real
+RUN(NAME intrinsics_286 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # atanh
+RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # spread
+RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # ishftc
+RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # log10
+RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # gamma
 RUN(NAME intrinsics_292 LABELS gfortran llvm fortran) # command_argument_count
-RUN(NAME intrinsics_293 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dgamma
-RUN(NAME intrinsics_294 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log_gamma
-RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # exp
-RUN(NAME intrinsics_296 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # storage_size
-RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # poppar
-RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
+RUN(NAME intrinsics_293 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # dgamma
+RUN(NAME intrinsics_294 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # log_gamma
+RUN(NAME intrinsics_295 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # exp
+RUN(NAME intrinsics_296 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # storage_size
+RUN(NAME intrinsics_297 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # poppar
+RUN(NAME intrinsics_298 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # dot_product
 RUN(NAME intrinsics_299 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # command_argument_count
-RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # kind
-RUN(NAME intrinsics_301 LABELS llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_302 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
-RUN(NAME intrinsics_303 LABELS gfortran llvm) # random_seed
-RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sign
-RUN(NAME intrinsics_305 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # realpart
-RUN(NAME intrinsics_306 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imagpart
-RUN(NAME intrinsics_307 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # imag
-RUN(NAME intrinsics_308 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dgamma
-RUN(NAME intrinsics_309 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
-RUN(NAME intrinsics_310 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # digits
+RUN(NAME intrinsics_300 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # kind
+RUN(NAME intrinsics_301 LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # findloc
+RUN(NAME intrinsics_302 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # is_contiguous
+RUN(NAME intrinsics_303 LABELS gfortran llvm MERGE_GROUP intrinsics_06) # random_seed
+RUN(NAME intrinsics_304 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # sign
+RUN(NAME intrinsics_305 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # realpart
+RUN(NAME intrinsics_306 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # imagpart
+RUN(NAME intrinsics_307 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # imag
+RUN(NAME intrinsics_308 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # dgamma
+RUN(NAME intrinsics_309 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # pack
+RUN(NAME intrinsics_310 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # digits
 RUN(NAME intrinsics_311 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs-arrays) # minloc
-RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minloc
-RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # maxloc
-RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dshift
-RUN(NAME intrinsics_315 LABELS llvm llvm_wasm llvm_wasm_emcc) # out_of_range
-RUN(NAME intrinsics_316 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max, min
+RUN(NAME intrinsics_312 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # minloc
+RUN(NAME intrinsics_313 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # maxloc
+RUN(NAME intrinsics_314 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # dshift
+RUN(NAME intrinsics_315 LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # out_of_range
+RUN(NAME intrinsics_316 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # max, min
 RUN(NAME intrinsics_317 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # get_command_argument
-RUN(NAME intrinsics_318 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cpu_time
-RUN(NAME intrinsics_319 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # system_clock
-RUN(NAME intrinsics_320 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # len_trim
-RUN(NAME intrinsics_321 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trim
-RUN(NAME intrinsics_322 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # index
-RUN(NAME intrinsics_323 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH) # dot_product
-RUN(NAME intrinsics_324 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # max
-RUN(NAME intrinsics_325 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
-RUN(NAME intrinsics_326 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
-RUN(NAME intrinsics_327 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # transpose
-RUN(NAME intrinsics_328 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_329 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # idnint
-RUN(NAME intrinsics_330 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #amax0, max1
-RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc
+RUN(NAME intrinsics_318 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # cpu_time
+RUN(NAME intrinsics_319 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # system_clock
+RUN(NAME intrinsics_320 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # len_trim
+RUN(NAME intrinsics_321 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # trim
+RUN(NAME intrinsics_322 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # index
+RUN(NAME intrinsics_323 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH MERGE_GROUP intrinsics_06) # dot_product
+RUN(NAME intrinsics_324 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # max
+RUN(NAME intrinsics_325 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # spread
+RUN(NAME intrinsics_326 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # minloc
+RUN(NAME intrinsics_327 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # transpose
+RUN(NAME intrinsics_328 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06)
+RUN(NAME intrinsics_329 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # idnint
+RUN(NAME intrinsics_330 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) #amax0, max1
+RUN(NAME intrinsics_331 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) # cshift
+RUN(NAME intrinsics_332 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06)
+RUN(NAME intrinsics_333 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06)
+RUN(NAME intrinsics_334 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_06) # move_alloc
 RUN(NAME move_alloc_pointer_alias LABELS gfortran llvm)
-RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #kind, real
-RUN(NAME intrinsics_336 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #any
-RUN(NAME intrinsics_337 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble, dfloat, float, shifta
-RUN(NAME intrinsics_338 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # compiler_options
-RUN(NAME intrinsics_339 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
-RUN(NAME intrinsics_340 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # leadz
-RUN(NAME intrinsics_341 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # trailz
-RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
-RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_344 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
-RUN(NAME intrinsics_345 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_346 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar
-RUN(NAME intrinsics_347 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # reshape
-RUN(NAME intrinsics_348 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # reshape
-RUN(NAME intrinsics_349 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
-RUN(NAME intrinsics_350 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
-RUN(NAME intrinsics_351 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # spread
-RUN(NAME intrinsics_352 LABELS gfortran llvm) # random_seed
-RUN(NAME intrinsics_353 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # random_number
-RUN(NAME intrinsics_354 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # minval
+RUN(NAME intrinsics_335 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) #kind, real
+RUN(NAME intrinsics_336 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_06) #any
+RUN(NAME intrinsics_337 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # dble, dfloat, float, shifta
+RUN(NAME intrinsics_338 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # compiler_options
+RUN(NAME intrinsics_339 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # minloc
+RUN(NAME intrinsics_340 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # leadz
+RUN(NAME intrinsics_341 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # trailz
+RUN(NAME intrinsics_342 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # spread
+RUN(NAME intrinsics_343 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # cshift
+RUN(NAME intrinsics_344 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # maskl
+RUN(NAME intrinsics_345 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # findloc
+RUN(NAME intrinsics_346 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # iachar
+RUN(NAME intrinsics_347 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # reshape
+RUN(NAME intrinsics_348 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # reshape
+RUN(NAME intrinsics_349 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # pack
+RUN(NAME intrinsics_350 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # spread
+RUN(NAME intrinsics_351 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH MERGE_GROUP intrinsics_07) # spread
+RUN(NAME intrinsics_352 LABELS gfortran llvm MERGE_GROUP intrinsics_07) # random_seed
+RUN(NAME intrinsics_353 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # random_number
+RUN(NAME intrinsics_354 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # minval
 RUN(NAME intrinsics_355 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # system_clock
-RUN(NAME intrinsics_356 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_357 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_358 LABELS gfortran llvm) # getseed
-RUN(NAME intrinsics_359 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # pack
-RUN(NAME intrinsics_360 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
-RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
-RUN(NAME intrinsics_366 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl, shiftr, trailz, btest, ibclr
+RUN(NAME intrinsics_356 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_357 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_358 LABELS gfortran llvm MERGE_GROUP intrinsics_07) # getseed
+RUN(NAME intrinsics_359 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # pack
+RUN(NAME intrinsics_360 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # findloc
+RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # is_contiguous
+RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # cshift
+RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # cshift
+RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # is_contiguous
+RUN(NAME intrinsics_366 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # shiftl, shiftr, trailz, btest, ibclr
 RUN(NAME intrinsics_367 LABELS gfortran llvm) # get_environment_variable
-RUN(NAME intrinsics_368 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # kind
-RUN(NAME intrinsics_369 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_370 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_371 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
-RUN(NAME intrinsics_372 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
-RUN(NAME intrinsics_373 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_374 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_375 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc for string
-RUN(NAME intrinsics_376 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
-RUN(NAME intrinsics_377 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minval, maxval
-RUN(NAME intrinsics_378 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc
+RUN(NAME intrinsics_368 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # kind
+RUN(NAME intrinsics_369 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_370 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # findloc
+RUN(NAME intrinsics_371 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # findloc
+RUN(NAME intrinsics_372 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # cmplx
+RUN(NAME intrinsics_373 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_374 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07)
+RUN(NAME intrinsics_375 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # move_alloc for string
+RUN(NAME intrinsics_376 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # present
+RUN(NAME intrinsics_377 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # minval, maxval
+RUN(NAME intrinsics_378 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # move_alloc
 RUN(NAME intrinsics_379 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # get_command_argument
 RUN(NAME intrinsics_380 LABELS gfortran llvm) # get_environment_variable
 RUN(NAME intrinsics_381 LABELS gfortran llvm) # get_environment_variable
-RUN(NAME intrinsics_382 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
-RUN(NAME intrinsics_383 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
-RUN(NAME intrinsics_384 LABELS gfortran llvm fortran) # eoshift
-RUN(NAME intrinsics_385 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nearest
-RUN(NAME intrinsics_386 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # product
+RUN(NAME intrinsics_382 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # pack
+RUN(NAME intrinsics_383 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # pack
+RUN(NAME intrinsics_384 LABELS gfortran llvm fortran MERGE_GROUP intrinsics_07) # eoshift
+RUN(NAME intrinsics_385 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # nearest
+RUN(NAME intrinsics_386 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # product
 RUN(NAME intrinsics_387 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_388 LABELS gfortran llvm) # execute_command_line
-RUN(NAME intrinsics_389 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # loc
-RUN(NAME intrinsics_390 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # c_f_ptr
-RUN(NAME intrinsics_391 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum, selected_real_kind, minloc, merge
-RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
-RUN(NAME intrinsics_393 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
+RUN(NAME intrinsics_389 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # loc
+RUN(NAME intrinsics_390 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # c_f_ptr
+RUN(NAME intrinsics_391 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # sum, selected_real_kind, minloc, merge
+RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_07) # present
+RUN(NAME intrinsics_393 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_07) # cmplx
 RUN(NAME intrinsics_394 LABELS gfortran llvm) # execute_command_line
-RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx kind cast regression
+RUN(NAME intrinsics_395 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # cmplx kind cast regression
 RUN(NAME intrinsics_396 LABELS gfortran llvm)
-RUN(NAME intrinsics_397 LABELS llvm llvm_wasm llvm_wasm_emcc) # selected_logical_kind
-RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
+RUN(NAME intrinsics_397 LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # selected_logical_kind
+RUN(NAME intrinsics_398 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # findloc
 RUN(NAME intrinsics_399 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # intrinsic impure subroutine
-RUN(NAME intrinsics_400 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # compiler_options
-RUN(NAME intrinsics_401 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc
-RUN(NAME intrinsics_402 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # intrinsic statement with procedure argument
-RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # min1, max1
-RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_406 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with array arguments
-RUN(NAME intrinsics_407 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() overflow
-RUN(NAME intrinsics_408 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # complex abs() underflow
+RUN(NAME intrinsics_400 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # compiler_options
+RUN(NAME intrinsics_401 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # minloc
+RUN(NAME intrinsics_402 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # intrinsic statement with procedure argument
+RUN(NAME intrinsics_403 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # min1, max1
+RUN(NAME intrinsics_404 LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08)
+RUN(NAME intrinsics_405 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08)
+RUN(NAME intrinsics_406 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # iachar with array arguments
+RUN(NAME intrinsics_407 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # complex abs() overflow
+RUN(NAME intrinsics_408 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # complex abs() underflow
 RUN(NAME intrinsics_409 LABELS gfortran llvm) # execute_command_line with file flush
 RUN(NAME intrinsics_410 LABELS gfortran llvm
     EXTRA_ARGS -fdefault-integer-8
     GFORTRAN_ARGS -fdefault-integer-8) # maxloc/minloc/shape with -fdefault-integer-8
-RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar with transfer of assumed-length strings
-RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # iachar(char(0))
+RUN(NAME intrinsics_411 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # iachar with transfer of assumed-length strings
+RUN(NAME intrinsics_412 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08)
+RUN(NAME intrinsics_413 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # iachar(char(0))
 RUN(NAME intrinsics_414 LABELS gfortran llvm) # system
-RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum/product with scalar mask = .true.
+RUN(NAME intrinsics_415 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # sum/product with scalar mask = .true.
 RUN(NAME intrinsics_416 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays) # string concat
-RUN(NAME intrinsics_417 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sleep
+RUN(NAME intrinsics_417 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # sleep
 RUN(NAME intrinsics_418 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME intrinsics_419 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxval/minval with dim on pointer arrays
-RUN(NAME intrinsics_420 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dble/float with array constructor
+RUN(NAME intrinsics_419 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # maxval/minval with dim on pointer arrays
+RUN(NAME intrinsics_420 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # dble/float with array constructor
 RUN(NAME intrinsics_421 LABELS gfortran llvm) # execute_command_line cmdstat/cmdmsg
 RUN(NAME intrinsics_422 LABELS llvm llvm_wasm llvm_wasm_emcc) # this_image
 RUN(NAME intrinsics_423 LABELS llvm llvm_wasm llvm_wasm_emcc) # num_images
 RUN(NAME intrinsics_424 LABELS llvm llvm_wasm llvm_wasm_emcc) # co_sum
 RUN(NAME intrinsics_425 LABELS llvm llvm_wasm llvm_wasm_emcc) # co_sum with optional args
-RUN(NAME intrinsics_426 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # count(mask, dim) with variable dim
-RUN(NAME intrinsics_427 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maxval with derived-type component in declaration
+RUN(NAME intrinsics_426 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # count(mask, dim) with variable dim
+RUN(NAME intrinsics_427 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # maxval with derived-type component in declaration
 RUN(NAME intrinsics_428 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # merge array mask in loop
-RUN(NAME intrinsics_429 LABELS gfortran llvm) # random_seed put resets RNG
-RUN(NAME intrinsics_430 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # is_contiguous with struct component sections
-RUN(NAME intrinsics_431 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) #char
-RUN(NAME intrinsics_432 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nested bitwise intrinsics with value args
+RUN(NAME intrinsics_429 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # random_seed put resets RNG
+RUN(NAME intrinsics_430 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # is_contiguous with struct component sections
+RUN(NAME intrinsics_431 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) #char
+RUN(NAME intrinsics_432 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # nested bitwise intrinsics with value args
 RUN(NAME intrinsics_433 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME intrinsics_434 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # selected_int_kind
-RUN(NAME intrinsics_435 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minloc/maxloc with dim and array mask
-RUN(NAME intrinsics_436 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # rand
-RUN(NAME intrinsics_437 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # norm2 with dim argument
-RUN(NAME intrinsics_438 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # norm2 with variable dim argument
-RUN(NAME intrinsics_439 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minval/maxval for strings
-RUN(NAME intrinsics_440 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atan2d
-RUN(NAME intrinsics_441 LABELS llvm llvm_wasm llvm_wasm_emcc) # sinpi/cospi/tanpi/asinpi/acospi/atanpi/atan2pi  <--- GFortran does not have support for these intrinsics
-RUN(NAME intrinsics_442 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ascii kind string literal (ascii_"...")
-RUN(NAME intrinsics_443 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # char with kind
-RUN(NAME intrinsics_444 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # anint parameter array
-RUN(NAME intrinsics_445 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log_gamma
-RUN(NAME intrinsics_446 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
-RUN(NAME intrinsics_447 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sngl
-RUN(NAME intrinsics_448 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # achar
-RUN(NAME intrinsics_449 LABELS gfortran llvm) # storage_size with c_ptr
-RUN(NAME intrinsics_450 LABELS llvm) # storage_size struct alignment
-RUN(NAME intrinsics_451 LABELS gfortran llvm) # findloc with character ExpressionLength
-RUN(NAME intrinsics_452 LABELS gfortran llvm) # findloc with Pointer-wrapped ExpressionLength
-RUN(NAME intrinsics_453 LABELS gfortran llvm) # Lgt intrinsic as while loop condition
-RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and whole array
-RUN(NAME intrinsics_455 LABELS gfortran llvm) # intrinsic declaration scope isolation
-RUN(NAME intrinsics_456 LABELS gfortran llvm) # move_alloc preserves lower bounds
-RUN(NAME intrinsics_457 LABELS gfortran llvm) # eoshift on 2D array with dim
-RUN(NAME intrinsics_458 LABELS gfortran llvm) # sign with common block variables
-RUN(NAME intrinsics_459 LABELS gfortran llvm) # minval over array with runtime bounds (--fast regression)
-RUN(NAME intrinsics_460 LABELS gfortran llvm) # random_seed put/get round-trip
-RUN(NAME intrinsics_461 LABELS gfortran llvm) # MVbits with array (treated as elemental function)
-RUN(NAME intrinsics_462 LABELS gfortran llvm) # nested spread over array section preserves result shape
+RUN(NAME intrinsics_434 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # selected_int_kind
+RUN(NAME intrinsics_435 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # minloc/maxloc with dim and array mask
+RUN(NAME intrinsics_436 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # rand
+RUN(NAME intrinsics_437 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # norm2 with dim argument
+RUN(NAME intrinsics_438 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # norm2 with variable dim argument
+RUN(NAME intrinsics_439 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # minval/maxval for strings
+RUN(NAME intrinsics_440 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # atan2d
+RUN(NAME intrinsics_441 LABELS llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # sinpi/cospi/tanpi/asinpi/acospi/atanpi/atan2pi  <--- GFortran does not have support for these intrinsics
+RUN(NAME intrinsics_442 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # ascii kind string literal (ascii_"...")
+RUN(NAME intrinsics_443 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # char with kind
+RUN(NAME intrinsics_444 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # anint parameter array
+RUN(NAME intrinsics_445 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_08) # log_gamma
+RUN(NAME intrinsics_446 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # spread
+RUN(NAME intrinsics_447 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # sngl
+RUN(NAME intrinsics_448 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_08) # achar
+RUN(NAME intrinsics_449 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # storage_size with c_ptr
+RUN(NAME intrinsics_450 LABELS llvm MERGE_GROUP intrinsics_08) # storage_size struct alignment
+RUN(NAME intrinsics_451 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # findloc with character ExpressionLength
+RUN(NAME intrinsics_452 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # findloc with Pointer-wrapped ExpressionLength
+RUN(NAME intrinsics_453 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # Lgt intrinsic as while loop condition
+RUN(NAME intrinsics_454 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # all/any with array section and whole array
+RUN(NAME intrinsics_455 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # intrinsic declaration scope isolation
+RUN(NAME intrinsics_456 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # move_alloc preserves lower bounds
+RUN(NAME intrinsics_457 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # eoshift on 2D array with dim
+RUN(NAME intrinsics_458 LABELS gfortran llvm MERGE_GROUP intrinsics_08) # sign with common block variables
+RUN(NAME intrinsics_459 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # minval over array with runtime bounds (--fast regression)
+RUN(NAME intrinsics_460 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # random_seed put/get round-trip
+RUN(NAME intrinsics_461 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # MVbits with array (treated as elemental function)
+RUN(NAME intrinsics_462 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # nested spread over array section preserves result shape
 RUN(NAME intrinsics_463 LABELS llvm) # get_command (optional keyword arguments) -- gfortran on CI fails, other gfortran versions pass
-RUN(NAME intrinsics_464 LABELS gfortran llvm) # cshift with array shift
-RUN(NAME intrinsics_465 LABELS gfortran llvm) # index() must not read past declared length of deferred-length string
-RUN(NAME intrinsics_466 LABELS gfortran llvm) # eoshift with array-valued shift
-RUN(NAME intrinsics_467 LABELS gfortran llvm) # elemental intrinsics over allocatable arrays in array constructors
-RUN(NAME intrinsics_468 LABELS gfortran llvm) # product with dim in array expression
-RUN(NAME intrinsics_469 LABELS gfortran llvm) # dot product with empty/zero-length arrays
-RUN(NAME intrinsics_470 LABELS gfortran llvm) # index with character(kind=4) arguments
-RUN(NAME intrinsics_471 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_max
-RUN(NAME intrinsics_472 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_min
-RUN(NAME intrinsics_473 LABELS gfortran llvm) # maxloc/minloc with compile-time mask evaluation on 2D arrays
+RUN(NAME intrinsics_464 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # cshift with array shift
+RUN(NAME intrinsics_465 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # index() must not read past declared length of deferred-length string
+RUN(NAME intrinsics_466 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # eoshift with array-valued shift
+RUN(NAME intrinsics_467 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # elemental intrinsics over allocatable arrays in array constructors
+RUN(NAME intrinsics_468 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # product with dim in array expression
+RUN(NAME intrinsics_469 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # dot product with empty/zero-length arrays
+RUN(NAME intrinsics_470 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # index with character(kind=4) arguments
+RUN(NAME intrinsics_471 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single MERGE_GROUP intrinsics_09) # co_max
+RUN(NAME intrinsics_472 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single MERGE_GROUP intrinsics_09) # co_min
+RUN(NAME intrinsics_473 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # maxloc/minloc with compile-time mask evaluation on 2D arrays
 RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_broadcast
-RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits of I
-RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
-RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # right-padding of character args for LGT/LLT/LGE/LLE
-RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
-RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
-RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_475 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # ishftc with SIZE keeps high bits of I
+RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_09) # scale with a negative exponent
+RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran MERGE_GROUP intrinsics_09) # right-padding of character args for LGT/LLT/LGE/LLE
+RUN(NAME intrinsics_478 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
+RUN(NAME intrinsics_479 LABELS gfortran llvm MERGE_GROUP intrinsics_09) # date_and_time: VALUES(4) agrees with ZONE
+RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc MERGE_GROUP intrinsics_09)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
