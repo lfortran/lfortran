@@ -125,6 +125,7 @@
                                                             [(()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                     )
                                                     ()
@@ -194,6 +195,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 settings)]
@@ -207,6 +209,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ColMajor
                                         )
@@ -385,6 +388,7 @@
                                                         [(()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -433,6 +437,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         ()
                                         Source
@@ -445,6 +450,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 5 fname)

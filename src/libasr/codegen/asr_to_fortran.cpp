@@ -358,8 +358,7 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -464,8 +463,7 @@ public:
                         *down_cast<ASR::Function_t>(item.second))) {
                 continue;
             }
-            if (is_a<ASR::Function_t>(*item.second)
-                    || is_a<ASR::GpuKernelFunction_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second)) {
                 if (prepend_contains_keyword) {
                     prepend_contains_keyword = false;
                     r += "\n";
@@ -553,7 +551,9 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                if (ASRUtils::is_device_kernel(item.second)) {
+                    func_name.push_back(item.first);
+                } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
                     r += src;
                 } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
@@ -561,9 +561,6 @@ public:
                 } else {
                     func_name.push_back(item.first);
                 }
-            }
-            if (is_a<ASR::GpuKernelFunction_t>(*item.second)) {
-                func_name.push_back(item.first);
             }
         }
         for (size_t i = 0; i < interface_func_name.size(); i++) {
@@ -600,6 +597,10 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_device_kernel(&x.base)) {
+            visit_device_kernel(x);
+            return;
+        }
         if (ASRUtils::is_bare_implicit_interface(x)) {
             // `integer, external :: f` — not an interface block and not a
             // bodiless implementation.
@@ -800,7 +801,10 @@ public:
         src = r;
     }
 
-    void visit_GpuKernelFunction(const ASR::GpuKernelFunction_t &x) {
+    // A GPU kernel is subroutine-shaped and its arguments carry no intent
+    // or interface attributes, so it is printed directly rather than through
+    // the general function printer.
+    void visit_device_kernel(const ASR::Function_t &x) {
         std::string r = indent;
         r += "subroutine";
         r += " ";
@@ -1912,6 +1916,21 @@ public:
         src = r;
     }
 
+    void visit_GpuOffload(const ASR::GpuOffload_t &x) {
+        std::string r = indent + "! gpu offload candidate\n";
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+            r += src;
+        }
+        r += indent + "! cpu alternative\n";
+        for (size_t i = 0; i < x.n_fallback; i++) {
+            visit_stmt(*x.m_fallback[i]);
+            r += src;
+        }
+        r += indent + "! end gpu offload candidate\n";
+        src = r;
+    }
+
     void visit_Where(const ASR::Where_t &x) {
         std::string r;
         r = indent;
@@ -2226,15 +2245,28 @@ public:
 
     /********************************** Expr **********************************/
     void visit_IfExp(const ASR::IfExp_t &x) {
-        std::string r = "";
-        visit_expr(*x.m_test);
-        r += src;
-        r += " ? ";
-        visit_expr(*x.m_body);
-        r += src;
-        r += " : ";
-        visit_expr(*x.m_orelse);
-        r += src;
+        // Fortran 2023 conditional expression, 10.1.2.3 R1002. The enclosing
+        // parentheses are part of the syntax, not decoration, so they must
+        // always be printed. A nested conditional expression in the `orelse`
+        // position is printed flat, as the repeating group of R1002.
+        std::string r = "(";
+        const ASR::IfExp_t *e = &x;
+        while (true) {
+            visit_expr(*e->m_test);
+            r += src;
+            r += " ? ";
+            visit_expr(*e->m_body);
+            r += src;
+            r += " : ";
+            if (ASR::is_a<ASR::IfExp_t>(*e->m_orelse)) {
+                e = ASR::down_cast<ASR::IfExp_t>(e->m_orelse);
+            } else {
+                visit_expr(*e->m_orelse);
+                r += src;
+                break;
+            }
+        }
+        r += ")";
         src = r;
     }
 
@@ -2293,6 +2325,7 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(System, "system")
             SET_INTRINSIC_SUBROUTINE_NAME(Sleep, "sleep")
             SET_INTRINSIC_SUBROUTINE_NAME(CoSum, "co_sum")
+            SET_INTRINSIC_SUBROUTINE_NAME(CoBroadcast, "co_broadcast")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMax, "co_max")
             SET_INTRINSIC_SUBROUTINE_NAME(CoMin, "co_min")
             default : {

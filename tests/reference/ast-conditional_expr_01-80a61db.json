@@ -1,0 +1,13 @@
+{
+    "basename": "ast-conditional_expr_01-80a61db",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/conditional_expr_01.f90",
+    "infile_hash": "8674ad6b1d908e31822127b112418c819da8d78a821f4cfb5885c2b0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-conditional_expr_01-80a61db.stdout",
+    "stdout_hash": "b2c3f791a83f9b9f666900f9fc74c05c17eb4047fd5835db642a1cae",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

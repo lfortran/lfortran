@@ -29,6 +29,7 @@ set(SRC
     test_error_rendering.cpp
     test_asr_text.cpp
     test_asr_text_parser.cpp
+    test_gpu.cpp
 )
 
 if (WITH_JSON)

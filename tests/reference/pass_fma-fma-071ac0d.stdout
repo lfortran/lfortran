@@ -120,6 +120,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 a)
@@ -268,6 +269,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 a)
@@ -416,6 +418,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 6 a)
@@ -564,6 +567,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 7 a)
@@ -712,6 +716,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 a)
@@ -761,6 +766,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -1147,6 +1153,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 1 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )
@@ -1155,6 +1162,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 10 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             (ArrayConstant
                                 40
@@ -1164,6 +1172,7 @@
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 10 (Integer 4) Decimal))]
                                     FixedSizeArray
+                                    Global
                                 )
                                 ColMajor
                             )

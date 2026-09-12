@@ -146,9 +146,12 @@ namespace LCompilers::LFortran {
         nl::json is_complete_request_impl(const std::string& code) override;
 
         nl::json kernel_info_request_impl() override;
-
+#if XEUS_VERSION_MAJOR > 5
         nl::json shutdown_request_impl(bool restart) override;
         nl::json interrupt_request_impl() override;
+#else
+	void shutdown_request_impl() override;
+#endif
     };
 
     
@@ -496,6 +499,7 @@ namespace LCompilers::LFortran {
         );
     }
 
+#if XEUS_VERSION_MAJOR > 5
     nl::json custom_interpreter::shutdown_request_impl(bool restart) {
         std::cout << "Bye!!" << std::endl;
         return xeus::create_shutdown_reply(restart);
@@ -504,6 +508,11 @@ namespace LCompilers::LFortran {
     nl::json custom_interpreter::interrupt_request_impl() {
         return xeus::create_interrupt_reply();
     }
+#else
+    void custom_interpreter::shutdown_request_impl() {
+        std::cout << "Bye!!" << std::endl;
+    }
+#endif
 
     int run_kernel(const std::string &connection_filename)
     {

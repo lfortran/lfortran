@@ -454,7 +454,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
                                 array_t->m_type, dims.p, dims.size(),
                                 (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
-                                    ? ASR::PointerArray : ASR::FixedSizeArray));
+                                    ? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
@@ -618,7 +618,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                     dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(
-                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
+                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type, ASR::memory_spaceType::Global));
                 }
                 if (ASRUtils::is_assumed_rank_array(func_arg_j->m_type) &&
                     !ASRUtils::is_allocatable(func_arg_j->m_type)) {
@@ -659,7 +659,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         }
                         dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(al, dummy_variable_type->base.loc,
-                                elem_type, dims.p, n_dims_actual, phy_type));
+                                elem_type, dims.p, n_dims_actual, phy_type, ASR::memory_spaceType::Global));
                     } else {
                         // Scalar actual argument
                         dummy_variable_type = elem_type;

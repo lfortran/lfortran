@@ -25,6 +25,8 @@ The LFortran compiler is currently in the alpha stage and is actively under deve
 Supported Standards:
 
 * ISO Fortran 2023 (`--std=f23`): Partial support for the latest Fortran 2023 features. Use this option to enable conformance to Fortran 2023 where supported.
+  Conditional expressions (10.1.2.3), written `( cond ? a : b )`, are supported and are accepted in every mode. They are executable expressions only: 10.1.11 and 10.1.12 do not list a conditional expression among the primaries a specification expression or a constant expression may contain, so it is rejected in a `KIND=`, a `LEN=`, an array bound and an initialization expression; use `merge` there.
+  Conditional arguments (15.5.1, 15.5.2.3) are supported too. In an actual argument position the same syntax selects the actual argument itself, so a consequent that is a variable is passed by reference and stays definable, and a consequent of `.NIL.` leaves an optional dummy argument not present: `call sub( ( x<5 ? x : y ), ( have_edge ? edge : .NIL. ) )`.
 * Legacy Mode (`--std=legacy`): Allows compilation of older Fortran codebases that use non-standard or deprecated syntax.
 * LFortran Mode (`--std=lf`): Default mode focusing on modern Fortran features, including experimental extensions beyond the current standards.
 

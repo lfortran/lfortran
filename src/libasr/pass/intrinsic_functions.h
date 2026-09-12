@@ -1163,7 +1163,7 @@ namespace Abs {
             if (ASR::is_a<ASR::Array_t>(*type)) {
                 ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);
                 type = TYPE(ASR::make_Array_t(al, type->base.loc, real_type,
-                                    e->m_dims, e->n_dims, e->m_physical_type));
+                                    e->m_dims, e->n_dims, e->m_physical_type, e->m_memory_space));
             } else {
                 type = real_type;
             }
@@ -6101,7 +6101,7 @@ namespace StringConcat {
                 ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arr_arg)));
                 ASR::ttype_t* result_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
-                    al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type));
+                    al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type, arr_t->m_memory_space));
                 value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
                     al, loc, n * result_elem_len, (void*)result_buf,
                     result_arr_type, ASR::arraystorageType::ColMajor));
@@ -7789,7 +7789,7 @@ static inline ASR::ttype_t* set_longest_string_length(Allocator& al,
     if (ASR::is_a<ASR::Array_t>(*type)) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
         return ASRUtils::TYPE(ASR::make_Array_t(al, loc, new_str_type,
-            array_type->m_dims, array_type->n_dims, array_type->m_physical_type));
+            array_type->m_dims, array_type->n_dims, array_type->m_physical_type, array_type->m_memory_space));
     }
     return new_str_type;
 }

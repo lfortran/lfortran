@@ -242,7 +242,11 @@ time_section "🧪 Testing Fiats" '
     rm -rf build
     git fetch https://github.com/certik/fiats lf1
     git checkout f5d91ae48c01297a7fb183957654a73721ad4520
-    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal"
+    # Fiats computes in real(8), which Metal has no type for, so some of its
+    # `do concurrent` loops cannot be offloaded. Waive the strict policy here
+    # until 64-bit floats are emulated on Metal; without this the loops are a
+    # hard error rather than a fall back to the CPU.
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 
   print_success "Done with Fiats"
@@ -271,8 +275,8 @@ time_section "🧪 Testing Formal" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout 0.3.0
-  assert_git_commit d3f8c5a37684a0598eee62c5f60629c94c6c3536
+  git checkout 0.4.0
+  assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
   # disabled because it gets a SEGV on Linux:
   #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build

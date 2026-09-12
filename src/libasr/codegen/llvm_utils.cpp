@@ -728,10 +728,17 @@ namespace LCompilers {
                                                     ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))));
                     }
                 } else {
+                    // Without an expression there is no Struct symbol to lay
+                    // the type out from, so it is laid out as an anonymous
+                    // struct of its member types. A member is laid out the
+                    // way it would be anywhere else -- an allocatable one as
+                    // its descriptor -- which is more than an element type
+                    // can be.
                     ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(m_type);
                     std::vector<llvm::Type*> member_types;
                     for (size_t i = 0; i < st->n_data_member_types; i++) {
-                        member_types.push_back(get_el_type(nullptr, st->m_data_member_types[i], module));
+                        member_types.push_back(get_type_from_ttype_t_util(
+                            st->m_data_member_types[i], nullptr, module));
                     }
                     el_type = llvm::StructType::get(context, member_types);
                 }
@@ -2151,7 +2158,7 @@ namespace LCompilers {
     void LLVMUtils::start_new_block(llvm::BasicBlock *bb) {
         llvm::BasicBlock *last_bb = builder->GetInsertBlock();
         llvm::Function *fn = last_bb->getParent();
-        llvm::Instruction *block_terminator = last_bb->getTerminator();
+        llvm::Instruction *block_terminator = LLVM::get_terminator(last_bb);
         if (block_terminator == nullptr) {
             // The previous block is not terminated --- terminate it by jumping
             // to our new block
@@ -2208,6 +2215,7 @@ namespace LCompilers {
                         throw LCompilersException("Unhandled String Physical type");
                 }
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 switch (str_type->m_physical_type){
                     // `string_descriptor*` and `char*`
@@ -2649,6 +2657,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_data(str, str_desc, get_pointer_to_data);
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 return get_string_data(str, arr_ptr, get_pointer_to_data);
             }
@@ -2669,6 +2678,7 @@ namespace LCompilers {
                     arr_api->get_pointer_to_data(type_, arr_ptr));
                 return get_string_length(str, str_desc);
             }
+            case ASR::UnboundedPointerArray:
             case ASR::PointerArray:{
                 return get_string_length(str, arr_ptr);
             }
@@ -2816,7 +2826,7 @@ namespace LCompilers {
             rhs_data, rhs_len, char_kind});
     }
 
-    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const){
+    llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const, bool is_const){
 
         /*  Don't depend on null_char.
             Fortran can represent null char is a char not as a terminating flag.
@@ -2834,10 +2844,10 @@ namespace LCompilers {
 
         return declare_global_string(
             ASRUtils::get_string_type(str_const->m_type),
-            initial_string, true, "string_const");
+            initial_string, is_const, "string_const");
     }
 
-    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const){
+    llvm::Value* LLVMUtils::declare_constant_stringArray(Allocator &/*al*/, const ASR::ArrayConstant_t* arr_const, bool is_const){
         LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(arr_const->m_type) == ASR::PointerArray)
         /*
             Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
@@ -2865,11 +2875,15 @@ namespace LCompilers {
             // Create the constant data
             llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
 
-            // Create global variable for the character data
+            // Create global variable for the character data. When this array
+            // constant initializes a writable global (e.g. a CHARACTER array in
+            // a DATA-initialized common block / struct), the backing buffer must
+            // be writable too, otherwise a later assignment to an element would
+            // write into read-only memory and fault at runtime.
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module,
                 char_array_type,
-                true,  // is_const
+                is_const,
                 llvm::GlobalValue::PrivateLinkage,
                 const_data_as_array,
                 "stringArray_const_data"
@@ -9493,6 +9507,31 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return gep;
     }
 
+    llvm::Value* LLVMUtils::get_type_identifier_for_polymorphic_type(
+            ASR::expr_t* arg, llvm::Value* arg_val, ASR::symbol_t* struct_sym,
+            llvm::Module* module, int class_type_id) {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t* core_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+        if (ASRUtils::is_class_type(core_type)) {
+            llvm::Type* class_type = getClassType(
+                ASR::down_cast<ASR::Struct_t>(struct_sym), false);
+            if (ASRUtils::is_allocatable(arg_type) ||
+                ASR::is_a<ASR::Pointer_t>(*arg_type)) {
+                arg_val = CreateLoad2(class_type->getPointerTo(), arg_val);
+            }
+            llvm::Value* id_ptr = create_gep2(class_type, arg_val, 0);
+            llvm::Type* field0_type = llvm::cast<llvm::StructType>(class_type)->getElementType(0);
+            return CreateLoad2(field0_type, id_ptr);
+        }
+        // Non-polymorphic derived type: use the static type's identifier.
+        if (compiler_options.new_classes) {
+            return struct_api->get_pointer_to_method(struct_sym, module);
+        }
+        return llvm::ConstantInt::get(getIntType(8),
+            llvm::APInt(64, class_type_id));
+    }
+
     void LLVMStruct::store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module)
     {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -10944,11 +10983,67 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                 builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         }
+                        // A scalar allocatable member of intrinsic type is a bare
+                        // pointer in the struct layout, so copying the member as-is
+                        // would make source and destination share one allocation
+                        // (and free it twice). Give the destination its own storage
+                        // and copy the value into it.
+                        ASR::ttype_t* mem_elem_type = ASRUtils::extract_type(member_type);
+                        bool is_alloc_scalar_intrinsic =
+                            ASRUtils::is_allocatable(member_type) &&
+                            !ASRUtils::is_array(member_type) &&
+                            (ASR::is_a<ASR::Integer_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::UnsignedInteger_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Real_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Complex_t>(*mem_elem_type) ||
+                             ASR::is_a<ASR::Logical_t>(*mem_elem_type));
+                        llvm::Type* mem_elem_llvm_type = nullptr;
+                        if (is_alloc_scalar_intrinsic) {
+                            mem_elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                ASRUtils::get_expr_from_sym(al, mem_sym), mem_elem_type, module);
+                        }
                         llvm_utils->create_if_else(is_allocated, [&]() {
+                            if (is_alloc_scalar_intrinsic) {
+                                llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                llvm::Value* dest_is_null = builder->CreateICmpEQ(
+                                    builder->CreatePtrToInt(dest_data, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                llvm_utils->create_if_else(dest_is_null, [&]() {
+                                    llvm::DataLayout data_layout(module->getDataLayout());
+                                    llvm::Value* alloc_size = llvm::ConstantInt::get(
+                                        llvm_utils->getIntType(4), llvm::APInt(32,
+                                            data_layout.getTypeAllocSize(mem_elem_llvm_type)));
+                                    llvm::Value* new_data = LLVMArrUtils::lfortran_malloc(
+                                        context, *module, *builder, alloc_size);
+                                    builder->CreateStore(builder->CreateBitCast(new_data,
+                                        mem_elem_llvm_type->getPointerTo()), dest_member);
+                                }, [](){});
+                                dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                builder->CreateStore(llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type, src_member), dest_data);
+                                return;
+                            }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
                             module);
                         }, [&]() {
+                            if (is_alloc_scalar_intrinsic) {
+                                // The source component is unallocated, so the
+                                // destination component must become unallocated too.
+                                llvm::Value* dest_data = llvm_utils->CreateLoad2(
+                                    mem_elem_llvm_type->getPointerTo(), dest_member);
+                                llvm::Value* dest_not_null = builder->CreateICmpNE(
+                                    builder->CreatePtrToInt(dest_data, llvm::Type::getInt64Ty(context)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                                llvm_utils->create_if_else(dest_not_null, [&]() {
+                                    llvm_utils->lfortran_free(dest_data);
+                                }, [](){});
+                                builder->CreateStore(llvm::ConstantPointerNull::get(
+                                    mem_elem_llvm_type->getPointerTo()), dest_member);
+                                return;
+                            }
                             if (is_alloc_str_only) {
                                 // If source allocatable string is not allocated, then
                                 // deallocate the destination allocatable string
