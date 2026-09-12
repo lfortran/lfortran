@@ -302,4 +302,156 @@ void rtrim(std::string& str) {
     str.erase(std::find_if_not(str.rbegin(), str.rend(), ::isspace).base(), str.end());
 }
 
+// UTF-8 helpers ------------------------------------------------------------
+
+namespace {
+
+// Length in bytes of the UTF-8 sequence a lead byte starts, or 0 if `c` is not
+// a valid lead byte.
+size_t utf8_sequence_length(unsigned char c) {
+    if (c < 0x80) return 1;
+    if ((c & 0xe0) == 0xc0) return 2;
+    if ((c & 0xf0) == 0xe0) return 3;
+    if ((c & 0xf8) == 0xf0) return 4;
+    return 0;
+}
+
+// The code point bits a lead byte contributes.
+uint32_t utf8_lead_bits(unsigned char c, size_t length) {
+    switch (length) {
+        case 1: return c;
+        case 2: return c & 0x1f;
+        case 3: return c & 0x0f;
+        default: return c & 0x07;
+    }
+}
+
+} // anonymous namespace
+
+bool is_valid_utf8(const char *value, size_t size) {
+    size_t i = 0;
+    while (i < size) {
+        const unsigned char c = static_cast<unsigned char>(value[i]);
+        const size_t length = utf8_sequence_length(c);
+        if (length == 0) return false;
+        if (length == 1) {
+            i++;
+            continue;
+        }
+        if (i + length > size) return false;
+        uint32_t code_point = utf8_lead_bits(c, length);
+        for (size_t k = 1; k < length; k++) {
+            const unsigned char cont =
+                static_cast<unsigned char>(value[i + k]);
+            if ((cont & 0xc0) != 0x80) return false;
+            code_point = (code_point << 6) | (cont & 0x3f);
+        }
+        if (length == 2 && code_point < 0x80) return false;
+        if (length == 3 && code_point < 0x800) return false;
+        if (length == 4 && code_point < 0x10000) return false;
+        if (code_point > 0x10ffff) return false;
+        if (code_point >= 0xd800 && code_point <= 0xdfff) return false;
+        i += length;
+    }
+    return true;
+}
+
+bool is_valid_utf8(const std::string &value) {
+    return is_valid_utf8(value.data(), value.size());
+}
+
+std::vector<uint32_t> utf8_decode(const std::string &s) {
+    std::vector<uint32_t> code_points;
+    size_t i = 0;
+    while (i < s.size()) {
+        const unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t length = utf8_sequence_length(c);
+        if (length == 0 || i + length > s.size()) {
+            // Not well-formed: pass the byte through so callers that did not
+            // validate still make progress instead of running off the end.
+            code_points.push_back(c);
+            i++;
+            continue;
+        }
+        uint32_t code_point = utf8_lead_bits(c, length);
+        for (size_t k = 1; k < length; k++) {
+            code_point = (code_point << 6) |
+                (static_cast<unsigned char>(s[i + k]) & 0x3f);
+        }
+        code_points.push_back(code_point);
+        i += length;
+    }
+    return code_points;
+}
+
+size_t utf8_codepoint_count(const std::string &s) {
+    size_t count = 0;
+    size_t i = 0;
+    while (i < s.size()) {
+        const size_t length =
+            utf8_sequence_length(static_cast<unsigned char>(s[i]));
+        i += (length == 0 || i + length > s.size()) ? 1 : length;
+        count++;
+    }
+    return count;
+}
+
+size_t utf8_codepoint_count(const char *s) {
+    return utf8_codepoint_count(std::string(s));
+}
+
+void utf8_encode_codepoint(std::string &out, uint32_t code_point) {
+    if (code_point <= 0x7f) {
+        out += static_cast<char>(code_point);
+    } else if (code_point <= 0x7ff) {
+        out += static_cast<char>(0xc0 | (code_point >> 6));
+        out += static_cast<char>(0x80 | (code_point & 0x3f));
+    } else if (code_point <= 0xffff) {
+        out += static_cast<char>(0xe0 | (code_point >> 12));
+        out += static_cast<char>(0x80 | ((code_point >> 6) & 0x3f));
+        out += static_cast<char>(0x80 | (code_point & 0x3f));
+    } else {
+        out += static_cast<char>(0xf0 | (code_point >> 18));
+        out += static_cast<char>(0x80 | ((code_point >> 12) & 0x3f));
+        out += static_cast<char>(0x80 | ((code_point >> 6) & 0x3f));
+        out += static_cast<char>(0x80 | (code_point & 0x3f));
+    }
+}
+
+std::vector<uint8_t> utf8_to_unicode_bytes(const std::string &s, int kind) {
+    std::vector<uint32_t> code_points = utf8_decode(s);
+    std::vector<uint8_t> bytes(code_points.size() * kind);
+    for (size_t idx = 0; idx < code_points.size(); idx++) {
+        const uint32_t cp = code_points[idx];
+        for (int b = 0; b < kind; b++) {
+            bytes[idx * kind + b] = (cp >> (8 * b)) & 0xff;
+        }
+    }
+    return bytes;
+}
+
+std::vector<std::string> utf8_split(const std::string &s) {
+    std::vector<std::string> characters;
+    size_t i = 0;
+    while (i < s.size()) {
+        size_t length = utf8_sequence_length(static_cast<unsigned char>(s[i]));
+        if (length == 0 || i + length > s.size()) length = 1;
+        characters.push_back(s.substr(i, length));
+        i += length;
+    }
+    return characters;
+}
+
+std::string unicode_bytes_to_utf8(const uint8_t *bytes, size_t count, int kind) {
+    std::string out;
+    for (size_t idx = 0; idx < count; idx++) {
+        uint32_t cp = 0;
+        for (int b = 0; b < kind; b++) {
+            cp |= static_cast<uint32_t>(bytes[idx * kind + b]) << (8 * b);
+        }
+        utf8_encode_codepoint(out, cp);
+    }
+    return out;
+}
+
 } // namespace LCompilers

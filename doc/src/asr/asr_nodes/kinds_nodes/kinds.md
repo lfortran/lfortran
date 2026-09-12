@@ -1,203 +1,81 @@
 # kinds
 
-The `kind` member selects the kind of a given type.
+The `kind` member of an intrinsic type.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-Integer
-Real
-Complex
-Character
-Logical
-kind
+```text
+Integer(int kind)
+UnsignedInteger(int kind)
+Real(int kind)
+Complex(int kind)
+Logical(int kind)
 ```
+
 ### Arguments
 
-None.
+| Argument | Description |
+|----------|-------------|
+| `kind` | the kind of the type, as a number of bytes. |
 
 ### Return values
 
-None.
+None. A type is not evaluated.
 
 ## Description
 
-**kind** denotes the kind of a given type. LFortran supports the following:
+The kind is part of the type, so every value in ASR has a width that is known
+where it appears: there is no integer whose size is implied by context, and an
+operation between two kinds is an explicit
+[Cast](../expression_nodes/Cast.md) rather than a promotion a backend performs.
 
-1. Integer kinds: 1 (i8), 2 (i16), 4 (i32), 8 (i64)
-2. Real kinds: 4 (f32), 8 (f64)
-3. Complex kinds: 4 (c32), 8 (c64)
-4. Character kinds: 1 (utf8 string)
-5. Logical kinds: 1, 2, 4: (boolean represented by 1, 2, 4 bytes; the default
-kind is 4, just like the default integer kind, consistent with Python and Fortran:
-in Python "Booleans in Python are implemented as a subclass of integers", in
-Fortran the "default logical kind has the same storage size as the default integer";
-we currently use kind=4 as default integer, so we also use kind=4 for the
-default logical.)
+LFortran supports these kinds:
 
-## Types
+| Type | Kinds | Default |
+|------|-------|---------|
+| [Integer](../type_nodes/Integer.md) | 1 (i8), 2 (i16), 4 (i32), 8 (i64) | 4 |
+| [UnsignedInteger](../type_nodes/UnsignedInteger.md) | 1, 2, 4, 8 | 4 |
+| [Real](../type_nodes/Real.md) | 4 (f32), 8 (f64) | 4 |
+| [Complex](../type_nodes/Complex.md) | 4 (c32), 8 (c64) | 4 |
+| [String](../type_nodes/String.md) | 1 (a byte) | 1 |
+| [Logical](../type_nodes/Logical.md) | 1, 2, 4 | 4 |
 
-LFortan supports the following types:
+A [Complex](../type_nodes/Complex.md) of kind 8 holds two `real(8)` values: the
+kind is the kind of each part, not the size of the pair.
 
-1. Integer kinds
-2. Real kinds
-3. Complex kinds
-4. Character kinds
-5. Logical kinds
+The default logical kind is 4, the same as the default integer kind. That
+follows both languages LFortran serves: in Fortran the "default logical kind
+has the same storage size as the default integer", and in Python "Booleans are
+implemented as a subclass of integers".
+
+A kind is written in Fortran as a literal suffix, `1.0_dp`, or as a type
+parameter, `real(kind=dp)`. Either way the frontend resolves it to a number
+before ASR is built, so a kind in ASR is always a plain integer and never an
+expression.
 
 ## Examples
 
-```fortran
-program const_kind_01
-integer, parameter :: sp = 4, dp = 8
-real(sp), parameter :: r1 = 1.0_sp
-real(dp), parameter :: r2 = 1.0_dp
-real :: r3
-r3 = 1.0_sp
-r3 = 1.0_dp
-print *, sp, dp, r1, r2, r3
-end program
-```
+A `real(8)` variable and a `real(8)` constant:
 
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            const_kind_01:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            dp:
-                                (Variable
-                                    2
-                                    dp
-                                    Local
-                                    (IntegerConstant 8 (Integer 4 []))
-                                    (IntegerConstant 8 (Integer 4 []))
-                                    Parameter
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            r1:
-                                (Variable
-                                    2
-                                    r1
-                                    Local
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4 [])
-                                    )
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4 [])
-                                    )
-                                    Parameter
-                                    (Real 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            r2:
-                                (Variable
-                                    2
-                                    r2
-                                    Local
-                                    (RealConstant
-                                        1.000000
-                                        (Real 8 [])
-                                    )
-                                    (RealConstant
-                                        1.000000
-                                        (Real 8 [])
-                                    )
-                                    Parameter
-                                    (Real 8 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            r3:
-                                (Variable
-                                    2
-                                    r3
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            sp:
-                                (Variable
-                                    2
-                                    sp
-                                    Local
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    (IntegerConstant 4 (Integer 4 []))
-                                    Parameter
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-
-                        })
-                    const_kind_01
-                    []
-                    [(=
-                        (Var 2 r3)
-                        (RealConstant
-                            1.000000
-                            (Real 4 [])
-                        )
-                        ()
-                    )
-                    (=
-                        (Var 2 r3)
-                        (Cast
-                            (RealConstant
-                                1.000000
-                                (Real 8 [])
-                            )
-                            RealToReal
-                            (Real 4 [])
-                            (RealConstant
-                                1.000000
-                                (Real 4 [])
-                            )
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 sp)
-                        (Var 2 dp)
-                        (Var 2 r1)
-                        (Var 2 r2)
-                        (Var 2 r3)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
+```clojure
+(RealConstant
+  :r 2.5
+  :type (Real
+    :kind 8
+  )
 )
 ```
 
+The complete translation unit:
+
+```{literalinclude} ../../examples/real_expr.asr
+:language: clojure
+```
+
 ## See Also
+
+[ttype](../type_nodes/ttype.md), [Integer](../type_nodes/Integer.md),
+[Real](../type_nodes/Real.md), [Cast](../expression_nodes/Cast.md),
+[TypeInquiry](../expression_nodes/TypeInquiry.md)

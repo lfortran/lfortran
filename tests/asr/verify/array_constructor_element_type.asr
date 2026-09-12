@@ -37,6 +37,7 @@
                   )
                 ]
                 :FixedSizeArray
+                :Global
               )
               nil
               :Source
@@ -101,6 +102,7 @@
                   )
                 ]
                 :FixedSizeArray
+                :Global
               )
               nil
               :ColMajor

@@ -1,0 +1,299 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "i" (Variable
+              :parent_symtab 1
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Variable
+              :parent_symtab 1
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Logical
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "t" (Variable
+              :parent_symtab 1
+              :name "t"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Tuple
+                :type [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "u" (Variable
+              :parent_symtab 1
+              :name "u"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Tuple
+                :type [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "t")
+            )
+            :value (TupleConstant
+              :elements [
+                (IntegerConstant
+                  :n 1
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                (RealConstant
+                  :r 2.0
+                  :type (Real
+                    :kind 4
+                  )
+                )
+              ]
+              :type (Tuple
+                :type [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "i")
+            )
+            :value (TupleLen
+              :arg (Var
+                :v (SymbolRef 1 "t")
+              )
+              :type (Integer
+                :kind 4
+              )
+              :value (IntegerConstant
+                :n 2
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "u")
+            )
+            :value (TupleConcat
+              :left (Var
+                :v (SymbolRef 1 "t")
+              )
+              :right (Var
+                :v (SymbolRef 1 "t")
+              )
+              :type (Tuple
+                :type [
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                  (Integer
+                    :kind 4
+                  )
+                  (Real
+                    :kind 4
+                  )
+                ]
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "p")
+            )
+            :value (TupleCompare
+              :left (Var
+                :v (SymbolRef 1 "t")
+              )
+              :op :Eq
+              :right (Var
+                :v (SymbolRef 1 "t")
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "p")
+            )
+            :value (TupleContains
+              :left (Var
+                :v (SymbolRef 1 "t")
+              )
+              :right (IntegerConstant
+                :n 1
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 1 "i")
+            )
+            :value (TupleItem
+              :a (Var
+                :v (SymbolRef 1 "t")
+              )
+              :pos (IntegerConstant
+                :n 0
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

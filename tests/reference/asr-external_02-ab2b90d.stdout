@@ -51,6 +51,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 7 calcfc_arg_0)]
@@ -68,7 +69,7 @@
                             []
                             (Real 8)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -77,6 +78,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -89,6 +91,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [cobylb]
                     [(Var 2 calcfc)]
@@ -155,6 +158,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 calcfc_arg_0)]
@@ -196,7 +200,7 @@
                             []
                             (Real 8)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -205,6 +209,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -217,6 +222,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 calcfc)]

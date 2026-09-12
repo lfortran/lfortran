@@ -1,0 +1,5 @@
+ASR verify pass error: Array of strings with physical type "StringArraySinglePointer" must have string physical type "CChar", not "DescriptorString"
+  --> tests/asr/verify/bindc_string_array_physical_type.asr:21:22
+   |
+21 |                     (Array
+   |                      ^^^^^ failed here

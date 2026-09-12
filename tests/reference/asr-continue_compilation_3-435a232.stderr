@@ -47,34 +47,40 @@ semantic error: Procedure declarations without an explicit interface (procedure(
    |         ^^^^^^^^^^^ 
 
 semantic error: Assumed-rank arrays are not supported in print statements
-  --> tests/errors/continue_compilation_3.f90:34:18
+  --> tests/errors/continue_compilation_3.f90:33:18
    |
-34 |         print *, x
+33 |         print *, x
    |                  ^ 
 
 semantic error: Assumed rank arrays cannot be used as `source` argument to reshape intrinsic
-  --> tests/errors/continue_compilation_3.f90:35:26
+  --> tests/errors/continue_compilation_3.f90:34:26
    |
-35 |         print *, reshape(x, [size(x)])
+34 |         print *, reshape(x, [size(x)])
    |                          ^ 
 
 semantic error: Assumed-rank array `x` cannot be accessed outside a select rank block
-  --> tests/errors/continue_compilation_3.f90:36:18
+  --> tests/errors/continue_compilation_3.f90:35:18
    |
-36 |         print *, x(1)
+35 |         print *, x(1)
    |                  ^^^^ 
 
 semantic error: Assumed-rank array 'x' must be a dummy argument
-  --> tests/errors/continue_compilation_3.f90:37:6
+  --> tests/errors/continue_compilation_3.f90:36:6
    |
-37 |      x = [1, 2]
+36 |      x = [1, 2]
    |      ^ 
 
 semantic error: Comparison operations are not allowed on assumed-rank arrays ('x')
-  --> tests/errors/continue_compilation_3.f90:38:19
+  --> tests/errors/continue_compilation_3.f90:37:19
    |
-38 |         print *, (x /= [1, 2])
+37 |         print *, (x /= [1, 2])
    |                   ^^^^^^^^^^^ 
+
+semantic error: Arithmetic operations are not allowed on assumed-rank arrays ('x')
+  --> tests/errors/continue_compilation_3.f90:38:18
+   |
+38 |         print *, x + x
+   |                  ^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_3.f90:77:26

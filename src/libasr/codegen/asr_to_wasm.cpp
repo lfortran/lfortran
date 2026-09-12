@@ -740,6 +740,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        throw CodeGenError("conditional expressions are not supported by the wasm backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -944,7 +949,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         type_vec.push_back(i32);
                     } else {
                         throw CodeGenError(
-                            "Strings of kind 1 only supported");
+                            "character(kind=" + std::to_string(v_int->m_kind) +
+                            ") is not supported by the WASM backend, only kind 1 is",
+                            v->base.base.loc);
                     }
                 }
             } else if (ASRUtils::is_complex(*ttype)) {
@@ -1182,6 +1189,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         declare_all_functions(*x.m_symtab);
         if (is_unsupported_function(x)) {
             return;

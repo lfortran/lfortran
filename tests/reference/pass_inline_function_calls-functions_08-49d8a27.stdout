@@ -185,6 +185,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f_real]
                                     [(Var 4 a)]
@@ -301,6 +302,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [f]
                                     [(Var 5 a)]

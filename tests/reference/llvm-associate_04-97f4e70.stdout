@@ -88,7 +88,7 @@ associate_block_start:                            ; preds = %.entry
   %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %29 = load i64, i64* %28, align 8
   %30 = trunc i64 %29 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %27, i32 %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %27, i32 %30, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %31 = icmp eq i8* %22, null
   br i1 %31, label %free_done, label %free_nonnull
 
@@ -121,7 +121,7 @@ FINALIZE_SYMTABLE_associate_block:                ; preds = %associate_block_end
   %43 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 1
   %44 = load i64, i64* %43, align 8
   %45 = trunc i64 %44 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %42, i32 %45, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %42, i32 %45, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   %46 = icmp eq i8* %37, null
   br i1 %46, label %free_done3, label %free_nonnull2
 
@@ -168,7 +168,7 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i3
 
 declare i8* @_lfortran_get_default_allocator()
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 

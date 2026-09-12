@@ -729,7 +729,8 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(1)"
+            "return": "character(1)",
+            "char_kind_from_arg": 0
         }
     ],
     "Range": [
@@ -938,7 +939,8 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return" : "allocatable_deferred_string()",
-            "allow_polymorphic_arg": [0]
+            "allow_polymorphic_arg": [0],
+            "char_kind_from_arg": 0
         }
     ],
 }
@@ -1166,6 +1168,14 @@ def add_create_func_return_src(func_name):
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
+    char_kind_from_arg = arg_infos[0].get("char_kind_from_arg", None)
+    if char_kind_from_arg is not None:
+        # The result is a character of the same kind as the argument, not of
+        # the default kind.
+        src += indent * 2 + f"if (is_character(*ASRUtils::expr_type(args[{char_kind_from_arg}]))) {{\n"
+        src += indent * 3 +     "set_kind_to_ttype_t(ASRUtils::extract_type(return_type),\n"
+        src += indent * 4 +         f"ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[{char_kind_from_arg}])));\n"
+        src += indent * 2 + "}\n"
     if kind_arg:
         src += indent * 2 + "if ( args[1] != nullptr ) {\n"
         src += indent * 3 +     "int kind = -1;\n"

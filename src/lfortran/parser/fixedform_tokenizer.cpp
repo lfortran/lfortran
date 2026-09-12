@@ -1144,6 +1144,13 @@ struct FixedFormRecursiveDescent {
     bool lex_body_statement(unsigned char *&cur, bool continue_compilation = false) {
         int64_t l = eat_label(cur);
         unsigned char *do_pos = nullptr;
+        if (is_named_do_while(cur, do_pos)) {
+            t.cur = cur;
+            tokenize_until(do_pos);
+            cur = do_pos;
+            lex_dowhile(cur);
+            return true;
+        }
         if (is_named_do_loop(cur, do_pos)) {
             t.cur = cur;
             tokenize_until(do_pos);
@@ -1553,6 +1560,15 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    bool is_named_do_while(unsigned char *cur, unsigned char *&do_pos) {
+        unsigned char *tmp = cur;
+        if (!try_name(tmp)) return false;
+        if (!try_next(tmp, ":")) return false;
+        if (!next_is(tmp, "dowhile(")) return false;
+        do_pos = tmp;
+        return true;
+    }
+
     bool label_last(int64_t label) {
         if (do_labels.size() > 0) {
             if (do_labels[do_labels.size()-1] == label) {
@@ -1680,7 +1696,8 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "do");
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
-        while (!next_is(cur, "enddo\n")) {
+        // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
+        while (!next_is(cur, "enddo")) {
             lex_body_statement(cur);
         }
         push_token_advance(cur, "enddo");

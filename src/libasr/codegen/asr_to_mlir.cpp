@@ -119,6 +119,11 @@ public:
         return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
     }
 
+    void visit_IfExp(const ASR::IfExp_t &x) {
+        throw CodeGenError("conditional expressions are not supported by the MLIR backend",
+            x.base.base.loc);
+    }
+
     void visit_expr2(ASR::expr_t &x) {
         this->visit_expr(x);
         if (ASR::is_a<ASR::Var_t>(x) || ASR::is_a<ASR::ArrayItem_t>(x)) {
@@ -167,6 +172,9 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
         ASR::FunctionType_t *fnType = down_cast<ASR::FunctionType_t>(
             x.m_function_signature);
         if (fnType->m_deftype == ASR::deftypeType::Interface) {

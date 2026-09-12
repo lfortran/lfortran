@@ -1,0 +1,163 @@
+#include <libasr/asr.h>
+#include <libasr/asr_utils.h>
+#include <libasr/codegen/gpu_utils.h>
+#include <libasr/containers.h>
+#include <libasr/pass/device_partition.h>
+#include <libasr/pass/pass_utils.h>
+
+#include <deque>
+#include <set>
+#include <vector>
+
+namespace LCompilers {
+
+/*
+Partition the call graph into the code that runs on the host and the code that
+runs on the device.
+
+`gpu_offload` marks only the kernel it creates, but a kernel body calls
+routines, and those routines call more. Everything the kernel reaches has to
+be compiled for the device too: the device-preparation passes have to give a
+routine's arrays a shape and a memory space before the device code generators
+read them, and they can only do that for a routine they can recognise as
+device code.
+
+The closure is taken over the calls a body makes, past external symbols and
+type bound procedure declarations, and over the routines a device routine
+contains, which nothing outside it can reach. A routine the host also reaches
+becomes HostDevice rather than Device, so that the host code generator still
+emits it: the two spaces share one definition here. Cloning the routine per
+space is only needed once a later pass has to transform the two copies
+differently, and nothing does yet.
+
+A module procedure is left as it is. Its signature belongs to the module's
+interface, which another translation unit was compiled against, and the
+device passes rewrite the signature of what they are given.
+
+The marking is monotone, so the pass can run more than once: a routine only
+ever moves from Host towards HostDevice, and a kernel is never touched. That
+matters because a helper such as `_lcompilers_matmul` is created by a pass
+that runs well after `gpu_offload`, and so is only visible to a later run.
+*/
+
+namespace {
+
+class DevicePartition {
+public:
+    void partition(ASR::TranslationUnit_t &unit) {
+        collect_symbols(unit.m_symtab);
+
+        std::set<ASR::Function_t*> device;
+        std::deque<ASR::Function_t*> work;
+        for (ASR::Function_t *fn : functions) {
+            if (ASRUtils::get_exec_space(*fn)
+                    != ASR::exec_spaceType::Kernel) {
+                continue;
+            }
+            device.insert(fn);
+            work.push_back(fn);
+        }
+        while (!work.empty()) {
+            ASR::Function_t *fn = work.front();
+            work.pop_front();
+            for (ASR::Function_t *callee : reached_by(fn)) {
+                if (device.insert(callee).second) work.push_back(callee);
+            }
+        }
+
+        // What the host reaches: every routine the host can enter, and
+        // everything those reach in turn. A routine the device closure did
+        // not take is host code itself, and so is a starting point.
+        std::set<ASR::Function_t*> host;
+        for (ASR::Program_t *program : programs) {
+            for (ASR::Function_t *callee : gpu_callees(program->m_body,
+                    program->n_body, true)) {
+                if (host.insert(callee).second) work.push_back(callee);
+            }
+        }
+        for (ASR::Function_t *fn : functions) {
+            if (device.count(fn) > 0) continue;
+            for (ASR::Function_t *callee : gpu_callees(fn->m_body,
+                    fn->n_body, true)) {
+                if (host.insert(callee).second) work.push_back(callee);
+            }
+        }
+        while (!work.empty()) {
+            ASR::Function_t *fn = work.front();
+            work.pop_front();
+            for (ASR::Function_t *callee : gpu_callees(fn->m_body,
+                    fn->n_body, true)) {
+                if (host.insert(callee).second) work.push_back(callee);
+            }
+        }
+
+        for (ASR::Function_t *fn : device) {
+            ASR::exec_spaceType current = ASRUtils::get_exec_space(*fn);
+            if (current == ASR::exec_spaceType::Kernel) continue;
+            if (current == ASR::exec_spaceType::HostDevice) continue;
+            if (module_procedures.count(fn) > 0) {
+                // A module procedure is left alone. Its signature is part of
+                // the module's interface, which another translation unit was
+                // compiled against, and the device passes below rewrite the
+                // signature of what they are given.
+                continue;
+            }
+            ASRUtils::get_FunctionType(fn)->m_exec_space =
+                host.count(fn) > 0 ? ASR::exec_spaceType::HostDevice
+                                   : ASR::exec_spaceType::Device;
+        }
+    }
+
+private:
+    std::vector<ASR::Function_t*> functions;
+    std::vector<ASR::Program_t*> programs;
+    std::set<ASR::Function_t*> module_procedures;
+
+    void collect_symbols(SymbolTable *symtab, bool in_module=false) {
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+                functions.push_back(fn);
+                if (in_module) module_procedures.insert(fn);
+                collect_symbols(fn->m_symtab, in_module);
+            } else if (ASR::is_a<ASR::Module_t>(*sym)) {
+                collect_symbols(ASR::down_cast<ASR::Module_t>(sym)->m_symtab,
+                    true);
+            } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+                ASR::Program_t *program = ASR::down_cast<ASR::Program_t>(sym);
+                programs.push_back(program);
+                collect_symbols(program->m_symtab, in_module);
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                collect_symbols(ASR::down_cast<ASR::Struct_t>(sym)->m_symtab,
+                    in_module);
+            }
+        }
+    }
+
+    // What device code inside `fn` reaches: what its body calls, and the
+    // routines it contains, which are reachable from nowhere else.
+    static std::set<ASR::Function_t*> reached_by(ASR::Function_t *fn) {
+        std::set<ASR::Function_t*> reached = gpu_callees(fn->m_body,
+            fn->n_body, true);
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                reached.insert(ASR::down_cast<ASR::Function_t>(item.second));
+            }
+        }
+        return reached;
+    }
+};
+
+} // namespace
+
+void pass_device_partition(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &/*pass_options*/) {
+    DevicePartition partition;
+    partition.partition(unit);
+
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
+}
+
+} // namespace LCompilers
