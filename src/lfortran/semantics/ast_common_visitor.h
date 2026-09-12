@@ -17877,6 +17877,15 @@ public:
         ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
         ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
 
+        if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
+            this->diag.semantic_error_label(
+                "Arguments to the 'shifta' intrinsic must be of type INTEGER",
+                { loc },
+                "help: check the variable types passed to shifta"
+            );
+            throw SemanticAbort();
+        }
+
         ASR::ttype_t* cast_target_for_w = base_n;
 
         if (ASRUtils::is_array(type_w)) {
@@ -17889,8 +17898,8 @@ public:
         if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
                 w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
-                                   ASR::cast_kindType::IntegerToInteger, 
-                                   cast_target_for_w, nullptr, nullptr));
+                                 ASR::cast_kindType::IntegerToInteger, 
+                                 cast_target_for_w, nullptr, nullptr));
             }
         }
 
