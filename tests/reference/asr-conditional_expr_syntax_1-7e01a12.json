@@ -1,0 +1,13 @@
+{
+    "basename": "asr-conditional_expr_syntax_1-7e01a12",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/conditional_expr_syntax_1.f90",
+    "infile_hash": "7e7e94ede615ed40300344f2581b968599aedd8274b386a907ac9a59",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-conditional_expr_syntax_1-7e01a12.stderr",
+    "stderr_hash": "59dd5ba42933aaa6aea310e083c2404d41a82c312d7241a0966e7390",
+    "returncode": 1
+}

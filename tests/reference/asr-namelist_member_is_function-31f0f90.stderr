@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.namelist.member_is_variable]: Namelist 'nml' member 'helper' must be a variable, not Function
-   --> tests/asr/verify/namelist_member_is_function.asr:110:20
+   --> tests/asr/verify/namelist_member_is_function.asr:111:20
     |
-110 |             "nml" (Namelist
+111 |             "nml" (Namelist
     |                    ^^^^^^^^ failed here

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface_explicit_zero_arg-b584f40",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/implicit_interface_explicit_zero_arg.f90",
+    "infile_hash": "c22a865363f4708f321a306c761985398b526205502d29368a3760ec",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_interface_explicit_zero_arg-b584f40.stderr",
+    "stderr_hash": "07e9a8c3154d3015a3eb43cf512af9d942de2dd0bc2caeba5c6ca2bb",
+    "returncode": 2
+}

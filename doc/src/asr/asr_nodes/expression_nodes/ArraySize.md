@@ -1,95 +1,60 @@
 # ArraySize
 
-Size of array.
+The number of elements of an array, or the extent of one dimension.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ArraySize(expr v, expr? dim, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`v` | expression |
-|`dim` | expression dimension |
-|`type` | table entry type |
-|`value` | expression value |
+| Argument | Description |
+|----------|-------------|
+| `v` | the array. |
+| `dim` | the dimension to measure, counting from one, or `nil` for the total number of elements. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArraySize represents.
+The value of the expression.
 
 ## Description
 
-**ArraySize** represents size of array.
-
-## Types
-
-Only accepts integers.
+`size(a)` and `size(a, d)`. For an array whose shape is known at compile time
+the frontend folds the result into `value`.
 
 ## Examples
 
-```fortran
-integer :: a(3)
-integer(8) :: size_a8
-size_a8 = size(a, kind=8)
+```clojure
+(ArraySize
+  :v (Var
+    :v (SymbolRef 1 "a")
+  )
+  :dim (IntegerConstant
+    :n 1
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            a:
-                (Variable
-                    1
-                    a
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 3 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            size_a8:
-                (Variable
-                    1
-                    size_a8
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 8 [])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 size_a8)
-        (ArraySize
-            (Var 1 a)
-            ()
-            (Integer 8 [])
-            (IntegerConstant 3 (Integer 8 []))
-        )
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/array_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[ArrayBound](ArrayBound.md), [ArrayRank](ArrayRank.md), [Array](../type_nodes/Array.md)

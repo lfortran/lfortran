@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.binding_override.result_kind_matches]: Type bound procedure 'meth' overriding 'base_meth' must be a subroutine
-   --> tests/asr/verify/binding_override_result_kind.asr:112:27
+   --> tests/asr/verify/binding_override_result_kind.asr:113:27
     |
-112 |                   "meth" (StructMethodDeclaration
+113 |                   "meth" (StructMethodDeclaration
     |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here

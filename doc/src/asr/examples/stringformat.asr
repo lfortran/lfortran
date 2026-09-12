@@ -1,0 +1,62 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "n" (Variable
+              :parent_symtab 1
+              :name "n"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (Print
+            :text (StringFormat
+              :fmt nil
+              :args [
+                (Var
+                  :v (SymbolRef 1 "n")
+                )
+              ]
+              :kind :FormatFortran
+              :type (String
+                :kind 1
+                :len nil
+                :len_kind :DeferredLength
+                :physical_type :DescriptorString
+              )
+              :value nil
+            )
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

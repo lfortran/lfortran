@@ -1,76 +1,70 @@
 # StringCompare
 
-String comparison.
+A comparison of two strings.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`left`  | left side of comparison operator |
-|`right` | right side of comparison operator |
-|`type` | table entry type |
-| `value` | expression value|
-|`op` | operand |
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the comparison; see [cmpop](../enum_nodes/cmpop.md). |
+| `right` | the right operand. |
+| `type` | the logical type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the StringCompare represents.
+The value of the expression.
 
 ## Description
 
-**StringCompare** represents string comparison expression type. Comparisons are:
-
-1. lexicographically less than, or less than equal to
-2. lexicographically greater than, or greater than or equal to
-3. Equal to
-4. Not equal to
-
-## Types
-
-Only accepts strings.
+Strings are compared character by character, and the shorter one is treated as
+padded with blanks, so `"a" < "ab"` is true. The result is logical.
 
 ## Examples
 
-```fortran
-"aaa" > "bbb"
+```clojure
+(StringCompare
+  :left (Var
+    :v (SymbolRef 1 "s")
+  )
+  :op :Eq
+  :right (StringConstant
+    :s "world"
+    :type (String
+      :kind 1
+      :len (IntegerConstant
+        :n 5
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+      :len_kind :ExpressionLength
+      :physical_type :DescriptorString
+    )
+  )
+  :type (Logical
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(StringCompare
-        (StringConstant
-            "aaa"
-            (Character 1 3 () [])
-        )
-        Gt
-        (StringConstant
-            "bbb"
-            (Character 1 3 () [])
-        )
-        (Logical 4 [])
-        (LogicalConstant
-            .false.
-            (Logical 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/string_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[cmpop](../enum_nodes/cmpop.md), [StringConcat](StringConcat.md), [StringContains](StringContains.md)

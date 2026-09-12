@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -50,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -84,6 +86,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -113,6 +116,7 @@
                                                         [(()
                                                         ())]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     BindC
@@ -136,12 +140,14 @@
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )
                                         (Array
                                             (Integer 4)
                                             [(()
                                             ())]
                                             PointerArray
+                                            Global
                                         )]
                                         ()
                                         BindC
@@ -154,6 +160,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 driver_arg_0)
@@ -201,6 +208,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )
                         (Array
                             (Integer 4)
@@ -211,6 +219,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )
                         (Integer 4)]
                         ()
@@ -224,6 +233,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 a)

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.operation.operand_not_assumed_rank]: RealBinOp left operand is an assumed rank array, which has no known rank; it must be cast to a descriptor array first
+  --> tests/asr/verify/binary_op_assumed_rank_operand.asr:78:24
+   |
+78 |                       (RealBinOp
+   |                        ^^^^^^^^^ failed here

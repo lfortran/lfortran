@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.external_symbol.owner_is_importable]: ExternalSymbol::m_external 'p' is owned by the global scope, which cannot be imported from
-   --> tests/asr/verify/external_symbol_owner_is_program.asr:110:18
+   --> tests/asr/verify/external_symbol_owner_is_program.asr:111:18
     |
-110 |             "p" (ExternalSymbol
+111 |             "p" (ExternalSymbol
     |                  ^^^^^^^^^^^^^^ failed here

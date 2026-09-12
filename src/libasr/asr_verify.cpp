@@ -726,6 +726,57 @@ public:
         }
     }
 
+    static ASR::memory_spaceType array_memory_space(ASR::ttype_t *type) {
+        ASR::ttype_t *base =
+            ASRUtils::type_get_past_allocatable_pointer(type);
+        if (ASR::is_a<ASR::Array_t>(*base)) {
+            return ASR::down_cast<ASR::Array_t>(base)->m_memory_space;
+        }
+        return ASR::memory_spaceType::Global;
+    }
+
+    // Whether a scope belongs to code the host runs, which has one flat
+    // memory and so knows only the Global space. Everything device_partition
+    // did not take is host code, the clones the memory space pass makes for
+    // the device included.
+    static bool is_host_only_scope(SymbolTable *symtab) {
+        while (symtab) {
+            ASR::asr_t *owner = symtab->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner)) {
+                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(owner);
+                if (ASRUtils::runs_on_device(sym)) return false;
+            }
+            symtab = symtab->parent;
+        }
+        return true;
+    }
+
+    // The memory space of an array is part of a routine's interface, so the
+    // signature and the dummy it describes have to name the same one. A code
+    // generator that qualifies a parameter from one and indexes it from the
+    // other would otherwise read the wrong memory.
+    void verify_argument_memory_spaces(const Function_t &x) {
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(x);
+        for (size_t i = 0; i < x.n_args && i < ftype->n_arg_types; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t *arg_sym =
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+            if (!arg_sym || !ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
+            ASR::ttype_t *declared =
+                ASR::down_cast<ASR::Variable_t>(arg_sym)->m_type;
+            if (!declared || !ftype->m_arg_types[i]) continue;
+            if (!ASRUtils::is_array(declared) ||
+                    !ASRUtils::is_array(ftype->m_arg_types[i])) {
+                continue;
+            }
+            require(array_memory_space(declared)
+                        == array_memory_space(ftype->m_arg_types[i]),
+                "Argument " + std::to_string(i + 1) + " of `"
+                    + std::string(x.m_name) + "` is declared in a different "
+                    "memory space than its signature gives it");
+        }
+    }
+
     void visit_Function(const Function_t &x) {
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
@@ -770,6 +821,8 @@ public:
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
+        verify_argument_memory_spaces(x);
+        if (x.m_gpu) verify_gpu_kernel_layout(x);
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
@@ -806,6 +859,20 @@ public:
         require(function_type->n_arg_types == x.n_args,
             "Number of argument types in FunctionType must be exactly same as "
             "number of arguments in the function");
+        if (ASRUtils::is_bare_implicit_interface(x)) {
+            require_id(x.n_args == 0,
+                "asr.verify.function.implicit_interface_has_no_args",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no dummy arguments");
+            require_id(x.n_body == 0,
+                "asr.verify.function.implicit_interface_has_no_body",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so it must have no body");
+            require_id(function_type->m_abi == ASR::abiType::BindC,
+                "asr.verify.function.implicit_interface_is_bindc",
+                "Function '" + func_name + "' has deftype ImplicitInterface, "
+                "so its abi must be BindC");
+        }
         if (!diagnostics.has_error()) {
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::ttype_t *argument_type =
@@ -873,32 +940,6 @@ public:
         visit_ttype(*x.m_function_signature);
         current_symtab = parent_symtab;
         function_dependencies = function_dependencies_copy;
-    }
-
-    void visit_GpuKernelFunction(const GpuKernelFunction_t &x) {
-        SymbolTable *parent_symtab = current_symtab;
-        current_symtab = x.m_symtab;
-        require(x.m_symtab != nullptr,
-            "GpuKernelFunction::m_symtab cannot be nullptr");
-        require(x.m_symtab->parent == parent_symtab,
-            "GpuKernelFunction::m_symtab->parent is not the right parent");
-        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
-            "GpuKernelFunction::m_symtab::asr_owner must point to it");
-        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
-            "GpuKernelFunction::m_symtab->counter must be unique");
-        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
-        for (auto &a : x.m_symtab->get_scope()) {
-            LCOMPILERS_ASSERT(a.second);
-            this->visit_symbol(*a.second);
-        }
-        visit_ttype(*x.m_function_signature);
-        for (size_t i=0; i<x.n_args; i++) {
-            visit_expr(*x.m_args[i]);
-        }
-        for (size_t i=0; i<x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-        }
-        current_symtab = parent_symtab;
     }
 
     template <typename T>
@@ -1205,6 +1246,13 @@ public:
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
+        if (x.m_type && ASRUtils::is_array(x.m_type)) {
+            require(array_memory_space(x.m_type)
+                        == ASR::memory_spaceType::Global
+                    || !is_host_only_scope(symtab),
+                "Variable '" + std::string(x.m_name) + "' is host code, so "
+                "its array cannot live in a device memory space");
+        }
 
         ASR::asr_t* asr_owner = symtab->asr_owner;
         bool is_module = false, is_struct = false;
@@ -1438,7 +1486,6 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
-            ASR::GpuKernelFunction_t* gkfm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -1455,8 +1502,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
@@ -1469,9 +1515,6 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
-                } else if( ASR::is_a<ASR::GpuKernelFunction_t>(*asr_owner_sym) ) {
-                    gkfm = ASR::down_cast<ASR::GpuKernelFunction_t>(asr_owner_sym);
-                    asr_owner_name = gkfm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -1523,8 +1566,6 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
-            } else if( gkfm ) {
-                s = gkfm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -1922,11 +1963,14 @@ public:
         ASR::FunctionType_t *actual = as_procedure_type(actual_type);
         ASR::FunctionType_t *formal = as_procedure_type(formal_type);
         if (actual == nullptr || formal == nullptr) return;
-        // An interface that declares no arguments constrains nothing: that is
-        // the shape `EXTERNAL f` and `procedure(), pointer` produce, and ASR
-        // has no way yet to tell it apart from a genuine argumentless one.
+        // An ImplicitInterface declaration constrains nothing: its argument
+        // list is unknown. `procedure()` and `procedure(), pointer` still
+        // have empty arg_types and deftype Interface, so they also skip until
+        // they have their own ASR state. A genuine zero-argument Interface
+        // shares that empty shape and still skips for the same reason.
         auto unconstrained = [](ASR::FunctionType_t *t) {
-            return t->n_arg_types == 0;
+            return t->m_deftype == ASR::deftypeType::ImplicitInterface
+                || t->n_arg_types == 0;
         };
         if (unconstrained(actual) || unconstrained(formal)) return;
         require_with_loc_id(
@@ -2264,6 +2308,361 @@ public:
         }
     }
 
+    // A launch and the kernel it launches are made together, and the passes
+    // between the two rewrite both: what one of them does to a kernel dummy
+    // it has to do to the argument the launch passes in that position. The
+    // launch is laid out argument by argument against the kernel's own
+    // dummies, so the two lists have to stay the same length, and each dummy
+    // has to be a variable to read that layout from.
+    void verify_gpu_kernel_launch_signature(const GpuKernelLaunch_t &x,
+            const ASR::Function_t &kernel) {
+        std::string kernel_name(kernel.m_name);
+        require_id(x.n_args == kernel.n_args,
+            "asr.verify.gpu_kernel_launch.argument_count",
+            "GpuKernelLaunch passes " + std::to_string(x.n_args) +
+                " arguments to kernel '" + kernel_name + "', which declares " +
+                std::to_string(kernel.n_args));
+        for (size_t i = 0; i < x.n_args; i++) {
+            std::string at = "GpuKernelLaunch argument " +
+                std::to_string(i + 1) + " of '" + kernel_name + "'";
+            require_id(x.m_args[i].m_value != nullptr,
+                "asr.verify.gpu_kernel_launch.argument_present",
+                at + " is absent; a kernel launch has no optional argument");
+            ASR::symbol_t *dummy = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*kernel.m_args[i])) {
+                dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
+            }
+            require_id(dummy && ASR::is_a<ASR::Variable_t>(*dummy),
+                "asr.verify.gpu_kernel_launch.dummy_is_a_variable",
+                "the kernel dummy for " + at + " is not a variable");
+            verify_gpu_kernel_launch_argument(x, at, x.m_args[i].m_value,
+                ASR::down_cast<ASR::Variable_t>(dummy));
+        }
+    }
+
+    // The block of bytes the host hands over for an argument is the one the
+    // device reads for the dummy in that position, so the two have to
+    // describe the same value. Not the same type: a kernel dummy carries the
+    // data and not the descriptor, so it drops the allocatable or pointer
+    // wrapper the argument may have, and the passes between the launch and
+    // its expansion give the two sides different array physical types and put
+    // the kernel's own arrays in a device address space. What is left, and
+    // what the layout is read from, is the element type, its kind and the
+    // rank.
+    void verify_gpu_kernel_launch_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg,
+            ASR::Variable_t *dummy) {
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        ASR::ttype_t *arg_element = ASRUtils::extract_type(arg_type);
+        ASR::ttype_t *dummy_element = ASRUtils::extract_type(dummy->m_type);
+        std::string mismatch = at + " is " +
+            ASRUtils::type_to_str_fortran_symbol(arg_element,
+                ASR::is_a<ASR::StructType_t>(*arg_element)
+                    ? ASRUtils::get_struct_sym_from_struct_expr(arg)
+                    : nullptr, true) +
+            ", but the dummy '" + std::string(dummy->m_name) +
+            "' the device reads it as is " +
+            ASRUtils::type_to_str_fortran_symbol(dummy_element,
+                dummy->m_type_declaration, true);
+        require_id(arg_element->type == dummy_element->type,
+            "asr.verify.gpu_kernel_launch.argument_element_type", mismatch);
+        require_id(ASRUtils::extract_kind_from_ttype_t(arg_element) ==
+                ASRUtils::extract_kind_from_ttype_t(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_element_kind", mismatch);
+        require_id(ASRUtils::extract_n_dims_from_ttype(arg_type) ==
+                ASRUtils::extract_n_dims_from_ttype(dummy->m_type),
+            "asr.verify.gpu_kernel_launch.argument_rank",
+            at + " has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(arg_type)) +
+                ", but the dummy '" + std::string(dummy->m_name) +
+                "' the device reads it as has rank " +
+                std::to_string(ASRUtils::extract_n_dims_from_ttype(
+                    dummy->m_type)));
+        require_id(ASRUtils::is_class_type(arg_element) ==
+                ASRUtils::is_class_type(dummy_element),
+            "asr.verify.gpu_kernel_launch.argument_polymorphism", mismatch);
+        if (ASRUtils::is_class_type(arg_element)) {
+            verify_gpu_kernel_launch_class_argument(x, at, arg, arg_type);
+        }
+    }
+
+    // A polymorphic argument is represented by a class container -- a type
+    // descriptor beside a pointer to the data -- while the kernel is
+    // generated against the declared type, so the launch hands the kernel a
+    // copy of the declared type's own components rather than the container
+    // itself. A container the launch cannot make that copy of would be
+    // uploaded as it stands and read as the declared type, which is the
+    // descriptor read as data: an unlimited polymorphic argument has no
+    // declared type to copy, an array of a polymorphic type has one container
+    // per element, and a declared type the launch cannot look up has no
+    // components to copy. `gpu_offload` keeps such a loop on the host rather
+    // than launching it, and that is what is required here.
+    void verify_gpu_kernel_launch_class_argument(const GpuKernelLaunch_t &x,
+            const std::string &at, ASR::expr_t *arg, ASR::ttype_t *arg_type) {
+        require_id(!ASRUtils::is_unlimited_polymorphic_type(arg_type),
+            "asr.verify.gpu_kernel_launch.unlimited_polymorphic_argument",
+            at + " is unlimited polymorphic, which has no declared type for "
+                "the device to read it as");
+        require_id(!ASRUtils::is_array(arg_type),
+            "asr.verify.gpu_kernel_launch.polymorphic_array_argument",
+            at + " is an array of a polymorphic type, which the device would "
+                "read as an array of class containers");
+        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(arg));
+        require_id(struct_sym && ASR::is_a<ASR::Struct_t>(*struct_sym),
+            "asr.verify.gpu_kernel_launch.polymorphic_declared_type",
+            at + " is polymorphic and its declared type is not known, so the "
+                "device has no layout to read it as");
+    }
+
+    void verify_gpu_kernel_layout(const Function_t &x) {
+        const Function_t &kernel = x;
+        require_id(ASRUtils::is_device_kernel(&kernel.base),
+            "asr.verify.gpu_layout.kernel",
+            "only a kernel may own a GPU launch layout");
+        const auto &layout = *kernel.m_gpu;
+        std::set<ASR::symbol_t*> device_functions;
+        for (size_t i = 0; i < layout.n_device_functions; i++) {
+            ASR::symbol_t *procedure = layout.m_device_functions[i];
+            require_id(procedure && ASR::is_a<ASR::Function_t>(*procedure) &&
+                    ASRUtils::runs_on_device(
+                        *ASR::down_cast<ASR::Function_t>(procedure)) &&
+                    device_functions.insert(procedure).second,
+                "asr.verify.gpu_layout.device_function",
+                "the GPU call graph must contain distinct device procedures");
+            const auto *function = ASR::down_cast<ASR::Function_t>(procedure);
+            for (auto *callee : ASRUtils::get_called_functions(function->m_body,
+                    function->n_body, true)) {
+                require_id(device_functions.count(&callee->base) != 0,
+                    "asr.verify.gpu_layout.device_call_order",
+                    "GPU callees must precede their callers in the device call graph");
+            }
+        }
+        for (auto *callee : ASRUtils::get_called_functions(kernel.m_body,
+                kernel.n_body, true)) {
+            require_id(device_functions.count(&callee->base) != 0,
+                "asr.verify.gpu_layout.device_call",
+                "every kernel callee must belong to the verified device call graph");
+        }
+        require_id(layout.m_source_argument_count >= 0 &&
+                (size_t)layout.m_source_argument_count <= kernel.n_args,
+            "asr.verify.gpu_layout.source_arguments",
+            "GPU layout has an invalid source argument count");
+        std::set<ASR::symbol_t*> bound;
+        size_t offset_count = 0;
+        auto verify_argument = [&](const gpu_kernel_argument_t &arg,
+                bool buffer) {
+            require_id(arg.m_argument_index >= 0 &&
+                    (size_t)arg.m_argument_index < kernel.n_args,
+                "asr.verify.gpu_layout.argument_index",
+                "GPU layout argument index is outside the kernel signature");
+            require_id(ASR::is_a<ASR::Var_t>(
+                    *kernel.m_args[arg.m_argument_index]) &&
+                    ASR::down_cast<ASR::Var_t>(
+                        kernel.m_args[arg.m_argument_index])->m_v ==
+                        arg.m_variable,
+                "asr.verify.gpu_layout.argument_identity",
+                "GPU layout must refer to the kernel dummy in its argument slot");
+            require_id(arg.m_type != nullptr,
+                "asr.verify.gpu_layout.argument_type",
+                "GPU layout argument must have an explicit element type");
+            if (arg.m_kind == gpu_argument_kindType::GpuPackedOffset) {
+                require_id(!buffer && layout.m_packed &&
+                        arg.m_dimension >= 0 &&
+                        (size_t)arg.m_dimension < layout.n_buffers,
+                    "asr.verify.gpu_layout.packed_offset",
+                    "GPU packed offset must identify a buffer in a packed layout");
+                offset_count++;
+            } else if (arg.m_kind == gpu_argument_kindType::GpuArrayExtent) {
+                require_id(!buffer && arg.m_dimension >= 0 &&
+                        arg.m_dimension < ASRUtils::extract_n_dims_from_ttype(
+                            ASRUtils::symbol_type(arg.m_variable)),
+                    "asr.verify.gpu_layout.array_dimension",
+                    "GPU array extent must identify a dimension of its argument");
+            } else if (!arg.m_member) {
+                require_id(buffer
+                        ? (arg.m_kind == gpu_argument_kindType::GpuArray ||
+                           arg.m_kind == gpu_argument_kindType::GpuStruct ||
+                           arg.m_kind == gpu_argument_kindType::GpuClass)
+                        : arg.m_kind == gpu_argument_kindType::GpuScalar,
+                    "asr.verify.gpu_layout.argument_role",
+                    "a primary GPU binding must have an array, struct, class or scalar role");
+                require_id(bound.insert(arg.m_variable).second,
+                    "asr.verify.gpu_layout.duplicate_argument",
+                    "a GPU argument may have only one primary binding");
+                bool array = ASRUtils::is_array(
+                    ASRUtils::symbol_type(arg.m_variable));
+                bool structure = ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::symbol_type(arg.m_variable)));
+                require_id(buffer == (array || structure),
+                    "asr.verify.gpu_layout.argument_storage",
+                    "GPU arrays and derived types must have buffer bindings");
+                if (buffer) {
+                    bool polymorphic = ASRUtils::is_class_type(
+                        ASRUtils::extract_type(ASRUtils::symbol_type(arg.m_variable)));
+                    require_id(array
+                            ? arg.m_kind == gpu_argument_kindType::GpuArray
+                            : arg.m_kind == (polymorphic
+                                ? gpu_argument_kindType::GpuClass
+                                : gpu_argument_kindType::GpuStruct),
+                        "asr.verify.gpu_layout.buffer_role",
+                        "a GPU buffer role must match its declared argument representation");
+                }
+            } else {
+                require_id(buffer && ASR::is_a<ASR::Variable_t>(*arg.m_member) &&
+                        (arg.m_kind == gpu_argument_kindType::GpuMemberData ||
+                         arg.m_kind == gpu_argument_kindType::GpuMemberOffsets ||
+                         arg.m_kind == gpu_argument_kindType::GpuMemberSizes),
+                    "asr.verify.gpu_layout.member_binding",
+                    "a GPU component buffer must have a component and a buffer role");
+                auto *variable = ASR::down_cast<ASR::Variable_t>(arg.m_variable);
+                ASR::symbol_t *declaration = ASRUtils::symbol_get_past_external(
+                    variable->m_type_declaration);
+                require_id(ASRUtils::is_array(variable->m_type) && declaration &&
+                        ASR::is_a<ASR::Struct_t>(*declaration),
+                    "asr.verify.gpu_layout.member_owner",
+                    "a GPU component buffer must belong to a declared derived-type array");
+                bool found = false;
+                for (auto &member : ASRUtils::collect_allocatable_array_members(
+                        ASR::down_cast<ASR::Struct_t>(declaration))) {
+                    found |= &member.second->base == arg.m_member;
+                }
+                require_id(found, "asr.verify.gpu_layout.member_identity",
+                    "a GPU component binding must refer to a member of its argument's type");
+            }
+        };
+        for (size_t i = 0; i < layout.n_buffers; i++) {
+            verify_argument(layout.m_buffers[i], true);
+        }
+        for (size_t i = 0; i < layout.n_scalars; i++) {
+            verify_argument(layout.m_scalars[i], false);
+        }
+        require_id(bound.size() == kernel.n_args,
+            "asr.verify.gpu_layout.complete_arguments",
+            "every kernel dummy must have a GPU layout binding");
+        require_id(offset_count == (layout.m_packed ? layout.n_buffers : 0),
+            "asr.verify.gpu_layout.complete_offsets",
+            "a packed GPU layout must have one offset per buffer");
+
+        struct ExtentVariables : ASR::BaseWalkVisitor<ExtentVariables> {
+            std::set<ASR::symbol_t*> variables;
+            bool host_evaluable = true;
+            void visit_expr(const ASR::expr_t &expression) {
+                switch (expression.type) {
+                    case ASR::exprType::IntegerConstant:
+                    case ASR::exprType::LogicalConstant:
+                    case ASR::exprType::Var:
+                    case ASR::exprType::IntegerBinOp:
+                    case ASR::exprType::IntegerUnaryMinus:
+                    case ASR::exprType::IntegerCompare:
+                    case ASR::exprType::IfExp:
+                    case ASR::exprType::Cast:
+                    case ASR::exprType::ArraySize:
+                    case ASR::exprType::ArrayBound:
+                    case ASR::exprType::ArrayItem:
+                    case ASR::exprType::ArrayPhysicalCast:
+                    case ASR::exprType::StructInstanceMember:
+                        ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
+                        break;
+                    default: host_evaluable = false;
+                }
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                variables.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_ttype(const ASR::ttype_t &) {}
+        };
+        std::set<ASR::symbol_t*> source_arguments;
+        for (int64_t i = 0; i < layout.m_source_argument_count; i++) {
+            source_arguments.insert(
+                ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
+        }
+        std::set<ASR::symbol_t*> workspaces, extent_parameters;
+        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+            (layout.n_scalars > 0);
+        for (size_t i = 0; i < layout.n_workspaces; i++) {
+            const auto &workspace = layout.m_workspaces[i];
+            require_id(workspace.m_variable &&
+                    ASR::is_a<ASR::Variable_t>(*workspace.m_variable) &&
+                    workspaces.insert(workspace.m_variable).second,
+                "asr.verify.gpu_layout.workspace_identity",
+                "a GPU workspace must identify a distinct local variable");
+            require_id(workspace.n_dims == (size_t)
+                    ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::symbol_type(workspace.m_variable)),
+                "asr.verify.gpu_layout.workspace_rank",
+                "GPU workspace dimensions must match the local array rank");
+            require_id(workspace.m_buffer_index == slot++,
+                "asr.verify.gpu_layout.workspace_slot",
+                "GPU workspace slots must follow the argument buffers");
+            require_id(workspace.m_element_size ==
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::extract_type(
+                        ASRUtils::symbol_type(workspace.m_variable))),
+                "asr.verify.gpu_layout.workspace_element_size",
+                "GPU workspace element size must match its array element kind");
+            for (size_t d = 0; d < workspace.n_dims; d++) {
+                const auto &dim = workspace.m_dims[d];
+                require_id(dim.m_extent && ASRUtils::is_integer(
+                        *ASRUtils::expr_type(dim.m_extent)) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(dim.m_extent)),
+                    "asr.verify.gpu_layout.workspace_extent",
+                    "a GPU workspace extent must be an integer scalar expression");
+                ExtentVariables refs;
+                refs.visit_expr(*dim.m_extent);
+                require_id(refs.host_evaluable,
+                    "asr.verify.gpu_layout.host_evaluable_expression",
+                    "a GPU workspace extent must contain only host-evaluable operations");
+                for (ASR::symbol_t *symbol : refs.variables) {
+                    require_id(source_arguments.count(symbol) != 0,
+                        "asr.verify.gpu_layout.host_evaluable_extent",
+                        "a GPU workspace extent may reference only source kernel arguments");
+                }
+                if (dim.m_parameter) {
+                    require_id(bound.count(dim.m_parameter) &&
+                            !source_arguments.count(dim.m_parameter) &&
+                            extent_parameters.insert(dim.m_parameter).second,
+                        "asr.verify.gpu_layout.extent_parameter",
+                        "a runtime GPU extent must have a distinct generated kernel parameter");
+                    require_id(ASRUtils::check_equal_type(
+                            ASRUtils::symbol_type(dim.m_parameter),
+                            ASRUtils::expr_type(dim.m_extent), nullptr, nullptr),
+                        "asr.verify.gpu_layout.extent_parameter_type",
+                        "a GPU extent parameter must preserve the extent expression type");
+                } else {
+                    require_id(ASRUtils::expr_value(dim.m_extent) != nullptr,
+                        "asr.verify.gpu_layout.constant_extent",
+                        "a GPU extent without a parameter must be constant");
+                }
+            }
+        }
+        require_id(extent_parameters.size() + layout.m_source_argument_count ==
+                kernel.n_args,
+            "asr.verify.gpu_layout.complete_extent_parameters",
+            "every generated GPU parameter must belong to a workspace dimension");
+    }
+
+    void visit_GpuOffload(const GpuOffload_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_offload.kernel",
+            "a GPU offload candidate must name a kernel");
+        require_id(x.n_body > 0 && x.n_fallback > 0,
+            "asr.verify.gpu_offload.alternatives",
+            "a GPU offload candidate must retain both execution alternatives");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuOffload(x);
+    }
+
+    void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
+        require_id(ASRUtils::is_device_kernel(x.m_kernel),
+            "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
+            "GpuKernelLaunch::m_kernel '" +
+                std::string(ASRUtils::symbol_name(x.m_kernel)) +
+                "' must be a function that runs on the device");
+        verify_gpu_kernel_launch_signature(x,
+            *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
@@ -2279,6 +2678,9 @@ public:
                 require(ASR::is_a<ASR::Function_t>(*s) ||
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
+                require(!ASR::is_a<ASR::Function_t>(*s) ||
+                        !ASRUtils::is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(s)),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' was declared external with no interface; the call must reference the signature inferred at this call site.");
             }
             // A CALL statement discards no result, because a procedure
             // invoked by one has none to discard.
@@ -2483,6 +2885,10 @@ public:
             require(fn_->m_return_var != nullptr,
                     "FunctionCall::m_name " + std::string(fn_->m_name) +
                     " must be returning a non-void value.");
+            require(!ASRUtils::is_bare_implicit_interface(*fn_),
+                    "FunctionCall::m_name " + std::string(fn_->m_name) +
+                    " was declared external with no interface; the call must"
+                    " reference the signature inferred at this call site.");
             // The call site's result type is what the surrounding expression
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.
@@ -2651,6 +3057,24 @@ public:
                 " is not supported");
     }
 
+    // An assumed rank array has no shape of its own: its rank is only known
+    // from the `select rank` block that selects it. An operation on one has
+    // no result shape, so the frontend must first pin the rank down with an
+    // ArrayPhysicalCast away from AssumedRankArray. Reaching an operation
+    // without that cast means the rank was never resolved, and every later
+    // stage reads the operand as rank 0.
+    void verify_operand_not_assumed_rank(const char *name,
+            const char *position, ASR::ttype_t *type, const Location &loc) {
+        if (type == nullptr) return;
+        require_with_loc_id(
+            !ASRUtils::is_assumed_rank_array(type),
+            "asr.verify.operation.operand_not_assumed_rank",
+            std::string(name) + " " + position + " is an assumed rank "
+                "array, which has no known rank; it must be cast to a "
+                "descriptor array first",
+            loc);
+    }
+
     // An operation combines two operands of one type into a result of that
     // type, and a comparison combines two operands of one type into a
     // logical. The frontend guarantees this by inserting explicit Cast
@@ -2665,6 +3089,9 @@ public:
         ASR::ttype_t *left_type = typed_expr_type(left);
         ASR::ttype_t *right_type = typed_expr_type(right);
         if (left_type == nullptr || right_type == nullptr) return;
+        verify_operand_not_assumed_rank(name, "left operand", left_type, loc);
+        verify_operand_not_assumed_rank(name, "right operand", right_type, loc);
+        if (diagnostics.has_error()) return;
         if (is_procedure_type(left_type) || is_procedure_type(right_type)
                 || is_struct_like_type(left_type)
                 || is_struct_like_type(right_type)) {
@@ -2760,6 +3187,34 @@ public:
         verify_binary_operands("LogicalCompare", x.m_left, x.m_right, x.m_type,
             true, x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_LogicalCompare(x);
+    }
+
+    void verify_unary_operand(const char *name, ASR::expr_t *arg,
+            const Location &loc) {
+        if (diagnostics.has_error()) return;
+        verify_operand_not_assumed_rank(name, "argument",
+            typed_expr_type(arg), loc);
+    }
+
+    void visit_IntegerUnaryMinus(const IntegerUnaryMinus_t &x) {
+        verify_unary_operand("IntegerUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_IntegerUnaryMinus(x);
+    }
+
+    void visit_UnsignedIntegerUnaryMinus(const UnsignedIntegerUnaryMinus_t &x) {
+        verify_unary_operand("UnsignedIntegerUnaryMinus", x.m_arg,
+            x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_UnsignedIntegerUnaryMinus(x);
+    }
+
+    void visit_RealUnaryMinus(const RealUnaryMinus_t &x) {
+        verify_unary_operand("RealUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_RealUnaryMinus(x);
+    }
+
+    void visit_ComplexUnaryMinus(const ComplexUnaryMinus_t &x) {
+        verify_unary_operand("ComplexUnaryMinus", x.m_arg, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexUnaryMinus(x);
     }
 
     // A StructConstructor's arguments fill the type's members in
@@ -2898,6 +3353,18 @@ public:
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
+            // A "StringArraySinglePointer" array is one flat character buffer,
+            // so its elements are plain C characters. Pairing it with
+            // "DescriptorString" elements describes two different layouts at
+            // once, and leaves every consumer to pick one on its own.
+            if(x.m_physical_type == ASR::StringArraySinglePointer){
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                    ASRUtils::extract_type(x.m_type));
+                require(str->m_physical_type == ASR::CChar,
+                    "Array of strings with physical type"
+                    " \"StringArraySinglePointer\" must have string physical"
+                    " type \"CChar\", not \"DescriptorString\"")
+            }
         }
         if(ASRUtils::is_class_type(x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
@@ -2937,6 +3404,9 @@ public:
     }
 
     void visit_String(const String_t &x){
+/*Check the character kind*/
+        require(ASRUtils::is_supported_character_kind(x.m_kind),
+            "String kind must be 1 or 4, found " + std::to_string(x.m_kind));
 /*General Check on the length*/ 
         if(x.m_len){
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
@@ -2992,6 +3462,41 @@ public:
             "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
         BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
     }
+    void visit_IfExp(const IfExp_t &x) {
+        // Fortran 2023 conditional expression (10.1.2.3) and compiler
+        // generated selections both land here. The condition selects one of
+        // two arms at run time, so it must be a scalar logical, and both arms
+        // must be usable as the result.
+        ASR::ttype_t *test_type = typed_expr_type(x.m_test);
+        if (test_type != nullptr) {
+            require(ASRUtils::is_logical(*test_type),
+                "IfExp condition must be logical");
+            require(ASRUtils::extract_n_dims_from_ttype(test_type) == 0,
+                "IfExp condition must be a scalar");
+        }
+        ASR::ttype_t *body_type = typed_expr_type(x.m_body);
+        ASR::ttype_t *orelse_type = typed_expr_type(x.m_orelse);
+        if (body_type != nullptr && orelse_type != nullptr
+                && !is_procedure_type(body_type)
+                && !is_procedure_type(orelse_type)
+                && !is_struct_like_type(body_type)
+                && !is_struct_like_type(orelse_type)) {
+            require(ASRUtils::check_equal_type(body_type, orelse_type,
+                    x.m_body, x.m_orelse),
+                "IfExp arms must have the same type and kind, found "
+                + ASRUtils::type_to_str_fortran_expr(body_type, x.m_body)
+                + " and " + ASRUtils::type_to_str_fortran_expr(orelse_type,
+                    x.m_orelse));
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(orelse_type),
+                "IfExp arms must have the same rank");
+            require(ASRUtils::extract_n_dims_from_ttype(body_type)
+                    == ASRUtils::extract_n_dims_from_ttype(x.m_type),
+                "IfExp result must have the same rank as its arms");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_IfExp(x);
+    }
+
     void visit_StringSection(const StringSection_t &x){
         require(x.m_start, "StringSection start member must be provided")
         require(x.m_end, "StringSection end member must be provided")
@@ -3131,6 +3636,51 @@ public:
                 "DoConcurrentLoop::m_shared must be a Var");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_OMPRegion(const OMPRegion_t &x) {
+        for ( size_t i = 0; i < x.n_clauses; i++ ) {
+            ASR::expr_t **vars = nullptr;
+            size_t n_vars = 0;
+            switch (x.m_clauses[i]->type) {
+                case ASR::omp_clauseType::OMPPrivate: {
+                    ASR::OMPPrivate_t *c = ASR::down_cast<ASR::OMPPrivate_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPShared: {
+                    ASR::OMPShared_t *c = ASR::down_cast<ASR::OMPShared_t>(
+                        x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPFirstPrivate: {
+                    ASR::OMPFirstPrivate_t *c =
+                        ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPLastPrivate: {
+                    ASR::OMPLastPrivate_t *c =
+                        ASR::down_cast<ASR::OMPLastPrivate_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPReduction: {
+                    ASR::OMPReduction_t *c =
+                        ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[i]);
+                    vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                default: break;
+            }
+            for ( size_t j = 0; j < n_vars; j++ ) {
+                require(ASR::is_a<ASR::Var_t>(*vars[j]),
+                    "a variable named by an OMPRegion clause must be a Var");
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_OMPRegion(x);
     }
 
 };

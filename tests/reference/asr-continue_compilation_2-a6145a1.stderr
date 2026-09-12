@@ -50,10 +50,10 @@ syntax error: kind 16 is not supported yet.
 227 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
-tokenizer error: Token '?' is not recognized
+tokenizer error: Token '`' is not recognized
    --> tests/errors/continue_compilation_2.f90:233:17
     |
-233 |     integer  :: ? tokenizer_error
+233 |     integer  :: ` tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement
@@ -966,12 +966,6 @@ warning: Format string missing comma between descriptors (F2023 constraint C1302
    --> tests/errors/continue_compilation_2.f90:533:14
     |
 533 |     write (*,badfmt_p) "hi", 3
-    |              ^^^^^^^^ 
-
-warning: Format string missing comma between descriptors (F2023 constraint C1302)
-   --> tests/errors/continue_compilation_2.f90:534:14
-    |
-534 |     write (*,badfmt_s) "hi", 3
     |              ^^^^^^^^ 
 
 semantic error: Function 'add_parens' not found (not user defined nor intrinsic)

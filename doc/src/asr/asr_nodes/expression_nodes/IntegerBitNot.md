@@ -1,74 +1,54 @@
 # IntegerBitNot
 
-Not conversion of integer bits, a `expr` node.
+Bitwise complement of an integer.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 IntegerBitNot(expr arg, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`arg`| expression arguments |
-|`type`| table entry type |
-|`value`|expression value |
+| Argument | Description |
+|----------|-------------|
+| `arg` | the operand. |
+| `type` | the type of the expression. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the IntegerBitNot represents.
+The value of the expression.
 
 ## Description
 
-**IntegerBitNot** represents integer binary not operation. It is used when flipping
-bits of integer from `1` to `0` or `0` to `1`.
-
-## Types
-
-Only accepts integers.
+**IntegerBitNot** is `not(i)`: every bit of the operand is flipped. It is a
+separate node from [IntegerUnaryMinus](IntegerUnaryMinus.md) because the two
+differ by one for two's complement integers, and because the bitwise operation
+is meaningless for the other numeric types.
 
 ## Examples
 
-```fortran
-not(1)
+```clojure
+(IntegerBitNot
+  :arg (Var
+    :v (SymbolRef 1 "i")
+  )
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_bit:
-                (IntrinsicModule lfortran_intrinsic_bit),
-            not:
-                (ExternalSymbol
-                    1
-                    not
-                    3 not
-                    lfortran_intrinsic_bit
-                    []
-                    not
-                    Private
-                )
-
-        })
-    [(IntegerBitNot
-        (IntegerConstant 1 (Integer 4 []))
-        (Integer 4 [])
-        (IntegerConstant -2 (Integer 4 []))
-    )]
-)
-
+```{literalinclude} ../../examples/integer_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[LogicalNot](logicalnot.md)
+[IntegerUnaryMinus](IntegerUnaryMinus.md), [IntegerBinOp](IntegerBinOp.md), [IntegerBitLen](IntegerBitLen.md)

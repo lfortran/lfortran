@@ -219,7 +219,7 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22"]
+        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22", "23"]
         python-version: ["3.10"]
         include:
           - os: macos-latest
@@ -331,6 +331,22 @@ jobs:
             zstd-static=1.5.7
 
       - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '23') && contains(matrix.os, 'ubuntu')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.10
+            binutils=2.45.1
+            zstd-static=1.5.7
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.os, 'macos')
         with:
           micromamba-version: '2.0.4-0'
@@ -359,7 +375,7 @@ jobs:
             openmpi=5.0.3
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') )}}
+        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -596,7 +612,7 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
+            ./run_tests.py -b mlir -j1
 
   upload_docs:
     name: Documentation

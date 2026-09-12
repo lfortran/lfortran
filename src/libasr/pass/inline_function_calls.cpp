@@ -4,6 +4,8 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/inline_function_calls.h>
+#include <libasr/asr_builder.h>
+#include <libasr/pass/scoped_inlining.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
@@ -13,8 +15,6 @@
 
 
 namespace LCompilers {
-
-typedef std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> SymbolToSymbol;
 
 class VarCollector: public ASR::BaseWalkVisitor<VarCollector> {
     private:
@@ -28,22 +28,6 @@ class VarCollector: public ASR::BaseWalkVisitor<VarCollector> {
 
     void visit_Var(const ASR::Var_t& x) {
         vars.push_back(al, const_cast<ASR::symbol_t*>(x.m_v));
-    }
-};
-
-class FixSymbols: public ASR::BaseWalkVisitor<FixSymbols> {
-    private:
-
-    SymbolToSymbol& function2currentscope;
-
-    public:
-
-    FixSymbols(SymbolToSymbol& function2currentscope_):
-        function2currentscope(function2currentscope_) {}
-
-    void visit_Var(const ASR::Var_t& x) {
-        ASR::Var_t& xx = const_cast<ASR::Var_t&>(x);
-        xx.m_v = function2currentscope[xx.m_v];
     }
 };
 
@@ -193,6 +177,16 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 }
             }
 
+            // Inlined locals are allocated at the caller's entry, before
+            // copies of the actuals are assigned. A local whose extent is
+            // an argument would be allocated empty.
+            if( (variable->m_intent == ASRUtils::intent_local ||
+                 variable->m_intent == ASRUtils::intent_unspecified) &&
+                ASRUtils::is_array(var_type) &&
+                !ASRUtils::is_fixed_size_array(var_type) ) {
+                return false;
+            }
+
         }
 
         for( size_t i = 0; i < func_call->n_args; i++ ) {
@@ -260,6 +254,20 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         return true;
     }
 
+    // Only the arm of a conditional expression that is chosen is evaluated
+    // (Fortran 2023, 10.1.4 NOTE 3), while inlining appends the body of the
+    // called function to the enclosing statement list, which would run it
+    // whichever arm is taken. Clearing current_body makes
+    // check_inline_possibility decline every call inside the node. The
+    // condition is evaluated unconditionally and could still be inlined, but
+    // declining it too keeps this to one rule.
+    void replace_IfExp(ASR::IfExp_t* x) {
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = nullptr;
+        ASR::BaseExprReplacer<InlineFunctionCalls>::replace_IfExp(x);
+        current_body = current_body_copy;
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( !check_inline_possibility(x->m_name, x) ) {
             return ;
@@ -268,109 +276,45 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x->m_name));
 
-        // Step 1
-        // Duplicate entire symbol table of function
-        // into the current scope
-        SymbolToSymbol function2currentscope, currentscope2function;
-        std::unordered_map<uint64_t, ASR::symbol_t*> argidx2function;
-        std::unordered_map<ASR::symbol_t*, ASR::expr_t*> function_locals2init_expr;
-        ASR::symbol_t* return_variable = nullptr;
-
-        const Location& loc = x->base.base.loc;
-
-        ASRUtils::ExprStmtDuplicator type_duplicator(al);
-        for( auto& sym: function->m_symtab->get_scope() ) {
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym.second));
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym.second);
-            std::string local_sym_unique_name = current_scope->get_unique_name(variable->m_name);
-            ASR::ttype_t* local_ttype_copy = type_duplicator.duplicate_ttype(variable->m_type);
-            if( (variable->m_intent == ASRUtils::intent_out ||
-                variable->m_intent == ASRUtils::intent_inout) ||
-                (ASRUtils::is_array(variable->m_type) &&
-                 ASRUtils::is_arg_dummy(variable->m_intent)) ) {
-                if( ASRUtils::is_array(variable->m_type) ) {
-                    local_ttype_copy = ASRUtils::duplicate_type_with_empty_dims(
-                        al, local_ttype_copy, ASR::array_physical_typeType::DescriptorArray, true);
+        const Location &loc = x->base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        SymbolTable *scope = al.make_new<SymbolTable>(current_scope);
+        std::map<ASR::symbol_t*, ASR::expr_t*> substitutions;
+        std::vector<ASR::stmt_t*> bindings;
+        for (size_t i = 0; i < function->n_args; i++) {
+            auto *dummy = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v);
+            ASR::ttype_t *type = ASRUtils::duplicate_type(al, dummy->m_type);
+            bool reference = dummy->m_intent == ASRUtils::intent_out ||
+                dummy->m_intent == ASRUtils::intent_inout ||
+                ASRUtils::is_array(type);
+            if (reference) {
+                if (ASRUtils::is_array(type)) {
+                    type = ASRUtils::duplicate_type_with_empty_dims(al, type,
+                        ASR::array_physical_typeType::DescriptorArray, true);
                 }
-                local_ttype_copy = ASRUtils::TYPE(ASR::make_Pointer_t(
-                    al, loc, ASRUtils::type_get_past_allocatable_pointer(local_ttype_copy)));
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    ASRUtils::type_get_past_allocatable_pointer(type)));
             }
-            ASR::symbol_t* local_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, local_sym_unique_name),
-                nullptr, 0, ASRUtils::intent_local, nullptr, nullptr, variable->m_storage,
-                local_ttype_copy, variable->m_type_declaration, variable->m_abi, variable->m_access,
-                variable->m_presence, variable->m_value_attr, variable->m_target_attr, variable->m_contiguous_attr));
-            current_scope->add_symbol(local_sym_unique_name, local_sym);
-            if( variable->m_intent == ASRUtils::intent_local ||
-                variable->m_intent == ASRUtils::intent_unspecified ) {
-                if( variable->m_symbolic_value ) {
-                    function_locals2init_expr[local_sym] = variable->m_symbolic_value;
-                }
-            } else if( variable->m_intent == ASRUtils::intent_return_var ) {
-                return_variable = local_sym;
-            }
-
-            function2currentscope[sym.second] = local_sym;
-            currentscope2function[local_sym] = sym.second;
+            ASR::expr_t *local = b.Variable(scope,
+                PassUtils::inline_local_name(scope, dummy->m_name), type,
+                ASR::intentType::Local);
+            substitutions.emplace(&dummy->base, local);
+            bindings.push_back(reference
+                ? ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                    local, x->m_args[i].m_value))
+                : b.Assignment(local, x->m_args[i].m_value));
         }
-
-        FixSymbols fix_symbols(function2currentscope);
-        for( auto sym: currentscope2function ) {
-            fix_symbols.visit_symbol(*sym.first);
-        }
-
-        for( size_t i = 0; i < function->n_args; i++ ) {
-            argidx2function[i] = ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v;
-        }
-
-        // Step 2
-        // Initialise local copies of argument variables.
-        LCOMPILERS_ASSERT(x->n_args == function->n_args);
-        for( size_t i = 0; i < x->n_args; i++ ) {
-            ASR::symbol_t* original_symbol = argidx2function.at(i);
-            ASR::symbol_t* local_symbol = function2currentscope[original_symbol];
-            ASR::stmt_t* init_stmt = nullptr;
-            if( ASRUtils::is_pointer(ASRUtils::symbol_type(local_symbol)) ) {
-                init_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
-                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                    x->m_args[i].m_value));
-            } else {
-                init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                    x->m_args[i].m_value, nullptr, false, false
-                ));
-            }
-            current_body->push_back(al, init_stmt);
-        }
-
-        // Initialise local copies of variables declared after
-        // arguments in the function
-        for( auto sym: currentscope2function ) {
-            if( function_locals2init_expr.find(sym.first)
-                != function_locals2init_expr.end() ) {
-                ASR::stmt_t* init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym.first)),
-                    function_locals2init_expr[sym.first], nullptr, false, false
-                ));
-                current_body->push_back(al, init_stmt);
-            }
-        }
-
-        // Duplicate entire body of function
-        // into the current body
-        // Step 3 - Replace symbols in the duplicated body
-        // with their local copies
-        ASRUtils::ExprStmtDuplicator stmt_duplicator(al);
-        for( size_t i = 0; i < function->n_body; i++ ) {
-            if( ASR::is_a<ASR::Return_t>(*function->m_body[i]) ) {
-                continue ;
-            }
-            ASR::stmt_t* stmt_copy = stmt_duplicator.duplicate_stmt(function->m_body[i]);
-            fix_symbols.visit_stmt(*stmt_copy);
-            current_body->push_back(al, stmt_copy);
-        }
-
-        *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_variable));
+        ASR::expr_t *result = b.Variable(current_scope,
+            current_scope->get_unique_name(
+                std::string(function->m_name) + "_result"),
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(function->m_return_var)),
+            ASR::intentType::Local);
+        ASR::stmt_t *inlined = PassUtils::inline_in_block(al, loc, *function,
+            scope, std::move(substitutions), result, bindings, {});
+        if (!inlined) return;
+        current_body->push_back(al, inlined);
+        *current_expr = result;
     }
 
     void replace_OverloadedCompare(ASR::OverloadedCompare_t* /*x*/) {
@@ -464,6 +408,15 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
         }
         transform_stmts(xx.m_body, xx.n_body);
         current_scope = current_scope_copy;
+    }
+
+    // See InlineFunctionCalls::replace_IfExp: an arm of a conditional
+    // expression has no statement list that a call in it may be inlined into.
+    void visit_IfExp(const ASR::IfExp_t& x) {
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = nullptr;
+        ASR::CallReplacerOnExpressionsVisitor<InlineFunctionCallsVisitor>::visit_IfExp(x);
+        current_body = current_body_copy;
     }
 
     void visit_OverloadedCompare(const ASR::OverloadedCompare_t& /*x*/) {

@@ -521,7 +521,7 @@ else51:                                           ; preds = %loop.end49
 
 ifcont52:                                         ; preds = %else51, %then50
   %181 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* %181, i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @31, i32 0, i32 0), i8* %181, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), i32 1)
   br label %return
 
 return:                                           ; preds = %ifcont52
@@ -567,7 +567,7 @@ declare void @llvm.stackrestore(i8*) #0
 ; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.fabs.f32(float) #1
 
-declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 attributes #0 = { nounwind }
 attributes #1 = { nounwind readnone speculatable willreturn }

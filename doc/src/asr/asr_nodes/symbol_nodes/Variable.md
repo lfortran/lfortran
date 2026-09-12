@@ -1,87 +1,47 @@
 # Variable
 
-Variable is a **symbol** node representing a variable declaration.
+A variable, a dummy argument, a named constant or a result variable.
 
 ## Declaration
 
 ### Syntax
 
-```
-Variable(symbol_table parent_symtab, identifier name, identifier* dependencies,
-    intent intent, expr? symbolic_value, expr? value, storage_type storage,
-    ttype type, symbol? type_declaration,
-    abi abi, access access, presence presence, bool value_attr,
-    bool target_attr, bool contiguous_attr, string? bindc_name,
-    bool is_volatile, bool is_protected,
-    pass_attr pass_attr, identifier? self_argument,
+```text
+Variable(symbol_table parent_symtab, identifier name,
+    identifier* dependencies, intent intent, expr? symbolic_value,
+    expr? value, storage_type storage, ttype type,
+    symbol? type_declaration, abi abi, access access,
+    presence presence, bool value_attr, bool target_attr,
+    bool contiguous_attr, string? bindc_name, bool is_volatile,
+    bool is_protected, pass_attr pass_attr, identifier? self_argument,
     codimension* codims)
 ```
 
 ### Arguments
 
-`parent_symtab` integer id of the parent symbol table that contains the variable
-
-`name` the name of the variable
-
-`dependencies` other symbols that this variable depends on; must all be defined
-in the `parent_symtab`
-
-`intent` specifies intent (Local, `intent(in)`, `intent(inout)`, etc.)
-
-`symbolic_value` the optional symbolic expression to initialize the variable
-(e.g. `2+3+4+x`), this value must be compile time, but it is not necessarily a
-constant (e.g., can contain binary operations, other variables, etc.)
-
-`value` the optional constant expression holding the compile time value
-(e.g. `5`, or `5.5`), it is a compile time constant.
-
-`storage` whether `Save`, `Parameter`, `Allocatable`
-
-`type` the ttype of the variable
-
-`type_declaration` null for primitive types; for composite types that are
-declared elsewhere in the program (struct, function, enum) it points to the
-symbol that declares the type
-
-`abi` abi such as: `Source`, `Interface`, `BindC`
-
-`access` visibility: `Public`, `Private`
-
-`presence` for parameters: `Required` or `Optional`
-
-`value_attr` if true, this parameter has a `value` attribute set
-
-`target_attr` if true, this variable has the `target` attribute
-
-`contiguous_attr` if true, this variable has the `contiguous` attribute
-
-`bindc_name` optional C binding name from `bind(c, name="...")`
-
-`is_volatile` if true, this variable has the `volatile` attribute
-
-`is_protected` if true, this variable has the `protected` attribute
-
-`pass_attr` determines whether this variable is a procedure pointer component
-with pass/nopass semantics. A three-valued enum:
-- `NotMethod` — this is not a type-bound procedure pointer (default for all
-  regular variables, standalone procedure pointers, and non-procedure variables)
-- `Pass` — this is a procedure pointer component inside a derived type with
-  pass semantics: the object through which it is called is implicitly passed
-  as an argument at the position identified by `self_argument`
-- `NoPass` — this is a procedure pointer component inside a derived type with
-  nopass semantics: no object is passed implicitly
-
-`self_argument` only meaningful when `pass_attr` is `Pass`. Identifies which
-dummy argument of the procedure interface receives the passed object:
-- `nullptr` — the passed object goes to the first dummy argument (default)
-- a name (e.g. `"pt"`) — the passed object goes to the dummy argument with
-  that name, which may be at any position in the argument list
-
-`codims` optional codimension bounds for coarray variables. Each entry follows
-the same structure as a `dimension` (start and length). When omitted, the
-variable is not a coarray. The number of codimension entries (`n_codims`) serves
-as the corank of the variable, and `n_codims > 0` indicates the variable is a
-coarray.
+| Argument | Description |
+|----------|-------------|
+| `parent_symtab` | the symbol table this variable is stored in. |
+| `name` | the name of the variable. |
+| `dependencies` | the names of the symbols its type or initializer refers to. |
+| `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
+| `symbolic_value` | the initializer as written, before folding. |
+| `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
+| `storage` | `Default`, `Save` for a variable that keeps its value between calls, or `Parameter` for a named constant. |
+| `type` | the type of the variable. |
+| `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
+| `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. |
+| `access` | `Public` or `Private`. |
+| `presence` | `Required`, or `Optional` for an optional dummy argument. |
+| `value_attr` | `true` when a `bind(c)` dummy argument is passed by value. |
+| `target_attr` | `true` for the `target` attribute, so a pointer may be associated with this variable. |
+| `contiguous_attr` | `true` for the `contiguous` attribute. |
+| `bindc_name` | the linker name given by `bind(c, name=...)`. |
+| `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. |
+| `is_protected` | `true` for the `protected` attribute: the variable is readable but not writable outside its module. |
+| `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
+| `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
+| `codims` | the codimensions of a coarray; empty for anything else. |
 
 ### Return values
 
@@ -89,186 +49,67 @@ None.
 
 ## Description
 
-A `Variable` node represents a declaration of any variable in the
-program. It contains information about the type, visibility, compile-time value,
-etc.
+Everything a Fortran declaration says about a variable is stored here, so that
+a backend never has to look at anything but the **Variable** and its `type` to
+allocate it.
 
-The type of the variable can be any of the primitive types like integer,
-real, complex, pointers, arrays. In such cases, the `type_declaration` member of
-the `Variable` is null.
+A variable is referenced from an expression by [Var](../expression_nodes/Var.md),
+which holds nothing but a reference to this symbol; every property is read from
+the symbol itself.
 
-`Variable` might also have a non-primitive type like `StructType`, or types for
-classes, enums, and function pointers. Such types are not declared inline to the
-`Variable` node itself. In such cases, the `type_declaration` member of
-`Variable` points to the symbol containing the declaration of the type.
-
-### Procedure Pointer Components
-
-When a derived type declares a procedure pointer component, that component is
-represented as a `Variable` whose `type` is a `FunctionType` (possibly wrapped
-in a `Pointer`). The `pass_attr` and `self_argument` fields distinguish three
-cases:
-
-```fortran
-type :: mytype
-    ! NotMethod, self_argument=null: plain procedure pointer, no pass/nopass attribute
-    procedure(iface), pointer :: op => null()
-    ! NoPass, self_argument=null: explicitly no implicit self
-    procedure(iface), nopass, pointer :: action => null()
-    ! Pass, self_argument=null: self is passed as the first argument (default position)
-    procedure(iface), pass, pointer :: scale => null()
-    ! Pass, self_argument="self": self is passed at the position of dummy arg "self"
-    procedure(iface), pass(self), pointer :: combine => null()
-end type
-```
-
-For type-bound procedures declared with `contains` (not procedure pointer
-components), see [StructMethodDeclaration](StructMethodDeclaration.md).
-
-### Coarray Variables
-
-In Fortran, coarrays enable data access and communication across multiple images
-(processes/threads) in a parallel program. A coarray variable has codimensions
-declared with the `[...]` notation:
-
-```fortran
-integer :: scalar_coarray[*]      ! rank 0, corank 1
-integer :: array_coarray(10)[*]   ! rank 1, corank 1
-integer :: matrix[*,*]            ! rank 0, corank 2
-integer :: scalar_not_coarray         ! rank 0, corank 0
-integer :: array_not_coarray(10)      ! rank 1, corank 0
-```
-
-The corank of a `Variable` is derived from its `codims` array — it is the
-number of codimension entries (`n_codims`). For non-coarray variables, `codims`
-is empty and the corank is 0. When accessing coarray elements in expressions,
-the number of coindices in a `CoarrayRef` node must match the variable's corank.
-
-`Variable` represents declarations of variables. `Var` nodes represent instances
-of variables in code. To represent the use of a variable in an expression,
-employ the ASR `expr Var` node. To reference a coarray with explicit image
-selectors, use the `CoarrayRef` node.
+`symbolic_value` and `value` are different things. `symbolic_value` is the
+initializer as the user wrote it, and `value` is what it folds to.
+`storage=Parameter` requires `value`, since a named constant is substituted
+wherever it is used.
 
 ## Examples
 
-```fortran
-program expr2
-integer :: x
-x = (2+3)*5
-print *, x
-end program
-```
-
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            expr2:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            x:
-                                (Variable
-                                    2
-                                    x
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    ()
-                                )
-
-                        })
-                    expr2
-                    []
-                    [(=
-                        (Var 2 x)
-                        (IntegerBinOp
-                            (IntegerBinOp
-                                (IntegerConstant 2 (Integer 4 []))
-                                Add
-                                (IntegerConstant 3 (Integer 4 []))
-                                (Integer 4 [])
-                                (IntegerConstant 5 (Integer 4 []))
-                            )
-                            Mul
-                            (IntegerConstant 5 (Integer 4 []))
-                            (Integer 4 [])
-                            (IntegerConstant 25 (Integer 4 []))
-                        )
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(Var 2 x)]
-                        ()
-                        ()
-                    )]
-                )
-
-        })
-    []
-)
-
-```
-
-## Coarray Example
-
-```fortran
-program coarray_test
-    implicit none
-    integer :: x[*]
-    x = 42
-    if (this_image() == 1) then
-        print *, x[2]  ! Access x on image 2
-    end if
-end program coarray_test
-```
-
-ASR (simplified):
-
-```fortran
+```clojure
 (Variable
-    2
-    x
-    Local
-    ()
-    ()
-    Default
-    (Integer 4 [])
-    Source
-    Public
-    Required
-    .false.
-    [(data_or_star ...)]  ! codims with n_codims=1 (one codimension entry)
+  :parent_symtab 1
+  :name "n"
+  :dependencies []
+  :intent :Local
+  :symbolic_value (IntegerConstant
+    :n 10
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :value (IntegerConstant
+    :n 10
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :storage :Parameter
+  :type (Integer
+    :kind 4
+  )
+  :type_declaration nil
+  :abi :Source
+  :access :Public
+  :presence :Required
+  :value_attr false
+  :target_attr false
+  :contiguous_attr false
+  :bindc_name nil
+  :is_volatile false
+  :is_protected false
+  :pass_attr :NotMethod
+  :self_argument nil
+  :codims []
 )
 ```
 
-In the assignment `x[2] = ...`, the coarray reference is represented as:
+It comes from this complete ASR text document:
 
-```fortran
-(CoarrayRef
-    (Var 2 x)
-    [(array_index (left (IntegerConstant 2)) (right ()) (step ()))]
-    (Integer 4 [])
-    ()
-)
+```{literalinclude} ../../examples/variable.asr
+:language: clojure
 ```
-
-The single codimension entry in the Variable's `codims` (i.e. `n_codims=1`)
-matches the single coindex `[2]` in the `CoarrayRef` expression.
 
 ## See Also
 
-[Var](../expression_nodes/Var.md),
-[CoarrayRef](../expression_nodes/CoarrayRef.md),
-[StructMethodDeclaration](StructMethodDeclaration.md)
+[Var](../expression_nodes/Var.md), [Program](Program.md), [Function](Function.md), ttype

@@ -1,140 +1,73 @@
 # FunctionCall
 
-Function Call expression type.
+Calls a function and uses its result.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 FunctionCall(symbol name, symbol? original_name, call_arg* args,
-            ttype type, expr? value, expr? dt)
+    ttype type, expr? value, expr? dt)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `name`        | symbol name |
-| `original_name`| original name of the symbol |
-| `args` | arguments of the called function |
-| `type` | table entry type |
-| `value` | expression value |
-| `dt` | If non-null, this is a method call on the object given by `dt`. If null, this is a regular (non-method) function call. |
+| Argument | Description |
+|----------|-------------|
+| `name` | the function actually called, after generic resolution. |
+| `original_name` | the symbol as written, when it differs; `nil` otherwise. |
+| `args` | the actual arguments, each a [call_arg](../helper_nodes/call_arg.md). |
+| `type` | the type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
+| `dt` | for a call through a type-bound procedure, the object it was reached through; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the `FunctionCall` represents.
+The value of the expression.
 
 ## Description
 
-**FunctionCall** represents function call expression.
+A **FunctionCall** is an expression, so it appears where a value is wanted;
+[SubroutineCall](../statement_nodes/SubroutineCall.md) is the statement form.
+Both store the resolved procedure in `name` and what was written in
+`original_name`.
 
-## Types
-
-Not applicable.
+An actual argument for an `intent(out)` or `intent(inout)` dummy must be
+writable. `value` is set when the frontend could evaluate the call at compile
+time, which it can do for some intrinsics.
 
 ## Examples
 
-```fortran
-program intrinsics
-    integer, dimension(-1:1, -1:2) :: a
-    print *, shape(a)             ! (/ 3, 4 /)
-    print *, size(shape(42))      ! (/ /)
-end program
+```clojure
+(FunctionCall
+  :name (SymbolRef 3 "square")
+  :original_name nil
+  :args [
+    (call_arg
+      :value (IntegerConstant
+        :n 5
+        :type (Integer
+          :kind 4
+        )
+        :intboz_type :Decimal
+      )
+    )
+  ]
+  :type (Integer
+    :kind 4
+  )
+  :value nil
+  :dt nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            intrinsics:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            a:
-                                (Variable
-                                    2
-                                    a
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4 [((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -1 (Integer 4 []))
-                                    )
-                                    (IntegerConstant 3 (Integer 4 [])))
-                                    ((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4 []))
-                                        (Integer 4 [])
-                                        (IntegerConstant -1 (Integer 4 []))
-                                    )
-                                    (IntegerConstant 4 (Integer 4 [])))])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                ),
-                            shape:
-                                (ExternalSymbol
-                                    2
-                                    shape
-                                    4 shape
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    shape
-                                    Private
-                                )
-
-                        })
-                    intrinsics
-                    []
-                    [(Print
-                        ()
-                        [(FunctionCall
-                            2 shape
-                            ()
-                            [((Var 2 a))]
-                            (Integer 4 [])
-                            ()
-                            ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        ()
-                        [(ArraySize
-                            (FunctionCall
-                                2 shape
-                                ()
-                                [((IntegerConstant 42 (Integer 4 [])))]
-                                (Integer 4 [])
-                                ()
-                                ()
-                            )
-                            ()
-                            (Integer 4 [])
-                            (IntegerConstant 1 (Integer 4 []))
-                        )]
-                        ()
-                        ()
-                    )]
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
-
-        })
-    []
-)
-
+```{literalinclude} ../../examples/functioncall.asr
+:language: clojure
 ```
 
 ## See Also
 
+[SubroutineCall](../statement_nodes/SubroutineCall.md), [Function](../symbol_nodes/Function.md), [call_arg](../helper_nodes/call_arg.md), [GenericProcedure](../symbol_nodes/GenericProcedure.md)
