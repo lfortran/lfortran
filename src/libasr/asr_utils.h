@@ -3233,8 +3233,6 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
 
 void set_intrinsic(ASR::symbol_t* sym);
 
-void get_sliced_indices(ASR::ArraySection_t* arr_sec, std::vector<size_t> &sliced_indices);
-
 static inline bool is_pointer(ASR::ttype_t *x) {
     return ASR::is_a<ASR::Pointer_t>(*x);
 }
@@ -9154,19 +9152,17 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
                 if( ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-                    bool is_arr_sec = ASR::is_a<ASR::ArraySection_t>(*a_args[i].m_value);
-                    std::vector<size_t> sliced_indices;
-                    if (is_arr_sec) {
-                        get_sliced_indices(ASR::down_cast<ASR::ArraySection_t>(a_args[i].m_value), sliced_indices);
-                    }
                     Vec<ASR::dimension_t> m_dims_vec; m_dims_vec.reserve(al, n_dims);
                     for( size_t j = 0; j < n_dims; j++ ) {
                         ASR::dimension_t m_dim_vec;
                         m_dim_vec.loc = m_dims[j].loc;
                         m_dim_vec.m_start = i32one;
-                        size_t dim = is_arr_sec ? sliced_indices[j] : (j + 1);
+                        // `dim` is over the rank of the argument itself. For an
+                        // ArraySection that rank already excludes the
+                        // scalar-indexed dimensions, and make_ArraySize_t_util
+                        // maps `dim` onto the section args accordingly.
                         m_dim_vec.m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, m_dims[j].loc,
-                            a_args[i].m_value, i32j(dim), ASRUtils::expr_type(i32one), nullptr));
+                            a_args[i].m_value, i32j(j + 1), ASRUtils::expr_type(i32one), nullptr));
                         m_dims_vec.push_back(al, m_dim_vec);
                     }
                     m_dims = m_dims_vec.p;
