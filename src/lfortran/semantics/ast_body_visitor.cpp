@@ -9717,6 +9717,42 @@ public:
         all_blocks_nesting--;
     }
 
+    // Lower the optional scalar mask of a FORALL / DO CONCURRENT header into an
+    // `if` wrapped around the loop body, so that the body only executes for the
+    // index values that satisfy the mask.
+    ASR::stmt_t* mask_to_if(AST::expr_t &ast_mask, Vec<ASR::stmt_t*> &body) {
+        visit_expr(ast_mask);
+        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(test));
+        if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
+            diag.add(diag::Diagnostic("Expected logical expression as mask, but received " +
+                ASRUtils::type_to_str_with_kind(test_type, test) + " instead",
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label(ASRUtils::type_to_str_with_kind(test_type, test) +
+                    " expression, expected logical", {test->base.loc})}));
+            throw SemanticAbort();
+        }
+        return ASRUtils::STMT(ASR::make_If_t(al, test->base.loc, nullptr, test,
+            body.p, body.size(), nullptr, 0));
+    }
+
+    ASR::stmt_t* mask_to_if(AST::expr_t &ast_mask, ASR::stmt_t *stmt) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, stmt);
+        return mask_to_if(ast_mask, body);
+    }
+
+    // Replace `body` with the single `if` statement guarding it.
+    void apply_mask(AST::expr_t &ast_mask, Vec<ASR::stmt_t*> &body) {
+        ASR::stmt_t *if_stmt = mask_to_if(ast_mask, body);
+        Vec<ASR::stmt_t*> masked_body;
+        masked_body.reserve(al, 1);
+        masked_body.push_back(al, if_stmt);
+        body = masked_body;
+    }
+
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
         bool in_loop_copy = in_loop;
@@ -9801,6 +9837,9 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
+        if (x.m_mask) {
+            apply_mask(*x.m_mask, body);
+        }
         Vec<ASR::reduction_expr_t> reductions; reductions.reserve(al, 1);
         Vec<ASR::expr_t*> shared_expr; shared_expr.reserve(al, 1);
         Vec<ASR::expr_t*> local_expr; local_expr.reserve(al, 1);
@@ -9902,6 +9941,11 @@ public:
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
         ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
 
+        // The mask guards the assignment, inside all the index loops
+        if (x.m_mask) {
+            inner_stmt = mask_to_if(*x.m_mask, inner_stmt);
+        }
+
         // Nest ForAllSingle nodes from innermost to outermost
         for (int i = x.n_control - 1; i >= 0; i--) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
@@ -9989,6 +10033,9 @@ public:
         if (x.n_body == 1) {
             this->visit_decl_stmt(*x.m_body[0]);
             ASR::stmt_t* stmt = ASRUtils::STMT(tmp);
+            if (x.m_mask) {
+                stmt = mask_to_if(*x.m_mask, stmt);
+            }
             for (int i = heads.size() - 1; i >= 0; i--) {
                 tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
                 stmt = ASRUtils::STMT(tmp);
@@ -9997,6 +10044,9 @@ public:
             Vec<ASR::stmt_t*> body;
             body.reserve(al, x.n_body);
             transform_stmts(body, x.n_body, x.m_body);
+            if (x.m_mask) {
+                apply_mask(*x.m_mask, body);
+            }
             tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
                 nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }
