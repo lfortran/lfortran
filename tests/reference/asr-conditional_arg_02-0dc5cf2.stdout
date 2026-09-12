@@ -1,0 +1,1497 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            conditional_arg_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            edge:
+                                (Variable
+                                    2
+                                    edge
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            five:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    five
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    [(If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 x)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 3 x)
+                                            (IntegerConstant 5 (Integer 4) Decimal)
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            is_present:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            is_present:
+                                                (Variable
+                                                    4
+                                                    is_present
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    is_present
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Logical 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 x)]
+                                    [(Assignment
+                                        (Var 4 is_present)
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 4 x)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 is_present)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            mode:
+                                (Variable
+                                    2
+                                    mode
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            p:
+                                                (Variable
+                                                    5
+                                                    p
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            q:
+                                                (Variable
+                                                    5
+                                                    q
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 p)
+                                    (Var 5 q)]
+                                    [(If
+                                        ()
+                                        (RealCompare
+                                            (IntrinsicElementalFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (Var 5 p)
+                                                    Sub
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Real 4)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Gt
+                                            (RealConstant
+                                                0.000001
+                                                (Real 4)
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 9 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (LogicalNot
+                                            (IntrinsicElementalFunction
+                                                Present
+                                                [(Var 5 q)]
+                                                0
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (RealCompare
+                                            (IntrinsicElementalFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (Var 5 q)
+                                                    Sub
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Real 4)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Gt
+                                            (RealConstant
+                                                0.000001
+                                                (Real 4)
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 11 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            sub2:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            p:
+                                                (Variable
+                                                    6
+                                                    p
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            q:
+                                                (Variable
+                                                    6
+                                                    q
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub2
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 p)
+                                    (Var 6 q)]
+                                    [(If
+                                        ()
+                                        (RealCompare
+                                            (IntrinsicElementalFunction
+                                                Abs
+                                                [(RealBinOp
+                                                    (Var 6 p)
+                                                    Sub
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    (Real 4)
+                                                    ()
+                                                )]
+                                                0
+                                                (Real 4)
+                                                ()
+                                            )
+                                            Gt
+                                            (RealConstant
+                                                0.000001
+                                                (Real 4)
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 12 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 6 q)]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 13 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    conditional_arg_02
+                    []
+                    [(Assignment
+                        (Var 2 a)
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            Lt
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [((Var 2 a))]
+                            ()
+                            .false.
+                        )]
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [(())]
+                            ()
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerConstant 7 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            Lt
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [((Var 2 a))]
+                            ()
+                            .false.
+                        )]
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [(())]
+                            ()
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [((Var 2 a))]
+                            ()
+                            .false.
+                        )]
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [(())]
+                            ()
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -1 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [((Var 2 a))]
+                            ()
+                            .false.
+                        )]
+                        [(SubroutineCall
+                            2 five
+                            ()
+                            [(())]
+                            ()
+                            .false.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 a)
+                            NotEq
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (IfExp
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    2 is_present
+                                    ()
+                                    [((Var 2 a))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                                (FunctionCall
+                                    2 is_present
+                                    ()
+                                    [(())]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IfExp
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (FunctionCall
+                                2 is_present
+                                ()
+                                [((Var 2 a))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (FunctionCall
+                                2 is_present
+                                ()
+                                [(())]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalNot
+                            (IfExp
+                                (IntegerCompare
+                                    (Var 2 a)
+                                    Gt
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (FunctionCall
+                                    2 is_present
+                                    ()
+                                    [((Var 2 a))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                                (IfExp
+                                    (IntegerCompare
+                                        (Var 2 a)
+                                        Gt
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (FunctionCall
+                                        2 is_present
+                                        ()
+                                        [((Var 2 a))]
+                                        (Logical 4)
+                                        ()
+                                        ()
+                                    )
+                                    (FunctionCall
+                                        2 is_present
+                                        ()
+                                        [(())]
+                                        (Logical 4)
+                                        ()
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (IntegerUnaryMinus
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -1 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IfExp
+                            (IntegerCompare
+                                (Var 2 a)
+                                Gt
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (FunctionCall
+                                2 is_present
+                                ()
+                                [((Var 2 a))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (IfExp
+                                (IntegerCompare
+                                    (Var 2 a)
+                                    Gt
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (FunctionCall
+                                    2 is_present
+                                    ()
+                                    [((Var 2 a))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                                (FunctionCall
+                                    2 is_present
+                                    ()
+                                    [(())]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (RealUnaryMinus
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            (Real 4)
+                            (RealConstant
+                                -1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (RealConstant
+                            0.500000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 edge)
+                        (RealUnaryMinus
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            (Real 4)
+                            (RealConstant
+                                -1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 mode)
+                        (IntegerConstant 3 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (RealCompare
+                                (Var 2 edge)
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(SubroutineCall
+                                2 sub
+                                ()
+                                [((Var 2 x))
+                                ((Var 2 edge))]
+                                ()
+                                .false.
+                            )]
+                            [(If
+                                ()
+                                (IntegerCompare
+                                    (Var 2 mode)
+                                    Eq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub
+                                    ()
+                                    [((Var 2 x))
+                                    ((RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    ))]
+                                    ()
+                                    .false.
+                                )]
+                                [(SubroutineCall
+                                    2 sub
+                                    ()
+                                    [((Var 2 x))
+                                    (())]
+                                    ()
+                                    .false.
+                                )]
+                            )]
+                        )]
+                        [(If
+                            ()
+                            (RealCompare
+                                (Var 2 y)
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                ()
+                                (RealCompare
+                                    (Var 2 edge)
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub
+                                    ()
+                                    [((Var 2 y))
+                                    ((Var 2 edge))]
+                                    ()
+                                    .false.
+                                )]
+                                [(If
+                                    ()
+                                    (IntegerCompare
+                                        (Var 2 mode)
+                                        Eq
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(SubroutineCall
+                                        2 sub
+                                        ()
+                                        [((Var 2 y))
+                                        ((RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    [(SubroutineCall
+                                        2 sub
+                                        ()
+                                        [((Var 2 y))
+                                        (())]
+                                        ()
+                                        .false.
+                                    )]
+                                )]
+                            )]
+                            [(If
+                                ()
+                                (RealCompare
+                                    (Var 2 edge)
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub
+                                    ()
+                                    [((Var 2 z))
+                                    ((Var 2 edge))]
+                                    ()
+                                    .false.
+                                )]
+                                [(If
+                                    ()
+                                    (IntegerCompare
+                                        (Var 2 mode)
+                                        Eq
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(SubroutineCall
+                                        2 sub
+                                        ()
+                                        [((Var 2 z))
+                                        ((RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    [(SubroutineCall
+                                        2 sub
+                                        ()
+                                        [((Var 2 z))
+                                        (())]
+                                        ()
+                                        .false.
+                                    )]
+                                )]
+                            )]
+                        )]
+                    )
+                    (Assignment
+                        (Var 2 edge)
+                        (RealUnaryMinus
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            (Real 4)
+                            (RealConstant
+                                -1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 mode)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (Var 2 x)
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (RealCompare
+                                (Var 2 edge)
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(SubroutineCall
+                                2 sub2
+                                ()
+                                [((Var 2 x))
+                                ((Var 2 edge))]
+                                ()
+                                .false.
+                            )]
+                            [(If
+                                ()
+                                (IntegerCompare
+                                    (Var 2 mode)
+                                    Eq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub2
+                                    ()
+                                    [((Var 2 x))
+                                    ((RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    ))]
+                                    ()
+                                    .false.
+                                )]
+                                [(SubroutineCall
+                                    2 sub2
+                                    ()
+                                    [((Var 2 x))
+                                    (())]
+                                    ()
+                                    .false.
+                                )]
+                            )]
+                        )]
+                        [(If
+                            ()
+                            (RealCompare
+                                (Var 2 y)
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                ()
+                                (RealCompare
+                                    (Var 2 edge)
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub2
+                                    ()
+                                    [((Var 2 y))
+                                    ((Var 2 edge))]
+                                    ()
+                                    .false.
+                                )]
+                                [(If
+                                    ()
+                                    (IntegerCompare
+                                        (Var 2 mode)
+                                        Eq
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(SubroutineCall
+                                        2 sub2
+                                        ()
+                                        [((Var 2 y))
+                                        ((RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    [(SubroutineCall
+                                        2 sub2
+                                        ()
+                                        [((Var 2 y))
+                                        (())]
+                                        ()
+                                        .false.
+                                    )]
+                                )]
+                            )]
+                            [(If
+                                ()
+                                (RealCompare
+                                    (Var 2 edge)
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(SubroutineCall
+                                    2 sub2
+                                    ()
+                                    [((Var 2 z))
+                                    ((Var 2 edge))]
+                                    ()
+                                    .false.
+                                )]
+                                [(If
+                                    ()
+                                    (IntegerCompare
+                                        (Var 2 mode)
+                                        Eq
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(SubroutineCall
+                                        2 sub2
+                                        ()
+                                        [((Var 2 z))
+                                        ((RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    [(SubroutineCall
+                                        2 sub2
+                                        ()
+                                        [((Var 2 z))
+                                        (())]
+                                        ()
+                                        .false.
+                                    )]
+                                )]
+                            )]
+                        )]
+                    )]
+                )
+        })
+    []
+)

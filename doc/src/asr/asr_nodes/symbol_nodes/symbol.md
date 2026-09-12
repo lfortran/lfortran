@@ -10,7 +10,7 @@ The symbols of ASR.
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, location start_name, location end_name)
-    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, location start_name, location end_name)
+    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
@@ -24,7 +24,6 @@ symbol
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
-    | GpuKernelFunction(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, access access, location start_name, location end_name)
 ```
 
 ### Arguments
@@ -44,8 +43,8 @@ because the parent is reachable from a symbol table it owns.
 
 The symbols divide into:
 
-- program units: [Program](Program.md), [Module](Module.md),
-  [Function](Function.md) and [GpuKernelFunction](GpuKernelFunction.md);
+- program units: [Program](Program.md), [Module](Module.md) and
+  [Function](Function.md);
 - type definitions: [Struct](Struct.md), [Enum](Enum.md) and [Union](Union.md),
   with [StructMethodDeclaration](StructMethodDeclaration.md) for a type-bound
   procedure;
@@ -68,4 +67,3 @@ appears in.
 [ASR overview](../../asr.md)
 
 ## Symbol Nodes
-

@@ -263,10 +263,10 @@ public:
                 value_n_dims = left_n_dims;
     
                 if (left_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, left_m_dims, left_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             } else if (ASR::is_a<ASR::Array_t>(*right_type)) {
@@ -277,10 +277,10 @@ public:
                 value_n_dims = right_n_dims;
     
                 if (right_array_type->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 } else {
-                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray));
+                    ASR::ttype_t* logical_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.loc, logical_type, right_m_dims, right_n_dims, ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                     value_type = logical_array_type;
                 }
             }

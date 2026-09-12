@@ -29,8 +29,6 @@ FINALIZE_SYMTABLE_cb:                             ; preds = %return
   ret float %7
 }
 
-declare float @f(float*)
-
 define void @__module_callback_01_foo(float* %c, float* %d) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8

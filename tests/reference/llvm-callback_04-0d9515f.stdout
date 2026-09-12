@@ -38,8 +38,6 @@ FINALIZE_SYMTABLE_print_dr_fortran:               ; preds = %return
   ret void
 }
 
-declare void @title_or_name()
-
 define void @__module_dr_fortran_cb_print_fortran() {
 .entry:
   %0 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8

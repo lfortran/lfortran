@@ -52,6 +52,8 @@ llvmdev = "==20.1.8"
 llvmdev = "==21.1.2"
 [feature.llvm22.dependencies]
 llvmdev = "==22.1.0"
+[feature.llvm23.dependencies]
+llvmdev = "==23.1.0"
 [feature.llvm12.target.linux.dependencies]
 libunwind = "==1.7.2"
 [feature.llvm13.target.linux.dependencies]
@@ -73,6 +75,8 @@ libunwind = "==1.7.2"
 [feature.llvm21.target.linux.dependencies]
 libunwind = "==1.7.2"
 [feature.llvm22.target.linux.dependencies]
+libunwind = "==1.7.2"
+[feature.llvm23.target.linux.dependencies]
 libunwind = "==1.7.2"
 
 # Dependencies to build the project to be installed for the target architecture.
@@ -162,10 +166,10 @@ channels = [
 platforms = ["emscripten-wasm32"]
 
 [feature.wasm-host.dependencies]
-xeus-lite = "*"
-xeus = "*"
-nlohmann_json = "*"
-llvm = "*"
+xeus-lite = "==5.0.0"
+xeus = "==6.0.5"
+nlohmann_json = "==3.12.0"
+llvm = "==22.1.8"
 
 [feature.lite]
 platforms = ["osx-arm64", "linux-64"]
@@ -258,6 +262,7 @@ llvm19 = {features = ["llvm19", "build"]}
 llvm20 = {features = ["llvm20", "build"]}
 llvm21 = {features = ["llvm21", "build"]}
 llvm22 = {features = ["llvm22", "build"]}
+llvm23 = {features = ["llvm23", "build"]}
 test = {features = ["test"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}

@@ -17,7 +17,6 @@ Enum
 ExternalSymbol
 Function
 GenericProcedure
-GpuKernelFunction
 Module
 Namelist
 Program

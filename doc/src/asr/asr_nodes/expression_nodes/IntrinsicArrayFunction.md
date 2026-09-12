@@ -67,6 +67,7 @@ their lowering is different: an array intrinsic becomes a loop nest, and the
           )
         ]
         :physical_type :DescriptorArray
+        :memory_space :Global
       )
       :value nil
     )

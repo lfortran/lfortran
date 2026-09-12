@@ -27,12 +27,34 @@ The value of the expression.
 ## Description
 
 The two branches have the same type, and the type of the whole expression is
-theirs. Fortran has no conditional expression before Fortran 2023;
-**IfExp** is LPython's `a if c else b` and Fortran 2023's `merge`-like
-conditional expression, and it is also convenient for compiler-generated code.
+theirs. **IfExp** is LPython's `a if c else b` and the Fortran 2023 conditional
+expression `( test ? body : orelse )` (10.1.2.3 R1002), and it is also
+convenient for compiler-generated code.
 
 Unlike the [If](../statement_nodes/If.md) statement, both branches must
 produce a value.
+
+The Fortran front end only produces **IfExp** from an executable expression.
+10.1.11 and 10.1.12 enumerate the primaries a specification expression and a
+constant expression may contain, and a conditional expression is in neither
+list, so it is rejected in a kind type parameter, a character length, an array
+bound and an initialization expression. **IfExp** therefore never carries a
+compile time value from the Fortran front end.
+
+Only the chosen branch is evaluated. Fortran 2023 requires this
+(10.1.4 NOTE 3): a function call in the branch that is not taken must not run,
+so **IfExp** must never be rewritten into `merge`, which evaluates both of its
+arguments. The multi-arm form of R1002,
+`( c1 ? a : c2 ? b : d )`, is represented by nesting **IfExp** in the `orelse`
+position.
+
+A result that is an array, a derived type or polymorphic takes its shape,
+length type parameters and dynamic type from the branch that is chosen
+(10.1.4 p22-23), so there is no single descriptor a backend could write into
+before the branch is known. The `conditional_expr` pass lowers those results
+into an allocatable temporary and an [If](../statement_nodes/If.md) statement.
+Scalars of intrinsic type, including character, reach the backends as
+**IfExp** and are lowered there with a real branch.
 
 ## Examples
 
