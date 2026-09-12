@@ -13,6 +13,24 @@ set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
 set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast when llvm < 17")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
+set(MERGE_TESTS yes CACHE BOOL "Compile tests that share a MERGE_GROUP as one program")
+
+# Tests in a MERGE_GROUP are compiled as a single program instead of one
+# program each, which pays lfortran's process startup once per group rather
+# than once per test. Only backends listed here do this; every other backend
+# compiles each test on its own exactly as before.
+set(MERGEABLE_BACKENDS llvm)
+
+# A merged program is one compilation, so every test in it must be built with
+# the same flags. The flag sweeps below rewrite EXTRA_ARGS per test (and some
+# tests opt out individually via NO_FAST / NO_STD_F23 / NO_DETECT_LEAKS), so
+# merging is disabled whenever one of them is active.
+if (FAST OR STD_F23 OR DETECT_LEAKS OR LLVM_GOC)
+    set(MERGE_TESTS no)
+endif()
+if (NOT (LFORTRAN_BACKEND IN_LIST MERGEABLE_BACKENDS))
+    set(MERGE_TESTS no)
+endif()
 
 enable_testing()
 
@@ -32,6 +50,7 @@ message("DETECT_LEAKS: ${DETECT_LEAKS}")
 message("NOFAST_LLVM16: ${NOFAST_LLVM16}")
 message("STD_F23: ${STD_F23}")
 message("LLVM_GOC: ${LLVM_GOC}")
+message("MERGE_TESTS: ${MERGE_TESTS}")
 
 # Make ISO_Fortran_binding.h available to the C compiler.
 # LFortran ships its own header in src/libasr/runtime/.
@@ -268,7 +287,7 @@ endmacro(RUN_UTIL)
 
 macro(RUN)
     set(options FAIL NOFAST_TILL_LLVM16 NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
-    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
+    set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES MERGE_GROUP)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
@@ -285,6 +304,23 @@ macro(RUN)
     else()
         set(RUN_FILE_NAME ${RUN_NAME})
     endif()
+
+    # Is this test being folded into a merged program? `return()` inside a
+    # macro would return from the caller, so this is a flag, not an early exit.
+    set(RUN_IS_MERGED NO)
+    if (MERGE_TESTS AND RUN_MERGE_GROUP AND (LFORTRAN_BACKEND IN_LIST RUN_LABELS))
+        set(RUN_IS_MERGED YES)
+    endif()
+
+if (RUN_IS_MERGED)
+    # Collected here, emitted as one program per group at the end of this
+    # file. Must not also be added individually.
+    set_property(GLOBAL APPEND PROPERTY MERGE_GROUP_NAMES ${RUN_MERGE_GROUP})
+    set_property(GLOBAL APPEND PROPERTY
+        MERGE_GROUP_${RUN_MERGE_GROUP}_TESTS ${RUN_FILE_NAME})
+    set_property(GLOBAL APPEND PROPERTY
+        MERGE_GROUP_${RUN_MERGE_GROUP}_ARGS "${RUN_EXTRA_ARGS}")
+else()
 
     if (RUN_INCLUDE_PATH)
         # Only one include path supported for now
@@ -320,6 +356,7 @@ macro(RUN)
     else ()
         RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
     endif()
+endif()
 
 endmacro(RUN)
 
@@ -5323,3 +5360,59 @@ RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)
 RUN(NAME decl_order_01 LABELS gfortran llvm)
 RUN(NAME decl_order_02 LABELS gfortran llvm)
+
+# ---------------------------------------------------------------------------
+# Merged test groups
+#
+# Every RUN() carrying a MERGE_GROUP was collected above instead of being
+# compiled on its own. Emit one program per group: merge_tests.py rewrites
+# each test's `program` into a `subroutine` and generates a driver that calls
+# them in order. The individual .f90 files are untouched on disk, so dropping
+# MERGE_GROUP from a RUN() line restores that test to a standalone build.
+# ---------------------------------------------------------------------------
+get_property(MERGE_GROUPS GLOBAL PROPERTY MERGE_GROUP_NAMES)
+if (MERGE_GROUPS)
+    list(REMOVE_DUPLICATES MERGE_GROUPS)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    message("Merged test groups: ${MERGE_GROUPS}")
+
+    foreach(g ${MERGE_GROUPS})
+        get_property(g_tests GLOBAL PROPERTY MERGE_GROUP_${g}_TESTS)
+        get_property(g_args  GLOBAL PROPERTY MERGE_GROUP_${g}_ARGS)
+
+        # One compilation, so one flag set: every test in the group must agree.
+        list(REMOVE_DUPLICATES g_args)
+        list(LENGTH g_args n_args)
+        if (n_args GREATER 1)
+            message(FATAL_ERROR
+                "MERGE_GROUP '${g}' mixes EXTRA_ARGS (${g_args}). Tests compiled "
+                "into one program must share their flags; split them into "
+                "separate groups.")
+        endif()
+
+        set(g_src ${CMAKE_CURRENT_BINARY_DIR}/merged_${g}.f90)
+        set(g_list ${CMAKE_CURRENT_BINARY_DIR}/merged_${g}.list)
+        string(REPLACE ";" "\n" g_list_text "${g_tests}")
+        file(WRITE ${g_list} "${g_list_text}\n")
+
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/merge_tests.py
+                --output ${g_src}
+                --group ${g}
+                --source-dir ${CMAKE_CURRENT_SOURCE_DIR}
+                --list-file ${g_list}
+            RESULT_VARIABLE g_rc
+            ERROR_VARIABLE g_err)
+        if (NOT g_rc EQUAL 0)
+            message(FATAL_ERROR "merge_tests.py failed for group '${g}':\n${g_err}")
+        endif()
+
+        add_executable(merged_${g} ${g_src})
+        target_compile_options(merged_${g} PUBLIC
+            $<$<COMPILE_LANGUAGE:Fortran>:${g_args}>)
+        target_link_options(merged_${g} PUBLIC ${g_args})
+        add_test(merged_${g} ${CURRENT_BINARY_DIR}/merged_${g})
+        set_tests_properties(merged_${g} PROPERTIES LABELS "${LFORTRAN_BACKEND}")
+    endforeach()
+endif()
