@@ -1,0 +1,13 @@
+{
+    "basename": "run-stdin_read_list_then_format_01-4d137b6",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/stdin_read_list_then_format_01.f90",
+    "infile_hash": "7d4e2bec1d36122e49059709db663f3a1a65d0a1910d6a5b4b4893b4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
