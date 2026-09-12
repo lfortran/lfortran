@@ -2307,7 +2307,12 @@ int link_executable(const std::vector<std::string> &infiles,
                     "the debug information. This might be caused because either"
                     " `llvm-dwarfdump` or `Python` are not available. "
                     "Please activate the CONDA environment and compile again.\n";
-                return status;
+                // `system()` reports a wait status, not an exit code. Returning
+                // it unchanged would truncate it to its low 8 bits in `main()`,
+                // so a missing `llvm-dwarfdump` (127 << 8 == 32512) would be
+                // silently reported as a successful exit code of 0.
+                int exit_status = LCompilers::LFortran::get_exit_status(status);
+                return exit_status != 0 ? exit_status : 1;
             }
         }
 #endif

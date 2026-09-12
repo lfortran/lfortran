@@ -481,6 +481,151 @@ public:
     }
 };
 
+// --- reductions -------------------------------------------------------
+//
+// A reduction is lowered as one accumulator per thread plus a fold on the
+// host. Both halves are written from the three functions below, so the
+// value a thread starts from, the way it accumulates and the way the host
+// folds the slots cannot describe different operators.
+
+// Whether this operator has a lowering here at all.
+inline bool gpu_reduction_op_supported(ASR::reduction_opType op) {
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceMul:
+        case ASR::reduction_opType::ReduceMIN:
+        case ASR::reduction_opType::ReduceMAX:
+        case ASR::reduction_opType::ReduceIAND:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return true;
+    }
+    return false;
+}
+
+// Whether the identity of `op` can be written down in `type`. The bitwise
+// operators are only defined on integers, and MIN and MAX need the
+// extreme value of the kind they run over.
+inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
+        ASR::ttype_t *type) {
+    ASR::ttype_t *t = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    bool is_int = ASR::is_a<ASR::Integer_t>(*t);
+    bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceMul:
+            return is_int || is_real;
+        case ASR::reduction_opType::ReduceMIN:
+        case ASR::reduction_opType::ReduceMAX:
+            return is_int || is_real;
+        case ASR::reduction_opType::ReduceIAND:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return is_int;
+    }
+    return false;
+}
+
+// Whether the host folds two accumulators by comparing them rather than by
+// combining them with an operator. MIN and MAX are the two that do.
+inline bool gpu_reduction_folds_by_compare(ASR::reduction_opType op) {
+    return op == ASR::reduction_opType::ReduceMIN
+        || op == ASR::reduction_opType::ReduceMAX;
+}
+
+// The operator the host folds two accumulators with.
+inline ASR::binopType gpu_reduction_fold_binop(ASR::reduction_opType op) {
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+            // Each thread accumulated its own run of subtractions, so the
+            // runs are added: (a-x)+(b-y) is what (a+b)-(x+y) means here.
+            return ASR::binopType::Add;
+        case ASR::reduction_opType::ReduceMul:
+            return ASR::binopType::Mul;
+        case ASR::reduction_opType::ReduceIAND:
+            return ASR::binopType::BitAnd;
+        case ASR::reduction_opType::ReduceIOR:
+            return ASR::binopType::BitOr;
+        case ASR::reduction_opType::ReduceIEOR:
+            return ASR::binopType::BitXor;
+        default:
+            break;
+    }
+    LCOMPILERS_ASSERT(false);
+    return ASR::binopType::Add;
+}
+
+// The value a thread's accumulator starts from: the one that leaves the
+// result unchanged when folded in, so a thread whose body never reached
+// the accumulator contributes nothing.
+inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
+        const Location &loc, ASR::reduction_opType op, ASR::ttype_t *type) {
+    ASR::ttype_t *t = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    const bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    const int kind = ASRUtils::extract_kind_from_ttype_t(t);
+    auto whole = [&](int64_t v) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t),
+            ASR::integerbozType::Decimal));
+    };
+    auto fraction = [&](double v) {
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t)));
+    };
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return is_real ? fraction(0.0) : whole(0);
+        case ASR::reduction_opType::ReduceMul:
+            return is_real ? fraction(1.0) : whole(1);
+        case ASR::reduction_opType::ReduceIAND:
+            // Every bit set, so folding with AND keeps what it is folded
+            // into.
+            return whole(-1);
+        case ASR::reduction_opType::ReduceMIN:
+            if (is_real) {
+                return fraction(kind == 8 ? 1.7976931348623157e308
+                                          : 3.40282347e38);
+            }
+            return whole(kind == 8 ? INT64_MAX : INT32_MAX);
+        case ASR::reduction_opType::ReduceMAX:
+            if (is_real) {
+                return fraction(kind == 8 ? -1.7976931348623157e308
+                                          : -3.40282347e38);
+            }
+            return whole(kind == 8 ? INT64_MIN : INT32_MIN);
+    }
+    LCOMPILERS_ASSERT(false);
+    return nullptr;
+}
+
+// `buffer(slot)`: the accumulator this thread owns. Built in one place so
+// the slot the kernel initialises and the slot it accumulates into are
+// spelled the same way.
+inline ASR::expr_t* gpu_reduction_slot(Allocator &al, const Location &loc,
+        ASR::symbol_t *buffer, ASR::expr_t *slot_index,
+        ASR::ttype_t *scalar_type) {
+    Vec<ASR::array_index_t> args;
+    args.reserve(al, 1);
+    ASR::array_index_t index;
+    index.loc = loc;
+    index.m_left = nullptr;
+    index.m_right = slot_index;
+    index.m_step = nullptr;
+    args.push_back(al, index);
+    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)),
+        args.p, args.n, ASRUtils::duplicate_type(al, scalar_type),
+        ASR::arraystorageType::ColMajor, nullptr));
+}
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_GPU_OFFLOAD_PREFLIGHT_H

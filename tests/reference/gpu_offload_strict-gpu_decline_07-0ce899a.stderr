@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support a derived type with a member that is not a number; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_decline_07.f90:16:5 - 18:10
+   |
+16 |        do concurrent (i = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived type with a member that is not a number

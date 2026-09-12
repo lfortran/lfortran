@@ -254,6 +254,37 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_IntegerBinOp_t(al, loc, grid_padded, ASR::binopType::Div,
             block_size_const, plan.int_type, nullptr));
 
+    // One accumulator per iteration, sized now that the iteration count
+    // is known. The kernel sets each to the identity, so nothing is
+    // copied in.
+    for (auto &r : plan.reductions) {
+        if (!r.host_buf_sym) continue;
+        Vec<ASR::alloc_arg_t> alloc_args;
+        alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t arg;
+        arg.loc = loc;
+        arg.m_a = ASRUtils::EXPR(ASR::make_Var_t(al, loc, r.host_buf_sym));
+        Vec<ASR::dimension_t> alloc_dims;
+        alloc_dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+            plan.int_type, ASR::integerbozType::Decimal));
+        dim.m_length = host_total;
+        alloc_dims.push_back(al, dim);
+        arg.m_dims = alloc_dims.p;
+        arg.n_dims = alloc_dims.n;
+        arg.m_codims = nullptr;
+        arg.n_codims = 0;
+        arg.m_len_expr = nullptr;
+        arg.m_sym_subclass = nullptr;
+        arg.m_type = nullptr;
+        alloc_args.push_back(al, arg);
+        launch_stmts.push_back(al, ASRUtils::STMT(
+            ASR::make_Allocate_t(al, loc, alloc_args.p, alloc_args.n,
+                nullptr, nullptr, nullptr)));
+    }
+
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
@@ -294,6 +325,71 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
                 nullptr, false, false)));
+    }
+
+    // Fold the accumulators into the scalar the source named. It still
+    // holds whatever it held before the loop, which is what a Fortran
+    // reduction accumulates onto, so the fold starts from it rather than
+    // from the identity.
+    for (auto &r : plan.reductions) {
+        if (!r.host_buf_sym) continue;
+        ASR::expr_t *scalar_var = ASRUtils::EXPR(
+            ASR::make_Var_t(al, loc, r.orig_scalar_sym));
+        std::string index_name = current_scope->get_unique_name("__gpu_fold_i");
+        ASR::symbol_t *index_sym = gpu_new_variable(al, loc, current_scope,
+            index_name, ASRUtils::duplicate_type(al, plan.int_type));
+        ASR::expr_t *index_var = ASRUtils::EXPR(
+            ASR::make_Var_t(al, loc, index_sym));
+        ASR::expr_t *slot = gpu_reduction_slot(al, loc, r.host_buf_sym,
+            index_var, r.scalar_type);
+
+        Vec<ASR::stmt_t*> fold_body;
+        fold_body.reserve(al, 1);
+        if (gpu_reduction_folds_by_compare(r.op)) {
+            // MIN and MAX keep whichever of the two they are named for.
+            ASR::expr_t *keep = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(
+                al, loc,
+                r.op == ASR::reduction_opType::ReduceMIN
+                    ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
+                slot, scalar_var,
+                ASRUtils::duplicate_type(al, r.scalar_type)));
+            Vec<ASR::stmt_t*> keep_body;
+            keep_body.reserve(al, 1);
+            keep_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, scalar_var, slot,
+                    nullptr, false, false)));
+            Vec<ASR::stmt_t*> keep_else;
+            keep_else.reserve(al, 0);
+            fold_body.push_back(al, ASRUtils::STMT(
+                ASR::make_If_t(al, loc, nullptr, keep,
+                    keep_body.p, keep_body.n, keep_else.p, keep_else.n)));
+        } else {
+            fold_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, scalar_var,
+                    ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
+                        gpu_reduction_fold_binop(r.op), scalar_var, slot,
+                        ASRUtils::duplicate_type(al, r.scalar_type))),
+                    nullptr, false, false)));
+        }
+
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = index_var;
+        head.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+            plan.int_type, ASR::integerbozType::Decimal));
+        head.m_end = host_total;
+        head.m_increment = nullptr;
+        launch_stmts.push_back(al, ASRUtils::STMT(
+            ASR::make_DoLoop_t(al, loc, nullptr, head,
+                fold_body.p, fold_body.n, nullptr, 0)));
+
+        Vec<ASR::expr_t*> dealloc_args;
+        dealloc_args.reserve(al, 1);
+        dealloc_args.push_back(al,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, r.host_buf_sym)));
+        launch_stmts.push_back(al, ASRUtils::STMT(
+            ASR::make_ExplicitDeallocate_t(al, loc,
+                dealloc_args.p, dealloc_args.n)));
     }
 
     // If any involved variable is optional, wrap the whole kernel

@@ -976,6 +976,7 @@ COMPILE(NAME assumed_rank_12 COMPILERS gfortran llvm llvm_wasm) # move to RUN wi
 
 RUN(NAME assumed_rank_14 LABELS gfortran llvm)
 RUN(NAME assumed_rank_15 LABELS gfortran llvm)
+RUN(NAME assumed_rank_16 LABELS gfortran llvm)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4943,7 +4944,7 @@ RUN(NAME gpu_metal_17 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_18 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_19 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_20 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_21 LABELS llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
+RUN(NAME gpu_metal_21 LABELS llvm metal cuda_cpu)
 RUN(NAME gpu_metal_22 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_23 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_24 LABELS gfortran llvm metal cuda_cpu)
@@ -5268,7 +5269,22 @@ RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQU
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+# No gfortran label: `reduce` is F2023, and the gfortran the CI builds with
+# rejects it outright ("Syntax error in DO statement"). Same reason
+# gpu_metal_21 above carries none. Checked by hand against gfortran 16,
+# which does accept it.
+RUN(NAME gpu_metal_339 LABELS llvm metal cuda_cpu)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+
+RUN(NAME gpu_decline_01 LABELS gfortran llvm)
+RUN(NAME gpu_decline_02 LABELS gfortran llvm)
+RUN(NAME gpu_decline_03 LABELS gfortran llvm EXTRAFILES gpu_decline_03_ext.f90)
+RUN(NAME gpu_decline_04 LABELS gfortran llvm)
+RUN(NAME gpu_decline_05 LABELS gfortran llvm)
+RUN(NAME gpu_decline_06 LABELS gfortran llvm)
+RUN(NAME gpu_decline_07 LABELS gfortran llvm)
+RUN(NAME gpu_decline_08 LABELS gfortran llvm)
+RUN(NAME gpu_decline_09 LABELS gfortran llvm)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)

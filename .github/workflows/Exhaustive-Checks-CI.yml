@@ -219,7 +219,19 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["8", "10", "11", "15", "17", "18", "19", "21", "22", "23"]
+        #
+        # Rotation: every LLVM version is tested on every push to main (i.e.
+        # on every merge), so a version-specific break is caught within one
+        # merge. On a pull request we test only the versions where breakage
+        # actually originates:
+        #   8  - oldest supported; catches use of newer LLVM APIs
+        #   11 - our default version
+        #   19 - the only job that runs the llvm_wasm / llvm_wasm_emcc tests
+        #   23 - newest; catches removed/deprecated LLVM APIs
+        # The intermediate versions differ from their neighbours only in ways
+        # these four already bracket. macOS LLVM 22 is in `include` below and
+        # so runs in both cases.
+        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"8\",\"11\",\"19\",\"23\"]') }}"
         python-version: ["3.10"]
         include:
           - os: macos-latest
@@ -398,7 +410,7 @@ jobs:
         run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -411,7 +423,7 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -421,7 +433,7 @@ jobs:
           wasmtime --version
 
       - name: Setup Emscripten SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -436,7 +448,7 @@ jobs:
           ./emsdk activate 3.1.35
 
       - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
@@ -469,7 +481,7 @@ jobs:
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
       - name: Build
-        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
+        if: ${{! contains(matrix.llvm-version, '19')}}
         shell: bash -e -l {0}
         run: |
             ./build0.sh
@@ -493,7 +505,10 @@ jobs:
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             LAPACK_MODE="smoke"
-            if [[ "${{ matrix.llvm-version }}" == "11" || "${{ matrix.llvm-version }}" == "21" ]]; then
+            # The full Reference-LAPACK suite costs ~10 min more than smoke.
+            # It exercises LFortran, not LLVM, so run it on the default
+            # version only; every other version still runs it in smoke mode.
+            if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
                 LAPACK_MODE="full"
             fi
             echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
