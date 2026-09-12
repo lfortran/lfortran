@@ -10157,12 +10157,13 @@ public:
              ASR::array_physical_typeType::DescriptorArray, true);
         llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
         int value_rank = array_section->n_args, target_rank = 0;
-        llvm::Value *target = arr_descr->create_descriptor_alloca(
-            target_type, "array_section_descriptor");
-        if( ASRUtils::is_character(*expr_type(x.m_target))){
-            llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
-            builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
-        }
+        // The descriptor of a pointer array lives in the scope that declares
+        // it, where fill_array_details_ allocates it and stores it into the
+        // variable. Fill that descriptor in place. Allocating a fresh one here
+        // instead would leave the pointer referring to the stack frame of the
+        // procedure performing the association, which dies once it returns.
+        llvm::Value *target = llvm_utils->CreateLoad2(
+            target_type->getPointerTo(), target_desc);
         Vec<llvm::Value*> lbs; lbs.reserve(al, value_rank);
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
@@ -10301,7 +10302,6 @@ public:
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 array_section->n_args, target_rank, location_manager);
         }
-        builder->CreateStore(target, target_desc);
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
