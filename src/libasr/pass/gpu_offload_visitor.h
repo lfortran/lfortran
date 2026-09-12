@@ -441,6 +441,30 @@ public:
         ASR::ttype_t *scalar_type;
     };
 
+    // One `reduce(op:var)` of an offloaded loop.
+    //
+    // Threads cannot all accumulate into one scalar without a race, and a
+    // device has no lock to serialise them with. Each thread is given a
+    // slot of its own instead: the kernel sets its slot to the identity of
+    // the operator, accumulates into that, and the host folds the slots
+    // into the original scalar once the launch has finished. The device
+    // needs no atomics for it and the launch stays a single dispatch.
+    //
+    // There is one slot per iteration, so a thread the bounds guard turns
+    // away has no slot to leave unwritten.
+    struct GpuReductionInfo {
+        std::string orig_name;
+        ASR::reduction_opType op;
+        std::string buf_name;
+        ASR::symbol_t *host_buf_sym;
+        ASR::symbol_t *orig_scalar_sym;
+        ASR::ttype_t *scalar_type;
+    };
+
+    // The reductions of the region being decided, collected where the
+    // clauses are read and consumed by the kernel draft below.
+    std::vector<GpuReductionInfo> pending_reductions;
+
     // A loop head as the host still spells it, saved before the kernel
     // extraction replaces the head expressions in place. The launch sizes
     // the grid from these.
@@ -463,6 +487,7 @@ public:
         Vec<ASR::stmt_t*> gather_stmts;
         Vec<ASR::stmt_t*> scatter_stmts;
         std::vector<LiveoutScalarInfo> liveout_scalars;
+        std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
         std::vector<ASR::symbol_t*> optional_syms;
         // Committed where the offload becomes certain, which is inside the
@@ -491,8 +516,7 @@ public:
             const std::map<ASR::symbol_t*, ASR::expr_t*>
                 &enclosing_assoc_map);
 
-    bool offloadable_after_rewrites(const ParallelLoopNest &work,
-            const std::map<std::string,
+    bool offloadable_after_rewrites(            const std::map<std::string,
                 std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
             const Location &loc);
 

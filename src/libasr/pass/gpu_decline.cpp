@@ -187,6 +187,18 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
     return GpuDeclineClass::NotImplemented;
 }
 
+// "a" or "an", for a kind the message puts an article in front of:
+// `integer(2)` takes one and `real(4)` the other.
+static std::string article(const std::string &word) {
+    if (word.empty()) return "a ";
+    switch (word[0]) {
+        case 'a': case 'e': case 'i': case 'o': case 'u':
+            return "an ";
+        default:
+            return "a ";
+    }
+}
+
 // The routine an unsupported statement was found in, when it was reached
 // through a call rather than written in the loop body.
 static std::string in_routine(const GpuDecline &decline) {
@@ -244,8 +256,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "local '" + decline.name +
                 "' has no gpu type of the same width";
         case GpuDeclineReason::SymbolTypeNotRepresentable:
-            return "the type of '" + decline.name +
-                "' is not representable on the gpu";
+            return unsupported + type_name + ", the type of '" +
+                decline.name + "'";
         case GpuDeclineReason::WideTypeNotOnDevice:
             return unsupported + type_name + ", used by '" +
                 decline.name + "'";
@@ -272,8 +284,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported +
                 "a derived type with an assumed shape array member";
         case GpuDeclineReason::StructMemberTypeWidth:
-            return unsupported + "a derived type with a " + type_name +
-                " member, which has no gpu type of the same width";
+            return unsupported + "a derived type with " + article(type_name)
+                + type_name + " member, which has no gpu type of the same "
+                "width";
         case GpuDeclineReason::StructMemberNotNumeric:
             return unsupported +
                 "a derived type with a member that is not a number";

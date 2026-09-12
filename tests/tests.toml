@@ -4370,6 +4370,46 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_337.f90"
 gpu_cuda_kernel = true
 
+# One regression test per GPU decline reason: each program is valid Fortran
+# that runs correctly on the CPU, and the reference captures the reason the
+# offload pass gives for leaving it there.
+
+[[test]]
+filename = "../integration_tests/gpu_decline_01.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_02.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_03.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_04.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_05.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_06.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_07.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_08.f90"
+gpu_offload_strict = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_09.f90"
+gpu_offload_strict = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
