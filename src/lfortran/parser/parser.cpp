@@ -626,6 +626,17 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
 {
     size_t col = 1;
     while (pos < s.size() && s[pos] != '\n' && col <= 5) {
+        if (s[pos] == '\t') {
+            // A tab while still inside the label field (columns 1-5) acts,
+            // per the fixed-form tab extension, as a fast-forward straight
+            // to column 7: keep the label digits already collected, but
+            // don't copy the tab itself. Pad back out to the fixed 5-char
+            // width so eat_label() (fixedform_tokenizer.cpp), which reads
+            // a raw 5-byte window, still parses this as digits-and-spaces.
+            out.append(6 - col, ' ');
+            pos++;
+            return;
+        }
         out += s[pos];
         pos++;
         col++;
