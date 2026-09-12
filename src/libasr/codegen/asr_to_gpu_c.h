@@ -290,11 +290,19 @@ public:
                 break;
             }
             case GpuExtentKind::BinOp: {
-                src << "(";
-                emit_derived_extent(e.children[0]);
-                src << " " << binop_str(e.binop) << " ";
-                emit_derived_extent(e.children[1]);
-                src << ")";
+                if (e.binop == ASR::binopType::Pow) {
+                    src << "pow(";
+                    emit_derived_extent(e.children[0]);
+                    src << ", ";
+                    emit_derived_extent(e.children[1]);
+                    src << ")";
+                } else {
+                    src << "(";
+                    emit_derived_extent(e.children[0]);
+                    src << " " << binop_str(e.binop) << " ";
+                    emit_derived_extent(e.children[1]);
+                    src << ")";
+                }
                 break;
             }
             case GpuExtentKind::Neg: {
@@ -4273,11 +4281,19 @@ public:
             }
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
-                src << "(";
-                visit_expr(op->m_left);
-                src << " " << binop_str(op->m_op) << " ";
-                visit_expr(op->m_right);
-                src << ")";
+                if (op->m_op == ASR::binopType::Pow) {
+                    src << "pow(";
+                    visit_expr(op->m_left);
+                    src << ", ";
+                    visit_expr(op->m_right);
+                    src << ")";
+                } else {
+                    src << "(";
+                    visit_expr(op->m_left);
+                    src << " " << binop_str(op->m_op) << " ";
+                    visit_expr(op->m_right);
+                    src << ")";
+                }
                 break;
             }
             case ASR::exprType::RealBinOp: {
@@ -5170,7 +5186,14 @@ public:
             case ASR::binopType::Sub: return "-";
             case ASR::binopType::Mul: return "*";
             case ASR::binopType::Div: return "/";
-            default: return "?";
+            case ASR::binopType::BitAnd: return "&";
+            case ASR::binopType::BitOr: return "|";
+            case ASR::binopType::BitXor: return "^";
+            case ASR::binopType::BitLShift: return "<<";
+            case ASR::binopType::BitRShift: return ">>";
+            case ASR::binopType::LBitRShift: return ">>";
+            default: throw CodeGenError("binop_str: operator " +
+                std::to_string(op) + " not implemented");
         }
     }
 
@@ -5183,7 +5206,8 @@ public:
             case ASR::cmpopType::Gt: return ">";
             case ASR::cmpopType::GtE: return ">=";
         }
-        return "?";
+        throw CodeGenError("cmpop_str: operator " +
+            std::to_string(op) + " not implemented");
     }
 };
 
