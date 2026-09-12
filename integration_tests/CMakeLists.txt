@@ -2697,6 +2697,11 @@ RUN(NAME allocate_70 LABELS gfortran llvm)
 RUN(NAME allocate_71 LABELS gfortran llvm)
 RUN(NAME allocate_72 LABELS gfortran llvm)
 RUN(NAME allocate_73 LABELS gfortran llvm)
+RUN(NAME allocatable_attr_dims_01 LABELS gfortran llvm)
+RUN(NAME allocatable_attr_dims_implicit_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-typing)
+RUN(NAME allocatable_attr_then_type_decl_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-typing)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
