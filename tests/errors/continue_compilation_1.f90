@@ -1216,3 +1216,9 @@ subroutine decimal_specifier_1()
     write(*, *, decimal=1) 1.0
     write(*, *, decimal="POINT", decimal="COMMA") 1.0
 end subroutine
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement

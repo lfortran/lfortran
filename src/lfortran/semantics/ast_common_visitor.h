@@ -2193,6 +2193,9 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
+    // Name of the procedure currently being processed.
+    // Set alongside current_procedure_args in SymbolTableVisitor.
+    std::string current_procedure_name;
     std::vector<std::string> excluded_from_symtab;
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
@@ -7500,10 +7503,19 @@ public:
                                 current_procedure_args.end(), sym) !=
                                 current_procedure_args.end();
                         if (!is_argument) {
+                            std::string proc_info;
+                            if (!current_procedure_name.empty()) {
+                                proc_info = " of '" + current_procedure_name
+                                    + "'";
+                            }
                             diag.add(Diagnostic(
-                                "Intent attribute can only be applied to procedure arguments",
+                                "'" + sym + "' has an intent attribute"
+                                " but is not a dummy argument"
+                                + proc_info,
                                 Level::Error, Stage::Semantic, {
-                                    Label("",{x.m_attributes[i]->base.loc})
+                                    Label("'" + sym
+                                        + "' is not a dummy argument",
+                                        {x.m_attributes[i]->base.loc})
                                 }));
                             throw SemanticAbort();
                         }
@@ -7748,10 +7760,21 @@ public:
                                 AST::down_cast<AST::AttrIntent_t>(a);
                             // Check if intent is used on a non-argument variable
                             if (!is_argument) {
+                                std::string var_name = to_lower(s.m_name);
+                                std::string proc_info;
+                                if (!current_procedure_name.empty()) {
+                                    proc_info = " of '"
+                                        + current_procedure_name + "'";
+                                }
                                 diag.add(Diagnostic(
-                                    "Intent attribute can only be applied to procedure arguments",
+                                    "'" + var_name
+                                    + "' has an intent attribute"
+                                    " but is not a dummy argument"
+                                    + proc_info,
                                     Level::Error, Stage::Semantic, {
-                                        Label("",{a->base.loc})
+                                        Label("'" + var_name
+                                            + "' is not a dummy argument",
+                                            {a->base.loc})
                                     }));
                                 throw SemanticAbort();
                             }
