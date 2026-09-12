@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_decline_05.f90:17:5 - 19:10
+   |
+17 |        do concurrent (i = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+19 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose

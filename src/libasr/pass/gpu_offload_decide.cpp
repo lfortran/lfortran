@@ -41,14 +41,50 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
     Location loc = region.base.base.loc;
     size_t n_dims = nest.n_heads();
 
-    // A reduction combines what the threads computed, which the launch
-    // does not do yet, so the loop stays where that already works.
+    // A reduction is given one accumulator per thread and folded on the
+    // host afterwards, so what has to be true here is only that the
+    // accumulator is something a thread can hold and the operator is one
+    // the fold can spell. Anything else stays where it already works.
+    pending_reductions.clear();
     for (size_t i = 0; i < region.n_clauses; i++) {
-        if (region.m_clauses[i]->type ==
+        if (region.m_clauses[i]->type !=
                 ASR::omp_clauseType::OMPReduction) {
+            continue;
+        }
+        ASR::OMPReduction_t *clause = ASR::down_cast<ASR::OMPReduction_t>(
+            region.m_clauses[i]);
+        if (!gpu_reduction_op_supported(clause->m_operator)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::ReductionClause));
             return false;
+        }
+        for (size_t v = 0; v < clause->n_vars; v++) {
+            ASR::expr_t *var = clause->m_vars[v];
+            if (!ASR::is_a<ASR::Var_t>(*var)) {
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::ReductionClause));
+                return false;
+            }
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(var)->m_v;
+            ASR::ttype_t *type = ASRUtils::expr_type(var);
+            // An array accumulator would need one array per thread, which
+            // is a different shape of buffer than this builds.
+            if (ASRUtils::is_array(type) ||
+                    !device_caps.has_scalar_type(
+                        ASRUtils::type_get_past_array(type)) ||
+                    !gpu_reduction_identity_exists(clause->m_operator,
+                        type)) {
+                report_not_offloaded(loc,
+                    GpuDecline(GpuDeclineReason::ReductionClause));
+                return false;
+            }
+            GpuReductionInfo info;
+            info.orig_name = ASRUtils::symbol_name(sym);
+            info.op = clause->m_operator;
+            info.orig_scalar_sym = sym;
+            info.scalar_type = type;
+            info.host_buf_sym = nullptr;
+            pending_reductions.push_back(info);
         }
     }
 
@@ -154,6 +190,41 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
     }
 
+    // A statement no device can run keeps the loop on the CPU whichever
+    // backend is selected. This is asked before the width sweep below
+    // because that sweep answers for every symbol reaching the kernel,
+    // including the ones a lowering introduced: a `write` brings in an
+    // `iomsg` buffer of a type no device has, and reporting that buffer
+    // names something the user never wrote instead of the statement they
+    // did. Which of the two is the reason does not depend on the device,
+    // so it is settled first.
+    {
+        GpuUnsupportedStatementFinder finder(device_caps);
+        for (size_t i = 0; i < work.n_body; i++) {
+            finder.visit_stmt(*work.body[i]);
+        }
+        std::string in_routine;
+        if (finder.reason == GpuDeclineReason::None) {
+            for (ASR::Function_t *fn : reachable_routines(work.body,
+                    work.n_body)) {
+                GpuUnsupportedStatementFinder callee_finder(device_caps);
+                for (size_t i = 0; i < fn->n_body; i++) {
+                    callee_finder.visit_stmt(*fn->m_body[i]);
+                }
+                if (callee_finder.reason != GpuDeclineReason::None) {
+                    finder = callee_finder;
+                    in_routine = fn->m_name;
+                    break;
+                }
+            }
+        }
+        if (finder.reason != GpuDeclineReason::None) {
+            report_not_offloaded(finder.loc,
+                GpuDecline(finder.reason, in_routine));
+            return false;
+        }
+    }
+
     // A device whose scalar type set is narrower than the shared width
     // table has to be asked about every symbol that reaches the kernel:
     // where the two sets are the same, the kernel-argument and
@@ -206,13 +277,16 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     return true;
 }
 
-// The last questions a decline can be based on: the ones the rewrites above
-// the call made answerable, on symbols and statements that only exist once
-// the body has been lowered. False means the decline has been reported and
-// the caller stops, which leaves the loop on the host -- the guards it holds
-// put back everything the rewrites did to the pass's copy of the nest.
+// The last question a decline can be based on: the one the rewrites above
+// the call made answerable, on symbols that only exist once the body has
+// been lowered. False means the decline has been reported and the caller
+// stops, which leaves the loop on the host -- the guards it holds put back
+// everything the rewrites did to the pass's copy of the nest.
+//
+// The nest itself is no longer asked about: what a statement needs of the
+// device does not depend on the rewrites, so that question is settled
+// before them, where it can name the statement the source wrote.
 bool GpuOffloadVisitor::offloadable_after_rewrites(
-        const ParallelLoopNest &work,
         const std::map<std::string,
             std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
         const Location &loc) {
@@ -230,34 +304,6 @@ bool GpuOffloadVisitor::offloadable_after_rewrites(
         }
     }
 
-    // A statement no device can run keeps the loop on the CPU whichever
-    // backend is selected.
-    {
-        GpuUnsupportedStatementFinder finder(device_caps);
-        for (size_t i = 0; i < work.n_body; i++) {
-            finder.visit_stmt(*work.body[i]);
-        }
-        std::string in_routine;
-        if (finder.reason == GpuDeclineReason::None) {
-            for (ASR::Function_t *fn : reachable_routines(work.body,
-                    work.n_body)) {
-                GpuUnsupportedStatementFinder callee_finder(device_caps);
-                for (size_t i = 0; i < fn->n_body; i++) {
-                    callee_finder.visit_stmt(*fn->m_body[i]);
-                }
-                if (callee_finder.reason != GpuDeclineReason::None) {
-                    finder = callee_finder;
-                    in_routine = fn->m_name;
-                    break;
-                }
-            }
-        }
-        if (finder.reason != GpuDeclineReason::None) {
-            report_not_offloaded(finder.loc,
-                GpuDecline(finder.reason, in_routine));
-            return false;
-        }
-    }
     return true;
 }
 

@@ -57,11 +57,16 @@ if [[ $WIN != "1" ]]; then
     fi
 
     cd integration_tests
+    # Check that CMake can detect and drive lfortran as a Fortran compiler
+    # without any help. run_tests.py below bypasses this detection with
+    # -DCMAKE_Fortran_COMPILER_WORKS=1, so this configure step is the only
+    # place we exercise it. Build and run just the two CMake-driven tests:
+    # building the whole suite here duplicates `run_tests.py -b llvm` below.
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
-    make -j${NPROC}
-    ctest -L llvm -j${NPROC}
+    make -j${NPROC} program_cmake_01 program_cmake_02
+    ctest -j${NPROC} -R program_cmake
     cd ..
 
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
@@ -82,7 +87,12 @@ if [[ $WIN != "1" ]]; then
     if [[ $MACOS != "1" ]]; then
         ./run_tests.py -b llvm_submodule -sc -j${NPROC}
     fi
-    ./run_tests.py -b llvm --detect-leaks
+    # Leak detection is a compile-flag sweep over the whole suite; it is not
+    # platform specific, so run it on Linux only (a full pass costs ~7x more
+    # on the 3-core macOS runners).
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm --detect-leaks -j${NPROC}
+    fi
     cd ..
 
     pip install src/server/tests tests/server

@@ -3222,53 +3222,70 @@ public:
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
 
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                create_associate_stmt = true;
-                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
-                tmp_storage = variable->m_storage;
-                tmp_type = variable->m_type;
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-                ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
-                tmp_type = sim->m_type;
-            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
-                       ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
-                // Complex parts are designators. Associate them with the
-                // original storage instead of copying their current value.
-                create_associate_stmt = true;
-            } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
-                create_associate_stmt = true;
-                ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
-                ASR::ttype_t* base_type = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
-                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+            // A parenthesized selector `(x)` is a primary (R1001), not a
+            // designator, so per F2018 11.1.3.3 the selector is an expression.
+            // It is evaluated when the ASSOCIATE statement executes and the
+            // associate name holds a copy of its value, so a later redefinition
+            // of `x` is not visible through the associate name. None of the
+            // designator cases below, which alias the associate name to the
+            // selector's storage, may therefore apply. The parentheses are
+            // dropped by visit_Parenthesis, so this is decided on the AST.
+            if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
+                if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                    create_associate_stmt = true;
+                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                     tmp_storage = variable->m_storage;
-                    base_type = variable->m_type;
-                } else {
-                    base_type = ASRUtils::expr_type(tmp_array_section->m_v);
-                }
-                ASR::dimension_t *var_dims;
-                ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
-                Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
-                for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
-                    if (tmp_array_section->m_args[i].m_left) {
-                        tmp_dims.push_back(al, var_dims[i]);
+                    tmp_type = variable->m_type;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                    ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                    tmp_type = sim->m_type;
+                } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
+                           ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
+                    // Complex parts are designators. Associate them with the
+                    // original storage instead of copying their current value.
+                    create_associate_stmt = true;
+                } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
+                    create_associate_stmt = true;
+                    ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
+                    ASR::ttype_t* base_type = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
+                        ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+                        tmp_storage = variable->m_storage;
+                        base_type = variable->m_type;
+                    } else {
+                        base_type = ASRUtils::expr_type(tmp_array_section->m_v);
                     }
+                    ASR::dimension_t *var_dims;
+                    ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
+                    Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
+                    for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
+                        if (tmp_array_section->m_args[i].m_left) {
+                            tmp_dims.push_back(al, var_dims[i]);
+                        }
+                    }
+                    tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
+                           ASRUtils::is_pointer(tmp_type)) {
+                    // A reference to a function with a data pointer result is a
+                    // variable, so the associate name must be associated with the
+                    // target the pointer refers to instead of being assigned a
+                    // copy of its value.
+                    create_associate_stmt = true;
                 }
-                tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
-                       ASRUtils::is_pointer(tmp_type)) {
-                // A reference to a function with a data pointer result is a
-                // variable, so the associate name must be associated with the
-                // target the pointer refers to instead of being assigned a
-                // copy of its value.
-                create_associate_stmt = true;
+            }
+
+            if ( !create_associate_stmt && ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
+                // The value of a pointer expression is copied into the
+                // associate name, which is an ordinary variable holding that
+                // copy and is not itself a pointer.
+                tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {

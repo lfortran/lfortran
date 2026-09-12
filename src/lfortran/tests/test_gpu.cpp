@@ -70,6 +70,56 @@ TEST_CASE("GPU declines require explicit fallback regardless of category") {
     CHECK(no_alternative.has_error());
 }
 
+// A loop is turned down for the reason the user can act on. The width sweep
+// that runs for a device narrower than the shared table answers for every
+// symbol reaching the kernel, and a lowering introduces symbols of its own:
+// a `print` brings in an `iomsg` buffer of a type no device has. Reporting
+// that buffer would name something the source never mentions, so the
+// statement is asked about first.
+TEST_CASE("A device that narrows types still reports the statement it cannot run") {
+    const std::string source = R"(
+program p
+    implicit none
+    integer :: i
+    real :: a(4)
+    a = 0.0
+    do concurrent (i = 1:4)
+        a(i) = real(i)
+        print *, a(i)
+    end do
+end program
+)";
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    // Left strict on purpose: the error carries the reason in the message
+    // itself, where a warning puts it in a label that needs the source to
+    // render.
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_decline_io.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(source.size());
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_kernel_finalize", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    std::string rendered = diagnostics.render2();
+    INFO(rendered);
+    CHECK(diagnostics.has_error());
+    // The statement the source wrote, not a name a lowering invented.
+    CHECK(rendered.find("input or output") != std::string::npos);
+    CHECK(rendered.find("iomsg") == std::string::npos);
+}
+
 TEST_CASE("GPU layouts preserve identity, extents and device closure") {
     const std::string source = R"(
 program p

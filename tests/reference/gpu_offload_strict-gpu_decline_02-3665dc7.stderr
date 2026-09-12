@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: a strided section cannot be gathered for the gpu; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_decline_02.f90:21:9 - 23:14
+   |
+21 |            do concurrent (i = 1:4)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+23 |            end do
+   | ...^^^^^^^^^^^^^^ a strided section cannot be gathered for the gpu
