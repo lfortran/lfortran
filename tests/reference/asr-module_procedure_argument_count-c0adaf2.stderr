@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.module_procedure.argument_count_matches]: Module procedure 'impl' implementing the interface in module 'm' must take 1 arguments, not 2
-  --> tests/asr/verify/module_procedure_argument_count.asr:81:12
+  --> tests/asr/verify/module_procedure_argument_count.asr:82:12
    |
-81 |       "s" (Module
+82 |       "s" (Module
    |            ^^^^^^ failed here

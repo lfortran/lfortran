@@ -1,0 +1,528 @@
+(TranslationUnit
+    [(Module
+        conditional_expr_01_mod
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)
+            (Comment
+                "! Fortran 2023 conditional expressions (10.1.2.3 R1002): syntax of the primary."
+            )]
+        )
+        [(ImplicitNone
+            []
+            ()
+        )
+        (Interface
+            (InterfaceHeaderDefinedOperator
+                "dbl"
+            )
+            ()
+            [(InterfaceModuleProcedure
+                [dbl]
+                [(SimpleAttribute
+                    AttrModule
+                )]
+                ()
+            )]
+        )]
+        [(Function
+            dbl
+            [(x)]
+            [(AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )]
+            ()
+            ()
+            ()
+            [(Declaration
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(AttrIntent
+                    In
+                )]
+                [(x
+                []
+                []
+                ()
+                ()
+                None
+                ())]
+                ()
+            )
+            (Assignment
+                0
+                dbl
+                (* 2 x)
+                ()
+            )]
+            []
+            []
+        )]
+    )
+    (Program
+        conditional_expr_01
+        ()
+        [(Use
+            []
+            conditional_expr_01_mod
+            []
+            .false.
+            ()
+        )
+        (ImplicitNone
+            []
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeInteger
+                []
+                ()
+                ()
+                None
+            )
+            []
+            [(i
+            []
+            []
+            ()
+            ()
+            None
+            ())
+            (x
+            []
+            []
+            ()
+            ()
+            None
+            ())]
+            ()
+        )
+        (Declaration
+            (AttrType
+                TypeCharacter
+                [(len
+                ()
+                Star)]
+                ()
+                ()
+                None
+            )
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(s
+            []
+            []
+            ()
+            (String "what?" ())
+            Equal
+            ())]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! Minimal two-arm form"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (Logical .true. ())
+                1
+                0
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 1)
+            [(ErrorStop
+                0
+                1
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! Multi-arm form: the repeating group of R1002"
+                )]
+            )
+        )
+        (Assignment
+            0
+            i
+            0
+            ()
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (> i 0)
+                1
+                (ConditionalExpr
+                    (< i 0)
+                    (u- 1)
+                    0
+                )
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 0)
+            [(ErrorStop
+                0
+                2
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            i
+            2
+            ()
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (> i 0)
+                1
+                (ConditionalExpr
+                    (< i 0)
+                    (u- 1)
+                    0
+                )
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 1)
+            [(ErrorStop
+                0
+                3
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            i
+            (u- 3)
+            ()
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (> i 0)
+                1
+                (ConditionalExpr
+                    (< i 0)
+                    (u- 1)
+                    0
+                )
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x (u- 1))
+            [(ErrorStop
+                0
+                4
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! A conditional expression is a primary, so it can be an arm of another"
+                )
+                (Comment
+                    "! one when it is parenthesized"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (Logical .true. ())
+                (ConditionalExpr
+                    (Logical .false. ())
+                    1
+                    2
+                )
+                3
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 2)
+            [(ErrorStop
+                0
+                5
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (Logical .false. ())
+                (ConditionalExpr
+                    (Logical .true. ())
+                    1
+                    2
+                )
+                3
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 3)
+            [(ErrorStop
+                0
+                6
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! Used as a primary inside a larger expression (10.1.2.2, 10.1.3)"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (+ 10 (* (ConditionalExpr
+                (Logical .true. ())
+                2
+                3
+            ) 4))
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 18)
+            [(ErrorStop
+                0
+                7
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )
+        (Assignment
+            0
+            x
+            (+ (ConditionalExpr
+                (Logical .false. ())
+                1
+                2
+            ) 3)
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 5)
+            [(ErrorStop
+                0
+                8
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! Free form continuation lines inside the conditional expression"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (ConditionalExpr
+                (> 1 0)
+                42
+                0
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 42)
+            [(ErrorStop
+                0
+                9
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! `?` inside a character literal is not a token (6.1.6, 6.2.1)"
+                )]
+            )
+        )
+        (If
+            0
+            ()
+            (/= s (String "what?" ()))
+            [(ErrorStop
+                0
+                10
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! A defined unary operator has the highest precedence (Table 10.1) and"
+                )
+                (Comment
+                    "! takes the conditional expression as its primary operand"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (DefUnaryOp
+                "dbl"
+                (ConditionalExpr
+                    (Logical .true. ())
+                    3
+                    4
+                )
+            )
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 6)
+            [(ErrorStop
+                0
+                11
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)
+                (Comment
+                    "! The arms are full expressions (10.1.8)"
+                )]
+            )
+        )
+        (Assignment
+            0
+            x
+            (+ 1 (ConditionalExpr
+                (Logical .true. ())
+                (+ 2 3)
+                0
+            ))
+            ()
+        )
+        (If
+            0
+            ()
+            (/= x 6)
+            [(ErrorStop
+                0
+                12
+                ()
+                ()
+            )]
+            []
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)

@@ -86,6 +86,7 @@ physical type: the stride has to be carried along with the data.
       )
     ]
     :physical_type :DescriptorArray
+    :memory_space :Global
   )
   :value nil
 )

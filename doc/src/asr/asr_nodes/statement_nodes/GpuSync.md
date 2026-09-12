@@ -37,4 +37,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[GpuKernelLaunch](GpuKernelLaunch.md), [GpuKernelFunction](../symbol_nodes/GpuKernelFunction.md)
+[GpuKernelLaunch](GpuKernelLaunch.md), [exec_space](../enum_nodes/exec_space.md)

@@ -17,9 +17,12 @@ cmpop
 codimension_type
 deftype
 enumtype
+exec_space
+exec_target
 integerboz
 intent
 logicalbinop
+memory_space
 pass_attr
 presence
 reduction_op

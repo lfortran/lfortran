@@ -1,0 +1,9 @@
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_291.f90:27:9 - 36:14
+   |
+27 |            do concurrent (i = 1:size(r))
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+36 |            end do
+   | ...^^^^^^^^^^^^^^ local 't' has no gpu type of the same width

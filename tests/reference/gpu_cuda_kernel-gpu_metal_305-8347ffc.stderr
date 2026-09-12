@@ -1,0 +1,9 @@
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_305.f90:23:1 - 37:6
+   |
+23 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+37 |    end do
+   | ...^^^^^^ the gpu backend does not support a workspace sized from a struct element whose shape may differ per thread
