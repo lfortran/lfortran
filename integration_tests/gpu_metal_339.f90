@@ -5,6 +5,9 @@ program gpu_metal_339
 ! identity of its operator, so a thread whose body never reaches it
 ! contributes nothing, and the fold starts from whatever the scalar already
 ! held, which is what a Fortran reduction accumulates onto.
+!
+! `reduce` is Fortran 2023, so this cannot carry the gfortran label --
+! the compiler the CI uses rejects the clause outright.
 implicit none
 integer, parameter :: n = 1000
 real :: a(n), s, p, lo, hi
