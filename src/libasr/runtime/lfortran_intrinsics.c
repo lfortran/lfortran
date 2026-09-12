@@ -12108,14 +12108,23 @@ static void common_formatted_read(InputSource *inputSource,
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values) {
     if (iostat) *iostat = 0;
-    if (unit_num == -1) {
-        return;
-    } else if (unit_num == -2) {
-        // Read from stdin
-        int inp = 0;
+    if (unit_num == -1 || unit_num == -2) {
+        // Standard input. Finish the current record. A list-directed read
+        // stops at the record terminator and leaves it in the stream, so
+        // without this advance the next format-directed read would see the
+        // leftover terminator and treat it as a complete, empty record.
+        int c = 0;
+        bool read_any = false;
         do {
-            inp = fgetc(stdin);
-        } while (inp != '\n' && inp != EOF);
+            c = fgetc(stdin);
+            read_any = read_any || (c != EOF);
+        } while (c != '\n' && c != EOF);
+        // Hitting end of file while advancing only ends the statement when
+        // it transferred no values; otherwise the values already read are
+        // what the statement returns.
+        if (c == EOF && !read_any && no_values && iostat) {
+            *iostat = -1;
+        }
         return;
     }
 
