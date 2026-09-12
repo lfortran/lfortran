@@ -589,14 +589,20 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
                 throw SemanticAbort();
             }
         }
-        std::string intrinsic_name = to_lower(ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
         size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
         for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
         ASRUtils::create_intrinsic_function create_func =
-                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(intrinsic_name);
-        ASR::expr_t* intrinsic_expr = ASRUtils::EXPR(create_func(al, x.base.base.loc, args, diag));
-        ASR::IntrinsicElementalFunction_t *intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(intrinsic_expr);
-        this->visit_expr(*intrinsic_func->m_value);
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(x.m_intrinsic_id);
+        ASR::asr_t* intrinsic_asr = create_func == nullptr ? nullptr :
+                create_func(al, x.base.base.loc, args, diag);
+        ASR::expr_t* intrinsic_value = intrinsic_asr == nullptr ? nullptr :
+                ASRUtils::expr_value(ASRUtils::EXPR(intrinsic_asr));
+        if (intrinsic_value == nullptr) {
+            diag.add(Diagnostic("Intrinsic cannot be evaluated at compile time in implied do loop",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        this->visit_expr(*intrinsic_value);
     }
 };
 
@@ -6607,17 +6613,29 @@ public:
                                     int64_t anchor_element_size =
                                         ASRUtils::get_type_byte_size(
                                             anchor_arr->m_type);
-                                    // Use the larger array as backing storage so
-                                    // that the equivalenced alias cannot overrun it.
-                                    if (n_set == 2 &&
+                                    // The alias is implemented by turning the
+                                    // target into a pointer, so only a plain
+                                    // local variable can be the target. An
+                                    // object of a common block is storage owned
+                                    // by that block, so it can only be the
+                                    // source, even when it is written last in
+                                    // the equivalence set.
+                                    bool source_is_local = ASR::is_a<ASR::Var_t>(
+                                        *array_item1->m_v);
+                                    bool anchor_is_local = ASR::is_a<ASR::Var_t>(
+                                        *array_item2->m_v);
+                                    // Otherwise use the larger array as backing
+                                    // storage so that the equivalenced alias
+                                    // cannot overrun it.
+                                    bool anchor_is_larger = n_set == 2 &&
                                         offset1 == offset2 &&
                                         source_size > 0 &&
                                         anchor_size > source_size &&
                                         source_element_size > 0 &&
                                         source_element_size ==
-                                            anchor_element_size &&
-                                        ASR::is_a<ASR::Var_t>(
-                                            *array_item1->m_v)) {
+                                            anchor_element_size;
+                                    if (source_is_local &&
+                                        (!anchor_is_local || anchor_is_larger)) {
                                         std::swap(asr_eq1, asr_eq2);
                                         std::swap(array_item1, array_item2);
                                         std::swap(source_arr, anchor_arr);
@@ -6657,6 +6675,15 @@ public:
                                         ASRUtils::type_get_past_array(arg_type1));
 
                                     target_var_ref = array_item2->m_v;
+                                    if (!ASR::is_a<ASR::Var_t>(*target_var_ref)) {
+                                        // Both objects belong to a common block,
+                                        // so neither of them can be made an alias
+                                        // of the other.
+                                        diag.semantic_error_label(
+                                            "equivalence between two common block objects is not supported",
+                                            {x.base.base.loc}, "unsupported equivalence");
+                                        throw SemanticAbort();
+                                    }
                                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(target_var_ref);
                                     target_variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
                                     target_elem_type = type_unwrap(ASRUtils::expr_type(asr_eq2));
