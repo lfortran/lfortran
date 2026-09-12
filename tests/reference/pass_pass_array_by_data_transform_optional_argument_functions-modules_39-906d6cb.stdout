@@ -142,6 +142,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -188,6 +189,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 PointerArray
+                                                Global
                                             )
                                             ColMajor
                                         ))
@@ -277,6 +279,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 9 __1filedata))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -329,6 +332,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()
@@ -342,6 +346,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 9 filename)
@@ -601,6 +606,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 a1)

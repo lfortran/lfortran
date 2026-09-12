@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.function.argument_declared_locally]: The dummy argument 1 of 'helper', 'x', is not declared in it
-  --> tests/asr/verify/function_dummy_not_declared_locally.asr:86:18
+  --> tests/asr/verify/function_dummy_not_declared_locally.asr:87:18
    |
-86 |                 (Var
+87 |                 (Var
    |                  ^^^ failed here

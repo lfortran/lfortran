@@ -1,0 +1,9 @@
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_292.f90:33:9 - 43:14
+   |
+33 |            do concurrent (i = 1:size(r))
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+43 |            end do
+   | ...^^^^^^^^^^^^^^ workspace 'work' cannot be sized on the host

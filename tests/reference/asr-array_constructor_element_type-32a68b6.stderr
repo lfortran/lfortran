@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.array_constructor.element_type_matches]: ArrayConstructor element 2 has type i64, but the constructor builds an array of i32
-  --> tests/asr/verify/array_constructor_element_type.asr:73:18
+  --> tests/asr/verify/array_constructor_element_type.asr:74:18
    |
-73 |                 (IntegerConstant
+74 |                 (IntegerConstant
    |                  ^^^^^^^^^^^^^^^ failed here

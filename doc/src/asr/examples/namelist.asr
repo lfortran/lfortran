@@ -90,6 +90,7 @@
             :rec nil
             :pos nil
             :asynchronous nil
+            :decimal nil
           )
         ]
       )

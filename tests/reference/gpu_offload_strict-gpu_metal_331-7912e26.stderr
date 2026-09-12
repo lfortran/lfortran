@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: workspace 'work' cannot be sized on the host; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_metal_331.f90:12:9 - 19:14
+   |
+12 |            do concurrent (i=1:4)
+   |            ^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+19 |            end do
+   | ...^^^^^^^^^^^^^^ workspace 'work' cannot be sized on the host

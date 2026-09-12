@@ -26,6 +26,7 @@
                     )
                   ]
                   :physical_type :DescriptorArray
+                  :memory_space :Global
                 )
               )
               :type_declaration nil

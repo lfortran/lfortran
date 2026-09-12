@@ -64,6 +64,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Host
               )
               :dependencies []
               :args [
@@ -127,6 +128,7 @@
                 :static false
                 :restrictions []
                 :is_restriction false
+                :exec_space :Host
               )
               :dependencies []
               :args [

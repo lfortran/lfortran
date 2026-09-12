@@ -518,7 +518,8 @@ public:
 
     bool decode_form(const TextValue &value, const char *expected_name,
             std::initializer_list<const char *> expected_fields,
-            std::vector<const TextValue *> &fields) {
+            std::vector<const TextValue *> &fields,
+            std::initializer_list<const char *> optional_fields = {}) {
         std::string name;
         if (!decode_form_name(value, name)) {
             return false;
@@ -539,17 +540,33 @@ public:
         for (const char *field : expected_fields) {
             names.emplace_back(field);
         }
+        auto optional = [&](const std::string &field) {
+            return std::any_of(optional_fields.begin(), optional_fields.end(),
+                [&](const char *name) { return field == name; });
+        };
+        static const TextValue absent = [] {
+            TextValue result{};
+            result.kind = ASRText::ValueKind::Nil;
+            return result;
+        }();
+        size_t required_count = expected_count - optional_fields.size();
         const bool named = form->elements.size() > 1 &&
             form->elements[1]->kind == ASRText::ValueKind::Keyword &&
             std::find(names.begin(), names.end(),
                 form->elements[1]->text) != names.end();
-        if (!named && form->elements.size() == expected_count + 1) {
+        if (!named && (form->elements.size() == expected_count + 1 ||
+                form->elements.size() == required_count + 1)) {
+            bool omit_optional = form->elements.size() == required_count + 1;
+            size_t position = 1;
             for (size_t i = 0; i < expected_count; i++) {
-                fields[i] = form->elements[i + 1];
+                fields[i] = omit_optional && optional(names[i])
+                    ? &absent : form->elements[position++];
             }
             return true;
         }
-        if (!named || form->elements.size() != 1 + 2 * expected_count) {
+        if (!named || form->elements.size() % 2 != 1 ||
+                form->elements.size() > 1 + 2 * expected_count ||
+                form->elements.size() < 1 + 2 * required_count) {
             schema_error(value, "'" + name + "' expects " +
                 std::to_string(expected_count) +
                 " positional fields or exactly " +
@@ -579,6 +596,10 @@ public:
         }
         for (size_t i = 0; i < fields.size(); i++) {
             if (fields[i] == nullptr) {
+                if (optional(names[i])) {
+                    fields[i] = &absent;
+                    continue;
+                }
                 schema_error(value, "missing field :" + names[i] +
                     " in '" + name + "'");
                 return false;

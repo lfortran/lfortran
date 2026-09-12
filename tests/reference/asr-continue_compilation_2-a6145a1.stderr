@@ -50,10 +50,10 @@ syntax error: kind 16 is not supported yet.
 227 |     real*16 :: unsupported_kind
     |     ^^^^^^^ 
 
-tokenizer error: Token '?' is not recognized
+tokenizer error: Token '`' is not recognized
    --> tests/errors/continue_compilation_2.f90:233:17
     |
-233 |     integer  :: ? tokenizer_error
+233 |     integer  :: ` tokenizer_error
     |                 ^ token not recognized
 
 tokenizer error: Token '@' is not recognized in `format` statement

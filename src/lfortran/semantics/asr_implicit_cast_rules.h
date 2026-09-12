@@ -212,7 +212,7 @@ public:
                   }
                   if (new_data) {
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                              array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                             new_data, new_array_type, array->m_storage_format));
                   }
@@ -273,7 +273,7 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                 new_data, new_array_type, array->m_storage_format));
                     }
@@ -312,7 +312,7 @@ public:
                   }
                   if (new_data) {
                       ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                       value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                               new_data, new_array_type, array->m_storage_format));
                   }
@@ -360,7 +360,7 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                 new_data, new_array_type, array->m_storage_format));
                     }
@@ -465,7 +465,7 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                 new_data, new_array_type, array->m_storage_format));
                     }
@@ -521,7 +521,7 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                 new_data, new_array_type, array->m_storage_format));
                     }
@@ -563,7 +563,7 @@ public:
 
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                                 new_data, new_array_type, array->m_storage_format));
                     }
@@ -588,7 +588,7 @@ public:
                         new_array[i] = data[i];
                     }
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                      array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                      array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     // NOTE: Logical ArrayConstant_t data is stored packed one byte per element (`sizeof(bool) == 1`)
                     // regardless of Fortran kind. However, asr_verify (asr_verify.cpp:1579) computes `fixed_size * kind`
                     // and checks `n_data == x.m_n_data`. Keeping `array_size * dest_kind` here is currently required to
@@ -645,7 +645,7 @@ public:
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
-                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
                                                 new_data, new_array_type, array->m_storage_format));
                     }

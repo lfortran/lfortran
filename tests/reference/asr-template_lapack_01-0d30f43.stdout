@@ -154,6 +154,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 6 arg)]
@@ -300,6 +301,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 9 arg)]
@@ -333,6 +335,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -392,6 +395,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -451,6 +455,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -682,6 +687,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Array
@@ -697,6 +703,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (TypeParameter
@@ -715,6 +722,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -728,6 +736,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 8 transa)
@@ -773,6 +782,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -806,6 +816,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -850,6 +861,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -949,6 +961,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -959,6 +972,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (TypeParameter
@@ -977,6 +991,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -997,6 +1012,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -1005,6 +1021,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -1016,6 +1033,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_to_t
                                                     gemm]
@@ -1097,6 +1115,7 @@
                                                                 (()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -1114,6 +1133,7 @@
                                                                 (()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -1154,6 +1174,7 @@
                                                                     ()
                                                                 ))]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -1262,6 +1283,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1321,6 +1343,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1380,6 +1403,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -1611,6 +1635,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Array
@@ -1626,6 +1651,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (TypeParameter
@@ -1644,6 +1670,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -1657,6 +1684,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 4 transa)
@@ -1812,6 +1840,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 14 a)]
@@ -1902,6 +1931,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 13 a)]
@@ -1939,6 +1969,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -1970,6 +2001,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2012,6 +2044,7 @@
                                                             ()
                                                         ))]
                                                         PointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2109,6 +2142,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                         (Array
                                             (Real 4)
@@ -2117,6 +2151,7 @@
                                             (()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )]
                                         (Array
                                             (Real 4)
@@ -2131,6 +2166,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2149,6 +2185,7 @@
                                                         (()
                                                         ())]
                                                         DescriptorArray
+                                                        Global
                                                     )
                                                     ()
                                                 )
@@ -2157,6 +2194,7 @@
                                                 ()
                                             ))]
                                             PointerArray
+                                            Global
                                         )
                                         Source
                                         Implementation
@@ -2168,6 +2206,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [my_cast_to_real
                                     my_gemm_real]
@@ -2245,6 +2284,7 @@
                                                 (()
                                                 ())]
                                                 UnboundedPointerArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -2260,6 +2300,7 @@
                                                 (()
                                                 ())]
                                                 UnboundedPointerArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -2296,6 +2337,7 @@
                                                     ()
                                                 ))]
                                                 UnboundedPointerArray
+                                                Global
                                             )
                                             ()
                                         ))
@@ -2330,6 +2372,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2385,6 +2428,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2440,6 +2484,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2700,6 +2745,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Array
@@ -2713,6 +2759,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Real 8)
@@ -2727,6 +2774,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()
@@ -2740,6 +2788,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 12 transa)
@@ -2783,6 +2832,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2838,6 +2888,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -2893,6 +2944,7 @@
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -3120,6 +3172,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Array
@@ -3133,6 +3186,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)
                                         (Real 4)
@@ -3147,6 +3201,7 @@
                                             (()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )
                                         (Integer 4)]
                                         ()
@@ -3160,6 +3215,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 11 transa)
@@ -3259,6 +3315,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 18 arg)]
@@ -3292,6 +3349,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3351,6 +3409,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3410,6 +3469,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3641,6 +3701,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (Array
@@ -3656,6 +3717,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)
                                                         (TypeParameter
@@ -3674,6 +3736,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -3687,6 +3750,7 @@
                                                         .false.
                                                         []
                                                         .true.
+                                                        Host
                                                     )
                                                     []
                                                     [(Var 17 transa)
@@ -3756,6 +3820,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3789,6 +3854,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3833,6 +3899,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -3932,6 +3999,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (TypeParameter
@@ -3942,6 +4010,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (TypeParameter
@@ -3960,6 +4029,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -3980,6 +4050,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -3988,6 +4059,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -3999,6 +4071,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [cast_to_t
                                                     gemm]
@@ -4080,6 +4153,7 @@
                                                                 (()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4097,6 +4171,7 @@
                                                                 (()
                                                                 ())]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4137,6 +4212,7 @@
                                                                     ()
                                                                 ))]
                                                                 DescriptorArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4219,6 +4295,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4250,6 +4327,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4292,6 +4370,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4389,6 +4468,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Real 4)
@@ -4397,6 +4477,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (Real 4)
@@ -4411,6 +4492,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -4429,6 +4511,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -4437,6 +4520,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -4448,6 +4532,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_real
                                                     my_gemm_real]
@@ -4525,6 +4610,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4540,6 +4626,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4576,6 +4663,7 @@
                                                                     ()
                                                                 ))]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4610,6 +4698,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4641,6 +4730,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4683,6 +4773,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -4780,6 +4871,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Real 8)
@@ -4788,6 +4880,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (Real 8)
@@ -4802,6 +4895,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -4820,6 +4914,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -4828,6 +4923,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -4839,6 +4935,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_double
                                                     my_gemm_double]
@@ -4916,6 +5013,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4931,6 +5029,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4967,6 +5066,7 @@
                                                                     ()
                                                                 ))]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -4996,6 +5096,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5027,6 +5128,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5058,6 +5160,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5089,6 +5192,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5120,6 +5224,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5151,6 +5256,7 @@
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                                         FixedSizeArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -5220,6 +5326,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5251,6 +5358,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5293,6 +5401,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5390,6 +5499,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Real 8)
@@ -5398,6 +5508,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (Real 8)
@@ -5412,6 +5523,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -5430,6 +5542,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -5438,6 +5551,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -5449,6 +5563,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_double
                                                     my_gemm_double]
@@ -5526,6 +5641,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5541,6 +5657,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5577,6 +5694,7 @@
                                                                     ()
                                                                 ))]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5611,6 +5729,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5642,6 +5761,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5684,6 +5804,7 @@
                                                                             ()
                                                                         ))]
                                                                         PointerArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                     Source
@@ -5781,6 +5902,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )
                                                         (Array
                                                             (Real 4)
@@ -5789,6 +5911,7 @@
                                                             (()
                                                             ())]
                                                             DescriptorArray
+                                                            Global
                                                         )]
                                                         (Array
                                                             (Real 4)
@@ -5803,6 +5926,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -5821,6 +5945,7 @@
                                                                         (()
                                                                         ())]
                                                                         DescriptorArray
+                                                                        Global
                                                                     )
                                                                     ()
                                                                 )
@@ -5829,6 +5954,7 @@
                                                                 ()
                                                             ))]
                                                             PointerArray
+                                                            Global
                                                         )
                                                         Source
                                                         Implementation
@@ -5840,6 +5966,7 @@
                                                         .false.
                                                         []
                                                         .false.
+                                                        Host
                                                     )
                                                     [my_cast_to_real
                                                     my_gemm_real]
@@ -5917,6 +6044,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5932,6 +6060,7 @@
                                                                 (()
                                                                 ())]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5968,6 +6097,7 @@
                                                                     ()
                                                                 ))]
                                                                 UnboundedPointerArray
+                                                                Global
                                                             )
                                                             ()
                                                         ))
@@ -5996,6 +6126,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -6015,6 +6146,7 @@
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -6029,6 +6161,7 @@
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -6039,6 +6172,7 @@
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ()
                                             ()
@@ -6063,6 +6197,7 @@
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))
@@ -6077,6 +6212,7 @@
                                                     ((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                                     DescriptorArray
+                                                    Global
                                                 )
                                                 ()
                                             ))]
@@ -6087,6 +6223,7 @@
                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
+                                                Global
                                             )
                                             ()
                                             ()

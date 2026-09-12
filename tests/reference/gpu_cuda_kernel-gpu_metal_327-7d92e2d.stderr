@@ -1,0 +1,54 @@
+gpu-decline: not-implemented: the allocatable array result of 'conditional_result' has no single allocation the gpu can use
+gpu-decline: not-implemented: the allocatable array result of 'resized_result' has no single allocation the gpu can use
+gpu-decline: not-implemented: the allocatable array result of 'assigned_result' has no single allocation the gpu can use
+gpu-decline: not-implemented: the allocatable array result of 'reshaped_result' has no single allocation the gpu can use
+gpu-decline: not-implemented: the allocatable array result of 'fixed_implicit_result' has no single allocation the gpu can use
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_327.f90:10:1 - 12:6
+   |
+10 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |    end do
+   | ...^^^^^^ the allocatable array result of 'conditional_result' has no single allocation the gpu can use
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_327.f90:13:1 - 15:6
+   |
+13 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+15 |    end do
+   | ...^^^^^^ the allocatable array result of 'resized_result' has no single allocation the gpu can use
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_327.f90:16:1 - 18:6
+   |
+16 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |    end do
+   | ...^^^^^^ the allocatable array result of 'assigned_result' has no single allocation the gpu can use
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_327.f90:19:1 - 21:6
+   |
+19 |    do concurrent (i = 1:1)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+21 |    end do
+   | ...^^^^^^ the allocatable array result of 'reshaped_result' has no single allocation the gpu can use
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_327.f90:22:1 - 24:6
+   |
+22 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+24 |    end do
+   | ...^^^^^^ the allocatable array result of 'fixed_implicit_result' has no single allocation the gpu can use

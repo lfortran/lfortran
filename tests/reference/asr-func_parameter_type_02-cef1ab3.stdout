@@ -70,6 +70,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 5 x)]
@@ -113,6 +114,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     4 ~implicit_interface_f_8
                                     Source
@@ -220,6 +222,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 8 ~implicit_interface_f_8_arg_0)]
@@ -246,6 +249,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         (Real 4)
                         Source
@@ -258,6 +262,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 f)]
@@ -333,6 +338,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -403,6 +409,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     []
@@ -453,6 +460,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -465,6 +473,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [hinit853]
                     [(Var 2 f)]

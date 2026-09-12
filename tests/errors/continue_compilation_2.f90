@@ -230,7 +230,7 @@ program continue_compilation_2
     ! invalid keyword argument specified
     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     !tokenizer error
-    integer  :: ? tokenizer_error
+    integer  :: ` tokenizer_error
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     real :: idint_kind_mismatch = 4.23
     character(5):: ichar_runtime = "Hello"

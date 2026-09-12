@@ -50,6 +50,7 @@
                                                         [(()
                                                         ())]
                                                         UnboundedPointerArray
+                                                        Global
                                                     )
                                                     ()
                                                     Source
@@ -73,6 +74,7 @@
                                             [(()
                                             ())]
                                             UnboundedPointerArray
+                                            Global
                                         )]
                                         (Real 8)
                                         Source
@@ -85,6 +87,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 6 w)]
@@ -109,6 +112,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -145,6 +149,7 @@
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 UnboundedPointerArray
+                                                Global
                                             )
                                             ()
                                         ))]
@@ -230,6 +235,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -253,6 +259,7 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Real 8)
                         Source
@@ -265,6 +272,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [mvndfn_main__lcompilers]
                     [(Var 2 w)]
@@ -380,6 +388,7 @@
                                         [(()
                                         ())]
                                         UnboundedPointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -404,6 +413,7 @@
                             [(()
                             ())]
                             UnboundedPointerArray
+                            Global
                         )]
                         (Real 8)
                         Source
@@ -416,6 +426,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 4 entry__lcompilers)
@@ -820,6 +831,7 @@
                                             [(()
                                             ())]
                                             DescriptorArray
+                                            Global
                                         )
                                     )
                                     ()
@@ -851,6 +863,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     [mvndfn_main__lcompilers]
                     []

@@ -26,8 +26,8 @@ ttype
     | CPtr()
     | SymbolicExpression()
     | TypeParameter(identifier param)
-    | Array(ttype type, dimension* dims, array_physical_type physical_type)
-    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction)
+    | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
+    | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 ```
 
 ### Arguments

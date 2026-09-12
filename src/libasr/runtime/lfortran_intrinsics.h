@@ -297,6 +297,8 @@ LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_exit(int32_t status);
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
 LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num);
+LFORTRAN_API void _lfortran_set_transfer_decimal_mode(int32_t decimal_mode);
+LFORTRAN_API int32_t _lfortran_decimal_mode_from_str(const fchar* value, int64_t value_len);
 LFORTRAN_API int32_t _lfortran_get_sign_mode(int32_t unit_num);
 LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(

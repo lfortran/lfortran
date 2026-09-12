@@ -21,6 +21,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -50,6 +51,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -126,6 +128,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )
                         (Array
                             (Real 4)
@@ -136,6 +139,7 @@
                                 ()
                             ))]
                             PointerArray
+                            Global
                         )]
                         ()
                         Source
@@ -148,6 +152,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 n)
@@ -222,6 +227,7 @@
                             )]
                             []
                         )]
+                        ExecAuto
                     )]
                     ()
                     Public
@@ -248,6 +254,7 @@
                                         [(()
                                         ())]
                                         DescriptorArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -368,6 +375,7 @@
                             [(()
                             ())]
                             DescriptorArray
+                            Global
                         )]
                         ()
                         Source
@@ -380,6 +388,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 3 n)
@@ -438,7 +447,9 @@
                                 )]
                                 []
                             )]
+                            ExecAuto
                         )]
+                        ExecAuto
                     )]
                     ()
                     Public
