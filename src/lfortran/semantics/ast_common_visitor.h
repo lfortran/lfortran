@@ -6625,15 +6625,20 @@ public:
                                     bool anchor_is_local = ASR::is_a<ASR::Var_t>(
                                         *array_item2->m_v);
                                     // Otherwise use the larger array as backing
-                                    // storage so that the equivalenced alias
-                                    // cannot overrun it.
+                                    // storage when it contains the whole
+                                    // source at the associated offset, so
+                                    // that the alias neither starts before
+                                    // nor runs past the end of the storage.
                                     bool anchor_is_larger = n_set == 2 &&
-                                        offset1 == offset2 &&
+                                        offset2 >= offset1 &&
                                         source_size > 0 &&
                                         anchor_size > source_size &&
                                         source_element_size > 0 &&
                                         source_element_size ==
-                                            anchor_element_size;
+                                            anchor_element_size &&
+                                        (offset2 - offset1) *
+                                            anchor_element_size +
+                                            source_size <= anchor_size;
                                     if (source_is_local &&
                                         (!anchor_is_local || anchor_is_larger)) {
                                         std::swap(asr_eq1, asr_eq2);
