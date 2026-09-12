@@ -66,6 +66,64 @@ public:
     }
 };
 
+// Lower a final derived-type value through its type-bound `show` function.
+static bool lower_showable_result(Allocator &al,
+    ASR::TranslationUnit_t &unit)
+{
+    if (unit.n_items == 0 ||
+            unit.m_items[unit.n_items - 1]->type != ASR::asrType::expr) {
+        return false;
+    }
+
+    ASR::expr_t *value = ASRUtils::EXPR(unit.m_items[unit.n_items - 1]);
+    ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(value));
+    if (!ASR::is_a<ASR::StructType_t>(*value_type)) {
+        return false;
+    }
+
+    ASR::symbol_t *struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+    struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+        return false;
+    }
+
+    ASR::symbol_t *method_sym = ASR::down_cast<ASR::Struct_t>(
+        struct_sym)->m_symtab->get_symbol("show");
+    method_sym = ASRUtils::symbol_get_past_external(method_sym);
+    if (method_sym == nullptr ||
+            !ASR::is_a<ASR::StructMethodDeclaration_t>(*method_sym)) {
+        return false;
+    }
+
+    ASR::StructMethodDeclaration_t *method =
+        ASR::down_cast<ASR::StructMethodDeclaration_t>(method_sym);
+    ASR::symbol_t *proc_sym = ASRUtils::symbol_get_past_external(method->m_proc);
+    if (proc_sym == nullptr || !ASR::is_a<ASR::Function_t>(*proc_sym)) {
+        throw LCompilersException(
+            "type-bound 'show' procedure must be a function");
+    }
+    ASR::Function_t *proc = ASR::down_cast<ASR::Function_t>(proc_sym);
+    if (method->m_is_nopass || proc->n_args != 1 ||
+            proc->m_return_var == nullptr ||
+            !ASRUtils::is_character(*ASRUtils::expr_type(proc->m_return_var))) {
+        throw LCompilersException(
+            "type-bound 'show' function must take only its passed object "
+            "and return a character value");
+    }
+
+    ASR::symbol_t *imported_method = ASRUtils::import_class_procedure(
+        al, value->base.loc, method_sym, unit.m_symtab);
+    ASR::call_arg_t *args = nullptr;
+    size_t n_args = 0;
+    ASRUtils::insert_self_arg(al, imported_method, args, n_args, value);
+    ASR::ttype_t *return_type = ASRUtils::expr_type(proc->m_return_var);
+    unit.m_items[unit.n_items - 1] = ASRUtils::make_FunctionCall_t_util(
+        al, value->base.loc, imported_method, nullptr, args, n_args,
+        return_type, nullptr, value);
+    return true;
+}
+
 
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
@@ -210,10 +268,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.asr = pickle(*asr, true, false, false, false);
     }
 
-    bool character_result = asr->n_items > 0
+    bool display_data_result = lower_showable_result(al, *asr);
+    bool character_result = display_data_result || (asr->n_items > 0
         && asr->m_items[asr->n_items - 1]->type == ASR::asrType::expr
         && ASRUtils::is_character(*ASRUtils::expr_type(
-            ASRUtils::EXPR(asr->m_items[asr->n_items - 1])));
+            ASRUtils::EXPR(asr->m_items[asr->n_items - 1]))));
 
     // ASR -> LLVM. The passes rewrite this tree; that is fine, it is this
     // cell's own and is discarded afterwards. What later cells resolve
@@ -310,7 +369,6 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     } else if (return_type == "character") {
         StringDescriptor descriptor;
         e.execfn<void>(run_fn, descriptor.pointer());
-        result.type = EvalResult::character;
         char *data = descriptor.data();
         int64_t length = descriptor.length();
         if (data && length > 0) {
@@ -322,6 +380,18 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
                 : "_lfortran_get_default_allocator";
             void *allocator = e.execfn<void *>(allocator_fn);
             e.execfn<void>("_lfortran_free_alloc", allocator, data);
+        }
+        if (display_data_result) {
+            std::size_t separator = result.str.find('\n');
+            if (separator == std::string::npos || separator == 0) {
+                throw LCompilersException(
+                    "type-bound 'show' function returned an invalid MIME representation");
+            }
+            result.type = EvalResult::display_data;
+            result.mime_type = result.str.substr(0, separator);
+            result.str.erase(0, separator + 1);
+        } else {
+            result.type = EvalResult::character;
         }
     } else if (return_type == "void") {
         e.execfn<void>(run_fn);
