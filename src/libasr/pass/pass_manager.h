@@ -278,8 +278,9 @@ namespace LCompilers {
                 "parallel_canonicalize",
                 "parallel_dispatch",
                 "implied_do_loops",
-                // Extract candidates without discarding their CPU alternatives.
-                // OpenMP outlining and flattening defer while a candidate exists.
+                // Every loop the dispatch assigned to the device becomes a
+                // kernel and its launch. Nothing is kept to run it on the
+                // host instead: a loop this cannot lower is an error.
                 "gpu_offload",
                 "openmp",
                 // Whatever OpenMP construct no lowering claimed is unwrapped
@@ -324,8 +325,8 @@ namespace LCompilers {
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.
                 "gpu_memory_space",
-                // Decide on the normalized kernel, freeze its ABI and select
-                // an alternative before lowering the remaining host OpenMP.
+                // Lay out each kernel, now that shared lowering has given it
+                // the shape the device code generators see.
                 "gpu_kernel_finalize",
                 "device_launch_expand",
                 "do_loops",

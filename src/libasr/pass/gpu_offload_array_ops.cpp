@@ -9,7 +9,6 @@
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 
 namespace LCompilers {
@@ -213,7 +212,7 @@ ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
 // compile-time constant extents. Metal has no variable-length
 // arrays, and a run-time sized kernel temporary would have to become
 // a device buffer shared by every thread of the kernel, so a loop
-// that would need one is not offloaded at all and runs on the host.
+// that would need one is an error.
 bool GpuOffloadVisitor::alias_temp_is_fixed_size(ASR::expr_t *target) {
     const Location &loc = target->base.loc;
     int64_t n;
@@ -277,8 +276,8 @@ bool GpuOffloadVisitor::alias_temp_extents(ASR::expr_t *target,
 }
 
 // Reports a self-aliasing array assignment whose temporary this pass
-// cannot give a per-thread home. Called before any of the destructive
-// inline_* helpers, so the loop can still be left on the host.
+// cannot give a per-thread home. Called before any of the inline_*
+// helpers rewrite the body.
 //
 // A fixed-size temporary is a kernel-scope stack array, private to
 // the thread by construction. A run-time sized one has to be a
@@ -373,12 +372,9 @@ bool GpuOffloadVisitor::body_needs_unsupported_alias_temp(ASR::stmt_t **body,
 // rewrites further down lower the whole-array assignment into an
 // element loop bounded by `ubound(r)`, after which the shape is gone.
 // So write it into the type here, while the assignment it can be read
-// from is still whole-array. Every replaced dimension list is
-// recorded in `undo` so the loop can still be left untouched if a
-// later check declines the offload.
+// from is still whole-array.
 void GpuOffloadVisitor::size_scope_array_temporaries(
-        ASR::stmt_t **body, size_t n_body,
-        std::vector<ScopeArrayDims> &undo) {
+        ASR::stmt_t **body, size_t n_body) {
     for (size_t si = 0; si < n_body; si++) {
         SymbolTable *symtab = nullptr;
         ASR::stmt_t **inner_body = nullptr;
@@ -403,7 +399,7 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             inner_n_body = ab->n_body;
         } else if (ASR::is_a<ASR::DoLoop_t>(*body[si])) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(body[si]);
-            size_scope_array_temporaries(dl->m_body, dl->n_body, undo);
+            size_scope_array_temporaries(dl->m_body, dl->n_body);
             continue;
         } else {
             continue;
@@ -431,13 +427,12 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             // An allocatable must keep deferred extents, so the
             // temporary becomes an automatic array of the same
             // shape -- which is what the workspace machinery binds.
-            undo.push_back({var, var->m_type});
             var->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, vloc,
                 arr->m_type, dims.p, dims.n,
                 ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         }
-        size_scope_array_temporaries(inner_body, inner_n_body, undo);
+        size_scope_array_temporaries(inner_body, inner_n_body);
     }
 }
 
@@ -1155,6 +1150,85 @@ bool GpuOffloadVisitor::const_section_extent(
     return true;
 }
 
+// The integer an extent expression folds to, if it is a constant.
+static bool section_int_constant(ASR::expr_t *e, int64_t &out) {
+    while (e && ASR::is_a<ASR::Cast_t>(*e)) {
+        e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+    }
+    if (!e) return false;
+    ASR::expr_t *value = ASRUtils::expr_value(e);
+    if (value) e = value;
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*e)) return false;
+    out = ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+    return true;
+}
+
+// Whether `e` is the lower or upper bound of dimension `d` (0-based) of the
+// array `base` itself -- how `:` is spelled.
+static bool is_bound_of(ASR::expr_t *e, ASR::expr_t *base, size_t d,
+        ASR::arrayboundType kind) {
+    while (e && ASR::is_a<ASR::Cast_t>(*e)) {
+        e = ASR::down_cast<ASR::Cast_t>(e)->m_arg;
+    }
+    if (!e || !ASR::is_a<ASR::ArrayBound_t>(*e)) return false;
+    ASR::ArrayBound_t *bound = ASR::down_cast<ASR::ArrayBound_t>(e);
+    int64_t dim;
+    if (bound->m_bound != kind || !bound->m_dim
+            || !section_int_constant(bound->m_dim, dim)
+            || dim != (int64_t) d + 1) {
+        return false;
+    }
+    return ASR::is_a<ASR::Var_t>(*bound->m_v) && ASR::is_a<ASR::Var_t>(*base)
+        && ASR::down_cast<ASR::Var_t>(bound->m_v)->m_v
+            == ASR::down_cast<ASR::Var_t>(base)->m_v;
+}
+
+// Whether dimension `d` of the section runs over the whole of that dimension
+// of its base, one element at a time, as far as can be told before run time.
+static bool section_dim_is_whole(const ASR::ArraySection_t *as, size_t d) {
+    const ASR::array_index_t &index = as->m_args[d];
+    if (!index.m_left || !index.m_right || !index.m_step) return false;
+    int64_t step;
+    if (!section_int_constant(index.m_step, step) || step != 1) return false;
+    if (is_bound_of(index.m_left, as->m_v, d, ASR::arrayboundType::LBound)
+            && is_bound_of(index.m_right, as->m_v, d,
+                ASR::arrayboundType::UBound)) {
+        return true;
+    }
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(as->m_v), dims);
+    int64_t start, length, left, right;
+    return d < n_dims && dims[d].m_start && dims[d].m_length
+        && section_int_constant(dims[d].m_start, start)
+        && section_int_constant(dims[d].m_length, length)
+        && section_int_constant(index.m_left, left)
+        && section_int_constant(index.m_right, right)
+        && left == start && right == start + length - 1;
+}
+
+// Whether the section's elements are not adjacent in its base: a dimension
+// stepped by other than one, or a range behind a dimension that does not run
+// over the whole base -- the row `a(i,:)` of a column-major matrix advances
+// by a column per element. Handed to a device function as a base pointer,
+// such a section would be read as if it were contiguous.
+static bool section_is_noncontiguous(const ASR::ArraySection_t *as) {
+    for (size_t i = 0; i < as->n_args; i++) {
+        if (!as->m_args[i].m_left || !as->m_args[i].m_right
+                || !as->m_args[i].m_step) {
+            continue;
+        }
+        int64_t step;
+        if (!section_int_constant(as->m_args[i].m_step, step) || step != 1) {
+            return true;
+        }
+        for (size_t e = 0; e < i; e++) {
+            if (!section_dim_is_whole(as, e)) return true;
+        }
+    }
+    return false;
+}
+
 bool GpuOffloadVisitor::section_is_strided(const ASR::ArraySection_t *as) {
     for (size_t i = 0; i < as->n_args; i++) {
         if (!as->m_args[i].m_left || !as->m_args[i].m_right
@@ -1310,7 +1384,9 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     }
     if (!inner || !ASR::is_a<ASR::ArraySection_t>(*inner)) return false;
     ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(inner);
-    if (!section_is_strided(as)) return false;
+    // A section stepped by one whose elements are still not adjacent -- a
+    // row of a matrix -- is gathered too whenever it can be.
+    if (!section_is_noncontiguous(as)) return false;
     if (!strided_section_is_gatherable(as)) return false;
     std::vector<int> range_dims;
     for (size_t d = 0; d < as->n_args; d++) {

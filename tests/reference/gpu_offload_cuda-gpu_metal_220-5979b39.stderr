@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: a derived-type element cannot be gathered for the gpu
+  --> tests/../integration_tests/gpu_metal_220.f90:74:1 - 76:6
+   |
+74 |    do concurrent (i = 1:2)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+76 |    end do
+   | ...^^^^^^ a derived-type element cannot be gathered for the gpu

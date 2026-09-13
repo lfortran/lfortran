@@ -672,9 +672,9 @@ public:
                 if (kind == 1) return "char";
                 if (kind == 2) return "short";
                 if (kind == 4) return "int";
-                // No device language has a 64-bit boolean; the launch turns
-                // such a loop back to the host rather than reinterpreting the
-                // host's 8-byte elements as 4-byte ones.
+                // No device language has a 64-bit boolean; such a loop is an
+                // error rather than a reinterpretation of the host's 8-byte
+                // elements as 4-byte ones.
                 return unsupported_gpu_type("logical", kind);
             }
             case ASR::ttypeType::Array: {

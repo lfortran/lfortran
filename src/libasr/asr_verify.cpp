@@ -2642,16 +2642,6 @@ public:
             "every generated GPU parameter must belong to a workspace dimension");
     }
 
-    void visit_GpuOffload(const GpuOffload_t &x) {
-        require_id(ASRUtils::is_device_kernel(x.m_kernel),
-            "asr.verify.gpu_offload.kernel",
-            "a GPU offload candidate must name a kernel");
-        require_id(x.n_body > 0 && x.n_fallback > 0,
-            "asr.verify.gpu_offload.alternatives",
-            "a GPU offload candidate must retain both execution alternatives");
-        BaseWalkVisitor<VerifyVisitor>::visit_GpuOffload(x);
-    }
-
     void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
         require_id(ASRUtils::is_device_kernel(x.m_kernel),
             "asr.verify.gpu_kernel_launch.kernel_runs_on_device",

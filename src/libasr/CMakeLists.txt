@@ -83,6 +83,7 @@ set(SRC
     pass/conditional_expr.cpp
     pass/replace_with_compile_time_values.cpp
     pass/gpu_decline.cpp
+    pass/gpu_unsupported_check.cpp
     pass/gpu_offload.cpp
     pass/gpu_offload_associate.cpp
     pass/gpu_offload_body.cpp

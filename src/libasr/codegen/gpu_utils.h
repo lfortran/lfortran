@@ -2270,7 +2270,7 @@ static const int PACKED_BUFFER_ALIGN = 16;
 // The Allocate and ReAlloc statements a routine applies to a component of one
 // of its variables, keyed by "variable.component".
 class StructMemberShapeCollector:
-    public ASR::BaseWalkVisitor<StructMemberShapeCollector> {
+    public ASRUtils::BlockBodyWalkVisitor<StructMemberShapeCollector> {
     public:
 
         std::map<GpuStructMemberKey, ASR::alloc_arg_t*> shapes;
@@ -2321,6 +2321,28 @@ inline std::map<GpuStructMemberKey, ASR::alloc_arg_t*> struct_member_shapes(
     return collector.shapes;
 }
 
+// The targets a routine's statements associate a pointer variable with.
+class AssociateTargetCollector:
+    public ASRUtils::BlockBodyWalkVisitor<AssociateTargetCollector> {
+    public:
+
+        ASR::symbol_t *sym;
+        std::vector<ASR::expr_t*> targets;
+
+        AssociateTargetCollector(ASR::symbol_t *sym_): sym(sym_) {}
+
+        void visit_Associate(const ASR::Associate_t &x) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v == sym) {
+                targets.push_back(x.m_value);
+            }
+        }
+
+        void visit_Function(const ASR::Function_t &/*x*/) {
+            // A nested routine associates its own variables.
+        }
+};
+
 // Binds the variables of a routine to the arguments a call passes it, so that
 // an extent the routine writes can be read at the call site.
 struct GpuExtentContext {
@@ -2328,6 +2350,30 @@ struct GpuExtentContext {
     ASR::call_arg_t *args = nullptr;
     size_t n_args = 0;
     const std::map<std::string, const GpuVlaWorkspace*> *workspaces = nullptr;
+    // The kernel that makes the call, whose own variables an extent read
+    // at the call site refers to.
+    const ASR::Function_t *kernel = nullptr;
+
+    // The context of the call site, where the arguments are evaluated.
+    GpuExtentContext caller() const {
+        GpuExtentContext caller_ctx;
+        caller_ctx.workspaces = workspaces;
+        caller_ctx.kernel = kernel;
+        return caller_ctx;
+    }
+
+    // The one array a pointer variable of the routine in scope is associated
+    // with, so that the pointer's extents are those of that array -- the
+    // section `c(i,:)` a kernel binds to a temporary before passing it on.
+    ASR::expr_t* associated_target(ASR::symbol_t *sym) const {
+        const ASR::Function_t *fn = callee != nullptr ? callee : kernel;
+        if (fn == nullptr) return nullptr;
+        AssociateTargetCollector collector(sym);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            collector.visit_stmt(*fn->m_body[i]);
+        }
+        return collector.targets.size() == 1 ? collector.targets[0] : nullptr;
+    }
 
     // The argument a variable of the callee is bound to, if any.
     ASR::expr_t* bound_arg(ASR::symbol_t *sym) const {
@@ -2349,6 +2395,9 @@ struct GpuExtentContext {
 inline bool gpu_extent_value(ASR::expr_t *e, const GpuExtentContext &ctx,
     int64_t &out);
 
+inline bool gpu_array_bound(ASR::expr_t *array, int64_t dim,
+    ASR::arrayboundType bound, const GpuExtentContext &ctx, int64_t &out);
+
 // The number of elements an array expression has along `dim` (all dimensions
 // when `dim` is zero), read from the type it is declared with or from the
 // workspace that backs it.
@@ -2359,9 +2408,11 @@ inline bool gpu_array_extent(ASR::expr_t *array, int64_t dim,
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
         ASR::expr_t *bound = ctx.bound_arg(sym);
         if (bound != nullptr) {
-            GpuExtentContext caller_ctx;
-            caller_ctx.workspaces = ctx.workspaces;
-            return gpu_array_extent(bound, dim, caller_ctx, out);
+            return gpu_array_extent(bound, dim, ctx.caller(), out);
+        }
+        ASR::expr_t *target = ctx.associated_target(sym);
+        if (target != nullptr) {
+            return gpu_array_extent(target, dim, ctx, out);
         }
         if (ctx.workspaces != nullptr) {
             auto ws = ctx.workspaces->find(
@@ -2379,6 +2430,40 @@ inline bool gpu_array_extent(ASR::expr_t *array, int64_t dim,
             }
         }
     }
+    if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+        // Each subscript triplet gives the section one dimension; a scalar
+        // subscript gives it none.
+        ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(v);
+        int64_t total = 1;
+        int64_t section_dim = 0;
+        for (size_t d = 0; d < section->n_args; d++) {
+            const ASR::array_index_t &index = section->m_args[d];
+            if (index.m_left == nullptr && index.m_step == nullptr) continue;
+            section_dim++;
+            if (dim != 0 && dim != section_dim) continue;
+            int64_t left, right, step = 1;
+            if (index.m_left != nullptr
+                    ? !gpu_extent_value(index.m_left, ctx, left)
+                    : !gpu_array_bound(section->m_v, (int64_t) d + 1,
+                        ASR::arrayboundType::LBound, ctx, left)) {
+                return false;
+            }
+            if (index.m_right != nullptr
+                    ? !gpu_extent_value(index.m_right, ctx, right)
+                    : !gpu_array_bound(section->m_v, (int64_t) d + 1,
+                        ASR::arrayboundType::UBound, ctx, right)) {
+                return false;
+            }
+            if (index.m_step != nullptr &&
+                    !gpu_extent_value(index.m_step, ctx, step)) {
+                return false;
+            }
+            if (step == 0) return false;
+            total *= std::max<int64_t>((right - left + step) / step, 0);
+        }
+        out = total;
+        return true;
+    }
     ASR::dimension_t *dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(v), dims);
@@ -2392,6 +2477,69 @@ inline bool gpu_array_extent(ASR::expr_t *array, int64_t dim,
         total *= length;
     }
     out = total;
+    return true;
+}
+
+// The lower or upper bound of dimension `dim` (1-based) of an array
+// expression, when it is known before the kernel is dispatched.
+inline bool gpu_array_bound(ASR::expr_t *array, int64_t dim,
+        ASR::arrayboundType bound, const GpuExtentContext &ctx,
+        int64_t &out) {
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(array);
+    if (dim < 1) return false;
+    if (ASR::is_a<ASR::Var_t>(*v)) {
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
+        ASR::expr_t *actual = ctx.bound_arg(sym);
+        if (actual != nullptr) {
+            // A dummy argument is counted from one unless it declares a
+            // lower bound of its own.
+            ASR::dimension_t *dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(v), dims);
+            if ((size_t) dim > n_dims) return false;
+            int64_t lower = 1;
+            if (dims[dim - 1].m_start != nullptr &&
+                    !gpu_extent_value(dims[dim - 1].m_start, ctx, lower)) {
+                return false;
+            }
+            if (bound == ASR::arrayboundType::LBound) {
+                out = lower;
+                return true;
+            }
+            int64_t length;
+            if (!gpu_array_extent(actual, dim, ctx.caller(), length)) {
+                return false;
+            }
+            out = lower + length - 1;
+            return true;
+        }
+        ASR::expr_t *target = ctx.associated_target(sym);
+        if (target != nullptr) {
+            return gpu_array_bound(target, dim, bound, ctx, out);
+        }
+    }
+    if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+        // A section is counted from one.
+        if (bound == ASR::arrayboundType::LBound) {
+            out = 1;
+            return true;
+        }
+        return gpu_array_extent(v, dim, ctx, out);
+    }
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(v), dims);
+    if ((size_t) dim > n_dims) return false;
+    if (dims[dim - 1].m_start == nullptr ||
+            dims[dim - 1].m_length == nullptr) {
+        return false;
+    }
+    int64_t start, length;
+    if (!gpu_extent_value(dims[dim - 1].m_start, ctx, start) ||
+            !gpu_extent_value(dims[dim - 1].m_length, ctx, length)) {
+        return false;
+    }
+    out = bound == ASR::arrayboundType::LBound ? start : start + length - 1;
     return true;
 }
 
@@ -2416,6 +2564,15 @@ inline bool gpu_extent_value(ASR::expr_t *e, const GpuExtentContext &ctx,
         }
         return gpu_array_extent(size->m_v, dim, ctx, out);
     }
+    if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
+        ASR::ArrayBound_t *bound = ASR::down_cast<ASR::ArrayBound_t>(v);
+        int64_t dim;
+        if (bound->m_dim == nullptr ||
+                !gpu_extent_value(bound->m_dim, ctx, dim)) {
+            return false;
+        }
+        return gpu_array_bound(bound->m_v, dim, bound->m_bound, ctx, out);
+    }
     if (ASR::is_a<ASR::IntegerBinOp_t>(*v)) {
         ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(v);
         int64_t left, right;
@@ -2434,9 +2591,7 @@ inline bool gpu_extent_value(ASR::expr_t *e, const GpuExtentContext &ctx,
         ASR::expr_t *bound = ctx.bound_arg(
             ASR::down_cast<ASR::Var_t>(v)->m_v);
         if (bound != nullptr) {
-            GpuExtentContext caller_ctx;
-            caller_ctx.workspaces = ctx.workspaces;
-            return gpu_extent_value(bound, caller_ctx, out);
+            return gpu_extent_value(bound, ctx.caller(), out);
         }
     }
     int64_t value;
@@ -2461,9 +2616,7 @@ inline bool gpu_extent_member_key(ASR::expr_t *e, const GpuExtentContext &ctx,
         ASR::expr_t *bound = ctx.bound_arg(
             ASR::down_cast<ASR::Var_t>(v)->m_v);
         if (bound == nullptr) return false;
-        GpuExtentContext caller_ctx;
-        caller_ctx.workspaces = ctx.workspaces;
-        return gpu_extent_member_key(bound, caller_ctx, key);
+        return gpu_extent_member_key(bound, ctx.caller(), key);
     }
     if (!ASR::is_a<ASR::ArraySize_t>(*v)) return false;
     ASR::expr_t *array = ASRUtils::get_past_array_physical_cast(
@@ -2495,17 +2648,19 @@ inline bool gpu_extent_member_key(ASR::expr_t *e, const GpuExtentContext &ctx,
 // paired with the shapes that routine gives the components of that element.
 // Reported as "struct_array.component" keys of the kernel's own arrays.
 class KernelStructMemberShapes:
-    public ASR::BaseWalkVisitor<KernelStructMemberShapes> {
+    public ASRUtils::BlockBodyWalkVisitor<KernelStructMemberShapes> {
     public:
 
         // key -> (shape, the context that reads the shape's extents)
         std::map<GpuStructMemberKey,
             std::pair<ASR::alloc_arg_t*, GpuExtentContext>> shapes;
         const std::map<std::string, const GpuVlaWorkspace*> *workspaces;
+        const ASR::Function_t *kernel;
 
         KernelStructMemberShapes(
-            const std::map<std::string, const GpuVlaWorkspace*> *workspaces_):
-            workspaces(workspaces_) {}
+            const std::map<std::string, const GpuVlaWorkspace*> *workspaces_,
+            const ASR::Function_t *kernel_):
+            workspaces(workspaces_), kernel(kernel_) {}
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_name);
@@ -2541,6 +2696,7 @@ class KernelStructMemberShapes:
                     ctx.args = x.m_args;
                     ctx.n_args = x.n_args;
                     ctx.workspaces = workspaces;
+                    ctx.kernel = kernel;
                     shapes.emplace(
                         GpuStructMemberKey{array_name, shape.first.member},
                         std::make_pair(shape.second, ctx));
@@ -2560,13 +2716,14 @@ inline std::map<GpuStructMemberKey,
         std::pair<ASR::alloc_arg_t*, GpuExtentContext>>
     kernel_struct_member_shapes(const ASR::Function_t &kernel,
         const std::map<std::string, const GpuVlaWorkspace*> &ws_by_name) {
-    KernelStructMemberShapes visitor(&ws_by_name);
+    KernelStructMemberShapes visitor(&ws_by_name, &kernel);
     for (size_t i = 0; i < kernel.n_body; i++) {
         visitor.visit_stmt(*kernel.m_body[i]);
     }
     // A component the kernel shapes itself, rather than through a call.
     GpuExtentContext ctx;
     ctx.workspaces = &ws_by_name;
+    ctx.kernel = &kernel;
     for (auto &shape: struct_member_shapes(kernel.m_body, kernel.n_body)) {
         visitor.shapes.emplace(shape.first,
             std::make_pair(shape.second, ctx));

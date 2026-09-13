@@ -95,8 +95,8 @@ class DeviceLaunchExpandVisitor :
         // A launch this pass cannot lay out, found once the loop it came
         // from is gone. `gpu_offload` answers the same question while the
         // loop is still there and leaves it on the host; there is nothing
-        // left to leave it on here, so this is an error whether or not the
-        // CPU fallback was asked for. The wording is the one every decline
+        // left to leave it on here, so this is an error whatever the reason
+        // for the decline. The wording is the one every decline
         // is phrased in, so that the two stages cannot describe the same
         // limitation differently.
 
