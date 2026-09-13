@@ -8,7 +8,10 @@ description: >
   create-mre and fix-mre repeatedly (one MRE per underlying bug) until the
   original issue is fully fixed, open a draft PR from the user's fork with
   `gh`, review it with pr-review, and keep fixing CI failures and review
-  blockers until the PR is green and clean, then mark it ready for review.
+  blockers until the PR is green and clean, then add the
+  Tests::Run-Exhaustive label, fix any exhaustive CI failures, and mark it
+  ready for review. Unrelated pre-existing bugs found along the way are filed
+  as separate issues and linked from the PR.
   Triggers: fix issue, fix github issue, issue to PR, resolve issue, send PR
   for issue, end-to-end fix.
 compatibility: >
@@ -30,9 +33,12 @@ setup ─► repro-issue ─► ┌─► create-mre ─► fix-mre ─► issue
             ▼
    ┌─► CI watch  +  fresh pr-review  +  human comments
    │        │
-   │        ├─ all clean ─► mark PR ready ─► final report
+   │        ├─ clean, no label yet ─► add Tests::Run-Exhaustive ─► CI watch
+   │        ├─ clean + exhaustive green ─► mark PR ready ─► final report
    │        ▼
    └── fix subagent (commit, push)
+
+unrelated pre-existing bugs (any phase) ─► followups.md ─► file issues, link in PR
 ```
 
 ## You are the orchestrator: delegate everything
@@ -57,7 +63,14 @@ last hours:
   anything longer (logs, review text, PR body) in a file under the state
   directory, returning only the path.
 - Only one subagent may modify the checkout at a time. Read-only subagents
-  (review) may run concurrently with a CI watch, never with a fixer.
+  (review, follow-up filing) may run concurrently with a CI watch, never with
+  a fixer.
+- Every report ends with an **Unrelated bugs** list (or `none`): LFortran bugs
+  the subagent ran into that are not needed to fix the original issue, such
+  as a failure that also occurs on `main` or a separate bug seen while
+  reducing or reviewing. One line each, plus a pointer to where the details
+  (code, command, output) are saved. Never silently drop them, and never
+  bundle their fixes into this PR. Append each new one to `followups.md`.
 
 ### State directory
 
@@ -70,17 +83,21 @@ session resumes, reread `state.md` to find where you are.
 
 Subagents write their artifacts there: `repro.md`; for each MRE iteration `j`,
 `mre_<j>.md`, `fix_<j>.md`, `check_<j>.md`; then `pr_body.md`, and for each
-review round `k`, `review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. The
-reproducers themselves (`run_re.sh`, `re_*.f90`, `run.sh`, `mre_*.f90`) live in
-the repository root, following the conventions of the `repro-issue` and
-`create-mre` skills. Before iteration `j+1` overwrites `run.sh`, the current
+review round `k`, `review_<k>.md`, `round_<k>.md`, `ci_<k>.log`. You maintain
+`followups.md`: one line per unrelated bug, with its status (`unfiled`,
+`filed #M`, `duplicate of #M`, or `regression, sent to fix loop`) and the
+path to its details. The reproducers themselves (`run_re.sh`, `re_*.f90`,
+`run.sh`, `mre_*.f90`) live in the repository root, following the conventions
+of the `repro-issue` and `create-mre` skills. Before iteration `j+1` overwrites `run.sh`, the current
 MRE files are archived to `.fix-issue/<id>/mre_<j>/`.
 
 ## Authorization
 
 Invoking this skill counts as the user's consent to create a branch, commit,
 push to **the user's fork**, open a draft PR against `lfortran/lfortran`, push
-follow-up commits to that PR, and mark it ready for review. This overrides the
+follow-up commits to that PR, add the `Tests::Run-Exhaustive` label to that
+PR, open new issues at `lfortran/lfortran` for unrelated pre-existing bugs
+found along the way, and mark the PR ready for review. This overrides the
 "do not commit" default in `fix-mre`. Pass this authorization explicitly to
 the subagents that need it.
 
@@ -89,8 +106,9 @@ Never, under any circumstances:
 - push to the upstream `lfortran/lfortran` repository;
 - force-push, or rebase a branch that already has an open PR (merge
   `upstream/main` into it instead, per `AGENTS.md`);
-- comment on, close, or relabel the issue, or post review comments on other
-  people's PRs;
+- comment on, close, or relabel the original issue, add any other label to
+  the PR, comment on other issues or PRs (including existing issues found in
+  a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
 
 ## Inputs
@@ -251,7 +269,9 @@ It should:
    Verification, Rationale.
    - Summary: first line `Fixes #<N>` (omit it for non-GitHub input), then
      the issue and a bullet per bug fixed, in commit order.
-   - Scope: what is and is not covered.
+   - Scope: what is and is not covered, including unrelated bugs found along
+     the way (linked once filed, see below) and non-bug follow-ups such as
+     refactoring ideas or missing tests for existing behaviour.
    - Verification: the integration tests added, each failing before its fix
      and passing after; the original reproducer now passing; the suite
      results.
@@ -263,6 +283,34 @@ It should:
    it is a `fix: ...` summary of the issue.
 
 Report: the PR number, URL, and head SHA. Record them in `state.md`.
+
+#### Follow-up issues subagent
+
+Spawn it once the PR exists if `followups.md` has `unfiled` entries, and again
+whenever a later round adds more (at the latest before Phase 6). It does not
+edit tracked files; it puts scratch files under
+`.fix-issue/<id>/followup_<m>/`, never in the repository root. For each
+distinct bug it:
+
+1. Confirms the bug also fails on `main`, reusing the discovering subagent's
+   evidence or building `<upstream-remote>/main` in a separate worktree
+   (never switch the PR checkout). If it does not fail on `main`, it is a
+   regression of this PR: do not file it; mark it for the fix loop instead.
+2. Searches for duplicates:
+   `gh issue list --repo lfortran/lfortran --state all --search "<keywords>"`.
+   If one exists, record `duplicate of #M` and do not comment on it.
+3. Otherwise files one issue with `gh issue create --repo lfortran/lfortran
+   --title "<bug>" --body-file <file>`. The body contains: a minimal
+   self-contained reproducer, the exact LFortran command and output, the
+   reference compiler's result showing the code is valid, confirmation that
+   it fails on `main`, and the line `Found while working on #<PR> (#<N>)`.
+4. Updates `followups.md`, adds every filed or duplicate issue to the Scope
+   section of `pr_body.md`, and runs
+   `gh pr edit <PR> --repo lfortran/lfortran --body-file .fix-issue/<id>/pr_body.md`.
+
+Only bugs are filed. Non-bug follow-ups go in the PR body and the final report.
+
+Report: issues filed, duplicates linked, regressions sent back.
 
 ### Phase 5: Review and CI loop
 
@@ -277,9 +325,10 @@ current head SHA.
   gh pr checks <PR> --repo lfortran/lfortran --watch --interval 120 \
       > .fix-issue/<id>/ci_<k>.log 2>&1; echo "exit=$?"
   ```
-  Checks can take a minute to appear after a push. If `gh` reports no checks
-  yet, wait and retry. CI can take over an hour. Do not poll in short loops;
-  wait for the background command to finish. Afterwards, get only a summary:
+  Checks can take a minute to appear after a push or labeling. If `gh`
+  reports no checks yet, wait and retry. CI can take over an hour. Do not
+  poll in short loops; wait for the background command to finish. Afterwards,
+  get only a summary:
   ```bash
   gh pr checks <PR> --repo lfortran/lfortran --json name,bucket \
       --jq 'group_by(.bucket)[] | "\(.[0].bucket): \(length) \([.[].name] | join(", "))"'
@@ -306,8 +355,8 @@ gh api repos/lfortran/lfortran/pulls/<PR>/comments --jq 'length'
 Treat the comment counts as new only if they changed since the last round.
 The fix subagent reads the actual comment text.
 
-**6c. Decide.** The PR is **done** when all of these hold for the current head
-SHA:
+**6c. Decide.** The PR is **clean** when all of these hold for the current
+head SHA:
 
 - every CI check passed, or each failing check was shown by a subagent to
   also fail on `main` (it is pre-existing, so report it but do not fix it
@@ -316,7 +365,21 @@ SHA:
 - no human review comment or requested change is unaddressed;
 - `mergeable` is not `CONFLICTING`.
 
-If done, go to Phase 6.
+If clean and the PR does not have the label yet, add it:
+`gh pr edit <PR> --repo lfortran/lfortran --add-label Tests::Run-Exhaustive`.
+Wait until now because the exhaustive suite is expensive, and while the label
+is present it reruns on every push (`.github/workflows/Exhaustive-Checks-CI.yml`
+triggers on `labeled` and `synchronize`). If `gh` lacks permission to add
+labels, tell the user and ask them to add it. Record the label in `state.md`,
+then start the next round with only the CI watch; the head SHA is unchanged,
+so the review stands, and this round does not count toward the cap.
+
+The PR is **done** when it is clean, the label is present, and the
+`Exhaustive checks` workflow ran on the current head SHA (not `skipped`) with
+every job passed or shown to also fail on `main`. Check with
+`gh pr checks <PR> --repo lfortran/lfortran --json workflow,name,bucket`.
+If done, go to Phase 6. Exhaustive failures go to the fix subagent like any
+other CI failure.
 
 **6d. Otherwise spawn a fresh fix subagent** with the list of what is
 outstanding: failing check names, the path `review_<k>.md`, and which human
@@ -327,7 +390,7 @@ comments are new. It should:
   file), reproduce locally where possible, and fix the root cause. If a
   failure also happens on `main` or is plainly infrastructure flakiness, do
   not fix it in this PR. Re-run it once with `gh run rerun <run-id> --failed`
-  and report it.
+  and report it; a pre-existing LFortran bug goes on its Unrelated bugs list.
 - For each review **blocker** and **rework** finding: first confirm the
   finding is real by reproducing it. Then fix it, or record in
   `round_<k>.md` exactly why it is not valid. Leave **follow-up** items
@@ -367,8 +430,10 @@ Bugs fixed (<count> MRE iterations, one commit each):
   2. ...
 
 CI:      green  (pre-existing failures on main: <none | names>)
+Exhaustive CI: green  (pre-existing failures on main: <none | names>)
 Review:  <rounds> round(s); blockers/rework fixed: <n>; rejected with reason: <n>
-Follow-ups (not in this PR): <list or none>
+Follow-up issues filed: <#M, #M (duplicate of existing), ... or none>
+Other follow-ups (not bugs, not filed): <list or none>
 Human comments needing your reply: <list or none>
 ```
 
