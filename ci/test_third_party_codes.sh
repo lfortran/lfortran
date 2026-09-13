@@ -242,11 +242,10 @@ time_section "🧪 Testing Fiats" '
     rm -rf build
     git fetch https://github.com/certik/fiats lf1
     git checkout f5d91ae48c01297a7fb183957654a73721ad4520
-    # Fiats computes in real(8), which Metal has no type for, so some of its
-    # `do concurrent` loops cannot be offloaded. Waive the strict policy here
-    # until 64-bit floats are emulated on Metal; without this the loops are a
-    # hard error rather than a fall back to the CPU.
-    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
+    # Fiats computes in real(8), which Metal has no type for, so those
+    # `do concurrent` loops run on the CPU with a warning; every other loop
+    # is offloaded.
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
   fi
 
   print_success "Done with Fiats"
