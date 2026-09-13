@@ -39,11 +39,6 @@ contains
         q => mm(2, :)
     end subroutine
 
-    subroutine assoc_char(q)
-        character(len=3), pointer, intent(inout) :: q(:)
-        q => cs(2:4)
-    end subroutine
-
     subroutine assoc_component(x)
         type(holder), intent(inout) :: x
         x%p => ma(3:5)
@@ -54,13 +49,23 @@ contains
         call assoc_inout(q)
     end subroutine
 
+    ! Copying an assumed-length section goes through a temporary pointer that
+    ! is declared without a descriptor
+    subroutine copy_assumed_len(d, v)
+        character(len=*), intent(in) :: d(:)
+        character(len=3), intent(out) :: v(:)
+        v = d(:)
+    end subroutine
+
 end module
 
 program pointer_section_02
 use pointer_section_02_mod
 implicit none
 integer, pointer :: q(:), q2(:,:)
-character(len=3), pointer :: cq(:)
+character(len=3), pointer :: cq(:), cq2(:)
+character(len=:), allocatable, target :: ca(:)
+character(len=3) :: cv(4)
 type(holder) :: x
 integer, target :: loc(5) = [10, 20, 30, 40, 50]
 integer :: i
@@ -99,12 +104,6 @@ if (q(1) /= 21) error stop
 if (q(4) /= 24) error stop
 print *, q
 
-call assoc_char(cq)
-if (size(cq) /= 3) error stop
-if (cq(1) /= 'def') error stop
-if (cq(3) /= 'jkl') error stop
-print *, cq
-
 call assoc_component(x)
 if (size(x%p) /= 3) error stop
 if (x%p(1) /= 3) error stop
@@ -129,5 +128,35 @@ call assoc_inout(q)
 q(1) = 99
 if (ma(2) /= 99) error stop
 print *, ma
+
+! Reassociating a character pointer must not change another pointer that
+! was associated with it
+cq => cs(1:2)
+cq2 => cq
+cq => cs(3:4)
+if (cq2(1) /= 'abc') error stop
+if (cq(1) /= 'ghi') error stop
+print *, cq2, ' ', cq
+
+! ... nor the array it was previously associated with
+allocate(character(len=3) :: ca(2))
+ca(1) = 'xyz'
+ca(2) = 'uvw'
+cq => ca
+cq => cs(2:3)
+if (size(ca) /= 2) error stop
+if (ca(1) /= 'xyz') error stop
+if (cq(2) /= 'ghi') error stop
+print *, ca, ' ', cq
+
+nullify(cq)
+cq => cs(3:4)
+if (cq(2) /= 'jkl') error stop
+print *, cq
+
+cv = '---'
+call copy_assumed_len(cs, cv)
+if (cv(4) /= 'jkl') error stop
+print *, cv
 
 end program pointer_section_02

@@ -10162,8 +10162,22 @@ public:
         // variable. Fill that descriptor in place. Allocating a fresh one here
         // instead would leave the pointer referring to the stack frame of the
         // procedure performing the association, which dies once it returns.
+        // Pointers declared without a descriptor (e.g. assumed-length
+        // character temporaries) still hold null, so give those one first.
         llvm::Value *target = llvm_utils->CreateLoad2(
             target_type->getPointerTo(), target_desc);
+        llvm_utils->create_if_else(builder->CreateIsNull(target), [&]() {
+            builder->CreateStore(arr_descr->create_descriptor_alloca(
+                target_type, "array_section_descriptor"), target_desc);
+        }, []() {});
+        target = llvm_utils->CreateLoad2(target_type->getPointerTo(), target_desc);
+        if( ASRUtils::is_character(*expr_type(x.m_target)) ){
+            // The string descriptor behind the data pointer may be shared with
+            // another array (`p => arr` copies the pointer) or be null after
+            // NULLIFY, so point the target at a string descriptor of its own.
+            llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
+            builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
+        }
         Vec<llvm::Value*> lbs; lbs.reserve(al, value_rank);
         Vec<llvm::Value*> ubs; ubs.reserve(al, value_rank);
         Vec<llvm::Value*> ds; ds.reserve(al, value_rank);
