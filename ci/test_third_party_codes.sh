@@ -281,6 +281,12 @@ time_section "🧪 Testing Formal" '
   #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
   rm -rf build
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Every do concurrent in Formal is offloaded to Metal. A loop the
+    # compiler cannot lower is a compile error, so this keeps it that way.
+    rm -rf build
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+  fi
 
   print_success "Done with Formal"
   cd ..
