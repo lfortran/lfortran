@@ -4525,6 +4525,13 @@ gpu_offload_metal = true
 filename = "../integration_tests/gpu_metal_346.f90"
 gpu_offload_metal = true
 
+# A derived type holding a character component and a real(8) one is turned
+# down for the real(8) member, which Metal has no type for: the loop runs on
+# the CPU with a warning naming real(8), and the compilation succeeds.
+[[test]]
+filename = "../integration_tests/gpu_metal_347.f90"
+gpu_offload_metal = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

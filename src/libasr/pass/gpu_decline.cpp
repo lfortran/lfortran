@@ -113,6 +113,11 @@ bool GpuDeviceCapabilities::narrows_scalar_types() const {
     return max_integer_kind < 8 || max_real_kind < 8;
 }
 
+bool GpuDeviceCapabilities::lacks_real_width(ASR::ttype_t *t) const {
+    return t != nullptr && ASR::is_a<ASR::Real_t>(*t) &&
+        ASR::down_cast<ASR::Real_t>(t)->m_kind > max_real_kind;
+}
+
 GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         const GpuDeviceCapabilities &caps) {
     switch (decline.reason) {
@@ -130,9 +135,9 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::StructMemberTypeWidth:
         case GpuDeclineReason::ArrayElementTypeWidth:
         case GpuDeclineReason::ScalarTypeWidth:
-            if (decline.type && ASR::is_a<ASR::Real_t>(*decline.type) &&
-                    ASR::down_cast<ASR::Real_t>(decline.type)->m_kind >
-                        caps.max_real_kind) {
+            // A derived type is declined for the member that offends, so
+            // the type here is that member's.
+            if (caps.lacks_real_width(decline.type)) {
                 return GpuDeclineClass::BackendCannot;
             }
             return GpuDeclineClass::NotImplemented;

@@ -92,6 +92,13 @@ struct GpuDeviceCapabilities {
     // checks already ask on every device.
     bool narrows_scalar_types() const;
 
+    // Whether `t` is a real wider than every floating point type this device
+    // has -- `real(8)` on a device with no 64-bit float, or a real wider than
+    // the shared floor on any device. No lowering could give such data a
+    // device representation, which is what sets it apart from every other
+    // type this device turns down.
+    bool lacks_real_width(ASR::ttype_t *t) const;
+
     // Whether the pass splices device callees into the kernel body for this
     // device. It does so exactly when a device function may not declare a
     // run-time sized local. The splice is also what can leave a section of a

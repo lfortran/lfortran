@@ -82,6 +82,12 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 // the parent chain has to be walked as well. `visited` guards against
 // self-referential types such as `type(node), pointer :: next`, whose
 // member graph is cyclic.
+//
+// A type turned down is turned down for one member's scalar type, found at
+// any depth, and `unsupported_type` (which the caller starts at nullptr) is
+// set to it. When some member is a real wider than any the device has, that
+// member is the one reported: the type the decline is classified on has to
+// be the one with no device equivalent, not whichever member came first.
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
         const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type = nullptr);
@@ -97,14 +103,11 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
 //
 // The rule itself is the capability descriptor's, so that the decline this
 // raises and the class that decline is given cannot disagree about what the
-// device has a type for.
+// device has a type for. `unsupported_type` is set to the scalar type turned
+// down: the element type of `t` itself, or for a derived type the member's
+// that gpu_struct_members_ok reports.
 bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
         ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type = nullptr);
-
-// The scalar element type behind `t`, for a decline that has to be
-// classified against what the device has a type for. A derived type has no
-// single element type -- the width that offends is one member's -- so it
-// answers with nothing, and the decline is classified on its reason alone.
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a
@@ -209,9 +212,8 @@ class GpuLocalWidthChecker :
 public:
     bool unsupported = false;
     std::string bad_name;
-    // The element type that was turned down, when it is a scalar one. A
-    // derived type leaves this null: the width that offends is a member's,
-    // and the message names the local rather than a type.
+    // The scalar type that was turned down: the local's element type, or
+    // for a derived type the member's that offends.
     ASR::ttype_t *bad_type = nullptr;
     // What the selected device has a scalar type of.
     GpuDeviceCapabilities caps;
@@ -227,7 +229,7 @@ public:
             if (!var->m_type_declaration) return false;
             std::set<ASR::Struct_t*> visited;
             return gpu_struct_members_ok(var->m_type_declaration, visited,
-                caps);
+                caps, &offending);
         }
         offending = base;
         return caps.has_scalar_type(base);

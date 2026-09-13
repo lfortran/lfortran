@@ -436,9 +436,25 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         // Already on the walk stack; its members are checked there.
         return true;
     }
+    // The walk does not stop at the first member turned down while a later
+    // one may be a real wider than any the device has: that member is the
+    // one no lowering could ever put on the device, so it is the one to
+    // report, whatever member -- a character component, say -- came first.
+    auto settled = [&]() {
+        return unsupported_type == nullptr
+            || caps.lacks_real_width(*unsupported_type);
+    };
+    auto record = [&](ASR::ttype_t *t) {
+        if (unsupported_type == nullptr) return;
+        if (*unsupported_type == nullptr || caps.lacks_real_width(t)) {
+            *unsupported_type = t;
+        }
+    };
+    bool ok = true;
     if (st->m_parent
             && !gpu_struct_members_ok(st->m_parent, visited, caps, unsupported_type)) {
-        return false;
+        ok = false;
+        if (settled()) return false;
     }
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
@@ -451,14 +467,15 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
             if (!mvar->m_type_declaration
                     || !gpu_struct_members_ok(
                         mvar->m_type_declaration, visited, caps, unsupported_type)) {
-                return false;
+                ok = false;
             }
         } else if (!caps.has_scalar_type(mtype)) {
-            if (unsupported_type) *unsupported_type = mtype;
-            return false;
+            record(mtype);
+            ok = false;
         }
+        if (!ok && settled()) return false;
     }
-    return true;
+    return ok;
 }
 
 bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
