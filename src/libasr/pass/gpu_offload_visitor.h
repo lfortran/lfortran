@@ -320,8 +320,6 @@ public:
 
     bool const_section_extent(const ASR::array_index_t &d, int64_t &n);
 
-    static bool section_is_strided(const ASR::ArraySection_t *as);
-
     static bool dummy_is_written(ASR::Function_t *fn, size_t arg_index);
 
     ASR::stmt_t* build_section_copy_loops(const Location &loc,

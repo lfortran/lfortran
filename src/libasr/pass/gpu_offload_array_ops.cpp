@@ -1229,17 +1229,6 @@ static bool section_is_noncontiguous(const ASR::ArraySection_t *as) {
     return false;
 }
 
-bool GpuOffloadVisitor::section_is_strided(const ASR::ArraySection_t *as) {
-    for (size_t i = 0; i < as->n_args; i++) {
-        if (!as->m_args[i].m_left || !as->m_args[i].m_right
-                || !as->m_args[i].m_step) {
-            continue;
-        }
-        if (!is_int_literal(as->m_args[i].m_step, 1)) return true;
-    }
-    return false;
-}
-
 // A dummy the callee may write has to be copied back. An unknown
 // intent is treated as writable: a wrong answer is worse than a copy.
 bool GpuOffloadVisitor::dummy_is_written(
@@ -1334,8 +1323,10 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
     return inner;
 }
 
-// The strided section under any physical casts of an actual argument,
-// or nullptr when the argument is not one.
+// The non-contiguous section under any physical casts of an actual
+// argument, or nullptr when the argument is not one. A section stepped
+// by one can still skip elements of its base -- the row `a(i,:)` --
+// and a base pointer would drop that stride just the same.
 ASR::ArraySection_t* GpuOffloadVisitor::strided_section_actual(
         ASR::expr_t *e) {
     while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
@@ -1343,30 +1334,27 @@ ASR::ArraySection_t* GpuOffloadVisitor::strided_section_actual(
     }
     if (!e || !ASR::is_a<ASR::ArraySection_t>(*e)) return nullptr;
     ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
-    return section_is_strided(as) ? as : nullptr;
+    return section_is_noncontiguous(as) ? as : nullptr;
 }
 
-// Can this strided section be gathered into a contiguous temporary?
-// The base has to be a designator the copy loops can index, and every
-// extent has to fold to a constant, because the temporary is a
-// kernel-local array.
+// Can this section be gathered into a contiguous temporary? The base
+// has to be a designator the copy loops can index. An extent only known
+// at run time is fine: the temporary is then sized per thread by the
+// workspace machinery, whose pre-flight reports an extent the host
+// cannot evaluate.
 bool GpuOffloadVisitor::strided_section_is_gatherable(
         ASR::ArraySection_t *as) {
     if (!ASR::is_a<ASR::Var_t>(*as->m_v)
             && !ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
         return false;
     }
-    bool any_range = false;
     for (size_t d = 0; d < as->n_args; d++) {
-        if (!as->m_args[d].m_left || !as->m_args[d].m_right
-                || !as->m_args[d].m_step) {
-            continue;
+        if (as->m_args[d].m_left && as->m_args[d].m_right
+                && as->m_args[d].m_step) {
+            return true;
         }
-        any_range = true;
-        int64_t n;
-        if (!const_section_extent(as->m_args[d], n)) return false;
     }
-    return any_range;
+    return false;
 }
 
 // Replace a strided section actual argument in `slot` with a gathered
@@ -1385,7 +1373,7 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     if (!inner || !ASR::is_a<ASR::ArraySection_t>(*inner)) return false;
     ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(inner);
     // A section stepped by one whose elements are still not adjacent -- a
-    // row of a matrix -- is gathered too whenever it can be.
+    // row of a matrix -- is gathered too.
     if (!section_is_noncontiguous(as)) return false;
     if (!strided_section_is_gatherable(as)) return false;
     std::vector<int> range_dims;
@@ -1397,15 +1385,19 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     }
     if (range_dims.empty()) return false;
 
-    // Every extent has to fold to a constant: the gathered buffer is a
-    // kernel-local array, and a device function cannot declare one
-    // whose size is only known per thread.
+    // An extent that folds to a constant makes the buffer an ordinary
+    // kernel-local array. One only known at run time makes it a
+    // run-time sized local of the BLOCK below, which the workspace
+    // machinery binds to a per-thread slice of a buffer the host sizes.
     Vec<ASR::expr_t*> extents;
     extents.reserve(al, range_dims.size());
     for (int d : range_dims) {
         int64_t n = 0;
-        const_section_extent(as->m_args[d], n);
-        extents.push_back(al, int32_const(loc, (int)n));
+        if (const_section_extent(as->m_args[d], n)) {
+            extents.push_back(al, int32_const(loc, (int)n));
+        } else {
+            extents.push_back(al, section_extent(loc, as->m_args[d]));
+        }
     }
     ASR::ttype_t *elem_type = ASRUtils::extract_type(
         ASRUtils::expr_type(as->m_v));

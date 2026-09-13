@@ -166,9 +166,9 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
                 GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
             return false;
         }
-        // A strided section actual argument is gathered into a
-        // contiguous kernel-local temporary below. When that temporary
-        // cannot be sized at compile time the gather is impossible,
+        // A non-contiguous section actual argument is gathered into a
+        // contiguous per-thread temporary below. When its base is not a
+        // designator the copy loops can index the gather is impossible,
         // and passing the section on would silently drop its stride.
         if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
             report_not_offloaded(loc,
