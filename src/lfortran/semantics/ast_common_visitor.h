@@ -11306,7 +11306,9 @@ public:
                     }
                     if( end == -1 && !flag ) {
                         end = str_length;
-                    } else {
+                    } else if( var->m_storage == ASR::storage_typeType::Parameter ) {
+                        // Only a parameter's value is known at compile time; any
+                        // other variable may have been assigned since initialization.
                         // Substring bounds are character positions. For kind > 1
                         // the value holds UTF-8, so slice whole characters.
                         std::vector<std::string> characters =
@@ -11538,9 +11540,9 @@ public:
                         ASR::expr_t *a_len_expr = nullptr;
                         if (ASRUtils::is_value_constant(r) && 
                             ASRUtils::is_value_constant(l)) {
-                            int64_t a_len_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
-                                                  ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n + 
-                                                  1;
+                            int64_t a_len_value = std::max<int64_t>(0,
+                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
+                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n + 1);
                             a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
                         } else {
                             ASRUtils::ASRBuilder b(al, loc);
