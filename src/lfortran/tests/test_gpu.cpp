@@ -14,26 +14,8 @@ TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     Location loc{0, 0};
     ASR::ttype_t *real8 = ASRUtils::TYPE(ASR::make_Real_t(allocator, loc, 8));
     ASR::ttype_t *logical8 = ASRUtils::TYPE(ASR::make_Logical_t(allocator, loc, 8));
-    auto metal = gpu_device_capabilities(GpuDevice::Metal);
-    auto cuda = gpu_device_capabilities(GpuDevice::Cuda);
     GpuDecline wide_real(GpuDeclineReason::SymbolTypeNotRepresentable, "x", real8);
     GpuDecline wide_logical(GpuDeclineReason::ArrayElementTypeWidth, "x", logical8);
-    // The classification is what `--gpu-decline-stats` prints.
-    CHECK(gpu_decline_class(wide_real, metal) == GpuDeclineClass::BackendCannot);
-    CHECK(gpu_decline_class(wide_real, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(wide_logical, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(GpuDecline(GpuDeclineReason::ScalarNotNumeric),
-        cuda) == GpuDeclineClass::NotImplemented);
-
-    // A statement is classified by what the device has to run it with: CUDA
-    // has a printf and a trap of its own, so what is missing there is the
-    // lowering; Metal has neither, so no lowering would help.
-    GpuDecline device_stop(GpuDeclineReason::StatementStop);
-    GpuDecline device_io(GpuDeclineReason::StatementIo);
-    CHECK(gpu_decline_class(device_stop, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(device_stop, metal) == GpuDeclineClass::BackendCannot);
-    CHECK(gpu_decline_class(device_io, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(device_io, metal) == GpuDeclineClass::BackendCannot);
 
     // A missing lowering is an error, even though the loop could run on the
     // CPU.
@@ -45,9 +27,9 @@ TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     CHECK(missing.has_error());
     CHECK(missing.diagnostics.size() == 1);
 
-    // So is a limit of the device, and the flag that softens the unsupported
-    // list does not change that: the decline comes after the loop was
-    // committed to the device, so the message suggests no flag.
+    // So is a width the device has no type for, and the flag that softens
+    // the unsupported list does not change that: the decline comes after the
+    // loop was committed to the device, so the message suggests no flag.
     diag::Diagnostics limited;
     options.diagnostics = &limited;
     options.gpu_offload_cuda = false;

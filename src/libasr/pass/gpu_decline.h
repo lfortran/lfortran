@@ -18,10 +18,7 @@ quotes, so that the decision and its phrasing cannot drift apart.
 A decline is raised by the offloading pipeline, after the unsupported-construct
 check (gpu_unsupported_check.h) has committed the loop to the device, so every
 decline is a compile-time error: a loop the pipeline cannot lower yet is a gap
-in this compiler, whatever the reason. Every reason is still classified, as a
-`NotImplemented` gap or a `BackendCannot` limit of the device, for
-`--gpu-decline-stats`; a `BackendCannot` decline of a loop the check accepted
-means the check is missing that limit.
+in this compiler, whatever the reason.
 */
 
 // The device dialect a loop is being offloaded to. Nothing outside
@@ -56,15 +53,9 @@ struct GpuDeviceCapabilities {
     // whose widest type is narrower than the host's would stride through
     // that buffer at the wrong size: it would read and write the wrong
     // elements, and nothing would say so. A loop touching data wider than
-    // this stays on the host.
+    // this cannot be offloaded.
     int max_integer_kind = 8;
     int max_real_kind = 8;
-
-    // Whether a kernel can write text out as it runs. A device that can is
-    // only waiting on the lowering for a Fortran print or write to be
-    // written here; a device that cannot has no way to run one at all, and
-    // no amount of work here would give it one.
-    bool device_printf = true;
 
     // Whether a kernel can bring the program to a halt from a thread. There
     // is no exit code to deliver either way -- a grid has no status to
@@ -111,16 +102,6 @@ struct GpuDeviceCapabilities {
     bool splices_device_functions() const {
         return !device_function_runtime_sized_locals;
     }
-};
-
-// What a decline says about the compiler and about the device.
-enum class GpuDeclineClass {
-    // LFortran could lower this onto the selected device, but does not yet.
-    // Every one of these is a gap to be closed.
-    NotImplemented,
-    // The selected device genuinely cannot express it, so no amount of work
-    // in this pass would put this loop on this device.
-    BackendCannot,
 };
 
 enum class GpuDeclineReason {
@@ -203,9 +184,7 @@ struct GpuDecline {
     // routine an unsupported statement was found in.
     std::string name;
     // The element type the decline is about, when the reason is about a
-    // type. The classification asks the selected device whether it has a
-    // type of that width, so that the same reason can be a limit of the
-    // device on one backend and a gap in this pass on another.
+    // type, which the message names.
     ASR::ttype_t *type = nullptr;
 
     GpuDecline() = default;
@@ -227,16 +206,9 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
 
-// Whether this decline is a gap in LFortran or a limit of the device.
-GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
-        const GpuDeviceCapabilities &caps);
-
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.
 std::string gpu_decline_message(const GpuDecline &decline);
-
-// A stable, greppable name for a class, for `--gpu-decline-stats`.
-const char* gpu_decline_class_name(GpuDeclineClass cls);
 
 void report_gpu_decline(const PassOptions &options, const Location &where,
     const GpuDecline &decline);

@@ -4348,7 +4348,7 @@ gpu_offload_cuda = true
 filename = "../integration_tests/gpu_metal_327.f90"
 gpu_cuda_kernel = true
 gpu_offload_cuda = true
-options = "--realloc-lhs-arrays --gpu-decline-stats"
+options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_328.f90"

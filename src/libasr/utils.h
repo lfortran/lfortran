@@ -86,11 +86,6 @@ struct PassOptions {
     // construct on the unsupported list then runs on the CPU with a warning,
     // so that the kernels of the other loops are still produced.
     bool gpu_kernel_source_only = false;
-    // Print one line per loop that is not offloaded, naming why -- a
-    // construct on the unsupported list, or the class of a decline of the
-    // offloading pipeline -- so that a corpus can be swept and the gaps
-    // counted.
-    bool gpu_decline_stats = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;

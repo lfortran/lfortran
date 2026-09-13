@@ -1,4 +1,3 @@
-#include <iostream>
 #include <set>
 #include <utility>
 
@@ -71,9 +70,6 @@ public:
             const GpuUnsupportedConstruct &construct) {
         std::string what = gpu_unsupported_construct_message(construct,
             device_caps);
-        if (pass_options.gpu_decline_stats) {
-            std::cerr << "gpu-decline: unsupported: " << what << std::endl;
-        }
         if (pass_options.diagnostics == nullptr) return;
         if (!reported.insert({construct.loc.first,
                 construct.loc.last}).second) {
