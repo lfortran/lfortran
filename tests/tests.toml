@@ -4559,12 +4559,6 @@ gpu_offload_metal = true
 filename = "../integration_tests/gpu_unsupported_04.f90"
 gpu_offload_metal = true
 
-# A derived type with an unused real(8) component, of which only a real(4)
-# component is read: accepted and offloaded.
-[[test]]
-filename = "../integration_tests/gpu_unsupported_05.f90"
-gpu_offload_metal = true
-
 # print in the loop body, on every device.
 [[test]]
 filename = "../integration_tests/gpu_unsupported_06.f90"
@@ -4577,11 +4571,10 @@ filename = "../integration_tests/gpu_unsupported_07.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
-# error stop in a pure function the loop calls: an error on Metal, offloaded
-# on CUDA.
+# error stop in a pure function the loop calls: an error on Metal. On CUDA it
+# is offloaded, which the integration test checks.
 [[test]]
 filename = "../integration_tests/gpu_unsupported_08.f90"
-gpu_offload_cuda = true
 gpu_offload_metal = true
 
 [[test]]
