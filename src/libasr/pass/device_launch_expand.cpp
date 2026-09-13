@@ -279,7 +279,7 @@ class DeviceLaunchExpandVisitor :
                     members.p, members.n, nullptr, 0,
                     ASR::abiType::BindC, ASR::accessType::Public,
                     false, false, false, nullptr, 0, nullptr, nullptr,
-                    nullptr, 0));
+                    nullptr, 0, nullptr));
             ASR::down_cast<ASR::Struct_t>(struct_sym)->m_struct_signature =
                 ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
             global_scope->add_symbol(struct_name, struct_sym);

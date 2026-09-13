@@ -615,6 +615,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     module_52_tomlf_error
@@ -716,6 +717,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     module_52_tomlf_type
