@@ -3408,7 +3408,10 @@ public:
         require(ASRUtils::is_supported_character_kind(x.m_kind),
             "String kind must be 1 or 4, found " + std::to_string(x.m_kind));
 /*General Check on the length*/ 
-        if(x.m_len){
+        // The length may reference an ExternalSymbol, which cannot be
+        // dereferenced before externals are resolved (e.g. during modfile
+        // deserialization), so only check it when check_external is set.
+        if(x.m_len && check_external){
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_len)))),
                 "String length must be of type INTEGER,"
@@ -3416,7 +3419,7 @@ public:
                 ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
-        if(x.m_len && ASRUtils::is_value_constant(x.m_len)){
+        if(x.m_len && check_external && ASRUtils::is_value_constant(x.m_len)){
             int64_t len{};
             ASRUtils::is_value_constant(x.m_len, len);
             require(len >= 0,
