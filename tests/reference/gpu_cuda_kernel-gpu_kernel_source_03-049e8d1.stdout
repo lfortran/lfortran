@@ -1,6 +1,15 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, int __loop_end_0) {
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* x,
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __do_loop_end;
     int __flat_idx;
     float b0;
@@ -17,18 +26,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, int __loo
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    b0 = 0.0f;
-    b1 = 0.0f;
-    b2 = 0.0f;
-    twox = (2.0f * x[(i - 1)]);
+    b0 =   0.00000000000000000e+00f;
+    b1 =   0.00000000000000000e+00f;
+    b2 =   0.00000000000000000e+00f;
+    twox = (  2.00000000000000000e+00f * x[((int)(i) - (1))]);
     __do_loop_end = nc;
     j = (1 - 1);
     while (((j + 1) <= __do_loop_end)) {
         j = (j + 1);
         b2 = b1;
         b1 = b0;
-        b0 = (((twox * b1) - b2) + cs[(((nc - j) + 1) - 1)]);
+        b0 = (((twox * b1) - b2) + cs[((int)(((nc - j) + 1)) - (1))]);
     }
-    y[(i - 1)] = (0.5f * (b0 - b2));
+    y[((int)(i) - (1))] = (  5.00000000000000000e-01f * (b0 - b2));
 }
 

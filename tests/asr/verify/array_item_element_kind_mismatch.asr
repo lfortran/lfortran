@@ -37,6 +37,7 @@
                   )
                 ]
                 :FixedSizeArray
+                :Global
               )
               nil
               :Source

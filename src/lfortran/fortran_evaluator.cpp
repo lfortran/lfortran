@@ -936,6 +936,11 @@ Result<std::string> FortranEvaluator::get_gpu_kernel_source(
     if (!pass_manager.has_user_defined_passes()) {
         pass_manager.use_default_passes();
     }
+    // Showing the kernels is how a user finds out which loops the backend
+    // can take and which it declines, so a declined loop is reported here
+    // rather than made fatal: the kernels built for the loops that were
+    // accepted are exactly what was asked for.
+    compiler_options.po.gpu_allow_cpu_fallback = true;
     pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
     if (compiler_options.gpu_backend == "cuda") {
         return asr_to_cuda(al, asr, diagnostics, compiler_options, false);

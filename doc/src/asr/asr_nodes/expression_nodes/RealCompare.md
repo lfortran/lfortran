@@ -1,85 +1,58 @@
 # RealCompare
 
-Real comparison `expr` ASR node.
+A comparison of two reals.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 RealCompare(expr left, cmpop op, expr right, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`left`      | left side of the comparison operand |
-|`right` | right side of the comparison operand |
-|`op` | comparison operator |
-|`type` | table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `left` | the left operand. |
+| `op` | the comparison; see [cmpop](../enum_nodes/cmpop.md). |
+| `right` | the right operand. |
+| `type` | the logical type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the RealCompare represents.
+The value of the expression.
 
 ## Description
 
-**RealCompare** represents real floating point comparison operation.
-
-Comparison operation can be:
-
-1. Less than
-2. Greater than
-3. Less than or equal to
-4. Greater than or equal to
-5. Equal to
-
-## Types
-
-Only accepts real constants, real exponents, floating point values.
+The result is logical. Comparing a NaN with anything is false, including with
+itself, and ASR leaves that to the hardware rather than folding it.
 
 ## Examples
 
-```fortran
-2.1 > 1.
+```clojure
+(RealCompare
+  :left (Var
+    :v (SymbolRef 1 "x")
+  )
+  :op :GtE
+  :right (Var
+    :v (SymbolRef 1 "y")
+  )
+  :type (Logical
+    :kind 4
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(RealCompare
-        (RealConstant
-            2.100000
-            (Real 4 [])
-        )
-        Gt
-        (Cast
-            (IntegerConstant 1 (Integer 4 []))
-            IntegerToReal
-            (Real 4 [])
-            (RealConstant
-                1.000000
-                (Real 4 [])
-            )
-        )
-        (Logical 4 [])
-        (LogicalConstant
-            .true.
-            (Logical 4 [])
-        )
-    )]
-)
-
+```{literalinclude} ../../examples/real_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerCompare](IntegerCompare.md)
+[cmpop](../enum_nodes/cmpop.md), [IntegerCompare](IntegerCompare.md), [RealBinOp](RealBinOp.md)

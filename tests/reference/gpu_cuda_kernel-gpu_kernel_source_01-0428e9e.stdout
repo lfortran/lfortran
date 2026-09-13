@@ -1,6 +1,17 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, float a, int __loop_end_0) {
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    float a;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* x,
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    float a = __scalar_args.a;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i;
     const int n = 1000;
@@ -9,6 +20,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(float *x, float *y, float a, 
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    y[(i - 1)] = ((a * x[(i - 1)]) + y[(i - 1)]);
+    y[((int)(i) - (1))] = ((a * x[((int)(i) - (1))]) + y[((int)(i) - (1))]);
 }
 

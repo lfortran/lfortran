@@ -438,7 +438,17 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                 }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
-                if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
+                if( ASR::is_a<ASR::Array_t>(*arg_type) &&
+                    ASR::down_cast<ASR::Array_t>(arg_type)->m_physical_type ==
+                        ASR::array_physical_typeType::AssumedRankArray ) {
+                    // An assumed-rank dummy has no rank to copy dimensions
+                    // from, and assumed rank is only meaningful on a dummy
+                    // argument anyway. This placeholder stands in for an
+                    // argument that is absent, so it is never accessed and
+                    // the element type is enough.
+                    arg_type = ASRUtils::duplicate_type(al,
+                        ASR::down_cast<ASR::Array_t>(arg_type)->m_type);
+                } else if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, array_t->n_dims);
@@ -454,7 +464,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
                                 array_t->m_type, dims.p, dims.size(),
                                 (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
-                                    ? ASR::PointerArray : ASR::FixedSizeArray));
+                                    ? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
@@ -618,7 +628,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     }
                     dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(
-                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type));
+                                al, dummy_variable_type->base.loc, ASRUtils::extract_type(dummy_variable_type), dims.p, n_dims, phy_type, ASR::memory_spaceType::Global));
                 }
                 if (ASRUtils::is_assumed_rank_array(func_arg_j->m_type) &&
                     !ASRUtils::is_allocatable(func_arg_j->m_type)) {
@@ -659,7 +669,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         }
                         dummy_variable_type = ASRUtils::TYPE(
                             ASR::make_Array_t(al, dummy_variable_type->base.loc,
-                                elem_type, dims.p, n_dims_actual, phy_type));
+                                elem_type, dims.p, n_dims_actual, phy_type, ASR::memory_spaceType::Global));
                     } else {
                         // Scalar actual argument
                         dummy_variable_type = elem_type;

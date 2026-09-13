@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 
-import toml
+import tomli
 import edn
 import asr_generator
 
@@ -408,7 +408,7 @@ def load_sources(manifest, explicit_sources):
     manifest = manifest.resolve()
     root = manifest.parent
     sources = []
-    for item in toml.load(manifest)["seed"]:
+    for item in tomli.load(manifest)["seed"]:
         path = (root / item["filename"]).resolve()
         # The seed manifest names integration tests, which a source tarball
         # does not ship. Skip what is not there rather than failing the run.

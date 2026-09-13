@@ -1,0 +1,169 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "fill" (Function
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 2
+                    :name "a"
+                    :dependencies []
+                    :intent :Out
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Array
+                      :type (Real
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (FunctionParam
+                            :param_number 0
+                            :type (Integer
+                              :kind 4
+                            )
+                            :value nil
+                          )
+                        )
+                      ]
+                      :physical_type :PointerArray
+                      :memory_space :Global
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "n" (Variable
+                    :parent_symtab 2
+                    :name "n"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "fill"
+              :function_signature (FunctionType
+                :arg_types [
+                  (Integer
+                    :kind 4
+                  )
+                  (Array
+                    :type (Real
+                      :kind 4
+                    )
+                    :dims [
+                      (dimension
+                        :start (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :length (FunctionParam
+                          :param_number 0
+                          :type (Integer
+                            :kind 4
+                          )
+                          :value nil
+                        )
+                      )
+                    ]
+                    :physical_type :PointerArray
+                    :memory_space :Global
+                  )
+                ]
+                :return_var_type nil
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 2 "n")
+                )
+                (Var
+                  :v (SymbolRef 2 "a")
+                )
+              ]
+              :body []
+              :return_var nil
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

@@ -435,10 +435,6 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
-        self.emit("case ASR::symbolType::GpuKernelFunction: {", 3)
-        self.emit("node_to_return = ( ASR::asr_t* ) ((GpuKernelFunction_t*)sym);", 4)
-        self.emit("return;", 4)
-        self.emit("}", 3)
         self.emit("}", 2)
         self.emit("}", 1)
         self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
@@ -943,7 +939,11 @@ class TreeVisitorVisitor(ASDLVisitor):
             self.emit(    '}', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.opt and field.type in products:
+                self.emit("if (x.m_%s) {" % field.name, 2)
             self.visitField(field, cons, n == len(fields)-1)
+            if field.opt and field.type in products:
+                self.emit("}", 2)
         self.emit(    'dec_indent();', 2)
         if not self.used:
             # Note: a better solution would be to change `&x` to `& /* x */`
@@ -1815,16 +1815,33 @@ class PickleVisitorVisitor(ASDLVisitor):
                 else:
                     self.emit(    's.append(" ");', 2)
         self.used = False
-        for n, field in enumerate(fields):
-            if field.type == "location":
-                continue
-            self.visitField(field, cons)
-            if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
-                if name not in symbol:
-                    self.emit(    'if(indent) s.append("\\n" + indented);', 2)
-                    self.emit(    'else s.append(" ");', 2)
-                else:
-                    self.emit(    's.append(" ");', 2)
+        if any(f.opt and f.type in products for f in fields):
+            self.emit("bool first_field = true;", 2)
+            for field in fields:
+                if field.type == "location":
+                    continue
+                optional = field.opt and field.type in products
+                if optional:
+                    self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("if (!first_field) {", 2)
+                self.emit('if (indent) s.append("\\n" + indented);', 3)
+                self.emit('else s.append(" ");', 3)
+                self.emit("}", 2)
+                self.visitField(field, cons)
+                self.emit("first_field = false;", 2)
+                if optional:
+                    self.emit("}", 2)
+        else:
+            for n, field in enumerate(fields):
+                if field.type == "location":
+                    continue
+                self.visitField(field, cons)
+                if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
+                    if name not in symbol:
+                        self.emit(    'if(indent) s.append("\\n" + indented);', 2)
+                        self.emit(    'else s.append(" ");', 2)
+                    else:
+                        self.emit(    's.append(" ");', 2)
         if name not in symbol and cons and len(fields) > 0:
             self.emit(    'if(indent) {', 2)
             self.emit(        'dec_indent();', 3)
@@ -2145,12 +2162,26 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(    's.append("\\"fields\\": {");', 2)
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
-            for n, field in enumerate(fields):
-                if field.type == "location":
-                    continue
-                self.visitField(field, cons)
-                if n < len(fields) - 1 and fields[n+1].type!="location":
-                    self.emit('s.append(",\\n" + indtd);', 2)
+            if any(f.opt and f.type in products for f in fields):
+                self.emit("bool first_field = true;", 2)
+                for field in fields:
+                    if field.type == "location":
+                        continue
+                    optional = field.opt and field.type in products
+                    if optional:
+                        self.emit("if (x.m_%s) {" % field.name, 2)
+                    self.emit('if (!first_field) s.append(",\\n" + indtd);', 2)
+                    self.visitField(field, cons)
+                    self.emit("first_field = false;", 2)
+                    if optional:
+                        self.emit("}", 2)
+            else:
+                for n, field in enumerate(fields):
+                    if field.type == "location":
+                        continue
+                    self.visitField(field, cons)
+                    if n < len(fields) - 1 and fields[n+1].type!="location":
+                        self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
         if name in products:
@@ -2398,11 +2429,19 @@ class ASRTextSerializationVisitorVisitor(ASDLVisitor):
 
     def make_visitor(self, name, fields):
         serialized_fields = [field for field in fields if field.type != "location"]
+        optional = [f for f in serialized_fields if f.opt and f.type in products]
+        field_count = str(len(serialized_fields) - len(optional))
+        for field in optional:
+            field_count += " + (x.m_%s != nullptr)" % field.name
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
-        self.emit('self().begin_form("%s", %d);' % (name, len(serialized_fields)), 2)
+        self.emit('self().begin_form("%s", %s);' % (name, field_count), 2)
         for field in serialized_fields:
+            if field in optional:
+                self.emit("if (x.m_%s) {" % field.name, 2)
             self.emit('self().begin_field("%s");' % field.name, 2)
             self.visitField(field, name)
+            if field in optional:
+                self.emit("}", 2)
         self.emit("self().end_form();", 2)
         if len(serialized_fields) == 0:
             self.emit("(void)x;", 2)
@@ -2431,6 +2470,8 @@ class ASRTextSerializationVisitorVisitor(ASDLVisitor):
                 field.type not in self.data.simple_types):
             if field.type in products:
                 value = "x.m_%s[i]" % field.name if field.seq else "x.m_%s" % field.name
+                if field.opt:
+                    value = "*" + value
                 statement = "self().visit_%s(%s);" % (field.type, value)
             elif field.type == "symbol":
                 value = "*x.m_%s[i]" % field.name if field.seq else "*x.m_%s" % field.name
@@ -2624,8 +2665,10 @@ class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
         names = self.field_names(fields)
         quoted = ", ".join(['"%s"' % field_name for field_name in names])
         self.emit("std::vector<const TextValue *> fields;", 2)
-        self.emit('if (!self().decode_form(value, "%s", {%s}, fields)) {'
-            % (name, quoted), 2)
+        optional = [f.name for f in fields if f.opt and f.type in products]
+        defaults = ', {%s}' % ', '.join('"%s"' % f for f in optional) if optional else ''
+        self.emit('if (!self().decode_form(value, "%s", {%s}, fields%s)) {'
+            % (name, quoted, defaults), 2)
         self.emit("return false;", 3)
         self.emit("}", 2)
         return {field_name: index for index, field_name in enumerate(names)}
@@ -2708,7 +2751,7 @@ class ASRTextDeserializationVisitorVisitor(ASDLVisitor):
                 self.emit("%s_t *%s;" % (field.type, target), indent)
 
         if field.opt and field.type in products:
-            self.emit("%s = self().allocator().make_new<%s_t>();"
+            self.emit("%s = self().allocator().template make_new<%s_t>();"
                 % (target, field.type), indent)
 
         if field.type in products:
@@ -3251,6 +3294,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     if field.type in products:
                         self.emit("v.push_back(al, self().deserialize_%s());" \
                              % (field.type), 4)
+                    elif field.type == "symbol":
+                        self.emit("v.push_back(al, self().read_symbol());", 4)
                     else:
                         self.emit("v.push_back(al, down_cast<%s_t>(self().deserialize_%s()));" % (field.type, field.type), 4)
                     self.emit('}', 3)
@@ -3268,6 +3313,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         rhs = "self().read_cstring()"
                     elif field.type == "int":
                         rhs = "self().read_int64()"
+                    elif field.type == "bool":
+                        rhs = "self().read_bool()"
                     else:
                         print(field.type)
                         assert False
@@ -3429,8 +3476,17 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                         assert False
                 else:
                     if f.type in products:
-                        assert not f.opt
-                        lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
+                        if f.opt:
+                            lines.append("%s::%s_t *m_%s = nullptr;" %
+                                (subs["MOD"], f.type, f.name))
+                            lines.append("if (self().read_bool()) {")
+                            lines.append("    m_%s = al.make_new<%s::%s_t>();" %
+                                (f.name, subs["MOD"], f.type))
+                            lines.append("    *m_%s = self().deserialize_%s();" %
+                                (f.name, f.type))
+                            lines.append("}")
+                        else:
+                            lines.append("%s::%s_t m_%s = self().deserialize_%s();" % (subs["MOD"], f.type, f.name, f.type))
                     else:
                         if f.type in simple_sums:
                             assert not f.opt

@@ -101,8 +101,6 @@ FINALIZE_SYMTABLE_solver:                         ; preds = %return
   ret i32 %28
 }
 
-declare i32 @f()
-
 define i32 @__module_recursion_02_sub1(i32* %y, i32* %iter) {
 .entry:
   %sub1 = alloca i32, align 4

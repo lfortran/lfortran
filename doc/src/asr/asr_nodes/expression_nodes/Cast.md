@@ -1,141 +1,63 @@
 # Cast
 
-Cast to different type and/or kind.
+Converts a value to another type.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|   `arg`| expression argument  |
-|`kind` | cast to kind |
-|`type` | table entry type |
-|`value`| expression value |
-|`dest`| use to get struct symbol of destination struct type |
+| Argument | Description |
+|----------|-------------|
+| `arg` | the value being converted. |
+| `kind` | which conversion this is; see [cast_kind](../cast_kind_nodes/cast_kind.md). |
+| `type` | the type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
+| `dest` | the destination the converted value is written into, when the conversion needs one; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the Cast represents.
+The value of the expression.
 
 ## Description
 
-**Cast** represents cast to different type and/or kind.
+**Cast** changes the bits of `arg`, unlike
+[ArrayPhysicalCast](ArrayPhysicalCast.md) and
+[StringPhysicalCast](StringPhysicalCast.md), which only change how the same
+bits are described.
 
-## Types
-
-Only accepts integer, real.
+Every implicit conversion Fortran performs is an explicit **Cast** in ASR. The
+frontend inserts it, so a backend never has to decide whether an operand needs
+converting: it lowers what it is given. If a backend appears to need a
+conversion of its own, the bug is upstream in the semantics.
 
 ## Examples
 
-```fortran
-real :: r
-integer :: i
-r = 1. * 2
-i = 1. * 2
+```clojure
+(Cast
+  :arg (Var
+    :v (SymbolRef 1 "i")
+  )
+  :kind :IntegerToReal
+  :type (Real
+    :kind 8
+  )
+  :value nil
+  :dest nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            i:
-                (Variable
-                    1
-                    i
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            r:
-                (Variable
-                    1
-                    r
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Real 4 [])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 r)
-        (RealBinOp
-            (RealConstant
-                1.000000
-                (Real 4 [])
-            )
-            Mul
-            (Cast
-                (IntegerConstant 2 (Integer 4 []))
-                IntegerToReal
-                (Real 4 [])
-                (RealConstant
-                    2.000000
-                    (Real 4 [])
-                )
-            )
-            (Real 4 [])
-            (RealConstant
-                2.000000
-                (Real 4 [])
-            )
-        )
-        ()
-    )
-    (=
-        (Var 1 i)
-        (Cast
-            (RealBinOp
-                (RealConstant
-                    1.000000
-                    (Real 4 [])
-                )
-                Mul
-                (Cast
-                    (IntegerConstant 2 (Integer 4 []))
-                    IntegerToReal
-                    (Real 4 [])
-                    (RealConstant
-                        2.000000
-                        (Real 4 [])
-                    )
-                )
-                (Real 4 [])
-                (RealConstant
-                    2.000000
-                    (Real 4 [])
-                )
-            )
-            RealToInteger
-            (Integer 4 [])
-            (IntegerConstant 2 (Integer 4 []))
-        )
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/cast_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[cast_kind](../cast_kind_nodes/cast_kind.md), [ArrayPhysicalCast](ArrayPhysicalCast.md), [StringPhysicalCast](StringPhysicalCast.md)

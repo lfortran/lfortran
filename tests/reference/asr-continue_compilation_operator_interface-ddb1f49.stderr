@@ -1,0 +1,17 @@
+semantic error: Symbol 'cc_op_iface_bad_op' not declared
+  --> tests/errors/continue_compilation_operator_interface.f90:14:9
+   |
+14 |         module procedure cc_op_iface_bad_op
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol 'cc_op_iface_bad_plus_op' not declared
+  --> tests/errors/continue_compilation_operator_interface.f90:21:9
+   |
+21 |         module procedure cc_op_iface_bad_plus_op
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assignment procedure `cc_op_iface_bad_assign_sub` not found
+  --> tests/errors/continue_compilation_operator_interface.f90:28:9
+   |
+28 |         module procedure cc_op_iface_bad_assign_sub
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

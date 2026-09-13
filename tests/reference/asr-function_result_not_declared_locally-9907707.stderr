@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.function.argument_declared_locally]: The result variable of 'helper', 'x', is not declared in it
-   --> tests/asr/verify/function_result_not_declared_locally.asr:130:16
+   --> tests/asr/verify/function_result_not_declared_locally.asr:131:16
     |
-130 |               (Var
+131 |               (Var
     |                ^^^ failed here

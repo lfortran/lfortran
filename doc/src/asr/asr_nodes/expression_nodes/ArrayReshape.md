@@ -1,129 +1,99 @@
 # ArrayReshape
 
-Function to reshape an array.
+An array with the same elements in a different shape.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
-ArrayReshape(expr array, expr shape, ttype type, expr? value)
+```text
+ArrayReshape(expr array, expr shape, expr? pad, expr? order,
+    ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`array`  | array expression |
-|`shape` | integer value and an array of rank one, positive or zero |
-|`type` | table entry type |
-|`value`| expression value|
+| Argument | Description |
+|----------|-------------|
+| `array` | the array whose elements are taken. |
+| `shape` | a rank one integer array giving the new extents. |
+| `pad` | values used to fill the result when `array` has too few elements; `nil` when it does not. |
+| `order` | the permutation of the dimensions to fill in; `nil` for the natural order. |
+| `type` | the array type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArrayReshape represents.
+The value of the expression.
 
 ## Description
 
-**ArrayReshape** reshape an array. If necessary, the new array may be padded
-with elements from PAD or permuted as defined by ORDER.
-
-## Types
-
-Only accepts integers.
+`reshape(a, shape)`. The elements are taken in array element order, so the
+result holds the same values in the same sequence with different extents.
 
 ## Examples
 
-```fortran
-real(8), intent(in) :: a(:, :)
-real(8) :: b(256)
-integer :: newshape(1)
-newshape(1) = 256
-b = reshape(a, newshape)
+```clojure
+(ArrayReshape
+  :array (Var
+    :v (SymbolRef 1 "a")
+  )
+  :shape (Var
+    :v (SymbolRef 1 "shape")
+  )
+  :pad nil
+  :order nil
+  :type (Array
+    :type (Integer
+      :kind 4
+    )
+    :dims [
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 2
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+      (dimension
+        :start (IntegerConstant
+          :n 1
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+        :length (IntegerConstant
+          :n 3
+          :type (Integer
+            :kind 4
+          )
+          :intboz_type :Decimal
+        )
+      )
+    ]
+    :physical_type :FixedSizeArray
+    :memory_space :Global
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            a:
-                (Variable
-                    1
-                    a
-                    In
-                    ()
-                    ()
-                    Default
-                    (Real 8 [(()
-                    ())
-                    (()
-                    ())])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            b:
-                (Variable
-                    1
-                    b
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Real 8 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 256 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            newshape:
-                (Variable
-                    1
-                    newshape
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 1 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (ArrayItem
-            (Var 1 newshape)
-            [(()
-            (IntegerConstant 1 (Integer 4 []))
-            ())]
-            (Integer 4 [])
-            ()
-        )
-        (IntegerConstant 256 (Integer 4 []))
-        ()
-    )
-    (=
-        (Var 1 b)
-        (ArrayReshape
-            (Var 1 a)
-            (Var 1 newshape)
-            (Real 8 [(()
-            ())])
-            ()
-        )
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/arrayreshape.asr
+:language: clojure
 ```
 
 ## See Also
 
+[ArrayTranspose](ArrayTranspose.md), [ArrayBroadcast](ArrayBroadcast.md), [ArraySize](ArraySize.md)

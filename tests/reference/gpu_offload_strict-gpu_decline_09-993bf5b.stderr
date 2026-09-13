@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support a scalar that is not an integer, a real, or a logical; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_decline_09.f90:10:5 - 12:10
+   |
+10 |        do concurrent (i = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a scalar that is not an integer, a real, or a logical

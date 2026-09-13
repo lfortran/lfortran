@@ -76,7 +76,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_clojure = is_included("asr_clojure")
     asr_openmp = is_included("asr_openmp")
     c_target_omp = is_included("c_target_omp")
-    c_target_cuda = is_included("c_target_cuda")
     asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
@@ -86,6 +85,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     gpu_cuda_kernel = is_included("gpu_cuda_kernel")
+    gpu_offload_strict = is_included("gpu_offload_strict")
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
@@ -626,16 +626,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
-    if c_target_cuda:
-        run_test(
-            filename,
-            "c_target_cuda",
-            "lfortran --show-c --openmp --target-offload {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
 
     if asr_logical_casting:
         run_test(
@@ -732,6 +722,17 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
+
+    if gpu_offload_strict:
+        if no_llvm:
+            log.info(f"{filename} * gpu_offload_strict   SKIPPED because LLVM is not enabled")
+        else:
+            run_test(filename, "gpu_offload_strict",
+                    "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
 
     if wat:
         run_test(filename, "wat", "lfortran --no-color --show-wat {infile}",

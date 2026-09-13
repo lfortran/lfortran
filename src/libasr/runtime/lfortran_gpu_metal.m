@@ -6,6 +6,14 @@
 #include <string.h>
 
 #define MAX_ARGS 32
+#define MAX_KERNELS 64
+
+// Registry of the shader sources emitted for each kernel.
+static struct {
+    const char *name;
+    const char *source;
+} source_registry[MAX_KERNELS];
+static int n_registered = 0;
 
 typedef struct scalar_arg {
     void *data;
@@ -53,10 +61,39 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     free(ctx);
 }
 
+// The Metal Shading Language source is registered by a constructor the host
+// code generator emits, so that loading a kernel only needs its name, exactly
+// like the CUDA and CPU runtimes.
+void lfortran_gpu_register_metal_source(const char *name, const char *source) {
+    if (n_registered >= MAX_KERNELS) {
+        fprintf(stderr, "lfortran_gpu_register_metal_source: too many kernels\n");
+        exit(1);
+    }
+    source_registry[n_registered].name = name;
+    source_registry[n_registered].source = source;
+    n_registered++;
+}
+
 lfortran_gpu_kernel* lfortran_gpu_load_kernel(
-    lfortran_gpu_ctx* ctx, const char* source, const char* entry_point)
+    lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len)
 {
-    if (!ctx || !source || !entry_point) return NULL;
+    if (!ctx || !entry_point) return NULL;
+
+    char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
+    lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
+
+    const char *source = NULL;
+    for (int i = 0; i < n_registered; i++) {
+        if (strcmp(source_registry[i].name, name_buf) == 0) {
+            source = source_registry[i].source;
+            break;
+        }
+    }
+    if (!source) {
+        fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
+                name_buf);
+        exit(1);
+    }
 
     NSError *error = nil;
     NSString *src = [NSString stringWithUTF8String:source];
@@ -70,11 +107,11 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
         exit(1);
     }
 
-    NSString *name = [NSString stringWithUTF8String:entry_point];
+    NSString *name = [NSString stringWithUTF8String:name_buf];
     id<MTLFunction> function = [library newFunctionWithName:name];
     if (!function) {
         fprintf(stderr, "lfortran_gpu_load_kernel: Function '%s' not found in shader\n",
-                entry_point);
+                name_buf);
         exit(1);
     }
 

@@ -1,0 +1,23 @@
+warning: 'error stop' in an offloaded loop does not deliver its stop code
+  --> tests/../integration_tests/gpu_metal_298.f90:28:16
+   |
+28 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the device halts the launch here and the program exits with a failure status
+
+warning: 'error stop' in an offloaded loop does not deliver its stop code
+  --> tests/../integration_tests/gpu_metal_298.f90:38:16
+   |
+38 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the device halts the launch here and the program exits with a failure status
+
+warning: 'error stop' in an offloaded loop does not deliver its stop code
+  --> tests/../integration_tests/gpu_metal_298.f90:54:16
+   |
+54 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the device halts the launch here and the program exits with a failure status
+
+warning: 'error stop' in an offloaded loop does not deliver its stop code
+  --> tests/../integration_tests/gpu_metal_298.f90:70:16
+   |
+70 |     if (i < 0) error stop "unreachable"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^ the device halts the launch here and the program exits with a failure status

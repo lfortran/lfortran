@@ -1,0 +1,1339 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "vec" (Struct
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "x" (Variable
+                    :parent_symtab 2
+                    :name "x"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Real
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec"
+              :struct_signature (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :dependencies []
+              :members [
+                "x"
+              ]
+              :member_functions []
+              :abi :Source
+              :access :Public
+              :is_packed false
+              :is_abstract false
+              :is_sequence false
+              :initializers []
+              :alignment nil
+              :parent nil
+              :kind_params []
+            )
+            "vec_add" (Function
+              :symtab (SymbolTable
+                :id 3
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 3
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 3
+                    :name "b"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 3
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec_add"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 3 "a")
+                )
+                (Var
+                  :v (SymbolRef 3 "b")
+                )
+              ]
+              :body []
+              :return_var (Var
+                :v (SymbolRef 3 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "vec_and" (Function
+              :symtab (SymbolTable
+                :id 4
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 4
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 4
+                    :name "b"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 4
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec_and"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 4 "a")
+                )
+                (Var
+                  :v (SymbolRef 4 "b")
+                )
+              ]
+              :body []
+              :return_var (Var
+                :v (SymbolRef 4 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "vec_eq" (Function
+              :symtab (SymbolTable
+                :id 5
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 5
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 5
+                    :name "b"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 5
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (Logical
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec_eq"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (Logical
+                  :kind 4
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 5 "a")
+                )
+                (Var
+                  :v (SymbolRef 5 "b")
+                )
+              ]
+              :body []
+              :return_var (Var
+                :v (SymbolRef 5 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "vec_neg" (Function
+              :symtab (SymbolTable
+                :id 6
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 6
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 6
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec_neg"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                ]
+                :return_var_type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 6 "a")
+                )
+              ]
+              :body []
+              :return_var (Var
+                :v (SymbolRef 6 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "vec_str" (Function
+              :symtab (SymbolTable
+                :id 7
+                :symbols {
+                  "a" (Variable
+                    :parent_symtab 7
+                    :name "a"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (StructType
+                      :data_member_types [
+                        (Real
+                          :kind 4
+                        )
+                      ]
+                      :member_function_types []
+                      :is_cstruct false
+                      :is_unlimited_polymorphic false
+                    )
+                    :type_declaration (SymbolRef 1 "vec")
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "b" (Variable
+                    :parent_symtab 7
+                    :name "b"
+                    :dependencies []
+                    :intent :In
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (String
+                      :kind 1
+                      :len (IntegerConstant
+                        :n 4
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                      :len_kind :ExpressionLength
+                      :physical_type :DescriptorString
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "c" (Variable
+                    :parent_symtab 7
+                    :name "c"
+                    :dependencies []
+                    :intent :ReturnVar
+                    :symbolic_value nil
+                    :value nil
+                    :storage :Default
+                    :type (String
+                      :kind 1
+                      :len (IntegerConstant
+                        :n 8
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                      :len_kind :ExpressionLength
+                      :physical_type :DescriptorString
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "vec_str"
+              :function_signature (FunctionType
+                :arg_types [
+                  (StructType
+                    :data_member_types [
+                      (Real
+                        :kind 4
+                      )
+                    ]
+                    :member_function_types []
+                    :is_cstruct false
+                    :is_unlimited_polymorphic false
+                  )
+                  (String
+                    :kind 1
+                    :len (IntegerConstant
+                      :n 4
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :len_kind :ExpressionLength
+                    :physical_type :DescriptorString
+                  )
+                ]
+                :return_var_type (String
+                  :kind 1
+                  :len (IntegerConstant
+                    :n 8
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :len_kind :ExpressionLength
+                  :physical_type :DescriptorString
+                )
+                :abi :Source
+                :deftype :Implementation
+                :bindc_name nil
+                :elemental false
+                :pure false
+                :module false
+                :inline false
+                :static false
+                :restrictions []
+                :is_restriction false
+                :exec_space :Host
+              )
+              :dependencies []
+              :args [
+                (Var
+                  :v (SymbolRef 7 "a")
+                )
+                (Var
+                  :v (SymbolRef 7 "b")
+                )
+              ]
+              :body []
+              :return_var (Var
+                :v (SymbolRef 7 "c")
+              )
+              :access :Public
+              :deterministic false
+              :side_effect_free false
+              :module_file nil
+            )
+            "~add" (CustomOperator
+              :parent_symtab 1
+              :name "~add"
+              :procs [
+                (SymbolRef 1 "vec_add")
+              ]
+              :access :Public
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 8
+          :symbols {
+            "b" (Variable
+              :parent_symtab 8
+              :name "b"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Logical
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "p" (Variable
+              :parent_symtab 8
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :type_declaration (SymbolRef 8 "vec")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "q" (Variable
+              :parent_symtab 8
+              :name "q"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :type_declaration (SymbolRef 8 "vec")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "s" (Variable
+              :parent_symtab 8
+              :name "s"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 8
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "vec" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec"
+              :external (SymbolRef 1 "vec")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec"
+              :access :Public
+            )
+            "vec_add" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec_add"
+              :external (SymbolRef 1 "vec_add")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec_add"
+              :access :Public
+            )
+            "vec_and" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec_and"
+              :external (SymbolRef 1 "vec_and")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec_and"
+              :access :Public
+            )
+            "vec_eq" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec_eq"
+              :external (SymbolRef 1 "vec_eq")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec_eq"
+              :access :Public
+            )
+            "vec_neg" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec_neg"
+              :external (SymbolRef 1 "vec_neg")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec_neg"
+              :access :Public
+            )
+            "vec_str" (ExternalSymbol
+              :parent_symtab 8
+              :name "vec_str"
+              :external (SymbolRef 1 "vec_str")
+              :module_name "m"
+              :scope_names []
+              :original_name "vec_str"
+              :access :Public
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 8 "q")
+            )
+            :value (OverloadedBinOp
+              :left (Var
+                :v (SymbolRef 8 "p")
+              )
+              :op :Add
+              :right (Var
+                :v (SymbolRef 8 "p")
+              )
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :value nil
+              :overloaded (FunctionCall
+                :name (SymbolRef 8 "vec_add")
+                :original_name nil
+                :args [
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                ]
+                :type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :value nil
+                :dt nil
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 8 "b")
+            )
+            :value (OverloadedCompare
+              :left (Var
+                :v (SymbolRef 8 "p")
+              )
+              :op :Eq
+              :right (Var
+                :v (SymbolRef 8 "q")
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+              :overloaded (FunctionCall
+                :name (SymbolRef 8 "vec_eq")
+                :original_name nil
+                :args [
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "q")
+                    )
+                  )
+                ]
+                :type (Logical
+                  :kind 4
+                )
+                :value nil
+                :dt nil
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 8 "q")
+            )
+            :value (OverloadedUnaryMinus
+              :arg (Var
+                :v (SymbolRef 8 "p")
+              )
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :value nil
+              :overloaded (FunctionCall
+                :name (SymbolRef 8 "vec_neg")
+                :original_name nil
+                :args [
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                ]
+                :type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :value nil
+                :dt nil
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 8 "q")
+            )
+            :value (OverloadedBoolOp
+              :left (Var
+                :v (SymbolRef 8 "p")
+              )
+              :op :And
+              :right (Var
+                :v (SymbolRef 8 "q")
+              )
+              :type (StructType
+                :data_member_types [
+                  (Real
+                    :kind 4
+                  )
+                ]
+                :member_function_types []
+                :is_cstruct false
+                :is_unlimited_polymorphic false
+              )
+              :value nil
+              :overloaded (FunctionCall
+                :name (SymbolRef 8 "vec_and")
+                :original_name nil
+                :args [
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "q")
+                    )
+                  )
+                ]
+                :type (StructType
+                  :data_member_types [
+                    (Real
+                      :kind 4
+                    )
+                  ]
+                  :member_function_types []
+                  :is_cstruct false
+                  :is_unlimited_polymorphic false
+                )
+                :value nil
+                :dt nil
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 8 "s")
+            )
+            :value (OverloadedStringConcat
+              :left (Var
+                :v (SymbolRef 8 "p")
+              )
+              :right (StringConstant
+                :s "abcd"
+                :type (String
+                  :kind 1
+                  :len (IntegerConstant
+                    :n 4
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :len_kind :ExpressionLength
+                  :physical_type :DescriptorString
+                )
+              )
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 8
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+              :value nil
+              :overloaded (FunctionCall
+                :name (SymbolRef 8 "vec_str")
+                :original_name nil
+                :args [
+                  (call_arg
+                    :value (Var
+                      :v (SymbolRef 8 "p")
+                    )
+                  )
+                  (call_arg
+                    :value (StringConstant
+                      :s "abcd"
+                      :type (String
+                        :kind 1
+                        :len (IntegerConstant
+                          :n 4
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :len_kind :ExpressionLength
+                        :physical_type :DescriptorString
+                      )
+                    )
+                  )
+                ]
+                :type (String
+                  :kind 1
+                  :len (IntegerConstant
+                    :n 8
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :len_kind :ExpressionLength
+                  :physical_type :DescriptorString
+                )
+                :value nil
+                :dt nil
+              )
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

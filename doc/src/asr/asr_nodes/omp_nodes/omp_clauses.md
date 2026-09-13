@@ -1,41 +1,34 @@
 # omp_clause
 
-The ``omp_clause`` union represents OpenMP clauses that modify the behavior of an ``OMPRegion`` directive.
+The clauses that can appear on an OpenMP directive.
 
 ## Declaration
 
 ### Syntax
 
-```
+```text
 omp_clause
-    = OMPPrivate(expr* vars)
-    | OMPShared(expr* vars)
-    | OMPFirstPrivate(expr* vars)
-    | OMPReduction(reduction_op operator, expr* vars)
-    | OMPCollapse(expr count)
-    | OMPNumThreads(expr num_threads)
-    | OMPSchedule(schedule_type kind, expr? chunk_size)
-    | OMPNumTeams(expr num_teams)
-    | OMPThreadLimit(expr thread_limit)
-    | OMPMap(map_type type, expr* vars)
+  = OMPPrivate(expr* vars)
+  | OMPShared(expr* vars)
+  | OMPFirstPrivate(expr* vars)
+  | OMPLastPrivate(expr* vars)
+  | OMPReduction(reduction_op operator, expr* vars)
+  | OMPCollapse(expr count)
+  | OMPIf(expr condition)
+  | OMPNumThreads(expr num_threads)
+  | OMPSchedule(schedule_type kind, expr? chunk_size)
+  | OMPNowait()
+  | OMPNumTeams(expr num_teams)
+  | OMPThreadLimit(expr thread_limit)
+  | OMPDevice(expr device)
+  | OMPMap(map_type type, expr* vars)
+  | OMPIndependent()
+  | OMPTargetRequested()
 ```
 
 ### Arguments
 
-
-| Clause Type           | Arguments                                         |
-|-----------------------|---------------------------------------------------|
-| `OMPPrivate`        | `vars`: List of variables to privatize.        |
-| `OMPShared`         | `vars`: List of variables to share.            |
-| `OMPFirstPrivate`   | `vars`: List of variables to first-privatize.  |
-| `OMPReduction`      | `operator`: Reduction operator (e.g., ReduceAdd). `vars`: List of variables for reduction.       |
-| `OMPCollapse`       | `count`: Number of loops to collapse.           |
-| `OMPNumThreads`     | `num_threads`: Number of threads.               |
-| `OMPSchedule`       | `kind`: Schedule type (e.g., Static). `chunk_size`: Optional chunk size expression.   |
-| `OMPNumTeams`     | `num_teams`: Number of teams.                   |
-| `OMPThreadLimit`    | `thread_limit`: Thread limit per team.          |
-| `OMPMap`            | `type`: Mapping type (e.g., ToFrom). `vars`: List of variables to map.              |
-
+None.
 
 ### Return values
 
@@ -43,26 +36,34 @@ None.
 
 ## Description
 
-``omp_clause`` defines modifiers for OpenMP regions in the Abstract Semantic Representation (ASR). Clauses control aspects like data scoping (e.g., ``OMPPrivate``, ``OMPShared``), reductions (``OMPReduction``), loop scheduling (``OMPSchedule``), team configuration (``OMPNumTeams``), and device data mapping (``OMPMap``). These clauses are attached to ``OMPRegion`` nodes to specify runtime behavior during execution.
+The clauses of an [OMPRegion](../statement_nodes/OMPRegion.md) are a list of
+these. Each constructor carries exactly what its clause was written with, so
+nothing has to be recovered from a list of expressions later.
 
-## More enums
+The data sharing clauses ([OMPPrivate](OMPPrivate.md),
+[OMPShared](OMPShared.md), [OMPFirstPrivate](OMPFirstPrivate.md),
+[OMPLastPrivate](OMPLastPrivate.md) and [OMPReduction](OMPReduction.md)) say
+what each thread sees. The rest control how the region runs
+([OMPNumThreads](OMPNumThreads.md), [OMPSchedule](OMPSchedule.md),
+[OMPCollapse](OMPCollapse.md), [OMPIf](OMPIf.md), [OMPNowait](OMPNowait.md))
+or where ([OMPDevice](OMPDevice.md), [OMPMap](OMPMap.md),
+[OMPNumTeams](OMPNumTeams.md), [OMPThreadLimit](OMPThreadLimit.md)).
+Two record what the source asserted rather than what it asked to be done:
+[OMPIndependent](OMPIndependent.md) says the iterations do not depend on
+one another, and [OMPTargetRequested](OMPTargetRequested.md) says a device
+was asked for.
 
-- ``map_type``: Enumeration for mapping directions in ``OMPMap``.
-  - ``To``: Map data to device.
-  - ``From``: Map data from device.
-  - ``ToFrom``: Map data to and from device.
-  - ``Alloc``: Allocate on device.
-  - ``Release``: Release from device.
-  - ``Delete``: Delete from device.
+A clause that is not written is simply absent from the list; there is no
+default clause node.
 
-- ``schedule_type``: Enumeration for loop scheduling in ``OMPSchedule``.
-  - ``Static``: Static scheduling.
-  - ``Dynamic``: Dynamic scheduling.
-  - ``Guided``: Guided scheduling.
-  - ``Auto``: Compiler-decided scheduling.
-  - ``Runtime``: Runtime-decided scheduling.
+## Examples
 
-## See OpenMp Documentation to understand each of the constructs with examples
+An ASR text document that uses it:
 
-- [OpenMP API 6.0 Specification Guide](https://www.openmp.org/wp-content/uploads/OpenMP-API-Specification-6-0.pdf)
-- [OpenMP API 6.0 Reference Guide](https://www.openmp.org/wp-content/uploads/OpenMP-RefGuide-6.0-OMP60SC24-web.pdf)
+```{literalinclude} ../../examples/omp_region.asr
+:language: clojure
+```
+
+## See Also
+
+[OMPRegion](../statement_nodes/OMPRegion.md), [omp_region_type](omp_region_type.md)

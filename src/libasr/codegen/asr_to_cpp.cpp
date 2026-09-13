@@ -53,7 +53,7 @@ std::string trim_dims(std::string &dims) {
     std::string trimmed;
     bool last_is_digit = true;
     size_t i = 0;
-    while (!isdigit(dims[i])) i++;
+    while (i < dims.size() && !isdigit(dims[i])) i++;
     for (; i < dims.size(); i++) {
         if (isdigit(dims[i])) {
             if (!last_is_digit) {

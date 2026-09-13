@@ -1,205 +1,52 @@
 # Requirement
 
-A **Requirement** is a `symbol` node for declaring generic types 
-and operations associated with the types.
- 
+A named set of type parameters and the operations required of them.
+
 ## Declaration
 
 ### Syntax
 
-```fortran
-Requirement(symbol_table symtab, identifier name, 
-            identifier* args, require_instantiation* requires)
+```text
+Requirement(symbol_table symtab, identifier name, identifier* args,
+    require_instantiation* requires)
 ```
 
 ### Arguments
 
-| Argument Name              | Denotes                    |
-|----------------------------|----------------------------|
-| `symtab`                   | symbol table of the requirement                    |
-| `name`                     | name of the requirement                            |
-| `args`                     | symbol names inside the requirement                |
-| `require_instantiation`    | instantiating argument types through require calls |
+| Argument | Description |
+|----------|-------------|
+| `symtab` | the symbol table of the requirement: the type parameters, as variables of type [TypeParameter](../type_nodes/TypeParameter.md), and the signatures required of them, as bodyless [Function](Function.md) symbols. |
+| `name` | the name of the requirement. |
+| `args` | the names of the parameters of the requirement, in order. Every name must be declared in `symtab`. |
+| `requires` | the requirements this one builds on, each a `Require` naming a requirement and the arguments to instantiate it with. |
 
 ### Return values
 
-N/A
+None.
 
 ## Description
 
-Generic types and their abstract methods (whose implementation are not yet known) are needed during implementation of generic functions. Requirements fills the hole here by declaring (adhoc) generic types and their associated methods. Requirements are analoguos to *typeclasses* in Haskell and *traits* in Rust.
+A **Requirement** states what a generic procedure needs from its type
+parameters: which types it is generic over, and which operations must exist on
+them. It plays the role of a type class in Haskell or a trait in Rust.
 
-`name` denotes the name of the requirement. In the example below, the `name` of the requirements are `semigroup` and `monoid`.
+A requirement declares nothing concrete. Its functions have no body, and its
+types are [TypeParameter](../type_nodes/TypeParameter.md) placeholders. A
+[Template](Template.md) is what refers to a requirement, and instantiation is
+what replaces the parameters with real types.
 
-`args` denotes the parameters of the requirement. A warning is generated if there is no corresponding symbol found in the requirement's `symtab` for a given paramater. In the example below, the parameters `(T, op)` make up the `args` of the `semigroup` requirement.
-
-`symtab` denotes the symbol table of the requirement. It contains generic types, represented by variables typed with `TypeParameter`, and *abstract* functions whose signatures may contain generic types. An error is generated if a symbol found in the `symtab` but not declared in `args`. In the example below, `semigroup`'s `symtab` contains the variable `T` with type `TypeParameter T` and the function `op` with type `TypeParameter T x TypeParameter T -> TypeParameter T`.
-
-`require_instantiation` (`Require` statements) are calls to requirements that replace the types of the arguments with the corresponding parameters' types in the requirement. As an example the requirement `monoid` below reuses `semigroup` through `require :: semigroup(S, combine)`. Although `S` and `combine` are not declared as symbols inside `monoid`, this statement maps the typing for both `S` and `combine` with the parameter `T` and `op` in `semigroup` that defines `S` as a type parameter. As a result, `type(S)` is a valid type in `monoid` and two methods `combine` and `empty` are associated with it.
-
-## Types
+`requires` lets one requirement reuse another: the names it passes need not be
+declared locally, since the `Require` binds them to the parameters of the
+requirement being reused.
 
 ## Examples
 
-LFortran:
-```fortran
-module semigroup_m
-  requirement semigroup(T, op)
-    type, deferred :: T
-    function op(x,y) result(z)
-      type(T), intent(in) :: x, y
-      type(T) :: z
-    end function
-  end requirement
-  requirement monoid(S, combine, empty)
-      require :: semigroup(S, combine)
-      pure function empty()
-          type(S) :: empty
-      end function
-  end requirement
-end module
-```
+An ASR text document that uses it:
 
-ASR:
-```
-semigroup_m:
-  (Module
-    (SymbolTable
-      2
-      {
-        semigroup:
-          (Requirement
-            (SymbolTable
-                3
-                {
-                  op:
-                    (Function
-                      (SymbolTable
-                        4
-                        {
-                          x:
-                            (Variable
-                              4
-                              x
-                              []
-                              In
-                              ()
-                              ()
-                              Default
-                              (TypeParameter
-                                  t
-                              )
-                              ()
-                              Source
-                              Public
-                              Required
-                              .false.
-                            ),
-                          y:
-                            (Variable
-                              4
-                              y
-                              []
-                              In
-                              ()
-                              ()
-                              Default
-                              (TypeParameter
-                                  t
-                              )
-                              ()
-                              Source
-                              Public
-                              Required
-                              .false.
-                            ),
-                          z:
-                            (Variable
-                              4
-                              z
-                              []
-                              ReturnVar
-                              ()
-                              ()
-                              Default
-                              (TypeParameter
-                                  t
-                              )
-                              ()
-                              Source
-                              Public
-                              Required
-                              .false.
-                            )
-                        })
-                      op
-                      (FunctionType
-                        [(TypeParameter
-                          t
-                        )
-                        (TypeParameter
-                          t
-                        )]
-                        (TypeParameter
-                          t
-                        )
-                        Source
-                        Implementation
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                        []
-                        .true.
-                      )
-                      []
-                      [(Var 4 x)
-                      (Var 4 y)]
-                      []
-                      (Var 4 z)
-                      Public
-                      .false.
-                      .false.
-                      ()
-                    ),
-                  t:
-                    (Variable
-                      3
-                      t
-                      []
-                      In
-                      ()
-                      ()
-                      Default
-                      (TypeParameter
-                        t
-                      )
-                      ()
-                      Source
-                      Public
-                      Required
-                      .false.
-                    )
-                })
-              semigroup
-              [t
-              op]
-              []
-          )
-      })
-    semigroup_m
-    []
-    .false.
-    .false.
-  )
+```{literalinclude} ../../examples/requirement.asr
+:language: clojure
 ```
 
 ## See Also
 
-* [Symbols](symbol.md)
-
-* [Template](Template.md)
-
-* [Generics](../../generics.md)
+[Template](Template.md), [TypeParameter](../type_nodes/TypeParameter.md), [Function](Function.md)

@@ -1,0 +1,29 @@
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_217.f90:16:3 - 18:8
+   |
+16 |      do concurrent (i = 1:4)
+   |      ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |      end do
+   | ...^^^^^^^^ the gpu backend does not support an array whose elements are not numbers
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_217.f90:24:3 - 26:8
+   |
+24 |      do concurrent (i = 1:4)
+   |      ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+26 |      end do
+   | ...^^^^^^^^ the gpu backend does not support an array whose elements are not numbers
+
+warning: parallel loop not offloaded to the GPU, it runs on the CPU instead
+  --> tests/../integration_tests/gpu_metal_217.f90:32:3 - 34:8
+   |
+32 |      do concurrent (i = 1:4)
+   |      ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+34 |      end do
+   | ...^^^^^^^^ the gpu backend does not support an array of logical(8), which has no gpu type of the same width

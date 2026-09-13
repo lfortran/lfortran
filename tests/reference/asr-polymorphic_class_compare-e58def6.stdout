@@ -130,6 +130,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 a)
@@ -276,6 +277,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [map_s_iter_equal]
                                     [(Var 5 a)

@@ -111,6 +111,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     [sfloor]
                                     [(Var 4 x)
@@ -215,6 +216,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 3 x)]

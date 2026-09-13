@@ -93,6 +93,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 n))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -122,6 +123,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 m))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -153,6 +155,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 n)
@@ -181,6 +184,7 @@
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 5 (Integer 4) Decimal))]
                                 FixedSizeArray
+                                Global
                             )
                             ColMajor
                         )

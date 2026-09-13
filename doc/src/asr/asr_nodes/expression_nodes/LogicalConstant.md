@@ -1,67 +1,48 @@
 # LogicalConstant
 
-Logical literal constant, an `expr` node.
+A logical literal.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 LogicalConstant(bool value, ttype type)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-| `value`           | value of boolean |
-| `type`        | tabel entry type |
+| Argument | Description |
+|----------|-------------|
+| `value` | `true` or `false`. |
+| `type` | the logical type, which fixes the kind and therefore the storage size. |
 
 ### Return values
 
-The return value is the expression that the LogicalConstant represents.
+The value of the expression.
 
 ## Description
 
-**LogicalConstant** represents logical constant, is either logical value true
-or false. The only logical constants are `.TRUE` and `.FALSE`. The period
-delimiters are necessary.
-
-The value must be in the uses 4 bytes of storage.
-
-## Types
-
-Only accepts TRUE or FAlSe values.
+The default logical kind is 4, matching the default integer kind, so a logical
+occupies the same storage as an integer unless another kind is asked for.
 
 ## Examples
 
-
-```fortran
-.TRUE.
-.FALSE.
+```clojure
+(LogicalConstant
+  :value true
+  :type (Logical
+    :kind 4
+  )
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-
-        })
-    [(LogicalConstant
-        .true.
-        (Logical 4 [])
-    )
-    (LogicalConstant
-        .false.
-        (Logical 4 [])
-    )]
-)
+```{literalinclude} ../../examples/logical_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
-[IntegerConstant](IntegerConstant.md), [ComplexConstant](ComplexConstant.md),
-[RealConstant](RealConstant.md)
+[IntegerConstant](IntegerConstant.md), [Logical](../type_nodes/Logical.md), [LogicalBinOp](LogicalBinOp.md)

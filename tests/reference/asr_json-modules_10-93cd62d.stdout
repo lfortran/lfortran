@@ -77,7 +77,8 @@
                                                 "inline": false,
                                                 "static": false,
                                                 "restrictions": [],
-                                                "is_restriction": false
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
                                             },
                                             "loc": {
                                                 "first": 220,
@@ -296,7 +297,8 @@
                                                 "inline": false,
                                                 "static": false,
                                                 "restrictions": [],
-                                                "is_restriction": false
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
                                             },
                                             "loc": {
                                                 "first": 65,

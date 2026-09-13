@@ -1,0 +1,127 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "main" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "i" (Variable
+              :parent_symtab 1
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "s" (Variable
+              :parent_symtab 1
+              :name "s"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Set
+                :type (Integer
+                  :kind 4
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "total" (Variable
+              :parent_symtab 1
+              :name "total"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies []
+        :body [
+          (ForEach
+            :var (Var
+              :v (SymbolRef 1 "i")
+            )
+            :container (Var
+              :v (SymbolRef 1 "s")
+            )
+            :body [
+              (Assignment
+                :target (Var
+                  :v (SymbolRef 1 "total")
+                )
+                :value (IntegerBinOp
+                  :left (Var
+                    :v (SymbolRef 1 "total")
+                  )
+                  :op :Add
+                  :right (Var
+                    :v (SymbolRef 1 "i")
+                  )
+                  :type (Integer
+                    :kind 4
+                  )
+                  :value nil
+                )
+                :overloaded nil
+                :realloc_lhs false
+                :move_allocation false
+              )
+            ]
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

@@ -1,0 +1,312 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "color" (Enum
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "green" (Variable
+                    :parent_symtab 2
+                    :name "green"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Parameter
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "red" (Variable
+                    :parent_symtab 2
+                    :name "red"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Parameter
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "color"
+              :dependencies []
+              :members [
+                "red"
+                "green"
+              ]
+              :abi :Source
+              :access :Public
+              :enum_value_type :IntegerConsecutiveFromZero
+              :type (Integer
+                :kind 4
+              )
+              :parent nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {
+            "c" (Variable
+              :parent_symtab 3
+              :name "c"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (EnumType
+                :enum_type (SymbolRef 3 "color")
+              )
+              :type_declaration (SymbolRef 3 "color")
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "color" (ExternalSymbol
+              :parent_symtab 3
+              :name "color"
+              :external (SymbolRef 1 "color")
+              :module_name "m"
+              :scope_names []
+              :original_name "color"
+              :access :Public
+            )
+            "i" (Variable
+              :parent_symtab 3
+              :name "i"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Integer
+                :kind 4
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+            "s" (Variable
+              :parent_symtab 3
+              :name "s"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 5
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+            )
+          }
+        )
+        :name "main"
+        :dependencies [
+          "m"
+        ]
+        :body [
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "c")
+            )
+            :value (EnumConstructor
+              :dt_sym (SymbolRef 3 "color")
+              :args [
+                (IntegerConstant
+                  :n 1
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+              ]
+              :type (EnumType
+                :enum_type (SymbolRef 3 "color")
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "i")
+            )
+            :value (EnumValue
+              :v (Var
+                :v (SymbolRef 3 "c")
+              )
+              :enum_type (EnumType
+                :enum_type (SymbolRef 3 "color")
+              )
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "s")
+            )
+            :value (EnumName
+              :v (Var
+                :v (SymbolRef 3 "c")
+              )
+              :enum_type (EnumType
+                :enum_type (SymbolRef 3 "color")
+              )
+              :type (String
+                :kind 1
+                :len (IntegerConstant
+                  :n 5
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :len_kind :ExpressionLength
+                :physical_type :DescriptorString
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+          (Assignment
+            :target (Var
+              :v (SymbolRef 3 "i")
+            )
+            :value (EnumStaticMember
+              :v (Var
+                :v (SymbolRef 3 "c")
+              )
+              :m (SymbolRef 2 "red")
+              :type (Integer
+                :kind 4
+              )
+              :value nil
+            )
+            :overloaded nil
+            :realloc_lhs false
+            :move_allocation false
+          )
+        ]
+      )
+    }
+  )
+  :items []
+)

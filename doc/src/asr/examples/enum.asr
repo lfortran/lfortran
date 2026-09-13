@@ -1,0 +1,124 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "m" (Module
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "color" (Enum
+              :symtab (SymbolTable
+                :id 2
+                :symbols {
+                  "green" (Variable
+                    :parent_symtab 2
+                    :name "green"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Parameter
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                  "red" (Variable
+                    :parent_symtab 2
+                    :name "red"
+                    :dependencies []
+                    :intent :Local
+                    :symbolic_value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :value (IntegerConstant
+                      :n 0
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :storage :Parameter
+                    :type (Integer
+                      :kind 4
+                    )
+                    :type_declaration nil
+                    :abi :Source
+                    :access :Public
+                    :presence :Required
+                    :value_attr false
+                    :target_attr false
+                    :contiguous_attr false
+                    :bindc_name nil
+                    :is_volatile false
+                    :is_protected false
+                    :pass_attr :NotMethod
+                    :self_argument nil
+                    :codims []
+                  )
+                }
+              )
+              :name "color"
+              :dependencies []
+              :members [
+                "red"
+                "green"
+              ]
+              :abi :Source
+              :access :Public
+              :enum_value_type :IntegerConsecutiveFromZero
+              :type (Integer
+                :kind 4
+              )
+              :parent nil
+            )
+          }
+        )
+        :name "m"
+        :parent_module nil
+        :dependencies []
+        :loaded_from_mod false
+        :intrinsic false
+        :has_submodules false
+      )
+      "main" (Program
+        :symtab (SymbolTable
+          :id 3
+          :symbols {}
+        )
+        :name "main"
+        :dependencies []
+        :body []
+      )
+    }
+  )
+  :items []
+)

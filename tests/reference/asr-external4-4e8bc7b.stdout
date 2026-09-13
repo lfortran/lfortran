@@ -68,7 +68,7 @@
                                             []
                                             (Real 8)
                                             BindC
-                                            Interface
+                                            ImplicitInterface
                                             ()
                                             .false.
                                             .false.
@@ -77,6 +77,7 @@
                                             .false.
                                             []
                                             .false.
+                                            Host
                                         )]
                                         ()
                                         BindC
@@ -89,6 +90,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 2 f)]
@@ -102,11 +104,11 @@
                             f:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        5
                                         {
                                             f_arg_0:
                                                 (Variable
-                                                    6
+                                                    5
                                                     f_arg_0
                                                     []
                                                     Unspecified
@@ -130,7 +132,7 @@
                                                 ),
                                             f_return_var_name:
                                                 (Variable
-                                                    6
+                                                    5
                                                     f_return_var_name
                                                     []
                                                     ReturnVar
@@ -167,11 +169,12 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
-                                    [(Var 6 f_arg_0)]
+                                    [(Var 5 f_arg_0)]
                                     []
-                                    (Var 6 f_return_var_name)
+                                    (Var 5 f_return_var_name)
                                     Public
                                     .false.
                                     .false.
@@ -217,6 +220,7 @@
                             .false.
                             []
                             .false.
+                            Host
                         )]
                         ()
                         Source
@@ -229,6 +233,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 f)]

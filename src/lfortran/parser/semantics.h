@@ -1167,6 +1167,12 @@ ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
 
 #define PAREN(x, l) parenthesis(p.m_a, l, EXPR(x))
 
+// Fortran 2023 conditional expression (R1002): ( test ? body : orelse )
+#define COND_EXPR(c, a, b, l) make_ConditionalExpr_t(p.m_a, l, EXPR(c), EXPR(a), EXPR(b))
+
+// `.NIL.` (R1527), a consequent that means the dummy argument is not present
+#define NIL(l) make_Nil_t(p.m_a, l)
+
 #define STRCONCAT(x, y, l) make_StrOp_t(p.m_a, l, EXPR(x), stroperatorType::Concat, EXPR(y))
 
 #define EQ(x, y, l)  make_Compare_t(p.m_a, l, EXPR(x), cmpopType::Eq, EXPR(y))
@@ -2535,7 +2541,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     Vec<fnarg_t> v;
     v.reserve(al, args.size());
     Vec<keyword_t> v2;
-    v2.reserve(al, args.size());
+    v2.reserve(al, args.size() + subargs.size());
     for (auto &item : args) {
         if (item.keyword) {
             v2.push_back(al, item.kw);
@@ -2546,7 +2552,11 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
     Vec<fnarg_t> v1;
     v1.reserve(al, subargs.size());
     for (auto &item : subargs) {
-        v1.push_back(al, item.arg);
+        if (item.keyword) {
+            v2.push_back(al, item.kw);
+        } else {
+            v1.push_back(al, item.arg);
+        }
     }
     Vec<decl_attribute_t*> v3;
     v3.reserve(al, temp_args.size());

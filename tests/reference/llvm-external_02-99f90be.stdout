@@ -17,8 +17,6 @@ FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
   ret void
 }
 
-declare void @calcfc(double*)
-
 define void @cobylb(void (double*)* %calcfc) {
 .entry:
   %con = alloca double, align 8
@@ -34,5 +32,3 @@ return:                                           ; preds = %unreachable_after_r
 FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
   ret void
 }
-
-declare void @calcfc.1(double*)

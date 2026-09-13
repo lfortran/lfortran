@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: procedure 'gpu_decline_03_twice' has no device implementation; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_decline_03.f90:13:5 - 15:10
+   |
+13 |        do concurrent (i = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+15 |        end do
+   | ...^^^^^^^^^^ procedure 'gpu_decline_03_twice' has no device implementation

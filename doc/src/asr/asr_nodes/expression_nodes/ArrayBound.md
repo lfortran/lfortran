@@ -1,102 +1,66 @@
 # ArrayBound
 
-Array upper and lower bound.
+The lower or upper bound of a dimension of an array.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ArrayBound(expr v, expr? dim, ttype type, arraybound bound,
-                 expr? value)
+    expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`v`| expression |
-|`dim`| dimension |
-|`type` | table entry type |
-|`bound` | array bound |
-|`value` | expression value |
+| Argument | Description |
+|----------|-------------|
+| `v` | the array. |
+| `dim` | the dimension, counting from one, or `nil` for the whole shape. |
+| `type` | the type of the expression. |
+| `bound` | `LBound` or `UBound`; see [arraybound](../enum_nodes/arraybound.md). |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArrayBound represents.
+The value of the expression.
 
 ## Description
 
-**ArrayBound** represents bounds of array. It can be upper or lower bound.
+`lbound(a, d)` and `ubound(a, d)` are one node distinguished by `bound`,
+because they take the same operands and differ only in which end they report.
 
-## Types
-
-Only accepts integers.
+For an array with explicit bounds the frontend folds the result. For an
+allocatable or a pointer the bounds are read from the descriptor at run time.
 
 ## Examples
 
-```fortran
-integer :: a(2:5, 3:9, 7)
-print *, lbound(a, 1), lbound(a, 2), lbound(a, 3)
+```clojure
+(ArrayBound
+  :v (Var
+    :v (SymbolRef 1 "a")
+  )
+  :dim (IntegerConstant
+    :n 1
+    :type (Integer
+      :kind 4
+    )
+    :intboz_type :Decimal
+  )
+  :type (Integer
+    :kind 4
+  )
+  :bound :UBound
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            a:
-                (Variable
-                    1
-                    a
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 2 (Integer 4 []))
-                    (IntegerConstant 4 (Integer 4 [])))
-                    ((IntegerConstant 3 (Integer 4 []))
-                    (IntegerConstant 7 (Integer 4 [])))
-                    ((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 7 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(Print
-        ()
-        [(ArrayBound
-            (Var 1 a)
-            (IntegerConstant 1 (Integer 4 []))
-            (Integer 4 [])
-            LBound
-            ()
-        )
-        (ArrayBound
-            (Var 1 a)
-            (IntegerConstant 2 (Integer 4 []))
-            (Integer 4 [])
-            LBound
-            ()
-        )
-        (ArrayBound
-            (Var 1 a)
-            (IntegerConstant 3 (Integer 4 []))
-            (Integer 4 [])
-            LBound
-            ()
-        )]
-        ()
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/array_expr.asr
+:language: clojure
 ```
 
 ## See Also
 
+[arraybound](../enum_nodes/arraybound.md), [ArraySize](ArraySize.md), [dimension](../helper_nodes/dimension.md)

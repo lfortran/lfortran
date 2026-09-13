@@ -1,136 +1,69 @@
 # ArrayPack
 
-Pack an array into an array of rank one.
+The elements of an array selected by a mask.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
- ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
+```text
+ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
 ```
 
 ### Arguments
 
-| Argument Name | Argument Description |
-|---------------|----------------------|
-|`array`  | expression array |
-|`mask` | array mask |
-|`vector` | vector expression |
-|`type` | table entry type |
-|`value`| expression value |
+| Argument | Description |
+|----------|-------------|
+| `array` | the array to select from. |
+| `mask` | a logical array of the same shape, or a scalar. |
+| `vector` | values to pad the result with when it must be longer than the number of selected elements; `nil` otherwise. |
+| `type` | the rank one array type of the result. |
+| `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
 
-The return value is the expression that the ArrayPack represents.
+The value of the expression.
 
 ## Description
 
-**ArrayPack** stores the elements of array in an array or rank one.
-The beginning of the resulting array is made up of elements whose MASK equals TRUE.
-Afterwards, positions are filled with elements taken from VECTOR.
-
-The result is an array of rank one and the same type as that of ARRAY.
-If VECTOR is present, the result size is that of VECTOR, the number of TRUE
-values in MASK otherwise.
-
-## Types
-
-Only accepts integers.
+`pack(a, mask)`. The result is always rank one, whatever the rank of the
+input, and its length is the number of true elements of the mask unless
+`vector` makes it longer.
 
 ## Examples
 
-```fortran
-integer :: m(6), p(2)
-m = [ 1, 0, 0, 0, 5, 0 ]
-p = pack(m, m /= 0)
+```clojure
+(ArrayPack
+  :array (Var
+    :v (SymbolRef 1 "a")
+  )
+  :mask (Var
+    :v (SymbolRef 1 "mask")
+  )
+  :vector nil
+  :type (Array
+    :type (Integer
+      :kind 4
+    )
+    :dims [
+      (dimension
+        :start nil
+        :length nil
+      )
+    ]
+    :physical_type :DescriptorArray
+    :memory_space :Global
+  )
+  :value nil
+)
 ```
 
-ASR:
+It comes from this complete ASR text document:
 
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            m:
-                (Variable
-                    1
-                    m
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 6 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                ),
-            p:
-                (Variable
-                    1
-                    p
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-                    (IntegerConstant 2 (Integer 4 [])))])
-                    Source
-                    Public
-                    Required
-                    .false.
-                )
-
-        })
-    [(=
-        (Var 1 m)
-        (ArrayConstant
-            [(IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))
-            (IntegerConstant 5 (Integer 4 []))
-            (IntegerConstant 0 (Integer 4 []))]
-            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-            (IntegerConstant 6 (Integer 4 [])))])
-        )
-        ()
-    )
-    (=
-        (Var 1 p)
-        (ArrayPack
-            (Var 1 m)
-            (IntegerCompare
-                (Var 1 m)
-                NotEq
-                (IntegerConstant 0 (Integer 4 []))
-                (Logical 4 [])
-                ()
-            )
-            ()
-            (Integer 4 [((IntegerConstant 1 (Integer 4 []))
-            (ArraySize
-                (IntegerCompare
-                    (Var 1 m)
-                    NotEq
-                    (IntegerConstant 0 (Integer 4 []))
-                    (Logical 4 [])
-                    ()
-                )
-                ()
-                (Integer 4 [])
-                ()
-            ))])
-            ()
-        )
-        ()
-    )]
-)
-
+```{literalinclude} ../../examples/arraypack.asr
+:language: clojure
 ```
 
 ## See Also
 
+[Where](../statement_nodes/Where.md), [ArrayReshape](ArrayReshape.md), [IntrinsicArrayFunction](IntrinsicArrayFunction.md)

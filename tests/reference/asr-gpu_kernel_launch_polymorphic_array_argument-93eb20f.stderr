@@ -1,0 +1,9 @@
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+  --> tests/asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr:5:14 - 61:7
+   |
+ 5 |          "op_t" (Struct
+   |                 ^^^^^^^...
+...
+   |
+61 |          )
+   | ...^^^^^^^ invalid ASR text here

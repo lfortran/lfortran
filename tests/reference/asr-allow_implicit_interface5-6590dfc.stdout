@@ -75,6 +75,7 @@
                                         .false.
                                         []
                                         .false.
+                                        Host
                                     )
                                     []
                                     [(Var 4 klvna_arg_0)]
@@ -147,6 +148,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 8 (Integer 4) Decimal))]
                                         FixedSizeArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -176,6 +178,7 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 nt))]
                                         PointerArray
+                                        Global
                                     )
                                     ()
                                     Source
@@ -207,6 +210,7 @@
                         .false.
                         []
                         .false.
+                        Host
                     )
                     []
                     [(Var 2 nt)

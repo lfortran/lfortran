@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.gpu_kernel_launch.argument_element_kind]: GpuKernelLaunch argument 1 of '__lfortran_gpu_kernel_0' is integer(8), but the dummy 'a' the device reads it as is integer(4)
+   --> tests/asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr:157:12
+    |
+157 |           (GpuKernelLaunch
+    |            ^^^^^^^^^^^^^^^ failed here

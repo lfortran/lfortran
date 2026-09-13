@@ -1,28 +1,28 @@
 # ExternalSymbol
 
-The **ExternalSymbol** is a `symbol` node that represents a symbol declared in another module.
+A symbol that lives in another scope, made visible here.
 
 ## Declaration
 
 ### Syntax
 
-```fortran
+```text
 ExternalSymbol(symbol_table parent_symtab, identifier name,
-        symbol external, identifier module_name, identifier* scope_names,
-        identifier original_name, access access)
+    symbol external, identifier module_name, identifier* scope_names,
+    identifier original_name, access access)
 ```
 
 ### Arguments
 
-| Argument Name              | Denotes                    |
-|----------------------------|----------------------------|
-| `parent_symtab`            | the parent symbol table that contains the external symbol |
-| `name`                     | the name of the external symbol in the current symbol table |
-| `external`                 | pointer to the actual symbol definition |
-| `module_name`              | the name of the module the symbol is in |
-| `scope_names`              | a list of names if the symbol is in a nested symbol table. For example if it is a local variable in a function `f` that is nested in function `g`, then `scope_names=[g, f]` |
-| `original_name`            | the name of the symbol in the external symbol table |
-| `access`                   | access type `Public/Private` |
+| Argument | Description |
+|----------|-------------|
+| `parent_symtab` | the symbol table this symbol is stored in. |
+| `name` | the name the symbol is known by here, after any renaming. |
+| `external` | the symbol this one stands for. |
+| `module_name` | the name of the module the original symbol is declared in. |
+| `scope_names` | the names of the scopes to walk inside the module to reach the symbol, outermost first. Empty when the symbol is declared directly in the module. |
+| `original_name` | the name the symbol has in its own scope, which differs from `name` under `use m, new => old`. |
+| `access` | `Public` or `Private`. |
 
 ### Return values
 
@@ -30,91 +30,36 @@ None.
 
 ## Description
 
-ExternalSymbol represents symbols that cannot be looked up in the current scoped symbol table. As an example, if a variable is defined in a module, but used in a nested subroutine, that is not an external symbol because it can be resolved in the current symbol table (nested subroutine) by following the parents. However if a symbol is used from a different module, then it is an external symbol, because usual symbol resolution by going to the parents will not find the definition.
-The `ExternalSymbol` is the only way to reference a symbol that cannot be accessed in the scoped symbol table by visiting the parents. There is a special handling for it in the serialization and deserialization: the `external` member is not serialized (since it is a pointer) and in deserialization the pointer is reconstructed from the `original_name` and `scope_names`.
+Ordinary symbol lookup walks from a symbol table to its parents. That finds a
+module variable used inside a procedure of the same module, so no
+**ExternalSymbol** is needed there. It does not find a symbol that belongs to
+another module, because that module is not a parent of the current scope.
 
-The `scope_names` contains the names of the external symbol table starting from the top how to get to the symbol. This approach allows to reference any nested symbol (such as a local variable in a function in a module). However, we might later change the design to only allow referencing top level module entities.
-
-One can think of the `ExternalSymbol` as the "import" statement in Python, or the "use" statement in Fortran.
-## Types
-
+**ExternalSymbol** closes that gap: `use m, only: f` puts an **ExternalSymbol**
+named `f` into the using scope, pointing at the real symbol in `m`. Every
+reference in that scope then names the local **ExternalSymbol**, so every
+symbol a program unit refers to is reachable from its own symbol table.
 
 ## Examples
 
-```fortran
-module module_num
-    integer :: my_num = 5
-end module
-
-program main
-  use module_num
-  print *, my_num
-end program
-
-```
-
-ASR:
-
-```fortran
-(TranslationUnit
-    (SymbolTable
-        1
-        {
-            main:
-                (Program
-                    (SymbolTable
-                        3
-                        {
-                            my_num:
-                                (ExternalSymbol
-                                    3
-                                    my_num
-                                    2 my_num
-                                    module_num
-                                    []
-                                    my_num
-                                    Public
-                                )
-                        })
-                    main
-                    [module_num]
-                    [(Print
-                        ()
-                        [(Var 3 my_num)]
-                        ()
-                        ()
-                    )]
-                ),
-            module_num:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            my_num:
-                                (Variable
-                                    2
-                                    my_num
-                                    []
-                                    Local
-                                    (IntegerConstant 5 (Integer 4 []))
-                                    ()
-                                    Save
-                                    (Integer 4 [])
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                )
-                        })
-                    module_num
-                    []
-                    .false.
-                    .false.
-                )
-        })
-    []
+```clojure
+(ExternalSymbol
+  :parent_symtab 3
+  :name "reset"
+  :external (SymbolRef 1 "reset")
+  :module_name "m"
+  :scope_names []
+  :original_name "reset"
+  :access :Public
 )
 ```
+
+It comes from this complete ASR text document:
+
+```{literalinclude} ../../examples/externalsymbol.asr
+:language: clojure
+```
+
 ## See Also
 
-[symbol](symbol.md).
+[Module](Module.md), [Function](Function.md), [Variable](Variable.md)
