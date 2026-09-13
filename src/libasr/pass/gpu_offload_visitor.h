@@ -1,6 +1,7 @@
 #ifndef LIBASR_PASS_GPU_OFFLOAD_VISITOR_H
 #define LIBASR_PASS_GPU_OFFLOAD_VISITOR_H
 
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -342,6 +343,14 @@ public:
 
     bool body_has_ungatherable_strided_section(ASR::stmt_t **body,
             size_t n_body);
+
+    ASR::ArraySection_t* find_strided_section_actual(ASR::stmt_t **body,
+            size_t n_body,
+            const std::function<bool(ASR::ArraySection_t*)> &pred);
+
+    bool body_has_varying_leading_section_extent(
+            const ParallelLoopNest &work, Location &where,
+            std::string &name);
 
     void gather_strided_section_arguments(ParallelLoopNest &nest);
 

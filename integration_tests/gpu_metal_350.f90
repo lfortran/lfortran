@@ -26,6 +26,11 @@ pure function row_scaled(x) result(y)
     y = 2 * x
 end function
 
+pure integer function ncols(i)
+    integer, intent(in) :: i
+    ncols = i + 2
+end function
+
 pure real function weighted_sum(x)
     real, intent(in) :: x(:,:)
     integer :: k, l
@@ -62,8 +67,8 @@ use gpu_metal_350_mod
 implicit none
 real, allocatable :: a(:,:), v(:,:,:), b(:,:)
 type(holder) :: h
-real :: s(3), d(3), e(3), t(3,5), w(3,2), ref(3), c(5)
-integer :: i, j, k
+real :: s(3), d(3), e(3), t(3,5), w(3,2), ref(3), c(5), g(3)
+integer :: i, j, k, n
 
 allocate(a(3,5), b(3,5), v(3,4,2))
 do i = 1, 3
@@ -128,6 +133,45 @@ allocate(h%a(3,5))
 h%a = a
 do concurrent (i = 1:5)
     c(i) = weighted_sum(h%a(:,1:i))
+end do
+print *, c
+do i = 1, 5
+    if (c(i) /= weighted_sum(a(:,1:i))) error stop
+end do
+
+! A row whose extent changes with the iteration: the gathered buffer is
+! sized as the whole row and the callee gets its leading part.
+do concurrent (i = 1:3)
+    s(i) = row_sum(a(i,1:i+1))
+end do
+print *, s
+do i = 1, 3
+    if (s(i) /= sum(a(i,1:i+1))) error stop
+end do
+
+! The same with an extent computed by a function of the index.
+do concurrent (i = 1:3)
+    g(i) = row_sum(a(i,1:ncols(i)))
+end do
+print *, g
+do i = 1, 3
+    if (g(i) /= sum(a(i,1:ncols(i)))) error stop
+end do
+
+! The same with an extent held in a local of the loop.
+do concurrent (i = 1:3) local(n)
+    n = 6 - i
+    s(i) = row_sum(a(i,1:n))
+end do
+print *, s
+do i = 1, 3
+    if (s(i) /= sum(a(i,1:6-i))) error stop
+end do
+
+! Leading columns of fixed height of an allocatable array, which is not
+! known to be whole before run time.
+do concurrent (i = 1:5)
+    c(i) = weighted_sum(a(1:3,1:i))
 end do
 print *, c
 do i = 1, 5

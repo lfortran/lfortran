@@ -123,6 +123,11 @@ enum class GpuDeclineReason {
     UnsizedLocalArray,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer, but a dimension before its last has an extent that
+    // changes from one iteration to the next, so no buffer the host sizes
+    // can hold it contiguously.
+    SectionLeadingExtentVaries,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
     RecursiveDeviceFunction,

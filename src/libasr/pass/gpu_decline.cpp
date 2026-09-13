@@ -153,6 +153,10 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "an aliased assignment needs a run-time sized temporary";
         case GpuDeclineReason::UngatherableStridedSection:
             return "a strided section cannot be gathered for the gpu";
+        case GpuDeclineReason::SectionLeadingExtentVaries:
+            return "the section of '" + decline.name + "' passed to a "
+                "procedure changes its extent between iterations in a "
+                "dimension other than its last";
         case GpuDeclineReason::DeviceFunctionInlining:
             return "a device function cannot be inlined";
         case GpuDeclineReason::DeviceFunctionImplementation:

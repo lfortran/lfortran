@@ -175,6 +175,21 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
                 GpuDecline(GpuDeclineReason::UngatherableStridedSection));
             return false;
         }
+        // The gathered buffer is sized on the host. Only its last
+        // dimension can be sized from the base array and read through a
+        // shorter slice; an earlier one has to have the section's exact
+        // extent, which the host cannot know when it changes with the
+        // iteration.
+        {
+            Location where = loc;
+            std::string name;
+            if (body_has_varying_leading_section_extent(work, where,
+                    name)) {
+                report_not_offloaded(where, GpuDecline(
+                    GpuDeclineReason::SectionLeadingExtentVaries, name));
+                return false;
+            }
+        }
         GpuLocalWidthChecker width_checker;
         width_checker.caps = device_caps;
         for (size_t i = 0; i < work.n_body; i++) {

@@ -1360,8 +1360,9 @@ ASR::ArraySection_t* GpuOffloadVisitor::strided_section_actual(
 // Can this section be gathered into a contiguous temporary? The base
 // has to be a designator the copy loops can index. An extent only known
 // at run time is fine: the temporary is then sized per thread by the
-// workspace machinery, whose pre-flight reports an extent the host
-// cannot evaluate.
+// workspace machinery (see gather_strided_section_arg for how its extents
+// are chosen, and body_has_varying_leading_section_extent for the one
+// shape that cannot be sized on the host).
 bool GpuOffloadVisitor::strided_section_is_gatherable(
         ASR::ArraySection_t *as) {
     if (!ASR::is_a<ASR::Var_t>(*as->m_v)
@@ -1408,16 +1409,57 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     // An extent that folds to a constant makes the buffer an ordinary
     // kernel-local array. One only known at run time makes it a
     // run-time sized local of the BLOCK below, which the workspace
-    // machinery binds to a per-thread slice of a buffer the host sizes.
+    // machinery binds to a per-thread slice of a buffer the host sizes
+    // before the launch, where the loop index has no value. So a last
+    // dimension that does not run over the whole of its base -- whose
+    // extent may change with the iteration, `a(i,1:i)` -- is sized as
+    // that whole base dimension, and the callee is handed the leading
+    // part of the buffer. An earlier dimension has to keep its exact
+    // extent, or that part would not be contiguous;
+    // offloadable_before_rewrites declines a loop in which such an
+    // extent changes with the iteration.
+    ASR::ttype_t *int_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, 4));
+    ASRUtils::ExprStmtDuplicator dup(al);
     Vec<ASR::expr_t*> extents;
     extents.reserve(al, range_dims.size());
-    for (int d : range_dims) {
+    Vec<ASR::array_index_t> part;
+    part.reserve(al, range_dims.size());
+    bool partial = false;
+    for (size_t k = 0; k < range_dims.size(); k++) {
+        int d = range_dims[k];
         int64_t n = 0;
+        ASR::expr_t *extent;
         if (const_section_extent(as->m_args[d], n)) {
-            extents.push_back(al, int32_const(loc, (int)n));
+            extent = int32_const(loc, (int)n);
+            extents.push_back(al, extent);
         } else {
-            extents.push_back(al, section_extent(loc, as->m_args[d]));
+            extent = section_extent(loc, as->m_args[d]);
+            if (k + 1 == range_dims.size()
+                    && !section_dim_is_whole(as, d)) {
+                ASR::array_index_t whole;
+                whole.loc = loc;
+                whole.m_left = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
+                    loc, dup.duplicate_expr(as->m_v),
+                    int32_const(loc, d + 1), int_type,
+                    ASR::arrayboundType::LBound, nullptr));
+                whole.m_right = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
+                    loc, dup.duplicate_expr(as->m_v),
+                    int32_const(loc, d + 1), int_type,
+                    ASR::arrayboundType::UBound, nullptr));
+                whole.m_step = int32_const(loc, 1);
+                extents.push_back(al, section_extent(loc, whole));
+                partial = true;
+            } else {
+                extents.push_back(al, extent);
+            }
         }
+        ASR::array_index_t idx;
+        idx.loc = loc;
+        idx.m_left = int32_const(loc, 1);
+        idx.m_right = dup.duplicate_expr(extent);
+        idx.m_step = int32_const(loc, 1);
+        part.push_back(al, idx);
     }
     ASR::ttype_t *elem_type = ASRUtils::extract_type(
         ASRUtils::expr_type(as->m_v));
@@ -1430,10 +1472,22 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
         after.push_back(build_section_copy_loops(loc, block_scope, as,
             range_dims, tmp, false));
     }
-    // The temporary is contiguous, so no physical-type cast is left to
-    // make: the dummy takes the array as it stands.
-    *slot = tmp;
-    (void)cast;
+    if (!partial) {
+        // The temporary is contiguous, so no physical-type cast is left
+        // to make: the dummy takes the array as it stands.
+        *slot = tmp;
+        return true;
+    }
+    // The leading part of the temporary has the shape the section had,
+    // and is handed over the way that section was.
+    ASR::expr_t *leading = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+        tmp, part.p, part.n, ASRUtils::duplicate_type(al, as->m_type),
+        nullptr));
+    if (cast) {
+        cast->m_arg = leading;
+    } else {
+        *slot = leading;
+    }
     return true;
 }
 
@@ -1475,18 +1529,17 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
     return changed;
 }
 
-// True when some call in `body` takes a strided section this pass
-// cannot gather. Passing it on would drop the stride silently, so the
-// loop is declined for offload instead, while the body is untouched.
-bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
-        ASR::stmt_t **body,
-        size_t n_body) {
+// The first strided section actual argument of a call in `body` for
+// which `pred` holds, or nullptr.
+ASR::ArraySection_t* GpuOffloadVisitor::find_strided_section_actual(
+        ASR::stmt_t **body, size_t n_body,
+        const std::function<bool(ASR::ArraySection_t*)> &pred) {
     for (size_t si = 0; si < n_body; si++) {
         ASR::stmt_t *stmt = body[si];
         if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-            if (body_has_ungatherable_strided_section(dl->m_body,
-                    dl->n_body)) return true;
+            if (ASR::ArraySection_t *as = find_strided_section_actual(
+                    dl->m_body, dl->n_body, pred)) return as;
             continue;
         }
         if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
@@ -1494,8 +1547,8 @@ bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
                 ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
             if (b && ASR::is_a<ASR::Block_t>(*b)) {
                 ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                if (body_has_ungatherable_strided_section(blk->m_body,
-                        blk->n_body)) return true;
+                if (ASR::ArraySection_t *as = find_strided_section_actual(
+                        blk->m_body, blk->n_body, pred)) return as;
             }
             continue;
         }
@@ -1505,8 +1558,8 @@ bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
             if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(b);
-                if (body_has_ungatherable_strided_section(ab->m_body,
-                        ab->n_body)) return true;
+                if (ASR::ArraySection_t *as = find_strided_section_actual(
+                        ab->m_body, ab->n_body, pred)) return as;
             }
             continue;
         }
@@ -1529,13 +1582,260 @@ bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
                 if (!arg_lists[li][i].m_value) continue;
                 ASR::ArraySection_t *as = strided_section_actual(
                     arg_lists[li][i].m_value);
-                if (as && !strided_section_is_gatherable(as)) {
-                    return true;
-                }
+                if (as && pred(as)) return as;
             }
         }
     }
-    return false;
+    return nullptr;
+}
+
+// True when some call in `body` takes a strided section this pass
+// cannot gather. Passing it on would drop the stride silently, so the
+// loop is declined for offload instead, while the body is untouched.
+bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
+        ASR::stmt_t **body,
+        size_t n_body) {
+    return find_strided_section_actual(body, n_body,
+        [&](ASR::ArraySection_t *as) {
+            return !strided_section_is_gatherable(as);
+        }) != nullptr;
+}
+
+namespace {
+
+// The symbols whose value can change from one iteration of a loop to the
+// next. `whole` holds those that can change as a whole -- the ones the
+// body assigns, allocates, associates, counts with or passes to a dummy
+// that may be written, and the loop indices -- and `parts` those only an
+// element or a component of which is written, which leaves the bounds of
+// an array as they are. A symbol declared in a scope the body opens is
+// new in every iteration.
+class GpuIterationVaryingSymbols :
+        public ASRUtils::BlockBodyWalkVisitor<GpuIterationVaryingSymbols> {
+    using Base = ASRUtils::BlockBodyWalkVisitor<GpuIterationVaryingSymbols>;
+public:
+    std::set<ASR::symbol_t*> whole, parts;
+    std::set<SymbolTable*> scopes;
+
+    void add(ASR::expr_t *e) {
+        bool is_whole = true;
+        while (e) {
+            if (ASR::is_a<ASR::Var_t>(*e)) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                (is_whole ? whole : parts).insert(s);
+                return;
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                is_whole = false;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                is_whole = false;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                is_whole = false;
+            } else {
+                return;
+            }
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        add(x.m_target);
+        Base::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        add(x.m_target);
+        Base::visit_Associate(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        add(x.m_head.m_v);
+        Base::visit_DoLoop(x);
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_a) whole.insert(root(x.m_args[i].m_a));
+        }
+        Base::visit_Allocate(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
+            x.m_name);
+        ASR::Function_t *fn =
+            (resolved && ASR::is_a<ASR::Function_t>(*resolved))
+                ? ASR::down_cast<ASR::Function_t>(resolved) : nullptr;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value
+                    && GpuOffloadVisitor::dummy_is_written(fn, i)) {
+                whole.insert(root(x.m_args[i].m_value));
+            }
+        }
+        Base::visit_SubroutineCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s && ASR::is_a<ASR::Block_t>(*s)) {
+            scopes.insert(ASR::down_cast<ASR::Block_t>(s)->m_symtab);
+        }
+        Base::visit_BlockCall(x);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s && ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+            scopes.insert(
+                ASR::down_cast<ASR::AssociateBlock_t>(s)->m_symtab);
+        }
+        Base::visit_AssociateBlockCall(x);
+    }
+
+    // The variable a designator is rooted at.
+    static ASR::symbol_t* root(ASR::expr_t *e) {
+        while (e) {
+            if (ASR::is_a<ASR::Var_t>(*e)) {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+};
+
+// Whether an expression reads a value that changes with the iteration.
+// A bound or the size of an array variable, or of a component of one,
+// only changes when the array as a whole does.
+class GpuIterationVaryingUse :
+        public ASR::BaseWalkVisitor<GpuIterationVaryingUse> {
+    const GpuIterationVaryingSymbols &varying;
+
+    bool changes(ASR::symbol_t *s, bool whole_only) const {
+        return varying.whole.count(s)
+            || (!whole_only && varying.parts.count(s))
+            || varying.scopes.count(ASRUtils::symbol_parent_symtab(s));
+    }
+
+    // The variable a chain of components ends at, or nullptr when the
+    // chain passes through anything else.
+    static ASR::symbol_t* member_chain_root(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+        }
+        if (!e || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
+        return ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+    }
+
+public:
+    bool found = false;
+
+    explicit GpuIterationVaryingUse(const GpuIterationVaryingSymbols &v)
+        : varying(v) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (changes(ASRUtils::symbol_get_past_external(x.m_v), false)) {
+            found = true;
+        }
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (ASR::symbol_t *s = member_chain_root(x.m_v)) {
+            if (changes(s, true)) found = true;
+            if (x.m_dim) visit_expr(*x.m_dim);
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuIterationVaryingUse>::visit_ArrayBound(x);
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (ASR::symbol_t *s = member_chain_root(x.m_v)) {
+            if (changes(s, true)) found = true;
+            if (x.m_dim) visit_expr(*x.m_dim);
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuIterationVaryingUse>::visit_ArraySize(x);
+    }
+};
+
+std::string section_base_name(ASR::expr_t *e) {
+    if (ASR::is_a<ASR::Var_t>(*e)) {
+        return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+        ASR::StructInstanceMember_t *m =
+            ASR::down_cast<ASR::StructInstanceMember_t>(e);
+        return section_base_name(m->m_v) + "%"
+            + ASRUtils::symbol_name(m->m_m);
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+        return section_base_name(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v)
+            + "(...)";
+    }
+    return "array";
+}
+
+} // namespace
+
+// True when a section that will be gathered has a dimension before its
+// last whose extent changes with the iteration. The gathered buffer is
+// sized on the host, and only its last dimension can be sized from the
+// base array instead (see gather_strided_section_arg).
+bool GpuOffloadVisitor::body_has_varying_leading_section_extent(
+        const ParallelLoopNest &work, Location &where, std::string &name) {
+    GpuIterationVaryingSymbols varying;
+    for (size_t d = 0; d < work.n_heads(); d++) {
+        varying.add(work.head(d).m_v);
+    }
+    for (size_t i = 0; i < work.n_body; i++) {
+        varying.visit_stmt(*work.body[i]);
+    }
+    auto varies = [&](ASR::expr_t *e) {
+        if (!e) return false;
+        GpuIterationVaryingUse use(varying);
+        use.visit_expr(*e);
+        return use.found;
+    };
+    ASR::ArraySection_t *found = find_strided_section_actual(work.body,
+        work.n_body, [&](ASR::ArraySection_t *as) {
+            if (!strided_section_is_gatherable(as)) return false;
+            std::vector<int> range_dims;
+            for (size_t d = 0; d < as->n_args; d++) {
+                if (as->m_args[d].m_left && as->m_args[d].m_right
+                        && as->m_args[d].m_step) {
+                    range_dims.push_back((int)d);
+                }
+            }
+            for (size_t k = 0; k + 1 < range_dims.size(); k++) {
+                const ASR::array_index_t &index = as->m_args[range_dims[k]];
+                int64_t n = 0;
+                if (const_section_extent(index, n)) continue;
+                if (varies(index.m_left) || varies(index.m_right)
+                        || varies(index.m_step)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    if (!found) return false;
+    where = found->base.base.loc;
+    name = section_base_name(found->m_v);
+    return true;
 }
 
 void GpuOffloadVisitor::gather_strided_section_arguments(
