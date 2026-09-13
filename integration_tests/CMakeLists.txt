@@ -3828,6 +3828,7 @@ RUN(NAME write_41 LABELS gfortran llvm)
 RUN(NAME write_42 LABELS gfortran llvm)
 RUN(NAME write_43 LABELS gfortran llvm)
 RUN(NAME write_44 LABELS gfortran llvm)
+RUN(NAME write_45 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
