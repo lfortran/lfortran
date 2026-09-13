@@ -4244,6 +4244,8 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_291.f90"
 gpu_cuda_kernel = true
+# real(16) is on the unsupported list of every device.
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_292.f90"
@@ -4513,23 +4515,73 @@ options = "--realloc-lhs-arrays"
 filename = "../integration_tests/gpu_metal_296.f90"
 gpu_offload_cuda = true
 
-# Metal has no 64-bit floating point type: the loop runs on the CPU with a
-# warning that names the reason, and the compilation succeeds.
+# real(8) is on the unsupported list of Metal, which has no 64-bit floating
+# point type: an error that suggests --gpu-allow-cpu-fallback.
 [[test]]
 filename = "../integration_tests/gpu_metal_345.f90"
 gpu_offload_metal = true
 
-# Metal kernels have no lowering for integer(8) yet: that is a gap, not a
-# limit of the device, so the compilation fails.
+# Metal kernels have no lowering for integer(8) yet: that is a gap, not an
+# entry of the unsupported list, so the compilation fails even with
+# --gpu-allow-cpu-fallback.
 [[test]]
 filename = "../integration_tests/gpu_metal_346.f90"
 gpu_offload_metal = true
+options = "--gpu-allow-cpu-fallback"
 
-# A derived type holding a character component and a real(8) one is turned
-# down for the real(8) member, which Metal has no type for: the loop runs on
-# the CPU with a warning naming real(8), and the compilation succeeds.
+# A real(8) allocatable component read by the loop, in a type that also holds
+# a character component ahead of it: the error names real(8).
 [[test]]
 filename = "../integration_tests/gpu_metal_347.f90"
+gpu_offload_metal = true
+
+# One program per entry of the GPU unsupported list, compiled without
+# --gpu-allow-cpu-fallback: the reference keeps the error at the construct,
+# or, where the device supports it, shows the loop is offloaded.
+
+# real(8) local of a BLOCK in the loop body.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_01.f90"
+gpu_offload_metal = true
+
+# real(8) local of a pure function the loop calls.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_02.f90"
+gpu_offload_metal = true
+
+# real(8) component the loop reads.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_03.f90"
+gpu_offload_metal = true
+
+# A derived-type value with an unused real(8) component, passed whole.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_04.f90"
+gpu_offload_metal = true
+
+# A derived type with an unused real(8) component, of which only a real(4)
+# component is read: accepted and offloaded.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_05.f90"
+gpu_offload_metal = true
+
+# print in the loop body, on every device.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_06.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# Internal write in a pure function the loop calls, on every device.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_07.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# error stop in a pure function the loop calls: an error on Metal, offloaded
+# on CUDA.
+[[test]]
+filename = "../integration_tests/gpu_unsupported_08.f90"
+gpu_offload_cuda = true
 gpu_offload_metal = true
 
 [[test]]

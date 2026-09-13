@@ -4925,19 +4925,21 @@ RUN(NAME coarrays_45 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_46 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_47 EXTRA_ARGS --coarray=true)
 
-# A GPU backend offloads every `do concurrent` it can. A loop the selected
-# device genuinely cannot run -- a `real(8)` on Metal, which has no 64-bit
-# floating point type, or a `print` or `stop` in a Metal shader, which has no
-# way to write text or halt -- runs on the CPU instead, with a warning naming
-# the reason; no flag asks for that. Any other loop that cannot be offloaded
-# is a lowering LFortran is missing and fails the compilation. A program
-# whose loops hit such a gap is registered below without the gpu labels
-# until the gap is closed, and the diagnostic is tracked by a
-# `gpu_offload_cuda` or `gpu_offload_metal` reference test in tests/tests.toml.
+# A GPU backend offloads every `do concurrent` (see doc/src/gpu_offloading.md).
+# A loop that uses a construct on the unsupported list of the device -- a
+# `real(8)` on Metal, a `real(10)` or `real(16)`, input/output, or a `stop` or
+# `error stop` on Metal -- is a compile error unless `--gpu-allow-cpu-fallback`
+# is given, which runs it on the CPU with a warning; the tests below ask for
+# the flag on the backends whose list their loops hit. Any other loop that
+# cannot be offloaded is a lowering LFortran is missing and fails the
+# compilation with or without the flag. A program whose loops hit such a gap
+# is registered below without the gpu labels until the gap is closed, and the
+# diagnostic is tracked by a `gpu_offload_cuda` or `gpu_offload_metal`
+# reference test in tests/tests.toml.
 RUN(NAME gpu_metal_01 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_02 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_03 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_04 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_04 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_05 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_06 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_07 LABELS gfortran llvm metal cuda cuda_cpu)
@@ -5137,7 +5139,7 @@ RUN(NAME gpu_metal_200 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_201 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_202 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_203 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_204 LABELS gfortran llvm metal)
+RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_206 LABELS gfortran llvm)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm)
@@ -5153,13 +5155,13 @@ RUN(NAME gpu_metal_209 LABELS gfortran llvm)
 RUN(NAME gpu_metal_210 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_211 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_212 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_213 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_214 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_215 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_216 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_213 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_214 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_215 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_216 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_217 LABELS gfortran llvm)
-RUN(NAME gpu_metal_218 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_219 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_218 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_219 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_220 LABELS gfortran llvm)
 RUN(NAME gpu_metal_221 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_222 LABELS gfortran llvm metal cuda_cpu)
@@ -5228,21 +5230,21 @@ RUN(NAME gpu_metal_284 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_
 RUN(NAME gpu_metal_285 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_286 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_287 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_288 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_288 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_289 LABELS gfortran llvm)
 RUN(NAME gpu_metal_290 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_291 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_291 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_metal_292 LABELS gfortran llvm)
 RUN(NAME gpu_metal_293 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_294 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_295 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_296 LABELS gfortran llvm)
 RUN(NAME gpu_metal_297 LABELS gfortran llvm)
-RUN(NAME gpu_metal_298 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_298 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_299 LABELS gfortran llvm)
 RUN(NAME gpu_metal_300 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_301 LABELS gfortran llvm)
-RUN(NAME gpu_metal_302 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_302 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_303 LABELS gfortran llvm)
 RUN(NAME gpu_metal_304 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_305 LABELS gfortran llvm)
@@ -5271,14 +5273,14 @@ RUN(NAME gpu_metal_326 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_327 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_328 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_329 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_330 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_330 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_331 LABELS gfortran llvm)
 RUN(NAME gpu_metal_332 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_333 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 # Refused by every gpu backend on purpose -- see the reference test in
 # tests/tests.toml for the diagnostic. Registered here for the answer the
 # host gives, which is the one the kernel used to get wrong in silence.
@@ -5293,9 +5295,9 @@ RUN(NAME gpu_metal_341 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_342 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_344 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_345 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_345 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_346 LABELS gfortran llvm cuda_cpu)
-RUN(NAME gpu_metal_347 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_347 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_348 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_349 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
@@ -5309,6 +5311,18 @@ RUN(NAME gpu_decline_06 LABELS gfortran llvm)
 RUN(NAME gpu_decline_07 LABELS gfortran llvm)
 RUN(NAME gpu_decline_08 LABELS gfortran llvm)
 RUN(NAME gpu_decline_09 LABELS gfortran llvm)
+
+# One program per entry of the GPU unsupported list. Each runs on the CPU with
+# --gpu-allow-cpu-fallback where its loop is on the list, and the error
+# without the flag is kept by a reference test in tests/tests.toml.
+RUN(NAME gpu_unsupported_01 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_unsupported_02 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_unsupported_03 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_unsupported_04 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_unsupported_05 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_unsupported_06 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
+RUN(NAME gpu_unsupported_07 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
+RUN(NAME gpu_unsupported_08 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
