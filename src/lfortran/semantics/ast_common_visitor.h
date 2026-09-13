@@ -17242,6 +17242,65 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
+    // A bare ImplicitInterface placeholder `v` names the procedure of the same
+    // name when this translation unit defines it. Copy that definition's
+    // argument list into the placeholder, so an interface inferred from a
+    // call that passes `v` matches the procedure that is actually passed.
+    void fill_implicit_interface_decl_from_definition(ASR::symbol_t* v) {
+        if (!ASR::is_a<ASR::Function_t>(*v) || !is_implicit_interface_decl(v)) return;
+        ASR::Function_t* placeholder = ASR::down_cast<ASR::Function_t>(v);
+        ASR::symbol_t* def_sym = current_scope->get_tu_scope()->get_symbol(
+            placeholder->m_name);
+        if (!def_sym || !ASR::is_a<ASR::Function_t>(*def_sym)) return;
+        ASR::Function_t* def = ASR::down_cast<ASR::Function_t>(def_sym);
+        ASR::FunctionType_t* def_ft = ASRUtils::get_FunctionType(def);
+        if (def_ft->m_deftype != ASR::deftypeType::Implementation) return;
+        if (def_ft->m_return_var_type != nullptr && placeholder->m_return_var == nullptr) return;
+        Vec<ASR::ttype_t*> arg_types;
+        arg_types.reserve(al, def->n_args);
+        for (size_t i = 0; i < def->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*def->m_args[i])
+                    || !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(def->m_args[i])->m_v)) {
+                return;
+            }
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(def->m_args[i]);
+            if (ASRUtils::is_array(arg_type)) {
+                arg_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_type,
+                    ASRUtils::extract_physical_type(arg_type), true);
+            }
+            // A type that refers to other dummies of the definition (e.g. a
+            // character length) cannot be moved to the placeholder's scope.
+            SetChar deps;
+            deps.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, deps, arg_type);
+            if (deps.size() > 0) return;
+            arg_types.push_back(al, arg_type);
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, arg_types.size());
+        for (size_t i = 0; i < arg_types.size(); i++) {
+            std::string arg_name = std::string(placeholder->m_name) + "_arg_" + std::to_string(i);
+            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, v->base.loc, placeholder->m_symtab,
+                    s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
+                    nullptr, nullptr, ASR::storage_typeType::Default, arg_types[i],
+                    nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            placeholder->m_symtab->add_or_overwrite_symbol(arg_name, arg_sym);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, v->base.loc, arg_sym)));
+        }
+        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(placeholder);
+        ft->m_arg_types = arg_types.p;
+        ft->n_arg_types = arg_types.size();
+        ft->m_deftype = ASR::deftypeType::Interface;
+        placeholder->m_args = args.p;
+        placeholder->n_args = args.size();
+        if (def_ft->m_return_var_type == nullptr) {
+            ft->m_return_var_type = nullptr;
+            placeholder->m_return_var = nullptr;
+        }
+    }
+
     // True if `v` is a BindC Interface function that LFortran synthesized for
     // an external with an implicit interface (has a concrete argument list
     // inferred from a call, not a user-written interface block).
@@ -17402,6 +17461,7 @@ public:
             if (ASR::is_a<ASR::Var_t>(*var_expr) &&
                     ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
+                fill_implicit_interface_decl_from_definition(v);
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 // Use Implementation's parameter type if available and implicit_argument_casting enabled
