@@ -1216,3 +1216,15 @@ subroutine decimal_specifier_1()
     write(*, *, decimal=1) 1.0
     write(*, *, decimal="POINT", decimal="COMMA") 1.0
 end subroutine
+
+! A common block fixes the storage of its variables, so equivalencing two of
+! them either contradicts that layout or associates two different blocks.
+module equivalence_two_commons_1
+    implicit none
+contains
+    subroutine equivalence_two_common_arrays()
+        real :: lhs(4), rhs(4)
+        common /equivalence_two_commons/ lhs, rhs
+        equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
+    end subroutine
+end module

@@ -597,6 +597,7 @@ RUN(NAME doloop_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --us
 RUN(NAME doloop_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME doloop_18 LABELS gfortran llvm)
 RUN(NAME doloop_19 LABELS gfortran llvm)
+RUN(NAME doloop_20 LABELS gfortran llvm)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1986,6 +1987,7 @@ RUN(NAME modules_70 LABELS gfortran llvm)
 RUN(NAME modules_71 LABELS gfortran llvm)
 RUN(NAME modules_72 LABELS gfortran llvm
         EXTRAFILES modules_72_stypemod.f90 modules_72_otypemod.f90)
+RUN(NAME modules_73 LABELS gfortran llvm EXTRAFILES modules_73_mod.f90)
 RUN(NAME module_func_generic_submodule LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
@@ -2980,6 +2982,7 @@ RUN(NAME string_117 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_118 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_119 LABELS gfortran llvm)
 RUN(NAME string_120 LABELS gfortran llvm)
+RUN(NAME string_121 LABELS gfortran llvm)
 RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3638,6 +3641,12 @@ RUN(NAME array_section_27 LABELS gfortran llvm llvm_single_invocation
 RUN(NAME array_section_28 LABELS gfortran llvm)
 RUN(NAME array_section_29 LABELS gfortran llvm)
 RUN(NAME array_section_30 LABELS gfortran llvm)
+RUN(NAME array_section_31 LABELS gfortran llvm)
+RUN(NAME array_section_32 LABELS gfortran)
+RUN(NAME array_section_33 LABELS gfortran)
+RUN(NAME array_section_34 LABELS gfortran llvm)
+RUN(NAME array_section_35 LABELS gfortran llvm)
+RUN(NAME array_section_36 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -5273,6 +5282,10 @@ RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQU
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+# Refused by every gpu backend on purpose -- see the reference test in
+# tests/tests.toml for the diagnostic. Registered here for the answer the
+# host gives, which is the one the kernel used to get wrong in silence.
+RUN(NAME gpu_metal_338 LABELS gfortran llvm)
 # No gfortran label: `reduce` is F2023, and the gfortran the CI builds with
 # rejects it outright ("Syntax error in DO statement"). Same reason
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
@@ -5323,6 +5336,7 @@ RUN(NAME equivalence_44 LABELS gfortran llvm)
 RUN(NAME equivalence_45 LABELS gfortran llvm)
 RUN(NAME equivalence_46 LABELS gfortran llvm)
 RUN(NAME equivalence_47 LABELS gfortran llvm)
+RUN(NAME equivalence_48 LABELS gfortran llvm)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
 RUN(NAME struct_tbp_codegen LABELS gfortran llvm c)

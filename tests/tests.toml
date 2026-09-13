@@ -4410,6 +4410,13 @@ gpu_offload_strict = true
 filename = "../integration_tests/gpu_decline_09.f90"
 gpu_offload_strict = true
 
+# Indexing an ASSOCIATE bound to a strided section inside a kernel. The
+# extent honours the step, so the count was right; the device pointer holds
+# only an address, so the elements were not. Refused rather than answered.
+[[test]]
+filename = "../integration_tests/gpu_metal_338.f90"
+gpu_offload_strict = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
