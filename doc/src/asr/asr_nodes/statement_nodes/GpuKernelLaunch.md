@@ -49,16 +49,18 @@ Before creating a launch, GPU offload checks the allocation of allocatable
 array results in callees that remain out of line. Nested or multiple allocation
 sites must agree with a buffer shape established by an unconditional fixed
 allocation. Otherwise the loop is rejected while the original loop is still
-available; `--gpu-allow-cpu-fallback` instead runs that loop on the CPU.
+available, which is an error: it is a lowering LFortran does not have yet.
 Reallocation and conditional assignments remain eligible when they preserve
 every extent, not just the total element count.
 
-Every declined offload is a compile-time error unless
-`--gpu-allow-cpu-fallback` is explicitly enabled, including native backend
-limitations. With that flag, a decline warns and selects the CPU alternative.
-`--gpu-decline-stats` reports the `not-implemented` or `backend-cannot`
-category without changing this policy. A manually constructed launch without
-a CPU alternative cannot use fallback even with the flag.
+Every declined offload is classified as `not-implemented` (a lowering
+LFortran does not have yet) or `backend-cannot` (something the selected device
+genuinely cannot run, such as a `real(8)` on Metal). A `not-implemented`
+decline is a compile-time error. A `backend-cannot` decline is a warning
+naming the reason, and the CPU alternative is selected; no flag is involved.
+`--gpu-decline-stats` prints the category of each decline without changing
+this policy. A manually constructed launch without a CPU alternative cannot
+fall back, so any decline of it is an error.
 
 ## Examples
 

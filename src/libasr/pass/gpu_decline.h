@@ -16,9 +16,11 @@ the user sees is built in one place, from the reason and what little it
 quotes, so that the decision and its phrasing cannot drift apart.
 
 Every reason is classified, and the classification is what the offload policy
-is meant to act on: a `NotImplemented` decline is a gap in this compiler and
-one day will not be raised at all, while a `BackendCannot` decline is a fact
-about the device that no amount of work here would change.
+acts on: a `NotImplemented` decline is a gap in this compiler and one day will
+not be raised at all, so it is a compile-time error; a `BackendCannot` decline
+is a fact about the device that no amount of work here would change, so the
+loop runs on the CPU with a warning. Since the latter needs no flag to move a
+loop off the device, only true limits of the device may be classified so.
 */
 
 // The device dialect a loop is being offloaded to. Nothing outside

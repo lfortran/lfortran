@@ -16,17 +16,22 @@ void report_gpu_decline(const PassOptions &options, const Location &where,
         std::cerr << "gpu-decline: " << gpu_decline_class_name(category)
             << ": " << why << std::endl;
     }
-    bool fallback = has_fallback && options.gpu_allow_cpu_fallback;
-    if (fallback) {
+    // A loop the selected device cannot run is run where it can be, and
+    // the user is told why. A loop LFortran merely has no lowering for yet
+    // is a gap in this compiler, and running it on the CPU without being
+    // asked would hide it, so that is an error. So is any decline of a
+    // launch that has no CPU alternative left to run.
+    bool on_cpu = has_fallback && (category == GpuDeclineClass::BackendCannot
+        || options.gpu_kernel_source_only);
+    if (on_cpu) {
         options.diagnostics->message_label(
-            "parallel loop not offloaded to the GPU, "
-            "it runs on the CPU instead", {where}, why,
+            "parallel loop not offloaded to the GPU, it runs on the CPU "
+            "instead: " + why, {where}, why,
             diag::Level::Warning, diag::Stage::ASRPass);
     } else {
         options.diagnostics->message_label(
             "parallel loop cannot be offloaded to the GPU: " + why +
-                (has_fallback
-                    ? "; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead"
+                (has_fallback ? ""
                     : "; no CPU alternative is available for this launch"),
             {where}, why, diag::Level::Error, diag::Stage::ASRPass);
     }
@@ -111,9 +116,14 @@ bool GpuDeviceCapabilities::narrows_scalar_types() const {
 GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         const GpuDeviceCapabilities &caps) {
     switch (decline.reason) {
-        // Native floating-point width is a backend limit. Missing integer,
-        // logical, character or aggregate lowering is compiler work, not a
-        // reason to silently waive strict mode.
+        // A real kind wider than any floating point type the device has --
+        // `real(8)` on Metal, which has no 64-bit float, or `real(10)` and
+        // `real(16)` on every device, none of which has a floating point
+        // type wider than 64 bits -- has no device representation at all, so
+        // no lowering could put the loop there. Every other width, and
+        // every integer, logical, character or aggregate type, is a
+        // lowering this compiler is missing: an error, not a reason to run
+        // the loop on the CPU.
         case GpuDeclineReason::LocalTypeWidth:
         case GpuDeclineReason::SymbolTypeNotRepresentable:
         case GpuDeclineReason::WideTypeNotOnDevice:

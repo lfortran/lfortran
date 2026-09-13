@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: local array 'y' has no extent the gpu can use
+  --> tests/../integration_tests/gpu_metal_60.f90:43:7 - 51:12
+   |
+43 |          do concurrent (pair = 1:2)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+51 |          end do
+   | ...^^^^^^^^^^^^ local array 'y' has no extent the gpu can use

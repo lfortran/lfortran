@@ -9,7 +9,7 @@
 
 using namespace LCompilers;
 
-TEST_CASE("GPU declines require explicit fallback regardless of category") {
+TEST_CASE("GPU declines fall back only where the device cannot run the loop") {
     Allocator allocator(1024 * 1024);
     Location loc{0, 0};
     ASR::ttype_t *real8 = ASRUtils::TYPE(ASR::make_Real_t(allocator, loc, 8));
@@ -34,40 +34,43 @@ TEST_CASE("GPU declines require explicit fallback regardless of category") {
     CHECK(gpu_decline_class(device_io, cuda) == GpuDeclineClass::NotImplemented);
     CHECK(gpu_decline_class(device_io, metal) == GpuDeclineClass::BackendCannot);
 
+    // A missing lowering is an error, even though the loop could run on the
+    // CPU.
     PassOptions options;
     options.gpu_offload_cuda = true;
-    diag::Diagnostics strict;
-    options.diagnostics = &strict;
+    diag::Diagnostics missing;
+    options.diagnostics = &missing;
     report_gpu_decline(options, loc, wide_logical);
-    CHECK(strict.has_error());
+    CHECK(missing.has_error());
+    CHECK(missing.diagnostics.size() == 1);
 
-    diag::Diagnostics waived;
-    options.diagnostics = &waived;
-    options.gpu_allow_cpu_fallback = true;
-    report_gpu_decline(options, loc, wide_logical);
-    CHECK_FALSE(waived.has_error());
-    CHECK(waived.diagnostics.size() == 1);
-
+    // What the device cannot run, runs on the CPU, and the warning says why.
     diag::Diagnostics limited;
     options.diagnostics = &limited;
-    options.gpu_allow_cpu_fallback = false;
     options.gpu_offload_cuda = false;
     options.gpu_offload_metal = true;
     report_gpu_decline(options, loc, wide_real);
-    CHECK(limited.has_error());
-    CHECK(limited.diagnostics.size() == 1);
+    CHECK_FALSE(limited.has_error());
+    REQUIRE(limited.diagnostics.size() == 1);
+    CHECK(limited.diagnostics[0].level == diag::Level::Warning);
+    CHECK(limited.diagnostics[0].message.find(
+        gpu_decline_message(wide_real)) != std::string::npos);
 
-    diag::Diagnostics limited_waived;
-    options.diagnostics = &limited_waived;
-    options.gpu_allow_cpu_fallback = true;
-    report_gpu_decline(options, loc, wide_real);
-    CHECK_FALSE(limited_waived.has_error());
-    CHECK(limited_waived.diagnostics.size() == 1);
-
+    // Unless there is no CPU alternative to run.
     diag::Diagnostics no_alternative;
     options.diagnostics = &no_alternative;
     report_gpu_decline(options, loc, wide_real, false);
     CHECK(no_alternative.has_error());
+
+    // Showing the kernels reports every decline without failing.
+    diag::Diagnostics shown;
+    options.diagnostics = &shown;
+    options.gpu_offload_metal = false;
+    options.gpu_offload_cuda = true;
+    options.gpu_kernel_source_only = true;
+    report_gpu_decline(options, loc, wide_logical);
+    CHECK_FALSE(shown.has_error());
+    CHECK(shown.diagnostics.size() == 1);
 }
 
 // A loop is turned down for the reason the user can act on. The width sweep
@@ -92,9 +95,8 @@ end program
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
-    // Left strict on purpose: the error carries the reason in the message
-    // itself, where a warning puts it in a label that needs the source to
-    // render.
+    // Metal has no way to write text out, so the loop runs on the CPU with a
+    // warning that carries the reason in its message.
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
@@ -114,7 +116,8 @@ end program
     passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
     std::string rendered = diagnostics.render2();
     INFO(rendered);
-    CHECK(diagnostics.has_error());
+    CHECK_FALSE(diagnostics.has_error());
+    CHECK(rendered.find("runs on the CPU instead") != std::string::npos);
     // The statement the source wrote, not a name a lowering invented.
     CHECK(rendered.find("input or output") != std::string::npos);
     CHECK(rendered.find("iomsg") == std::string::npos);

@@ -4226,6 +4226,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_217.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_288.f90"
@@ -4234,6 +4235,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_289.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_290.f90"
@@ -4246,10 +4248,12 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_292.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_297.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_298.f90"
@@ -4258,6 +4262,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_299.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_300.f90"
@@ -4266,6 +4271,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_301.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_302.f90"
@@ -4285,9 +4291,9 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_303.f90"
 gpu_cuda_kernel = true
-# A GPU backend is strict: this loop cannot be offloaded, so the compilation
-# fails unless --gpu-allow-cpu-fallback is given.
-gpu_offload_strict = true
+# This loop needs a lowering the offload pass does not have yet, so the
+# compilation fails.
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_304.f90"
@@ -4296,6 +4302,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_305.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_306.f90"
@@ -4316,6 +4323,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_310.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_315.f90"
@@ -4332,11 +4340,12 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_320.f90"
 gpu_cuda_kernel = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_327.f90"
 gpu_cuda_kernel = true
-gpu_offload_strict = true
+gpu_offload_cuda = true
 options = "--realloc-lhs-arrays --gpu-decline-stats"
 
 [[test]]
@@ -4350,7 +4359,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_331.f90"
 gpu_cuda_kernel = true
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_332.f90"
@@ -4372,50 +4381,149 @@ gpu_cuda_kernel = true
 
 # One regression test per GPU decline reason: each program is valid Fortran
 # that runs correctly on the CPU, and the reference captures the reason the
-# offload pass gives for leaving it there.
+# offload pass gives for not offloading it.
 
 [[test]]
 filename = "../integration_tests/gpu_decline_01.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_02.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_03.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_04.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_05.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_06.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_07.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_08.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_09.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
 
 # Indexing an ASSOCIATE bound to a strided section inside a kernel. The
 # extent honours the step, so the count was right; the device pointer holds
 # only an address, so the elements were not. Refused rather than answered.
 [[test]]
 filename = "../integration_tests/gpu_metal_338.f90"
-gpu_offload_strict = true
+gpu_offload_cuda = true
+
+# A program whose loops need a lowering the offload pass does not have yet.
+# Each is registered in integration_tests/CMakeLists.txt without the gpu
+# labels of the backends it fails on, and the reference keeps the reason.
+
+[[test]]
+filename = "../integration_tests/gpu_metal_13.f90"
+gpu_offload_metal = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_60.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_162.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_167.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_175.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_176.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_177.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_204.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_206.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_207.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_208.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_209.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_220.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_265.f90"
+gpu_offload_cuda = true
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_271.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_273.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_276.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_277.f90"
+gpu_offload_cuda = true
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_285.f90"
+gpu_offload_cuda = true
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_296.f90"
+gpu_offload_cuda = true
+
+# Metal has no 64-bit floating point type: the loop runs on the CPU with a
+# warning that names the reason, and the compilation succeeds.
+[[test]]
+filename = "../integration_tests/gpu_metal_345.f90"
+gpu_offload_metal = true
+
+# Metal kernels have no lowering for integer(8) yet: that is a gap, not a
+# limit of the device, so the compilation fails.
+[[test]]
+filename = "../integration_tests/gpu_metal_346.f90"
+gpu_offload_metal = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"

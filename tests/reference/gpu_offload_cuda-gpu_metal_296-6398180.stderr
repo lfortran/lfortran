@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support a workspace sized from a struct element whose shape may differ per thread
+  --> tests/../integration_tests/gpu_metal_296.f90:53:9 - 55:14
+   |
+53 |            do concurrent (jj = 1:nn)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+55 |            end do
+   | ...^^^^^^^^^^^^^^ the gpu backend does not support a workspace sized from a struct element whose shape may differ per thread

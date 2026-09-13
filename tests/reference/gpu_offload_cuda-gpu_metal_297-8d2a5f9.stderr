@@ -1,0 +1,19 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: local 'ch' has no gpu type of the same width
+  --> tests/../integration_tests/gpu_metal_297.f90:42:9 - 52:14
+   |
+42 |            do concurrent (i = 1:size(r))
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+52 |            end do
+   | ...^^^^^^^^^^^^^^ local 'ch' has no gpu type of the same width
+
+ASR pass error: parallel loop cannot be offloaded to the GPU: local 'z' has no gpu type of the same width
+  --> tests/../integration_tests/gpu_metal_297.f90:30:9 - 36:14
+   |
+30 |            do concurrent (i = 1:size(r))
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+36 |            end do
+   | ...^^^^^^^^^^^^^^ local 'z' has no gpu type of the same width

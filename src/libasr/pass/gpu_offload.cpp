@@ -31,11 +31,11 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
-// A GPU backend was asked for, so a loop left on the host is a failure to
-// deliver what was asked for: report it as an error and let the user opt
-// into host execution with --gpu-allow-cpu-fallback. Every declining loop
-// in the unit is reported before the compilation is stopped, so one run
-// lists all of the gaps rather than only the first.
+// A GPU backend was asked for, so a loop left on the host is reported:
+// as a warning when the device cannot run it, and as an error when the
+// lowering it needs is missing (see report_gpu_decline). Every declining
+// loop in the unit is reported before the compilation is stopped, so one
+// run lists all of the gaps rather than only the first.
 void GpuOffloadVisitor::report_not_offloaded(const Location &where,
         const GpuDecline &decline) {
     if (pass_options.diagnostics == nullptr) return;

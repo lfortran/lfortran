@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support a derived type with an allocatable scalar member
+  --> tests/../integration_tests/gpu_metal_208.f90:21:1 - 27:6
+   |
+21 |    do concurrent (i = 1:8)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+27 |    end do
+   | ...^^^^^^ the gpu backend does not support a derived type with an allocatable scalar member
