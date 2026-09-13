@@ -41,25 +41,14 @@ class ASRToLLVMVisitor;
     }
 
 
-    inline std::string get_type_key(ASR::symbol_t* sym, std::vector<ASR::symbol_t*> visited = {});
-
-
-
     // Return symbolName
     // Adds unqiue symtab ID for Struct and Union
-    inline std::string get_type_key(ASR::symbol_t* sym, std::vector<ASR::symbol_t*> visited) {
+    inline std::string get_type_key(ASR::symbol_t* sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
         std::string name = ASRUtils::symbol_name(sym);
         if (!name.empty() && name[0] == '~') return name; // global sentinels for UPoly 
 
         if(ASR::is_a<ASR::Struct_t>(*sym) || ASR::is_a<ASR::Union_t>(*sym)){
-            if (ASR::is_a<ASR::Struct_t>(*sym)) {
-                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(sym);
-                if ((st->m_is_sequence || st->m_abi == ASR::abiType::BindC) && st->m_original_declaration != nullptr) {
-                    sym = st->m_original_declaration;
-                    name = ASRUtils::symbol_name(sym);
-                }
-            }
             ASR::Module_t* mod = ASRUtils::get_sym_module(sym);
             if(mod) {
                 name = ASRUtils::symbol_name(&mod->base) + 
@@ -70,8 +59,8 @@ class ASRToLLVMVisitor;
 
         return name;
     }
-    inline std::string get_type_key(ASR::Struct_t* sym, std::vector<ASR::symbol_t*> visited = {}){
-        return get_type_key(&sym->base, visited);
+    inline std::string get_type_key(ASR::Struct_t* sym){
+        return get_type_key(&sym->base);
     }
 
     namespace {
