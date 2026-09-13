@@ -190,8 +190,9 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
     }
 
-    // A statement no device can run keeps the loop on the CPU whichever
-    // backend is selected. This is asked before the width sweep below
+    // A statement the device cannot run. The unsupported-construct check
+    // has already kept such loops off the device; this is asked before the
+    // width sweep below
     // because that sweep answers for every symbol reaching the kernel,
     // including the ones a lowering introduced: a `write` brings in an
     // `iomsg` buffer of a type no device has, and reporting that buffer
@@ -240,6 +241,13 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         // temporaries alike — is collected here, so a single sweep
         // covers all of them.
         for (auto &sym : candidate_syms) {
+            // A derived type is asked about once the body has been
+            // rewritten, where it is known whether its layout reaches the
+            // kernel at all (see offloadable_after_rewrites).
+            if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(sym.second.first))) {
+                continue;
+            }
             ASR::ttype_t *narrowed = gpu_device_narrowed_type(device_caps,
                 sym.second.first, sym.second.second);
             if (narrowed != nullptr) {
@@ -282,13 +290,16 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
 // The last question a decline can be based on: the one the rewrites above
 // the call made answerable, on symbols that only exist once the body has
 // been lowered. False means the decline has been reported and the caller
-// stops, which leaves the loop on the host -- the guards it holds put back
-// everything the rewrites did to the pass's copy of the nest.
+// stops -- the guards it holds put back everything the rewrites did to the
+// pass's copy of the nest.
 //
-// The nest itself is no longer asked about: what a statement needs of the
-// device does not depend on the rewrites, so that question is settled
-// before them, where it can name the statement the source wrote.
+// The statements of the nest are not asked about again: what a statement
+// needs of the device does not depend on the rewrites, so that question is
+// settled before them, where it can name the statement the source wrote.
+// The nest is read only for how it reaches derived types, which decides
+// whether a type's whole layout reaches the kernel.
 bool GpuOffloadVisitor::offloadable_after_rewrites(
+        const ParallelLoopNest &work,
         const std::map<std::string,
             std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
         const Location &loc) {
@@ -302,6 +313,64 @@ bool GpuOffloadVisitor::offloadable_after_rewrites(
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
                     sym.first, base_t));
+            return false;
+        }
+    }
+
+    // A derived type reaches the kernel in one of two ways. Read only
+    // through allocatable array components, it is split into one buffer per
+    // component, and only the element types of those components reach the
+    // device. Otherwise its whole layout does, member by member, and a member
+    // of a width this device narrows -- a real(8) that is never read
+    // included -- would put every member after it at the wrong offset. The
+    // split is decided from the same accesses when the kernel is built.
+    if (!device_caps.narrows_scalar_types()) return true;
+    GpuAllocStructMemberCollector accesses;
+    for (size_t i = 0; i < work.n_body; i++) {
+        accesses.visit_stmt(*work.body[i]);
+    }
+    for (auto &sym : involved_syms) {
+        ASR::symbol_t *s = current_scope->resolve_symbol(sym.first);
+        if (!s || !ASR::is_a<ASR::Variable_t>(*s)) continue;
+        ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(s)->m_type;
+        if (!ASR::is_a<ASR::Array_t>(*type)) continue;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (arr->m_dims[d].m_start) {
+                accesses.visit_expr(*arr->m_dims[d].m_start);
+            }
+            if (arr->m_dims[d].m_length) {
+                accesses.visit_expr(*arr->m_dims[d].m_length);
+            }
+        }
+    }
+    for (auto &sym : involved_syms) {
+        if (!ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(sym.second.first))) {
+            continue;
+        }
+        auto split = accesses.alloc_members.find(sym.first);
+        bool whole = split == accesses.alloc_members.end()
+            || accesses.has_non_alloc_access.count(sym.first) > 0;
+        ASR::ttype_t *narrowed = nullptr;
+        if (whole) {
+            narrowed = gpu_device_narrowed_type(device_caps,
+                sym.second.first, sym.second.second);
+        } else {
+            for (auto &member : split->second) {
+                ASR::ttype_t *element = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(
+                        member.second.second));
+                if (device_caps.narrows_scalar_type(element)) {
+                    narrowed = element;
+                    break;
+                }
+            }
+        }
+        if (narrowed != nullptr) {
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::WideTypeNotOnDevice,
+                    sym.first, narrowed));
             return false;
         }
     }

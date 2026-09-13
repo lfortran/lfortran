@@ -1,9 +1,5 @@
-warning: parallel loop not offloaded to the GPU, it runs on the CPU instead: the gpu backend does not support real(8), the type of 'x'
-  --> tests/../integration_tests/gpu_metal_345.f90:14:1 - 16:6
+ASR pass error: parallel loop cannot be offloaded: the Metal GPU does not support real(8); pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
+  --> tests/../integration_tests/gpu_metal_345.f90:15:5
    |
-14 |    do concurrent (i = 1:n)
-   |    ^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-16 |    end do
-   | ...^^^^^^ the gpu backend does not support real(8), the type of 'x'
+15 |     y(i) = x(i) * x(i) + 1.0e-12_dp
+   |     ^^^^ 'y' is real(8)

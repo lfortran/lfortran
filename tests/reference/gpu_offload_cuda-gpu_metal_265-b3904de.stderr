@@ -1,4 +1,4 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU: workspace 'r' cannot be sized on the host
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: workspace 'r' cannot be sized on the host
   --> tests/../integration_tests/gpu_metal_265.f90:64:9 - 66:14
    |
 64 |            do concurrent (j = 1:size(v, 2))
@@ -8,7 +8,7 @@ ASR pass error: parallel loop cannot be offloaded to the GPU: workspace 'r' cann
 66 |            end do
    | ...^^^^^^^^^^^^^^ workspace 'r' cannot be sized on the host
 
-ASR pass error: parallel loop cannot be offloaded to the GPU: workspace 't' cannot be sized on the host
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: workspace 't' cannot be sized on the host
   --> tests/../integration_tests/gpu_metal_265.f90:29:9 - 38:14
    |
 29 |            do concurrent (j = 1:size(a))

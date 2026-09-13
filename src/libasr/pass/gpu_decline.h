@@ -15,12 +15,13 @@ lays out the launch (device_launch_expand.cpp) both raise these; the wording
 the user sees is built in one place, from the reason and what little it
 quotes, so that the decision and its phrasing cannot drift apart.
 
-Every reason is classified, and the classification is what the offload policy
-acts on: a `NotImplemented` decline is a gap in this compiler and one day will
-not be raised at all, so it is a compile-time error; a `BackendCannot` decline
-is a fact about the device that no amount of work here would change, so the
-loop runs on the CPU with a warning. Since the latter needs no flag to move a
-loop off the device, only true limits of the device may be classified so.
+A decline is raised by the offloading pipeline, after the unsupported-construct
+check (gpu_unsupported_check.h) has committed the loop to the device, so every
+decline is a compile-time error: a loop the pipeline cannot lower yet is a gap
+in this compiler, whatever the reason. Every reason is still classified, as a
+`NotImplemented` gap or a `BackendCannot` limit of the device, for
+`--gpu-decline-stats`; a `BackendCannot` decline of a loop the check accepted
+means the check is missing that limit.
 */
 
 // The device dialect a loop is being offloaded to. Nothing outside
@@ -41,6 +42,9 @@ struct GpuDeviceCapabilities {
     // The dialect these answers describe. Nothing outside this struct
     // branches on it.
     GpuDevice device = GpuDevice::None;
+
+    // The name a diagnostic calls the device by, such as "Metal".
+    std::string name;
 
     // Whether a device was selected at all. When none was, the offload
     // passes have nothing to do.

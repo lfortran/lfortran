@@ -1,5 +1,5 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support input or output
+ASR pass error: parallel loop cannot be offloaded: the CUDA GPU does not support input/output statements; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
   --> tests/../integration_tests/gpu_metal_204.f90:14:5
    |
 14 |     write(s(i), '(i1)') i
-   |     ^^^^^^^^^^^^^^^^^^^^^ the gpu backend does not support input or output
+   |     ^^^^^^^^^^^^^^^^^^^^^ input/output statement

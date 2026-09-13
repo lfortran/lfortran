@@ -31,11 +31,11 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
-// A GPU backend was asked for, so a loop left on the host is reported:
-// as a warning when the device cannot run it, and as an error when the
-// lowering it needs is missing (see report_gpu_decline). Every declining
-// loop in the unit is reported before the compilation is stopped, so one
-// run lists all of the gaps rather than only the first.
+// The loop was assigned to the device by the unsupported-construct check,
+// so a decline here is a lowering this pass is missing and is reported as
+// an error (see report_gpu_decline). Every declining loop in the unit is
+// reported before the compilation is stopped, so one run lists all of the
+// gaps rather than only the first.
 void GpuOffloadVisitor::report_not_offloaded(const Location &where,
         const GpuDecline &decline) {
     if (pass_options.diagnostics == nullptr) return;
@@ -259,7 +259,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
     collect_involved_syms(work, enclosing_block_scopes, involved_syms);
 
-    if (!offloadable_after_rewrites(involved_syms, loc)) {
+    if (!offloadable_after_rewrites(work, involved_syms, loc)) {
         return;
     }
 

@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "gpu_offload_metal-gpu_metal_347-d3f3ad2.stderr",
-    "stderr_hash": "a26741d32d6b839d959de67c234e12e74160fc1d03665a4482c6f318",
-    "returncode": 0
+    "stderr_hash": "71fd5e3b3d26bae1ef9da6c9b3b0d7df3ba7d33c5ea4c5d60fb14e51",
+    "returncode": 5
 }

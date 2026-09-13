@@ -16,23 +16,18 @@ void report_gpu_decline(const PassOptions &options, const Location &where,
         std::cerr << "gpu-decline: " << gpu_decline_class_name(category)
             << ": " << why << std::endl;
     }
-    // A loop the selected device cannot run is run where it can be, and
-    // the user is told why. A loop LFortran merely has no lowering for yet
-    // is a gap in this compiler, and running it on the CPU without being
-    // asked would hide it, so that is an error. So is any decline of a
-    // launch that has no CPU alternative left to run.
-    bool on_cpu = has_fallback && (category == GpuDeclineClass::BackendCannot
-        || options.gpu_kernel_source_only);
-    if (on_cpu) {
+    // The loop was committed to the device by the unsupported-construct
+    // check, so a decline is a lowering this compiler does not have yet:
+    // an error, which no flag turns into CPU execution. Only showing the
+    // kernels reports it as a warning, so that the kernels of the other
+    // loops are still shown.
+    if (options.gpu_kernel_source_only && has_fallback) {
         options.diagnostics->message_label(
-            "parallel loop not offloaded to the GPU, it runs on the CPU "
-            "instead: " + why, {where}, why,
+            "parallel loop not offloaded to the GPU: " + why, {where}, why,
             diag::Level::Warning, diag::Stage::ASRPass);
     } else {
         options.diagnostics->message_label(
-            "parallel loop cannot be offloaded to the GPU: " + why +
-                (has_fallback ? ""
-                    : "; no CPU alternative is available for this launch"),
+            "parallel loop cannot be offloaded to the GPU yet: " + why,
             {where}, why, diag::Level::Error, diag::Stage::ASRPass);
     }
 }
@@ -51,6 +46,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
     caps.device = device;
     switch (device) {
         case GpuDevice::Metal:
+            caps.name = "Metal";
             // The Metal Shading Language has `float`, `half` and `bfloat`
             // but no 64-bit floating point type, and the emitter has no
             // 64-bit integer of its own either.
@@ -67,6 +63,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_abort = false;
             break;
         case GpuDevice::Cuda:
+            caps.name = "CUDA";
             // CUDA C++ has `double` and `long long`, so it narrows nothing
             // the shared width table permits.
             //

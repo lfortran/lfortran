@@ -1,4 +1,4 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU: the gpu backend does not support integer(8), the type of 'a'
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support integer(8), the type of 'a'
   --> tests/../integration_tests/gpu_metal_13.f90:15:1 - 17:6
    |
 15 |    do concurrent (i = 1:n)

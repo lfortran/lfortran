@@ -77,13 +77,19 @@ struct PassOptions {
     // `!$omp parallel do` asks for host threads. Offloading one onto a device
     // is a choice the user has to make, so it is off unless asked for.
     bool gpu_offload_omp_loops = false;
-    // The device kernels are only being shown, not built. Every declined
-    // loop is then reported as a warning, so that the kernels of the loops
-    // that were accepted are still produced. A build reports a decline as
-    // a warning only when the device cannot run the loop.
+    // A parallel loop that uses a construct on the unsupported list of the
+    // selected device (see gpu_unsupported_check.h) runs on the CPU with a
+    // warning instead of being a compile-time error. It never affects a
+    // loop the offloading pipeline fails on.
+    bool gpu_allow_cpu_fallback = false;
+    // The device kernels are only being shown, not built. A loop that is not
+    // offloaded, for whatever reason, is then reported as a warning, so that
+    // the kernels of the other loops are still produced.
     bool gpu_kernel_source_only = false;
-    // Print one line per declined loop, naming the class of the decline, so
-    // that a corpus can be swept and the gaps counted.
+    // Print one line per loop that is not offloaded, naming why -- a
+    // construct on the unsupported list, or the class of a decline of the
+    // offloading pipeline -- so that a corpus can be swept and the gaps
+    // counted.
     bool gpu_decline_stats = false;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
