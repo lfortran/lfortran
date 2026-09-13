@@ -117,10 +117,9 @@ failing loop is reported once, at the first construct found, with the loop
 also pointed at when the construct is in a called procedure. Every failing
 loop of a file is reported before the compilation stops.
 
-`--gpu-decline-stats` prints one line per loop that is not offloaded: an
-`unsupported` line naming the construct for a loop the check assigned to the
-host, and a `not-implemented` or `backend-cannot` line for a decline of the
-pipeline.
+`--show-gpu-kernel-source` assigns a failing loop to the host, as
+`--gpu-allow-cpu-fallback` does, so that the kernels of the other loops are
+still shown. A failure of the offloading pipeline is an error there too.
 
 ## The offloading pipeline
 
@@ -170,14 +169,12 @@ generates the device source. It never falls back to the CPU:
 
 ## Differences from the current implementation
 
-* The decision is made by the check, but the pipeline still has the machinery
-  of an earlier policy: a candidate loop is extracted into a `GpuOffload` node
-  that keeps the original loop as a CPU alternative, and `gpu_kernel_finalize`
-  can select it. Every decline of the pipeline is now a compile error, so the
-  alternative is never taken in a build (only `--show-gpu-kernel-source`
-  uses it, to go on showing the other kernels).
-* The pipeline still has its own checks for device limits, spread over several
-  passes and the device code generator, which report errors instead of
-  asserting the facts the check guarantees. They are not expected to fire for
-  a loop the check accepted.
+* The pipeline still has its own checks for device limits (the width of the
+  data that reaches a kernel, input/output and `stop` statements), spread over
+  several passes and the device code generator. They report a compile error
+  rather than assert, because the check does not guarantee everything they
+  look at: symbols a rewrite introduces, the bodies of procedures only the
+  pipeline loads (separate compilation), widths that are not on the list
+  (`integer(8)` on Metal), and a derived type with an unused `real(8)`
+  component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
