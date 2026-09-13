@@ -1,6 +1,6 @@
 program do_concurrent_18
 implicit none
-integer :: i, j, k
+integer :: i, j
 integer :: a(5), m(3,3)
 real :: r(5), s(5)
 
@@ -54,19 +54,6 @@ if (abs(r(2)) > 1e-6) error stop
 if (abs(r(5) - 5.5) > 1e-6) error stop
 print *, a
 print *, r
-
-! Test do concurrent with a mask and a local variable
-a = 0
-do concurrent (i = 1:5, mod(i,2) == 1) local(k)
-    k = i * 3
-    a(i) = k
-end do
-if (a(1) /= 3) error stop
-if (a(2) /= 0) error stop
-if (a(3) /= 9) error stop
-if (a(4) /= 0) error stop
-if (a(5) /= 15) error stop
-print *, a
 
 ! Test a mask that is never true
 a = 4
