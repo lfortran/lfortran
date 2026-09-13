@@ -5291,7 +5291,7 @@ RUN(NAME gpu_metal_338 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allo
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
 # which does accept it.
 RUN(NAME gpu_metal_339 LABELS llvm metal cuda_cpu)
-RUN(NAME gpu_metal_340 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_metal_340 LABELS llvm metal cuda_cpu EXTRA_ARGS --separate-compilation) # `shared` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_341 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback --realloc-lhs-arrays)
 RUN(NAME gpu_metal_342 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
