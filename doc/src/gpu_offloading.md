@@ -44,7 +44,11 @@ entry states why it is there. Current proposal:
 | `real(8)` | Metal | the Metal Shading Language has no 64-bit float | emulate later |
 | `real(10)`, `real(16)` | all | no device has these widths | emulate, or never |
 | input/output statements, including internal-file I/O | all | no Fortran units or formats on a device | never, or a host-side buffer later |
-| `error stop` | Metal | a Metal shader has no way to halt the program | a host-side status buffer later |
+| `error stop`, `stop` | Metal | a Metal shader has no way to halt the program | a host-side status buffer later |
+
+`stop` is on the list for now. The standard and gfortran treat `stop` in a
+`do concurrent` body as invalid (it is an image control statement), so it will
+become a semantic error instead.
 
 Everything else is not on the list, even when it is not implemented yet. For
 example `integer(8)` on Metal (the Metal Shading Language has 64-bit integers),
@@ -91,6 +95,33 @@ For an `!$omp parallel do` loop offloaded with `--gpu-offload-omp-loops` the
 standard gives no such guarantee: the body and its callees can do anything, so
 the check has to walk every procedure the loop reaches.
 
+Since purity is not enforced yet (see the open questions), the check does not
+rely on it: for every loop it walks the loop body and every procedure the loop
+reaches transitively, looking at their statements, the declared types of their
+dummy arguments, results and locals, and the type of every expression they
+evaluate. A compile-time constant is not evaluated on the device, so what is
+below it is not looked at.
+
+For derived types the check uses this rule:
+
+* A component reference `s%m` is judged by the type of `m` alone: only that
+  component reaches the device. A loop that reads only `real(4)` components of
+  a type that also has a `real(8)` component is not rejected for it.
+* A derived-type value used as a whole (passed to a procedure, assigned,
+  copied), and a derived-type variable declared in a procedure the loop
+  reaches or in a `block` of the loop, is judged by all of its components,
+  recursively: its whole layout reaches the device.
+
+The check lives in `src/libasr/pass/gpu_unsupported_check.cpp`, and each
+failing loop is reported once, at the first construct found, with the loop
+also pointed at when the construct is in a called procedure. Every failing
+loop of a file is reported before the compilation stops.
+
+`--gpu-decline-stats` prints one line per loop that is not offloaded: an
+`unsupported` line naming the construct for a loop the check assigned to the
+host, and a `not-implemented` or `backend-cannot` line for a decline of the
+pipeline.
+
 ## The offloading pipeline
 
 Once a loop is assigned to the device, the offloading pipeline extracts the
@@ -122,11 +153,12 @@ generates the device source. It never falls back to the CPU:
   (for example one that prints) called from a `do concurrent` loop, and `stop`
   in its body. The check relies on the standard's constraints, so these need to
   become semantic errors first.
-* **What counts as using a type.** A loop that reads only `real(4)` components
-  of a derived type which also has `real(8)` or `character` components should
-  not be rejected because of the components it never reads. But when the whole
-  derived type is copied to the device, its layout has to match. The rule needs
-  to say which one applies when.
+* **What counts as using a type.** The check uses the rule above. The
+  pipeline does not always follow it yet: a derived type whose components are
+  read only through allocatable array components is handed to the kernel one
+  component at a time, but one with other components read is handed over
+  whole, so an unused `real(8)` component there is still an error on Metal
+  (reported by the pipeline, not the check).
 * **Procedures without a visible body.** A `bind(c)` interface is how a kernel
   calls a function the device provides (for example `sqrt`), but a host-only C
   routine looks the same. Either keep an allowlist of device-provided
@@ -138,12 +170,14 @@ generates the device source. It never falls back to the CPU:
 
 ## Differences from the current implementation
 
-* A candidate loop is extracted into a `GpuOffload` node that keeps the original
-  loop as a CPU alternative, and the decision is made late, in
-  `gpu_kernel_finalize`, from the reason the pipeline gave up
-  (`GpuDecline`, classified as not-implemented or backend-cannot). In this
-  design the decision is made before extraction and the pipeline has no
-  alternative to fall back to.
-* Checks for device limits are spread over several passes and the device code
-  generator, instead of living in one check.
+* The decision is made by the check, but the pipeline still has the machinery
+  of an earlier policy: a candidate loop is extracted into a `GpuOffload` node
+  that keeps the original loop as a CPU alternative, and `gpu_kernel_finalize`
+  can select it. Every decline of the pipeline is now a compile error, so the
+  alternative is never taken in a build (only `--show-gpu-kernel-source`
+  uses it, to go on showing the other kernels).
+* The pipeline still has its own checks for device limits, spread over several
+  passes and the device code generator, which report errors instead of
+  asserting the facts the check guarantees. They are not expected to fire for
+  a loop the check accepted.
 * Purity of procedures called from `do concurrent` is not enforced.

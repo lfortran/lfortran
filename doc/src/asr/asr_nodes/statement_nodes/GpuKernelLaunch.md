@@ -53,14 +53,15 @@ available, which is an error: it is a lowering LFortran does not have yet.
 Reallocation and conditional assignments remain eligible when they preserve
 every extent, not just the total element count.
 
-Every declined offload is classified as `not-implemented` (a lowering
-LFortran does not have yet) or `backend-cannot` (something the selected device
-genuinely cannot run, such as a `real(8)` on Metal). A `not-implemented`
-decline is a compile-time error. A `backend-cannot` decline is a warning
-naming the reason, and the CPU alternative is selected; no flag is involved.
-`--gpu-decline-stats` prints the category of each decline without changing
-this policy. A manually constructed launch without a CPU alternative cannot
-fall back, so any decline of it is an error.
+A loop reaches GPU offload only after the unsupported-construct check in the
+`parallel_dispatch` pass has assigned it to the device (see
+[GPU offloading](../../../gpu_offloading.md)), so every declined offload is a
+compile-time error, whatever its reason and whether or not
+`--gpu-allow-cpu-fallback` is given. `--gpu-decline-stats` prints the category
+of each decline, `not-implemented` (a lowering LFortran does not have yet) or
+`backend-cannot` (a limit of the device the check should have caught), without
+changing this policy. Only `--show-gpu-kernel-source` reports a decline as a
+warning, so that the kernels of the other loops are still shown.
 
 ## Examples
 
