@@ -228,7 +228,9 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     // A device whose scalar type set is narrower than the shared width
     // table has to be asked about every symbol that reaches the kernel:
     // where the two sets are the same, the kernel-argument and
-    // kernel-local checks that run on every device already ask it.
+    // kernel-local checks that run on every device already ask it. Only
+    // the width is asked here; everything else about a type is left to
+    // those checks, exactly as on a device that narrows nothing.
     if (device_caps.narrows_scalar_types()) {
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
             candidate_syms;
@@ -238,12 +240,12 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         // temporaries alike — is collected here, so a single sweep
         // covers all of them.
         for (auto &sym : candidate_syms) {
-            ASR::ttype_t *unsupported_type = nullptr;
-            if (!gpu_device_can_represent_type(device_caps,
-                    sym.second.first, sym.second.second, &unsupported_type)) {
+            ASR::ttype_t *narrowed = gpu_device_narrowed_type(device_caps,
+                sym.second.first, sym.second.second);
+            if (narrowed != nullptr) {
                 report_not_offloaded(loc, GpuDecline(
                     GpuDeclineReason::SymbolTypeNotRepresentable,
-                    sym.first, unsupported_type));
+                    sym.first, narrowed));
                 return false;
             }
         }
