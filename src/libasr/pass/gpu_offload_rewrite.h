@@ -121,6 +121,28 @@ public:
         if (new_mem) {
             x->m_m = new_mem;
         }
+        rebind_member_to_base_type(x);
+    }
+
+    // The component has to belong to the derived type its base now names.
+    // A body spliced in from a procedure names its components through that
+    // procedure's own symbols, which the kernel scope has no entry for, so
+    // the lookup by name above leaves them on the host's copy of the type
+    // while the base has already moved to the kernel's copy. Take the
+    // component from the base's type instead.
+    static void rebind_member_to_base_type(ASR::StructInstanceMember_t *x) {
+        ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x->m_m);
+        if (!ASR::is_a<ASR::Variable_t>(*member)) return;
+        ASR::symbol_t *base_type = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(x->m_v));
+        if (!base_type || !ASR::is_a<ASR::Struct_t>(*base_type)) return;
+        std::string name = ASR::is_a<ASR::ExternalSymbol_t>(*x->m_m)
+            ? std::string(ASR::down_cast<ASR::ExternalSymbol_t>(
+                  x->m_m)->m_original_name)
+            : std::string(ASRUtils::symbol_name(member));
+        ASR::symbol_t *own = gpu_struct_lookup_member(base_type, name);
+        if (!own || own == member) return;
+        x->m_m = own;
     }
 
     // A structure constructor names the derived type it builds. Left

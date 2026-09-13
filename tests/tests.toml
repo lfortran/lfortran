@@ -4413,16 +4413,12 @@ gpu_offload_strict = true
 # Indexing an ASSOCIATE bound to a strided section inside a kernel. The
 # extent honours the step, so the count was right; the device pointer holds
 # only an address, so the elements were not. Refused rather than answered.
+# The device code generator is what refuses it, so this is also the kernel it
+# cannot write: declined like any other, a strict compilation reports it and
+# points at the CPU fallback.
 [[test]]
 filename = "../integration_tests/gpu_metal_338.f90"
 gpu_offload_strict = true
-
-# A kernel the device code generator cannot write is declined like any other,
-# so a strict compilation reports it and points at the CPU fallback.
-[[test]]
-filename = "../integration_tests/gpu_metal_343.f90"
-gpu_offload_strict = true
-options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"

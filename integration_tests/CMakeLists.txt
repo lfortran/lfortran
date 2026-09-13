@@ -5282,9 +5282,10 @@ RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 # Refused by every gpu backend on purpose -- see the reference test in
-# tests/tests.toml for the diagnostic. Registered here for the answer the
-# host gives, which is the one the kernel used to get wrong in silence.
-RUN(NAME gpu_metal_338 LABELS gfortran llvm)
+# tests/tests.toml for the diagnostic. The refusal comes from the device code
+# generator, so with the fallback the loop runs on the host and gives the
+# answer the kernel used to get wrong in silence.
+RUN(NAME gpu_metal_338 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 # No gfortran label: `reduce` is F2023, and the gfortran the CI builds with
 # rejects it outright ("Syntax error in DO statement"). Same reason
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
@@ -5293,7 +5294,7 @@ RUN(NAME gpu_metal_339 LABELS llvm metal cuda_cpu)
 RUN(NAME gpu_metal_340 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_341 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback --realloc-lhs-arrays)
 RUN(NAME gpu_metal_342 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback --realloc-lhs-arrays)
+RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)
