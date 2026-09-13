@@ -9068,6 +9068,14 @@ public:
 
                             // If passed has arg info but param doesn't, update param interface
                             if (passed_ft && passed_ft->n_arg_types > 0 && param_ft->n_arg_types == 0) {
+                                // A bare implicit interface only has a guessed
+                                // return type from implicit typing. A passed
+                                // subroutine shows the dummy is a subroutine too.
+                                if (ASRUtils::is_bare_implicit_interface(*param_ft)
+                                        && passed_ft->m_return_var_type == nullptr) {
+                                    param_ft->m_return_var_type = nullptr;
+                                    param_func->m_return_var = nullptr;
+                                }
                                 // Update the FunctionType's arg_types
                                 param_ft->m_arg_types = passed_ft->m_arg_types;
                                 param_ft->n_arg_types = passed_ft->n_arg_types;
@@ -9100,7 +9108,8 @@ public:
                             } else if (passed_ft && param_ft->n_arg_types > 0
                                     && ASR::is_a<ASR::Function_t>(*passed_sym)
                                     && ASRUtils::is_bare_implicit_interface(
-                                        *ASR::down_cast<ASR::Function_t>(passed_sym))) {
+                                        *ASR::down_cast<ASR::Function_t>(passed_sym))
+                                    && !implicit_interface_passes_definition(passed_sym, var->m_v)) {
                                 // Reverse propagation: parameter has type info but the passed
                                 // function is a bare ImplicitInterface. Only rewrite that
                                 // placeholder — a genuine zero-argument procedure is left alone.
@@ -11016,6 +11025,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                 if (callee->m_args[i] == nullptr) continue;
                                 if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
                                 ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v;
+                                if (b.implicit_interface_passes_definition(passed_sym, param_sym)) continue;
                                 ASR::FunctionType_t* param_ft = nullptr;
 
                                 // Handle Variable_t parameter with FunctionType
