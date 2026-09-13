@@ -5291,6 +5291,7 @@ RUN(NAME gpu_metal_338 LABELS gfortran llvm)
 # which does accept it.
 RUN(NAME gpu_metal_339 LABELS llvm metal cuda_cpu)
 RUN(NAME gpu_metal_340 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_metal_341 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback --realloc-lhs-arrays)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)

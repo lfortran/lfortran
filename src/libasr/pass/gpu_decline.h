@@ -98,6 +98,15 @@ struct GpuDeviceCapabilities {
     bool splices_device_functions() const {
         return !device_function_runtime_sized_locals;
     }
+
+    // Emits the device source for one kernel and discards it, returning what
+    // the code generator raised, or an empty string when it raised nothing.
+    // The source of a translation unit is only written once every pass has
+    // run, by which time the CPU alternative of each loop is gone; asking
+    // this while the offload is still being decided lets a kernel the code
+    // generator cannot write be declined like any other.
+    std::string (*kernel_source_error)(const ASR::Function_t &kernel) =
+        nullptr;
 };
 
 // What a decline says about the compiler and about the device.
@@ -130,6 +139,9 @@ enum class GpuDeclineReason {
     FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
+    // The device code generator could not write the kernel. The name holds
+    // what it said, as a clause.
+    KernelSourceEmission,
 
     // --- what the device has no type for ---
     LocalTypeWidth,

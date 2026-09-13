@@ -104,4 +104,8 @@ Result<std::string> asr_to_metal(Allocator & /*al*/, ASR::TranslationUnit_t &asr
     return v.src.str();
 }
 
+std::string asr_to_metal_kernel_error(const ASR::Function_t &kernel) {
+    return gpu_kernel_source_error(MetalDialect(), kernel);
+}
+
 } // namespace LCompilers

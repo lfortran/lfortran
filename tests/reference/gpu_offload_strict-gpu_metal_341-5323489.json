@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_offload_strict-gpu_metal_341-5323489",
+    "cmd": "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/gpu_metal_341.f90",
+    "infile_hash": "990bbcc764e5eb497e02b8596bab528a1efeae13eb1ec32dfeaca78e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "gpu_offload_strict-gpu_metal_341-5323489.stderr",
+    "stderr_hash": "f12f0f84e40f41b4be200e0c95e9b9dfad61a4acb7221cbac6046e13",
+    "returncode": 5
+}
