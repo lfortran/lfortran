@@ -1,9 +1,9 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU: the extent of dimension 1 of an array is not available inside a gpu kernel; pass `--gpu-allow-cpu-fallback` to run it on the CPU instead
-  --> tests/../integration_tests/gpu_metal_341.f90:15:5 - 17:10
+  --> tests/../integration_tests/gpu_metal_343.f90:38:5 - 40:10
    |
-15 |        do concurrent (j = 1:2)
+38 |        do concurrent (j = 1:2)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-17 |        end do
+40 |        end do
    | ...^^^^^^^^^^ the extent of dimension 1 of an array is not available inside a gpu kernel
