@@ -241,11 +241,12 @@ time_section "🧪 Testing Fiats" '
   if [[ "$(uname)" == "Darwin" ]]; then
     rm -rf build
     git fetch https://github.com/certik/fiats lf1
-    git checkout f5d91ae48c01297a7fb183957654a73721ad4520
+    git checkout 869584f56955fe591304587eb34068b814448c33
     # Fiats computes in real(8), which is on the unsupported list for Metal
     # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
     # `do concurrent` loops on the CPU with a warning; every other loop is
-    # offloaded.
+    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
+    # into serial loops.
     fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 
