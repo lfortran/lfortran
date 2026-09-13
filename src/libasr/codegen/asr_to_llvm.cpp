@@ -19249,7 +19249,7 @@ public:
             // historical drain, matching the runtime's own check in
             // common_formatted_read.
             bool has_advance_guard = (x.m_advance && x.m_fmt && !is_string);
-            llvm::Value* do_drain = nullptr;
+            llvm::Value* should_drain = nullptr;
             if (has_advance_guard) {
                 // Reuse the runtime's own matcher instead of open-coding
                 // the comparison here.
@@ -19272,7 +19272,7 @@ public:
                 }
                 llvm::Value* is_advance_no = builder->CreateCall(cmp_fn,
                     {advance, advance_length, no_data, no_len});
-                do_drain = builder->CreateNot(is_advance_no);
+                should_drain = builder->CreateNot(is_advance_no);
             }
             auto emit_drain = [&]() {
             // When x.m_iostat is provided and values were read (n_values > 0),
@@ -19291,7 +19291,7 @@ public:
             }
             };
             if (has_advance_guard) {
-                llvm_utils->create_if_else(do_drain, emit_drain, [](){});
+                llvm_utils->create_if_else(should_drain, emit_drain, [](){});
             } else {
                 emit_drain();
             }
