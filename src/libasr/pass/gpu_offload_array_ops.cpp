@@ -1163,6 +1163,28 @@ static bool section_int_constant(ASR::expr_t *e, int64_t &out) {
     return true;
 }
 
+// Whether two designators name the same array: the same variable, or the
+// same component of the same designator.
+static bool same_designator(ASR::expr_t *x, ASR::expr_t *y) {
+    if (!x || !y || x->type != y->type) return false;
+    if (ASR::is_a<ASR::Var_t>(*x)) {
+        return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x)->m_v)
+            == ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(y)->m_v);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+        ASR::StructInstanceMember_t *mx =
+            ASR::down_cast<ASR::StructInstanceMember_t>(x);
+        ASR::StructInstanceMember_t *my =
+            ASR::down_cast<ASR::StructInstanceMember_t>(y);
+        return ASRUtils::symbol_get_past_external(mx->m_m)
+                == ASRUtils::symbol_get_past_external(my->m_m)
+            && same_designator(mx->m_v, my->m_v);
+    }
+    return false;
+}
+
 // Whether `e` is the lower or upper bound of dimension `d` (0-based) of the
 // array `base` itself -- how `:` is spelled.
 static bool is_bound_of(ASR::expr_t *e, ASR::expr_t *base, size_t d,
@@ -1178,9 +1200,7 @@ static bool is_bound_of(ASR::expr_t *e, ASR::expr_t *base, size_t d,
             || dim != (int64_t) d + 1) {
         return false;
     }
-    return ASR::is_a<ASR::Var_t>(*bound->m_v) && ASR::is_a<ASR::Var_t>(*base)
-        && ASR::down_cast<ASR::Var_t>(bound->m_v)->m_v
-            == ASR::down_cast<ASR::Var_t>(base)->m_v;
+    return same_designator(bound->m_v, base);
 }
 
 // Whether dimension `d` of the section runs over the whole of that dimension

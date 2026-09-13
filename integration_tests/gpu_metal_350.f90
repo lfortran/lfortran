@@ -5,6 +5,10 @@ type vec
     real :: x(3)
 end type
 
+type holder
+    real, allocatable :: a(:,:)
+end type
+
 interface operator(.dot.)
     module procedure dot_rows
 end interface
@@ -20,6 +24,17 @@ pure function row_scaled(x) result(y)
     real, intent(in) :: x(:)
     real :: y(size(x))
     y = 2 * x
+end function
+
+pure real function weighted_sum(x)
+    real, intent(in) :: x(:,:)
+    integer :: k, l
+    weighted_sum = 0
+    do l = 1, size(x, 2)
+        do k = 1, size(x, 1)
+            weighted_sum = weighted_sum + k * l * x(k, l)
+        end do
+    end do
 end function
 
 pure real function dot_rows(x, y)
@@ -46,7 +61,8 @@ program gpu_metal_350
 use gpu_metal_350_mod
 implicit none
 real, allocatable :: a(:,:), v(:,:,:), b(:,:)
-real :: s(3), d(3), e(3), t(3,5), w(3,2), ref(3)
+type(holder) :: h
+real :: s(3), d(3), e(3), t(3,5), w(3,2), ref(3), c(5)
 integer :: i, j, k
 
 allocate(a(3,5), b(3,5), v(3,4,2))
@@ -104,6 +120,18 @@ do i = 1, 3
     do k = 1, 2
         if (w(i,k) /= sum(v(i,:,k))) error stop
     end do
+end do
+
+! Leading columns of a component, `h%a(:,1:i)`, are contiguous and are
+! passed without a gather.
+allocate(h%a(3,5))
+h%a = a
+do concurrent (i = 1:5)
+    c(i) = weighted_sum(h%a(:,1:i))
+end do
+print *, c
+do i = 1, 5
+    if (c(i) /= weighted_sum(a(:,1:i))) error stop
 end do
 
 end program
