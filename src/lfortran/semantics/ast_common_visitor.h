@@ -17242,76 +17242,6 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
-    // True if the procedure `v` is a dummy argument of the procedure whose
-    // scope declares it.
-    bool is_dummy_procedure(ASR::symbol_t* v) {
-        if (!ASR::is_a<ASR::Function_t>(*v)) return false;
-        SymbolTable* owner_scope = ASR::down_cast<ASR::Function_t>(v)->m_symtab->parent;
-        if (!owner_scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)) {
-            return false;
-        }
-        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner);
-        if (!ASR::is_a<ASR::Function_t>(*owner)) return false;
-        ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner);
-        for (size_t i = 0; i < owner_func->n_args; i++) {
-            if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i]) &&
-                    ASR::down_cast<ASR::Var_t>(owner_func->m_args[i])->m_v == v) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // A bare ImplicitInterface placeholder `v` declared by `external s`
-    // denotes the global procedure `s`. Returns the definition of `s` in this
-    // translation unit, or nullptr. A dummy procedure is its own entity
-    // whatever its name, so it never denotes a global procedure. Inside a
-    // module nullptr is returned too: the module's ASR is also used by other
-    // translation units, where this definition is absent. So is a function
-    // definition when the placeholder has no return variable, since the
-    // placeholder is then referenced as a subroutine.
-    ASR::symbol_t* implicit_interface_definition(ASR::symbol_t* v) {
-        if (!ASR::is_a<ASR::Function_t>(*v) || !is_implicit_interface_decl(v)) return nullptr;
-        if (ASRUtils::get_sym_module0(v) != nullptr || is_dummy_procedure(v)) return nullptr;
-        ASR::Function_t* placeholder = ASR::down_cast<ASR::Function_t>(v);
-        ASR::symbol_t* def = placeholder->m_symtab->get_tu_scope()->get_symbol(
-            placeholder->m_name);
-        if (!def || !ASR::is_a<ASR::Function_t>(*def)) return nullptr;
-        ASR::FunctionType_t* def_ft = ASRUtils::get_FunctionType(
-            ASR::down_cast<ASR::Function_t>(def));
-        if (def_ft->m_deftype != ASR::deftypeType::Implementation) return nullptr;
-        if (def_ft->m_return_var_type != nullptr && placeholder->m_return_var == nullptr) {
-            return nullptr;
-        }
-        return def;
-    }
-
-    // True if `v` is a procedure defined at the top level of this
-    // translation unit. Only create_implicit_interface_function makes such a
-    // definition the dummy of an inferred interface, through
-    // implicit_interface_definition. A dummy taken from a contained
-    // procedure, a module procedure or an interface block is never one.
-    bool is_translation_unit_definition(ASR::symbol_t* v) {
-        if (!ASR::is_a<ASR::Function_t>(*v)) return false;
-        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(v);
-        SymbolTable* tu_scope = f->m_symtab->get_tu_scope();
-        return f->m_symtab->parent == tu_scope
-            && tu_scope->get_symbol(f->m_name) == v
-            && ASRUtils::get_FunctionType(f)->m_deftype
-                == ASR::deftypeType::Implementation;
-    }
-
-    // True if the placeholder `passed` stands for a definition in this
-    // translation unit and the dummy `param` it is passed for is such a
-    // definition too (see is_translation_unit_definition). The placeholder
-    // then must not take the dummy's signature: its own is its definition's,
-    // and its other references stay those of an implicit interface. Any
-    // other dummy fills the placeholder as before.
-    bool implicit_interface_passes_definition(ASR::symbol_t* passed, ASR::symbol_t* param) {
-        return is_translation_unit_definition(param)
-            && implicit_interface_definition(passed) != nullptr;
-    }
-
     // True if `v` is a BindC Interface function that LFortran synthesized for
     // an external with an implicit interface (has a concrete argument list
     // inferred from a call, not a user-written interface block).
@@ -17464,16 +17394,6 @@ public:
             }
         }
 
-        // The interface already inferred from an earlier reference, if any.
-        ASR::Function_t* inferred = nullptr;
-        if (ASR::symbol_t* inferred_sym = sym_scope->get_symbol(sym_name)) {
-            if (is_synthesized_implicit_interface(inferred_sym)
-                    && !is_implicit_interface_decl(inferred_sym)) {
-                inferred = ASR::down_cast<ASR::Function_t>(
-                    ASRUtils::symbol_get_past_external(inferred_sym));
-            }
-        }
-
         for (size_t i=0; i<c_args.size(); i++) {
             std::string arg_name = sym_name + "_arg_" + std::to_string(i);
             arg_name = to_lower(arg_name);
@@ -17482,19 +17402,6 @@ public:
             if (ASR::is_a<ASR::Var_t>(*var_expr) &&
                     ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
-                // A placeholder with no argument list stands for its
-                // definition, whose signature is the one actually passed.
-                // If an earlier reference already gave this dummy another
-                // kind of procedure (contained procedure, interface block,
-                // ...), the placeholder is kept, so that the comparison with
-                // that interface below is unchanged.
-                ASR::symbol_t* def = implicit_interface_definition(v);
-                if (def && (inferred == nullptr || (i < inferred->n_args
-                        && ASR::is_a<ASR::Var_t>(*inferred->m_args[i])
-                        && is_translation_unit_definition(
-                            ASR::down_cast<ASR::Var_t>(inferred->m_args[i])->m_v)))) {
-                    v = def;
-                }
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 // Use Implementation's parameter type if available and implicit_argument_casting enabled
@@ -17699,24 +17606,6 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(ex->m_args[i])));
                 ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(nw->m_args[i])));
-                // A dummy procedure with no known argument list, passed where
-                // the existing interface has an in-file definition as its
-                // dummy, gets no separate view: a view typed after the bare
-                // dummy does not match the definition's signature in LLVM.
-                // In a subroutine call the reverse propagation in
-                // visit_SubroutineCall then gives the dummy that signature;
-                // a function call leaves it unfilled. Any other existing
-                // dummy (contained procedure, interface block, ...) keeps the
-                // separate view, which leaves later direct calls of the dummy
-                // those of an implicit interface.
-                if (ASR::is_a<ASR::Var_t>(*ex->m_args[i]) && ASR::is_a<ASR::Var_t>(*nw->m_args[i])
-                        && is_translation_unit_definition(
-                            ASR::down_cast<ASR::Var_t>(ex->m_args[i])->m_v)) {
-                    ASR::symbol_t* passed = ASR::down_cast<ASR::Var_t>(nw->m_args[i])->m_v;
-                    if (is_implicit_interface_decl(passed) && is_dummy_procedure(passed)) {
-                        continue;
-                    }
-                }
                 if (!ASRUtils::check_equal_type(t1, t2, ex->m_args[i], nw->m_args[i])) {
                     same = false;
                 }
