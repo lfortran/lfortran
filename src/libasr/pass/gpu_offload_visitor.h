@@ -12,13 +12,29 @@
 #include <libasr/containers.h>
 #include <libasr/utils.h>
 #include <libasr/pass/gpu_decline.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 
 namespace LCompilers {
+
+// Hands a body rewrite the loop's statements and writes whatever it made
+// of them back into the loop. The rewrites report their result by moving
+// the pointers they were given, and a nest holds those pointers twice --
+// once as its own view and once in the loop it reads from -- so the two
+// would otherwise drift apart.
+class NestBodyWriteBack {
+public:
+    ParallelLoopNest &nest;
+    ASR::stmt_t **body;
+    size_t n_body;
+
+    NestBodyWriteBack(ParallelLoopNest &nest_)
+        : nest(nest_), body(nest_.body), n_body(nest_.n_body) {}
+
+    ~NestBodyWriteBack() { nest.set_body(body, n_body); }
+};
 
 // The GPU offload pass itself: it walks every parallel region, decides
 // whether the selected device can run it, canonicalises the body it found
@@ -260,8 +276,7 @@ public:
             size_t n_body, bool top_level,
             const std::vector<std::string> &arg_names);
 
-    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body,
-            std::vector<ScopeArrayDims> &undo);
+    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body);
 
     void materialize_runtime_alias_blocks(ParallelLoopNest &nest);
 
@@ -348,28 +363,10 @@ public:
     // workspace extent resolver expects: every symbol the loop involves,
     // plus the synthetic per-dimension extent scalar the kernel
     // extraction adds for each dimension of an array argument.
-    // A parallel loop is ordinary Fortran, so a loop that cannot be
-    // offloaded must still compile and run. Report why it was left on the
-    // host rather than build a kernel that would quietly do something else.
-    // The loop whose offload is being decided, and the loops already
-    // reported. pass_replace_gpu_offload re-walks the translation unit until
-    // nothing changes, so a declined loop is visited again on every sweep;
-    // without this the user is told about it once per sweep rather than once
-    // per loop.
-    const ASR::OMPRegion_t *region_being_decided = nullptr;
-    std::set<const ASR::OMPRegion_t*> reported_regions;
-
-    // Names the region a decline is about for as long as the decision lasts,
-    // whichever of the dozen exits it leaves by.
-    struct DecisionScope {
-        GpuOffloadVisitor &v;
-        const ASR::OMPRegion_t *saved;
-        DecisionScope(GpuOffloadVisitor &v_, const ASR::OMPRegion_t *r)
-            : v(v_), saved(v_.region_being_decided) {
-            v.region_being_decided = r;
-        }
-        ~DecisionScope() { v.region_being_decided = saved; }
-    };
+    // Whether a loop assigned to the device was reported as one this pass
+    // cannot lower. The compilation stops after the pass, and the pass
+    // stops re-walking the unit.
+    bool declined = false;
 
     void report_not_offloaded(const Location &where,
             const GpuDecline &decline);
@@ -397,15 +394,12 @@ public:
 
     bool hoist_struct_element_gathers(const ParallelLoopNest &nest,
             Vec<ASR::stmt_t*> &gather_stmts,
-            Vec<ASR::stmt_t*> &scatter_stmts,
-            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo,
-            std::vector<std::string> &temp_names);
+            Vec<ASR::stmt_t*> &scatter_stmts);
 
     bool host_nameable(ASR::symbol_t *sym);
 
-    // The BLOCKs and ASSOCIATEs the kernel was given copies of, so that a
-    // declined offload can drop them again, and so that only a copy this
-    // pass made is moved into the kernel.
+    // The BLOCKs and ASSOCIATEs the kernel was given copies of, so that
+    // only a copy this pass made is moved into the kernel.
     //
     // The blocks are held as the symbols themselves rather than as their
     // names. A name says which entry of a scope a block is filed under
@@ -488,18 +482,14 @@ public:
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
         std::vector<ASR::symbol_t*> optional_syms;
-        // Committed where the offload becomes certain, which is inside the
-        // launch construction, so the guard itself has to reach it.
-        GpuGatherGuard *gather_guard = nullptr;
     };
 
     void decline(const ASR::OMPRegion_t &x);
 
     // The phases visit_OMPRegion walks a region through, in the order it
-    // calls them. The three that return a bool can leave the loop on the
-    // host: false means the decline is already reported or the region
-    // already walked into, and the caller stops there rather than going on
-    // with the offload.
+    // calls them. The three that return a bool can stop the offload: false
+    // means the error is already reported or the region, which is not this
+    // pass's to offload, already walked into, and the caller stops there.
     bool offloadable_loop_nest(const ASR::OMPRegion_t &region,
             ParallelLoopNest &nest);
 

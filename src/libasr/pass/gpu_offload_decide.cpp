@@ -9,11 +9,11 @@
 namespace LCompilers {
 
 // The shapes a kernel can be built out of. Everything this asks is about
-// the region as the pass found it: nothing here rewrites anything, so a
-// region turned down leaves no trace. False means the region has already
-// been left on the host -- either walked into so the regions inside it
-// still get their chance, or reported as a loop the launch cannot run --
-// and the caller stops.
+// the region as the pass found it, and nothing here rewrites anything.
+// False means either that the region is not one this pass offloads, and it
+// has been walked into so the regions inside it still get their chance, or
+// that it has been reported as a loop the launch cannot run; the caller
+// stops.
 bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
         ParallelLoopNest &nest) {
     if (!device_caps.device_selected()) {
@@ -21,10 +21,8 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
         return false;
     }
 
-    // Only the regions the dispatch pass gave to the device. Every other
-    // exit of this function leaves the region alone, and the regions
-    // still marked for the device once the pass is done are the ones it
-    // declined; they are handed back to the host below.
+    // Only the regions the dispatch pass gave to the device, which are
+    // committed to it: every other exit of this function is an error.
     if (region.m_exec_target != ASR::exec_targetType::ExecDevice) {
         decline(region);
         return false;
@@ -34,7 +32,8 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
     // perfectly nested loop nest, and the whole data environment in one
     // clause list. The kernel is built out of the nest.
     if (!parallel_loop_nest(region, nest)) {
-        decline(region);
+        report_not_offloaded(region.base.base.loc,
+            GpuDecline(GpuDeclineReason::LoopNestShape));
         return false;
     }
 
@@ -44,7 +43,7 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
     // A reduction is given one accumulator per thread and folded on the
     // host afterwards, so what has to be true here is only that the
     // accumulator is something a thread can hold and the operator is one
-    // the fold can spell. Anything else stays where it already works.
+    // the fold can spell. Anything else is an error.
     pending_reductions.clear();
     for (size_t i = 0; i < region.n_clauses; i++) {
         if (region.m_clauses[i]->type !=
@@ -110,8 +109,8 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
 
     // The kernel maps a flat thread id onto `start + (flat % extent)`, which
     // is only the loop's iteration set when the stride is one. A strided
-    // head would silently address the wrong elements, so it stays on the
-    // host until the index arithmetic carries the stride.
+    // head would silently address the wrong elements, so it is an error
+    // until the index arithmetic carries the stride.
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *step = nest.head(d).m_increment;
         if (!step) continue;
@@ -130,10 +129,10 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
 }
 
 // Whether the loop is one the launch can run, asked of the loop as it was
-// found. Every check here is analysis only, so a loop turned down is left
-// exactly as it was; false means the decline has already been reported and
-// the caller stops. The one thing it leaves behind is the splice plan in
-// functions_to_inline, which the rewrites below the call consume.
+// found. Every check here is analysis only; false means the error has
+// already been reported and the caller stops. The one thing it leaves
+// behind is the splice plan in functions_to_inline, which the rewrites below
+// the call consume.
 bool GpuOffloadVisitor::offloadable_before_rewrites(
         const ParallelLoopNest &work,
         const std::set<SymbolTable*> &enclosing_block_scopes,
@@ -157,8 +156,7 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
         // An array assignment whose two sides overlap the same array
         // needs a temporary (see materialize_aliased_assignments).
-        // If that temporary cannot be fixed-size, decline here,
-        // while the body is still untouched.
+        // If that temporary cannot be fixed-size, it is an error.
         std::vector<std::string> alias_arg_names;
         collect_kernel_arg_names(work, enclosing_block_scopes,
             alias_arg_names);
@@ -273,8 +271,8 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         GpuDecline decline;
         if (!plan_device_function_inlining(work.body, work.n_body,
                 needs_inline_memo, on_stack, decline)) {
-            // Decline before destructive rewrites if a callee cannot be
-            // spliced or its result allocation cannot reach the device.
+            // A callee that cannot be spliced, or whose result allocation
+            // cannot reach the device, is an error.
             functions_to_inline.clear();
             if (!decline.declined()) {
                 decline = GpuDecline(GpuDeclineReason::DeviceFunctionInlining);
@@ -289,9 +287,8 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
 
 // The last question a decline can be based on: the one the rewrites above
 // the call made answerable, on symbols that only exist once the body has
-// been lowered. False means the decline has been reported and the caller
-// stops -- the guards it holds put back everything the rewrites did to the
-// pass's copy of the nest.
+// been lowered. False means the error has been reported and the caller
+// stops.
 //
 // The statements of the nest are not asked about again: what a statement
 // needs of the device does not depend on the rewrites, so that question is

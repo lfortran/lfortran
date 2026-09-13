@@ -9,7 +9,6 @@
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 
 namespace LCompilers {
@@ -213,7 +212,7 @@ ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
 // compile-time constant extents. Metal has no variable-length
 // arrays, and a run-time sized kernel temporary would have to become
 // a device buffer shared by every thread of the kernel, so a loop
-// that would need one is not offloaded at all and runs on the host.
+// that would need one is an error.
 bool GpuOffloadVisitor::alias_temp_is_fixed_size(ASR::expr_t *target) {
     const Location &loc = target->base.loc;
     int64_t n;
@@ -277,8 +276,8 @@ bool GpuOffloadVisitor::alias_temp_extents(ASR::expr_t *target,
 }
 
 // Reports a self-aliasing array assignment whose temporary this pass
-// cannot give a per-thread home. Called before any of the destructive
-// inline_* helpers, so the loop can still be left on the host.
+// cannot give a per-thread home. Called before any of the inline_*
+// helpers rewrite the body.
 //
 // A fixed-size temporary is a kernel-scope stack array, private to
 // the thread by construction. A run-time sized one has to be a
@@ -373,12 +372,9 @@ bool GpuOffloadVisitor::body_needs_unsupported_alias_temp(ASR::stmt_t **body,
 // rewrites further down lower the whole-array assignment into an
 // element loop bounded by `ubound(r)`, after which the shape is gone.
 // So write it into the type here, while the assignment it can be read
-// from is still whole-array. Every replaced dimension list is
-// recorded in `undo` so the loop can still be left untouched if a
-// later check declines the offload.
+// from is still whole-array.
 void GpuOffloadVisitor::size_scope_array_temporaries(
-        ASR::stmt_t **body, size_t n_body,
-        std::vector<ScopeArrayDims> &undo) {
+        ASR::stmt_t **body, size_t n_body) {
     for (size_t si = 0; si < n_body; si++) {
         SymbolTable *symtab = nullptr;
         ASR::stmt_t **inner_body = nullptr;
@@ -403,7 +399,7 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             inner_n_body = ab->n_body;
         } else if (ASR::is_a<ASR::DoLoop_t>(*body[si])) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(body[si]);
-            size_scope_array_temporaries(dl->m_body, dl->n_body, undo);
+            size_scope_array_temporaries(dl->m_body, dl->n_body);
             continue;
         } else {
             continue;
@@ -431,13 +427,12 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             // An allocatable must keep deferred extents, so the
             // temporary becomes an automatic array of the same
             // shape -- which is what the workspace machinery binds.
-            undo.push_back({var, var->m_type});
             var->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, vloc,
                 arr->m_type, dims.p, dims.n,
                 ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         }
-        size_scope_array_temporaries(inner_body, inner_n_body, undo);
+        size_scope_array_temporaries(inner_body, inner_n_body);
     }
 }
 

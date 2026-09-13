@@ -153,6 +153,9 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
 
         // Everything else is a lowering this pass has not written yet.
         case GpuDeclineReason::None:
+        case GpuDeclineReason::LoopNestShape:
+        case GpuDeclineReason::LoopNestNotCopyable:
+        case GpuDeclineReason::LoopNotLowered:
         case GpuDeclineReason::ReductionClause:
         case GpuDeclineReason::LoopWithoutIndex:
         case GpuDeclineReason::IncompleteLoopHead:
@@ -221,6 +224,12 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::None:
             return "";
 
+        case GpuDeclineReason::LoopNestShape:
+            return "the loop is not a single, perfectly nested loop nest";
+        case GpuDeclineReason::LoopNestNotCopyable:
+            return "the loop body cannot be copied into a gpu kernel";
+        case GpuDeclineReason::LoopNotLowered:
+            return "the loop was not lowered for the gpu";
         case GpuDeclineReason::ReductionClause:
             return "a reduction has no gpu lowering yet";
         case GpuDeclineReason::LoopWithoutIndex:

@@ -343,8 +343,8 @@ public:
 // from an assumed-shape or deferred-shape dummy argument, or from a
 // local allocatable whose ALLOCATE bounds are themselves only known at
 // run time, would have to be a VLA inside the device function -- which
-// Metal cannot express. Detect that shape here so the loop can be
-// declined and run on the host instead. Elements sized from a local
+// Metal cannot express. Detect that shape here so the loop is reported
+// as an error instead. Elements sized from a local
 // allocatable with constant ALLOCATE bounds are fine: the Metal backend
 // resolves those extents from the ALLOCATE statement.
 class GpuDeviceFunctionArrayTempChecker :

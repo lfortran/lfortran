@@ -6,7 +6,6 @@
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
@@ -20,9 +19,8 @@ namespace LCompilers {
 void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         const ParallelLoopNest &work, const Location &loc,
         GpuLaunchPlan &plan) {
-    // The loop is offloaded from here on, so this is where a clause the
-    // launch cannot honour is reported: before this every exit still
-    // leaves the loop on the host, where the clause is honoured.
+    // The kernel is built, so this is where a clause the launch cannot
+    // honour is reported: a loop that is an error is not also warned about.
     for (size_t i = 0; i < region.n_clauses; i++) {
         std::string clause_name = unhonoured_clause(region.m_clauses[i]);
         if (!clause_name.empty()) {
@@ -34,8 +32,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // A `stop` the kernel runs as a trap is reported for the same reason:
     // the launch does halt where the program said to halt, but the stop
     // code and the kind of termination do not survive the crossing. A
-    // device with no trap never gets here -- the loop was declined above
-    // and runs on the host, where the statement means all of what it says.
+    // device with no trap never gets here: such a loop is an error before
+    // this.
     {
         GpuStopStatementFinder stops;
         for (size_t i = 0; i < work.n_body; i++) {
@@ -179,7 +177,6 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Collect all launch-related statements into a temporary Vec.
     // If any involved variable is optional, wrap them in a
     // present() guard so the host never reads a null descriptor.
-    plan.gather_guard->commit();
     Vec<ASR::stmt_t*> launch_stmts;
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2

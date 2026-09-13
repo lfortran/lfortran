@@ -18,9 +18,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
-#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_gpu_offload.h>
 
@@ -33,16 +31,12 @@ static int gpu_kernel_counter = 0;
 
 // The loop was assigned to the device by the unsupported-construct check,
 // so a decline here is a lowering this pass is missing and is reported as
-// an error (see report_gpu_decline). Every declining loop in the unit is
-// reported before the compilation is stopped, so one run lists all of the
+// an error (see report_gpu_decline). Every loop of the round that finds
+// one is reported before the compilation is stopped, so one run lists the
 // gaps rather than only the first.
 void GpuOffloadVisitor::report_not_offloaded(const Location &where,
         const GpuDecline &decline) {
-    if (pass_options.diagnostics == nullptr) return;
-    if (region_being_decided != nullptr &&
-            !reported_regions.insert(region_being_decided).second) {
-        return;
-    }
+    declined = true;
     report_gpu_decline(pass_options, where, decline);
 }
 
@@ -95,7 +89,6 @@ void GpuOffloadVisitor::decline(const ASR::OMPRegion_t &x) {
 }
 
 void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
-    DecisionScope decision(*this, &region);
     ParallelLoopNest nest;
     if (!offloadable_loop_nest(region, nest)) return;
 
@@ -103,26 +96,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     size_t n_dims = nest.n_heads();
 
     // Everything below rewrites the loop as it goes -- inlining an
-    // intrinsic, splicing a callee, gathering an argument -- and
-    // several of those rewrites change a statement in place. A rewrite
-    // must not reach the loop the host would run, because the offload
-    // can still be declined further down. So the region's loop nest is
-    // copied and it is the copy that is rewritten, the original
-    // standing until the launch replaces it.
-    //
-    // A BLOCK or ASSOCIATE in the nest is copied with it. The kernel
-    // takes that copy and the host keeps its own, so a rewrite on the
-    // way to a kernel cannot reach the host, and a decline has
-    // nothing to put back.
+    // intrinsic, splicing a callee, gathering an argument -- and several
+    // of those rewrites change a statement, an expression or a BLOCK local
+    // in place. The kernel is built from its own copy of the nest, BLOCKs
+    // and ASSOCIATEs included, so that no rewrite reaches a node the loop
+    // shares with the rest of the program.
     ParallelLoopNest work;
     kernel_blocks.clear();
-    // From here on the pass is drafting a kernel: it copies the blocks of
-    // the nest into this scope and takes a kernel number. Every exit
-    // below that leaves the loop on the host drops both, whichever exit
-    // it is; the draft is handed to the kernel by committing the guard
-    // once the launch is known to be supported.
-    GpuKernelDraftGuard draft_guard(current_scope, kernel_blocks,
-        gpu_kernel_counter);
     {
         ASRUtils::ExprStmtDuplicator dup(al);
         dup.allow_procedure_calls = true;
@@ -131,8 +111,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         if (loop_copy == nullptr ||
                 !parallel_loop_nest_of(loop_copy,
                     parallel_collapse_count(region), work)) {
-            // Nothing here can be rewritten safely.
-            decline(region);
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::LoopNestNotCopyable));
             return;
         }
     }
@@ -174,20 +154,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // component -- `x%c_(k)` -- is copied to a temporary of this
     // scope before the launch, and the loop body reads the temporary.
     // This runs ahead of the checks below on purpose: they must judge
-    // the shape the kernel would really be built from. The guard puts
-    // the loop back untouched if any of them declines.
+    // the shape the kernel would really be built from.
     Vec<ASR::stmt_t*> gather_stmts;
     gather_stmts.reserve(al, 1);
     Vec<ASR::stmt_t*> scatter_stmts;
     scatter_stmts.reserve(al, 1);
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> gather_undo;
-    std::vector<std::string> gather_temp_names;
-    GpuGatherGuard gather_guard(current_scope, gather_undo,
-        gather_temp_names);
     // The gather is a copy the host makes before it launches, so this
     // holds for every dialect.
     if (!hoist_struct_element_gathers(work, gather_stmts,
-            scatter_stmts, gather_undo, gather_temp_names)) {
+            scatter_stmts)) {
         // The element could not be hoisted -- a subscript that moves
         // with the loop, or a write to the object that the copy back
         // after the launch could not reproduce exactly. Passing
@@ -199,14 +174,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return;
     }
 
-    // Decide whether this loop can be offloaded at all *before* any of
-    // the inline_* helpers below rewrite the loop body. Those helpers
-    // are destructive: they lower array-section and intrinsic-array
-    // assignments into explicit element loops, a half-lowered shape
-    // that only the kernel extractor understands. If we declined the
-    // offload after rewriting, the loop would stay on the host in a
-    // form the later array_op pass no longer normalizes, and codegen
-    // would fail. So: no mutation until the decision is made.
+    // What can be asked of the loop as it was written is asked before the
+    // inline_* helpers below rewrite the body, so that an error names what
+    // the source wrote rather than the shape a rewrite left.
     if (!offloadable_before_rewrites(work, enclosing_block_scopes, loc)) {
         return;
     }
@@ -214,16 +184,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Splice the planned device functions into the loop body. This
     // must come first among the rewrites below: the intrinsic and
     // array-section inliners then see the spliced-in statements too.
-    // The splice is recorded so that it can be undone: the workspace
-    // pre-flight right below needs the spliced shape, but must still
-    // be able to leave the loop untouched when it declines.
-    GpuLoopBodySnapshot splice_snapshot;
-    std::vector<ScopeArrayDims> scope_dims_undo;
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>>
-        member_extent_undo;
-    GpuSpliceRestoreGuard splice_guard(splice_snapshot, scope_dims_undo);
     {
-        splice_snapshot.record(work, current_scope);
         if (!inline_device_function_calls(work.body, work.n_body)) {
             functions_to_inline.clear();
             report_not_offloaded(loc,
@@ -233,10 +194,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         functions_to_inline.clear();
         // Run-time sized alias temporaries become BLOCK locals here,
         // ahead of the workspace pre-flight below, so that the
-        // pre-flight sizes them too and can still decline the loop.
+        // pre-flight sizes them too.
         materialize_runtime_alias_blocks(work);
-        size_scope_array_temporaries(work.body, work.n_body,
-            scope_dims_undo);
+        size_scope_array_temporaries(work.body, work.n_body);
     }
 
     // Splicing a callee is what can leave a section of a section in the
@@ -2600,7 +2560,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         for (size_t i = 0; i < body_copy.n; i++) {
             mev.visit_stmt(*body_copy.p[i]);
         }
-        member_extent_undo = mev.replacer.undo;
         for (auto &pair : member_extent_args) {
             kernel_args.push_back(al,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, pair.first)));
@@ -2657,9 +2616,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
 
-    draft_guard.commit();
-    splice_guard.commit();
-
     GpuLaunchPlan plan;
     plan.kernel_func = kernel_func;
     plan.kernel_name = kernel_name;
@@ -2673,27 +2629,28 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
-    plan.gather_guard = &gather_guard;
     build_kernel_launch(region, work, loc, plan);
 }
 
-// A loop the offload pass turned down is still a parallel loop, so it goes
-// back to whoever else can run it rather than to a single thread by default.
-class DeclinedLoopVisitor : public ASR::BaseWalkVisitor<DeclinedLoopVisitor>
-{
+// Every loop assigned to the device is either offloaded or an error, so a
+// loop still assigned to it once the pass is done is one the pass missed. It
+// is reported rather than left to the passes below, which would run it on
+// the CPU.
+class UnloweredDeviceLoopReporter :
+        public ASR::BaseWalkVisitor<UnloweredDeviceLoopReporter> {
 public:
     const PassOptions &pass_options;
 
-    DeclinedLoopVisitor(const PassOptions &pass_options_) :
-        pass_options(pass_options_) {
-    }
+    explicit UnloweredDeviceLoopReporter(const PassOptions &pass_options_) :
+        pass_options(pass_options_) {}
 
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
-        if (xx.m_exec_target == ASR::exec_targetType::ExecDevice) {
-            xx.m_exec_target = host_exec_target(pass_options);
+        if (x.m_exec_target == ASR::exec_targetType::ExecDevice) {
+            report_gpu_decline(pass_options, x.base.base.loc,
+                GpuDecline(GpuDeclineReason::LoopNotLowered));
+            return;
         }
-        ASR::BaseWalkVisitor<DeclinedLoopVisitor>::visit_OMPRegion(x);
+        ASR::BaseWalkVisitor<UnloweredDeviceLoopReporter>::visit_OMPRegion(x);
     }
 };
 
@@ -2737,13 +2694,17 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
         v.asr_changed = false;
         v.mark_regions_device_code_runs();
         v.visit_TranslationUnit(unit);
+        // A loop this pass cannot lower is an error, and the compilation
+        // stops after the pass. What was drafted for that loop is not
+        // taken back, so another round could walk into it.
+        if (v.declined) return;
     }
     // The last round built no kernel, so every region a kernel holds was
     // marked serial at the start of it.
     KernelSerialRegionFlattener kernels(al);
     kernels.flatten(unit);
-    DeclinedLoopVisitor d(pass_options);
-    d.visit_TranslationUnit(unit);
+    UnloweredDeviceLoopReporter unlowered(pass_options);
+    unlowered.visit_TranslationUnit(unit);
     // Kernel extraction moves Block symbols out of their enclosing
     // function, which can leave stale entries in that function's
     // dependency list. Recompute all dependencies to fix this.

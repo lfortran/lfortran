@@ -237,10 +237,6 @@ public:
     // Kernel parameter and the host expression that supplies its value,
     // in the order the parameters were created.
     std::vector<std::pair<ASR::symbol_t*, ASR::expr_t*>> &added;
-    // Every slot overwritten, so the loop can be put back as it was. The
-    // rewrite reaches the types of a BLOCK's locals, and a BLOCK is shared
-    // with the host rather than copied for the kernel.
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> undo;
     std::map<std::string, ASR::symbol_t*> by_key;
 
     GpuStructArrayMemberExtent(Allocator &al_, SymbolTable *orig_scope_,
@@ -349,7 +345,6 @@ public:
             added.push_back({sym, host_size});
             by_key[key] = sym;
         }
-        undo.push_back({current_expr, *current_expr});
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         return true;
     }
@@ -558,26 +553,21 @@ struct GpuStructElementGather {
     bool scatter = false;
 };
 
-// Replaces each collected designator with a reference to its temporary,
-// recording every slot it overwrites so the substitution can be undone
-// when the loop turns out not to be offloadable after all.
+// Replaces each collected designator with a reference to its temporary.
 class GpuStructElementGatherReplacer :
         public ASR::BaseExprReplacer<GpuStructElementGatherReplacer> {
 public:
     Allocator &al;
     const std::vector<GpuStructElementGather> &gathers;
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo;
 
     GpuStructElementGatherReplacer(Allocator &al_,
-            const std::vector<GpuStructElementGather> &gathers_,
-            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo_)
-        : al(al_), gathers(gathers_), undo(undo_) {}
+            const std::vector<GpuStructElementGather> &gathers_)
+        : al(al_), gathers(gathers_) {}
 
     void replace_ArrayItem(ASR::ArrayItem_t *x) {
         ASR::expr_t *e = ASRUtils::EXPR((ASR::asr_t*)x);
         for (const GpuStructElementGather &g : gathers) {
             if (!gpu_same_designator(g.chain, e)) continue;
-            undo.push_back({current_expr, *current_expr});
             *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                 x->base.base.loc, g.temp));
             return;
@@ -594,9 +584,8 @@ public:
     GpuStructElementGatherReplacer replacer;
 
     GpuStructElementGatherVisitor(Allocator &al,
-            const std::vector<GpuStructElementGather> &gathers,
-            std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> &undo)
-        : replacer(al, gathers, undo) {}
+            const std::vector<GpuStructElementGather> &gathers)
+        : replacer(al, gathers) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;

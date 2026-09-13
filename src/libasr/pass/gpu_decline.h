@@ -127,6 +127,11 @@ enum class GpuDeclineReason {
     None,
 
     // --- the shape of the loop itself ---
+    LoopNestShape,
+    LoopNestNotCopyable,
+    // A loop still assigned to the device once the offload pass is done,
+    // which the pass never reached.
+    LoopNotLowered,
     ReductionClause,
     LoopWithoutIndex,
     IncompleteLoopHead,
