@@ -186,10 +186,4 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     return v.src.str();
 }
 
-std::string asr_to_cuda_kernel_error(const ASR::Function_t &kernel) {
-    // Neither the registration shim nor the CPU emulation shims can fail, so
-    // the kernel is asked about without them.
-    return gpu_kernel_source_error(CudaDialect(false, false), kernel);
-}
-
 } // namespace LCompilers

@@ -1,6 +1,7 @@
 program gpu_metal_341
-! A parallel loop whose kernel the device code generator cannot write runs on
-! the CPU when a CPU fallback is allowed, instead of failing to compile.
+! `associate(it => s)` over an array of derived type binds `it` to a cast of
+! `s`; the kernel has to address the allocatable component `it(1)%l` through
+! `s` itself to find the buffers its layout describes.
 implicit none
 type :: t
     real, allocatable :: l(:,:)

@@ -1,8 +1,6 @@
-! A kernel the device code generator cannot write is declined like any
-! other: `it(1)%fv` inlines a type-bound function whose component reference
-! `self%l` still names the host's copy of the derived type, which the kernel
-! layout does not describe. With --gpu-allow-cpu-fallback the loop runs on
-! the CPU; tests.toml checks the strict compilation reports it.
+! `it(1)%fv` splices a type-bound function into the kernel. Its component
+! reference `self%l` has to be rebound to the kernel's copy of the derived
+! type, the one the kernel layout describes, together with its base.
 module gpu_metal_343_m
   implicit none
   type :: t

@@ -82,16 +82,6 @@ public:
         GpuDecline decline;
         bool accepted = gpu_create_kernel_layout(al, kernel,
             launch.m_args, launch.n_args, decline);
-        if (accepted) {
-            GpuDeviceCapabilities caps = gpu_device_capabilities(options);
-            LCOMPILERS_ASSERT(caps.kernel_source_error != nullptr);
-            std::string error = caps.kernel_source_error(kernel);
-            if (!error.empty()) {
-                decline = GpuDecline(GpuDeclineReason::KernelSourceEmission,
-                    error);
-                accepted = false;
-            }
-        }
         ASR::stmt_t **body;
         size_t n_body;
         if (accepted) {

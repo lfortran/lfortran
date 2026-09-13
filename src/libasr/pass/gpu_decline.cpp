@@ -1,7 +1,5 @@
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
-#include <libasr/codegen/asr_to_cuda.h>
-#include <libasr/codegen/asr_to_metal.h>
 #include <libasr/pass/gpu_decline.h>
 #include <iostream>
 
@@ -62,7 +60,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // `printf` nor a trap.
             caps.device_printf = false;
             caps.device_abort = false;
-            caps.kernel_source_error = asr_to_metal_kernel_error;
             break;
         case GpuDevice::Cuda:
             // CUDA C++ has `double` and `long long`, so it narrows nothing
@@ -75,7 +72,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_function_runtime_sized_locals = false;
             // A CUDA kernel has a `printf` of its own and a trap it can
             // raise, so it keeps both of those defaults.
-            caps.kernel_source_error = asr_to_cuda_kernel_error;
             break;
         case GpuDevice::None:
             break;
@@ -167,7 +163,6 @@ GpuDeclineClass gpu_decline_class(const GpuDecline &decline,
         case GpuDeclineReason::FunctionResultAllocation:
         case GpuDeclineReason::NestedArraySection:
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
-        case GpuDeclineReason::KernelSourceEmission:
         case GpuDeclineReason::StructDeclarationUnknown:
         case GpuDeclineReason::StructNonDataMember:
         case GpuDeclineReason::StructPointerMember:
@@ -256,8 +251,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
-        case GpuDeclineReason::KernelSourceEmission:
-            return decline.name;
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +

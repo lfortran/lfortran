@@ -2573,11 +2573,12 @@ public:
     bool needs_erf_helper = false;
     bool needs_erfc_helper = false;
 
-    void scan_for_math_helpers(
-            const std::vector<const ASR::Function_t*> &kernels) {
+    void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
         GpuMathHelperScanner scanner;
-        for (const ASR::Function_t *kernel : kernels) {
-            scanner.visit_symbol(kernel->base);
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (ASRUtils::is_device_kernel(item.second)) {
+                scanner.visit_symbol(*item.second);
+            }
         }
         needs_erf_helper = scanner.needs_erf;
         needs_erfc_helper = scanner.needs_erfc;
@@ -2612,36 +2613,24 @@ public:
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
-        std::vector<const ASR::Function_t*> kernels;
-        for (auto &item : tu.m_symtab->get_scope()) {
-            if (ASRUtils::is_device_kernel(item.second)) {
-                kernels.push_back(
-                    ASR::down_cast<ASR::Function_t>(item.second));
-            }
-        }
-        emit_kernels(kernels);
-    }
-
-    // The device source for `kernels`, as one file. The whole translation
-    // unit is emitted this way, and so is a single kernel on its own, which
-    // is how the offload decision learns whether a kernel can be emitted
-    // while the loop it came from still has a CPU alternative.
-    void emit_kernels(const std::vector<const ASR::Function_t*> &kernels) {
         dialect.emit_prologue(src);
 
-        scan_for_math_helpers(kernels);
+        scan_for_math_helpers(tu);
 
         // Collect and emit struct definitions from all kernels once,
         // before any kernel code, to avoid redefinition errors when
         // multiple kernels reference the same struct type.
         std::set<std::string> emitted_structs;
         std::vector<ASR::Struct_t*> ordered_structs;
-        for (const ASR::Function_t *kf : kernels) {
-            for (auto &kitem : kf->m_symtab->get_scope()) {
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(item.second)) continue;
+            ASR::Function_t &kf =
+                *ASR::down_cast<ASR::Function_t>(item.second);
+            for (auto &kitem : kf.m_symtab->get_scope()) {
                 if (ASR::is_a<ASR::Struct_t>(*kitem.second)) {
                     collect_structs_ordered(
                         ASR::down_cast<ASR::Struct_t>(kitem.second),
-                        kf->m_symtab, emitted_structs, ordered_structs);
+                        kf.m_symtab, emitted_structs, ordered_structs);
                 }
             }
         }
@@ -2653,9 +2642,13 @@ public:
 
         emitted_funcs.clear();
         std::vector<std::string> kernel_names;
-        for (const ASR::Function_t *kf : kernels) {
-            kernel_names.push_back(std::string(kf->m_name));
-            visit_device_kernel(*kf);
+        for (auto &item : tu.m_symtab->get_scope()) {
+            if (ASRUtils::is_device_kernel(item.second)) {
+                ASR::Function_t *kf =
+                    ASR::down_cast<ASR::Function_t>(item.second);
+                kernel_names.push_back(std::string(kf->m_name));
+                visit_device_kernel(*kf);
+            }
         }
 
         dialect.emit_translation_unit_epilogue(src, kernel_names);
@@ -5291,31 +5284,5 @@ public:
 } // namespace LCompilers
 
 #include <libasr/codegen/gpu_kernel_signature.h>
-
-namespace LCompilers {
-
-// Emits `kernel` alone in `dialect` and discards the source, returning what
-// the code generator raised, or an empty string when it raised nothing. The
-// message is a clause the offload diagnostic quotes, so the prefix that
-// names the offload when the error is reported on its own is dropped.
-template <typename D>
-std::string gpu_kernel_source_error(const D &dialect,
-        const ASR::Function_t &kernel) {
-    CompilerOptions co;
-    ASRToGpuCVisitor<D> v(co, dialect);
-    try {
-        v.emit_kernels({&kernel});
-    } catch (const CodeGenError &e) {
-        const std::string prefix = "gpu offload: ";
-        const std::string &message = e.d.message;
-        if (startswith(message, prefix)) return message.substr(prefix.size());
-        return message;
-    } catch (const Abort &) {
-        return "the gpu kernel code generator stopped";
-    }
-    return "";
-}
-
-} // namespace LCompilers
 
 #endif // LFORTRAN_ASR_TO_GPU_C_H
