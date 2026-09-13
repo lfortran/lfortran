@@ -1,4 +1,4 @@
-warning: parallel loop not offloaded to the GPU: the gpu backend does not support an array whose elements are not numbers
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support an array whose elements are not numbers
   --> tests/../integration_tests/gpu_metal_301.f90:15:1 - 24:6
    |
 15 |    do concurrent (i = 1:4)

@@ -234,7 +234,7 @@ std::string gpu_decline_message(const GpuDecline &decline);
 const char* gpu_decline_class_name(GpuDeclineClass cls);
 
 void report_gpu_decline(const PassOptions &options, const Location &where,
-    const GpuDecline &decline, bool has_fallback = true);
+    const GpuDecline &decline);
 
 } // namespace LCompilers
 

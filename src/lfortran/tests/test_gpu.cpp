@@ -61,12 +61,7 @@ TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     CHECK(limited.diagnostics[0].message.find("--gpu-allow-cpu-fallback")
         == std::string::npos);
 
-    diag::Diagnostics no_alternative;
-    options.diagnostics = &no_alternative;
-    report_gpu_decline(options, loc, wide_real, false);
-    CHECK(no_alternative.has_error());
-
-    // Showing the kernels reports every decline without failing.
+    // So is showing the kernels: there is no host loop left to show instead.
     diag::Diagnostics shown;
     options.diagnostics = &shown;
     options.gpu_allow_cpu_fallback = false;
@@ -74,7 +69,7 @@ TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     options.gpu_offload_cuda = true;
     options.gpu_kernel_source_only = true;
     report_gpu_decline(options, loc, wide_logical);
-    CHECK_FALSE(shown.has_error());
+    CHECK(shown.has_error());
     CHECK(shown.diagnostics.size() == 1);
 }
 

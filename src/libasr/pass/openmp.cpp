@@ -3,7 +3,6 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
-#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/asr_verify.h>
 #include <libasr/asr_builder.h>
 #include <libasr/pass/pass_utils.h>
@@ -3404,7 +3403,6 @@ class RepointCallArguments: public PassUtils::PassVisitor<RepointCallArguments> 
 
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
-    if (has_pending_gpu_offload(unit)) return;
     if (pass_options.openmp) {
         ParallelRegionVisitor v(al, pass_options);
         v.visit_TranslationUnit(unit);

@@ -82,9 +82,9 @@ struct PassOptions {
     // warning instead of being a compile-time error. It never affects a
     // loop the offloading pipeline fails on.
     bool gpu_allow_cpu_fallback = false;
-    // The device kernels are only being shown, not built. A loop that is not
-    // offloaded, for whatever reason, is then reported as a warning, so that
-    // the kernels of the other loops are still produced.
+    // The device kernels are only being shown, not built. A loop that uses a
+    // construct on the unsupported list then runs on the CPU with a warning,
+    // so that the kernels of the other loops are still produced.
     bool gpu_kernel_source_only = false;
     // Print one line per loop that is not offloaded, naming why -- a
     // construct on the unsupported list, or the class of a decline of the

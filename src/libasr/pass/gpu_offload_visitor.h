@@ -42,8 +42,6 @@ public:
         : StatementWalkVisitor(al), pass_options(pass_options_),
           device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
 
-    void visit_GpuOffload(const ASR::GpuOffload_t &) {}
-
     void load_submodule_deps(ASR::TranslationUnit_t &sub_tu);
 
     void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu);

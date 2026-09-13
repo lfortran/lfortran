@@ -37,11 +37,11 @@ The kernel is an ordinary [Function](../symbol_nodes/Function.md); what makes
 it launchable is that its signature has `exec_space = Kernel`, and a kernel
 has no result. See [exec_space](../enum_nodes/exec_space.md).
 
-During extraction a launch belongs to a [GpuOffload](GpuOffload.md) candidate
-alongside the original CPU alternative. `gpu_kernel_finalize` makes the
-definitive decision after shared lowering and records the accepted kernel's
-`Function.gpu` layout. `device_launch_expand` and both device emitters consume
-that layout. Workspace sizes are evaluated once on the host and passed as
+The `gpu_offload` pass replaces a parallel loop assigned to the device with its
+launch, together with the copies the host makes before and after it; nothing
+of the original loop is kept. `gpu_kernel_finalize` records the kernel's
+`Function.gpu` layout after shared lowering. `device_launch_expand` and both
+device emitters consume that layout. Workspace sizes are evaluated once on the host and passed as
 explicit scalar arguments, so host allocation and device indexing use the
 same values.
 
@@ -55,13 +55,9 @@ every extent, not just the total element count.
 
 A loop reaches GPU offload only after the unsupported-construct check in the
 `parallel_dispatch` pass has assigned it to the device (see
-[GPU offloading](../../../gpu_offloading.md)), so every declined offload is a
-compile-time error, whatever its reason and whether or not
-`--gpu-allow-cpu-fallback` is given. `--gpu-decline-stats` prints the category
-of each decline, `not-implemented` (a lowering LFortran does not have yet) or
-`backend-cannot` (a limit of the device the check should have caught), without
-changing this policy. Only `--show-gpu-kernel-source` reports a decline as a
-warning, so that the kernels of the other loops are still shown.
+[GPU offloading](../../../gpu_offloading.md)), so a loop the offload cannot
+lower is a compile-time error, whatever its reason, whether or not
+`--gpu-allow-cpu-fallback` is given, and also with `--show-gpu-kernel-source`.
 
 ## Examples
 

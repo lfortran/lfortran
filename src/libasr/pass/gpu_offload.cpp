@@ -2657,8 +2657,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
 
-    // This commits the draft, not the offload decision. GpuOffload retains
-    // the host alternative until the lowered kernel has a verified layout.
     draft_guard.commit();
     splice_guard.commit();
 

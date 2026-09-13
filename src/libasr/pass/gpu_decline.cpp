@@ -6,7 +6,7 @@
 namespace LCompilers {
 
 void report_gpu_decline(const PassOptions &options, const Location &where,
-        const GpuDecline &decline, bool has_fallback) {
+        const GpuDecline &decline) {
     LCOMPILERS_ASSERT(decline.declined());
     if (!options.diagnostics) return;
     GpuDeclineClass category = gpu_decline_class(decline,
@@ -18,18 +18,10 @@ void report_gpu_decline(const PassOptions &options, const Location &where,
     }
     // The loop was committed to the device by the unsupported-construct
     // check, so a decline is a lowering this compiler does not have yet:
-    // an error, which no flag turns into CPU execution. Only showing the
-    // kernels reports it as a warning, so that the kernels of the other
-    // loops are still shown.
-    if (options.gpu_kernel_source_only && has_fallback) {
-        options.diagnostics->message_label(
-            "parallel loop not offloaded to the GPU: " + why, {where}, why,
-            diag::Level::Warning, diag::Stage::ASRPass);
-    } else {
-        options.diagnostics->message_label(
-            "parallel loop cannot be offloaded to the GPU yet: " + why,
-            {where}, why, diag::Level::Error, diag::Stage::ASRPass);
-    }
+    // an error, which no flag turns into CPU execution.
+    options.diagnostics->message_label(
+        "parallel loop cannot be offloaded to the GPU yet: " + why,
+        {where}, why, diag::Level::Error, diag::Stage::ASRPass);
 }
 
 GpuDevice gpu_device_selected(const PassOptions &pass_options) {
