@@ -9068,6 +9068,14 @@ public:
 
                             // If passed has arg info but param doesn't, update param interface
                             if (passed_ft && passed_ft->n_arg_types > 0 && param_ft->n_arg_types == 0) {
+                                // A bare implicit interface only has a guessed
+                                // return type from implicit typing. A passed
+                                // subroutine shows the dummy is a subroutine too.
+                                if (ASRUtils::is_bare_implicit_interface(*param_ft)
+                                        && passed_ft->m_return_var_type == nullptr) {
+                                    param_ft->m_return_var_type = nullptr;
+                                    param_func->m_return_var = nullptr;
+                                }
                                 // Update the FunctionType's arg_types
                                 param_ft->m_arg_types = passed_ft->m_arg_types;
                                 param_ft->n_arg_types = passed_ft->n_arg_types;
