@@ -2699,6 +2699,37 @@ public:
     }
 };
 
+// A parallel loop inside a kernel is run serially by the thread that runs
+// the kernel, so once no more kernels are being built it is written as the
+// loop it is. Every analysis of device code below -- the memory space of a
+// local array, the workspaces the host sizes, the kernel source itself --
+// walks loops, and a loop still wrapped in a region would hide what it
+// allocates from all of them.
+class KernelSerialRegionFlattener :
+        public ASR::StatementWalkVisitor<KernelSerialRegionFlattener> {
+public:
+    explicit KernelSerialRegionFlattener(Allocator &al) :
+        StatementWalkVisitor(al) {}
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        if (xx.m_exec_target != ASR::exec_targetType::ExecSerial) return;
+        remove_original_stmt = true;
+        pass_result.reserve(al, xx.n_body);
+        for (size_t i = 0; i < xx.n_body; i++) {
+            pass_result.push_back(al, xx.m_body[i]);
+        }
+    }
+
+    void flatten(ASR::TranslationUnit_t &unit) {
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(item.second)) continue;
+            visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+        }
+    }
+};
+
 void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
     if (!gpu_device_capabilities(pass_options).device_selected()) return;
@@ -2709,6 +2740,10 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
         v.mark_regions_device_code_runs();
         v.visit_TranslationUnit(unit);
     }
+    // The last round built no kernel, so every region a kernel holds was
+    // marked serial at the start of it.
+    KernelSerialRegionFlattener kernels(al);
+    kernels.flatten(unit);
     DeclinedLoopVisitor d(pass_options);
     d.visit_TranslationUnit(unit);
     // Kernel extraction moves Block symbols out of their enclosing
