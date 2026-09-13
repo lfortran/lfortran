@@ -130,6 +130,7 @@
                                     ()
                                     15 toml_structure
                                     []
+                                    ()
                                 ),
                             toml_structure:
                                 (Struct
@@ -167,6 +168,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_structure_base
@@ -617,6 +619,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    ()
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -935,6 +938,7 @@
                                     ()
                                     20 toml_value
                                     []
+                                    ()
                                 ),
                             toml_value:
                                 (Struct
@@ -1000,6 +1004,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_keyval
@@ -1146,6 +1151,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_value

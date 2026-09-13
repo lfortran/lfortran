@@ -177,6 +177,7 @@
                                     ()
                                     ()
                                     []
+                                    2 string_type
                                 ),
                             trim_string:
                                 (Function

@@ -366,6 +366,9 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+
+        // Deduplicate SEQUENCE and BIND(C) types across all scopes
+        deduplicate_sequence_and_bindc_types(unit);
     }
 
     template <typename T>

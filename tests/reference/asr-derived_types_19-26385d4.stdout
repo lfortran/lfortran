@@ -257,6 +257,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    ()
                                 ),
                             default_class:
                                 (Function
@@ -390,6 +391,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_module_19

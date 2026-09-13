@@ -94,6 +94,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             sds:
                                 (Struct
@@ -178,6 +179,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     mod_struct_allocate

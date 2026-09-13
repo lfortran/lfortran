@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.binding_override.nopass_matches]: Type bound procedure 'meth' overriding 'base_meth' must agree on the NOPASS attribute
-   --> tests/asr/verify/binding_override_nopass.asr:149:27
-    |
-149 |                   "meth" (StructMethodDeclaration
-    |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+  --> tests/asr/verify/binding_override_nopass.asr:9:20 - 44:13
+   |
+ 9 |                "base" (Struct
+   |                       ^^^^^^^...
+...
+   |
+44 |                )
+   | ...^^^^^^^^^^^^^ invalid ASR text here

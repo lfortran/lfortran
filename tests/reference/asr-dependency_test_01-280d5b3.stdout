@@ -304,6 +304,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -452,6 +453,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (Struct
@@ -714,6 +716,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             find_dependency:
                                 (Function

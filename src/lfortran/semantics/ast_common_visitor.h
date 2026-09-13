@@ -4747,7 +4747,7 @@ public:
                 al, loc, struct_scope, s2c(al,common_block_name),
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false, true,
-                nullptr, 0, nullptr, nullptr, nullptr, 0));
+                nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr));
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -9653,7 +9653,7 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0, nullptr);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -10183,7 +10183,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -10488,7 +10488,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -22317,6 +22317,42 @@ public:
             return nullptr;
 
         return ASRUtils::get_struct_sym_from_struct_expr(x);
+    }
+
+    void deduplicate_sequence_and_bindc_types(ASR::TranslationUnit_t* tu) {
+        std::vector<ASR::Struct_t*> all_structs;
+        std::function<void(SymbolTable*)> collect_structs = [&](SymbolTable* symtab) {
+            for (auto &item : symtab->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                    ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(item.second);
+                    if (s->m_is_sequence || s->m_abi == ASR::abiType::BindC) {
+                        all_structs.push_back(s);
+                    }
+                } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    collect_structs(ASR::down_cast<ASR::Module_t>(item.second)->m_symtab);
+                } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                    collect_structs(ASR::down_cast<ASR::Program_t>(item.second)->m_symtab);
+                } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                    collect_structs(ASR::down_cast<ASR::Function_t>(item.second)->m_symtab);
+                } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                    collect_structs(ASR::down_cast<ASR::Block_t>(item.second)->m_symtab);
+                }
+            }
+        };
+        collect_structs(tu->m_symtab);
+
+        for (ASR::Struct_t* s : all_structs) {
+            if (s->m_original_declaration == nullptr) {
+                s->m_original_declaration = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)s);
+                for (ASR::Struct_t* other : all_structs) {
+                    if (other != s && other->m_original_declaration == nullptr) {
+                        if (ASRUtils::is_derived_type_similar(s, other)) {
+                            other->m_original_declaration = s->m_original_declaration;
+                        }
+                    }
+                }
+            }
+        }
     }
 };
 

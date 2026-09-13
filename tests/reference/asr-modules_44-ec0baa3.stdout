@@ -288,6 +288,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             fpm_new_settings:
                                 (Struct
@@ -342,6 +343,7 @@
                                     ()
                                     2 fpm_cmd_settings
                                     []
+                                    ()
                                 ),
                             warnwrite:
                                 (ExternalSymbol

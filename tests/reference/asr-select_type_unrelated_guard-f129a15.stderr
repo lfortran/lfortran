@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.select_type.guard_extends_selector]: The type guard 'other' does not extend the declared type of the selector
-   --> tests/asr/verify/select_type_unrelated_guard.asr:125:12
-    |
-125 |           (SelectType
-    |            ^^^^^^^^^^ failed here
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+  --> tests/asr/verify/select_type_unrelated_guard.asr:9:20 - 33:13
+   |
+ 9 |                "base" (Struct
+   |                       ^^^^^^^...
+...
+   |
+33 |                )
+   | ...^^^^^^^^^^^^^ invalid ASR text here

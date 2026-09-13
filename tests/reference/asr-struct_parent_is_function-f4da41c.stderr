@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.struct.parent_is_struct]: Struct::m_parent of 'base' must be a derived type, not Function
-  --> tests/asr/verify/struct_parent_is_function.asr:97:21
-   |
-97 |             "base" (Struct
-   |                     ^^^^^^ failed here
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+   --> tests/asr/verify/struct_parent_is_function.asr:97:20 - 121:13
+    |
+ 97 |                "base" (Struct
+    |                       ^^^^^^^...
+...
+    |
+121 |                )
+    | ...^^^^^^^^^^^^^ invalid ASR text here

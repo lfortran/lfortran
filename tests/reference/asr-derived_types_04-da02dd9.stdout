@@ -1554,6 +1554,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_datetime:
                                 (Struct
@@ -1696,6 +1697,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_time:
                                 (Struct
@@ -1876,6 +1878,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             ~toml_time:
                                 (GenericProcedure

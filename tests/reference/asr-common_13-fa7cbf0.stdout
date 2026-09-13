@@ -224,6 +224,7 @@
                                     ()
                                     ()
                                     []
+                                    2 arrblock
                                 ),
                             struct_instance_arrblock:
                                 (Variable
@@ -379,6 +380,7 @@
                                     ()
                                     ()
                                     []
+                                    4 myblock
                                 ),
                             struct_instance_myblock:
                                 (Variable

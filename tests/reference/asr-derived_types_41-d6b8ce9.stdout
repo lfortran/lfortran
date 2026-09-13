@@ -318,6 +318,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             mytype_instance:
                                 (Variable

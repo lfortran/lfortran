@@ -190,6 +190,7 @@
                                     ()
                                     4 toml_tokenizer
                                     []
+                                    ()
                                 ),
                             toml_table:
                                 (ExternalSymbol
@@ -530,6 +531,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -625,6 +627,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_tokenizer_:
                                 (Struct
@@ -652,6 +655,7 @@
                                     ()
                                     8 toml_tokenizer
                                     []
+                                    ()
                                 )
                         })
                     tomlf_de_tokenizer_25

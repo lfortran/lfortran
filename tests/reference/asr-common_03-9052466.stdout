@@ -236,6 +236,7 @@
                                     ()
                                     ()
                                     []
+                                    6 b
                                 ),
                             struct_instance_b:
                                 (Variable
@@ -353,6 +354,7 @@
                                     ()
                                     ()
                                     []
+                                    8 blank#block
                                 ),
                             struct_instance_blank#block:
                                 (Variable
@@ -520,6 +522,7 @@
                                     ()
                                     ()
                                     []
+                                    10 c
                                 ),
                             struct_instance_c:
                                 (Variable
@@ -672,6 +675,7 @@
                                     ()
                                     ()
                                     []
+                                    3 sample
                                 ),
                             struct_instance_sample:
                                 (Variable

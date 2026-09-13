@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.variable.abstract_type_not_instantiated]: Variable 'x' has the abstract type 'base', which only a polymorphic entity may have
-  --> tests/asr/verify/abstract_type_variable.asr:56:18
+ASR syntax error: 'Struct' expects 16 positional fields or exactly 16 named fields
+  --> tests/asr/verify/abstract_type_variable.asr:9:20 - 33:13
    |
-56 |             "x" (Variable
-   |                  ^^^^^^^^ failed here
+ 9 |                "base" (Struct
+   |                       ^^^^^^^...
+...
+   |
+33 |                )
+   | ...^^^^^^^^^^^^^ invalid ASR text here
