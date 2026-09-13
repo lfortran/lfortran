@@ -1843,10 +1843,6 @@ class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
-    // Dummies of inferred interfaces that were given the signature of the
-    // definition of the procedure passed for them. The passed placeholder
-    // must not take its signature back from such a dummy.
-    std::set<ASR::symbol_t*> implicit_interface_dummies_from_definition;
     // Set by create_implicit_interface_function when a later reference needs a
     // different signature than the first: canonical is the first-inferred
     // procedure, target is the interface describing this reference's view.
@@ -17246,93 +17242,58 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
-    // A bare ImplicitInterface placeholder `v` declared by `external s` in a
-    // scoping unit denotes the global procedure `s`. When this translation
-    // unit defines it, return a new interface `dummy_name` in `iface_scope`
-    // with that definition's signature, to be the dummy of an interface
-    // inferred from a call that passes `v`, so that it matches the procedure
-    // actually passed. `v` itself is left unchanged, so its other references
-    // are still checked as those of an implicit interface. Returns nullptr
-    // when the signature cannot be taken from a definition.
-    ASR::symbol_t* make_implicit_interface_dummy_from_definition(
-            ASR::symbol_t* v, SymbolTable* iface_scope,
-            const std::string& dummy_name, const Location& loc) {
+    // True if the procedure `v` is a dummy argument of the procedure whose
+    // scope declares it.
+    bool is_dummy_procedure(ASR::symbol_t* v) {
+        if (!ASR::is_a<ASR::Function_t>(*v)) return false;
+        SymbolTable* owner_scope = ASR::down_cast<ASR::Function_t>(v)->m_symtab->parent;
+        if (!owner_scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)) {
+            return false;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner);
+        if (!ASR::is_a<ASR::Function_t>(*owner)) return false;
+        ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner);
+        for (size_t i = 0; i < owner_func->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(owner_func->m_args[i])->m_v == v) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A bare ImplicitInterface placeholder `v` declared by `external s`
+    // denotes the global procedure `s`. Returns the definition of `s` in this
+    // translation unit, or nullptr. A dummy procedure is its own entity
+    // whatever its name, so it never denotes a global procedure. Inside a
+    // module nullptr is returned too: the module's ASR is also used by other
+    // translation units, where this definition is absent.
+    ASR::symbol_t* implicit_interface_definition(ASR::symbol_t* v) {
         if (!ASR::is_a<ASR::Function_t>(*v) || !is_implicit_interface_decl(v)) return nullptr;
+        if (ASRUtils::get_sym_module0(v) != nullptr || is_dummy_procedure(v)) return nullptr;
         ASR::Function_t* placeholder = ASR::down_cast<ASR::Function_t>(v);
-        // A dummy procedure is its own entity whatever its name, so it must
-        // never take the signature of a global procedure of the same name.
-        SymbolTable* owner_scope = placeholder->m_symtab->parent;
-        if (owner_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)) {
-            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*owner)) {
-                ASR::Function_t* owner_func = ASR::down_cast<ASR::Function_t>(owner);
-                for (size_t i = 0; i < owner_func->n_args; i++) {
-                    if (ASR::is_a<ASR::Var_t>(*owner_func->m_args[i]) &&
-                            ASR::down_cast<ASR::Var_t>(owner_func->m_args[i])->m_v == v) {
-                        return nullptr;
-                    }
-                }
-            }
-        }
-        ASR::symbol_t* def_sym = current_scope->get_tu_scope()->get_symbol(
+        ASR::symbol_t* def = placeholder->m_symtab->get_tu_scope()->get_symbol(
             placeholder->m_name);
-        if (!def_sym || !ASR::is_a<ASR::Function_t>(*def_sym)) return nullptr;
-        ASR::Function_t* def = ASR::down_cast<ASR::Function_t>(def_sym);
-        ASR::FunctionType_t* def_ft = ASRUtils::get_FunctionType(def);
+        if (!def || !ASR::is_a<ASR::Function_t>(*def)) return nullptr;
+        ASR::FunctionType_t* def_ft = ASRUtils::get_FunctionType(
+            ASR::down_cast<ASR::Function_t>(def));
         if (def_ft->m_deftype != ASR::deftypeType::Implementation) return nullptr;
-        ASR::ttype_t* return_type = nullptr;
-        if (def_ft->m_return_var_type != nullptr) {
-            if (placeholder->m_return_var == nullptr) return nullptr;
-            return_type = ASRUtils::get_FunctionType(placeholder)->m_return_var_type;
+        if (def_ft->m_return_var_type != nullptr && placeholder->m_return_var == nullptr) {
+            return nullptr;
         }
-        Vec<ASR::ttype_t*> arg_types;
-        arg_types.reserve(al, def->n_args);
-        for (size_t i = 0; i < def->n_args; i++) {
-            if (!ASR::is_a<ASR::Var_t>(*def->m_args[i])
-                    || !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(def->m_args[i])->m_v)) {
-                return nullptr;
-            }
-            ASR::Variable_t* def_arg = ASRUtils::EXPR2VAR(def->m_args[i]);
-            ASR::ttype_t* arg_type = def_arg->m_type;
-            if (ASRUtils::is_array(arg_type)) {
-                // Dimensions, including adjustable ones such as `y(n)`, are
-                // dropped here, so they never make the type dependent.
-                arg_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_type,
-                    ASRUtils::extract_physical_type(arg_type), true);
-            }
-            // A type that still refers to other dummies of the definition,
-            // such as `character(len=n)`, cannot be moved to another scope.
-            SetChar deps;
-            deps.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(al, deps, arg_type);
-            if (deps.size() > 0) return nullptr;
-            arg_types.push_back(al, arg_type);
-        }
-        // A derived type has to be reachable from the new interface. Import it
-        // into the interface's own scope, never into the user's scope.
-        SymbolTable* fn_scope = al.make_new<SymbolTable>(iface_scope);
-        Vec<ASR::symbol_t*> arg_type_decls;
-        arg_type_decls.reserve(al, def->n_args);
-        for (size_t i = 0; i < def->n_args; i++) {
-            ASR::symbol_t* type_decl = ASRUtils::import_type_declaration(al,
-                ASRUtils::EXPR2VAR(def->m_args[i])->m_type_declaration, fn_scope);
-            if (!ASRUtils::is_visible_from(type_decl, fn_scope)) return nullptr;
-            arg_type_decls.push_back(al, type_decl);
-        }
-        Vec<ASR::expr_t*> args;
-        ASR::expr_t* return_var = nullptr;
-        make_implicit_interface_args(fn_scope, dummy_name, loc, arg_types.p,
-            arg_types.size(), return_type, arg_type_decls, args, return_var);
-        ASR::symbol_t* dummy = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Function_t_util(al, loc, fn_scope,
-                s2c(al, dummy_name), nullptr, 0, args.p, args.size(),
-                nullptr, 0, return_var, ASR::abiType::BindC,
-                ASR::accessType::Public, ASR::deftypeType::Interface, nullptr,
-                false, false, false, false, false, nullptr, 0,
-                false, false, false));
-        iface_scope->add_symbol(dummy_name, dummy);
-        implicit_interface_dummies_from_definition.insert(dummy);
-        return dummy;
+        return def;
+    }
+
+    // True if the placeholder `passed` stands for a definition in this
+    // translation unit and the dummy `param` it is passed for is a definition
+    // too (see create_implicit_interface_function). The placeholder then
+    // must not take the dummy's signature: its own is its definition's, and
+    // its other references stay those of an implicit interface.
+    bool implicit_interface_passes_definition(ASR::symbol_t* passed, ASR::symbol_t* param) {
+        return ASR::is_a<ASR::Function_t>(*param)
+            && ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(param))->m_deftype
+                == ASR::deftypeType::Implementation
+            && implicit_interface_definition(passed) != nullptr;
     }
 
     // True if `v` is a BindC Interface function that LFortran synthesized for
@@ -17495,9 +17456,9 @@ public:
             if (ASR::is_a<ASR::Var_t>(*var_expr) &&
                     ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
-                ASR::symbol_t* dummy = make_implicit_interface_dummy_from_definition(
-                    v, current_scope, arg_name, x.base.base.loc);
-                if (dummy) v = dummy;
+                // A placeholder with no argument list stands for its
+                // definition, whose signature is the one actually passed.
+                if (ASR::symbol_t* def = implicit_interface_definition(v)) v = def;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
                 // Use Implementation's parameter type if available and implicit_argument_casting enabled
@@ -17702,6 +17663,16 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(ex->m_args[i])));
                 ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(nw->m_args[i])));
+                // A dummy procedure with no known argument list has one type
+                // in its procedure's definition, so it takes the signature of
+                // the procedure dummy it is passed for (in visit_SubroutineCall)
+                // instead of getting a separate view.
+                if (ASR::is_a<ASR::FunctionType_t>(*t1) && ASR::is_a<ASR::Var_t>(*nw->m_args[i])) {
+                    ASR::symbol_t* passed = ASR::down_cast<ASR::Var_t>(nw->m_args[i])->m_v;
+                    if (is_implicit_interface_decl(passed) && is_dummy_procedure(passed)) {
+                        continue;
+                    }
+                }
                 if (!ASRUtils::check_equal_type(t1, t2, ex->m_args[i], nw->m_args[i])) {
                     same = false;
                 }
@@ -21779,15 +21750,40 @@ public:
         return asr_list;
     }
 
-    // Create the dummy arguments and the return variable of an interface
-    // named `iface_name` in `fn_scope`.
-    void make_implicit_interface_args(SymbolTable* fn_scope,
-            const std::string& iface_name, const Location& loc,
+    // Create or update an implicit interface for a procedure variable.
+    // If proc_var->m_type_declaration already points to a Function_t,
+    // updates it in place; otherwise creates a new interface symbol.
+    // If owner_scope is provided, also updates the containing function's
+    // FunctionType arg_types to reflect the resolved procedure type.
+    // Returns the resulting FunctionType.
+    ASR::ttype_t* create_or_update_implicit_interface(
+            ASR::Variable_t* proc_var, const Location& loc,
             ASR::ttype_t** arg_type_arr, size_t n_arg_types,
-            ASR::ttype_t* return_type, Vec<ASR::symbol_t*>& arg_type_decls,
-            Vec<ASR::expr_t*>& args, ASR::expr_t*& return_var) {
+            ASR::ttype_t* return_type, SymbolTable* parent_scope,
+            const std::string& var_name,
+            Vec<ASR::symbol_t*>& arg_type_decls,
+            SymbolTable* owner_scope = nullptr) {
         LCOMPILERS_ASSERT(arg_type_decls.size() == n_arg_types)
+        bool update_existing = proc_var->m_type_declaration != nullptr &&
+            ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                proc_var->m_type_declaration));
+        ASR::Function_t* existing_fn = nullptr;
+        std::string iface_name;
+        SymbolTable* fn_scope = nullptr;
+        if (update_existing) {
+            existing_fn = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(proc_var->m_type_declaration));
+            iface_name = existing_fn->m_name;
+            fn_scope = al.make_new<SymbolTable>(existing_fn->m_symtab->parent);
+        } else {
+            fn_scope = al.make_new<SymbolTable>(parent_scope);
+            iface_name = "~implicit_interface_" + var_name + "_" +
+                fn_scope->get_counter();
+        }
+        Vec<ASR::expr_t*> args;
         args.reserve(al, n_arg_types);
+        Vec<ASR::ttype_t*> arg_types_vec;
+        arg_types_vec.reserve(al, n_arg_types);
         for (size_t i = 0; i < n_arg_types; i++) {
             std::string arg_name = iface_name + "_arg_" + std::to_string(i);
             // Use the type_declaration passed by the caller (nullptr when not
@@ -21813,8 +21809,9 @@ public:
             fn_scope->add_symbol(arg_name, arg_sym);
             args.push_back(al, ASRUtils::EXPR(
                 ASR::make_Var_t(al, loc, arg_sym)));
+            arg_types_vec.push_back(al, arg_type_arr[i]);
         }
-        return_var = nullptr;
+        ASR::expr_t* return_var = nullptr;
         if (return_type) {
             std::string rv_name = iface_name + "_return_var";
             ASR::symbol_t* rv_sym = ASR::down_cast<ASR::symbol_t>(
@@ -21828,77 +21825,28 @@ public:
             fn_scope->add_symbol(rv_name, rv_sym);
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, rv_sym));
         }
-    }
-
-    // Give the interface Function `fn` the signature
-    // (`arg_type_arr`, `return_type`) in place, replacing its argument list
-    // and return variable. Returns its FunctionType.
-    ASR::ttype_t* update_implicit_interface_signature(ASR::Function_t* fn,
-            const Location& loc, ASR::ttype_t** arg_type_arr, size_t n_arg_types,
-            ASR::ttype_t* return_type, Vec<ASR::symbol_t*>& arg_type_decls) {
-        SymbolTable* fn_scope = al.make_new<SymbolTable>(fn->m_symtab->parent);
-        Vec<ASR::expr_t*> args;
-        ASR::expr_t* return_var = nullptr;
-        make_implicit_interface_args(fn_scope, fn->m_name, loc, arg_type_arr,
-            n_arg_types, return_type, arg_type_decls, args, return_var);
-        // Update the existing FunctionType in-place and share the source
-        // arg_types array directly (not a copy). This is critical for
-        // cross-scope type propagation: when contained functions' bodies
-        // are processed after the calling scope's body, in-place updates
-        // to the source array elements propagate to the iface automatically.
-        fn->m_symtab = fn_scope;
-        fn_scope->asr_owner = (ASR::asr_t*)fn;
-        ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(
-            fn->m_function_signature);
-        ft->m_arg_types = arg_type_arr;
-        ft->n_arg_types = n_arg_types;
-        ft->m_return_var_type = return_type;
-        // The interface is now known, so this is no longer a procedure
-        // known only by name.
-        ft->m_deftype = ASR::deftypeType::Interface;
-        fn->m_args = args.p;
-        fn->n_args = args.size();
-        fn->m_return_var = return_var;
-        implicit_interfaces_to_sync.push_back(fn);
-        return fn->m_function_signature;
-    }
-
-    // Create or update an implicit interface for a procedure variable.
-    // If proc_var->m_type_declaration already points to a Function_t,
-    // updates it in place; otherwise creates a new interface symbol.
-    // If owner_scope is provided, also updates the containing function's
-    // FunctionType arg_types to reflect the resolved procedure type.
-    // Returns the resulting FunctionType.
-    ASR::ttype_t* create_or_update_implicit_interface(
-            ASR::Variable_t* proc_var, const Location& loc,
-            ASR::ttype_t** arg_type_arr, size_t n_arg_types,
-            ASR::ttype_t* return_type, SymbolTable* parent_scope,
-            const std::string& var_name,
-            Vec<ASR::symbol_t*>& arg_type_decls,
-            SymbolTable* owner_scope = nullptr) {
-        LCOMPILERS_ASSERT(arg_type_decls.size() == n_arg_types)
-        bool update_existing = proc_var->m_type_declaration != nullptr &&
-            ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
-                proc_var->m_type_declaration));
         ASR::ttype_t* iface_type;
         if (update_existing) {
-            iface_type = update_implicit_interface_signature(
-                ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-                    proc_var->m_type_declaration)),
-                loc, arg_type_arr, n_arg_types, return_type, arg_type_decls);
+            // Update the existing FunctionType in-place and share the source
+            // arg_types array directly (not a copy). This is critical for
+            // cross-scope type propagation: when contained functions' bodies
+            // are processed after the calling scope's body, in-place updates
+            // to the source array elements propagate to the iface automatically.
+            existing_fn->m_symtab = fn_scope;
+            fn_scope->asr_owner = (ASR::asr_t*)existing_fn;
+            ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
+                existing_fn->m_function_signature);
+            existing_ft->m_arg_types = arg_type_arr;
+            existing_ft->n_arg_types = n_arg_types;
+            existing_ft->m_return_var_type = return_type;
+            // The interface is now known, so this is no longer a procedure
+            // known only by name.
+            existing_ft->m_deftype = ASR::deftypeType::Interface;
+            iface_type = existing_fn->m_function_signature;
+            existing_fn->m_args = args.p;
+            existing_fn->n_args = args.size();
+            existing_fn->m_return_var = return_var;
         } else {
-            SymbolTable* fn_scope = al.make_new<SymbolTable>(parent_scope);
-            std::string iface_name = "~implicit_interface_" + var_name + "_" +
-                fn_scope->get_counter();
-            Vec<ASR::expr_t*> args;
-            ASR::expr_t* return_var = nullptr;
-            make_implicit_interface_args(fn_scope, iface_name, loc, arg_type_arr,
-                n_arg_types, return_type, arg_type_decls, args, return_var);
-            Vec<ASR::ttype_t*> arg_types_vec;
-            arg_types_vec.reserve(al, n_arg_types);
-            for (size_t i = 0; i < n_arg_types; i++) {
-                arg_types_vec.push_back(al, arg_type_arr[i]);
-            }
             iface_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
                 al, loc, arg_types_vec.p, arg_types_vec.size(), return_type,
                 ASR::abiType::BindC, ASR::deftypeType::Interface, nullptr,
@@ -21912,9 +21860,9 @@ public:
                     nullptr, nullptr, nullptr));
             parent_scope->add_or_overwrite_symbol(iface_name, iface);
             proc_var->m_type_declaration = iface;
-            implicit_interfaces_to_sync.push_back(
-                ASR::down_cast<ASR::Function_t>(iface));
+            existing_fn = ASR::down_cast<ASR::Function_t>(iface);
         }
+        implicit_interfaces_to_sync.push_back(existing_fn);
         if (ASRUtils::is_pointer(proc_var->m_type)) {
             proc_var->m_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, iface_type));
