@@ -2252,6 +2252,10 @@ RUN(NAME implicit_interface_68 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
     EXTRAFILES implicit_interface_68b.f90)
 RUN(NAME implicit_interface_69 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
     EXTRAFILES implicit_interface_69b.f90)
+RUN(NAME implicit_interface_70 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_70b.f90)
+RUN(NAME implicit_interface_71 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing
+    EXTRAFILES implicit_interface_71b.f90)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)

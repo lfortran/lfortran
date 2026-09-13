@@ -9108,7 +9108,9 @@ public:
                             } else if (passed_ft && param_ft->n_arg_types > 0
                                     && ASR::is_a<ASR::Function_t>(*passed_sym)
                                     && ASRUtils::is_bare_implicit_interface(
-                                        *ASR::down_cast<ASR::Function_t>(passed_sym))) {
+                                        *ASR::down_cast<ASR::Function_t>(passed_sym))
+                                    && implicit_interface_dummies_from_definition.count(
+                                        var->m_v) == 0) {
                                 // Reverse propagation: parameter has type info but the passed
                                 // function is a bare ImplicitInterface. Only rewrite that
                                 // placeholder — a genuine zero-argument procedure is left alone.
@@ -11024,6 +11026,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
                                 if (callee->m_args[i] == nullptr) continue;
                                 if (!ASR::is_a<ASR::Var_t>(*callee->m_args[i])) continue;
                                 ASR::symbol_t* param_sym = ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v;
+                                if (b.implicit_interface_dummies_from_definition.count(param_sym)) continue;
                                 ASR::FunctionType_t* param_ft = nullptr;
 
                                 // Handle Variable_t parameter with FunctionType
