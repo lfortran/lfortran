@@ -3588,6 +3588,8 @@ RUN(NAME external_20 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_21 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_24 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 
