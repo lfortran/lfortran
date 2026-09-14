@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -975,16 +976,37 @@ class GpuComponentFit {
     std::set<SymbolTable*> inner_scopes;
     std::map<ASR::symbol_t*, ASR::expr_t*> associations;
 
+    // The `if` and `select case` branches the replay is in, outermost
+    // first, each as the construct and the index of the branch.
+    typedef std::vector<std::pair<ASR::stmt_t*, size_t>> Branches;
+    Branches branches;
+
+    // A place where the replay writes a component.
+    struct Site {
+        std::vector<ASR::expr_t*> extents;
+        // Whether the replay can evaluate the extents there.
+        bool sized = false;
+        // Whether the extents read a scalar the loop assigns, which may
+        // have another value at another site of the same iteration.
+        bool reads_assigned = false;
+        Branches branches;
+    };
+
     // What the loop writes of a component of an array of derived type.
     struct Written {
-        size_t sites = 0;
+        std::vector<Site> sites;
         // Whether a site is where the replay cannot tell which element it
         // writes.
         bool unknown = false;
         ASR::expr_t *array = nullptr;
         ASR::symbol_t *component = nullptr;
-        // Extents that are the same for every element, if there are.
+        // Extents that are the same for every element at every site, if
+        // there are; `nonuniform` once a site has others or none.
         std::vector<ASR::expr_t*> uniform;
+        bool nonuniform = false;
+        // Whether each iteration gives the component one size: no two
+        // sites that can both run in an iteration give it different sizes.
+        bool one_size = true;
     };
     std::map<std::string, Written> written;
     // Whether the loop can write components the replay does not see.
@@ -998,7 +1020,56 @@ class GpuComponentFit {
     std::map<ASR::symbol_t*, ASR::expr_t*> host;
 
     bool known(const Written &w) const {
-        return !everything_unknown && w.sites == 1 && !w.unknown;
+        return !everything_unknown && !w.sites.empty() && !w.unknown;
+    }
+
+    void merge_uniform(Written &w, bool uniform,
+            const std::vector<ASR::expr_t*> &extents) {
+        if (w.nonuniform) return;
+        if (!uniform) {
+            w.nonuniform = true;
+            w.uniform.clear();
+        } else if (w.uniform.empty()) {
+            w.uniform = extents;
+        } else if (!same_extents(w.uniform, extents)) {
+            w.nonuniform = true;
+            w.uniform.clear();
+        }
+    }
+
+    static bool same_extents(const std::vector<ASR::expr_t*> &a,
+            const std::vector<ASR::expr_t*> &b) {
+        if (a.size() != b.size()) return false;
+        for (size_t d = 0; d < a.size(); d++) {
+            if (!same_value(a[d], b[d])) return false;
+        }
+        return true;
+    }
+
+    // Whether two sites are in different branches of one `if` or
+    // `select case`, so that no iteration runs both.
+    static bool exclusive(const Site &a, const Site &b) {
+        size_t n = std::min(a.branches.size(), b.branches.size());
+        for (size_t k = 0; k < n; k++) {
+            if (a.branches[k] == b.branches[k]) continue;
+            return a.branches[k].first == b.branches[k].first;
+        }
+        return false;
+    }
+
+    static bool one_size(const Written &w) {
+        for (size_t i = 0; i < w.sites.size(); i++) {
+            for (size_t j = i + 1; j < w.sites.size(); j++) {
+                const Site &a = w.sites[i], &b = w.sites[j];
+                if (exclusive(a, b)) continue;
+                if (!a.sized || !b.sized || a.reads_assigned ||
+                        b.reads_assigned || !same_extents(a.extents,
+                            b.extents)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     ASR::expr_t* resolved(ASR::expr_t *e) {
@@ -1311,10 +1382,13 @@ class GpuComponentFit {
     std::vector<ASR::stmt_t*> if_statement(ASR::If_t *x, bool replayed) {
         ASR::expr_t *test = resolved(x->m_test);
         bool evaluated = replayed && evaluable(test, false);
+        branches.push_back({&x->base, 0});
         std::vector<ASR::stmt_t*> then_part = slice(x->m_body, x->n_body,
             evaluated, false);
+        branches.back().second = 1;
         std::vector<ASR::stmt_t*> else_part = slice(x->m_orelse, x->n_orelse,
             evaluated, false);
+        branches.pop_back();
         if (dry || (then_part.empty() && else_part.empty())) return {};
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
         return {b.If(on_host(test), then_part, else_part)};
@@ -1342,7 +1416,9 @@ class GpuComponentFit {
         Vec<ASR::case_stmt_t*> cases;
         cases.reserve(al, x->n_body);
         bool any = false;
+        branches.push_back({&x->base, 0});
         for (size_t i = 0; i < x->n_body; i++) {
+            branches.back().second = i;
             const Location &loc = x->m_body[i]->base.loc;
             Vec<ASR::stmt_t*> body;
             if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[i])) {
@@ -1376,8 +1452,10 @@ class GpuComponentFit {
                         body.p, body.n)));
             }
         }
+        branches.back().second = x->n_body;
         std::vector<ASR::stmt_t*> default_part = slice(x->m_default,
             x->n_default, evaluated, false);
+        branches.pop_back();
         if (dry || (!any && default_part.empty())) return {};
         Vec<ASR::stmt_t*> default_body;
         default_body.from_pointer_n_copy(al, default_part.data(),
@@ -1434,12 +1512,24 @@ class GpuComponentFit {
                 }
                 Written &w = written[key + "%" +
                     ASRUtils::symbol_name(write.component)];
-                w.sites++;
+                w.sites.push_back(Site());
                 w.unknown = true;
                 w.array = write.element->m_v;
                 w.component = write.component;
+                merge_uniform(w, uniform(write), write.shape.extents);
             }
         }
+    }
+
+    // Whether a write gives the component extents that are the same for
+    // every element, and can be evaluated before the loop runs.
+    bool uniform(const ComponentWrite &write) {
+        bool same = same_array(write.element->m_v) && write.shape.single &&
+            !write.shape.extents.empty();
+        for (ASR::expr_t *extent : write.shape.extents) {
+            same = same && evaluable(extent, true);
+        }
+        return same;
     }
 
     void site(const ComponentWrite &write, bool replayed,
@@ -1462,16 +1552,22 @@ class GpuComponentFit {
             sized = sized && evaluable(extent, false);
         }
         if (dry) {
-            w.sites++;
+            Site s;
+            s.extents = write.shape.extents;
+            s.sized = sized;
+            s.branches = branches;
+            for (ASR::expr_t *extent : write.shape.extents) {
+                VariableReader reader;
+                reader.visit_expr(*extent);
+                for (ASR::symbol_t *sym : reader.variables) {
+                    s.reads_assigned = s.reads_assigned || trackable.count(sym);
+                }
+            }
+            w.sites.push_back(s);
             w.array = write.element->m_v;
             w.component = write.component;
             if (!replayed || !subscripts || !array) w.unknown = true;
-            bool uniform = array && write.shape.single &&
-                !write.shape.extents.empty();
-            for (ASR::expr_t *extent : write.shape.extents) {
-                uniform = uniform && evaluable(extent, true);
-            }
-            if (uniform) w.uniform = write.shape.extents;
+            merge_uniform(w, uniform(write), write.shape.extents);
             return;
         }
         if (!known(w)) return;
@@ -1480,7 +1576,11 @@ class GpuComponentFit {
             ASRUtils::getStructInstanceMember_t(al, write.loc,
                 (ASR::asr_t*)element, nullptr, write.component, scope));
         std::vector<ASR::stmt_t*> fit;
-        if (sized) {
+        // Without --realloc-lhs-arrays each write is checked against the
+        // size it gives, as bounds checking checks each assignment. With it,
+        // the kernel cannot reallocate between two writes of an iteration,
+        // so the host allocates only when the iteration gives one size.
+        if (sized && (!realloc || w.one_size)) {
             std::vector<ASR::expr_t*> extents;
             for (ASR::expr_t *extent : write.shape.extents) {
                 extents.push_back(on_host(extent));
@@ -1668,14 +1768,12 @@ public:
 
         block_scope = al.make_new<SymbolTable>(scope);
         std::vector<ASR::stmt_t*> stmts;
-        if (realloc) {
-            for (auto &w : written) {
-                if (!known(w.second) && w.second.sites == 1 &&
-                        !w.second.uniform.empty()) {
-                    std::vector<ASR::stmt_t*> part =
-                        allocate_unallocated(loc, w.second);
-                    stmts.insert(stmts.end(), part.begin(), part.end());
-                }
+        for (auto &w : written) {
+            w.second.one_size = one_size(w.second);
+            if (realloc && !known(w.second) && !w.second.uniform.empty()) {
+                std::vector<ASR::stmt_t*> part =
+                    allocate_unallocated(loc, w.second);
+                stmts.insert(stmts.end(), part.begin(), part.end());
             }
         }
 

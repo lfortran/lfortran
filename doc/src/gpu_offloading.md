@@ -157,11 +157,13 @@ generates the device source. It never falls back to the CPU:
     iterations again, but only what decides the writes: the `if` and
     `select case` tests around a write, the `block` and `associate`
     constructs it is in, and the scalar assignments at the top of the body
-    that the tests, subscripts and sizes read. At each write it allocates or
-    checks the element the write picks, with the size the write gives it: the
-    extents of the array assigned to the component, or those of the
-    `allocate` or array assignment in `f`, in terms of the actual arguments of
-    the call. An element the loop does not write is left as it is. The
+    that the tests, subscripts and sizes read. At each write, also when the
+    loop writes the component in more than one place (in both branches of an
+    `if`, in several cases of a `select case`, or twice in an iteration), it
+    allocates or checks the element the write picks, with the size the write
+    gives it: the extents of the array assigned to the component, or those
+    of the `allocate` or array assignment in `f`, in terms of the actual
+    arguments of the call. An element the loop does not write is left as it is. The
     limits of the loops are evaluated once, before this host code runs, and
     the launch reads the same values.
   * The host does not guess what it cannot work out before the loop runs:
@@ -175,6 +177,10 @@ generates the device source. It never falls back to the CPU:
       component one of several different sizes
       (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1)); end if`;
       when every way through `f` gives it the same size, that size is used).
+      Or two writes that can both run in an iteration give it different
+      sizes (`t(i) = f(2); t(i) = f(3)`), since a kernel cannot reallocate
+      between them; writes in different branches of one `if` or
+      `select case` each give their own size.
       In all these cases even with the option the component is not
       allocated. With bounds
       checking on, the launch stops if the component is not allocated.
@@ -189,14 +195,16 @@ generates the device source. It never falls back to the CPU:
     * Which elements the loop writes. The element may be picked by a call
       (`t(g(i))`) or by a value the loop writes. A test may call a procedure
       or read a value the loop writes. The write may be inside another
-      construct (a loop, a `where`), in more than one place, or in a loop
-      with a `cycle`, `exit` or `return` that can end an iteration early, or
-      a pointer association. Then no allocated component is changed and
-      nothing is checked. With the option, a component that is not allocated
-      is given a size that is the same for every element, if there is one,
-      so an element the loop does not write can end up allocated. Without
-      the option, a written component that is not allocated stays
-      unallocated, even with bounds checking on.
+      construct (a loop, a `where`), or in a loop with a `cycle`, `exit` or
+      `return` that can end an iteration early, or a pointer association.
+      Then no allocated component is changed and nothing is checked, for any
+      write of that component. With the option, when every write of the
+      component gives it the same extents, and the host can evaluate them
+      before the loop runs and they do not depend on the element, every
+      element whose component is not allocated is allocated with them, so an
+      element the loop does not write can end up allocated. Without the
+      option, a written component that is not allocated stays unallocated,
+      even with bounds checking on.
   * A `do concurrent` mask (`do concurrent (i = 1:n, mask(i))`) is currently
     ignored on every backend (#12778), and so is a `cycle` in an offloaded
     loop (#12856), so such a loop writes elements it should not.
