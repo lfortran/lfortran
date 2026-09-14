@@ -205,11 +205,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     {
         Location where = loc;
         std::string name;
-        GpuSectionSite site = GpuSectionSite::Statement;
+        GpuSectionPlace place;
         if (body_has_unplaceable_section(work.body, work.n_body, where,
-                name, site)) {
+                name, place)) {
             report_not_offloaded(where, GpuDecline(
-                GpuDeclineReason::SectionCopyNotPlaceable, name, site));
+                GpuDeclineReason::SectionCopyNotPlaceable, name, place));
             return;
         }
     }

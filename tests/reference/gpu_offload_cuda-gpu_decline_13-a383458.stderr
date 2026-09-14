@@ -1,5 +1,5 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: the section of 'a' passed to a procedure in a forall statement has to be copied into a contiguous buffer, which is not supported there
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the section of 'a' passed to a procedure in a forall statement is copied into a contiguous buffer before the forall statement, but the forall statement changes a value it depends on
   --> tests/../integration_tests/gpu_decline_13.f90:29:39
    |
 29 |     forall (j = 1:3) s(i,j) = row_sum(a(i,1:j))
-   |                                       ^^^^^^^^ the section of 'a' passed to a procedure in a forall statement has to be copied into a contiguous buffer, which is not supported there
+   |                                       ^^^^^^^^ the section of 'a' passed to a procedure in a forall statement is copied into a contiguous buffer before the forall statement, but the forall statement changes a value it depends on

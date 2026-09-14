@@ -1,3 +1,6 @@
+#include <functional>
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -1506,16 +1509,97 @@ class GpuIterationVaryingSymbols;
 // expression reads any of it.
 std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
     ASR::stmt_t **body, size_t n_body);
+// A symbol in `ignored` does not count as changed.
 bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
+    ASR::expr_t *e, const std::set<ASR::symbol_t*> *ignored = nullptr);
+// Whether a procedure `e` calls may read a changed symbol without being
+// handed it: one of a module, or of a scope the procedure is nested in.
+bool gpu_calls_may_read_changed(const GpuIterationVaryingSymbols &changed,
     ASR::expr_t *e);
 
 // A condition under which a call is evaluated: an arm of a conditional
-// expression (`test`, taken when it is `holds`), or a FORALL that runs at
-// least once (`head`, when `test` is nullptr).
+// expression (the test in `test`, taken when it is `holds`), or a FORALL
+// that runs at least once (`head`, when `test` is nullptr). The slots are
+// the construct's own, so that a value can be computed once before it.
 struct GpuSectionGuard {
-    ASR::expr_t *test;
+    ASR::expr_t **test;
     bool holds;
-    const ASR::do_loop_head_t *head;
+    ASR::do_loop_head_t *head;
+};
+
+// The slots of the expressions a guard evaluates.
+std::vector<ASR::expr_t**> gpu_guard_slots(const GpuSectionGuard &guard) {
+    if (guard.test) return {guard.test};
+    return {&guard.head->m_start, &guard.head->m_end,
+        &guard.head->m_increment};
+}
+
+// The index of a FORALL head, or nullptr.
+ASR::symbol_t* gpu_head_index(const ASR::do_loop_head_t &head) {
+    if (!head.m_v || !ASR::is_a<ASR::Var_t>(*head.m_v)) return nullptr;
+    return ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(head.m_v)->m_v);
+}
+
+// Whether an expression calls a procedure that is not known to be pure.
+class GpuImpureCallFinder :
+        public ASR::BaseWalkVisitor<GpuImpureCallFinder> {
+public:
+    bool found = false;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (!s || !ASR::is_a<ASR::Function_t>(*s)) {
+            found = true;
+        } else {
+            ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(s));
+            if (!ft->m_pure && !ft->m_elemental) found = true;
+        }
+        ASR::BaseWalkVisitor<GpuImpureCallFinder>::visit_FunctionCall(x);
+    }
+};
+
+bool gpu_calls_impure(ASR::expr_t *e) {
+    GpuImpureCallFinder finder;
+    finder.visit_expr(*e);
+    return finder.found;
+}
+
+// Whether an expression reads the variable `sym`.
+class GpuSymbolReadFinder :
+        public ASR::BaseWalkVisitor<GpuSymbolReadFinder> {
+public:
+    ASR::symbol_t *sym;
+    bool found = false;
+
+    explicit GpuSymbolReadFinder(ASR::symbol_t *s) : sym(s) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == sym) found = true;
+    }
+};
+
+bool gpu_expr_reads_symbol(ASR::expr_t *e, ASR::symbol_t *sym) {
+    if (!e || !sym) return false;
+    GpuSymbolReadFinder finder(sym);
+    finder.visit_expr(*e);
+    return finder.found;
+}
+
+// Makes every variable of `subs` read its replacement instead.
+class GpuSubstituteSymbols :
+        public ASR::BaseExprReplacer<GpuSubstituteSymbols> {
+public:
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &subs;
+
+    explicit GpuSubstituteSymbols(
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &s) : subs(s) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        auto it = subs.find(ASRUtils::symbol_get_past_external(x->m_v));
+        if (it != subs.end()) x->m_v = it->second;
+    }
 };
 
 // A call among whose actual arguments a section may have to be gathered,
@@ -1610,11 +1694,12 @@ public:
 
     void visit_IfExp(const ASR::IfExp_t &x) {
         visit_expr(*x.m_test);
+        ASR::IfExp_t &ie = const_cast<ASR::IfExp_t&>(x);
         at(GpuSectionSite::ConditionalExpression, [&]() {
-            under({x.m_test, true, nullptr}, [&]() {
+            under({&ie.m_test, true, nullptr}, [&]() {
                 visit_expr(*x.m_body);
             });
-            under({x.m_test, false, nullptr}, [&]() {
+            under({&ie.m_test, false, nullptr}, [&]() {
                 visit_expr(*x.m_orelse);
             });
         });
@@ -1639,20 +1724,28 @@ public:
         visit_expr(*x.m_head.m_start);
         visit_expr(*x.m_head.m_end);
         if (x.m_head.m_increment) visit_expr(*x.m_head.m_increment);
-        under({nullptr, true, &x.m_head}, [&]() {
+        ASR::ForAllSingle_t &fa = const_cast<ASR::ForAllSingle_t&>(x);
+        under({nullptr, true, &fa.m_head}, [&]() {
             visit_stmt(*x.m_assign_stmt);
         });
     }
 };
 
 // Add the calls, evaluated at `site` unless the collector found a more
-// specific one, with what the construct changes between evaluations.
+// specific one, with what the construct changes between evaluations. An
+// arm of a conditional expression in a construct that evaluates it again
+// is taken to be at that construct, which is what can keep a copy before
+// it from serving the call.
 void gpu_file_section_calls(std::vector<GpuSectionCall> &found,
         GpuSectionSite site,
         const std::shared_ptr<GpuIterationVaryingSymbols> &changed,
         std::vector<GpuSectionCall> &calls) {
     for (GpuSectionCall &call : found) {
-        if (call.site == GpuSectionSite::Statement) call.site = site;
+        if (call.site == GpuSectionSite::Statement
+                || (changed
+                    && call.site == GpuSectionSite::ConditionalExpression)) {
+            call.site = site;
+        }
         call.changed = changed;
         calls.push_back(call);
     }
@@ -1781,20 +1874,38 @@ void gpu_split_section_calls(ASR::stmt_t *stmt,
 }
 
 // Whether the gather of `as`, the section passed as argument `arg` of
-// `call`, can be placed before the statement that makes the call. Once
-// guarded by the conditions the call is evaluated under, it copies the
-// section the call would see, provided that neither the section nor
-// those conditions read anything the construct changes between two
-// evaluations of the call. A callee that may write the section it is
-// handed would change it too. A condition is evaluated again for the
-// gather, so it must not call a procedure, and a FORALL is only known to
-// run when its step is a constant. Fortran evaluates only the arm of a
+// `call`, can be placed before the statement that makes the call: where
+// the call is evaluated, with `Statement` as its site, when it can, and
+// why not otherwise. Once guarded by the conditions the call is evaluated
+// under, the gather copies the section the call would see, provided that
+// neither the section nor those conditions read anything the construct
+// changes between two evaluations of the call. A callee that may write
+// the section it is handed would change it too, and so would a procedure
+// a condition calls that can read a changed variable it is not handed.
+// The one change a condition may read is the index of a FORALL it is
+// nested in: the gather is then guarded by whether some index gives the
+// condition a value that evaluates the call (see
+// gather_strided_sections_in_stmt). Fortran evaluates only the arm of a
 // conditional expression that is selected, and a FORALL assignment only
 // for the indices it has, so the gather is not left unguarded: the
-// section may not even exist where the call is not evaluated.
-bool gpu_section_gather_placeable(const GpuSectionCall &call, size_t arg,
-        ASR::ArraySection_t *as) {
-    if (call.opaque) return false;
+// section may not even exist where the call is not evaluated. A
+// condition may be evaluated again for the gather, so a procedure it
+// calls has to be pure.
+//
+// A write through a pointer or an associate name is not seen as a change
+// to its target. Neither can reach a gather yet: such a write is lost in
+// an offloaded loop (#12860), and an associate in a do while body fails
+// before this pass (#12861). Fixing either has to count it here.
+GpuSectionPlace gpu_section_gather_place(const GpuSectionCall &call,
+        size_t arg, ASR::ArraySection_t *as) {
+    GpuSectionPlace place;
+    auto refuse = [&](GpuSectionConflict conflict) {
+        place.site = call.site == GpuSectionSite::Statement
+            ? GpuSectionSite::Construct : call.site;
+        place.conflict = conflict;
+        return place;
+    };
+    if (call.opaque) return refuse(GpuSectionConflict::NoPlace);
     const GpuIterationVaryingSymbols *changed = call.changed.get();
     auto reads_changed = [&](ASR::expr_t *e) {
         return e && changed && gpu_reads_changed(*changed, e);
@@ -1805,37 +1916,41 @@ bool gpu_section_gather_placeable(const GpuSectionCall &call, size_t arg,
         ASR::Function_t *fn =
             (resolved && ASR::is_a<ASR::Function_t>(*resolved))
                 ? ASR::down_cast<ASR::Function_t>(resolved) : nullptr;
-        if (GpuOffloadVisitor::dummy_is_written(fn, arg)) return false;
-        if (reads_changed(as->m_v)) return false;
+        bool changes = GpuOffloadVisitor::dummy_is_written(fn, arg)
+            || reads_changed(as->m_v);
         for (size_t d = 0; d < as->n_args; d++) {
-            if (reads_changed(as->m_args[d].m_left)
-                    || reads_changed(as->m_args[d].m_right)
-                    || reads_changed(as->m_args[d].m_step)) {
-                return false;
-            }
+            changes = changes || reads_changed(as->m_args[d].m_left)
+                || reads_changed(as->m_args[d].m_right)
+                || reads_changed(as->m_args[d].m_step);
         }
+        if (changes) return refuse(GpuSectionConflict::ValueChanges);
     }
+    std::set<ASR::symbol_t*> indices;
     for (const GpuSectionGuard &guard : call.guards) {
-        std::vector<ASR::expr_t*> reads;
-        if (guard.test) {
-            reads.push_back(guard.test);
-        } else {
-            reads = {guard.head->m_start, guard.head->m_end,
-                guard.head->m_increment};
-            int64_t step = 1;
-            if (guard.head->m_increment
-                    && (!section_int_constant(guard.head->m_increment,
-                        step) || step == 0)) {
-                return false;
+        for (ASR::expr_t **slot : gpu_guard_slots(guard)) {
+            ASR::expr_t *e = *slot;
+            if (!e) continue;
+            if (gpu_calls_impure(e)) {
+                return refuse(GpuSectionConflict::ImpureCondition);
+            }
+            if (changed && (gpu_reads_changed(*changed, e, &indices)
+                    || gpu_calls_may_read_changed(*changed, e))) {
+                return refuse(GpuSectionConflict::ValueChanges);
             }
         }
-        for (ASR::expr_t *e : reads) {
-            if (e && (expr_has_function_call(e) || reads_changed(e))) {
-                return false;
+        if (guard.head) {
+            if (ASR::symbol_t *index = gpu_head_index(*guard.head)) {
+                indices.insert(index);
             }
         }
     }
-    return true;
+    return place;
+}
+
+bool gpu_section_gather_placeable(const GpuSectionCall &call, size_t arg,
+        ASR::ArraySection_t *as) {
+    return gpu_section_gather_place(call, arg, as).site
+        == GpuSectionSite::Statement;
 }
 
 } // namespace
@@ -1853,42 +1968,128 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
     bool changed = false;
     const Location &loc = stmt->base.loc;
     ASRUtils::ExprStmtDuplicator dup(al);
-    // The copies run only where the call is evaluated.
-    auto guarded = [&](const std::vector<GpuSectionGuard> &guards,
-            std::vector<ASR::stmt_t*> stmts) {
-        for (size_t k = guards.size(); k-- > 0 && !stmts.empty();) {
-            const GpuSectionGuard &guard = guards[k];
-            Vec<ASR::stmt_t*> body;
-            body.reserve(al, stmts.size());
-            for (ASR::stmt_t *s : stmts) body.push_back(al, s);
-            Vec<ASR::stmt_t*> none;
-            none.reserve(al, 0);
-            ASR::expr_t *test;
-            if (guard.test) {
-                test = dup.duplicate_expr(guard.test);
-            } else {
-                ASRUtils::ASRBuilder b(al, loc);
-                int64_t step = 1;
-                if (guard.head->m_increment) {
-                    section_int_constant(guard.head->m_increment, step);
-                }
-                ASR::expr_t *start = dup.duplicate_expr(guard.head->m_start);
-                ASR::expr_t *end = dup.duplicate_expr(guard.head->m_end);
-                test = step > 0 ? b.LtE(start, end) : b.GtE(start, end);
-            }
-            bool holds = !guard.test || guard.holds;
-            stmts = {ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test,
-                holds ? body.p : none.p, holds ? body.n : none.n,
-                holds ? none.p : body.p, holds ? none.n : body.n))};
+    ASRUtils::ASRBuilder b(al, loc);
+    // A copy of `e` in which the variables of `subs` read their
+    // replacements.
+    auto copy = [&](ASR::expr_t *e,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &subs) {
+        if (!e) return e;
+        ASR::expr_t *c = dup.duplicate_expr(e);
+        if (!subs.empty()) {
+            GpuSubstituteSymbols r(subs);
+            r.current_expr = &c;
+            r.replace_expr(c);
         }
-        return stmts;
+        return c;
     };
+    // Whether a FORALL head gives its index a value at all. A zero step
+    // is not Fortran, and gives none.
+    auto runs = [&](const ASR::do_loop_head_t &head,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &subs) {
+        int64_t step = 1;
+        if (!head.m_increment
+                || (section_int_constant(head.m_increment, step)
+                    && step != 0)) {
+            ASR::expr_t *start = copy(head.m_start, subs);
+            ASR::expr_t *end = copy(head.m_end, subs);
+            return step > 0 ? b.LtE(start, end) : b.GtE(start, end);
+        }
+        return b.Or(
+            b.And(b.Gt(copy(head.m_increment, subs), int32_const(loc, 0)),
+                b.LtE(copy(head.m_start, subs), copy(head.m_end, subs))),
+            b.And(b.Lt(copy(head.m_increment, subs), int32_const(loc, 0)),
+                b.GtE(copy(head.m_start, subs), copy(head.m_end, subs))));
+    };
+    auto new_var = [&](const std::string &prefix, ASR::ttype_t *type) {
+        ASR::symbol_t *sym = gpu_new_variable(al, loc, block_scope,
+            block_scope->get_unique_name(prefix), type);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    };
+    auto make_if = [&](ASR::expr_t *test, bool holds,
+            const std::vector<ASR::stmt_t*> &stmts) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, stmts.size());
+        for (ASR::stmt_t *s : stmts) body.push_back(al, s);
+        Vec<ASR::stmt_t*> none;
+        none.reserve(al, 0);
+        return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test,
+            holds ? body.p : none.p, holds ? body.n : none.n,
+            holds ? none.p : body.p, holds ? none.n : body.n));
+    };
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> no_subs;
     for (GpuSectionCall &call : calls) {
         ASR::symbol_t *resolved =
             ASRUtils::symbol_get_past_external(call.name);
         ASR::Function_t *fn =
             (resolved && ASR::is_a<ASR::Function_t>(*resolved))
                 ? ASR::down_cast<ASR::Function_t>(resolved) : nullptr;
+        const std::vector<GpuSectionGuard> &guards = call.guards;
+        const size_t n_guards = guards.size();
+        // Whether a guard after the k-th reads its index.
+        auto index_read_later = [&](size_t k) {
+            ASR::symbol_t *index = guards[k].head
+                ? gpu_head_index(*guards[k].head) : nullptr;
+            for (size_t l = k + 1; index && l < n_guards; l++) {
+                for (ASR::expr_t **slot : gpu_guard_slots(guards[l])) {
+                    if (gpu_expr_reads_symbol(*slot, index)) return true;
+                }
+            }
+            return false;
+        };
+        // The guards before `outer` read no FORALL index; from `outer`
+        // on, a guard may read the index of a FORALL around it.
+        size_t outer = 0;
+        while (outer < n_guards && !index_read_later(outer)) outer++;
+        // `stmts` under the guards before `upto`, outermost first.
+        auto guarded = [&](size_t upto, std::vector<ASR::stmt_t*> stmts) {
+            for (size_t k = upto; k-- > 0 && !stmts.empty();) {
+                const GpuSectionGuard &guard = guards[k];
+                ASR::expr_t *test = guard.test
+                    ? copy(*guard.test, no_subs) : runs(*guard.head, no_subs);
+                stmts = {make_if(test, !guard.test || guard.holds, stmts)};
+            }
+            return stmts;
+        };
+        // Sets `flag` when some value of the indices of the FORALLs from
+        // guard `k` on gives every guard a value that evaluates the call.
+        std::function<std::vector<ASR::stmt_t*>(size_t, ASR::expr_t*,
+            std::map<ASR::symbol_t*, ASR::symbol_t*>&)> search;
+        search = [&](size_t k, ASR::expr_t *flag,
+                std::map<ASR::symbol_t*, ASR::symbol_t*> &subs)
+                -> std::vector<ASR::stmt_t*> {
+            if (k == n_guards) {
+                return {ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                    flag, b.bool_t(true, ASRUtils::expr_type(flag)),
+                    nullptr, false, false))};
+            }
+            const GpuSectionGuard &guard = guards[k];
+            if (guard.test) {
+                return {make_if(copy(*guard.test, subs), guard.holds,
+                    search(k + 1, flag, subs))};
+            }
+            if (!index_read_later(k)) {
+                return {make_if(runs(*guard.head, subs), true,
+                    search(k + 1, flag, subs))};
+            }
+            ASR::symbol_t *index = gpu_head_index(*guard.head);
+            ASR::expr_t *i = new_var("__gpu_guard_i",
+                ASRUtils::duplicate_type(al,
+                    ASRUtils::expr_type(guard.head->m_v)));
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = i;
+            head.m_start = copy(guard.head->m_start, subs);
+            head.m_end = copy(guard.head->m_end, subs);
+            head.m_increment = copy(guard.head->m_increment, subs);
+            subs[index] = ASR::down_cast<ASR::Var_t>(i)->m_v;
+            std::vector<ASR::stmt_t*> inner = search(k + 1, flag, subs);
+            subs.erase(index);
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, inner.size());
+            for (ASR::stmt_t *s : inner) body.push_back(al, s);
+            return {ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+                head, body.p, body.n, nullptr, 0))};
+        };
         for (size_t i = 0; i < call.n_args; i++) {
             if (!call.args[i].m_value) continue;
             ASR::ArraySection_t *as =
@@ -1904,16 +2105,55 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
                     "gathered");
             }
             std::vector<ASR::stmt_t*> copy_in, copy_out;
-            if (gather_strided_section_arg(loc, block_scope,
+            if (!gather_strided_section_arg(loc, block_scope,
                     &call.args[i].m_value, dummy_is_written(fn, i),
                     varies, copy_in, copy_out)) {
-                changed = true;
-                for (ASR::stmt_t *s : guarded(call.guards, copy_in)) {
-                    before.push_back(s);
+                continue;
+            }
+            changed = true;
+            // A value an outer guard calls a procedure for is computed
+            // once, where the construct would compute it, and read by
+            // both the construct and the gather.
+            for (size_t k = 0; k < outer; k++) {
+                for (ASR::expr_t **slot : gpu_guard_slots(guards[k])) {
+                    if (!*slot || !expr_has_function_call(*slot)) continue;
+                    ASR::expr_t *value = new_var("__gpu_guard_value",
+                        ASRUtils::duplicate_type(al,
+                            ASRUtils::expr_type(*slot)));
+                    std::vector<ASR::stmt_t*> set = {ASRUtils::STMT(
+                        ASR::make_Assignment_t(al, loc, value, *slot,
+                            nullptr, false, false))};
+                    for (ASR::stmt_t *s : guarded(k, set)) {
+                        before.push_back(s);
+                    }
+                    *slot = dup.duplicate_expr(value);
                 }
-                for (ASR::stmt_t *s : guarded(call.guards, copy_out)) {
-                    after.push_back(s);
+            }
+            if (outer < n_guards) {
+                // Pure calls in these guards are evaluated again here.
+                ASR::expr_t *flag = new_var("__gpu_guard",
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
+                std::map<ASR::symbol_t*, ASR::symbol_t*> subs;
+                std::vector<ASR::stmt_t*> in = {ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, flag,
+                        b.bool_t(false, ASRUtils::expr_type(flag)),
+                        nullptr, false, false))};
+                for (ASR::stmt_t *s : search(outer, flag, subs)) {
+                    in.push_back(s);
                 }
+                in.push_back(make_if(dup.duplicate_expr(flag), true,
+                    copy_in));
+                copy_in = in;
+                if (!copy_out.empty()) {
+                    copy_out = {make_if(dup.duplicate_expr(flag), true,
+                        copy_out)};
+                }
+            }
+            for (ASR::stmt_t *s : guarded(outer, copy_in)) {
+                before.push_back(s);
+            }
+            for (ASR::stmt_t *s : guarded(outer, copy_out)) {
+                after.push_back(s);
             }
         }
     }
@@ -1923,12 +2163,12 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
 // The first strided section actual argument of a call in `body` for
 // which `pred` holds, or nullptr. `pred` is also told where the call is
 // evaluated: GpuSectionSite::Statement when a gather for the section can
-// be placed before the statement (see gpu_section_gather_placeable), the
-// construct that prevents it otherwise.
+// be placed before the statement (see gpu_section_gather_place), the
+// construct that prevents it, and why, otherwise.
 ASR::ArraySection_t* GpuOffloadVisitor::find_strided_section_actual(
         ASR::stmt_t **body, size_t n_body,
-        const std::function<bool(ASR::ArraySection_t*, GpuSectionSite)>
-            &pred) {
+        const std::function<bool(ASR::ArraySection_t*,
+            const GpuSectionPlace&)> &pred) {
     for (size_t si = 0; si < n_body; si++) {
         std::vector<GpuNestedStmts> nested;
         std::vector<GpuSectionCall> calls;
@@ -1943,13 +2183,11 @@ ASR::ArraySection_t* GpuOffloadVisitor::find_strided_section_actual(
                 ASR::ArraySection_t *as = strided_section_actual(
                     call.args[i].m_value);
                 if (!as) continue;
-                GpuSectionSite site = GpuSectionSite::Statement;
-                if (strided_section_is_gatherable(as)
-                        && !gpu_section_gather_placeable(call, i, as)) {
-                    site = call.site == GpuSectionSite::Statement
-                        ? GpuSectionSite::Construct : call.site;
+                GpuSectionPlace place;
+                if (strided_section_is_gatherable(as)) {
+                    place = gpu_section_gather_place(call, i, as);
                 }
-                if (pred(as, site)) return as;
+                if (pred(as, place)) return as;
             }
         }
     }
@@ -1963,7 +2201,7 @@ bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
         ASR::stmt_t **body,
         size_t n_body) {
     return find_strided_section_actual(body, n_body,
-        [&](ASR::ArraySection_t *as, GpuSectionSite) {
+        [&](ASR::ArraySection_t *as, const GpuSectionPlace&) {
             return !strided_section_is_gatherable(as);
         }) != nullptr;
 }
@@ -2123,6 +2361,7 @@ class GpuIterationVaryingUse :
     const GpuIterationVaryingSymbols &varying;
 
     bool changes(ASR::symbol_t *s, bool whole_only) const {
+        if (ignored && ignored->count(s)) return false;
         return varying.whole.count(s)
             || (!whole_only && varying.parts.count(s))
             || varying.scopes.count(ASRUtils::symbol_parent_symtab(s));
@@ -2141,6 +2380,7 @@ class GpuIterationVaryingUse :
 
 public:
     bool found = false;
+    const std::set<ASR::symbol_t*> *ignored = nullptr;
 
     explicit GpuIterationVaryingUse(const GpuIterationVaryingSymbols &v)
         : varying(v) {}
@@ -2180,10 +2420,53 @@ std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
 }
 
 bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
-        ASR::expr_t *e) {
+        ASR::expr_t *e, const std::set<ASR::symbol_t*> *ignored) {
     GpuIterationVaryingUse use(changed);
+    use.ignored = ignored;
     use.visit_expr(*e);
     return use.found;
+}
+
+// The procedures an expression calls.
+class GpuCalledFunctions : public ASR::BaseWalkVisitor<GpuCalledFunctions> {
+public:
+    std::vector<ASR::Function_t*> functions;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s && ASR::is_a<ASR::Function_t>(*s)) {
+            functions.push_back(ASR::down_cast<ASR::Function_t>(s));
+        }
+        ASR::BaseWalkVisitor<GpuCalledFunctions>::visit_FunctionCall(x);
+    }
+};
+
+bool gpu_calls_may_read_changed(const GpuIterationVaryingSymbols &changed,
+        ASR::expr_t *e) {
+    GpuCalledFunctions called;
+    called.visit_expr(*e);
+    if (called.functions.empty()) return false;
+    // A procedure reaches a variable it is not handed only through a
+    // module or a scope it is nested in, and so does every procedure it
+    // can call in turn.
+    auto reachable = [&](ASR::symbol_t *s) {
+        SymbolTable *owner = ASRUtils::symbol_parent_symtab(s);
+        if (!owner) return true;
+        if (owner->asr_owner && ASR::is_a<ASR::symbol_t>(*owner->asr_owner)
+                && ASR::is_a<ASR::Module_t>(
+                    *ASR::down_cast<ASR::symbol_t>(owner->asr_owner))) {
+            return true;
+        }
+        for (ASR::Function_t *fn : called.functions) {
+            for (SymbolTable *t = fn->m_symtab; t; t = t->parent) {
+                if (t == owner) return true;
+            }
+        }
+        return false;
+    };
+    for (ASR::symbol_t *s : changed.whole) if (reachable(s)) return true;
+    for (ASR::symbol_t *s : changed.parts) if (reachable(s)) return true;
+    return false;
 }
 
 std::string section_base_name(ASR::expr_t *e) {
@@ -2237,7 +2520,7 @@ bool GpuOffloadVisitor::body_has_varying_leading_section_extent(
         const ParallelLoopNest &work, Location &where, std::string &name) {
     GpuVaries varies = gpu_iteration_varies(work, work.body, work.n_body);
     ASR::ArraySection_t *found = find_strided_section_actual(work.body,
-        work.n_body, [&](ASR::ArraySection_t *as, GpuSectionSite) {
+        work.n_body, [&](ASR::ArraySection_t *as, const GpuSectionPlace&) {
             if (!strided_section_is_gatherable(as)) return false;
             std::vector<int> range_dims;
             for (size_t d = 0; d < as->n_args; d++) {
@@ -2265,18 +2548,18 @@ bool GpuOffloadVisitor::body_has_varying_leading_section_extent(
 
 // True when a section that would be gathered is passed to a procedure
 // where no gather can be placed next to the call (see
-// gpu_split_section_calls). `where`, `name` and `site` then say which
-// section and where it is.
+// gpu_split_section_calls). `where`, `name` and `place` then say which
+// section, where it is and why.
 bool GpuOffloadVisitor::body_has_unplaceable_section(ASR::stmt_t **body,
         size_t n_body, Location &where, std::string &name,
-        GpuSectionSite &site) {
+        GpuSectionPlace &place) {
     ASR::ArraySection_t *found = find_strided_section_actual(body, n_body,
-        [&](ASR::ArraySection_t *as, GpuSectionSite s) {
-            if (s == GpuSectionSite::Statement
+        [&](ASR::ArraySection_t *as, const GpuSectionPlace &p) {
+            if (p.site == GpuSectionSite::Statement
                     || !strided_section_is_gatherable(as)) {
                 return false;
             }
-            site = s;
+            place = p;
             return true;
         });
     if (!found) return false;

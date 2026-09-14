@@ -129,10 +129,12 @@ enum class GpuDeclineReason {
     // can hold it contiguously.
     SectionLeadingExtentVaries,
     // A section passed to a procedure has to be copied into a contiguous
-    // per-thread buffer, but it is evaluated where no copy can be placed
-    // next to it: again on every test of a do while condition, only when
-    // one arm of a conditional expression is taken, or inside a construct
-    // the copy cannot be put into (see GpuSectionSite).
+    // per-thread buffer before the statement that makes the call, but no
+    // such copy serves the call (see GpuSectionConflict): a do while
+    // condition or a FORALL evaluates it again after changing a value it
+    // depends on, a condition it is evaluated under calls a procedure that
+    // is not pure, or a construct has no place for the copy (see
+    // GpuSectionSite).
     SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
@@ -203,6 +205,27 @@ enum class GpuSectionSite {
     Construct,
 };
 
+// Why a copy placed before the statement cannot serve a section evaluated
+// at a site other than `Statement`.
+enum class GpuSectionConflict {
+    // The construct has no place for the copy: a WHERE, a SELECT TYPE, a
+    // SELECT RANK, an implied DO or a construct not known to this pass.
+    NoPlace,
+    // The construct changes a value that the section, or a condition it
+    // is evaluated under, depends on before evaluating it again.
+    ValueChanges,
+    // A condition the section is evaluated under calls a procedure that
+    // is not pure, which the copy would have to call again.
+    ImpureCondition,
+};
+
+// Where a section is evaluated, and why no copy before the statement
+// serves it when that site is not `Statement`.
+struct GpuSectionPlace {
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+};
+
 // A decline, with the little the message quotes alongside it.
 struct GpuDecline {
     GpuDeclineReason reason = GpuDeclineReason::None;
@@ -212,8 +235,10 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
-    // Where the section is evaluated, when the reason is about a section.
+    // Where the section is evaluated, when the reason is about a section,
+    // and why no copy placed before the statement serves it.
     GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}
@@ -223,8 +248,9 @@ struct GpuDecline {
             ASR::ttype_t *type_)
         : reason(reason_), name(name_), type(type_) {}
     GpuDecline(GpuDeclineReason reason_, const std::string &name_,
-            GpuSectionSite site_)
-        : reason(reason_), name(name_), site(site_) {}
+            const GpuSectionPlace &place)
+        : reason(reason_), name(name_), site(place.site),
+          conflict(place.conflict) {}
 
     bool declined() const { return reason != GpuDeclineReason::None; }
 };

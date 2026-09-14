@@ -158,29 +158,51 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 "procedure changes its extent between iterations in a "
                 "dimension other than its last";
         case GpuDeclineReason::SectionCopyNotPlaceable: {
-            std::string where;
+            std::string where, before;
             switch (decline.site) {
                 case GpuSectionSite::WhileCondition:
-                    where = "in the condition of a do while loop"; break;
+                    where = "in the condition of a do while loop";
+                    before = "the loop"; break;
                 case GpuSectionSite::ConditionalExpression:
-                    where = "in one arm of a conditional expression"; break;
+                    where = "in one arm of a conditional expression";
+                    before = "the statement"; break;
                 case GpuSectionSite::ImpliedDo:
-                    where = "in an implied do loop"; break;
+                    where = "in an implied do loop";
+                    before = "the statement"; break;
                 case GpuSectionSite::Forall:
-                    where = "in a forall statement"; break;
+                    where = "in a forall statement";
+                    before = "the forall statement"; break;
                 case GpuSectionSite::Where:
-                    where = "in a where construct"; break;
+                    where = "in a where construct";
+                    before = "the construct"; break;
                 case GpuSectionSite::SelectType:
-                    where = "in a select type construct"; break;
+                    where = "in a select type construct";
+                    before = "the construct"; break;
                 case GpuSectionSite::SelectRank:
-                    where = "in a select rank construct"; break;
+                    where = "in a select rank construct";
+                    before = "the construct"; break;
                 case GpuSectionSite::Statement:
                 case GpuSectionSite::Construct:
-                    where = "in this construct"; break;
+                    where = "in this construct";
+                    before = "the construct"; break;
             }
-            return "the section of '" + decline.name + "' passed to a "
-                "procedure " + where + " has to be copied into a "
-                "contiguous buffer, which is not supported there";
+            std::string what = "the section of '" + decline.name
+                + "' passed to a procedure " + where;
+            switch (decline.conflict) {
+                case GpuSectionConflict::ValueChanges:
+                    return what + " is copied into a contiguous buffer "
+                        "before " + before + ", but " + before
+                        + " changes a value it depends on";
+                case GpuSectionConflict::ImpureCondition:
+                    return what + " is copied into a contiguous buffer "
+                        "before " + before + " under the same condition, "
+                        "but that condition calls a procedure that is not "
+                        "pure";
+                case GpuSectionConflict::NoPlace:
+                    break;
+            }
+            return what + " has to be copied into a contiguous buffer, "
+                "which is not supported there";
         }
         case GpuDeclineReason::DeviceFunctionInlining:
             return "a device function cannot be inlined";
