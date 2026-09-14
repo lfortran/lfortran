@@ -2672,6 +2672,18 @@ inline bool gpu_extent_member_key(ASR::expr_t *e, const GpuExtentContext &ctx,
     return true;
 }
 
+// The shape a kernel gives a component of one of its struct arrays.
+struct GpuMemberShape {
+    // The Allocate or ReAlloc argument that shapes the component.
+    ASR::alloc_arg_t *shape = nullptr;
+    // The context that reads the shape's extents.
+    GpuExtentContext ctx;
+    // The element of the kernel's struct array whose component is shaped,
+    // with the subscripts the kernel picks it by, or nullptr when it is not
+    // picked by subscripts.
+    ASR::ArrayItem_t *element = nullptr;
+};
+
 // Every routine a kernel calls with an element of one of its struct arrays,
 // paired with the shapes that routine gives the components of that element.
 // Reported as "struct_array.component" keys of the kernel's own arrays.
@@ -2679,9 +2691,7 @@ class KernelStructMemberShapes:
     public ASRUtils::BlockBodyWalkVisitor<KernelStructMemberShapes> {
     public:
 
-        // key -> (shape, the context that reads the shape's extents)
-        std::map<GpuStructMemberKey,
-            std::pair<ASR::alloc_arg_t*, GpuExtentContext>> shapes;
+        std::map<GpuStructMemberKey, GpuMemberShape> shapes;
         const std::map<std::string, const GpuVlaWorkspace*> *workspaces;
         const ASR::Function_t *kernel;
 
@@ -2727,7 +2737,7 @@ class KernelStructMemberShapes:
                     ctx.kernel = kernel;
                     shapes.emplace(
                         GpuStructMemberKey{array_name, shape.first.member},
-                        std::make_pair(shape.second, ctx));
+                        GpuMemberShape{shape.second, ctx, item});
                 }
             }
         }
@@ -2740,8 +2750,7 @@ class KernelStructMemberShapes:
 // The shape of every component of a kernel's struct arrays that the kernel
 // writes without the caller having allocated it, gathered from the Allocate
 // and ReAlloc statements that give the component its extents.
-inline std::map<GpuStructMemberKey,
-        std::pair<ASR::alloc_arg_t*, GpuExtentContext>>
+inline std::map<GpuStructMemberKey, GpuMemberShape>
     kernel_struct_member_shapes(const ASR::Function_t &kernel,
         const std::map<std::string, const GpuVlaWorkspace*> &ws_by_name) {
     KernelStructMemberShapes visitor(&ws_by_name, &kernel);
@@ -2753,8 +2762,11 @@ inline std::map<GpuStructMemberKey,
     ctx.workspaces = &ws_by_name;
     ctx.kernel = &kernel;
     for (auto &shape: struct_member_shapes(kernel.m_body, kernel.n_body)) {
-        visitor.shapes.emplace(shape.first,
-            std::make_pair(shape.second, ctx));
+        ASR::expr_t *base = ASR::down_cast<ASR::StructInstanceMember_t>(
+            shape.second->m_a)->m_v;
+        visitor.shapes.emplace(shape.first, GpuMemberShape{shape.second, ctx,
+            ASR::is_a<ASR::ArrayItem_t>(*base)
+                ? ASR::down_cast<ASR::ArrayItem_t>(base) : nullptr});
     }
     return visitor.shapes;
 }
@@ -2774,10 +2786,10 @@ inline std::map<GpuStructMemberKey, int64_t>
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
         int64_t total = 1;
         bool known = true;
-        for (size_t d = 0; d < shape.second.first->n_dims; d++) {
+        for (size_t d = 0; d < shape.second.shape->n_dims; d++) {
             int64_t length;
-            if (!gpu_extent_value(shape.second.first->m_dims[d].m_length,
-                    shape.second.second, length)) {
+            if (!gpu_extent_value(shape.second.shape->m_dims[d].m_length,
+                    shape.second.ctx, length)) {
                 known = false;
                 break;
             }
@@ -2798,10 +2810,10 @@ inline std::map<GpuStructMemberKey, GpuStructMemberKey>
     std::map<std::string, const GpuVlaWorkspace*> ws_by_name;
     std::map<GpuStructMemberKey, GpuStructMemberKey> result;
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
-        if (shape.second.first->n_dims != 1) continue;
+        if (shape.second.shape->n_dims != 1) continue;
         GpuStructMemberKey source;
-        if (gpu_extent_member_key(shape.second.first->m_dims[0].m_length,
-                shape.second.second, source)) {
+        if (gpu_extent_member_key(shape.second.shape->m_dims[0].m_length,
+                shape.second.ctx, source)) {
             result[shape.first] = source;
         }
     }

@@ -297,7 +297,8 @@ class DeviceLaunchExpandVisitor :
                 ASR::symbol_t *parameter,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
-                const ASR::Function_t &kernel) {
+                const ASR::Function_t &kernel,
+                ASR::call_arg_t *launch_args, size_t n_launch_args) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::Struct_t *st = gpu_struct_definition(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
@@ -308,6 +309,9 @@ class DeviceLaunchExpandVisitor :
                     gpu_kernel_workspaces(kernel));
             std::map<GpuStructMemberKey, GpuStructMemberKey> runtime_sources =
                 find_struct_member_vla_runtime_sources(kernel);
+            std::map<std::string, const GpuVlaWorkspace*> no_workspaces;
+            std::map<GpuStructMemberKey, GpuMemberShape> shapes =
+                kernel_struct_member_shapes(kernel, no_workspaces);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
             for (const GpuComponentLayout &component :
@@ -325,16 +329,20 @@ class DeviceLaunchExpandVisitor :
                 // so the host has to give it storage first.
                 GpuStructMemberKey key{arg_name, member_name};
                 ASR::expr_t *missing_size = nullptr;
+                // The shape of a component whose extents the host evaluates
+                // for each element, when no single size serves them all.
+                const GpuMemberShape *runtime_shape = nullptr;
                 auto write_size = write_sizes.find(key);
+                auto source = runtime_sources.find(key);
+                auto shape = shapes.find(key);
                 if (write_size != write_sizes.end()) {
                     missing_size = b.i32(write_size->second);
-                } else {
-                    auto source = runtime_sources.find(key);
-                    if (source != runtime_sources.end()) {
-                        auto first = member_first_sizes.find(source->second);
-                        missing_size = first != member_first_sizes.end()
-                            ? first->second : b.i32(1);
-                    }
+                } else if (source != runtime_sources.end()) {
+                    auto first = member_first_sizes.find(source->second);
+                    missing_size = first != member_first_sizes.end()
+                        ? first->second : b.i32(1);
+                } else if (shape != shapes.end()) {
+                    runtime_shape = &shape->second;
                 }
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
@@ -372,6 +380,46 @@ class DeviceLaunchExpandVisitor :
                     size_dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
                 std::vector<ASR::stmt_t*> measure;
+                if (runtime_shape) {
+                    ASR::expr_t *element = struct_member(loc, arg, k, member);
+                    std::vector<ASR::expr_t*> extents =
+                        gpu_host_member_extents(al, kernel, launch_args,
+                            n_launch_args, *runtime_shape,
+                            element_subscripts(loc, arg, k));
+                    if (extents.size() == rank) {
+                        Vec<ASR::dimension_t> member_dims;
+                        member_dims.reserve(al, rank);
+                        for (ASR::expr_t *extent : extents) {
+                            ASR::dimension_t member_dim;
+                            member_dim.loc = loc;
+                            member_dim.m_start = b.i32(1);
+                            member_dim.m_length = b.Max(
+                                b.i2i_t(extent, int32), b.i32(0));
+                            member_dims.push_back(al, member_dim);
+                        }
+                        measure.push_back(b.If(b.Not(is_allocated(loc,
+                            element)), {b.Allocate(struct_member(loc, arg,
+                                k, member), member_dims.p, member_dims.n)},
+                            {}));
+                    } else {
+                        // The kernel gives the component extents the host
+                        // cannot work out, which is fine as long as the
+                        // caller allocated it; without that the launch would
+                        // hand the kernel storage that does not exist.
+                        std::string message = "the component '"
+                            + member_name + "' of '"
+                            + ASRUtils::symbol_name(parameter) + "' is "
+                            "written in an offloaded loop without being "
+                            "allocated, and its size cannot be computed "
+                            "before the loop runs";
+                        ASR::expr_t *code = b.StringConstant(message,
+                            b.String(b.i32(message.size()),
+                                ASR::ExpressionLength));
+                        measure.push_back(b.If(b.Not(is_allocated(loc,
+                            element)), {ASRUtils::STMT(
+                                ASR::make_ErrorStop_t(al, loc, code))}, {}));
+                    }
+                }
                 if (missing_size) {
                     Vec<ASR::dimension_t> member_dims;
                     member_dims.reserve(al, 1);
@@ -868,7 +916,8 @@ class DeviceLaunchExpandVisitor :
                         // the actual need not be a plain variable: a
                         // component chain names one array just as well.
                         decompose_struct_members(loc, out, arg,
-                            entry.m_variable, buffers, writebacks, *kernel);
+                            entry.m_variable, buffers, writebacks, *kernel,
+                            x.m_args, x.n_args);
                     }
                 }
             }

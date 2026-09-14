@@ -1,6 +1,9 @@
 #ifndef LIBASR_PASS_GPU_KERNEL_ABI_H
 #define LIBASR_PASS_GPU_KERNEL_ABI_H
 
+#include <map>
+#include <vector>
+
 #include <libasr/asr.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -19,7 +22,19 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
 
 ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
-    ASR::expr_t *expression);
+    ASR::expr_t *expression,
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &host_values = {});
+
+// The extents a kernel gives a component of one element of its struct
+// array, as expressions the host evaluates before the launch for the element
+// at `subscripts`, bound to the launch's arguments `args`. The extents may
+// depend on the iteration that writes the element, through the loop index
+// the kernel subscripts the element by. Empty when one of them has no host
+// counterpart.
+std::vector<ASR::expr_t*> gpu_host_member_extents(Allocator &al,
+    const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
+    const GpuMemberShape &shape,
+    const std::vector<ASR::expr_t*> &subscripts);
 
 inline ASR::Variable_t* gpu_argument_variable(
         const ASR::gpu_kernel_argument_t &arg) {

@@ -16,6 +16,19 @@ public:
             const std::map<ASR::symbol_t*, ASR::expr_t*> &arguments)
         : arguments(arguments) {}
 
+    // Where a thread is in the grid exists only on the device.
+    void replace_GpuThreadIndex(ASR::GpuThreadIndex_t */*x*/) {
+        valid = false;
+    }
+
+    void replace_GpuBlockIndex(ASR::GpuBlockIndex_t */*x*/) {
+        valid = false;
+    }
+
+    void replace_GpuBlockSize(ASR::GpuBlockSize_t */*x*/) {
+        valid = false;
+    }
+
     void replace_Var(ASR::Var_t *x) {
         ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(x->m_v);
         auto arg = arguments.find(symbol);
@@ -104,12 +117,281 @@ public:
     }
 };
 
+ASR::expr_t* duplicate_expression(Allocator &al, ASR::expr_t *e) {
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    duplicator.success = true;
+    ASR::expr_t *result = duplicator.duplicate_expr(e);
+    return duplicator.success ? result : nullptr;
+}
+
+// Rewrites an extent a routine the kernel calls writes over its own dummy
+// arguments into the kernel's names, by the actual arguments of the call.
+class CalleeArgumentBinder :
+        public ASR::BaseExprReplacer<CalleeArgumentBinder> {
+    Allocator &al;
+    const GpuExtentContext &ctx;
+
+    // Whether `sym` is a dummy of the callee, and which one.
+    bool is_dummy(ASR::symbol_t *sym, size_t &index) {
+        for (size_t i = 0; i < ctx.callee->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*ctx.callee->m_args[i]) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(ctx.callee->m_args[i])->m_v)
+                    == sym) {
+                index = i;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // A dummy array has the shape it is declared with, which need not be
+    // the shape of the actual argument, so its extents are not read off
+    // the actual.
+    bool names_dummy_array(ASR::expr_t *e) {
+        ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(e);
+        size_t index;
+        return ASR::is_a<ASR::Var_t>(*v) && is_dummy(
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(v)->m_v), index);
+    }
+
+public:
+    bool valid = true;
+
+    CalleeArgumentBinder(Allocator &al, const GpuExtentContext &ctx)
+        : al(al), ctx(ctx) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x->m_v);
+        size_t index;
+        if (is_dummy(sym, index)) {
+            ASR::expr_t *actual = index < ctx.n_args
+                ? ctx.args[index].m_value : nullptr;
+            actual = actual ? duplicate_expression(al, actual) : nullptr;
+            if (actual) *current_expr = actual;
+            else valid = false;
+        } else if (ASRUtils::symbol_parent_symtab(sym) ==
+                ctx.callee->m_symtab) {
+            ASR::Variable_t *var = ASR::is_a<ASR::Variable_t>(*sym)
+                ? ASR::down_cast<ASR::Variable_t>(sym) : nullptr;
+            if (var && var->m_storage == ASR::storage_typeType::Parameter
+                    && var->m_value) {
+                *current_expr = var->m_value;
+            } else {
+                valid = false;
+            }
+        }
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        if (names_dummy_array(x->m_v)) {
+            valid = false;
+            return;
+        }
+        ASR::BaseExprReplacer<CalleeArgumentBinder>::replace_ArraySize(x);
+    }
+
+    void replace_ArrayBound(ASR::ArrayBound_t *x) {
+        if (names_dummy_array(x->m_v)) {
+            valid = false;
+            return;
+        }
+        ASR::BaseExprReplacer<CalleeArgumentBinder>::replace_ArrayBound(x);
+    }
+};
+
+// Rewrites an extent written in the kernel's names into one over the
+// kernel's parameters and the names in `kept`: a local the kernel gives one
+// value is replaced by that value, and an extent of a pointer the kernel
+// associates with a section by the extent the section's ranges span.
+class KernelLocalResolver :
+        public ASR::BaseExprReplacer<KernelLocalResolver> {
+    Allocator &al;
+    const ASR::Function_t &kernel;
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &kept;
+    int depth = 0;
+
+    bool is_parameter(ASR::symbol_t *sym) {
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            if (ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v == sym) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The value `e` stands for, itself resolved.
+    ASR::expr_t* resolved(ASR::expr_t *e) {
+        ASR::expr_t *copy = duplicate_expression(al, e);
+        if (!copy || depth > 8) {
+            valid = false;
+            return e;
+        }
+        ASR::expr_t **saved = current_expr;
+        depth++;
+        current_expr = &copy;
+        replace_expr(copy);
+        current_expr = saved;
+        depth--;
+        return copy;
+    }
+
+    // The section a pointer local of the kernel is associated with, when
+    // the kernel associates it with exactly one.
+    ASR::expr_t* bound_section(ASR::expr_t *array) {
+        ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(array);
+        if (!ASR::is_a<ASR::Var_t>(*v)) return nullptr;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
+        if (is_parameter(ASRUtils::symbol_get_past_external(sym))) {
+            return nullptr;
+        }
+        GpuExtentContext ctx;
+        ctx.kernel = &kernel;
+        ASR::expr_t *target = ctx.associated_target(sym);
+        if (!target) return nullptr;
+        target = ASRUtils::get_past_array_physical_cast(target);
+        return ASR::is_a<ASR::ArraySection_t>(*target) ? target : nullptr;
+    }
+
+    // The number of elements `range` spans, never below zero.
+    ASR::expr_t* range_extent(ASR::array_index_t *range,
+            ASR::ttype_t *type) {
+        ASRUtils::ASRBuilder b(al, range->loc);
+        ASR::expr_t *lo = b.i2i_t(resolved(range->m_left), type);
+        ASR::expr_t *hi = b.i2i_t(resolved(range->m_right), type);
+        ASR::expr_t *step = range->m_step
+            ? b.i2i_t(resolved(range->m_step), type)
+            : b.i_t(1, type);
+        ASR::expr_t *count = b.Div(b.Add(b.Sub(hi, lo), step), step);
+        return b.Max(count, b.i_t(0, type));
+    }
+
+    // The element count of the ranges of `section` that `dim` selects, or
+    // nullptr when the section has no such shape.
+    ASR::expr_t* section_extent(ASR::expr_t *section, ASR::expr_t *dim,
+            ASR::ttype_t *type) {
+        std::vector<ASR::array_index_t*> ranges =
+            gpu_section_extent_ranges(section, dim);
+        if (ranges.empty()) return nullptr;
+        ASRUtils::ASRBuilder b(al, section->base.loc);
+        ASR::expr_t *count = nullptr;
+        for (ASR::array_index_t *range : ranges) {
+            ASR::expr_t *one = range_extent(range, type);
+            count = count ? b.Mul(count, one) : one;
+        }
+        return count;
+    }
+
+public:
+    bool valid = true;
+
+    KernelLocalResolver(Allocator &al, const ASR::Function_t &kernel,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &kept)
+        : al(al), kernel(kernel), kept(kept) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x->m_v);
+        if (kept.count(sym) || is_parameter(sym)) return;
+        ASR::expr_t *value = gpu_local_scalar_binding(sym, kernel.m_body,
+            kernel.n_body);
+        if (value) {
+            ASR::expr_t *replacement = resolved(value);
+            *current_expr = replacement;
+        }
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        ASR::expr_t *section = bound_section(x->m_v);
+        if (!section) {
+            ASR::BaseExprReplacer<KernelLocalResolver>::replace_ArraySize(x);
+            return;
+        }
+        ASR::expr_t *count = section_extent(section, x->m_dim, x->m_type);
+        if (count) *current_expr = count;
+        else valid = false;
+    }
+
+    // A pointer associated with a section is counted from one.
+    void replace_ArrayBound(ASR::ArrayBound_t *x) {
+        ASR::expr_t *section = bound_section(x->m_v);
+        if (!section) {
+            ASR::BaseExprReplacer<KernelLocalResolver>::replace_ArrayBound(x);
+            return;
+        }
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        if (x->m_bound == ASR::arrayboundType::LBound) {
+            *current_expr = b.i_t(1, x->m_type);
+            return;
+        }
+        ASR::expr_t *count = x->m_dim
+            ? section_extent(section, x->m_dim, x->m_type) : nullptr;
+        if (count) *current_expr = count;
+        else valid = false;
+    }
+
+    // A call may not have a counterpart on the host.
+    void replace_FunctionCall(ASR::FunctionCall_t */*x*/) {
+        valid = false;
+    }
+};
+
 } // namespace
+
+std::vector<ASR::expr_t*> gpu_host_member_extents(Allocator &al,
+        const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
+        const GpuMemberShape &shape,
+        const std::vector<ASR::expr_t*> &subscripts) {
+    // The iteration that writes the element is the one whose loop index
+    // equals the subscript the element is picked by, so a local subscript
+    // is the host's own subscript of the element.
+    std::map<ASR::symbol_t*, ASR::expr_t*> host_values;
+    if (shape.element && shape.element->n_args == subscripts.size()) {
+        for (size_t d = 0; d < shape.element->n_args; d++) {
+            ASR::expr_t *sub = shape.element->m_args[d].m_right;
+            if (!sub || shape.element->m_args[d].m_left ||
+                    shape.element->m_args[d].m_step ||
+                    !ASR::is_a<ASR::Var_t>(*sub)) {
+                continue;
+            }
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(sub)->m_v);
+            if (ASRUtils::symbol_parent_symtab(sym) != kernel.m_symtab) {
+                continue;
+            }
+            host_values.emplace(sym, subscripts[d]);
+        }
+    }
+    std::vector<ASR::expr_t*> extents;
+    for (size_t d = 0; d < shape.shape->n_dims; d++) {
+        ASR::expr_t *extent = shape.shape->m_dims[d].m_length;
+        extent = extent ? duplicate_expression(al, extent) : nullptr;
+        if (!extent) return {};
+        if (shape.ctx.callee) {
+            CalleeArgumentBinder binder(al, shape.ctx);
+            binder.current_expr = &extent;
+            binder.replace_expr(extent);
+            if (!binder.valid) return {};
+        }
+        KernelLocalResolver resolver(al, kernel, host_values);
+        resolver.current_expr = &extent;
+        resolver.replace_expr(extent);
+        if (!resolver.valid) return {};
+        extent = gpu_bind_kernel_expression(al, kernel, args, n_args, extent,
+            host_values);
+        if (!extent) return {};
+        extent = duplicate_expression(al, extent);
+        if (!extent) return {};
+        extents.push_back(extent);
+    }
+    return extents;
+}
 
 ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
         const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
-        ASR::expr_t *expression) {
-    std::map<ASR::symbol_t*, ASR::expr_t*> arguments;
+        ASR::expr_t *expression,
+        const std::map<ASR::symbol_t*, ASR::expr_t*> &host_values) {
+    std::map<ASR::symbol_t*, ASR::expr_t*> arguments = host_values;
     LCOMPILERS_ASSERT(n_args <= kernel.n_args);
     for (size_t i = 0; i < n_args; i++) {
         arguments.emplace(ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v,
