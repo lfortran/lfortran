@@ -9234,10 +9234,38 @@ public:
         all_loops_blocks_nesting += 1;
         bool in_loop_copy = in_loop;
         in_loop = true;
+        // Statements the condition needs (e.g. associating the
+        // procedure-pointer temporary of a call through an implicit
+        // interface) must run before every evaluation of the condition.
+        Vec<ASR::stmt_t*> test_stmts;
+        test_stmts.reserve(al, 1);
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        current_body = &test_stmts;
         visit_expr(*x.m_test);
+        current_body = current_body_copy;
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_body + test_stmts.size() + 1);
+        if (test_stmts.size() > 0) {
+            // do while (.true.)
+            //     <test_stmts>
+            //     if (.not. test) exit
+            //     <body>
+            // end do
+            const Location &loc = test->base.loc;
+            ASR::ttype_t* logical_type = ASRUtils::expr_type(test);
+            for (size_t i = 0; i < test_stmts.size(); i++) {
+                body.push_back(al, test_stmts[i]);
+            }
+            Vec<ASR::stmt_t*> exit_body;
+            exit_body.reserve(al, 1);
+            exit_body.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al, loc, x.m_stmt_name)));
+            ASR::expr_t* not_test = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, test,
+                ASRUtils::expr_type(test), nullptr));
+            body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, not_test,
+                exit_body.p, exit_body.size(), nullptr, 0)));
+            test = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical_type));
+        }
         transform_stmts(body, x.n_body, x.m_body);
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);

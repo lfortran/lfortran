@@ -17247,9 +17247,10 @@ public:
     //   FunctionPointerCast(source, to_iface)
     // and return the temporary Variable symbol. The caller uses it as the
     // SubroutineCall/FunctionCall name so the call agrees with `to_iface`.
-    // The association is emitted at every call site, right before the
-    // statement being built, so the temporary always holds `source` when the
-    // call is made.
+    // The association is emitted at every call site into `current_body`, the
+    // statements run right before the statement being built (or, for a DO
+    // WHILE condition, before each evaluation of the condition), so the
+    // temporary always holds `source` when the call is made.
     ASR::symbol_t* make_fpcast_call_target(
         const Location& loc,
         ASR::symbol_t* source,
