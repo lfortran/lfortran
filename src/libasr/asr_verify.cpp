@@ -2794,9 +2794,14 @@ public:
         require_id(ASR::is_a<ASR::FunctionType_t>(*x.m_type),
             "asr.verify.function_pointer_cast.type_is_procedure",
             "FunctionPointerCast type must be a procedure type");
-        require_id(as_procedure_type(ASRUtils::expr_type(x.m_arg)) != nullptr,
-            "asr.verify.function_pointer_cast.arg_is_procedure",
-            "FunctionPointerCast argument must be a procedure");
+        // The argument's type can only be taken once ExternalSymbols are
+        // resolved: while a modfile is loaded the argument can be a
+        // use-associated procedure of a module that is not loaded yet.
+        if (check_external) {
+            require_id(as_procedure_type(ASRUtils::expr_type(x.m_arg)) != nullptr,
+                "asr.verify.function_pointer_cast.arg_is_procedure",
+                "FunctionPointerCast argument must be a procedure");
+        }
         if (x.m_to == nullptr) {
             require_id(ASRUtils::is_opaque_procedure_type(x.m_type),
                 "asr.verify.function_pointer_cast.no_interface_is_opaque",
