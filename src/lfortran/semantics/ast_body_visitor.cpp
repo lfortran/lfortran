@@ -8613,6 +8613,15 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    if (compiler_options.implicit_interface
+                            && ASRUtils::is_bare_implicit_interface(final_sym)) {
+                        // A use-associated procedure with an implicit
+                        // interface is called like a local one: through an
+                        // interface built from this call's actuals.
+                        final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                            original_sym, args, nullptr);
+                        break;
+                    }
                     final_sym=original_sym;
                     original_sym = nullptr;
                     legacy_array_sections_helper(final_sym, args, x.base.base.loc);
