@@ -102,6 +102,90 @@
                                     ()
                                     Default
                                     (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    4 ~implicit_interface_f_8
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            f@fpcast:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            f_arg_0:
+                                                (Variable
+                                                    9
+                                                    f_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            f_return_var_name:
+                                                (Variable
+                                                    9
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    f@fpcast
+                                    (FunctionType
                                         [(Real 4)]
                                         (Real 4)
                                         BindC
@@ -116,7 +200,42 @@
                                         .false.
                                         Host
                                     )
-                                    4 ~implicit_interface_f_8
+                                    []
+                                    [(Var 9 f_arg_0)]
+                                    []
+                                    (Var 9 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f_fpcast:
+                                (Variable
+                                    4
+                                    f_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 4)]
+                                            (Real 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    4 f@fpcast
                                     Source
                                     Public
                                     Required
@@ -159,61 +278,14 @@
                                     (SymbolTable
                                         8
                                         {
-                                            ~implicit_interface_f_8_arg_0:
-                                                (Variable
-                                                    8
-                                                    ~implicit_interface_f_8_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            ~implicit_interface_f_8_return_var:
-                                                (Variable
-                                                    8
-                                                    ~implicit_interface_f_8_return_var
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
+                                            
                                         })
                                     ~implicit_interface_f_8
                                     (FunctionType
-                                        [(Real 4)]
+                                        []
                                         (Real 4)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -225,10 +297,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 ~implicit_interface_f_8_arg_0)]
                                     []
-                                    (Var 8 ~implicit_interface_f_8_return_var)
-                                    Public
+                                    []
+                                    ()
+                                    Private
                                     .false.
                                     .false.
                                     ()
@@ -237,10 +309,10 @@
                     hinit853
                     (FunctionType
                         [(FunctionType
-                            [(Real 4)]
+                            []
                             (Real 4)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -266,10 +338,33 @@
                     )
                     []
                     [(Var 4 f)]
-                    [(Assignment
+                    [(Associate
+                        (Var 4 f_fpcast)
+                        (FunctionPointerCast
+                            (Var 4 f)
+                            4 f@fpcast
+                            (FunctionType
+                                [(Real 4)]
+                                (Real 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
                         (Var 4 hinit853)
                         (FunctionCall
-                            4 f
+                            4 f_fpcast
                             ()
                             [((RealConstant
                                 3.000000
@@ -285,8 +380,8 @@
                     )]
                     (Var 4 hinit853)
                     Public
-                    .true.
-                    .true.
+                    .false.
+                    .false.
                     ()
                 ),
             main:

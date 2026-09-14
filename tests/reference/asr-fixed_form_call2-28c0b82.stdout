@@ -60,9 +60,41 @@
                                     (SymbolTable
                                         3
                                         {
+                                            
+                                        })
+                                    prinf
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            prinf@fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
                                             prinf_arg_0:
                                                 (Variable
-                                                    3
+                                                    4
                                                     prinf_arg_0
                                                     []
                                                     Unspecified
@@ -86,7 +118,7 @@
                                                 ),
                                             prinf_arg_1:
                                                 (Variable
-                                                    3
+                                                    4
                                                     prinf_arg_1
                                                     []
                                                     Unspecified
@@ -109,7 +141,7 @@
                                                     []
                                                 )
                                         })
-                                    prinf
+                                    prinf@fpcast
                                     (FunctionType
                                         [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         (Integer 4)]
@@ -127,14 +159,55 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 prinf_arg_0)
-                                    (Var 3 prinf_arg_1)]
+                                    [(Var 4 prinf_arg_0)
+                                    (Var 4 prinf_arg_1)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            prinf_fpcast:
+                                (Variable
+                                    2
+                                    prinf_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 prinf@fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     idd_frm
@@ -162,9 +235,33 @@
                         .false.
                         .false.
                     )
+                    (Associate
+                        (Var 2 prinf_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 prinf)
+                            2 prinf@fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (SubroutineCall
+                        2 prinf_fpcast
                         2 prinf
-                        ()
                         [((StringConstant
                             "lw = *"
                             (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -173,9 +270,33 @@
                         ()
                         .false.
                     )
+                    (Associate
+                        (Var 2 prinf_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 prinf)
+                            2 prinf@fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (SubroutineCall
+                        2 prinf_fpcast
                         2 prinf
-                        ()
                         [((StringConstant
                             "16m+70 = *"
                             (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)

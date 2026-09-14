@@ -36,9 +36,41 @@
                                     (SymbolTable
                                         3
                                         {
+                                            
+                                        })
+                                    matveca
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            matveca@fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
                                             matveca_arg_0:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_0
                                                     []
                                                     Unspecified
@@ -68,7 +100,7 @@
                                                 ),
                                             matveca_arg_1:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_1
                                                     []
                                                     Unspecified
@@ -92,7 +124,7 @@
                                                 ),
                                             matveca_arg_2:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_2
                                                     []
                                                     Unspecified
@@ -122,7 +154,7 @@
                                                 ),
                                             matveca_arg_3:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_3
                                                     []
                                                     Unspecified
@@ -146,7 +178,7 @@
                                                 ),
                                             matveca_arg_4:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_4
                                                     []
                                                     Unspecified
@@ -170,7 +202,7 @@
                                                 ),
                                             matveca_arg_5:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_5
                                                     []
                                                     Unspecified
@@ -194,7 +226,7 @@
                                                 ),
                                             matveca_arg_6:
                                                 (Variable
-                                                    3
+                                                    4
                                                     matveca_arg_6
                                                     []
                                                     Unspecified
@@ -217,7 +249,7 @@
                                                     []
                                                 )
                                         })
-                                    matveca
+                                    matveca@fpcast
                                     (FunctionType
                                         [(Array
                                             (Complex 4)
@@ -252,19 +284,77 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 matveca_arg_0)
-                                    (Var 3 matveca_arg_1)
-                                    (Var 3 matveca_arg_2)
-                                    (Var 3 matveca_arg_3)
-                                    (Var 3 matveca_arg_4)
-                                    (Var 3 matveca_arg_5)
-                                    (Var 3 matveca_arg_6)]
+                                    [(Var 4 matveca_arg_0)
+                                    (Var 4 matveca_arg_1)
+                                    (Var 4 matveca_arg_2)
+                                    (Var 4 matveca_arg_3)
+                                    (Var 4 matveca_arg_4)
+                                    (Var 4 matveca_arg_5)
+                                    (Var 4 matveca_arg_6)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            matveca_fpcast:
+                                (Variable
+                                    2
+                                    matveca_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Array
+                                                (Complex 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )
+                                            (Integer 4)
+                                            (Array
+                                                (Complex 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )
+                                            (Complex 4)
+                                            (Complex 4)
+                                            (Complex 4)
+                                            (Complex 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 matveca@fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -467,9 +557,50 @@
                     []
                     [(Var 2 m)
                     (Var 2 n)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 matveca_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 matveca)
+                            2 matveca@fpcast
+                            (FunctionType
+                                [(Array
+                                    (Complex 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )
+                                (Integer 4)
+                                (Array
+                                    (Complex 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )
+                                (Complex 4)
+                                (Complex 4)
+                                (Complex 4)
+                                (Complex 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 matveca_fpcast
                         2 matveca
-                        ()
                         [((Var 2 x))
                         ((Var 2 m))
                         ((Var 2 y))

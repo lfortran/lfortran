@@ -58,6 +58,61 @@
                             bcorr:
                                 (Function
                                     (SymbolTable
+                                        3
+                                        {
+                                            bcorr_return_var_name:
+                                                (Variable
+                                                    3
+                                                    bcorr_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    bcorr
+                                    (FunctionType
+                                        []
+                                        (Real 8)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 bcorr_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            bcorr@fpcast:
+                                (Function
+                                    (SymbolTable
                                         4
                                         {
                                             bcorr_arg_0:
@@ -133,7 +188,7 @@
                                                     []
                                                 )
                                         })
-                                    bcorr
+                                    bcorr@fpcast
                                     (FunctionType
                                         [(Real 4)
                                         (Real 4)]
@@ -159,6 +214,47 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            bcorr_fpcast:
+                                (Variable
+                                    2
+                                    bcorr_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 4)
+                                            (Real 4)]
+                                            (Real 8)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 bcorr@fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             brcmp1:
                                 (Variable
@@ -227,13 +323,37 @@
                     )
                     []
                     []
-                    [(Assignment
+                    [(Associate
+                        (Var 2 bcorr_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 bcorr)
+                            2 bcorr@fpcast
+                            (FunctionType
+                                [(Real 4)
+                                (Real 4)]
+                                (Real 8)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
                         (Var 2 brcmp1)
                         (IntrinsicElementalFunction
                             Exp
                             [(RealUnaryMinus
                                 (FunctionCall
-                                    2 bcorr
+                                    2 bcorr_fpcast
                                     ()
                                     [((Var 2 a))
                                     ((Var 2 b))]

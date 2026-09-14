@@ -4,7 +4,11 @@ target datalayout = "..."
 
 define void @a() {
 .entry:
-  call void @b(float ()* @f, float ()* @g)
+  %b_fpcast = alloca void (float ()*, float ()*)*, align 8
+  store void (float ()*, float ()*)* null, void (float ()*, float ()*)** %b_fpcast, align 8
+  store void (float ()*, float ()*)* bitcast (void ()* @b to void (float ()*, float ()*)*), void (float ()*, float ()*)** %b_fpcast, align 8
+  %0 = load void (float ()*, float ()*)*, void (float ()*, float ()*)** %b_fpcast, align 8
+  call void %0(float ()* @f, float ()* @g)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -14,7 +18,11 @@ FINALIZE_SYMTABLE_a:                              ; preds = %return
   ret void
 }
 
-declare void @b(float ()*, float ()*)
+declare void @b()
+
+declare void @"b@fpcast"(float ()*, float ()*)
+
+declare void @b_fpcast(float ()*, float ()*)
 
 declare float @f()
 

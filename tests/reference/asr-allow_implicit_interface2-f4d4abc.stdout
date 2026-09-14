@@ -12,9 +12,41 @@
                                     (SymbolTable
                                         3
                                         {
+                                            
+                                        })
+                                    fcn
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            fcn@fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
                                             fcn_arg_0:
                                                 (Variable
-                                                    3
+                                                    4
                                                     fcn_arg_0
                                                     []
                                                     Unspecified
@@ -38,7 +70,7 @@
                                                 ),
                                             fcn_arg_1:
                                                 (Variable
-                                                    3
+                                                    4
                                                     fcn_arg_1
                                                     []
                                                     Unspecified
@@ -61,7 +93,7 @@
                                                     []
                                                 )
                                         })
-                                    fcn
+                                    fcn@fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Integer 4)]
@@ -79,14 +111,55 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 fcn_arg_0)
-                                    (Var 3 fcn_arg_1)]
+                                    [(Var 4 fcn_arg_0)
+                                    (Var 4 fcn_arg_1)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            fcn_fpcast:
+                                (Variable
+                                    2
+                                    fcn_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 fcn@fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -163,7 +236,21 @@
                         })
                     fdjac1
                     (FunctionType
-                        [(Real 4)
+                        [(FunctionType
+                            []
+                            ()
+                            BindC
+                            ImplicitInterface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                            Host
+                        )
                         (Integer 4)
                         (Integer 4)
                         (Integer 4)]
@@ -185,9 +272,33 @@
                     (Var 2 n)
                     (Var 2 x)
                     (Var 2 y)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 fcn_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 fcn)
+                            2 fcn@fpcast
+                            (FunctionType
+                                [(Integer 4)
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 fcn_fpcast
                         2 fcn
-                        ()
                         [((Var 2 x))
                         ((Var 2 y))]
                         ()

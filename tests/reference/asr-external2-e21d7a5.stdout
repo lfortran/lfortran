@@ -10,6 +10,61 @@
                             sub2:
                                 (Function
                                     (SymbolTable
+                                        3
+                                        {
+                                            sub2_return_var_name:
+                                                (Variable
+                                                    3
+                                                    sub2_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub2
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 sub2_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            sub2@fpcast:
+                                (Function
+                                    (SymbolTable
                                         4
                                         {
                                             sub2_arg_0:
@@ -37,7 +92,7 @@
                                                     []
                                                 )
                                         })
-                                    sub2
+                                    sub2@fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         ()
@@ -61,6 +116,46 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            sub2_fpcast:
+                                (Variable
+                                    2
+                                    sub2_fpcast
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 sub2@fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             x:
                                 (Variable
@@ -119,9 +214,32 @@
                     )
                     []
                     [(Var 2 sub2)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 sub2_fpcast)
+                        (FunctionPointerCast
+                            (Var 2 sub2)
+                            2 sub2@fpcast
+                            (FunctionType
+                                [(Real 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 sub2_fpcast
                         2 sub2
-                        ()
                         [((Var 2 x))]
                         ()
                         .false.
