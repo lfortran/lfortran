@@ -10527,6 +10527,14 @@ public:
         for (size_t i = 0; i < x.n_clauses; i++) {
             std::string clause = AST::down_cast<AST::String_t>(x.m_clauses[i])->m_s;
             std::string clause_name = clause.substr(0, clause.find('('));
+            // Unlisted variables are shared already; default(none) only adds
+            // a compile-time check that every variable is listed, which is
+            // not enforced yet.
+            std::string compact = clause;
+            compact.erase(std::remove(compact.begin(), compact.end(), ' '), compact.end());
+            if (compact == "default(shared)" || compact == "default(none)") {
+                continue;
+            }
             if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit" || clause_name == "schedule" || clause_name == "num_threads" || clause_name == "map" || clause_name == "device") {
                 std::string list = clause.substr(clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                 Vec<ASR::expr_t*> vars;
