@@ -5332,7 +5332,7 @@ RUN(NAME gpu_metal_358 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-l
 RUN(NAME gpu_metal_368 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # a component sized from a value dummy argument the callee changes is reported when it is not allocated
 RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_364 FAIL NO_FAST LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays
+RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)
