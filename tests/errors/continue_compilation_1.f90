@@ -1248,3 +1248,32 @@ contains
         type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
     end subroutine
 end module
+
+! Initializing an entity from an imported parameter does not make a module
+! export the parameter's type, whether it was imported under another name or
+! only inside a procedure.
+module imported_init_export_a
+    implicit none
+    type :: imported_init_t
+        integer :: i = 0
+    end type
+    type(imported_init_t), parameter :: imported_init_z = imported_init_t(7)
+end module
+
+module imported_init_export_b
+    use imported_init_export_a, only: imported_init_u => imported_init_t, imported_init_z
+    implicit none
+    type(imported_init_u) :: imported_init_mv = imported_init_z
+contains
+    integer function imported_init_local()
+        use imported_init_export_a, only: imported_init_t, imported_init_z
+        type(imported_init_t) :: x = imported_init_z
+        imported_init_local = x%i
+    end function
+end module
+
+subroutine imported_init_no_export()
+    use imported_init_export_b
+    implicit none
+    type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
+end subroutine
