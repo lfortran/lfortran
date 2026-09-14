@@ -6781,6 +6781,7 @@ class SymbolDuplicator {
         for( auto& item: symbol_table->get_scope() ) {
             duplicate_symbol(item.second, destination_symtab);
         }
+        fixup_local_type_declarations(destination_symtab, symbol_table);
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
@@ -6965,21 +6966,54 @@ class SymbolDuplicator {
     // declared by a symbol of `orig_scope` (e.g. a procedure variable
     // declared with an interface of the same procedure) is declared by the
     // copy of that symbol, so the copy does not refer into the original.
+    // The same holds for a variable of a scope nested in the copy (a BLOCK,
+    // ASSOCIATE or contained procedure) declared by a symbol of any
+    // enclosing copied scope.
     void fixup_local_type_declarations(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
+        std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
+        fixup_type_declarations_in_scope(new_scope, orig_scope, copied_scopes);
+    }
+
+    void fixup_type_declarations_in_scope(SymbolTable *new_scope,
+            SymbolTable *orig_scope,
+            std::vector<std::pair<SymbolTable*, SymbolTable*>> &copied_scopes) {
+        copied_scopes.push_back({orig_scope, new_scope});
         for (auto &item : new_scope->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-            if (v->m_type_declaration == nullptr ||
-                    ASRUtils::symbol_parent_symtab(v->m_type_declaration) != orig_scope) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_type_declaration == nullptr) continue;
+                SymbolTable *declared_in =
+                    ASRUtils::symbol_parent_symtab(v->m_type_declaration);
+                for (auto &scopes : copied_scopes) {
+                    if (declared_in != scopes.first) continue;
+                    ASR::symbol_t *copy = scopes.second->get_symbol(
+                        ASRUtils::symbol_name(v->m_type_declaration));
+                    if (copy != nullptr) {
+                        v->m_type_declaration = copy;
+                    }
+                    break;
+                }
                 continue;
             }
-            ASR::symbol_t *copy = new_scope->get_symbol(
-                ASRUtils::symbol_name(v->m_type_declaration));
-            if (copy != nullptr) {
-                v->m_type_declaration = copy;
+            SymbolTable *new_nested = nullptr;
+            if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*item.second) ||
+                    ASR::is_a<ASR::Function_t>(*item.second)) {
+                new_nested = ASRUtils::symbol_symtab(item.second);
+            }
+            ASR::symbol_t *orig_sym = orig_scope->get_symbol(item.first);
+            if (new_nested == nullptr || orig_sym == nullptr ||
+                    orig_sym->type != item.second->type) {
+                continue;
+            }
+            SymbolTable *orig_nested = ASRUtils::symbol_symtab(orig_sym);
+            if (orig_nested != nullptr && orig_nested != new_nested) {
+                fixup_type_declarations_in_scope(new_nested, orig_nested,
+                    copied_scopes);
             }
         }
+        copied_scopes.pop_back();
     }
 
     void fixup_nested_block_bodies(SymbolTable *new_scope,
@@ -7029,7 +7063,6 @@ class SymbolDuplicator {
         duplicate_SymbolTable(function->m_symtab, function_symtab);
 
         fixup_nested_block_bodies(function_symtab, function->m_symtab);
-        fixup_local_type_declarations(function_symtab, function->m_symtab);
 
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);
