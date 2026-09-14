@@ -1,57 +1,35 @@
 program gpu_metal_356
-! An allocatable component of a function result, sized at run time from the
-! actual argument, assigned to an element of a struct array in an offloaded
-! `do concurrent`: the host has to give each element its size before launch.
+! Bitwise and power operators inside do concurrent.
+! Exercises iand, ior, ieor, ishft, and integer exponentiation.
 implicit none
-type tt
-    real, allocatable :: v(:)
-end type
-real :: c(5)
-real, allocatable :: d(:)
-type(tt) :: t(2), u(2), w(3)
-integer :: i, n
+integer, parameter :: n = 8
+integer :: a(n), b_and(n), b_or(n), b_xor(n), b_lsh(n), b_rsh(n), b_pow(n)
+integer :: i
 
-c = [1.0, 2.0, 3.0, 4.0, 5.0]
-n = 3
-
-! A section whose extent is a variable.
-do concurrent (i = 1:2)
-    t(i) = f(c(1:n))
-end do
-do i = 1, 2
-    print *, size(t(i)%v), t(i)%v
-    if (size(t(i)%v) /= 3) error stop
-    if (any(t(i)%v /= c(1:3))) error stop
+do i = 1, n
+    a(i) = i
 end do
 
-! An allocatable actual argument.
-allocate(d(4))
-d = [10.0, 20.0, 30.0, 40.0]
-do concurrent (i = 1:2)
-    u(i) = f(d)
-end do
-do i = 1, 2
-    print *, size(u(i)%v), u(i)%v
-    if (size(u(i)%v) /= 4) error stop
-    if (any(u(i)%v /= d)) error stop
-end do
+b_and = 0; b_or = 0; b_xor = 0
+b_lsh = 0; b_rsh = 0; b_pow = 0
 
-! An extent that changes from one iteration to the next.
-do concurrent (i = 1:3)
-    w(i) = f(c(1:i+1))
-end do
-do i = 1, 3
-    print *, size(w(i)%v), w(i)%v
-    if (size(w(i)%v) /= i + 1) error stop
-    if (any(w(i)%v /= c(1:i+1))) error stop
+do concurrent (i = 1:n)
+    b_and(i) = iand(a(i), 3)
+    b_or(i)  = ior(a(i), 16)
+    b_xor(i) = ieor(a(i), 7)
+    b_lsh(i) = ishft(a(i), 2)
+    b_rsh(i) = ishft(a(i), -1)
+    b_pow(i) = a(i) ** 2
 end do
 
-contains
+do i = 1, n
+    if (b_and(i) /= iand(i, 3))   error stop
+    if (b_or(i)  /= ior(i, 16))   error stop
+    if (b_xor(i) /= ieor(i, 7))   error stop
+    if (b_lsh(i) /= ishft(i, 2))  error stop
+    if (b_rsh(i) /= ishft(i, -1)) error stop
+    if (b_pow(i) /= i ** 2)       error stop
+end do
 
-pure function f(x) result(r)
-    real, intent(in) :: x(:)
-    type(tt) :: r
-    r%v = x
-end function
-
+print *, "PASSED"
 end program

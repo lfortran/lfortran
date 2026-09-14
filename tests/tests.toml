@@ -5209,6 +5209,26 @@ filename = "openmp1.f90"
 asr_openmp = true
 
 [[test]]
+filename = "errors/openmp_default_01.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_02.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_03.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_04.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_05.f90"
+asr_openmp = true
+
+[[test]]
 filename = "errors/intrinsics3.f90"
 asr = true
 
@@ -5649,6 +5669,11 @@ options = "< tests/stdin_read_blank_lines_01.in"
 filename = "stdin_read_list_then_format_01.f90"
 run = true
 options = "< tests/stdin_read_list_then_format_01.in"
+
+[[test]]
+filename = "stdin_read_advance_01.f90"
+run = true
+options = "< tests/stdin_read_advance_01.in"
 
 [[test]]
 filename = "mangle_underscore_external_01.f90"
