@@ -12,6 +12,76 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+// The StructConstant a named constant of derived type stands for, if any.
+static ASR::StructConstant_t* get_struct_constant(ASR::expr_t* x) {
+    if (ASR::is_a<ASR::Var_t>(*x)) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return nullptr;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_storage != ASR::storage_typeType::Parameter) {
+            return nullptr;
+        }
+        x = var->m_value;
+    }
+    if (x && ASR::is_a<ASR::StructConstant_t>(*x)) {
+        return ASR::down_cast<ASR::StructConstant_t>(x);
+    }
+    return nullptr;
+}
+
+static bool is_parameter(ASR::expr_t* x) {
+    if (!ASR::is_a<ASR::Var_t>(*x)) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(x)->m_v);
+    return ASR::is_a<ASR::Variable_t>(*sym) &&
+        ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+            ASR::storage_typeType::Parameter;
+}
+
+// Rebuild a StructConstant, including nested StructConstant components, as
+// the equivalent StructConstructor whose value is the constant. A null()
+// allocatable or pointer component is left out, as an omitted constructor
+// argument is, so the component keeps its default initialization.
+static ASR::expr_t* struct_constant_to_constructor(Allocator& al,
+        ASR::StructConstant_t* x) {
+    std::deque<ASR::symbol_t*> members;
+    ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(x->m_dt_sym));
+    while (struct_sym) {
+        for (int i = (int) struct_sym->n_members - 1; i >= 0; i--) {
+            members.push_front(struct_sym->m_symtab->get_symbol(
+                struct_sym->m_members[i]));
+        }
+        struct_sym = struct_sym->m_parent ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym->m_parent)) : nullptr;
+    }
+    LCOMPILERS_ASSERT(members.size() == x->n_args);
+    Vec<ASR::call_arg_t> args;
+    args.reserve(al, x->n_args);
+    for (size_t i = 0; i < x->n_args; i++) {
+        ASR::call_arg_t arg = x->m_args[i];
+        ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+        if (arg.m_value && ASR::is_a<ASR::PointerNullConstant_t>(*arg.m_value) &&
+                (ASRUtils::is_allocatable(member_type) ||
+                 ASRUtils::is_pointer(member_type))) {
+            arg.m_value = nullptr;
+        } else if (arg.m_value && ASR::is_a<ASR::StructConstant_t>(*arg.m_value) &&
+                ASR::is_a<ASR::StructType_t>(*member_type) &&
+                !ASRUtils::is_class_type(member_type)) {
+            arg.m_value = struct_constant_to_constructor(al,
+                ASR::down_cast<ASR::StructConstant_t>(arg.m_value));
+        }
+        args.push_back(al, arg);
+    }
+    return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, x->base.base.loc,
+        x->m_dt_sym, args.p, args.size(), x->m_type, &x->base));
+}
+
 class ReplaceStructConstructor: public ASR::BaseExprReplacer<ReplaceStructConstructor> {
 
     public:
@@ -115,6 +185,16 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
                 replacer.result_var = nullptr;
             } else {
                 replacer.result_var = x.m_target;
+                // Assigning a constant structure is lowered like assigning
+                // the equivalent structure constructor: component by
+                // component, so every kind of component is copied.
+                ASR::StructConstant_t* value = get_struct_constant(x.m_value);
+                if (value && ASR::is_a<ASR::StructType_t>(*target_type) &&
+                        !ASRUtils::is_class_type(target_type) &&
+                        !is_parameter(x.m_target)) {
+                    const_cast<ASR::Assignment_t&>(x).m_value =
+                        struct_constant_to_constructor(al, value);
+                }
             }
 
             ASR::expr_t** current_expr_copy_9 = current_expr;
