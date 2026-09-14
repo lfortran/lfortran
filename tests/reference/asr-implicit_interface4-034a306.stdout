@@ -39,14 +39,14 @@
                                     .false.
                                     ()
                                 ),
-                            driver2@fpcast:
+                            driver2~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
                                             
                                         })
-                                    driver2@fpcast
+                                    driver2~fpcast
                                     (FunctionType
                                         [(FunctionType
                                             []
@@ -85,10 +85,10 @@
                                     .false.
                                     ()
                                 ),
-                            driver2_fpcast:
+                            driver2~fpcast_ptr:
                                 (Variable
                                     2
-                                    driver2_fpcast
+                                    driver2~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -125,7 +125,7 @@
                                             Host
                                         )
                                     )
-                                    2 driver2@fpcast
+                                    2 driver2~fpcast
                                     Source
                                     Public
                                     Required
@@ -171,15 +171,15 @@
                                     .false.
                                     ()
                                 ),
-                            f@fpcast:
+                            f~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            f_arg_0:
+                                            f~arg_0:
                                                 (Variable
                                                     4
-                                                    f_arg_0
+                                                    f~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -200,10 +200,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_arg_1:
+                                            f~arg_1:
                                                 (Variable
                                                     4
-                                                    f_arg_1
+                                                    f~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -224,10 +224,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_arg_2:
+                                            f~arg_2:
                                                 (Variable
                                                     4
-                                                    f_arg_2
+                                                    f~arg_2
                                                     []
                                                     Unspecified
                                                     ()
@@ -249,7 +249,7 @@
                                                     []
                                                 )
                                         })
-                                    f@fpcast
+                                    f~fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Real 4)
@@ -268,9 +268,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 f_arg_0)
-                                    (Var 4 f_arg_1)
-                                    (Var 4 f_arg_2)]
+                                    [(Var 4 f~arg_0)
+                                    (Var 4 f~arg_1)
+                                    (Var 4 f~arg_2)]
                                     []
                                     ()
                                     Public
@@ -278,10 +278,10 @@
                                     .false.
                                     ()
                                 ),
-                            f_fpcast:
+                            f~fpcast_ptr:
                                 (Variable
                                     2
-                                    f_fpcast
+                                    f~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -306,7 +306,7 @@
                                             Host
                                         )
                                     )
-                                    2 f@fpcast
+                                    2 f~fpcast
                                     Source
                                     Public
                                     Required
@@ -428,10 +428,10 @@
                     [(Var 2 f)
                     (Var 2 n)]
                     [(Associate
-                        (Var 2 f_fpcast)
+                        (Var 2 f~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 f)
-                            2 f@fpcast
+                            2 f~fpcast
                             (FunctionType
                                 [(Integer 4)
                                 (Real 4)
@@ -453,7 +453,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 f_fpcast
+                        2 f~fpcast_ptr
                         2 f
                         [((Var 2 n))
                         ((Var 2 i))
@@ -462,10 +462,10 @@
                         .false.
                     )
                     (Associate
-                        (Var 2 driver2_fpcast)
+                        (Var 2 driver2~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 driver2)
-                            2 driver2@fpcast
+                            2 driver2~fpcast
                             (FunctionType
                                 [(FunctionType
                                     []
@@ -499,7 +499,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 driver2_fpcast
+                        2 driver2~fpcast_ptr
                         2 driver2
                         [((Var 2 f))]
                         ()

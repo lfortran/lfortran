@@ -139,14 +139,14 @@
                                     .false.
                                     ()
                                 ),
-                            messpr@fpcast:
+                            messpr~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
                                             
                                         })
-                                    messpr@fpcast
+                                    messpr~fpcast
                                     (FunctionType
                                         []
                                         ()
@@ -171,10 +171,10 @@
                                     .false.
                                     ()
                                 ),
-                            messpr_fpcast:
+                            messpr~fpcast_ptr:
                                 (Variable
                                     4
-                                    messpr_fpcast
+                                    messpr~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -197,7 +197,7 @@
                                             Host
                                         )
                                     )
-                                    4 messpr@fpcast
+                                    4 messpr~fpcast
                                     Source
                                     Public
                                     Required
@@ -231,10 +231,10 @@
                     []
                     [(Var 4 entry__lcompilers)]
                     [(Associate
-                        (Var 4 messpr_fpcast)
+                        (Var 4 messpr~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 4 messpr)
-                            4 messpr@fpcast
+                            4 messpr~fpcast
                             (FunctionType
                                 []
                                 ()
@@ -254,10 +254,10 @@
                         )
                     )
                     (Associate
-                        (Var 4 messpr_fpcast)
+                        (Var 4 messpr~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 4 messpr)
-                            4 messpr@fpcast
+                            4 messpr~fpcast
                             (FunctionType
                                 []
                                 ()
@@ -316,7 +316,7 @@
                         2
                     )
                     (SubroutineCall
-                        4 messpr_fpcast
+                        4 messpr~fpcast_ptr
                         4 messpr
                         []
                         ()

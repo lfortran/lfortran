@@ -17274,7 +17274,18 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
-    // Build a procedure-pointer temporary holding
+    // The name of a symbol the compiler declares for the user symbol `name`
+    // in the role `role`, e.g. `f~fpcast` for a call-site interface of `f`.
+    // `~` cannot appear in a Fortran name, so a generated symbol neither
+    // hides nor is hidden by a user symbol of its own scope or of any scope
+    // around it. Callers make it unique among the generated symbols of its
+    // scope with `get_unique_name`.
+    static std::string generated_symbol_name(const std::string &name,
+            const std::string &role) {
+        return name + "~" + role;
+    }
+
+    // Build a procedure-pointer temporary (`name~fpcast_ptr`) holding
     //   FunctionPointerCast(source, to_iface)
     // and return the temporary Variable symbol. The caller uses it as the
     // SubroutineCall/FunctionCall name so the call agrees with `to_iface`.
@@ -17316,8 +17327,8 @@ public:
         if (tmp_var == nullptr) {
             ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                 ASRUtils::duplicate_type(al, to_fn->m_function_signature)));
-            std::string tmp_name = tmp_scope->get_unique_name(
-                std::string(ASRUtils::symbol_name(source)) + "_fpcast", false);
+            std::string tmp_name = tmp_scope->get_unique_name(generated_symbol_name(
+                ASRUtils::symbol_name(source), "fpcast_ptr"), false);
             tmp_var = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(
                     al, loc, tmp_scope, s2c(al, tmp_name), nullptr, 0,
@@ -17641,7 +17652,7 @@ public:
     // The interface of a reference to `name` through an implicit interface,
     // built from the reference's actual arguments `args` and, for a function
     // reference, its result type `return_type`. It is filed in the enclosing
-    // procedure's scope as `name@fpcast`, and a reference with the same
+    // procedure's scope as `name~fpcast`, and a reference with the same
     // argument types, declarations and result reuses it.
     ASR::symbol_t* get_callsite_interface(const Location &loc, const std::string &name,
             Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
@@ -17692,7 +17703,7 @@ public:
         }
 
         // Reuse an interface of an earlier reference with the same signature.
-        std::string prefix = sym_name + "@fpcast";
+        std::string prefix = generated_symbol_name(sym_name, "fpcast");
         for (auto &item : sym_scope->get_scope()) {
             if (item.first.rfind(prefix, 0) != 0 ||
                     !ASR::is_a<ASR::Function_t>(*item.second)) {
@@ -17727,7 +17738,8 @@ public:
         Vec<ASR::expr_t*> dummies;
         dummies.reserve(al, args.size());
         for (size_t i = 0; i < args.size(); i++) {
-            std::string arg_name = sym_name + "_arg_" + std::to_string(i);
+            std::string arg_name = generated_symbol_name(sym_name,
+                "arg_" + std::to_string(i));
             ASR::expr_t* actual = args[i].m_value;
             if (ASR::is_a<ASR::Var_t>(*actual) &&
                     ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(actual)->m_v)) {
@@ -17780,7 +17792,7 @@ public:
         }
         ASR::expr_t *to_return = nullptr;
         if (return_type) {
-            std::string return_var_name = sym_name + "_return_var_name";
+            std::string return_var_name = generated_symbol_name(sym_name, "result");
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, return_type);
@@ -17846,7 +17858,7 @@ public:
     // is associated with a dummy or pointer declared by `decl` with the
     // explicit type `formal`: `decl` itself when the caller can name it,
     // otherwise a copy of it filed in the caller's procedure as
-    // `name@fpcast`. Null when there is no usable declaration, or when the
+    // `name~cast_interface`. Null when there is no usable declaration, or when the
     // copy would name derived types the caller cannot see.
     ASR::symbol_t* get_cast_interface(ASR::symbol_t* decl, ASR::FunctionType_t* formal) {
         if (decl == nullptr) {
@@ -17892,7 +17904,8 @@ public:
         dup_fn->m_body = nullptr;
         dup_fn->n_body = 0;
         ASRUtils::get_FunctionType(dup_fn)->m_deftype = ASR::deftypeType::Interface;
-        std::string name = sym_scope->get_unique_name(std::string(fn->m_name) + "@fpcast", false);
+        std::string name = sym_scope->get_unique_name(
+            generated_symbol_name(fn->m_name, "cast_interface"), false);
         dup_fn->m_name = s2c(al, name);
         sym_scope->add_symbol(name, dup);
         copy = dup;

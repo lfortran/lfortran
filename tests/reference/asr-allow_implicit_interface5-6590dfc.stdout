@@ -63,15 +63,15 @@
                                     .false.
                                     ()
                                 ),
-                            klvna@fpcast:
+                            klvna~fpcast:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            klvna_arg_0:
+                                            klvna~arg_0:
                                                 (Variable
                                                     5
-                                                    klvna_arg_0
+                                                    klvna~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -93,7 +93,7 @@
                                                     []
                                                 )
                                         })
-                                    klvna@fpcast
+                                    klvna~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
@@ -110,7 +110,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 klvna_arg_0)]
+                                    [(Var 5 klvna~arg_0)]
                                     []
                                     ()
                                     Public
@@ -118,10 +118,10 @@
                                     .false.
                                     ()
                                 ),
-                            klvna_fpcast:
+                            klvna~fpcast_ptr:
                                 (Variable
                                     2
-                                    klvna_fpcast
+                                    klvna~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -144,7 +144,7 @@
                                             Host
                                         )
                                     )
-                                    2 klvna@fpcast
+                                    2 klvna~fpcast
                                     Source
                                     Public
                                     Required
@@ -288,10 +288,10 @@
                     [(Var 2 nt)
                     (Var 2 kd)]
                     [(Associate
-                        (Var 2 klvna_fpcast)
+                        (Var 2 klvna~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 klvna)
-                            2 klvna@fpcast
+                            2 klvna~fpcast
                             (FunctionType
                                 [(Real 8)]
                                 ()
@@ -311,7 +311,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 klvna_fpcast
+                        2 klvna~fpcast_ptr
                         2 klvna
                         [((Var 2 rt))]
                         ()

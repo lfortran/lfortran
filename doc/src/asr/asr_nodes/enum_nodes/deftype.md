@@ -104,21 +104,21 @@ end program p
 ```
 
 `f` keeps `deftype = ImplicitInterface`. The reference adds a `Function
-f@fpcast` with `deftype = Interface` and two `integer(4)` dummies, a
-procedure-pointer temporary `f_fpcast` declared with it, and, before the
+f~fpcast` with `deftype = Interface` and two `integer(4)` dummies, a
+procedure-pointer temporary `f~fpcast_ptr` declared with it, and, before the
 statement, the association of the temporary with
-`FunctionPointerCast(f, f@fpcast)` (see
+`FunctionPointerCast(f, f~fpcast)` (see
 [FunctionPointerCast](../expression_nodes/FunctionPointerCast.md)). The
 `FunctionCall` calls the temporary, so it agrees with its callee exactly as any
 other call in ASR does, and the ordinary argument checks apply to it. A later
-reference with the same argument types and result reuses `f@fpcast`; one with
+reference with the same argument types and result reuses `f~fpcast`; one with
 different ones gets its own interface.
 
 A character, array or derived-type result goes through the same interface;
-when an ASR pass turns the result into an argument of `f@fpcast`, the casts to
-`f@fpcast` take its new signature. A character result whose length is an
+when an ASR pass turns the result into an argument of `f~fpcast`, the casts to
+`f~fpcast` take its new signature. A character result whose length is an
 expression of the caller (`character(len=n), external :: f`) is assumed length
-in `f@fpcast`; the `FunctionCall` keeps the declared length.
+in `f~fpcast`; the `FunctionCall` keeps the declared length.
 
 A reference in a DO WHILE condition associates the temporary before each
 evaluation of the condition: the loop becomes `do while (.true.)` starting with

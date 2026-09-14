@@ -63,15 +63,15 @@
                                     .false.
                                     ()
                                 ),
-                            matveca@fpcast:
+                            matveca~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            matveca_arg_0:
+                                            matveca~arg_0:
                                                 (Variable
                                                     4
-                                                    matveca_arg_0
+                                                    matveca~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -98,10 +98,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_1:
+                                            matveca~arg_1:
                                                 (Variable
                                                     4
-                                                    matveca_arg_1
+                                                    matveca~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -122,10 +122,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_2:
+                                            matveca~arg_2:
                                                 (Variable
                                                     4
-                                                    matveca_arg_2
+                                                    matveca~arg_2
                                                     []
                                                     Unspecified
                                                     ()
@@ -152,10 +152,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_3:
+                                            matveca~arg_3:
                                                 (Variable
                                                     4
-                                                    matveca_arg_3
+                                                    matveca~arg_3
                                                     []
                                                     Unspecified
                                                     ()
@@ -176,10 +176,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_4:
+                                            matveca~arg_4:
                                                 (Variable
                                                     4
-                                                    matveca_arg_4
+                                                    matveca~arg_4
                                                     []
                                                     Unspecified
                                                     ()
@@ -200,10 +200,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_5:
+                                            matveca~arg_5:
                                                 (Variable
                                                     4
-                                                    matveca_arg_5
+                                                    matveca~arg_5
                                                     []
                                                     Unspecified
                                                     ()
@@ -224,10 +224,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            matveca_arg_6:
+                                            matveca~arg_6:
                                                 (Variable
                                                     4
-                                                    matveca_arg_6
+                                                    matveca~arg_6
                                                     []
                                                     Unspecified
                                                     ()
@@ -249,7 +249,7 @@
                                                     []
                                                 )
                                         })
-                                    matveca@fpcast
+                                    matveca~fpcast
                                     (FunctionType
                                         [(Array
                                             (Complex 4)
@@ -284,13 +284,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 matveca_arg_0)
-                                    (Var 4 matveca_arg_1)
-                                    (Var 4 matveca_arg_2)
-                                    (Var 4 matveca_arg_3)
-                                    (Var 4 matveca_arg_4)
-                                    (Var 4 matveca_arg_5)
-                                    (Var 4 matveca_arg_6)]
+                                    [(Var 4 matveca~arg_0)
+                                    (Var 4 matveca~arg_1)
+                                    (Var 4 matveca~arg_2)
+                                    (Var 4 matveca~arg_3)
+                                    (Var 4 matveca~arg_4)
+                                    (Var 4 matveca~arg_5)
+                                    (Var 4 matveca~arg_6)]
                                     []
                                     ()
                                     Public
@@ -298,10 +298,10 @@
                                     .false.
                                     ()
                                 ),
-                            matveca_fpcast:
+                            matveca~fpcast_ptr:
                                 (Variable
                                     2
-                                    matveca_fpcast
+                                    matveca~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -342,7 +342,7 @@
                                             Host
                                         )
                                     )
-                                    2 matveca@fpcast
+                                    2 matveca~fpcast
                                     Source
                                     Public
                                     Required
@@ -558,10 +558,10 @@
                     [(Var 2 m)
                     (Var 2 n)]
                     [(Associate
-                        (Var 2 matveca_fpcast)
+                        (Var 2 matveca~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 matveca)
-                            2 matveca@fpcast
+                            2 matveca~fpcast
                             (FunctionType
                                 [(Array
                                     (Complex 4)
@@ -599,7 +599,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 matveca_fpcast
+                        2 matveca~fpcast_ptr
                         2 matveca
                         [((Var 2 x))
                         ((Var 2 m))

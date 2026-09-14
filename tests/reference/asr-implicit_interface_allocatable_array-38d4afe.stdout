@@ -103,15 +103,15 @@
                                     .false.
                                     ()
                                 ),
-                            sub1@fpcast:
+                            sub1~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            sub1_arg_0:
+                                            sub1~arg_0:
                                                 (Variable
                                                     4
-                                                    sub1_arg_0
+                                                    sub1~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -132,10 +132,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            sub1_arg_1:
+                                            sub1~arg_1:
                                                 (Variable
                                                     4
-                                                    sub1_arg_1
+                                                    sub1~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -163,7 +163,7 @@
                                                     []
                                                 )
                                         })
-                                    sub1@fpcast
+                                    sub1~fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Array
@@ -187,8 +187,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 sub1_arg_0)
-                                    (Var 4 sub1_arg_1)]
+                                    [(Var 4 sub1~arg_0)
+                                    (Var 4 sub1~arg_1)]
                                     []
                                     ()
                                     Public
@@ -196,10 +196,10 @@
                                     .false.
                                     ()
                                 ),
-                            sub1_fpcast:
+                            sub1~fpcast_ptr:
                                 (Variable
                                     2
-                                    sub1_fpcast
+                                    sub1~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -229,7 +229,7 @@
                                             Host
                                         )
                                     )
-                                    2 sub1@fpcast
+                                    2 sub1~fpcast
                                     Source
                                     Public
                                     Required
@@ -275,15 +275,15 @@
                                     .false.
                                     ()
                                 ),
-                            sub2@fpcast:
+                            sub2~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            sub2_arg_0:
+                                            sub2~arg_0:
                                                 (Variable
                                                     6
-                                                    sub2_arg_0
+                                                    sub2~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -304,10 +304,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            sub2_arg_1:
+                                            sub2~arg_1:
                                                 (Variable
                                                     6
-                                                    sub2_arg_1
+                                                    sub2~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -335,7 +335,7 @@
                                                     []
                                                 )
                                         })
-                                    sub2@fpcast
+                                    sub2~fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Array
@@ -359,8 +359,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 sub2_arg_0)
-                                    (Var 6 sub2_arg_1)]
+                                    [(Var 6 sub2~arg_0)
+                                    (Var 6 sub2~arg_1)]
                                     []
                                     ()
                                     Public
@@ -368,10 +368,10 @@
                                     .false.
                                     ()
                                 ),
-                            sub2_fpcast:
+                            sub2~fpcast_ptr:
                                 (Variable
                                     2
-                                    sub2_fpcast
+                                    sub2~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -401,7 +401,7 @@
                                             Host
                                         )
                                     )
-                                    2 sub2@fpcast
+                                    2 sub2~fpcast
                                     Source
                                     Public
                                     Required
@@ -435,10 +435,10 @@
                     []
                     []
                     [(Associate
-                        (Var 2 sub1_fpcast)
+                        (Var 2 sub1~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 sub1)
-                            2 sub1@fpcast
+                            2 sub1~fpcast
                             (FunctionType
                                 [(Integer 4)
                                 (Array
@@ -465,7 +465,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 sub1_fpcast
+                        2 sub1~fpcast_ptr
                         2 sub1
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
@@ -485,10 +485,10 @@
                         .false.
                     )
                     (Associate
-                        (Var 2 sub2_fpcast)
+                        (Var 2 sub2~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 sub2)
-                            2 sub2@fpcast
+                            2 sub2~fpcast
                             (FunctionType
                                 [(Integer 4)
                                 (Array
@@ -515,7 +515,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 sub2_fpcast
+                        2 sub2~fpcast_ptr
                         2 sub2
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast

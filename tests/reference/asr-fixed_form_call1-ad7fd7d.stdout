@@ -111,15 +111,15 @@
                                     .false.
                                     ()
                                 ),
-                            prinf@fpcast:
+                            prinf~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            prinf_arg_0:
+                                            prinf~arg_0:
                                                 (Variable
                                                     4
-                                                    prinf_arg_0
+                                                    prinf~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -140,10 +140,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            prinf_arg_1:
+                                            prinf~arg_1:
                                                 (Variable
                                                     4
-                                                    prinf_arg_1
+                                                    prinf~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -164,10 +164,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            prinf_arg_2:
+                                            prinf~arg_2:
                                                 (Variable
                                                     4
-                                                    prinf_arg_2
+                                                    prinf~arg_2
                                                     []
                                                     Unspecified
                                                     ()
@@ -189,7 +189,7 @@
                                                     []
                                                 )
                                         })
-                                    prinf@fpcast
+                                    prinf~fpcast
                                     (FunctionType
                                         [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         (Integer 4)
@@ -208,9 +208,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 prinf_arg_0)
-                                    (Var 4 prinf_arg_1)
-                                    (Var 4 prinf_arg_2)]
+                                    [(Var 4 prinf~arg_0)
+                                    (Var 4 prinf~arg_1)
+                                    (Var 4 prinf~arg_2)]
                                     []
                                     ()
                                     Public
@@ -218,10 +218,10 @@
                                     .false.
                                     ()
                                 ),
-                            prinf_fpcast:
+                            prinf~fpcast_ptr:
                                 (Variable
                                     2
-                                    prinf_fpcast
+                                    prinf~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -246,7 +246,7 @@
                                             Host
                                         )
                                     )
-                                    2 prinf@fpcast
+                                    2 prinf~fpcast
                                     Source
                                     Public
                                     Required
@@ -360,10 +360,10 @@
                     (Var 2 x)
                     (Var 2 y)]
                     [(Associate
-                        (Var 2 prinf_fpcast)
+                        (Var 2 prinf~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 prinf)
-                            2 prinf@fpcast
+                            2 prinf~fpcast
                             (FunctionType
                                 [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 (Integer 4)
@@ -385,7 +385,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 prinf_fpcast
+                        2 prinf~fpcast_ptr
                         2 prinf
                         [((StringConstant
                             "lw = *"
@@ -397,10 +397,10 @@
                         .false.
                     )
                     (Associate
-                        (Var 2 prinf_fpcast)
+                        (Var 2 prinf~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 prinf)
-                            2 prinf@fpcast
+                            2 prinf~fpcast
                             (FunctionType
                                 [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 (Integer 4)
@@ -422,7 +422,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 prinf_fpcast
+                        2 prinf~fpcast_ptr
                         2 prinf
                         [((StringConstant
                             "16m+70 = *"

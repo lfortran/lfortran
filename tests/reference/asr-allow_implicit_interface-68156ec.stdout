@@ -39,15 +39,15 @@
                                     .false.
                                     ()
                                 ),
-                            alnorm@fpcast:
+                            alnorm~fpcast:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            alnorm_arg_0:
+                                            alnorm~arg_0:
                                                 (Variable
                                                     5
-                                                    alnorm_arg_0
+                                                    alnorm~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -68,10 +68,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            alnorm_arg_1:
+                                            alnorm~arg_1:
                                                 (Variable
                                                     5
-                                                    alnorm_arg_1
+                                                    alnorm~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -92,10 +92,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            alnorm_return_var_name:
+                                            alnorm~result:
                                                 (Variable
                                                     5
-                                                    alnorm_return_var_name
+                                                    alnorm~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -117,7 +117,7 @@
                                                     []
                                                 )
                                         })
-                                    alnorm@fpcast
+                                    alnorm~fpcast
                                     (FunctionType
                                         [(Real 8)
                                         (Logical 4)]
@@ -135,19 +135,19 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 alnorm_arg_0)
-                                    (Var 5 alnorm_arg_1)]
+                                    [(Var 5 alnorm~arg_0)
+                                    (Var 5 alnorm~arg_1)]
                                     []
-                                    (Var 5 alnorm_return_var_name)
+                                    (Var 5 alnorm~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            alnorm_fpcast:
+                            alnorm~fpcast_ptr:
                                 (Variable
                                     2
-                                    alnorm_fpcast
+                                    alnorm~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -171,7 +171,7 @@
                                             Host
                                         )
                                     )
-                                    2 alnorm@fpcast
+                                    2 alnorm~fpcast
                                     Source
                                     Public
                                     Required
@@ -241,15 +241,15 @@
                                     .false.
                                     ()
                                 ),
-                            dgetrf@fpcast:
+                            dgetrf~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            dgetrf_arg_0:
+                                            dgetrf~arg_0:
                                                 (Variable
                                                     6
-                                                    dgetrf_arg_0
+                                                    dgetrf~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -270,10 +270,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            dgetrf_arg_1:
+                                            dgetrf~arg_1:
                                                 (Variable
                                                     6
-                                                    dgetrf_arg_1
+                                                    dgetrf~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -294,10 +294,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            dgetrf_arg_2:
+                                            dgetrf~arg_2:
                                                 (Variable
                                                     6
-                                                    dgetrf_arg_2
+                                                    dgetrf~arg_2
                                                     []
                                                     Unspecified
                                                     ()
@@ -319,7 +319,7 @@
                                                     []
                                                 )
                                         })
-                                    dgetrf@fpcast
+                                    dgetrf~fpcast
                                     (FunctionType
                                         [(Real 8)
                                         (Real 8)
@@ -338,9 +338,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 dgetrf_arg_0)
-                                    (Var 6 dgetrf_arg_1)
-                                    (Var 6 dgetrf_arg_2)]
+                                    [(Var 6 dgetrf~arg_0)
+                                    (Var 6 dgetrf~arg_1)
+                                    (Var 6 dgetrf~arg_2)]
                                     []
                                     ()
                                     Public
@@ -348,10 +348,10 @@
                                     .false.
                                     ()
                                 ),
-                            dgetrf_fpcast:
+                            dgetrf~fpcast_ptr:
                                 (Variable
                                     2
-                                    dgetrf_fpcast
+                                    dgetrf~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -376,7 +376,7 @@
                                             Host
                                         )
                                     )
-                                    2 dgetrf@fpcast
+                                    2 dgetrf~fpcast
                                     Source
                                     Public
                                     Required
@@ -666,10 +666,10 @@
                         .false.
                     )
                     (Associate
-                        (Var 2 alnorm_fpcast)
+                        (Var 2 alnorm~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 alnorm)
-                            2 alnorm@fpcast
+                            2 alnorm~fpcast
                             (FunctionType
                                 [(Real 8)
                                 (Logical 4)]
@@ -714,7 +714,7 @@
                             Add
                             (Cast
                                 (FunctionCall
-                                    2 alnorm_fpcast
+                                    2 alnorm~fpcast_ptr
                                     ()
                                     [((Var 2 x))
                                     ((LogicalConstant
@@ -738,10 +738,10 @@
                         .false.
                     )
                     (Associate
-                        (Var 2 dgetrf_fpcast)
+                        (Var 2 dgetrf~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 dgetrf)
-                            2 dgetrf@fpcast
+                            2 dgetrf~fpcast
                             (FunctionType
                                 [(Real 8)
                                 (Real 8)
@@ -763,7 +763,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 dgetrf_fpcast
+                        2 dgetrf~fpcast_ptr
                         2 dgetrf
                         [((Var 2 x))
                         ((Var 2 y))

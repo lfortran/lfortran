@@ -240,8 +240,8 @@ define void @driver(void ()* %fnc, i32* %arr, i32* %m) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
-  %fnc_fpcast = alloca void (i32*, i32*, i32*)*, align 8
-  store void (i32*, i32*, i32*)* null, void (i32*, i32*, i32*)** %fnc_fpcast, align 8
+  %"fnc~fpcast_ptr" = alloca void (i32*, i32*, i32*)*, align 8
+  store void (i32*, i32*, i32*)* null, void (i32*, i32*, i32*)** %"fnc~fpcast_ptr", align 8
   %1 = alloca i64, align 8
   %2 = alloca float, align 4
   store float 1.000000e+00, float* %2, align 4
@@ -266,8 +266,8 @@ free_nonnull:                                     ; preds = %.entry
 
 free_done:                                        ; preds = %free_nonnull, %.entry
   %13 = bitcast void ()* %fnc to void (i32*, i32*, i32*)*
-  store void (i32*, i32*, i32*)* %13, void (i32*, i32*, i32*)** %fnc_fpcast, align 8
-  %14 = load void (i32*, i32*, i32*)*, void (i32*, i32*, i32*)** %fnc_fpcast, align 8
+  store void (i32*, i32*, i32*)* %13, void (i32*, i32*, i32*)** %"fnc~fpcast_ptr", align 8
+  %14 = load void (i32*, i32*, i32*)*, void (i32*, i32*, i32*)** %"fnc~fpcast_ptr", align 8
   %15 = load i32, i32* %m, align 4
   %16 = sext i32 %15 to i64
   %17 = add i64 1, %16
@@ -319,9 +319,9 @@ FINALIZE_SYMTABLE_driver:                         ; preds = %return
   ret void
 }
 
-declare void @"fnc@fpcast"(i32*, i32*, i32*)
+declare void @"fnc~fpcast"(i32*, i32*, i32*)
 
-declare void @fnc_fpcast(i32*, i32*, i32*)
+declare void @"fnc~fpcast_ptr"(i32*, i32*, i32*)
 
 define void @implicit_interface_check(i32* %arr1, i32* %m, i32* %c) {
 .entry:

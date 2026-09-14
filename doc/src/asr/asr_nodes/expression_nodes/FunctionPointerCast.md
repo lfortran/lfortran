@@ -36,7 +36,7 @@ arguments:
 
 * **Calls.** Each reference to a procedure with an implicit interface builds an
   `Interface` from its own actual arguments (and result type), filed in the
-  calling procedure as `name@fpcast` and shared by references with the same
+  calling procedure as `name~fpcast` and shared by references with the same
   signature. The procedure is associated with a procedure-pointer temporary
   through a `FunctionPointerCast` to that interface right before the statement
   (before each evaluation of a DO WHILE condition), and the call is a call of

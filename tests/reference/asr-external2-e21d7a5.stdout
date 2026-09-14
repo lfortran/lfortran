@@ -62,15 +62,15 @@
                                     .false.
                                     ()
                                 ),
-                            sub2@fpcast:
+                            sub2~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            sub2_arg_0:
+                                            sub2~arg_0:
                                                 (Variable
                                                     4
-                                                    sub2_arg_0
+                                                    sub2~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -92,7 +92,7 @@
                                                     []
                                                 )
                                         })
-                                    sub2@fpcast
+                                    sub2~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         ()
@@ -109,7 +109,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 sub2_arg_0)]
+                                    [(Var 4 sub2~arg_0)]
                                     []
                                     ()
                                     Public
@@ -117,10 +117,10 @@
                                     .false.
                                     ()
                                 ),
-                            sub2_fpcast:
+                            sub2~fpcast_ptr:
                                 (Variable
                                     2
-                                    sub2_fpcast
+                                    sub2~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -143,7 +143,7 @@
                                             Host
                                         )
                                     )
-                                    2 sub2@fpcast
+                                    2 sub2~fpcast
                                     Source
                                     Public
                                     Required
@@ -215,10 +215,10 @@
                     []
                     [(Var 2 sub2)]
                     [(Associate
-                        (Var 2 sub2_fpcast)
+                        (Var 2 sub2~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 sub2)
-                            2 sub2@fpcast
+                            2 sub2~fpcast
                             (FunctionType
                                 [(Real 4)]
                                 ()
@@ -238,7 +238,7 @@
                         )
                     )
                     (SubroutineCall
-                        2 sub2_fpcast
+                        2 sub2~fpcast_ptr
                         2 sub2
                         [((Var 2 x))]
                         ()

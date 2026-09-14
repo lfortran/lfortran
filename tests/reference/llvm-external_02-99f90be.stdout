@@ -19,12 +19,12 @@ FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
 
 define void @cobylb(double ()* %calcfc) {
 .entry:
-  %calcfc_fpcast = alloca void (double*)*, align 8
-  store void (double*)* null, void (double*)** %calcfc_fpcast, align 8
+  %"calcfc~fpcast_ptr" = alloca void (double*)*, align 8
+  store void (double*)* null, void (double*)** %"calcfc~fpcast_ptr", align 8
   %con = alloca double, align 8
   %0 = bitcast double ()* %calcfc to void (double*)*
-  store void (double*)* %0, void (double*)** %calcfc_fpcast, align 8
-  %1 = load void (double*)*, void (double*)** %calcfc_fpcast, align 8
+  store void (double*)* %0, void (double*)** %"calcfc~fpcast_ptr", align 8
+  %1 = load void (double*)*, void (double*)** %"calcfc~fpcast_ptr", align 8
   call void %1(double* %con)
   br label %return
 
@@ -38,6 +38,6 @@ FINALIZE_SYMTABLE_cobylb:                         ; preds = %return
   ret void
 }
 
-declare void @"calcfc@fpcast"(double*)
+declare void @"calcfc~fpcast"(double*)
 
-declare void @calcfc_fpcast(double*)
+declare void @"calcfc~fpcast_ptr"(double*)

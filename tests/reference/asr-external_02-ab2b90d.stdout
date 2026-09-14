@@ -169,15 +169,15 @@
                                     .false.
                                     ()
                                 ),
-                            calcfc@fpcast:
+                            calcfc~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            calcfc_arg_0:
+                                            calcfc~arg_0:
                                                 (Variable
                                                     6
-                                                    calcfc_arg_0
+                                                    calcfc~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -199,7 +199,7 @@
                                                     []
                                                 )
                                         })
-                                    calcfc@fpcast
+                                    calcfc~fpcast
                                     (FunctionType
                                         [(Real 8)]
                                         ()
@@ -216,7 +216,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 calcfc_arg_0)]
+                                    [(Var 6 calcfc~arg_0)]
                                     []
                                     ()
                                     Public
@@ -224,10 +224,10 @@
                                     .false.
                                     ()
                                 ),
-                            calcfc_fpcast:
+                            calcfc~fpcast_ptr:
                                 (Variable
                                     4
-                                    calcfc_fpcast
+                                    calcfc~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -250,7 +250,7 @@
                                             Host
                                         )
                                     )
-                                    4 calcfc@fpcast
+                                    4 calcfc~fpcast
                                     Source
                                     Public
                                     Required
@@ -322,10 +322,10 @@
                     []
                     [(Var 4 calcfc)]
                     [(Associate
-                        (Var 4 calcfc_fpcast)
+                        (Var 4 calcfc~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 4 calcfc)
-                            4 calcfc@fpcast
+                            4 calcfc~fpcast
                             (FunctionType
                                 [(Real 8)]
                                 ()
@@ -345,7 +345,7 @@
                         )
                     )
                     (SubroutineCall
-                        4 calcfc_fpcast
+                        4 calcfc~fpcast_ptr
                         4 calcfc
                         [((Var 4 con))]
                         ()

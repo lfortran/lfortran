@@ -62,15 +62,15 @@
                                     .false.
                                     ()
                                 ),
-                            f@fpcast:
+                            f~fpcast:
                                 (Function
                                     (SymbolTable
                                         7
                                         {
-                                            f_arg_0:
+                                            f~arg_0:
                                                 (Variable
                                                     7
-                                                    f_arg_0
+                                                    f~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -91,10 +91,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_return_var_name:
+                                            f~result:
                                                 (Variable
                                                     7
-                                                    f_return_var_name
+                                                    f~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -116,7 +116,7 @@
                                                     []
                                                 )
                                         })
-                                    f@fpcast
+                                    f~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         (Real 4)
@@ -133,18 +133,18 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 f_arg_0)]
+                                    [(Var 7 f~arg_0)]
                                     []
-                                    (Var 7 f_return_var_name)
+                                    (Var 7 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            f_fpcast:
+                            f~fpcast_ptr:
                                 (Variable
                                     4
-                                    f_fpcast
+                                    f~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -167,7 +167,7 @@
                                             Host
                                         )
                                     )
-                                    4 f@fpcast
+                                    4 f~fpcast
                                     Source
                                     Public
                                     Required
@@ -239,10 +239,10 @@
                     []
                     [(Var 4 f)]
                     [(Associate
-                        (Var 4 f_fpcast)
+                        (Var 4 f~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 4 f)
-                            4 f@fpcast
+                            4 f~fpcast
                             (FunctionType
                                 [(Real 4)]
                                 (Real 4)
@@ -264,7 +264,7 @@
                     (Assignment
                         (Var 4 r)
                         (FunctionCall
-                            4 f_fpcast
+                            4 f~fpcast_ptr
                             ()
                             [((RealConstant
                                 2.000000

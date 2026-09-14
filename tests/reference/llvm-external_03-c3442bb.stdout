@@ -13,12 +13,12 @@ define void @a(float ()* %f) {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
   %call_arg_value = alloca float, align 4
-  %f_fpcast = alloca float (float*)*, align 8
-  store float (float*)* null, float (float*)** %f_fpcast, align 8
+  %"f~fpcast_ptr" = alloca float (float*)*, align 8
+  store float (float*)* null, float (float*)** %"f~fpcast_ptr", align 8
   %r = alloca float, align 4
   %1 = bitcast float ()* %f to float (float*)*
-  store float (float*)* %1, float (float*)** %f_fpcast, align 8
-  %2 = load float (float*)*, float (float*)** %f_fpcast, align 8
+  store float (float*)* %1, float (float*)** %"f~fpcast_ptr", align 8
+  %2 = load float (float*)*, float (float*)** %"f~fpcast_ptr", align 8
   store float 2.000000e+00, float* %call_arg_value, align 4
   %3 = call float %2(float* %call_arg_value)
   store float %3, float* %r, align 4
@@ -52,9 +52,9 @@ FINALIZE_SYMTABLE_a:                              ; preds = %return
   ret void
 }
 
-declare float @"f@fpcast"(float*)
+declare float @"f~fpcast"(float*)
 
-declare float @f_fpcast(float*)
+declare float @"f~fpcast_ptr"(float*)
 
 define void @b() {
 .entry:

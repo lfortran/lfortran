@@ -62,15 +62,15 @@
                                     .false.
                                     ()
                                 ),
-                            f@fpcast:
+                            f~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            f_arg_0:
+                                            f~arg_0:
                                                 (Variable
                                                     4
-                                                    f_arg_0
+                                                    f~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -91,10 +91,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_return_var_name:
+                                            f~result:
                                                 (Variable
                                                     4
-                                                    f_return_var_name
+                                                    f~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -116,7 +116,7 @@
                                                     []
                                                 )
                                         })
-                                    f@fpcast
+                                    f~fpcast
                                     (FunctionType
                                         [(Integer 4)]
                                         (Real 8)
@@ -133,18 +133,18 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 f_arg_0)]
+                                    [(Var 4 f~arg_0)]
                                     []
-                                    (Var 4 f_return_var_name)
+                                    (Var 4 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            f_fpcast:
+                            f~fpcast_ptr:
                                 (Variable
                                     2
-                                    f_fpcast
+                                    f~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -167,7 +167,7 @@
                                             Host
                                         )
                                     )
-                                    2 f@fpcast
+                                    2 f~fpcast
                                     Source
                                     Public
                                     Required
@@ -236,15 +236,15 @@
                                     .false.
                                     ()
                                 ),
-                            g@fpcast:
+                            g~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            g_arg_0:
+                                            g~arg_0:
                                                 (Variable
                                                     6
-                                                    g_arg_0
+                                                    g~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -265,10 +265,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            g_arg_1:
+                                            g~arg_1:
                                                 (Variable
                                                     6
-                                                    g_arg_1
+                                                    g~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -289,10 +289,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            g_return_var_name:
+                                            g~result:
                                                 (Variable
                                                     6
-                                                    g_return_var_name
+                                                    g~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -314,7 +314,7 @@
                                                     []
                                                 )
                                         })
-                                    g@fpcast
+                                    g~fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Real 4)]
@@ -332,19 +332,19 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 g_arg_0)
-                                    (Var 6 g_arg_1)]
+                                    [(Var 6 g~arg_0)
+                                    (Var 6 g~arg_1)]
                                     []
-                                    (Var 6 g_return_var_name)
+                                    (Var 6 g~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            g_fpcast:
+                            g~fpcast_ptr:
                                 (Variable
                                     2
-                                    g_fpcast
+                                    g~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -368,7 +368,7 @@
                                             Host
                                         )
                                     )
-                                    2 g@fpcast
+                                    2 g~fpcast
                                     Source
                                     Public
                                     Required
@@ -386,10 +386,10 @@
                     implicit_interface2
                     []
                     [(Associate
-                        (Var 2 f_fpcast)
+                        (Var 2 f~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 f)
-                            2 f@fpcast
+                            2 f~fpcast
                             (FunctionType
                                 [(Integer 4)]
                                 (Real 8)
@@ -409,10 +409,10 @@
                         )
                     )
                     (Associate
-                        (Var 2 g_fpcast)
+                        (Var 2 g~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 g)
-                            2 g@fpcast
+                            2 g~fpcast
                             (FunctionType
                                 [(Integer 4)
                                 (Real 4)]
@@ -436,7 +436,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                2 f_fpcast
+                                2 f~fpcast_ptr
                                 ()
                                 [((IntegerConstant 5 (Integer 4) Decimal))]
                                 (Real 8)
@@ -444,7 +444,7 @@
                                 ()
                             )
                             (FunctionCall
-                                2 g_fpcast
+                                2 g~fpcast_ptr
                                 ()
                                 [((IntegerConstant 1 (Integer 4) Decimal))
                                 ((RealConstant

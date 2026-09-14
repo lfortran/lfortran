@@ -87,14 +87,14 @@
                                     .false.
                                     ()
                                 ),
-                            dqk15w@fpcast:
+                            dqk15w~fpcast:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
                                             
                                         })
-                                    dqk15w@fpcast
+                                    dqk15w~fpcast
                                     (FunctionType
                                         [(FunctionType
                                             []
@@ -133,10 +133,10 @@
                                     .false.
                                     ()
                                 ),
-                            dqk15w_fpcast:
+                            dqk15w~fpcast_ptr:
                                 (Variable
                                     2
-                                    dqk15w_fpcast
+                                    dqk15w~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -173,7 +173,7 @@
                                             Host
                                         )
                                     )
-                                    2 dqk15w@fpcast
+                                    2 dqk15w~fpcast
                                     Source
                                     Public
                                     Required
@@ -242,15 +242,15 @@
                                     .false.
                                     ()
                                 ),
-                            f@fpcast:
+                            f~fpcast:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            f_arg_0:
+                                            f~arg_0:
                                                 (Variable
                                                     6
-                                                    f_arg_0
+                                                    f~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -271,10 +271,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            f_return_var_name:
+                                            f~result:
                                                 (Variable
                                                     6
-                                                    f_return_var_name
+                                                    f~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -296,7 +296,7 @@
                                                     []
                                                 )
                                         })
-                                    f@fpcast
+                                    f~fpcast
                                     (FunctionType
                                         [(Real 4)]
                                         (Real 8)
@@ -313,18 +313,18 @@
                                         Host
                                     )
                                     []
-                                    [(Var 6 f_arg_0)]
+                                    [(Var 6 f~arg_0)]
                                     []
-                                    (Var 6 f_return_var_name)
+                                    (Var 6 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
                                 ),
-                            f_fpcast:
+                            f~fpcast_ptr:
                                 (Variable
                                     2
-                                    f_fpcast
+                                    f~fpcast_ptr
                                     []
                                     Local
                                     ()
@@ -347,7 +347,7 @@
                                             Host
                                         )
                                     )
-                                    2 f@fpcast
+                                    2 f~fpcast
                                     Source
                                     Public
                                     Required
@@ -419,10 +419,10 @@
                     []
                     [(Var 2 f)]
                     [(Associate
-                        (Var 2 dqk15w_fpcast)
+                        (Var 2 dqk15w~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 dqk15w)
-                            2 dqk15w@fpcast
+                            2 dqk15w~fpcast
                             (FunctionType
                                 [(FunctionType
                                     []
@@ -456,17 +456,17 @@
                         )
                     )
                     (SubroutineCall
-                        2 dqk15w_fpcast
+                        2 dqk15w~fpcast_ptr
                         2 dqk15w
                         [((Var 2 f))]
                         ()
                         .false.
                     )
                     (Associate
-                        (Var 2 f_fpcast)
+                        (Var 2 f~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 f)
-                            2 f@fpcast
+                            2 f~fpcast
                             (FunctionType
                                 [(Real 4)]
                                 (Real 8)
@@ -489,7 +489,7 @@
                         (StringFormat
                             ()
                             [(FunctionCall
-                                2 f_fpcast
+                                2 f~fpcast_ptr
                                 ()
                                 [((RealBinOp
                                     (Var 2 hlgth)
