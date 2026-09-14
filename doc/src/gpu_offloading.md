@@ -134,6 +134,36 @@ generates the device source. It never falls back to the CPU:
 * The pipeline does not repeat the unsupported-construct check. Where it needs
   a fact the check guarantees (for example that no `real(8)` reaches a Metal
   kernel), it asserts it.
+* A kernel cannot allocate. When a loop assigns `t(i) = f(...)` and `f` gives
+  an allocatable component of its result a size, the storage the kernel
+  writes into `t(i)%v` has to exist before the launch. That follows the rule
+  every assignment follows: an allocatable scalar is always allocated or
+  reallocated automatically, but an allocatable array, including an
+  allocatable array component such as `t(i)%v`, only with
+  `--realloc-lhs-arrays`.
+  * With the option, the host allocates `t(i)%v` before the launch, or
+    reallocates it when it is allocated with another size. It sizes each
+    element from the same expression the kernel uses, evaluated for that
+    iteration.
+  * Without it, nothing is allocated, and the component has to be allocated
+    with the right size already. With bounds checking on (the default,
+    without `--fast`), the launch checks this with the same run-time check an
+    assignment gets ("Array ... is not allocated", "Array shape mismatch in
+    assignment"). Allocation status and size are known only at run time, so
+    the check cannot be made at compile time. Without bounds checking the
+    kernel writes storage that does not exist.
+  * Only the elements the loop writes are allocated or checked. They are
+    found from the loop's index range mapped through the element's subscripts.
+    An element the loop does not write is left as it is.
+  * Sometimes the host cannot evaluate the size before the loop runs. The size
+    may come from a call, from a value the loop itself writes (`s(i) = ...`
+    earlier in the iteration, so the value before the loop would be a wrong
+    size), or from a section with an omitted bound (#12884). Then even with
+    the option the component is not allocated, and bounds checking reports it
+    if it is unallocated. A wrong size is not detected.
+  * When the host cannot tell which elements the loop writes, a size that is
+    the same for every element is given to all of them with the option, and
+    nothing is checked.
 
 ## Testing
 

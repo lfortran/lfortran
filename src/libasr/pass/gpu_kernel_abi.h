@@ -1,7 +1,9 @@
 #ifndef LIBASR_PASS_GPU_KERNEL_ABI_H
 #define LIBASR_PASS_GPU_KERNEL_ABI_H
 
+#include <functional>
 #include <map>
+#include <string>
 #include <vector>
 
 #include <libasr/asr.h>
@@ -25,16 +27,49 @@ ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     ASR::expr_t *expression,
     const std::map<ASR::symbol_t*, ASR::expr_t*> &host_values = {});
 
+// The iterations a launch of a kernel runs, replayed on the host: the loop
+// `do counter = 0, count - 1` whose body starts with `prologue` goes through
+// them in the order the device numbers them, and `prologue` works out the
+// loop indices of the iteration the way the kernel does, into host
+// variables. `indices` maps each index the kernel gives a single value to
+// the host variable holding it.
+struct GpuHostIterations {
+    ASR::expr_t *counter = nullptr;
+    ASR::expr_t *count = nullptr;
+    std::vector<ASR::stmt_t*> prologue;
+    std::map<ASR::symbol_t*, ASR::expr_t*> indices;
+};
+
+// Fills `iterations` for a launch of `kernel` with the arguments `args`,
+// declaring the host variables it needs with `new_local`. False when the
+// kernel does not work out its iteration the way the offload pass writes
+// it, or the host cannot evaluate what it reads.
+bool gpu_host_iterations(Allocator &al, const ASR::Function_t &kernel,
+    ASR::call_arg_t *args, size_t n_args,
+    const std::function<ASR::expr_t*(const std::string&, ASR::ttype_t*)>
+        &new_local,
+    GpuHostIterations &iterations);
+
+// The subscripts, into the host's struct array `array`, of the element of
+// the kernel's struct array whose component `shape` shapes, in the
+// iteration whose loop indices `indices` hold (see GpuHostIterations).
+// Empty when the element is not picked by subscripts the host can evaluate
+// before the launch.
+std::vector<ASR::expr_t*> gpu_host_element_subscripts(Allocator &al,
+    const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
+    const GpuMemberShape &shape, ASR::expr_t *array,
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &indices);
+
 // The extents a kernel gives a component of one element of its struct
-// array, as expressions the host evaluates before the launch for the element
-// at `subscripts`, bound to the launch's arguments `args`. The extents may
-// depend on the iteration that writes the element, through the loop index
-// the kernel subscripts the element by. Empty when one of them has no host
-// counterpart.
+// array, as expressions the host evaluates before the launch, bound to the
+// launch's arguments `args`. The extents may depend on the iteration that
+// writes the element, through the loop indices in `indices`. Empty when one
+// of them has no host counterpart, which includes an extent that reads a
+// value the kernel changes: the host only sees it before the loop runs.
 std::vector<ASR::expr_t*> gpu_host_member_extents(Allocator &al,
     const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
     const GpuMemberShape &shape,
-    const std::vector<ASR::expr_t*> &subscripts);
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &indices);
 
 inline ASR::Variable_t* gpu_argument_variable(
         const ASR::gpu_kernel_argument_t &arg) {
