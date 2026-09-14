@@ -921,16 +921,28 @@ class ParallelRegionVisitor :
                     for (auto it: array_arg_mapping) {
                         func_type->m_arg_types[it.second] = ASRUtils::symbol_type(func->m_symtab->resolve_symbol(it.first));
                     }
+                    // types of the remaining variables, e.g. `y(size(ap)-1)`, can refer to the replaced arrays
+                    for (auto &item: func->m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                            v.visit_symbol(*item.second);
+                        }
+                    }
+                    v.visit_ttype(*func->m_function_signature);
 
+                    // only dummy arguments have a counterpart at the call sites
                     std::vector<int> array_variables_indices;
+                    std::vector<std::string> array_arguments;
                     for (auto it: array_variables) {
-                        array_variables_indices.push_back(array_arg_mapping[it]);
+                        if (array_arg_mapping.find(it) != array_arg_mapping.end()) {
+                            array_variables_indices.push_back(array_arg_mapping[it]);
+                            array_arguments.push_back(it);
+                        }
                     }
 
                     // search for function / subroutine calls to existing function
                     std::vector<SymbolTable*> scopes;
                     scoped_array_variable_map.clear();
-                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes, array_variables_indices, array_variables, scoped_array_variable_map);
+                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes, array_variables_indices, array_arguments, scoped_array_variable_map);
 
                     // get global scope
                     SymbolTable* global_scope = current_scope;
@@ -1422,11 +1434,22 @@ class ParallelRegionVisitor :
                     for (size_t i = 0; i < array_type->n_dims; i++) {
                         dims.push_back(al, empty_dim);
                     }
+                    ASR::ttype_t* array_pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                        ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                        array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global))));
+                    if (is_argument && array_type->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                        /*
+                            Changing the type of an explicit-shape dummy argument would
+                            change the interface of the procedure, which callers compiled
+                            separately rely on. Keep the dummy as it is; the outlined
+                            region receives its data address and bounds and
+                            associates its own pointer with them.
+                        */
+                        involved_symbols[it.first].first = array_pointer_type;
+                        continue;
+                    }
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
-                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
-                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
-                                is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
+                            array_pointer_type, is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
                     
                     bool already_allocated = true;
@@ -1476,10 +1499,16 @@ class ParallelRegionVisitor :
 
                 if (is_array) {
                     // Handle arrays (existing logic)
+                    ASR::expr_t* array_var = b.Var(current_scope->get_symbol(it.first));
+                    if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(array_var))) {
+                        // dummy argument arrays keep their type, take their address
+                        array_var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, array_var,
+                            sym_type, nullptr));
+                    }
                     nested_lowered_body.push_back(b.Assignment(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
+                        b.PointerToCPtr(array_var, ASRUtils::symbol_type(sym))
                     ));
                     
                     // Add sym, assignment for Ubound and Lbound
