@@ -8413,20 +8413,25 @@ public:
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
                     }
+                    // Module variables, parameters and derived-type component
+                    // defaults are initialized statically, so their
+                    // initializer must be a StructConstant; other variables
+                    // get a StructConstructor that init_expr lowers to
+                    // assignments.
+                    bool is_struct_const = false;
+                    if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                        ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                        if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
+                            is_struct_const = true;
+                        }
+                    }
+                    if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
+                        is_struct_const = true;
+                    }
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
-                        bool is_struct_const = false;
-                        if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-                            if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
-                                is_struct_const = true;
-                            }
-                        }
-                        if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
-                            is_struct_const = true;
-                        }
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -8564,8 +8569,11 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Convert StructConstant to StructConstructor for non-parameter variables
-                            if (ASR::is_a<ASR::StructConstant_t>(*param_init)) {
+                            ASR::expr_t* param_value = ASRUtils::expr_value(param_init);
+                            if (is_struct_const && param_value &&
+                                    ASR::is_a<ASR::StructConstant_t>(*param_value)) {
+                                init_expr = param_value;
+                            } else if (ASR::is_a<ASR::StructConstant_t>(*param_init)) {
                                 ASR::StructConstant_t* struct_const = ASR::down_cast<ASR::StructConstant_t>(param_init);
                                 // Create StructConstructor with the constant as its value
                                 init_expr = ASRUtils::EXPR(ASR::make_StructConstructor_t(
