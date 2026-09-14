@@ -16423,13 +16423,11 @@ public:
             }
             case ASR::symbolType::Function: {
                 const uint32_t h = get_hash((ASR::asr_t*)x_m_v);
-                if(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()){ // Callback fn arg.
-                    tmp = llvm_symtab_fn_arg[h];
-                } else if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
-                    tmp = llvm_symtab_fn[h];
-                } else {
+                if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
+                        llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
                     throw CodeGenError(std::string("Can't resolve var to Function '") + ASRUtils::symbol_name(x_m_v) + "'");
                 }
+                tmp = get_procedure_value(ASR::down_cast<ASR::Function_t>(x_m_v));
             break;
             }
             default: {
@@ -16780,45 +16778,65 @@ public:
         return alloc;
     }
 
+    // The address of procedure `fn`, typed by its own ASR signature. The
+    // LLVM function that owns the link name may have been declared with
+    // another signature, e.g. a definition in this file for an external
+    // with an implicit interface.
+    llvm::Value* get_procedure_value(ASR::Function_t* fn) {
+        uint32_t h = get_hash((ASR::asr_t*)fn);
+        llvm::Value* value = nullptr;
+        if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
+            value = llvm_symtab_fn_arg[h];
+        } else {
+            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                instantiate_function(*fn);
+            }
+            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                throw CodeGenError(std::string("Can't resolve var to Function '")
+                    + fn->m_name + "'");
+            }
+            value = llvm_symtab_fn[h];
+        }
+        llvm::Type* own_type = llvm_utils->get_function_type(*fn,
+            module.get())->getPointerTo();
+        if (value->getType() != own_type) {
+            value = builder->CreateBitCast(value, own_type);
+        }
+        return value;
+    }
+
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
-        // Cast a procedure to the function-pointer type of `m_to`. The two
-        // interfaces describe the same link-time procedure under an implicit
-        // interface; only the signature used at this call changes.
+        // View a procedure through another procedure type: the interface
+        // `m_to`, or without it the opaque procedure type. Only the type of
+        // the pointer changes.
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        LCOMPILERS_ASSERT(x.m_to);
-        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
-        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
-        llvm::FunctionType* target_ft = llvm_utils->get_function_type(
-            *to_fn, module.get());
-
+        llvm::Type* target_type = nullptr;
+        if (x.m_to) {
+            ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+            target_type = llvm_utils->get_function_type(
+                *ASR::down_cast<ASR::Function_t>(to_sym), module.get())->getPointerTo();
+        } else {
+            target_type = llvm_utils->get_opaque_procedure_ptr_type(
+                *ASR::down_cast<ASR::FunctionType_t>(x.m_type), module.get());
+        }
         llvm::Value* src = nullptr;
         if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
             ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v);
             if (ASR::is_a<ASR::Function_t>(*arg_sym)) {
-                uint32_t h = get_hash((ASR::asr_t*)arg_sym);
-                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                    // Ensure the source procedure has been declared.
-                    instantiate_function(*ASR::down_cast<ASR::Function_t>(arg_sym));
-                }
-                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                src = llvm_symtab_fn[h];
+                src = get_procedure_value(ASR::down_cast<ASR::Function_t>(arg_sym));
             }
         }
         if (!src) {
-            this->visit_expr(*x.m_arg);
+            this->visit_expr_wrapper(x.m_arg, true);
             src = tmp;
-            if (src && src->getType()->isPointerTy()) {
-                // May be a pointer-to-function-pointer (procedure pointer var).
-                // Leave as-is; bitcast handles pointer types.
-            }
         }
         LCOMPILERS_ASSERT(src);
-        tmp = builder->CreateBitCast(src, target_ft->getPointerTo());
+        tmp = builder->CreateBitCast(src, target_type);
     }
 
 
@@ -22765,20 +22783,16 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)fn);
                     if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                        tmp = llvm_symtab_fn[h];
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
                                 ASRUtils::is_declaration_deftype(
                                     ASRUtils::get_FunctionType(fn)->m_deftype) ) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                        tmp = llvm_symtab_fn[h];
-                        LCOMPILERS_ASSERT(tmp != nullptr)
                     } else {
                         // Must be an argument/chained procedure pass
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
-                        tmp = llvm_symtab_fn_arg[h];
-                        LCOMPILERS_ASSERT(tmp != nullptr)
                     }
+                    tmp = get_procedure_value(fn);
 #if LLVM_VERSION_MAJOR < 15
                     // Bitcast function pointer if LLVM types don't match.
                     // Handles implicit interfaces and typed-pointer LLVM
