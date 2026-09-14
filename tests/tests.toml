@@ -5213,6 +5213,22 @@ filename = "errors/openmp_default_01.f90"
 asr_openmp = true
 
 [[test]]
+filename = "errors/openmp_default_02.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_03.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_04.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_default_05.f90"
+asr_openmp = true
+
+[[test]]
 filename = "errors/intrinsics3.f90"
 asr = true
 
