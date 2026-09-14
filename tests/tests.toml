@@ -5089,6 +5089,11 @@ options = "--implicit-interface"
 extrafiles = "errors/implicit_interface_explicit_zero_arg_mod.f90"
 
 [[test]]
+filename = "errors/implicit_interface_specification_function.f90"
+asr = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "optional_argument_subroutine_in_type.f90"
 asr = true
 

@@ -1,0 +1,5 @@
+semantic error: the procedure 'work_size' has an implicit interface, so it is not a specification function and cannot be referenced in a specification expression
+ --> tests/errors/implicit_interface_specification_function.f90:8:18
+  |
+8 |     real :: work(work_size(n))
+  |                  ^^^^^^^^^^^^ 
