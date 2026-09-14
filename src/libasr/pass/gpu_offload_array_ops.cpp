@@ -1231,13 +1231,17 @@ static bool section_dim_is_whole(const ASR::ArraySection_t *as, size_t d) {
 // stepped by other than one, or a range behind a dimension that does not run
 // over the whole base -- the row `a(i,:)` of a column-major matrix advances
 // by a column per element. Handed to a device function as a base pointer,
-// such a section would be read as if it were contiguous.
-static bool section_is_noncontiguous(const ASR::ArraySection_t *as) {
+// such a section would be read as if it were contiguous. A dimension with a
+// single element does not advance, so `a(1:i,1:1)` is contiguous.
+bool GpuOffloadVisitor::section_is_noncontiguous(
+        const ASR::ArraySection_t *as) {
     for (size_t i = 0; i < as->n_args; i++) {
         if (!as->m_args[i].m_left || !as->m_args[i].m_right
                 || !as->m_args[i].m_step) {
             continue;
         }
+        int64_t n;
+        if (const_section_extent(as->m_args[i], n) && n == 1) continue;
         int64_t step;
         if (!section_int_constant(as->m_args[i].m_step, step) || step != 1) {
             return true;

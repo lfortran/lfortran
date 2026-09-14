@@ -178,4 +178,14 @@ do i = 1, 5
     if (c(i) /= weighted_sum(a(:,1:i))) error stop
 end do
 
+! A section whose trailing dimension has one element is contiguous, so it is
+! passed as it is, even though its first extent changes with the iteration.
+do concurrent (i = 1:3)
+    e(i) = weighted_sum(a(1:i,1:1))
+end do
+print *, e
+do i = 1, 3
+    if (e(i) /= weighted_sum(a(1:i,1:1))) error stop
+end do
+
 end program

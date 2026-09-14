@@ -328,7 +328,9 @@ public:
             const std::vector<int> &range_dims, ASR::expr_t *tmp,
             bool to_temp);
 
-    static ASR::ArraySection_t* strided_section_actual(ASR::expr_t *e);
+    bool section_is_noncontiguous(const ASR::ArraySection_t *as);
+
+    ASR::ArraySection_t* strided_section_actual(ASR::expr_t *e);
 
     bool strided_section_is_gatherable(ASR::ArraySection_t *as);
 
