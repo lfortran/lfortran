@@ -1156,6 +1156,7 @@ class ParallelRegionVisitor :
                                                 array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                             is_arg ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
+                                pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
                                     We skip allocation for dummy arguments as the caller provides the memory.
@@ -1269,6 +1270,7 @@ class ParallelRegionVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                                 ASR::intentType::Local);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                     new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
@@ -1502,9 +1504,27 @@ class ParallelRegionVisitor :
             return true;
         }
 
+        // Array variables that this pass declared as pointers itself, to
+        // pass them to outlined functions; any other pointer array is a
+        // pointer array of the program
+        std::set<ASR::symbol_t*> pass_pointer_arrays;
+
+        bool is_program_pointer_array(SymbolTable* scope, const std::string& name) {
+            ASR::symbol_t* sym = scope->resolve_symbol(name);
+            if (sym == nullptr) {
+                return false;
+            }
+            ASR::ttype_t* sym_type = ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sym));
+            return ASRUtils::is_array(sym_type) && ASRUtils::is_pointer(sym_type)
+                && pass_pointer_arrays.find(sym) == pass_pointer_arrays.end();
+        }
+
         // Records the arrays that the private and firstprivate clauses of
         // the region name, so that the outlined function gives each of them
-        // storage of its own instead of pointing at the original array
+        // storage of its own instead of pointing at the original array.
+        // Pointer arrays of the program own no storage: each thread already
+        // gets a pointer of its own that is associated with the original
+        // target, and the pass must neither allocate nor free that target
         void collect_private_arrays(const ASR::OMPRegion_t& x, InvolvedSymbolsCollector& c) {
             for (size_t i = 0; i < x.n_clauses; i++) {
                 ASR::expr_t** vars = nullptr;
@@ -1521,7 +1541,8 @@ class ParallelRegionVisitor :
                 for (size_t j = 0; j < n_vars; j++) {
                     std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(vars[j])->m_v);
                     auto sym = c.symbols.find(var_name);
-                    if (sym != c.symbols.end() && ASRUtils::is_array(sym->second.first)) {
+                    if (sym != c.symbols.end() && ASRUtils::is_array(sym->second.first)
+                            && !is_program_pointer_array(current_scope, var_name)) {
                         c.private_arrays[var_name] = x.m_clauses[i]->type;
                     }
                 }
@@ -1902,7 +1923,7 @@ class ParallelRegionVisitor :
                     if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
                         ASR::expr_t* original = b.Variable(current_scope,
                             current_scope->get_unique_name("original_" + it.first), sym_type,
-                            ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second),
+                            ASR::intentType::Local, involved_type_declaration(it.second.second),
                             ASR::abiType::BindC);
                         allocate_copy.push_back(b.CPtrToPointer(original_data, original, shape, lbounds_constructor));
                         allocate_copy.push_back(b.Assignment(copy, original));
@@ -1990,6 +2011,7 @@ class ParallelRegionVisitor :
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
                             array_pointer_type, is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                     
                     bool already_allocated = true;
                     if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
@@ -2262,7 +2284,12 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
 
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
@@ -3150,7 +3177,12 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
@@ -3506,8 +3538,13 @@ class ParallelRegionVisitor :
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, 
-                    ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type,
+                    ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             // Unpack data
