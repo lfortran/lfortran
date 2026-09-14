@@ -124,11 +124,14 @@ A reference in a DO WHILE condition associates the temporary before each
 evaluation of the condition: the loop becomes `do while (.true.)` starting with
 the association and `if (.not. condition) exit`.
 
-A reference outside of a statement body (a specification expression) has no
-statement to associate a temporary before. It calls a fresh `f@fpcast`
-directly, whose `bindc_name` is the name of the external procedure `f`; `f`
-itself is left unchanged. A dummy procedure cannot be called this way and is
-reported as an error.
+The temporary is declared in the scope of the statements it is associated in,
+so it is never shared with another procedure: a reference in a statement
+function associates a temporary of the statement function before its result
+is assigned.
+
+A procedure with an implicit interface cannot be known to be pure, so it is
+not a specification function (F2018 10.1.11) and a reference to it in a
+specification expression is an error.
 
 ### Why the value is needed at all
 
