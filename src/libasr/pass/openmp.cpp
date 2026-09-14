@@ -1450,13 +1450,16 @@ class ParallelRegionVisitor :
                     ASR::ttype_t* array_pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
                         ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
                         array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global))));
-                    if (is_argument && array_type->m_physical_type == ASR::array_physical_typeType::PointerArray) {
+                    bool is_host_associated = current_scope->get_symbol(it.first) == nullptr;
+                    if ((is_argument && array_type->m_physical_type == ASR::array_physical_typeType::PointerArray)
+                            || is_host_associated) {
                         /*
                             Changing the type of an explicit-shape dummy argument would
                             change the interface of the procedure, which callers compiled
-                            separately rely on. Keep the dummy as it is; the outlined
-                            region receives its data address and bounds and
-                            associates its own pointer with them.
+                            separately rely on. An array declared in an enclosing scope
+                            must not be replaced by a new local array either. Keep the
+                            array as it is; the outlined region receives its data address
+                            and bounds and associates its own pointer with them.
                         */
                         involved_symbols[it.first].first = array_pointer_type;
                         continue;
@@ -1507,14 +1510,15 @@ class ParallelRegionVisitor :
 
                 ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
-                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->get_symbol(it.first));
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(it.first));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var_sym->m_storage == ASR::storage_typeType::Parameter);
 
                 if (is_array) {
                     // Handle arrays (existing logic)
-                    ASR::expr_t* array_var = b.Var(current_scope->get_symbol(it.first));
+                    ASR::expr_t* array_ref = b.Var(current_scope->resolve_symbol(it.first));
+                    ASR::expr_t* array_var = array_ref;
                     if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(array_var))) {
-                        // dummy argument arrays keep their type, take their address
+                        // explicit-shape dummy and host arrays keep their type, take their address
                         array_var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, array_var,
                             sym_type, nullptr));
                     }
@@ -1535,7 +1539,7 @@ class ParallelRegionVisitor :
                         nested_lowered_body.push_back(b.Assignment(
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                             lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr)),
-                            b.ArrayLBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                            b.ArrayLBound(array_ref, i+1)
                         ));
                         
                         std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "ubound_" + it.first + "_" + std::to_string(i);
@@ -1546,7 +1550,7 @@ class ParallelRegionVisitor :
                         nested_lowered_body.push_back(b.Assignment(
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                             ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
-                            b.ArrayUBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                            b.ArrayUBound(array_ref, i+1)
                         ));
                     }
                 } else if (is_shared) {

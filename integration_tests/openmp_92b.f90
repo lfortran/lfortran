@@ -48,3 +48,50 @@ end do
 !$omp end parallel do
 a = a + tmp
 end subroutine
+
+subroutine host_arrays(hs, gs, g43, g01, ws)
+implicit none
+integer, intent(out) :: hs, gs, g43, g01, ws
+integer :: h(10), g(0:4, 3)
+integer, allocatable :: w(:)
+h = 0
+call fill_host()
+hs = sum(h)
+g = 0
+call double_host()
+gs = sum(g)
+g43 = g(4, 3)
+g01 = g(0, 1)
+allocate(w(5))
+w = 0
+call fill_allocatable()
+ws = sum(w)
+contains
+subroutine fill_host()
+integer :: k
+!$omp parallel do
+do k = 1, 10
+    h(k) = k
+end do
+!$omp end parallel do
+end subroutine
+
+subroutine double_host()
+integer :: k
+!$omp parallel do
+do k = 0, 4
+    g(k, 1) = 2*h(k + 1)
+    g(k, 3) = 2*h(k + 6)
+end do
+!$omp end parallel do
+end subroutine
+
+subroutine fill_allocatable()
+integer :: k
+!$omp parallel do
+do k = 1, 5
+    w(k) = 2*k
+end do
+!$omp end parallel do
+end subroutine
+end subroutine
