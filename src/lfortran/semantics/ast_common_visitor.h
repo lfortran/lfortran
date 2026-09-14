@@ -17282,17 +17282,6 @@ public:
         return ASRUtils::is_bare_implicit_interface(v);
     }
 
-    // The name of a symbol the compiler declares for the user symbol `name`
-    // in the role `role`, e.g. `f~fpcast` for a call-site interface of `f`.
-    // `~` cannot appear in a Fortran name, so a generated symbol neither
-    // hides nor is hidden by a user symbol of its own scope or of any scope
-    // around it. Callers make it unique among the generated symbols of its
-    // scope with `get_unique_name`.
-    static std::string generated_symbol_name(const std::string &name,
-            const std::string &role) {
-        return name + "~" + role;
-    }
-
     // Build a procedure-pointer temporary (`name~fpcast_ptr`) holding
     //   FunctionPointerCast(source, to_iface)
     // and return the temporary Variable symbol. The caller uses it as the
