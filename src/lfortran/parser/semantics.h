@@ -2129,7 +2129,22 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
 
 static inline ast_t* OMP_PRAGMA2(Allocator &al,
         Location &loc, std::string omp_str) {
-    std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(omp_str);
+    // Join continued directives: `&` <newline> `!$omp` [`&`] becomes a space
+    const char *ws = " \t\v\r";
+    std::string joined;
+    size_t k = 0;
+    while (k < omp_str.size()) {
+        size_t nl = omp_str[k] == '&' ? omp_str.find_first_not_of(ws, k + 1) : std::string::npos;
+        if (nl != std::string::npos && omp_str[nl] == '\n') {
+            k = omp_str.find_first_not_of(ws, nl + 1) + 5;
+            k = std::min(omp_str.find_first_not_of(ws, k), omp_str.size());
+            if (k < omp_str.size() && omp_str[k] == '&') k++;
+            joined += ' ';
+        } else {
+            joined += omp_str[k++];
+        }
+    }
+    std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(joined);
     size_t i = 1;
     bool m_end = false;
     std::string construct_name = omp_stmt[i++];
