@@ -5643,6 +5643,64 @@ public:
         }
     }
 
+    // A `type(...)` entity may only be initialized with a value of its own
+    // declared type. A different derived type, a parent or extension of it,
+    // or an intrinsic value is rejected, as is a derived-type value for an
+    // intrinsic `type(...)` entity.
+    void check_type_initializer_type(ASR::ttype_t *decl_type,
+            ASR::symbol_t *decl_type_declaration, ASR::expr_t *init_expr,
+            const Location &loc) {
+        ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
+        bool decl_is_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(decl_type));
+        bool init_is_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(init_type));
+        if (!decl_is_struct && !init_is_struct) {
+            return;
+        }
+        ASR::symbol_t *decl_struct_sym = decl_is_struct
+            ? decl_type_declaration : nullptr;
+        ASR::symbol_t *init_struct_sym = init_is_struct
+            ? ASRUtils::get_struct_sym_from_struct_expr(init_expr) : nullptr;
+        if ((decl_is_struct && decl_struct_sym == nullptr) ||
+                (init_is_struct && init_struct_sym == nullptr)) {
+            return;
+        }
+        if (decl_struct_sym) {
+            decl_struct_sym = ASRUtils::symbol_get_past_external(decl_struct_sym);
+        }
+        if (init_struct_sym) {
+            init_struct_sym = ASRUtils::symbol_get_past_external(init_struct_sym);
+        }
+        if (decl_is_struct && init_is_struct) {
+            if (!ASR::is_a<ASR::Struct_t>(*decl_struct_sym) ||
+                    !ASR::is_a<ASR::Struct_t>(*init_struct_sym)) {
+                return;
+            }
+            ASR::Struct_t *decl_struct = ASR::down_cast<ASR::Struct_t>(decl_struct_sym);
+            ASR::Struct_t *init_struct = ASR::down_cast<ASR::Struct_t>(init_struct_sym);
+            if (decl_struct == init_struct ||
+                    (!ASRUtils::is_parent(decl_struct, init_struct) &&
+                     !ASRUtils::is_parent(init_struct, decl_struct) &&
+                     ASRUtils::is_derived_type_similar(decl_struct, init_struct))) {
+                return;
+            }
+        }
+        auto type_name = [](ASR::ttype_t *t, ASR::symbol_t *struct_sym) {
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))) {
+                return "type(" + std::string(ASRUtils::symbol_name(struct_sym)) + ")";
+            }
+            return ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(t), nullptr);
+        };
+        diag.add(Diagnostic(
+            "type mismatch in initialization: `" + type_name(init_type, init_struct_sym) +
+            "` cannot be assigned to `" + type_name(decl_type, decl_struct_sym) + "`",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        throw SemanticAbort();
+    }
+
     void emit_fortran_slash_init_warning(const AST::var_sym_t &s) {
         LCOMPILERS_ASSERT(s.m_initializer != nullptr);
         std::string init_str = "<expr>";
@@ -8652,6 +8710,11 @@ public:
                                 Label("",{x.base.base.loc})
                             }));
                         throw SemanticAbort();
+                    }
+
+                    if (init_expr && !is_pointer) {
+                        check_type_initializer_type(type, type_declaration,
+                            init_expr, s.m_initializer->base.loc);
                     }
 
                     value = ASRUtils::expr_value(init_expr);

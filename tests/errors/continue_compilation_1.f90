@@ -1228,3 +1228,23 @@ contains
         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
     end subroutine
 end module
+
+! A `type(...)` entity can only be initialized with a value of its own type.
+module init_type_mismatch_1
+    implicit none
+    type :: init_mismatch_a_t
+        integer :: h = 0
+    end type
+    type :: init_mismatch_b_t
+        integer :: h = 0
+    end type
+    type(init_mismatch_a_t), parameter :: init_mismatch_pa = init_mismatch_a_t(1)
+    integer, parameter :: init_mismatch_ip = 3
+    type(init_mismatch_b_t) :: init_mismatch_mv = init_mismatch_pa  ! {Error} type mismatch in initialization
+contains
+    subroutine init_type_mismatch_local()
+        type(init_mismatch_b_t) :: x = init_mismatch_pa  ! {Error} type mismatch in initialization
+        type(init_mismatch_a_t) :: y = init_mismatch_ip  ! {Error} type mismatch in initialization
+        type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
+    end subroutine
+end module
