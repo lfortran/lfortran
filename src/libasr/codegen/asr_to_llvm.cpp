@@ -22600,6 +22600,23 @@ public:
                                             ASRUtils::type_get_past_pointer(arg->m_type),
                                             module.get()), tmp);
                                 }
+                                // A pointer or allocatable scalar (e.g. an
+                                // ASSOCIATE name) passed by reference to a
+                                // scalar dummy that is neither passes its
+                                // target. An array dummy (e.g. assumed rank)
+                                // builds its descriptor from the actual.
+                                if (!using_deep_copy && !orig_arg->m_value_attr &&
+                                        !ASRUtils::is_array(orig_arg->m_type) &&
+                                        !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                        LLVM::is_llvm_pointer(*arg->m_type) &&
+                                        !ASR::is_a<ASR::FunctionType_t>(
+                                            *ASRUtils::type_get_past_pointer(arg->m_type)) &&
+                                        !ASRUtils::is_character(*arg->m_type) &&
+                                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) &&
+                                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                                    tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_args[i].m_value, arg->m_type, module.get()), tmp);
+                                }
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
                                     ASR::ttype_t* arg_type = arg->m_type;
                                     llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
