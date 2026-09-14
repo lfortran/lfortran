@@ -2290,6 +2290,9 @@ RUN(NAME implicit_interface_90 LABELS gfortran llvm llvm_omp EXTRA_ARGS --implic
 RUN(NAME implicit_interface_91 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_92 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_93 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_94 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_95 LABELS gfortran llvm llvm_omp EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
