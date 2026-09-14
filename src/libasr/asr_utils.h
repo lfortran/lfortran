@@ -6527,6 +6527,24 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
     }
 
+    ASR::asr_t* duplicate_FunctionPointerCast(ASR::FunctionPointerCast_t* x) {
+        ASR::expr_t* m_arg = duplicate_expr(x->m_arg);
+        ASR::symbol_t* m_to = x->m_to;
+        if (m_to != nullptr) {
+            std::string name = ASRUtils::symbol_name(m_to);
+            ASR::symbol_t* resolved = use_resolve_symbol
+                ? current_scope->resolve_symbol(name)
+                : current_scope->get_symbol(name);
+            if (resolved != nullptr) {
+                m_to = resolved;
+            }
+        }
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        return ASR::make_FunctionPointerCast_t(al, x->base.base.loc, m_arg, m_to,
+            m_type, m_value);
+    }
+
     ASR::asr_t* duplicate_AssociateBlockCall(ASR::AssociateBlockCall_t* x) {
         std::string name = ASRUtils::symbol_name(x->m_m);
         ASR::symbol_t* m_m = current_scope->get_symbol(name);
@@ -6932,6 +6950,27 @@ class SymbolDuplicator {
     // and Blocks (including nested ones) and re-duplicates from the
     // original bodies using a scoped duplicator that resolves symbols
     // through the new scope chain.
+    // A variable copied from `orig_scope` into `new_scope` whose type is
+    // declared by a symbol of `orig_scope` (e.g. a procedure variable
+    // declared with an interface of the same procedure) is declared by the
+    // copy of that symbol, so the copy does not refer into the original.
+    void fixup_local_type_declarations(SymbolTable *new_scope,
+            SymbolTable *orig_scope) {
+        for (auto &item : new_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_type_declaration == nullptr ||
+                    ASRUtils::symbol_parent_symtab(v->m_type_declaration) != orig_scope) {
+                continue;
+            }
+            ASR::symbol_t *copy = new_scope->get_symbol(
+                ASRUtils::symbol_name(v->m_type_declaration));
+            if (copy != nullptr) {
+                v->m_type_declaration = copy;
+            }
+        }
+    }
+
     void fixup_nested_block_bodies(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         for (auto &item : new_scope->get_scope()) {
@@ -6979,6 +7018,7 @@ class SymbolDuplicator {
         duplicate_SymbolTable(function->m_symtab, function_symtab);
 
         fixup_nested_block_bodies(function_symtab, function->m_symtab);
+        fixup_local_type_declarations(function_symtab, function->m_symtab);
 
         Vec<ASR::stmt_t*> new_body;
         new_body.reserve(al, function->n_body);

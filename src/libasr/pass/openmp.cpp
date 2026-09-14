@@ -313,11 +313,37 @@ class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<Red
         }
 };
 
-// The symbol in `scope` for `proc`, a procedure referenced (not called) by code
-// moved into `scope`, e.g. the source or the interface of a procedure cast, or
-// the interface of a procedure variable. A procedure without a body (an
-// interface, or a procedure with an implicit interface) is declared in `scope`;
-// a module procedure is imported. Null for any other procedure.
+static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable* scope,
+        ASR::symbol_t* proc);
+
+// True if `proc` is a procedure (not a procedure variable) that is a dummy
+// argument of the procedure that declares it.
+static bool is_dummy_procedure(ASR::symbol_t* proc) {
+    if (!ASR::is_a<ASR::Function_t>(*proc)) {
+        return false;
+    }
+    ASR::asr_t* owner = ASR::down_cast<ASR::Function_t>(proc)->m_symtab->parent->asr_owner;
+    if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        return false;
+    }
+    ASR::Function_t* owner_fn = ASR::down_cast<ASR::Function_t>(
+        ASR::down_cast<ASR::symbol_t>(owner));
+    for (size_t i = 0; i < owner_fn->n_args; i++) {
+        if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
+                ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v == proc) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The symbol in `scope` for `proc`, a procedure referenced by code moved into
+// `scope`, e.g. a procedure actual, the source or the interface of a procedure
+// cast, or the interface of a procedure variable. A procedure without a body
+// (an interface, or a procedure with an implicit interface) is declared in
+// `scope`; a procedure with a body is imported (see
+// import_procedure_implementation). Null for any other procedure.
 static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* scope,
         ASR::symbol_t* proc) {
     std::string name = ASRUtils::symbol_name(proc);
@@ -342,27 +368,42 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* s
     }
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
     ASR::deftypeType deftype = ASRUtils::get_FunctionType(fn)->m_deftype;
+    if (deftype == ASR::deftypeType::Implementation) {
+        return import_procedure_implementation(al, scope, proc);
+    }
     if (deftype != ASR::deftypeType::Interface &&
             deftype != ASR::deftypeType::ImplicitInterface) {
         return nullptr;
     }
     // A dummy procedure is a value of the procedure it belongs to, not a
     // procedure that can be declared elsewhere.
-    ASR::asr_t* owner = fn->m_symtab->parent->asr_owner;
-    if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
-            ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
-        ASR::Function_t* owner_fn = ASR::down_cast<ASR::Function_t>(
-            ASR::down_cast<ASR::symbol_t>(owner));
-        for (size_t i = 0; i < owner_fn->n_args; i++) {
-            if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
-                    ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v == proc) {
-                return nullptr;
-            }
-        }
+    if (is_dummy_procedure(proc)) {
+        return nullptr;
     }
     ASRUtils::SymbolDuplicator duplicator(al);
     ASR::symbol_t* declaration = duplicator.duplicate_Function(fn, scope);
+    if (declaration == nullptr) {
+        return nullptr;
+    }
     scope->add_symbol(name, declaration);
+    // A dummy argument of the declaration can be a procedure outside of it
+    // (a call-site interface names a procedure actual itself), which is
+    // imported as well.
+    ASR::Function_t* declaration_fn = ASR::down_cast<ASR::Function_t>(declaration);
+    for (size_t i = 0; i < declaration_fn->n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*declaration_fn->m_args[i])) {
+            continue;
+        }
+        ASR::Var_t* arg = ASR::down_cast<ASR::Var_t>(declaration_fn->m_args[i]);
+        if (declaration_fn->m_symtab->resolve_symbol(ASRUtils::symbol_name(arg->m_v))
+                == arg->m_v) {
+            continue;
+        }
+        ASR::symbol_t* imported = import_procedure_declaration(al, scope, arg->m_v);
+        if (imported != nullptr) {
+            arg->m_v = imported;
+        }
+    }
     return declaration;
 }
 
@@ -380,7 +421,11 @@ class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
             if (sym == nullptr) {
                 sym = import_procedure_declaration(al, current_scope, x->m_v);
             }
-            LCOMPILERS_ASSERT(sym != nullptr);
+            if (sym == nullptr) {
+                // Nothing to import: the verifier reports a reference that
+                // is out of scope.
+                return;
+            }
             *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, sym));
         }
 
@@ -421,68 +466,17 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(x_copy->m_name));
         ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
-        ASR::symbol_t* fun_sym_for_module = nullptr;
-        char* module_name = nullptr;
-        // Steps:
-        // Create a module add it to current_scope->parent symtab
-        // Add func to that module symtab
-        // Overwrite External symbol to x's asr_owner's symtab
-        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-            ASRUtils::SymbolDuplicator duplicator(al);
-            SymbolTable* module_scope = al.make_new<SymbolTable>(current_scope->parent);
-
-            module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
-            ASR::asr_t* mo = ASR::make_Module_t(
-                                al, x.base.base.loc, module_scope,
-                                s2c(al, module_name), nullptr,
-                                nullptr, 0, false, false, false);
-            if (current_scope->parent->get_symbol(module_name) == nullptr) {
-                current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
-            }
-
-            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
-            fun_sym_for_module = duplicator.duplicate_Function(fn, module_scope);
-            module->m_symtab->add_symbol(fn->m_name, fun_sym_for_module);
-
-            ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
-                                al,
-                                x.base.base.loc,
-                                ASRUtils::symbol_parent_symtab(x.m_name),
-                                fn->m_name,
-                                fun_sym_for_module,
-                                s2c(al, module_name),
-                                nullptr,
-                                0,
-                                x_copy->m_original_name
-                                    ? ASRUtils::symbol_name(x_copy->m_original_name)
-                                    : ASRUtils::symbol_name(x_copy->m_name),
-                                ASR::accessType::Public);
-            ASR::Program_t* program = ASR::down_cast<ASR::Program_t>(
-                                    ASR::down_cast<ASR::symbol_t>(asr_owner));
-            program->m_symtab->add_or_overwrite_symbol(fn->m_name,
-                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+        if (!ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+            // A procedure of the translation unit is visible everywhere.
+            return;
         }
-
-        ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
-        if (func_sym == nullptr) {
-            if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-                ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
-                                        al,
-                                        x.base.base.loc,
-                                        current_scope,
-                                        fn->m_name,
-                                        fun_sym_for_module,
-                                        s2c(al, module_name),
-                                        nullptr,
-                                        0,
-                                        x_copy->m_original_name
-                                            ? ASRUtils::symbol_name(x_copy->m_original_name)
-                                            : ASRUtils::symbol_name(x_copy->m_name),
-                                        ASR::accessType::Public);
-                current_scope->add_or_overwrite_symbol(fn->m_name,
-                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
-                func_sym = current_scope->get_symbol(fn->m_name);
-            } else if (ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+        ASR::symbol_t* func_sym = nullptr;
+        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+            func_sym = import_procedure_implementation(al, current_scope, x.m_name);
+        } else {
+            func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
+            if (func_sym == nullptr &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
                 func_sym = current_scope->resolve_symbol(fn->m_name);
             }
         }
@@ -511,6 +505,91 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
     }
 };
 
+// The symbol in `scope` for `proc`, a procedure with a body used by code moved
+// into `scope`. A module procedure is imported from its module. A procedure
+// contained in a program cannot be imported from the program, so it is copied,
+// once, into a module of its own, and the procedures, interfaces and
+// declarations the copy refers to are imported into it the same way. The
+// program keeps its own procedure, which the rest of the program refers to.
+static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable* scope,
+        ASR::symbol_t* proc) {
+    std::string name = ASRUtils::symbol_name(proc);
+    if (ASR::symbol_t* existing = scope->get_symbol(name)) {
+        return existing;
+    }
+    ASR::symbol_t* target = ASRUtils::symbol_get_past_external(proc);
+    if (!ASR::is_a<ASR::Function_t>(*target)) {
+        return nullptr;
+    }
+    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(target);
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
+    if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
+        SymbolTable* program_scope = ASRUtils::symbol_parent_symtab(target);
+        SymbolTable* tu_scope = program_scope->parent;
+        const std::string module_prefix = "lcompilers_user_defined_functions";
+        ASR::symbol_t* copied = nullptr;
+        for (auto &item : tu_scope->get_scope()) {
+            if (item.first.rfind(module_prefix, 0) == 0 &&
+                    ASR::is_a<ASR::Module_t>(*item.second)) {
+                ASR::symbol_t* candidate = ASR::down_cast<ASR::Module_t>(
+                    item.second)->m_symtab->get_symbol(fn->m_name);
+                if (candidate != nullptr && ASR::is_a<ASR::Function_t>(*candidate)) {
+                    copied = candidate;
+                    break;
+                }
+            }
+        }
+        if (copied != nullptr) {
+            target = copied;
+        } else {
+            SymbolTable* module_scope = al.make_new<SymbolTable>(tu_scope);
+            ASRUtils::SymbolDuplicator duplicator(al);
+            ASR::symbol_t* moved = duplicator.duplicate_Function(fn, module_scope);
+            if (moved == nullptr) {
+                return nullptr;
+            }
+            char* module_name = s2c(al, tu_scope->get_unique_name(module_prefix));
+            ASR::symbol_t* module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al,
+                fn->base.base.loc, module_scope, module_name, nullptr, nullptr, 0,
+                false, false, false));
+            tu_scope->add_symbol(module_name, module);
+            module_scope->add_symbol(fn->m_name, moved);
+            ASR::Function_t* moved_fn = ASR::down_cast<ASR::Function_t>(moved);
+            for (auto &item : moved_fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    continue;
+                }
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_type_declaration == nullptr || moved_fn->m_symtab->resolve_symbol(
+                        ASRUtils::symbol_name(v->m_type_declaration)) == v->m_type_declaration) {
+                    continue;
+                }
+                ASR::symbol_t* decl = import_procedure_declaration(al, moved_fn->m_symtab,
+                    v->m_type_declaration);
+                if (decl != nullptr) {
+                    v->m_type_declaration = decl;
+                }
+            }
+            DoConcurrentStatementVisitor moved_visitor(al, moved_fn->m_symtab);
+            moved_visitor.visit_Function(*moved_fn);
+            target = moved;
+        }
+        owner = ASRUtils::get_asr_owner(target);
+    }
+    if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+        return nullptr;
+    }
+    if (scope->resolve_symbol(name) == target) {
+        return target;
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+        proc->base.loc, scope, s2c(al, name), target,
+        ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
+        ASRUtils::symbol_name(target), ASR::accessType::Public));
+    scope->add_symbol(name, imported);
+    return imported;
+}
+
 class InvolvedSymbolsCollector:
     public ASR::BaseWalkVisitor<InvolvedSymbolsCollector>
 {
@@ -532,7 +611,15 @@ class InvolvedSymbolsCollector:
                 // is moved to (see import_procedure_declaration).
                 return;
             }
-            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = ASRUtils::symbol_type(x.m_v);
+            ASR::ttype_t* type = ASRUtils::symbol_type(x.m_v);
+            if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+                // A procedure that is not a pointer, e.g. a dummy procedure
+                // with an explicit interface, is a procedure value, not the
+                // address of one: it enters the region as a procedure
+                // pointer associated with it.
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = type;
             symbols[to_lower(ASRUtils::symbol_name(x.m_v))].second = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v));
             // A procedure variable is passed to the region by value.
             variable_accessibility[ASRUtils::symbol_name(x.m_v)] =
@@ -3180,7 +3267,7 @@ class ParallelRegionVisitor :
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
             }
-            
+
             // Create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = 
                 create_thread_data_module_omp(&c, x.base.base.loc, "teams_thread_data");
@@ -3555,6 +3642,10 @@ void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
         v.visit_TranslationUnit(unit);
         RepointCallArguments r(al);
         r.visit_TranslationUnit(unit);
+        // The outlined procedures call and reference procedures of the
+        // code they were moved from.
+        PassUtils::UpdateDependenciesVisitor u(al);
+        u.visit_TranslationUnit(unit);
     }
     return;
 }
