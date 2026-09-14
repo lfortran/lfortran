@@ -5315,6 +5315,12 @@ RUN(NAME gpu_metal_362 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_365 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+# gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
+# gfortran label. The llvm backend and gfortran evaluate the limits of an
+# inner index again for every value of the outer one, so gpu_metal_370 is for
+# the GPU backends only.
+RUN(NAME gpu_metal_369 LABELS llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_370 LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 # Expected run-time errors on the GPU backends only. gpu_metal_359 and
 # gpu_metal_363 are GPU-only because the llvm backend still allocates array
 # components in `t(i) = f(...)` without --realloc-lhs-arrays (#9738).

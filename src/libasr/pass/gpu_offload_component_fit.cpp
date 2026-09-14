@@ -936,6 +936,9 @@ class GpuComponentFit {
     bool realloc;
     bool checks;
     const ParallelLoopNest &loop;
+    // The host variables or constants holding the limits of each loop of
+    // the nest, evaluated once before the fit runs.
+    const std::vector<ASR::expr_t*> &starts, &ends;
 
     // What the loop body changes from one iteration to the next.
     std::shared_ptr<GpuIterationVaryingSymbols> changed;
@@ -1625,12 +1628,16 @@ class GpuComponentFit {
 
 public:
     GpuComponentFit(Allocator &al, SymbolTable *scope, bool realloc,
-            bool checks, const ParallelLoopNest &loop)
+            bool checks, const ParallelLoopNest &loop,
+            const std::vector<ASR::expr_t*> &starts,
+            const std::vector<ASR::expr_t*> &ends)
         : al(al), scope(scope), realloc(realloc), checks(checks),
-          loop(loop) {}
+          loop(loop), starts(starts), ends(ends) {}
 
     std::vector<ASR::stmt_t*> build(const Location &loc) {
         if (!realloc && !checks) return {};
+        LCOMPILERS_ASSERT(starts.size() == loop.n_heads() &&
+            ends.size() == loop.n_heads());
         analyse();
         slice(loop.body, loop.n_body, true, true);
         if (written.empty()) return {};
@@ -1657,11 +1664,10 @@ public:
             for (size_t d = loop.n_heads(); d-- > 0;) {
                 const ASR::do_loop_head_t &head = loop.head(d);
                 ASRUtils::ASRBuilder b(al, loc);
+                // The step is one: a strided loop is not offloaded.
                 body = {b.DoLoop(host_variable(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(head.m_v)->m_v)),
-                    duplicate(al, head.m_start), duplicate(al, head.m_end),
-                    body, head.m_increment
-                        ? duplicate(al, head.m_increment) : nullptr)};
+                    duplicate(al, starts[d]), duplicate(al, ends[d]), body)};
             }
             stmts.insert(stmts.end(), body.begin(), body.end());
         }
@@ -1691,9 +1697,10 @@ public:
 // size. What the replay cannot evaluate before the loop runs it does not
 // guess; see doc/src/gpu_offloading.md.
 std::vector<ASR::stmt_t*> GpuOffloadVisitor::build_component_fit(
-        const ParallelLoopNest &loop, const Location &loc) {
+        const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
+        const std::vector<ASR::expr_t*> &ends, const Location &loc) {
     GpuComponentFit fit(al, current_scope, pass_options.realloc_lhs_arrays,
-        pass_options.bounds_checking, loop);
+        pass_options.bounds_checking, loop, starts, ends);
     return fit.build(loc);
 }
 
