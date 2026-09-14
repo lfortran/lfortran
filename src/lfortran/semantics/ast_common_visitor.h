@@ -11047,11 +11047,64 @@ public:
             }
         }
         if (is_const) {
-           return ASR::make_StructConstant_t(al, loc,
+            // A StructConstant holds constants only: store the folded value of
+            // each argument, not the parameter reference or nested constructor
+            for (size_t i = 0; i < vals.size(); i++) {
+                vals.p[i].m_value = fold_struct_constant_arg(vals.p[i].m_value);
+            }
+            return ASR::make_StructConstant_t(al, loc,
                     v, vals.p, vals.size(), der);
         }
         return ASR::make_StructConstructor_t(al, loc,
                 v, vals.p, vals.size(), der, nullptr);
+    }
+
+    bool is_struct_type_parameter(ASR::expr_t* expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr)) {
+            return false;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        ASR::asr_t* owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
+        return owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+            ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+    }
+
+    ASR::expr_t* fold_struct_constant_arg(ASR::expr_t* arg) {
+        if (arg == nullptr) {
+            return arg;
+        }
+        // A type parameter keeps its reference: its value is a placeholder
+        // until the parameterized type is instantiated
+        if (is_struct_type_parameter(arg)) {
+            return arg;
+        }
+        if (ASR::is_a<ASR::StructConstructor_t>(*arg)) {
+            ASR::StructConstructor_t* sc = ASR::down_cast<ASR::StructConstructor_t>(arg);
+            if (sc->m_value) {
+                return fold_struct_constant_arg(sc->m_value);
+            }
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, sc->n_args);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                ASR::call_arg_t folded = sc->m_args[i];
+                folded.m_value = fold_struct_constant_arg(folded.m_value);
+                if (folded.m_value && is_struct_type_parameter(folded.m_value)) {
+                    return arg;
+                }
+                args.push_back(al, folded);
+            }
+            return ASRUtils::EXPR(ASR::make_StructConstant_t(al, arg->base.loc,
+                sc->m_dt_sym, args.p, args.size(), sc->m_type));
+        }
+        ASR::expr_t* value = ASRUtils::expr_value(arg);
+        if (value && value != arg) {
+            return fold_struct_constant_arg(value);
+        }
+        return arg;
     }
 
     int get_based_indexing(ASR::symbol_t* v) {
