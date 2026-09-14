@@ -10659,6 +10659,63 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
 
+    // A dummy argument declared as a variable is known to be a procedure only
+    // once the body of its procedure is visited. A call to that procedure
+    // built before then passes procedure actuals to it without the cast to
+    // the dummy's opaque procedure type.
+    if (!b.procedures_with_late_procedure_dummies.empty()) {
+        class CastLateProcedureActuals :
+                public ASR::BaseWalkVisitor<CastLateProcedureActuals> {
+        public:
+            Allocator &al;
+            std::set<ASR::symbol_t*> &procedures;
+            CastLateProcedureActuals(Allocator &al,
+                std::set<ASR::symbol_t*> &procedures)
+                : al{al}, procedures{procedures} {}
+
+            void cast_actuals(ASR::symbol_t* name, ASR::call_arg_t* args,
+                    size_t n_args, ASR::expr_t* dt) {
+                ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(name);
+                if (dt != nullptr || procedures.find(callee) == procedures.end()) {
+                    return;
+                }
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(callee);
+                for (size_t i = 0; i < n_args && i < fn->n_args; i++) {
+                    ASR::expr_t* actual = args[i].m_value;
+                    if (actual == nullptr) {
+                        continue;
+                    }
+                    ASR::ttype_t* formal = ASRUtils::expr_type(fn->m_args[i]);
+                    ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(actual));
+                    if (ASRUtils::is_pointer(formal) ||
+                            !ASRUtils::is_opaque_procedure_type(formal) ||
+                            !ASR::is_a<ASR::FunctionType_t>(*actual_type) ||
+                            ASRUtils::procedure_types_identical(
+                                ASR::down_cast<ASR::FunctionType_t>(actual_type),
+                                ASR::down_cast<ASR::FunctionType_t>(formal))) {
+                        continue;
+                    }
+                    args[i].m_value = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
+                        al, actual->base.loc, actual, nullptr,
+                        ASRUtils::duplicate_type(al, formal), nullptr));
+                }
+            }
+
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                cast_actuals(x.m_name, x.m_args, x.n_args, x.m_dt);
+                ASR::BaseWalkVisitor<CastLateProcedureActuals>::visit_SubroutineCall(x);
+            }
+
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                cast_actuals(x.m_name, x.m_args, x.n_args, x.m_dt);
+                ASR::BaseWalkVisitor<CastLateProcedureActuals>::visit_FunctionCall(x);
+            }
+        };
+        CastLateProcedureActuals cast_late(al, b.procedures_with_late_procedure_dummies);
+        cast_late.visit_TranslationUnit(*tu);
+    }
+
     // Post-processing: propagate procedure types for implicit interfaces.
     // This handles the case where callee body is visited after caller body,
     // so the callee's parameter types weren't available during caller visit.

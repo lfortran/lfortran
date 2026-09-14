@@ -1850,6 +1850,9 @@ public:
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
+    // Procedures with a dummy argument found to be a procedure while their
+    // body is visited, after calls to them may have been built.
+    std::set<ASR::symbol_t*> procedures_with_late_procedure_dummies;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -17365,6 +17368,7 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*owner->m_args[i]) &&
                         ASR::down_cast<ASR::Var_t>(owner->m_args[i])->m_v == var) {
                     owner->m_args[i] = ASRUtils::EXPR(ASR::make_Var_t(al, loc, fn));
+                    procedures_with_late_procedure_dummies.insert(&owner->base);
                     owner_type->m_arg_types[i] = ASR::down_cast<ASR::Function_t>(
                         fn)->m_function_signature;
                 }
@@ -17409,6 +17413,7 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*owner->m_args[i]) &&
                         ASR::down_cast<ASR::Var_t>(owner->m_args[i])->m_v == &v->base) {
                     owner_type->m_arg_types[i] = v->m_type;
+                    procedures_with_late_procedure_dummies.insert(&owner->base);
                 }
             }
         }
@@ -17708,6 +17713,9 @@ public:
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
             ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
         ASR::symbol_t* iface = get_callsite_interface(loc, name, args, return_type);
+        // Nothing is known about the called procedure.
+        current_function_deterministic = false;
+        current_function_side_effect_free = false;
         return make_fpcast_call_target(loc, source, iface);
     }
 
