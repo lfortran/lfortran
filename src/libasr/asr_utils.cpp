@@ -3073,7 +3073,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     }
                 }
 
-                ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
+                ASR::symbol_t* s1 = nullptr;
                 ASR::symbol_t* s2 = nullptr;
                 ASR::ttype_t* arg2_ext = ASRUtils::extract_type(arg2);
                 bool is_elemental = ASRUtils::get_FunctionType(sub)->m_elemental;
@@ -3082,6 +3082,9 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                             (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1) && !ASRUtils::is_assumed_rank_array(arg2)) ||
                             (!is_elemental && !ASRUtils::is_array(arg2) && ASRUtils::is_array(arg1))) {
                         return false;
+                    }
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg1)) || ASRUtils::is_class_type(ASRUtils::extract_type(arg1))) {
+                        s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                     }
                     s2 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(sub.m_args[i]));
                 }

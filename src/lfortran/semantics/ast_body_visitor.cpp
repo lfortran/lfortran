@@ -10396,6 +10396,26 @@ public:
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
                         ASR::make_OMPReduction_t(al, loc, op, vars.p, vars.n)));
                 }
+            } else if (clause_name == "default") {
+                std::string kind;
+                if (clause.find('(') != std::string::npos && clause.back() == ')') {
+                    kind = clause.substr(clause.find('(') + 1, clause.size() - clause.find('(') - 2);
+                    kind.erase(0, kind.find_first_not_of(" "));
+                    LCompilers::rtrim(kind);
+                }
+                if (kind == "shared" || kind == "none") {
+                    // A variable that no data-sharing clause names is shared,
+                    // which is what default(shared) asks for. default(none)
+                    // only requires every such variable to be named, so a
+                    // valid program means the same without the clause.
+                    continue;
+                } else if (kind == "private" || kind == "firstprivate") {
+                    diag.add(Diagnostic("the default(" + kind + ") clause is not supported yet", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                } else {
+                    diag.add(Diagnostic("the default clause expects one of shared, none, private or firstprivate", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
             } else {
                 diag.add(Diagnostic("The clause " + clause_name + " is not supported for parallel sections", Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();

@@ -435,6 +435,7 @@ RUN(NAME fixed_form_goto LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_A
 RUN(NAME fixed_form_stmt_func_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_do_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --use-loop-variable-after-loop GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_do_while_name_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_type_save_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_where_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_module_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_common_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
@@ -2166,6 +2167,7 @@ RUN(NAME interface_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_31 LABELS gfortran llvm)
 RUN(NAME interface_32 LABELS gfortran llvm EXTRAFILES interface_32_module.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME interface_33 LABELS gfortran llvm EXTRAFILES interface_33_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME interface_34 LABELS gfortran llvm)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
@@ -2676,6 +2678,7 @@ RUN(NAME derived_types_158 LABELS gfortran llvm)
 RUN(NAME derived_types_159 LABELS gfortran llvm)
 RUN(NAME derived_types_160 LABELS gfortran llvm)
 RUN(NAME derived_types_161 LABELS gfortran llvm)
+RUN(NAME derived_types_162 LABELS gfortran llvm)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
@@ -3198,6 +3201,7 @@ RUN(NAME file_open_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_open_08 LABELS gfortran llvm)
 RUN(NAME file_open_09 LABELS gfortran llvm)
 RUN(NAME file_open_10 LABELS gfortran llvm)
+RUN(NAME file_open_11 LABELS gfortran llvm)
 
 RUN(NAME file_overwrite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3642,6 +3646,8 @@ RUN(NAME external_20 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_21 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_22 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_23 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_24 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_25 LABELS gfortran llvm NO_STD_F23 EXTRA_ARGS --std=f23)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 
@@ -3849,6 +3855,7 @@ RUN(NAME read_95 LABELS gfortran llvm)
 RUN(NAME read_96 LABELS gfortran llvm)
 RUN(NAME read_98 LABELS gfortran llvm)
 RUN(NAME read_99 LABELS gfortran llvm COPY_TO_BIN read_99_data.txt)
+RUN(NAME read_100 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4635,6 +4642,7 @@ RUN(NAME openmp_76 LABELS gfortran metal cuda_cpu EXTRA_ARGS --openmp --gpu-offl
 RUN(NAME openmp_77 LABELS llvm llvm_omp)
 RUN(NAME openmp_78 LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_79 LABELS gfortran metal cuda_cpu llvm_omp EXTRA_ARGS --openmp)
+RUN(NAME openmp_80 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -5359,10 +5367,17 @@ RUN(NAME gpu_metal_346 LABELS gfortran llvm cuda_cpu)
 RUN(NAME gpu_metal_347 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_348 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_349 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_350 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_351 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_352 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_353 LABELS llvm metal cuda_cpu) # conditional expressions are not accepted by every supported gfortran
+RUN(NAME gpu_metal_354 LABELS llvm metal cuda_cpu) # conditional expressions are not accepted by every supported gfortran
+RUN(NAME gpu_metal_355 LABELS llvm metal cuda_cpu) # `local` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_356 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)
-RUN(NAME gpu_decline_02 LABELS gfortran llvm)
+RUN(NAME gpu_decline_02 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_decline_03 LABELS gfortran llvm EXTRAFILES gpu_decline_03_ext.f90)
 RUN(NAME gpu_decline_04 LABELS gfortran llvm)
 RUN(NAME gpu_decline_05 LABELS gfortran llvm)
@@ -5370,6 +5385,14 @@ RUN(NAME gpu_decline_06 LABELS gfortran llvm)
 RUN(NAME gpu_decline_07 LABELS gfortran llvm)
 RUN(NAME gpu_decline_08 LABELS gfortran llvm)
 RUN(NAME gpu_decline_09 LABELS gfortran llvm)
+RUN(NAME gpu_decline_10 LABELS gfortran llvm)
+RUN(NAME gpu_decline_11 LABELS gfortran llvm)
+RUN(NAME gpu_decline_12 LABELS gfortran llvm)
+# No llvm label: without --gpu, LFortran computes a FORALL whose right-hand
+# side reads a section bounded by the FORALL index wrongly (#12853).
+RUN(NAME gpu_decline_13 LABELS gfortran)
+RUN(NAME gpu_decline_14 LABELS gfortran llvm)
+RUN(NAME gpu_decline_15 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
