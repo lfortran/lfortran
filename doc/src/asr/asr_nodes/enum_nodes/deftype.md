@@ -114,9 +114,21 @@ other call in ASR does, and the ordinary argument checks apply to it. A later
 reference with the same argument types and result reuses `f@fpcast`; one with
 different ones gets its own interface.
 
-A reference outside of a statement body (e.g. in a specification expression),
-or with a character, array or derived-type result, still calls an interface
-installed under the name directly.
+A character, array or derived-type result goes through the same interface;
+when an ASR pass turns the result into an argument of `f@fpcast`, the casts to
+`f@fpcast` take its new signature. A character result whose length is an
+expression of the caller (`character(len=n), external :: f`) is assumed length
+in `f@fpcast`; the `FunctionCall` keeps the declared length.
+
+A reference in a DO WHILE condition associates the temporary before each
+evaluation of the condition: the loop becomes `do while (.true.)` starting with
+the association and `if (.not. condition) exit`.
+
+A reference outside of a statement body (a specification expression) has no
+statement to associate a temporary before. It calls a fresh `f@fpcast`
+directly, whose `bindc_name` is the name of the external procedure `f`; `f`
+itself is left unchanged. A dummy procedure cannot be called this way and is
+reported as an error.
 
 ### Why the value is needed at all
 

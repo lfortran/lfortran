@@ -34,13 +34,15 @@ It exists for procedures with an implicit interface (see
 [deftype](../enum_nodes/deftype.md)), whose type says nothing about their
 arguments:
 
-* **Calls.** A procedure with an implicit interface is never called directly.
-  Each reference builds an `Interface` from its own actual arguments (and
-  result type), filed in the calling procedure as `name@fpcast` and shared by
-  references with the same signature. The procedure is associated with a
-  procedure-pointer temporary through a `FunctionPointerCast` to that interface
-  right before the statement, and the call is a call of that temporary, so the
-  call agrees with its callee.
+* **Calls.** Each reference to a procedure with an implicit interface builds an
+  `Interface` from its own actual arguments (and result type), filed in the
+  calling procedure as `name@fpcast` and shared by references with the same
+  signature. The procedure is associated with a procedure-pointer temporary
+  through a `FunctionPointerCast` to that interface right before the statement
+  (before each evaluation of a DO WHILE condition), and the call is a call of
+  that temporary, so the call agrees with its callee. Only a reference in a
+  specification expression, which has no statement before it, calls such an
+  interface directly, with the external procedure's name as its `bindc_name`.
 * **Procedure actuals and pointer targets.** A procedure passed to a dummy
   procedure, or associated with a procedure pointer, whose type differs from
   its own is cast to the type of the dummy or pointer: to the opaque type,
