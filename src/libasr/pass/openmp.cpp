@@ -1421,6 +1421,19 @@ class ParallelRegionVisitor :
             // Process arrays first (existing logic with some modifications)
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = it.second.first;
+                ASR::symbol_t* scope_sym = current_scope->resolve_symbol(it.first);
+                if (scope_sym != nullptr && ASRUtils::is_array(sym_type)) {
+                    ASR::ttype_t* scope_type = ASRUtils::symbol_type(scope_sym);
+                    if (ASR::is_a<ASR::Pointer_t>(*scope_type) && ASRUtils::is_array(scope_type)) {
+                        /*
+                            A region nested in an outlined function still refers to the
+                            original dummy argument, which keeps its type. The outlined
+                            function declares that array as a pointer, use its type.
+                        */
+                        sym_type = scope_type;
+                        involved_symbols[it.first].first = scope_type;
+                    }
+                }
                 if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
                     array_variables.push_back(it.first);
                     continue;
