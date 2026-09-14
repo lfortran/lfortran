@@ -2462,6 +2462,16 @@ public:
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
+        // Inside a derived-type definition only kind type parameters are
+        // accessible by name; a data component must not shadow a host
+        // entity (e.g. `integer :: grid_level = GRID_LEVEL`).
+        if (is_derived_type && v && scope->parent
+                && ASR::is_a<ASR::Variable_t>(*v)
+                && ASR::down_cast<ASR::Variable_t>(v)->m_parent_symtab == scope
+                && ASR::down_cast<ASR::Variable_t>(v)->m_storage
+                    != ASR::storage_typeType::Parameter) {
+            v = scope->parent->resolve_symbol(var_name);
+        }
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0 && current_scope->asr_owner) {

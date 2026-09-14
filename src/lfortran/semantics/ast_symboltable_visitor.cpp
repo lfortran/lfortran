@@ -2968,6 +2968,7 @@ public:
                 this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
+                is_derived_type = false;
                 throw;
             }
         }
@@ -3145,6 +3146,7 @@ public:
                 this->visit_decl_stmt(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
+                is_derived_type = false;
                 throw;
             }
         }
