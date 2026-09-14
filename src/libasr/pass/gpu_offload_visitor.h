@@ -528,6 +528,12 @@ public:
                 std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_syms,
             const Location &loc);
 
+    // Host statements that give the allocatable array components of struct
+    // array elements the loop `loop` writes the storage the kernel writes
+    // into, or check that they have it, before the launch.
+    std::vector<ASR::stmt_t*> build_component_fit(
+            const ParallelLoopNest &loop, const Location &loc);
+
     void build_kernel_launch(const ASR::OMPRegion_t &region,
             const ParallelLoopNest &work, const Location &loc,
             GpuLaunchPlan &plan);

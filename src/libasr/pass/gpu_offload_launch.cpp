@@ -181,6 +181,17 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
         + plan.liveout_scalars.size());
+    // The components the kernel writes are made ready from the loop as the
+    // source wrote it, which the rewrites above left untouched, and before
+    // any element is gathered into a copy.
+    {
+        ParallelLoopNest source;
+        if (parallel_loop_nest(region, source)) {
+            for (ASR::stmt_t *stmt : build_component_fit(source, loc)) {
+                launch_stmts.push_back(al, stmt);
+            }
+        }
+    }
     for (size_t gi = 0; gi < plan.gather_stmts.n; gi++) {
         launch_stmts.push_back(al, plan.gather_stmts.p[gi]);
     }

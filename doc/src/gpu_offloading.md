@@ -134,58 +134,64 @@ generates the device source. It never falls back to the CPU:
 * The pipeline does not repeat the unsupported-construct check. Where it needs
   a fact the check guarantees (for example that no `real(8)` reaches a Metal
   kernel), it asserts it.
-* A kernel cannot allocate. When a loop assigns `t(i) = f(...)` and `f` gives
-  an allocatable component of its result a size, the storage the kernel
-  writes into `t(i)%v` has to exist before the launch. That follows the rule
-  every assignment follows: an allocatable scalar is always allocated or
-  reallocated automatically, but an allocatable array, including an
-  allocatable array component such as `t(i)%v`, only with
-  `--realloc-lhs-arrays`.
+* A kernel cannot allocate. When a loop writes an allocatable array component
+  of an element of an array of derived type, the storage the kernel writes
+  into has to exist before the launch. The write may be `t(i) = f(...)`,
+  where `f` gives the component of its result a size, `t(i) = tt(...)`, or
+  `t(i)%v = ...`. That follows the rule every assignment follows: an
+  allocatable scalar is always allocated or reallocated automatically, but an
+  allocatable array, including an allocatable array component such as
+  `t(i)%v`, only with `--realloc-lhs-arrays`.
   * With the option, the host allocates `t(i)%v` before the launch, or
-    reallocates it when it is allocated with another size. It sizes each
-    element from the same expression the kernel uses, evaluated for that
-    iteration.
+    reallocates it when it is allocated with another size.
   * Without it, nothing is allocated, and the component has to be allocated
     with the right size already. With bounds checking on (the default,
     without `--fast`), the launch checks this with the same run-time check an
-    assignment gets ("Array ... is not allocated", "Array shape mismatch in
-    assignment"). Allocation status and size are known only at run time, so
-    the check cannot be made at compile time. Without bounds checking the
-    kernel writes storage that does not exist.
-  * Only the elements the loop writes are allocated or checked. The host
-    replays the loop's iterations, evaluates the `if` tests the write is in,
-    and maps the loop indices through the element's subscripts. An element
-    the loop does not write is left as it is.
+    assignment gets ("Array 't(i)%v' is not allocated", "Array shape mismatch
+    in assignment"), pointing at the write. Allocation status and size are
+    known only at run time, so the check cannot be made at compile time.
+    Without bounds checking the kernel writes storage that does not exist.
+  * Only the elements the loop writes are allocated or checked. The offload
+    pass builds this host code from the loop as the source wrote it, before
+    it turns the loop into a kernel. The host code runs the loop's
+    iterations again, but only what decides the writes: the `if` and
+    `select case` tests around a write, the `block` and `associate`
+    constructs it is in, and the scalar assignments at the top of the body
+    that the tests, subscripts and sizes read. At each write it allocates or
+    checks the element the write picks, with the size the write gives it: the
+    extents of the array assigned to the component, or those of the
+    `allocate` or array assignment in `f`, in terms of the actual arguments of
+    the call. An element the loop does not write is left as it is.
   * The host does not guess what it cannot work out before the loop runs:
     * The size. It may come from a call, from a value the loop itself writes
       (`s(i) = ...` earlier in the iteration, so the value before the loop
-      would be a wrong size), or from a section with an omitted bound
-      (#12884). Or the called function may give the component one of several
-      sizes (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1));
-      end if`). Then even with the option the component is not allocated.
-      With bounds checking on, the launch stops if the component is not
-      allocated. Without the option the message is the usual "Array ... is
-      not allocated". With the option the message says that the size cannot
-      be determined before the loop runs, and that the component has to be
-      allocated before the loop. That is a limitation: the program is valid
-      with the option, and allocating the component before the loop makes
-      it run. A wrong preallocated size is not detected. Without bounds
-      checking nothing is checked, and the kernel writes storage that does
-      not exist.
+      would be a wrong size), or from a bound or an element of a dummy array
+      of `f`. Or `f` may give the component one of several sizes
+      (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1)); end if`).
+      Then even with the option the component is not allocated. With bounds
+      checking on, the launch stops if the component is not allocated.
+      Without the option the message is the usual "Array ... is not
+      allocated". With the option the message says that the size of
+      `t(i)%v` cannot be determined before the loop runs, and that the
+      component has to be allocated before the loop. That is a limitation:
+      the program is valid with the option, and allocating the component
+      before the loop makes it run. A wrong preallocated size is not
+      detected. Without bounds checking nothing is checked, and the kernel
+      writes storage that does not exist.
     * Which elements the loop writes. The element may be picked by a call
-      (`t(g(i))`) or by a value the loop writes. An `if` test may call a
-      procedure or read a value the loop writes. The write may be inside
-      another construct (a loop, a `select`), in more than one place, or
-      after a `cycle`, `exit` or `return` that can end the iteration early.
-      Then no allocated component is changed and nothing is checked. With
-      the option, a component that is not allocated is given a size that is
-      the same for every element, if there is one, so an element the loop
-      does not write can end up allocated. Without the option, a written
-      component that is not allocated stays unallocated, even with bounds
-      checking on.
+      (`t(g(i))`) or by a value the loop writes. A test may call a procedure
+      or read a value the loop writes. The write may be inside another
+      construct (a loop, a `where`), in more than one place, or in a loop
+      with a `cycle`, `exit` or `return` that can end an iteration early, or
+      a pointer association. Then no allocated component is changed and
+      nothing is checked. With the option, a component that is not allocated
+      is given a size that is the same for every element, if there is one,
+      so an element the loop does not write can end up allocated. Without
+      the option, a written component that is not allocated stays
+      unallocated, even with bounds checking on.
   * A `do concurrent` mask (`do concurrent (i = 1:n, mask(i))`) is currently
-    ignored on every backend (#12778), so such a loop writes every element of
-    its range.
+    ignored on every backend (#12778), and so is a `cycle` in an offloaded
+    loop (#12856), so such a loop writes elements it should not.
 
 ## Testing
 

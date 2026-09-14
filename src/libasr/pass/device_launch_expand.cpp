@@ -48,10 +48,8 @@ class DeviceLaunchExpandVisitor :
     public:
 
         DeviceLaunchExpandVisitor(Allocator &al_,
-                ASR::TranslationUnit_t &unit_,
-                const PassOptions &pass_options_) :
-            PassVisitor(al_, nullptr), unit(unit_),
-            pass_options(pass_options_) {}
+                ASR::TranslationUnit_t &unit_) :
+            PassVisitor(al_, nullptr), unit(unit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
             LCOMPILERS_ASSERT(ASR::down_cast<ASR::Function_t>(
@@ -85,12 +83,7 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
-        const PassOptions &pass_options;
         std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
-        // Size of the first element of a decomposed struct member. A
-        // member sized at run time from another one, and a workspace sized
-        // from a member, both read it.
-        std::map<GpuStructMemberKey, ASR::expr_t*> member_first_sizes;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
         std::map<GpuStructMemberKey, ASR::expr_t*> member_sizes_bufs;
@@ -300,21 +293,12 @@ class DeviceLaunchExpandVisitor :
                 ASR::symbol_t *parameter,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
-                const ASR::Function_t &kernel,
-                ASR::call_arg_t *launch_args, size_t n_launch_args) {
+                const ASR::Function_t &kernel) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::Struct_t *st = gpu_struct_definition(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
             if (!st) return;
             std::string arg_name = ASRUtils::symbol_name(parameter);
-            std::map<GpuStructMemberKey, int64_t> write_sizes =
-                find_struct_member_vla_write_sizes(kernel,
-                    gpu_kernel_workspaces(kernel));
-            std::map<GpuStructMemberKey, GpuStructMemberKey> runtime_sources =
-                find_struct_member_vla_runtime_sources(kernel);
-            std::map<std::string, const GpuVlaWorkspace*> no_workspaces;
-            std::map<GpuStructMemberKey, GpuMemberShape> shapes =
-                kernel_struct_member_shapes(kernel, no_workspaces);
             // A member inherited from a type this one extends is stored
             // and handed over exactly like one of its own.
             for (const GpuComponentLayout &component :
@@ -328,23 +312,13 @@ class DeviceLaunchExpandVisitor :
                     : ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
                         element_type, int64, nullptr));
 
-                // The kernel gives the component of the elements it writes a
-                // size: the same for every element, or one the kernel works
-                // out in each iteration from what `shape` says.
                 GpuStructMemberKey key{arg_name, member_name};
-                auto write_size = write_sizes.find(key);
-                auto source = runtime_sources.find(key);
-                auto shape = shapes.find(key);
-                const GpuMemberShape *written_shape =
-                    shape != shapes.end() ? &shape->second : nullptr;
-                std::vector<ASR::expr_t*> uniform_extents;
-                if (write_size != write_sizes.end()) {
-                    uniform_extents.push_back(b.i32(write_size->second));
-                } else if (source != runtime_sources.end()) {
-                    auto first = member_first_sizes.find(source->second);
-                    uniform_extents.push_back(first != member_first_sizes.end()
-                        ? first->second : b.i32(1));
-                }
+                // The component of an element may not be allocated: the
+                // offload pass gave storage only to those the loop writes
+                // (see build_component_fit). One that is not holds nothing
+                // to hand over.
+                bool may_be_unallocated = ASRUtils::is_allocatable(
+                    ASRUtils::symbol_type(member));
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
@@ -381,17 +355,8 @@ class DeviceLaunchExpandVisitor :
                     size_dims.n));
                 out.push_back(al, b.Assignment(total, b.i32(0)));
                 std::vector<ASR::stmt_t*> measure;
-                if (written_shape || !uniform_extents.empty()) {
-                    fit_written_component(loc, out, measure, arg, member,
-                        arg_name, member_name, rank, k, kernel, launch_args,
-                        n_launch_args, written_shape, uniform_extents);
-                }
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
                     total));
-                // The component of an element the loop does not write need
-                // not be allocated; it holds nothing to hand over.
-                bool may_be_unallocated = ASRUtils::is_allocatable(
-                    ASRUtils::symbol_type(member));
                 std::vector<ASR::stmt_t*> extents, no_extents;
                 for (size_t d = 0; d < rank; d++) {
                     extents.push_back(b.Assignment(
@@ -413,8 +378,6 @@ class DeviceLaunchExpandVisitor :
                 measure.push_back(b.Assignment(total, b.Add(total,
                     member_element_count(loc, sizes, k, rank))));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
-                member_first_sizes[key] = member_element_count(loc, sizes,
-                    b.i32(1), rank);
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
                 // of them -- `allocate(x%m(0,3))` -- leaves nothing to hand
@@ -467,229 +430,6 @@ class DeviceLaunchExpandVisitor :
                 writebacks.push_back(b.Deallocate(offsets));
                 writebacks.push_back(b.Deallocate(sizes));
             }
-        }
-
-        // Makes the component `member` of the elements of `arg` the loop
-        // writes fit what the kernel writes into it: the size is
-        // `uniform_extents` for every element, or the extents `shape` gives
-        // each one in the iteration that writes it.
-        //
-        // Assigning to an allocatable component allocates it, or allocates
-        // it again with another size, only with --realloc-lhs-arrays, as for
-        // any assignment; only then does the host do so before the launch.
-        // Without it the component has to fit already, which bounds checking
-        // checks with the check an assignment gets.
-        //
-        // Only the elements the loop writes are looked at, in the iterations
-        // that write them: the host replays the iterations and the `if`
-        // tests around the write, and maps the loop indices through the
-        // element's subscripts. Any other element is left as it is.
-        //
-        // What the host cannot work out before the loop runs it does not
-        // guess:
-        // * When the component can get more than one size, or its size reads
-        //   something the host cannot evaluate, the host cannot allocate it.
-        //   Bounds checking then only checks that a component every write
-        //   gives a size is allocated.
-        // * When the host cannot tell which elements the loop writes, it
-        //   changes no allocated component and checks nothing. With the
-        //   option it gives a component that is not allocated a size that is
-        //   the same for every element.
-        void fit_written_component(const Location &loc,
-                Vec<ASR::stmt_t*> &out, std::vector<ASR::stmt_t*> &measure,
-                ASR::expr_t *arg, ASR::symbol_t *member,
-                const std::string &arg_name, const std::string &member_name,
-                size_t rank, ASR::expr_t *k, const ASR::Function_t &kernel,
-                ASR::call_arg_t *launch_args, size_t n_launch_args,
-                const GpuMemberShape *shape,
-                const std::vector<ASR::expr_t*> &uniform_extents) {
-            bool realloc = pass_options.realloc_lhs_arrays;
-            bool checks = pass_options.bounds_checking;
-            if (!realloc && !checks) return;
-            ASRUtils::ASRBuilder b(al, loc);
-            auto extents_for = [&](
-                    const std::map<ASR::symbol_t*, ASR::expr_t*> &indices) {
-                std::vector<ASR::expr_t*> extents;
-                // A component that can get more than one size has no one
-                // size to give it.
-                if (shape && !shape->single) return extents;
-                if (!uniform_extents.empty()) {
-                    ASRUtils::ExprStmtDuplicator duplicator(al);
-                    for (ASR::expr_t *extent : uniform_extents) {
-                        extents.push_back(duplicator.duplicate_expr(extent));
-                    }
-                } else if (shape) {
-                    extents = gpu_host_member_extents(al, kernel, launch_args,
-                        n_launch_args, *shape, indices);
-                }
-                return extents;
-            };
-            GpuHostIterations iterations;
-            auto new_local = [&](const std::string &name,
-                    ASR::ttype_t *type) {
-                return declare_local(loc, name, type);
-            };
-            std::vector<ASR::expr_t*> subscripts, tests;
-            bool written_known = shape && gpu_host_iterations(al, kernel,
-                launch_args, n_launch_args, new_local, iterations);
-            if (written_known) {
-                subscripts = gpu_host_element_subscripts(al, kernel,
-                    launch_args, n_launch_args, *shape, arg,
-                    iterations.indices);
-                written_known = !subscripts.empty() &&
-                    gpu_host_write_conditions(al, kernel, launch_args,
-                        n_launch_args, *shape, iterations.indices, tests);
-            }
-            if (!written_known) {
-                std::vector<ASR::expr_t*> extents = extents_for({});
-                if (realloc && extents.size() == rank) {
-                    std::vector<ASR::stmt_t*> fit;
-                    std::vector<ASR::expr_t*> lengths =
-                        evaluate_extents(loc, extents, fit);
-                    fit.push_back(b.If(b.Not(is_allocated(loc,
-                        struct_member(loc, arg, k, member))),
-                        {allocate_with(loc, struct_member(loc, arg, k,
-                            member), lengths)}, {}));
-                    measure.insert(measure.end(), fit.begin(), fit.end());
-                }
-                return;
-            }
-            ASR::expr_t *element = ASRUtils::EXPR(
-                ASR::make_StructInstanceMember_t(al, loc,
-                    b.ArrayItem_01(arg, subscripts), member,
-                    ASRUtils::symbol_type(member), nullptr));
-            std::vector<ASR::expr_t*> extents =
-                extents_for(iterations.indices);
-            std::vector<ASR::stmt_t*> fit;
-            if (extents.size() == rank) {
-                fit = realloc ? allocate_to_fit(loc, element, extents)
-                    : check_fits(loc, element, extents);
-            } else if (checks && shape->always_shaped) {
-                if (realloc) {
-                    fit.push_back(require_allocated(loc, element, arg_name,
-                        member_name));
-                } else {
-                    ASRUtils::ExprStmtDuplicator duplicator(al);
-                    fit.push_back(debug_check(loc, element,
-                        duplicator.duplicate_expr(element)));
-                }
-            }
-            if (fit.empty()) return;
-            // Only an iteration the tests let through writes the element,
-            // and a test is only evaluated where the ones around it hold.
-            for (auto test = tests.rbegin(); test != tests.rend(); ++test) {
-                fit = {b.If(*test, fit, {})};
-            }
-            std::vector<ASR::stmt_t*> body = iterations.prologue;
-            body.insert(body.end(), fit.begin(), fit.end());
-            ASR::ttype_t *counter_type =
-                ASRUtils::expr_type(iterations.counter);
-            out.push_back(al, b.DoLoop(iterations.counter,
-                b.i_t(0, counter_type),
-                b.Sub(iterations.count, b.i_t(1, counter_type)), body));
-        }
-
-        // Evaluates `extents`, never below zero, into new variables.
-        std::vector<ASR::expr_t*> evaluate_extents(const Location &loc,
-                const std::vector<ASR::expr_t*> &extents,
-                std::vector<ASR::stmt_t*> &stmts) {
-            ASRUtils::ASRBuilder b(al, loc);
-            std::vector<ASR::expr_t*> lengths;
-            for (ASR::expr_t *extent : extents) {
-                ASR::expr_t *length = declare_local(loc,
-                    "gpu_component_extent", int32);
-                stmts.push_back(b.Assignment(length,
-                    b.Max(b.i2i_t(extent, int32), b.i32(0))));
-                lengths.push_back(length);
-            }
-            return lengths;
-        }
-
-        ASR::stmt_t* allocate_with(const Location &loc, ASR::expr_t *x,
-                const std::vector<ASR::expr_t*> &lengths) {
-            ASRUtils::ASRBuilder b(al, loc);
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, lengths.size());
-            for (ASR::expr_t *length : lengths) {
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = b.i32(1);
-                dim.m_length = length;
-                dims.push_back(al, dim);
-            }
-            return b.Allocate(x, dims.p, dims.n);
-        }
-
-        // Allocates `component` with `extents`, first deallocating it when
-        // it is allocated with other extents, as an assignment with
-        // --realloc-lhs-arrays does.
-        std::vector<ASR::stmt_t*> allocate_to_fit(const Location &loc,
-                ASR::expr_t *component,
-                const std::vector<ASR::expr_t*> &extents) {
-            ASRUtils::ASRBuilder b(al, loc);
-            ASRUtils::ExprStmtDuplicator duplicator(al);
-            auto copy = [&]() { return duplicator.duplicate_expr(component); };
-            std::vector<ASR::stmt_t*> stmts;
-            std::vector<ASR::expr_t*> lengths =
-                evaluate_extents(loc, extents, stmts);
-            size_t rank = lengths.size();
-            ASR::expr_t *differs = nullptr;
-            for (size_t d = 0; d < rank; d++) {
-                ASR::expr_t *one = b.NotEq(b.ArraySize(copy(),
-                    rank > 1 ? b.i32((int)d + 1) : nullptr, int32),
-                    lengths[d]);
-                differs = differs ? b.Or(differs, one) : one;
-            }
-            stmts.push_back(b.If(is_allocated(loc, copy()),
-                {b.If(differs, {b.Deallocate(copy()),
-                    allocate_with(loc, copy(), lengths)}, {})},
-                {allocate_with(loc, component, lengths)}));
-            return stmts;
-        }
-
-        // The check bounds checking makes of an assignment to `component`
-        // from a value with `extents`: that it is allocated, with those
-        // extents.
-        std::vector<ASR::stmt_t*> check_fits(const Location &loc,
-                ASR::expr_t *component,
-                const std::vector<ASR::expr_t*> &extents) {
-            ASRUtils::ASRBuilder b(al, loc);
-            std::vector<ASR::stmt_t*> stmts;
-            std::vector<ASR::expr_t*> lengths =
-                evaluate_extents(loc, extents, stmts);
-            ASR::expr_t *value = declare_local(loc, "gpu_component_shape",
-                b.allocatable(b.Array(std::vector<int64_t>(lengths.size(),
-                    -1), int8)));
-            stmts.push_back(allocate_with(loc, value, lengths));
-            stmts.push_back(debug_check(loc, component, value));
-            stmts.push_back(b.Deallocate(value));
-            return stmts;
-        }
-
-        // With --realloc-lhs-arrays the assignment would allocate
-        // `component`, but the host cannot work out its size before the
-        // loop runs, so the program has to have allocated it.
-        ASR::stmt_t* require_allocated(const Location &loc,
-                ASR::expr_t *component, const std::string &arg_name,
-                const std::string &member_name) {
-            ASRUtils::ASRBuilder b(al, loc);
-            std::string message = "the size an offloaded loop gives the "
-                "component '" + member_name + "' of '" + arg_name + "' "
-                "cannot be determined before the loop runs, so it cannot be "
-                "allocated automatically; allocate it before the loop";
-            ASR::expr_t *code = b.StringConstant(message,
-                b.String(b.i32(message.size()), ASR::ExpressionLength));
-            return b.If(b.Not(is_allocated(loc, component)),
-                {ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, code))}, {});
-        }
-
-        ASR::stmt_t* debug_check(const Location &loc, ASR::expr_t *target,
-                ASR::expr_t *value) {
-            Vec<ASR::expr_t*> components;
-            components.reserve(al, 1);
-            components.push_back(al, value);
-            return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
-                target, components.p, components.n, false));
         }
 
         // `copy`, only when `component` is allocated if it may not be.
@@ -1120,8 +860,7 @@ class DeviceLaunchExpandVisitor :
                         // the actual need not be a plain variable: a
                         // component chain names one array just as well.
                         decompose_struct_members(loc, out, arg,
-                            entry.m_variable, buffers, writebacks, *kernel,
-                            x.m_args, x.n_args);
+                            entry.m_variable, buffers, writebacks, *kernel);
                     }
                 }
             }
@@ -1320,7 +1059,7 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!gpu_device_capabilities(pass_options).device_selected()) {
         return;
     }
-    DeviceLaunchExpandVisitor v(al, unit, pass_options);
+    DeviceLaunchExpandVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
