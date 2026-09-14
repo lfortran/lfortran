@@ -3268,6 +3268,22 @@ public:
                         ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable_pointer(
                                 actual));
+                    if (ASR::is_a<ASR::PointerNullConstant_t>(
+                            *x.m_args[i].m_value)) {
+                        // A null() argument has the type of its member, so
+                        // it is a derived type or procedure exactly when the
+                        // member is.
+                        require_with_loc_id(
+                            is_struct_like_type(member_scalar)
+                                == is_struct_like_type(actual_scalar)
+                            && is_procedure_type(member_scalar)
+                                == is_procedure_type(actual_scalar),
+                            "asr.verify.struct_constructor.null_argument_type_matches_member",
+                            "null() argument type does not match member '" +
+                                std::string(ASRUtils::symbol_name(members[i])) +
+                                "'",
+                            x.m_args[i].m_value->base.loc);
+                    }
                     if (is_struct_like_type(member_scalar)
                             || is_procedure_type(member_scalar)
                             || is_struct_like_type(actual_scalar)

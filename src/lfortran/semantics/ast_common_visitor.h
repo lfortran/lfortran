@@ -10991,13 +10991,65 @@ public:
         visit_kwargs(vals, nullptr, 0, loc, v, diag);
     }
 
+    // Visits the constructor arguments `args` that correspond to the
+    // components `members`. A `null()` argument is a disassociated pointer or
+    // unallocated allocatable of its component's type, like the component's
+    // own `=> null()` default initializer; it must not take the type of the
+    // variable being declared or assigned.
+    void visit_struct_constructor_args(AST::fnarg_t *args, size_t n,
+            const std::vector<ASR::symbol_t*>& members, Vec<ASR::call_arg_t>& vals) {
+        vals.reserve(al, n);
+        for (size_t i = 0; i < n; i++) {
+            ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
+            Vec<ASR::call_arg_t> val;
+            ASR::ttype_t* prev_variable_type = current_variable_type_;
+            ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
+            set_null_context_to_component(member, args[i].m_end->base.loc);
+            visit_expr_list(&args[i], 1, val);
+            current_variable_type_ = prev_variable_type;
+            current_struct_type_var_expr = prev_struct_type_var_expr;
+            vals.push_back(al, val[0]);
+        }
+    }
+
+    void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
+        current_variable_type_ = nullptr;
+        current_struct_type_var_expr = nullptr;
+        if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+            return;
+        }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+        current_variable_type_ = member_var->m_type;
+        ASR::ttype_t* member_type = ASRUtils::extract_type(member_var->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*member_type) ||
+                ASR::is_a<ASR::FunctionType_t>(*member_type)) {
+            // The mold of a derived type or procedure `null()` is the
+            // component, which lives in the type's scope, so refer to its
+            // type as seen from the current scope, as a default initializer
+            // filled into a constructor does.
+            ASR::expr_t* member_null = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, loc, member_var->m_type, ASRUtils::EXPR(ASR::make_Var_t(al, loc, member))));
+            member_null = ASRUtils::externalize_struct_refs_in_init(al, member_null, current_scope);
+            current_struct_type_var_expr =
+                ASR::down_cast<ASR::PointerNullConstant_t>(member_null)->m_var_expr;
+        }
+    }
+
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
         StructConstructorInfo info = get_struct_constructor_info(v);
         bool is_pdt = !info.kind_indices.empty();
         Vec<ASR::call_arg_t> vals;
-        visit_expr_list(x.m_args, x.n_args, vals);
+        if (is_pdt && x.n_subargs > 0) {
+            std::vector<ASR::symbol_t*> kind_members;
+            for (size_t index : info.kind_indices) {
+                kind_members.push_back(info.members[index]);
+            }
+            visit_struct_constructor_args(x.m_args, x.n_args, kind_members, vals);
+        } else {
+            visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals);
+        }
         if (is_pdt && x.n_subargs > 0) {
             if (vals.size() > info.kind_indices.size()
                     || x.n_subargs > info.members.size() - info.kind_indices.size()) {
@@ -11005,8 +11057,15 @@ public:
                     {loc}, "type parameters and components must be specified in their respective argument lists");
                 throw SemanticAbort();
             }
+            std::vector<ASR::symbol_t*> component_members;
+            for (size_t i = 0; i < info.members.size(); i++) {
+                if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
+                        == info.kind_indices.end()) {
+                    component_members.push_back(info.members[i]);
+                }
+            }
             Vec<ASR::call_arg_t> components;
-            visit_expr_list(x.m_subargs, x.n_subargs, components);
+            visit_struct_constructor_args(x.m_subargs, x.n_subargs, component_members, components);
             Vec<ASR::call_arg_t> combined;
             combined.reserve(al, info.members.size());
             for (size_t i = 0; i < info.members.size(); i++) {
@@ -11035,6 +11094,17 @@ public:
         }
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
+
+        // `null()` for an allocatable component means it is not allocated,
+        // which is how an omitted allocatable component is represented.
+        std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
+        for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
+            if (vals[i].m_value &&
+                    ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value) &&
+                    ASRUtils::is_allocatable(ASRUtils::symbol_type(members[i]))) {
+                vals.p[i].m_value = nullptr;
+            }
+        }
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
@@ -22154,8 +22224,6 @@ public:
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
 
         for (size_t i = 0; i < n; i++) {
-            this->visit_expr(*kwargs[i].m_value);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
@@ -22168,6 +22236,14 @@ public:
             }
 
             size_t idx = std::distance(constructor_args.begin(), search);
+            ASR::ttype_t* prev_variable_type = current_variable_type_;
+            ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
+            set_null_context_to_component(constructor_arg_syms[idx],
+                kwargs[i].m_value->base.loc);
+            this->visit_expr(*kwargs[i].m_value);
+            current_variable_type_ = prev_variable_type;
+            current_struct_type_var_expr = prev_struct_type_var_expr;
+            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (args[idx].m_value != nullptr) {
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
