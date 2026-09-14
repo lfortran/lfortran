@@ -299,8 +299,7 @@ public:
     // The `body` Vec must already be reserved
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        current_body = &body;
+        CurrentBodyScope body_scope(*this, &body, current_scope);
         for (size_t i=0; i<n_body; i++) {
             // A program unit hands us its whole `items` list, the declarations
             // in it were already handled by the symbol table visitor
@@ -342,7 +341,6 @@ public:
             // To avoid last statement to be entered twice once we exit this node
             tmp = nullptr;
         }
-        current_body = current_body_copy;
     }
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -5977,6 +5975,7 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
+        current_body_scope = current_scope;
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
@@ -6626,7 +6625,12 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         statement_function_parent_scope = parent_scope;
-        this->visit_expr(*x.m_value);
+        {
+            // The statements the expression needs run in the statement
+            // function, before its result is assigned, not in the host.
+            CurrentBodyScope body_scope(*this, &body, current_scope);
+            this->visit_expr(*x.m_value);
+        }
         statement_function_parent_scope = nullptr;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
@@ -9239,10 +9243,10 @@ public:
         // interface) must run before every evaluation of the condition.
         Vec<ASR::stmt_t*> test_stmts;
         test_stmts.reserve(al, 1);
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        current_body = &test_stmts;
-        visit_expr(*x.m_test);
-        current_body = current_body_copy;
+        {
+            CurrentBodyScope body_scope(*this, &test_stmts, current_scope);
+            visit_expr(*x.m_test);
+        }
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body + test_stmts.size() + 1);

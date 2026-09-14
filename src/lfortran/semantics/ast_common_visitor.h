@@ -2261,7 +2261,34 @@ public:
     }
     bool _declaring_variable = false;
     bool _processing_common_block_object = false;
+    // The statements run right before the statement being built, where the
+    // statements an expression needs are added (e.g. associating the
+    // procedure-pointer temporary of a call through an implicit interface),
+    // and the scope that owns them. Null outside of a statement body.
     Vec<ASR::stmt_t*> *current_body = nullptr;
+    SymbolTable *current_body_scope = nullptr;
+
+    // Makes `body`, a statement list of `scope`, current and restores the
+    // previous one even when the visit throws SemanticAbort, which would
+    // otherwise leave `current_body` pointing to a destroyed list under
+    // --continue-compilation.
+    struct CurrentBodyScope {
+        CommonVisitor &v;
+        Vec<ASR::stmt_t*> *previous_body;
+        SymbolTable *previous_scope;
+        CurrentBodyScope(CommonVisitor &v_, Vec<ASR::stmt_t*> *body, SymbolTable *scope)
+                : v{v_}, previous_body{v_.current_body},
+                  previous_scope{v_.current_body_scope} {
+            v.current_body = body;
+            v.current_body_scope = scope;
+        }
+        ~CurrentBodyScope() {
+            v.current_body = previous_body;
+            v.current_body_scope = previous_scope;
+        }
+        CurrentBodyScope(const CurrentBodyScope &) = delete;
+        CurrentBodyScope &operator=(const CurrentBodyScope &) = delete;
+    };
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping;
@@ -17250,13 +17277,17 @@ public:
     // The association is emitted at every call site into `current_body`, the
     // statements run right before the statement being built (or, for a DO
     // WHILE condition, before each evaluation of the condition), so the
-    // temporary always holds `source` when the call is made.
+    // temporary always holds `source` when the call is made. The temporary is
+    // declared in `current_body_scope`, the scope those statements belong
+    // to, so it is never shared with another procedure, e.g. between a
+    // statement function and its host.
     ASR::symbol_t* make_fpcast_call_target(
         const Location& loc,
         ASR::symbol_t* source,
         ASR::symbol_t* to_iface)
     {
         LCOMPILERS_ASSERT(current_body != nullptr);
+        LCOMPILERS_ASSERT(current_body_scope != nullptr);
         ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(to_iface);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
         ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
@@ -17265,7 +17296,7 @@ public:
         // through it. The temp procedure-pointer variable is Pointer(...).
         ASR::ttype_t* fn_type = ASRUtils::duplicate_type(al, to_fn->m_function_signature);
 
-        SymbolTable* tmp_scope = implicit_call_statement_scope();
+        SymbolTable* tmp_scope = current_body_scope;
         ASR::symbol_t*& tmp_var = fpcast_call_targets[tmp_scope][{source, to_sym}];
         if (tmp_var == nullptr) {
             ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
@@ -17294,19 +17325,13 @@ public:
         return tmp_var;
     }
 
-    // The scope of the statements a call made in `current_scope` belongs to:
-    // for a reference in the body of a statement function, the scope that
-    // defines the statement function.
-    SymbolTable* implicit_call_statement_scope() {
-        return statement_function_parent_scope ? statement_function_parent_scope
-            : current_scope;
-    }
-
     // The scope that owns the implicit-interface symbols of a call made in
     // `current_scope`: the enclosing procedure or program, past any
-    // Block/AssociateBlock scopes.
+    // Block/AssociateBlock scopes, and for a reference in the body of a
+    // statement function, the scope that defines the statement function.
     SymbolTable* implicit_interface_scope() {
-        SymbolTable *sym_scope = implicit_call_statement_scope();
+        SymbolTable *sym_scope = statement_function_parent_scope
+            ? statement_function_parent_scope : current_scope;
         while (sym_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*sym_scope->asr_owner)) {
             ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(sym_scope->asr_owner);
             if (!ASR::is_a<ASR::AssociateBlock_t>(*owner) && !ASR::is_a<ASR::Block_t>(*owner)) {
