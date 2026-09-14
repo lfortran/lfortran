@@ -1148,7 +1148,7 @@ struct FixedFormRecursiveDescent {
             t.cur = cur;
             tokenize_until(do_pos);
             cur = do_pos;
-            lex_dowhile(cur);
+            lex_dowhile(cur, continue_compilation);
             return true;
         }
         if (is_named_do_loop(cur, do_pos)) {
@@ -1193,7 +1193,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "dowhile(")) {
-            lex_dowhile(cur);
+            lex_dowhile(cur, continue_compilation);
             return true;
         }
 
@@ -1691,14 +1691,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_dowhile(unsigned char *&cur) {
+    void lex_dowhile(unsigned char *&cur, bool continue_compilation = false) {
         auto end = cur; next_line(end);
         push_token_advance(cur, "do");
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
         // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
         while (!next_is(cur, "enddo")) {
-            lex_body_statement(cur);
+            // With --continue-compilation an unrecognized body statement is
+            // tokenized as a plain line (and reported by the parser); the
+            // error below is then only reached at end of file or at a
+            // stray `end`/`contains`/`subroutine`/`function`.
+            if (!lex_body_statement(cur, continue_compilation)) {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a do while loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
         }
         push_token_advance(cur, "enddo");
         tokenize_line(cur);
