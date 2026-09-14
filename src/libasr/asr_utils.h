@@ -3086,12 +3086,15 @@ static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
         || deftype == ASR::deftypeType::ImplicitInterface;
 }
 
-// True if `x` has deftype ImplicitInterface: declared (e.g. `integer, external
-// :: f`) with no interface. ASR states that the argument list is unknown. It
-// is never a call target and never code-generated; every reference
-// synthesizes a concrete Interface from the actuals at that reference. Once
-// an interface is inferred (including from a dummy/procedure-pointer use),
-// deftype becomes Interface and this returns false.
+// True if `x` has deftype ImplicitInterface: the opaque procedure type of a
+// procedure with an implicit interface (e.g. `integer, external :: f`, an
+// `external f` dummy or a `procedure()` pointer).
+//   * `arg_types` is always empty and means "unknown", not "no arguments".
+//   * `return_var_type` is set only when the procedure is explicitly typed.
+//   * The type is never changed as uses of the procedure are seen.
+// An opaque procedure is never a call target. Every call goes through a
+// FunctionPointerCast to an interface built from that call's actuals, and a
+// procedure passed to a dummy of a different type is cast to the dummy's type.
 static inline bool is_bare_implicit_interface(const ASR::FunctionType_t &x) {
     return x.m_deftype == ASR::deftypeType::ImplicitInterface;
 }
@@ -3110,6 +3113,51 @@ static inline bool is_bare_implicit_interface(ASR::symbol_t *v) {
         return false;
     }
     return is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(f2));
+}
+
+// True if `t`, past pointer and allocatable, is the opaque procedure type.
+static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
+    if (t == nullptr) {
+        return false;
+    }
+    t = type_get_past_allocatable(type_get_past_pointer(t));
+    return ASR::is_a<ASR::FunctionType_t>(*t) && is_bare_implicit_interface(
+        *ASR::down_cast<ASR::FunctionType_t>(t));
+}
+
+// The opaque procedure type, returning `return_type` (null for a procedure
+// that is not explicitly typed).
+static inline ASR::ttype_t* make_opaque_procedure_type(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type) {
+    return ASRUtils::TYPE(ASR::make_FunctionType_t(al, loc, nullptr, 0,
+        return_type, ASR::abiType::BindC, ASR::deftypeType::ImplicitInterface,
+        nullptr, false, false, false, false, false, nullptr, 0, false,
+        ASR::exec_spaceType::Host));
+}
+
+// True if a procedure of type `a` can be used where type `b` is expected
+// without a FunctionPointerCast: both are opaque or both are explicit, with
+// the same arguments, result and abi. Unlike `types_equal`, an opaque type is
+// never identical to an explicit zero-argument one.
+static inline bool procedure_types_identical(ASR::FunctionType_t *a,
+        ASR::FunctionType_t *b) {
+    if (is_bare_implicit_interface(*a) != is_bare_implicit_interface(*b)
+            || a->n_arg_types != b->n_arg_types || a->m_abi != b->m_abi
+            || (a->m_return_var_type == nullptr)
+                != (b->m_return_var_type == nullptr)) {
+        return false;
+    }
+    if (a->m_return_var_type && !types_equal(a->m_return_var_type,
+            b->m_return_var_type, nullptr, nullptr, true)) {
+        return false;
+    }
+    for (size_t i = 0; i < a->n_arg_types; i++) {
+        if (!types_equal(a->m_arg_types[i], b->m_arg_types[i], nullptr,
+                nullptr, true)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
