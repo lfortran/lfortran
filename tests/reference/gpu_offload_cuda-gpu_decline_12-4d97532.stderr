@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the section of 'a' passed to a procedure in the condition of a do while loop has to be copied into a contiguous buffer, which is not supported there
+  --> tests/../integration_tests/gpu_decline_12.f90:29:23
+   |
+29 |     do while (row_sum(a(i,1:n)) < 30)
+   |                       ^^^^^^^^ the section of 'a' passed to a procedure in the condition of a do while loop has to be copied into a contiguous buffer, which is not supported there

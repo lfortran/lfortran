@@ -199,6 +199,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         size_scope_array_temporaries(work.body, work.n_body);
     }
 
+    // A spliced callee can bring a section into a place no gather can
+    // serve, such as its own do while condition, which the check before
+    // the rewrites did not see.
+    {
+        Location where = loc;
+        std::string name;
+        GpuSectionSite site = GpuSectionSite::Statement;
+        if (body_has_unplaceable_section(work.body, work.n_body, where,
+                name, site)) {
+            report_not_offloaded(where, GpuDecline(
+                GpuDeclineReason::SectionCopyNotPlaceable, name, site));
+            return;
+        }
+    }
+
     // Splicing a callee is what can leave a section of a section in the
     // body, so the shape is only possible where the pass splices.
     if (device_caps.splices_device_functions()) {
@@ -2465,6 +2480,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
                     ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(s);
                     process_nested(wl->m_body, wl->n_body);
+                } else if (ASR::is_a<ASR::Select_t>(*s)) {
+                    gpu_for_each_case_body(ASR::down_cast<ASR::Select_t>(s),
+                        process_nested);
                 }
                 if (!ASR::is_a<ASR::BlockCall_t>(*s)) continue;
                 ASR::BlockCall_t *inner_bc =
@@ -2565,6 +2583,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::WhileLoop_t *wl =
                     ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
                 move_blocks_to_kernel(wl->m_body, wl->n_body);
+            } else if (ASR::is_a<ASR::Select_t>(*stmts[i])) {
+                gpu_for_each_case_body(
+                    ASR::down_cast<ASR::Select_t>(stmts[i]),
+                    move_blocks_to_kernel);
             }
         }
     };

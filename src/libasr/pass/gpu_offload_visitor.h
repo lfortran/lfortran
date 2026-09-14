@@ -353,7 +353,11 @@ public:
 
     ASR::ArraySection_t* find_strided_section_actual(ASR::stmt_t **body,
             size_t n_body,
-            const std::function<bool(ASR::ArraySection_t*, bool)> &pred);
+            const std::function<bool(ASR::ArraySection_t*, GpuSectionSite)>
+                &pred);
+
+    bool body_has_unplaceable_section(ASR::stmt_t **body, size_t n_body,
+            Location &where, std::string &name, GpuSectionSite &site);
 
     bool body_has_varying_leading_section_extent(
             const ParallelLoopNest &work, Location &where,

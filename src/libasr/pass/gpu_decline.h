@@ -128,6 +128,12 @@ enum class GpuDeclineReason {
     // changes from one iteration to the next, so no buffer the host sizes
     // can hold it contiguously.
     SectionLeadingExtentVaries,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer, but it is evaluated where no copy can be placed
+    // next to it: again on every test of a do while condition, only when
+    // one arm of a conditional expression is taken, or inside a construct
+    // the copy cannot be put into (see GpuSectionSite).
+    SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
     RecursiveDeviceFunction,
@@ -182,6 +188,21 @@ enum class GpuDeclineReason {
     ScalarKindMismatch,
 };
 
+// Where a section passed to a procedure is evaluated, as far as copying it
+// into a contiguous buffer is concerned. `Statement` is the one site where
+// the copy can be placed: right before the statement that makes the call.
+enum class GpuSectionSite {
+    Statement,
+    WhileCondition,
+    ConditionalExpression,
+    ImpliedDo,
+    Forall,
+    Where,
+    SelectType,
+    SelectRank,
+    Construct,
+};
+
 // A decline, with the little the message quotes alongside it.
 struct GpuDecline {
     GpuDeclineReason reason = GpuDeclineReason::None;
@@ -191,6 +212,8 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // Where the section is evaluated, when the reason is about a section.
+    GpuSectionSite site = GpuSectionSite::Statement;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}
@@ -199,6 +222,9 @@ struct GpuDecline {
     GpuDecline(GpuDeclineReason reason_, const std::string &name_,
             ASR::ttype_t *type_)
         : reason(reason_), name(name_), type(type_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_,
+            GpuSectionSite site_)
+        : reason(reason_), name(name_), site(site_) {}
 
     bool declined() const { return reason != GpuDeclineReason::None; }
 };

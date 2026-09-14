@@ -167,9 +167,23 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
             return false;
         }
         // A non-contiguous section actual argument is gathered into a
-        // contiguous per-thread temporary below. When its base is not a
-        // designator the copy loops can index the gather is impossible,
-        // and passing the section on would silently drop its stride.
+        // contiguous per-thread temporary below, right before the
+        // statement that makes the call. Where the call is evaluated
+        // somewhere no such gather can serve -- a do while condition, a
+        // FORALL -- the gather is impossible, and so it is when its base
+        // is not a designator the copy loops can index. Passing the
+        // section on would silently drop its stride.
+        {
+            Location where = loc;
+            std::string name;
+            GpuSectionSite site = GpuSectionSite::Statement;
+            if (body_has_unplaceable_section(work.body, work.n_body, where,
+                    name, site)) {
+                report_not_offloaded(where, GpuDecline(
+                    GpuDeclineReason::SectionCopyNotPlaceable, name, site));
+                return false;
+            }
+        }
         if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::UngatherableStridedSection));

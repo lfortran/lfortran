@@ -2114,8 +2114,26 @@ inline void scan_kernel_scope_alloc_vlas(
     }
 }
 
+// Every statement list of a SELECT CASE: each case body, then the default.
+template <typename F>
+inline void gpu_for_each_case_body(ASR::Select_t *sel, F &&fn) {
+    for (size_t i = 0; i < sel->n_body; i++) {
+        ASR::case_stmt_t *c = sel->m_body[i];
+        if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+            ASR::CaseStmt_t *cs = ASR::down_cast<ASR::CaseStmt_t>(c);
+            fn(cs->m_body, cs->n_body);
+        } else {
+            ASR::CaseStmt_Range_t *cr =
+                ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+            fn(cr->m_body, cr->n_body);
+        }
+    }
+    fn(sel->m_default, sel->n_default);
+}
+
 // Every BLOCK and ASSOCIATE the statement list opens, at whatever depth,
-// including those nested in `if` / serial `do` / `do concurrent` / `while`.
+// including those nested in `if` / `select case` / serial `do` /
+// `do concurrent` / `while`.
 // The pre-flight and the workspace collector ask the same question of the
 // same scopes.
 template <typename F>
@@ -2153,6 +2171,11 @@ inline void gpu_walk_scopes(ASR::stmt_t **stmts, size_t n, F &&fn) {
             ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
             gpu_walk_scopes(ifs->m_body, ifs->n_body, fn);
             gpu_walk_scopes(ifs->m_orelse, ifs->n_orelse, fn);
+        } else if (ASR::is_a<ASR::Select_t>(*stmts[i])) {
+            gpu_for_each_case_body(ASR::down_cast<ASR::Select_t>(stmts[i]),
+                [&](ASR::stmt_t **body, size_t n_body) {
+                    gpu_walk_scopes(body, n_body, fn);
+                });
         }
     }
 }
