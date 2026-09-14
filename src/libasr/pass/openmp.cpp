@@ -2076,7 +2076,8 @@ class ParallelRegionVisitor :
                 }
             }
 
-            if (has_schedule_clause && schedule_kind != ASR::schedule_typeType::Auto) {
+            bool is_scheduled_loop = has_schedule_clause && schedule_kind != ASR::schedule_typeType::Auto;
+            if (is_scheduled_loop) {
                 // Instead of manual partitioning, use GOMP loop constructs
                 handle_scheduled_loop(heads, schedule_kind, chunk_size, innermost_loop, loc);
             } else {
@@ -2084,6 +2085,9 @@ class ParallelRegionVisitor :
                 handle_default_loop_partitioning(heads, innermost_loop, loc);
             }
 
+            // Each thread combines its copy before the implicit barrier at the
+            // end of the construct, so the value is final once all threads
+            // have passed the barrier.
             if (!reduction_combines.empty()) {
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                     current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr, false)));
@@ -2092,6 +2096,12 @@ class ParallelRegionVisitor :
                 }
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                     current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr, false)));
+            }
+
+            if (is_scheduled_loop) {
+                // GOMP_loop_end is the implicit barrier of the scheduled loop
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr, false)));
             }
 
             clauses_heirarchial[nesting_lvl].clear();
@@ -2265,11 +2275,6 @@ class ParallelRegionVisitor :
                     while_body.p, while_body.n, nullptr, 0));
                 
                 nested_lowered_body.push_back(while_stmt);
-                
-                // Call GOMP_loop_end_nowait or GOMP_loop_end based on whether there's a nowait clause
-                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr, false)));
-                
         }
 
         void handle_default_loop_partitioning(const std::vector<ASR::do_loop_head_t> &heads, ASR::DoLoop_t* innermost_loop, const Location &loc) {
