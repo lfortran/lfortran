@@ -5303,8 +5303,9 @@ RUN(NAME gpu_metal_349 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_350 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_351 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_352 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_353 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_354 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_353 LABELS llvm metal cuda_cpu) # conditional expressions are not accepted by every supported gfortran
+RUN(NAME gpu_metal_354 LABELS llvm metal cuda_cpu) # conditional expressions are not accepted by every supported gfortran
+RUN(NAME gpu_metal_355 LABELS llvm metal cuda_cpu) # `local` locality is not accepted by every supported gfortran
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)

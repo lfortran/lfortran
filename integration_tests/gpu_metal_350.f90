@@ -68,7 +68,7 @@ implicit none
 real, allocatable :: a(:,:), v(:,:,:), b(:,:)
 type(holder) :: h
 real :: s(3), d(3), e(3), t(3,5), w(3,2), ref(3), c(5), g(3)
-integer :: i, j, k, n
+integer :: i, j, k
 
 allocate(a(3,5), b(3,5), v(3,4,2))
 do i = 1, 3
@@ -156,16 +156,6 @@ end do
 print *, g
 do i = 1, 3
     if (g(i) /= sum(a(i,1:ncols(i)))) error stop
-end do
-
-! The same with an extent held in a local of the loop.
-do concurrent (i = 1:3) local(n)
-    n = 6 - i
-    s(i) = row_sum(a(i,1:n))
-end do
-print *, s
-do i = 1, 3
-    if (s(i) /= sum(a(i,1:6-i))) error stop
 end do
 
 ! Leading columns of fixed height of an allocatable array, which is not
