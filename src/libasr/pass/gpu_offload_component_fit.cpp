@@ -336,6 +336,9 @@ public:
     bool poisoned = false;
     // The variables intrinsic subroutines are passed, which they may change.
     std::set<ASR::symbol_t*> intrinsic_arguments;
+    // The variable each associate name refers to, which a write through the
+    // name changes.
+    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> associations;
 
     ComponentShapeCounter(Allocator &al, ASR::symbol_t *r,
             const std::string &component)
@@ -360,6 +363,9 @@ public:
 
     void visit_Associate(const ASR::Associate_t &x) {
         if (names(x.m_value)) poisoned = true;
+        ASR::symbol_t *name = designator_root(x.m_target);
+        ASR::symbol_t *selector = designator_root(x.m_value);
+        if (name && selector) associations.push_back({name, selector});
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
@@ -783,8 +789,9 @@ bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
 // It is a single one when only statements of the body of `fn` itself shape
 // it, which run one after the other, so the last one decides; or when every
 // way through `fn` shapes it and every statement that does gives it the
-// same extents. An extent that reads a dummy argument `fn` changes is not
-// the one the actual argument gives, so it cannot be told.
+// same extents. An extent that reads a dummy argument `fn` changes, also
+// through an associate name, is not the one the actual argument gives, so
+// it cannot be told.
 ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
         ASR::symbol_t *r, const std::string &component, ASR::call_arg_t *args,
         size_t n_args) {
@@ -801,6 +808,22 @@ ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
 
     std::shared_ptr<GpuIterationVaryingSymbols> changed =
         gpu_symbols_changed_in(fn.m_body, fn.n_body);
+    // The variables written through an associate name, or through a name
+    // associated with such a name.
+    std::set<ASR::symbol_t*> written_through_name;
+    for (bool grew = true; grew;) {
+        grew = false;
+        for (const auto &association : counter.associations) {
+            ASR::symbol_t *name = association.first;
+            bool name_written = gpu_writes_symbol(*changed, name) ||
+                counter.intrinsic_arguments.count(name) > 0 ||
+                written_through_name.count(name) > 0;
+            if (name_written &&
+                    written_through_name.insert(association.second).second) {
+                grew = true;
+            }
+        }
+    }
     auto bind = [&](const std::vector<ASR::expr_t*> &extents,
             std::vector<ASR::expr_t*> &bound) {
         bound.clear();
@@ -810,7 +833,8 @@ ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
             bool reads_changed = gpu_reads_changed(*changed, extent);
             for (ASR::symbol_t *sym : reader.variables) {
                 reads_changed = reads_changed ||
-                    counter.intrinsic_arguments.count(sym) > 0;
+                    counter.intrinsic_arguments.count(sym) > 0 ||
+                    written_through_name.count(sym) > 0;
             }
             ASR::expr_t *copy = duplicate(al, extent);
             DummyArgumentBinder binder(al, fn, args, n_args);

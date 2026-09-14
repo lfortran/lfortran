@@ -169,12 +169,14 @@ generates the device source. It never falls back to the CPU:
       (`s(i) = ...` earlier in the iteration, so the value before the loop
       would be a wrong size), from a bound or an element of a dummy array
       of `f`, or from a dummy argument `f` changes (`n = n + 1` before
-      `allocate(r%v(n))`, where `n` is a `value` dummy), whose value the
-      actual argument does not tell. Or `f` may give the component one of
-      several different sizes
-      (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1)); end if`).
-      When every way through `f` gives it the same size, that size is used.
-      Then even with the option the component is not allocated. With bounds
+      `allocate(r%v(n))`, where `n` is a `value` dummy, also through an
+      associate name: `associate (m => n); m = m + 1; end associate`),
+      whose value the actual argument does not tell. Or `f` may give the
+      component one of several different sizes
+      (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1)); end if`;
+      when every way through `f` gives it the same size, that size is used).
+      In all these cases even with the option the component is not
+      allocated. With bounds
       checking on, the launch stops if the component is not allocated.
       Without the option the message is the usual "Array ... is not
       allocated". With the option the message says that the size of

@@ -27,6 +27,9 @@ std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
 // A symbol in `ignored` does not count as changed.
 bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
     ASR::expr_t *e, const std::set<ASR::symbol_t*> *ignored = nullptr);
+// Whether the statements write `s`, as a whole or only a part of it.
+bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
+    ASR::symbol_t *s);
 
 // A new variable named `name` in `scope`, added to it.
 //

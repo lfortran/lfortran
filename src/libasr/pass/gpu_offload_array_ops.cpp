@@ -2420,6 +2420,11 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
     return use.found;
 }
 
+bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
+        ASR::symbol_t *s) {
+    return changed.whole.count(s) > 0 || changed.parts.count(s) > 0;
+}
+
 namespace {
 
 // The procedures an expression calls.
