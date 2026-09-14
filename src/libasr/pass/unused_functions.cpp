@@ -173,6 +173,23 @@ public:
         }
     }
 
+    // A cast of a procedure to another interface names that interface, and
+    // nothing calls it.
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_FunctionPointerCast(x);
+        if (x.m_to == nullptr) return;
+        ASR::symbol_t *to = x.m_to;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*to)) {
+            fn_used[get_hash((ASR::asr_t*)to)] =
+                ASR::down_cast<ASR::ExternalSymbol_t>(to)->m_name;
+            to = ASR::down_cast<ASR::ExternalSymbol_t>(to)->m_external;
+        }
+        if (to != nullptr && ASR::is_a<ASR::Function_t>(*to)) {
+            fn_used[get_hash((ASR::asr_t*)to)] =
+                ASR::down_cast<ASR::Function_t>(to)->m_name;
+        }
+    }
+
     // A procedure declaration such as `procedure(iface) :: p` names its
     // interface through the variable's type declaration, and nothing calls
     // that interface. Removing it would leave the variable pointing at a

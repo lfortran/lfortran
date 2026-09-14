@@ -1847,6 +1847,9 @@ public:
     // per scope, keyed by the called procedure and the call-site interface.
     std::map<SymbolTable*, std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
         ASR::symbol_t*>> fpcast_call_targets;
+    // Copies of dummy interfaces that procedures with implicit interfaces are
+    // cast to, per scope, keyed by the copied interface.
+    std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -13591,6 +13594,11 @@ public:
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        for (size_t i = 0; i < args.size() && i < func->n_args; i++) {
+            // A procedure actual of another type than its dummy is cast to
+            // the dummy's type.
+            args.p[i].m_value = cast_procedure_actual(args.p[i].m_value, func->m_args[i]);
+        }
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
         if (!func->m_deterministic) {
@@ -17734,6 +17742,128 @@ public:
             return iface;
         }
         return implicit_call_target(x.base.base.loc, name, source, c_args, return_type);
+    }
+
+    // The interface a procedure with an implicit interface is cast to when it
+    // is associated with a dummy or pointer declared by `decl` with the
+    // explicit type `formal`: `decl` itself when the caller can name it,
+    // otherwise a copy of it filed in the caller's procedure as
+    // `name@fpcast`. Null when there is no usable declaration, or when the
+    // copy would name derived types the caller cannot see.
+    ASR::symbol_t* get_cast_interface(ASR::symbol_t* decl, ASR::FunctionType_t* formal) {
+        if (decl == nullptr) {
+            return nullptr;
+        }
+        ASR::symbol_t* decl_fn = ASRUtils::symbol_get_past_external(decl);
+        if (!ASR::is_a<ASR::Function_t>(*decl_fn)) {
+            return nullptr;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(decl_fn);
+        if (ASRUtils::is_bare_implicit_interface(*fn) || fn->n_args != formal->n_arg_types) {
+            return nullptr;
+        }
+        if (ASRUtils::is_visible_from(decl, current_scope)) {
+            return decl;
+        }
+        SymbolTable* sym_scope = implicit_interface_scope();
+        ASR::symbol_t*& copy = cast_interface_copies[sym_scope][decl_fn];
+        if (copy != nullptr) {
+            return copy;
+        }
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t* dup = duplicator.duplicate_Function(fn, sym_scope);
+        if (dup == nullptr) {
+            return nullptr;
+        }
+        ASR::Function_t* dup_fn = ASR::down_cast<ASR::Function_t>(dup);
+        for (auto &item : dup_fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_type_declaration == nullptr) {
+                continue;
+            }
+            v->m_type_declaration = ASRUtils::import_type_declaration(al,
+                v->m_type_declaration, dup_fn->m_symtab);
+            if (!ASRUtils::is_visible_from(v->m_type_declaration, dup_fn->m_symtab)) {
+                return nullptr;
+            }
+        }
+        // The copy only describes the interface.
+        dup_fn->m_body = nullptr;
+        dup_fn->n_body = 0;
+        ASRUtils::get_FunctionType(dup_fn)->m_deftype = ASR::deftypeType::Interface;
+        std::string name = sym_scope->get_unique_name(std::string(fn->m_name) + "@fpcast", false);
+        dup_fn->m_name = s2c(al, name);
+        sym_scope->add_symbol(name, dup);
+        copy = dup;
+        return copy;
+    }
+
+    // `actual`, a procedure, as a procedure of type `formal` declared by
+    // `formal_decl`, for association with a dummy argument or a pointer:
+    //   * `actual` itself when the types are identical, or when both are
+    //     explicit (they are checked elsewhere);
+    //   * a cast to the opaque type when `formal` is opaque;
+    //   * when only `actual` is opaque, a cast to the interface of `formal`,
+    //     or, when the caller cannot name that interface, to the opaque type.
+    ASR::expr_t* cast_procedure(ASR::expr_t* actual, ASR::FunctionType_t* formal,
+            ASR::symbol_t* formal_decl) {
+        ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(actual));
+        if (!ASR::is_a<ASR::FunctionType_t>(*actual_type)) {
+            return actual;
+        }
+        ASR::FunctionType_t* actual_ft = ASR::down_cast<ASR::FunctionType_t>(actual_type);
+        if (ASRUtils::procedure_types_identical(actual_ft, formal)) {
+            return actual;
+        }
+        const Location &loc = actual->base.loc;
+        if (ASRUtils::is_bare_implicit_interface(*formal)) {
+            return ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(al, loc, actual,
+                nullptr, ASRUtils::duplicate_type(al, &formal->base), nullptr));
+        }
+        if (!ASRUtils::is_bare_implicit_interface(*actual_ft)) {
+            return actual;
+        }
+        ASR::symbol_t* to = get_cast_interface(formal_decl, formal);
+        if (to == nullptr) {
+            ASR::ttype_t* opaque = ASRUtils::make_opaque_procedure_type(al, loc,
+                formal->m_return_var_type);
+            if (ASRUtils::procedure_types_identical(actual_ft,
+                    ASR::down_cast<ASR::FunctionType_t>(opaque))) {
+                return actual;
+            }
+            return ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(al, loc, actual,
+                nullptr, opaque, nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(al, loc, actual,
+            to, ASRUtils::duplicate_type(al, &formal->base), nullptr));
+    }
+
+    // `actual` associated with the dummy argument `dummy` of a procedure.
+    ASR::expr_t* cast_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy) {
+        if (actual == nullptr || dummy == nullptr || !ASR::is_a<ASR::Var_t>(*dummy)) {
+            return actual;
+        }
+        ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+        if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
+            return cast_procedure(actual, ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(dummy_sym)), dummy_sym);
+        }
+        if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+            return actual;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+        // A pointer dummy is associated with the pointer itself.
+        if (ASRUtils::is_pointer(v->m_type) ||
+                !ASR::is_a<ASR::FunctionType_t>(*v->m_type)) {
+            return actual;
+        }
+        return cast_procedure(actual, ASR::down_cast<ASR::FunctionType_t>(v->m_type),
+            v->m_type_declaration);
     }
 
 
