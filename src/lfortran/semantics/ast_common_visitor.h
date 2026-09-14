@@ -1857,6 +1857,12 @@ public:
     // a character result whose length is an expression of the caller is
     // assumed length there.
     std::map<ASR::symbol_t*, ASR::ttype_t*> implicit_call_result_types;
+    // Whether a procedure referenced through an implicit interface was
+    // referenced as a function (true) or with CALL (false): for dummy
+    // procedures and procedure variables per symbol, for external procedures
+    // per name, which identifies one procedure in the whole program.
+    std::map<ASR::symbol_t*, bool> implicit_procedure_is_function;
+    std::map<std::string, bool> external_procedure_is_function;
     // Procedures with a dummy argument found to be a procedure while their
     // body is visited, after calls to them may have been built.
     std::set<ASR::symbol_t*> procedures_with_late_procedure_dummies;
@@ -17813,11 +17819,49 @@ public:
         return iface;
     }
 
+    // A procedure is either a function or a subroutine (F2018 15.5.1,
+    // 19.5.1.4). Reports a reference to `source`, the procedure `name` with an
+    // implicit interface, as a function (`is_function`) or with CALL that
+    // contradicts an earlier reference to the same procedure, or, for a
+    // function reference to an external procedure, its definition as a
+    // subroutine in this file.
+    void check_implicit_procedure_kind(const Location &loc, const std::string &name,
+            ASR::symbol_t* source, bool is_function) {
+        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(source);
+        bool is_external = false;
+        if (ASR::is_a<ASR::Function_t>(*proc)) {
+            ASR::symbol_t* owner = ASRUtils::get_asr_owner(proc);
+            is_external = !(owner && ASR::is_a<ASR::Function_t>(*owner) &&
+                ASRUtils::is_dummy_argument(*ASR::down_cast<ASR::Function_t>(owner), proc));
+        }
+        bool first_use_is_function = is_external
+            ? external_procedure_is_function.emplace(
+                ASRUtils::symbol_name(proc), is_function).first->second
+            : implicit_procedure_is_function.emplace(proc, is_function).first->second;
+        bool contradicts = first_use_is_function != is_function;
+        if (!contradicts && is_function && is_external) {
+            ASR::symbol_t* definition = ASRUtils::get_tu_symtab(current_scope)->get_symbol(
+                ASRUtils::symbol_name(proc));
+            contradicts = definition && definition != proc &&
+                ASR::is_a<ASR::Function_t>(*definition) &&
+                ASRUtils::get_FunctionType(definition)->m_deftype ==
+                    ASR::deftypeType::Implementation &&
+                ASR::down_cast<ASR::Function_t>(definition)->m_return_var == nullptr;
+        }
+        if (contradicts) {
+            diag.add(Diagnostic(std::string(is_function ? "Subroutine" : "Function") +
+                " `" + name + "` called as a " + (is_function ? "function" : "subroutine"),
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     // The call target of a reference to `name` through an implicit
     // interface: `source` (an opaque procedure or procedure variable) cast to
     // the interface built from this reference's actuals.
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
             ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
+        check_implicit_procedure_kind(loc, name, source, return_type != nullptr);
         ASR::symbol_t* iface = get_callsite_interface(loc, name, args, return_type);
         // Nothing is known about the called procedure.
         current_function_deterministic = false;
