@@ -8493,8 +8493,11 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
+                            // The name may come from `use` or host association
+                            // of a submodule, so look through ExternalSymbol.
+                            ASR::symbol_t *sym_resolved = ASRUtils::symbol_get_past_external(sym_found);
                             if (is_pointer) {
-                                if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                                if (!ASR::is_a<ASR::Variable_t>(*sym_resolved)) {
                                     diag.add(Diagnostic(
                                         "Pointer initialization target `" + sym_name + "` is not a variable",
                                         Level::Error, Stage::Semantic, {
@@ -8502,7 +8505,7 @@ public:
                                         }));
                                     throw SemanticAbort();
                                 }
-                                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_resolved);
                                 if (!var->m_target_attr) {
                                     diag.add(Diagnostic(
                                         "Pointer initialization target `" + sym_name +
@@ -8523,7 +8526,7 @@ public:
                                         &variable_added_to_symtab->base));
                                 }
                                 ASR::expr_t* rhs_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                                    var->base.base.loc, &var->base));
+                                    var->base.base.loc, sym_found));
                                 if (!ASRUtils::check_equal_type(lhs_type, rhs_type,
                                         lhs_var_expr, rhs_var_expr)) {
                                     diag.add(Diagnostic(
@@ -8540,7 +8543,7 @@ public:
                             } else {
                                 // Handle initialization with named parameter constants
                                 // Check if the symbol is a parameter variable
-                            if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                            if (!ASR::is_a<ASR::Variable_t>(*sym_resolved)) {
                                 diag.add(Diagnostic(
                                     "Named initialization not supported with: " + sym_name,
                                     Level::Error, Stage::Semantic, {
@@ -8548,7 +8551,7 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_resolved);
                             if (var->m_storage != ASR::storage_typeType::Parameter) {
                                 diag.add(Diagnostic(
                                     "Initialization with non-constant variable `" + sym_name + "` is not allowed",
@@ -8568,6 +8571,12 @@ public:
                                         Label("",{x.base.base.loc})
                                     }));
                                 throw SemanticAbort();
+                            }
+                            if (sym_found != sym_resolved) {
+                                // The value of an imported parameter refers to the
+                                // Struct symbols of the module that declares it.
+                                param_init = ASRUtils::externalize_struct_refs_in_init(
+                                    al, param_init, current_scope);
                             }
                             ASR::expr_t* param_value = ASRUtils::expr_value(param_init);
                             if (is_struct_const && param_value &&
