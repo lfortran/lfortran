@@ -2183,6 +2183,10 @@ public:
     CompilerOptions &compiler_options;
     SymbolTable *current_scope;
     SymbolTable *statement_function_parent_scope = nullptr;
+    // While a statement function is built: the statements of its host at the
+    // statement function, and the scope that owns them.
+    Vec<ASR::stmt_t*> *statement_function_host_body = nullptr;
+    SymbolTable *statement_function_host_body_scope = nullptr;
     ASR::Module_t *current_module = nullptr;
     bool in_block_data = false;
     SetChar current_module_dependencies;
@@ -17297,6 +17301,17 @@ public:
         ASR::ttype_t* fn_type = ASRUtils::duplicate_type(al, to_fn->m_function_signature);
 
         SymbolTable* tmp_scope = current_body_scope;
+        Vec<ASR::stmt_t*>* association_body = current_body;
+        if (statement_function_host_body != nullptr &&
+                is_statement_function_host_dummy(source)) {
+            // A dummy procedure of the host is a value of the host, which a
+            // statement function can only reach through a variable of the
+            // host. The host associates that temporary where the statement
+            // function is defined; a dummy does not change while the host
+            // runs.
+            tmp_scope = statement_function_host_body_scope;
+            association_body = statement_function_host_body;
+        }
         ASR::symbol_t*& tmp_var = fpcast_call_targets[tmp_scope][{source, to_sym}];
         if (tmp_var == nullptr) {
             ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
@@ -17320,9 +17335,43 @@ public:
         // Associate, not Assignment: procedure pointers are associated the
         // same way as `sp => add_ten`, and Assignment's store lowering does
         // not match the Pointer(FunctionType) physical representation.
-        current_body->push_back(al, ASRUtils::STMT(
+        association_body->push_back(al, ASRUtils::STMT(
             ASR::make_Associate_t(al, loc, lhs, cast)));
         return tmp_var;
+    }
+
+    // True if `source`, referenced in a statement function, is a dummy
+    // procedure (a procedure, or a variable of a procedure type that is not
+    // a pointer) of the procedure defining the statement function.
+    bool is_statement_function_host_dummy(ASR::symbol_t* source) {
+        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(source);
+        bool is_procedure_value = ASR::is_a<ASR::Function_t>(*proc) ||
+            (ASR::is_a<ASR::Variable_t>(*proc) && ASR::is_a<ASR::FunctionType_t>(
+                *ASR::down_cast<ASR::Variable_t>(proc)->m_type));
+        if (!is_procedure_value || statement_function_parent_scope == nullptr) {
+            return false;
+        }
+        SymbolTable* host_scope = statement_function_parent_scope;
+        while (host_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)
+                && (ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner))
+                    || ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                        host_scope->asr_owner)))) {
+            host_scope = host_scope->parent;
+        }
+        if (host_scope->asr_owner == nullptr || !ASR::is_a<ASR::symbol_t>(*host_scope->asr_owner)
+                || !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                    host_scope->asr_owner))) {
+            return false;
+        }
+        ASR::Function_t* host = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner));
+        for (size_t i = 0; i < host->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*host->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(host->m_args[i])->m_v == proc) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The scope that owns the implicit-interface symbols of a call made in

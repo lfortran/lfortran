@@ -6625,12 +6625,16 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         statement_function_parent_scope = parent_scope;
+        statement_function_host_body = current_body;
+        statement_function_host_body_scope = current_body_scope;
         {
             // The statements the expression needs run in the statement
             // function, before its result is assigned, not in the host.
             CurrentBodyScope body_scope(*this, &body, current_scope);
             this->visit_expr(*x.m_value);
         }
+        statement_function_host_body = nullptr;
+        statement_function_host_body_scope = nullptr;
         statement_function_parent_scope = nullptr;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
