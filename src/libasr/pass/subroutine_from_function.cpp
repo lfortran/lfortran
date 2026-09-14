@@ -147,6 +147,37 @@ public:
 };
 
 /**
+ * A cast of a procedure to an interface that CreateFunctionFromSubroutine
+ * turned into a subroutine takes the interface's new signature, so that the
+ * cast, the procedure it is associated with and the calls through it agree.
+ */
+class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes> {
+    private:
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
+
+    public:
+        UpdateFunctionPointerCastTypes(
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
+            : Function__TO__ReturnType_MAP_(Function__ReturnType_MAP) {}
+
+        void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
+            if (x.m_to == nullptr) {
+                return;
+            }
+            ASR::symbol_t* to = ASRUtils::symbol_get_past_external(x.m_to);
+            if (!ASR::is_a<ASR::Function_t>(*to)) {
+                return;
+            }
+            ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to);
+            if (Function__TO__ReturnType_MAP_.find(to_fn) == Function__TO__ReturnType_MAP_.end()) {
+                return;
+            }
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
+        }
+};
+
+/**
  * @class AllocateVarBasedOnFuncCall
  * @brief This class is responsible for inserting an ALLOCATE statement for a variable based on the return type of a function call.
  *
@@ -304,6 +335,12 @@ public :
                                         " -- If it got modified into subroutine,"
                                         " You'll probably find type in the Function_returnType MAP.")
                 return_t_ = func_ret_type;
+            }
+            // An assumed-length character result has the length the
+            // reference declares.
+            if (ASRUtils::is_string_only(return_t_) &&
+                    ASRUtils::get_string_type(return_t_)->m_len_kind == ASR::AssumedLength) {
+                return_t_ = f_call->m_type;
             }
             return_t = ASRUtils::duplicate_type(al, return_t_);
         }
@@ -909,6 +946,8 @@ void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t 
     std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
     CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
     v.visit_TranslationUnit(unit);
+    UpdateFunctionPointerCastTypes c(Function__TO__ReturnType_MAP);
+    c.visit_TranslationUnit(unit);
     ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

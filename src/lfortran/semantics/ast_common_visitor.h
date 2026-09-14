@@ -1850,6 +1850,11 @@ public:
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
+    // The result type declared by the function references made through a
+    // procedure-pointer temporary. The call-site interface may state less:
+    // a character result whose length is an expression of the caller is
+    // assumed length there.
+    std::map<ASR::symbol_t*, ASR::ttype_t*> implicit_call_result_types;
     // Procedures with a dummy argument found to be a procedure while their
     // body is visited, after calls to them may have been built.
     std::set<ASR::symbol_t*> procedures_with_late_procedure_dummies;
@@ -13619,6 +13624,10 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)));
         ASR::ttype_t *return_type = func->m_return_var_type;
+        auto declared_result = implicit_call_result_types.find(v);
+        if (declared_result != implicit_call_result_types.end()) {
+            return_type = declared_result->second;
+        }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
@@ -17565,6 +17574,21 @@ public:
         SymbolTable* sym_scope = implicit_interface_scope();
         std::string sym_name = to_lower(name);
 
+        // A character result whose length is an expression of the caller
+        // (`character(len=n), external :: f`) is returned into a string of
+        // that length, which the called procedure receives at run time: the
+        // interface declares an assumed-length result, not tied to the
+        // caller's scope.
+        if (return_type && ASR::is_a<ASR::String_t>(*return_type)) {
+            ASR::String_t* result_str = ASR::down_cast<ASR::String_t>(return_type);
+            if (result_str->m_len_kind == ASR::ExpressionLength && result_str->m_len &&
+                    !ASR::is_a<ASR::IntegerConstant_t>(*result_str->m_len)) {
+                return_type = ASRUtils::TYPE(ASR::make_String_t(al, return_type->base.loc,
+                    result_str->m_kind, nullptr, ASR::AssumedLength,
+                    result_str->m_physical_type));
+            }
+        }
+
         // For implicit argument casting, look up the Implementation to get correct param types
         ASR::Function_t* impl_func = nullptr;
         if (compiler_options.implicit_argument_casting) {
@@ -17719,37 +17743,67 @@ public:
         return make_fpcast_call_target(loc, source, iface);
     }
 
+    // True if the procedure `proc` is a dummy argument of the procedure that
+    // declares it.
+    bool is_dummy_procedure(ASR::symbol_t* proc) {
+        SymbolTable* owner_scope = ASRUtils::symbol_parent_symtab(proc);
+        if (owner_scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)
+                || !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                    owner_scope->asr_owner))) {
+            return false;
+        }
+        ASR::Function_t* owner = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner));
+        for (size_t i = 0; i < owner->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*owner->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(owner->m_args[i])->m_v == proc) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // The target of a function reference `x` to `name` through an implicit
     // interface: `source` cast to the interface built from the reference's
     // actuals and `return_type`.
-    // A procedure (not a procedure variable) is instead called directly
-    // through an interface installed under `name`, as before call-site
-    // interfaces, where the cast cannot be used:
-    //   * outside of a statement body (e.g. a specification expression),
-    //     there is no statement to associate the procedure-pointer temporary
-    //     before;
-    //   * a character, array or derived-type result is returned through an
-    //     argument added to the called interface by an ASR pass, which does
-    //     not update the types of the temporary and the cast.
+    // Outside of a statement body (a specification expression) there is no
+    // statement to associate the procedure-pointer temporary before. There a
+    // procedure that is not a dummy argument is called directly through a
+    // call-site interface whose link name is the procedure's name; `source`
+    // is left unchanged.
     template <class Call>
     ASR::symbol_t* implicit_function_reference_target(const Call &x,
             const std::string &name, ASR::symbol_t* source, ASR::ttype_t* return_type) {
         Vec<ASR::call_arg_t> c_args = visit_implicit_call_actuals(x);
-        bool direct_call = current_body == nullptr
-            || ASRUtils::is_character(*return_type) || ASRUtils::is_array(return_type)
-            || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(return_type));
-        if (direct_call && ASR::is_a<ASR::Function_t>(
-                *ASRUtils::symbol_get_past_external(source))) {
+        if (current_body == nullptr) {
+            ASR::symbol_t* source_proc = ASRUtils::symbol_get_past_external(source);
+            // While the declarations are visited, the dummy arguments are
+            // known by name only.
+            bool is_dummy = is_dummy_procedure(source_proc)
+                || (!ASR::is_a<ASR::ExternalSymbol_t>(*source)
+                    && std::find(current_procedure_args.begin(),
+                        current_procedure_args.end(), to_lower(name))
+                        != current_procedure_args.end());
+            if (!ASR::is_a<ASR::Function_t>(*source_proc) || is_dummy) {
+                diag.add(Diagnostic("the procedure '" + name + "' has an implicit "
+                    "interface and is not an external procedure, so it cannot be "
+                    "referenced in a specification expression",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
             ASR::symbol_t* iface = get_callsite_interface(x.base.base.loc, name,
                 c_args, return_type, false);
-            SymbolTable* sym_scope = implicit_interface_scope();
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(iface);
-            sym_scope->erase_symbol(fn->m_name);
-            fn->m_name = s2c(al, name);
-            sym_scope->add_or_overwrite_symbol(name, iface);
+            ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(iface))->m_bindc_name
+                = s2c(al, ASRUtils::symbol_name(source_proc));
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
             return iface;
         }
-        return implicit_call_target(x.base.base.loc, name, source, c_args, return_type);
+        ASR::symbol_t* target = implicit_call_target(x.base.base.loc, name, source,
+            c_args, return_type);
+        implicit_call_result_types[target] = return_type;
+        return target;
     }
 
     // The interface a procedure with an implicit interface is cast to when it
