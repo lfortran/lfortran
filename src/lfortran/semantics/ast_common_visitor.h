@@ -1847,6 +1847,8 @@ public:
     // per scope, keyed by the called procedure and the call-site interface.
     std::map<SymbolTable*, std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
         ASR::symbol_t*>> fpcast_call_targets;
+    // The procedure each of those temporaries holds.
+    std::map<const ASR::symbol_t*, ASR::symbol_t*> implicit_call_procedures;
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
@@ -17337,6 +17339,7 @@ public:
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::presenceType::Required, false));
             tmp_scope->add_symbol(tmp_name, tmp_var);
+            implicit_call_procedures[tmp_var] = source;
         }
 
         ASR::expr_t* src = ASRUtils::EXPR(ASR::make_Var_t(al, loc, source));
