@@ -4437,6 +4437,10 @@ gpu_offload_cuda = true
 filename = "../integration_tests/gpu_decline_14.f90"
 gpu_offload_cuda = true
 
+[[test]]
+filename = "../integration_tests/gpu_decline_15.f90"
+gpu_offload_cuda = true
+
 # Indexing an ASSOCIATE bound to a strided section inside a kernel. The
 # extent honours the step, so the count was right; the device pointer holds
 # only an address, so the elements were not. Refused rather than answered.

@@ -5303,6 +5303,7 @@ RUN(NAME gpu_metal_349 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_350 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_351 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_352 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_353 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_decline_01 LABELS gfortran llvm)
@@ -5318,9 +5319,10 @@ RUN(NAME gpu_decline_10 LABELS gfortran llvm)
 RUN(NAME gpu_decline_11 LABELS gfortran llvm)
 RUN(NAME gpu_decline_12 LABELS gfortran llvm)
 # No llvm label: without --gpu, LFortran computes a FORALL whose right-hand
-# side reads a section bounded by the FORALL index wrongly (unrelated bug).
+# side reads a section bounded by the FORALL index wrongly (#12853).
 RUN(NAME gpu_decline_13 LABELS gfortran)
 RUN(NAME gpu_decline_14 LABELS gfortran llvm)
+RUN(NAME gpu_decline_15 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error

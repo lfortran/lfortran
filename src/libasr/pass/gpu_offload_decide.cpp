@@ -168,11 +168,13 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
         // A non-contiguous section actual argument is gathered into a
         // contiguous per-thread temporary below, right before the
-        // statement that makes the call. Where the call is evaluated
-        // somewhere no such gather can serve -- a do while condition, a
-        // FORALL -- the gather is impossible, and so it is when its base
-        // is not a designator the copy loops can index. Passing the
-        // section on would silently drop its stride.
+        // statement that makes the call. Where the call is evaluated again
+        // by the statement -- a do while condition, a FORALL -- that
+        // gather serves it only when the section reads nothing the
+        // statement changes in between; where no gather can be placed
+        // at all, as in a WHERE, the gather is impossible, and so it is
+        // when its base is not a designator the copy loops can index.
+        // Passing the section on would silently drop its stride.
         {
             Location where = loc;
             std::string name;
