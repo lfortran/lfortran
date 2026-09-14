@@ -313,8 +313,13 @@ class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<Red
         }
 };
 
-static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable* scope,
-        ASR::symbol_t* proc);
+// The copies of procedures contained in a program that code moved out of the
+// program uses, keyed by the original procedure (see
+// import_procedure_implementation).
+using ProgramProcedureCopies = std::map<ASR::Function_t*, ASR::symbol_t*>;
+
+static ASR::symbol_t* import_procedure_implementation(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc);
 
 // True if `proc` is a procedure (not a procedure variable) that is a dummy
 // argument of the procedure that declares it.
@@ -344,8 +349,8 @@ static bool is_dummy_procedure(ASR::symbol_t* proc) {
 // (an interface, or a procedure with an implicit interface) is declared in
 // `scope`; a procedure with a body is imported (see
 // import_procedure_implementation). Null for any other procedure.
-static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* scope,
-        ASR::symbol_t* proc) {
+static ASR::symbol_t* import_procedure_declaration(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc) {
     std::string name = ASRUtils::symbol_name(proc);
     ASR::symbol_t* existing = scope->get_symbol(name);
     if (existing != nullptr) {
@@ -369,7 +374,7 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* s
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
     ASR::deftypeType deftype = ASRUtils::get_FunctionType(fn)->m_deftype;
     if (deftype == ASR::deftypeType::Implementation) {
-        return import_procedure_implementation(al, scope, proc);
+        return import_procedure_implementation(al, copies, scope, proc);
     }
     if (deftype != ASR::deftypeType::Interface &&
             deftype != ASR::deftypeType::ImplicitInterface) {
@@ -399,7 +404,7 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* s
                 == arg->m_v) {
             continue;
         }
-        ASR::symbol_t* imported = import_procedure_declaration(al, scope, arg->m_v);
+        ASR::symbol_t* imported = import_procedure_declaration(al, copies, scope, arg->m_v);
         if (imported != nullptr) {
             arg->m_v = imported;
         }
@@ -410,16 +415,17 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al, SymbolTable* s
 class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
     private:
         Allocator& al;
+        ProgramProcedureCopies& copies;
     public:
         SymbolTable* current_scope;
 
-        ReplaceExpression(Allocator& al_) :
-            al(al_) {}
+        ReplaceExpression(Allocator& al_, ProgramProcedureCopies& copies_) :
+            al(al_), copies(copies_) {}
 
         void replace_Var(ASR::Var_t* x) {
             ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
             if (sym == nullptr) {
-                sym = import_procedure_declaration(al, current_scope, x->m_v);
+                sym = import_procedure_declaration(al, copies, current_scope, x->m_v);
             }
             if (sym == nullptr) {
                 // Nothing to import: the verifier reports a reference that
@@ -435,11 +441,13 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
     private:
         Allocator& al;
         SymbolTable* current_scope;
+        ProgramProcedureCopies& copies;
         ReplaceExpression replacer;
 
     public:
-        DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_) :
-            al(al_), current_scope(current_scope_), replacer(al_) {}
+        DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_,
+                ProgramProcedureCopies &copies_) :
+            al(al_), current_scope(current_scope_), copies(copies_), replacer(al_, copies_) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -457,8 +465,8 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             LCOMPILERS_ASSERT(var_sym != nullptr);
             x_copy->m_name = var_sym;
             if (x_copy->m_original_name) {
-                ASR::symbol_t* original = import_procedure_declaration(al, current_scope,
-                    x_copy->m_original_name);
+                ASR::symbol_t* original = import_procedure_declaration(al, copies,
+                    current_scope, x_copy->m_original_name);
                 x_copy->m_original_name = original ? original : var_sym;
             }
             return;
@@ -472,7 +480,7 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         }
         ASR::symbol_t* func_sym = nullptr;
         if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-            func_sym = import_procedure_implementation(al, current_scope, x.m_name);
+            func_sym = import_procedure_implementation(al, copies, current_scope, x.m_name);
         } else {
             func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
             if (func_sym == nullptr &&
@@ -498,7 +506,7 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
         CallReplacerOnExpressionsVisitor::visit_FunctionPointerCast(x);
         if (x.m_to != nullptr) {
-            ASR::symbol_t* to = import_procedure_declaration(al, current_scope, x.m_to);
+            ASR::symbol_t* to = import_procedure_declaration(al, copies, current_scope, x.m_to);
             LCOMPILERS_ASSERT(to != nullptr);
             const_cast<ASR::FunctionPointerCast_t&>(x).m_to = to;
         }
@@ -510,9 +518,10 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
 // contained in a program cannot be imported from the program, so it is copied,
 // once, into a module of its own, and the procedures, interfaces and
 // declarations the copy refers to are imported into it the same way. The
-// program keeps its own procedure, which the rest of the program refers to.
-static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable* scope,
-        ASR::symbol_t* proc) {
+// copy is recorded in `copies`. The program keeps its own procedure, which
+// the rest of the program refers to.
+static ASR::symbol_t* import_procedure_implementation(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc) {
     std::string name = ASRUtils::symbol_name(proc);
     if (ASR::symbol_t* existing = scope->get_symbol(name)) {
         return existing;
@@ -524,36 +533,25 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(target);
     ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
     if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
-        SymbolTable* program_scope = ASRUtils::symbol_parent_symtab(target);
-        SymbolTable* tu_scope = program_scope->parent;
-        const std::string module_prefix = "lcompilers_user_defined_functions";
-        ASR::symbol_t* copied = nullptr;
-        for (auto &item : tu_scope->get_scope()) {
-            if (item.first.rfind(module_prefix, 0) == 0 &&
-                    ASR::is_a<ASR::Module_t>(*item.second)) {
-                ASR::symbol_t* candidate = ASR::down_cast<ASR::Module_t>(
-                    item.second)->m_symtab->get_symbol(fn->m_name);
-                if (candidate != nullptr && ASR::is_a<ASR::Function_t>(*candidate)) {
-                    copied = candidate;
-                    break;
-                }
-            }
-        }
-        if (copied != nullptr) {
-            target = copied;
-        } else {
+        ASR::symbol_t*& copy = copies[fn];
+        if (copy == nullptr) {
+            SymbolTable* tu_scope = ASRUtils::symbol_parent_symtab(target)->parent;
             SymbolTable* module_scope = al.make_new<SymbolTable>(tu_scope);
             ASRUtils::SymbolDuplicator duplicator(al);
             ASR::symbol_t* moved = duplicator.duplicate_Function(fn, module_scope);
             if (moved == nullptr) {
                 return nullptr;
             }
-            char* module_name = s2c(al, tu_scope->get_unique_name(module_prefix));
+            char* module_name = s2c(al, tu_scope->get_unique_name(
+                "lcompilers_user_defined_functions"));
             ASR::symbol_t* module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al,
                 fn->base.base.loc, module_scope, module_name, nullptr, nullptr, 0,
                 false, false, false));
             tu_scope->add_symbol(module_name, module);
             module_scope->add_symbol(fn->m_name, moved);
+            // Recorded before the copy's body is visited, which can refer to
+            // the procedure again.
+            copy = moved;
             ASR::Function_t* moved_fn = ASR::down_cast<ASR::Function_t>(moved);
             for (auto &item : moved_fn->m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -564,16 +562,16 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al, SymbolTable
                         ASRUtils::symbol_name(v->m_type_declaration)) == v->m_type_declaration) {
                     continue;
                 }
-                ASR::symbol_t* decl = import_procedure_declaration(al, moved_fn->m_symtab,
-                    v->m_type_declaration);
+                ASR::symbol_t* decl = import_procedure_declaration(al, copies,
+                    moved_fn->m_symtab, v->m_type_declaration);
                 if (decl != nullptr) {
                     v->m_type_declaration = decl;
                 }
             }
-            DoConcurrentStatementVisitor moved_visitor(al, moved_fn->m_symtab);
+            DoConcurrentStatementVisitor moved_visitor(al, moved_fn->m_symtab, copies);
             moved_visitor.visit_Function(*moved_fn);
-            target = moved;
         }
+        target = copy;
         owner = ASRUtils::get_asr_owner(target);
     }
     if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
@@ -788,6 +786,7 @@ class ParallelRegionVisitor :
         std::map<int,std::vector<ASR::omp_clause_t*>> clauses_heirarchial;
         ASR::expr_t* tdata_expr_copy;
         ASR::symbol_t* thread_data_sym_copy;
+        ProgramProcedureCopies program_procedure_copies;
     public:
         ParallelRegionVisitor(Allocator& al_, PassOptions pass_options_) :
         al(al_), remove_original_statement(false), pass_options(pass_options_) {
@@ -806,7 +805,8 @@ class ParallelRegionVisitor :
                     ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
                     if (v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(
                             *ASRUtils::type_get_past_pointer(v->m_type))) {
-                        return import_procedure_declaration(al, current_scope,
+                        return import_procedure_declaration(al, program_procedure_copies,
+                            current_scope,
                             v->m_type_declaration);
                     }
                 }
@@ -1296,7 +1296,7 @@ class ParallelRegionVisitor :
             if(nesting_lvl) {
                 ASRUtils::ASRBuilder b(al, x.base.base.loc);
                     std::vector<ASR::stmt_t*> if_body={}, else_body={};
-                    DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                    DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
                     stmt_visitor.current_expr = nullptr;
                     nested_lowered_body={};
     
@@ -1344,7 +1344,7 @@ class ParallelRegionVisitor :
         }
 
         void visit_OMPBody(const ASR::OMPRegion_t* omp_region, Vec<ASR::stmt_t*>& dest_body) {
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
 
             for (size_t j = 0; j < omp_region->n_body; j++) {
@@ -1380,7 +1380,7 @@ class ParallelRegionVisitor :
             } else {
                 ASRUtils::ASRBuilder b(al, x.base.base.loc);
                 std::vector<ASR::stmt_t*> loop_body={};
-                DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
                 stmt_visitor.current_expr = nullptr;
                 nested_lowered_body={};
                 stmt_visitor.visit_do_loop_head(x.m_head);
@@ -1499,7 +1499,8 @@ class ParallelRegionVisitor :
                 ASR::symbol_t* type_decl = nullptr;
                 if (!is_array && !is_shared && var->m_type_declaration &&
                         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(sym_type))) {
-                    type_decl = import_procedure_declaration(al, parent_scope,
+                    type_decl = import_procedure_declaration(al, program_procedure_copies,
+                        parent_scope,
                         var->m_type_declaration);
                 }
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local,
@@ -1924,7 +1925,7 @@ class ParallelRegionVisitor :
 
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             // stmt_visitor.visit_OMPRegion(x);
 
@@ -2225,7 +2226,7 @@ class ParallelRegionVisitor :
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             stmt_visitor.visit_OMPRegion(x);
 
@@ -2797,7 +2798,7 @@ class ParallelRegionVisitor :
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
             // Process task body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             
             // Add the task body statements
@@ -2838,7 +2839,7 @@ class ParallelRegionVisitor :
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             
             // Count the number of sections in the body
@@ -2946,7 +2947,7 @@ class ParallelRegionVisitor :
             Vec<ASR::stmt_t*> single_body;
             single_body.reserve(al, x.n_body);
             // Process body, handling nested OMPRegions recursively
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             visit_OMPBody(&x, single_body);
             std::vector<ASR::stmt_t*> single_body_s={};
@@ -2970,7 +2971,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the critical section body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             Vec<ASR::stmt_t*> critical_body;
             critical_body.reserve(al,1);
@@ -3002,7 +3003,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the atomic section body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             Vec<ASR::stmt_t*> atomic_body;
             atomic_body.reserve(al,1);
@@ -3175,7 +3176,7 @@ class ParallelRegionVisitor :
             Vec<ASR::OMPReduction_t*> reduction_clauses;
             reduction_clauses.reserve(al,0);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             for(size_t i=0; i<x.n_clauses; i++){
                 stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
@@ -3431,7 +3432,7 @@ class ParallelRegionVisitor :
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
             
             // Similar to OMPDo but distribute iterations across teams
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             stmt_visitor.visit_OMPRegion(x);
             
