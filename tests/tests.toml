@@ -4390,10 +4390,6 @@ filename = "../integration_tests/gpu_decline_01.f90"
 gpu_offload_cuda = true
 
 [[test]]
-filename = "../integration_tests/gpu_decline_02.f90"
-gpu_offload_cuda = true
-
-[[test]]
 filename = "../integration_tests/gpu_decline_03.f90"
 gpu_offload_cuda = true
 
@@ -4419,6 +4415,34 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_09.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_10.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_11.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_12.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_13.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_14.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_15.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
 # Indexing an ASSOCIATE bound to a strided section inside a kernel. The

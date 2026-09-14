@@ -1,7 +1,7 @@
-! gpu decline reason: UngatherableStridedSection
-! a call in the loop body takes a strided section whose extent is not a
-! compile-time constant, so it cannot be gathered into a kernel-local
-! temporary.
+! A call in the loop body takes a strided section whose extent is not a
+! compile-time constant. This used to be declined (UngatherableStridedSection);
+! the section is now gathered into a per-thread workspace sized on the host,
+! so the loop is offloaded and has to compute the same values.
 program gpu_decline_02
     implicit none
     real :: b(8), a(4)

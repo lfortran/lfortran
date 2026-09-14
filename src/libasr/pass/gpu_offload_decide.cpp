@@ -166,14 +166,48 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
                 GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
             return false;
         }
-        // A strided section actual argument is gathered into a
-        // contiguous kernel-local temporary below. When that temporary
-        // cannot be sized at compile time the gather is impossible,
-        // and passing the section on would silently drop its stride.
+        // A non-contiguous section actual argument is gathered into a
+        // contiguous per-thread temporary below, right before the
+        // statement that makes the call, under the conditions the call is
+        // evaluated under. Where the call is evaluated again by the
+        // statement -- a do while condition, a FORALL -- that gather
+        // serves it only when neither the section nor those conditions
+        // read anything the statement changes in between, and a condition
+        // evaluated again for the gather may call only pure procedures;
+        // where no gather can be placed at all, as in a WHERE, the gather
+        // is impossible, and so it is when its base is not a designator
+        // the copy loops can index. Passing the section on would silently
+        // drop its stride.
+        {
+            Location where = loc;
+            std::string name;
+            GpuSectionPlace place;
+            if (body_has_unplaceable_section(work.body, work.n_body, where,
+                    name, place)) {
+                report_not_offloaded(where, GpuDecline(
+                    GpuDeclineReason::SectionCopyNotPlaceable, name, place));
+                return false;
+            }
+        }
         if (body_has_ungatherable_strided_section(work.body, work.n_body)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::UngatherableStridedSection));
             return false;
+        }
+        // The gathered buffer is sized on the host. Only its last
+        // dimension can be sized from the base array and read through a
+        // shorter slice; an earlier one has to have the section's exact
+        // extent, which the host cannot know when it changes with the
+        // iteration.
+        {
+            Location where = loc;
+            std::string name;
+            if (body_has_varying_leading_section_extent(work, where,
+                    name)) {
+                report_not_offloaded(where, GpuDecline(
+                    GpuDeclineReason::SectionLeadingExtentVaries, name));
+                return false;
+            }
         }
         GpuLocalWidthChecker width_checker;
         width_checker.caps = device_caps;

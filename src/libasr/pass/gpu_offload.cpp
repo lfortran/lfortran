@@ -199,6 +199,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         size_scope_array_temporaries(work.body, work.n_body);
     }
 
+    // A spliced callee can bring a section into a place no gather can
+    // serve, such as its own do while condition, which the check before
+    // the rewrites did not see.
+    {
+        Location where = loc;
+        std::string name;
+        GpuSectionPlace place;
+        if (body_has_unplaceable_section(work.body, work.n_body, where,
+                name, place)) {
+            report_not_offloaded(where, GpuDecline(
+                GpuDeclineReason::SectionCopyNotPlaceable, name, place));
+            return;
+        }
+    }
+
     // Splicing a callee is what can leave a section of a section in the
     // body, so the shape is only possible where the pass splices.
     if (device_caps.splices_device_functions()) {
@@ -2445,28 +2460,50 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
-        // Recursively process nested BlockCall statements
-        for (size_t j = 0; j < block->n_body; j++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*block->m_body[j])) {
+        // Recursively process nested BlockCall statements, including
+        // those inside a loop or an IF of the block.
+        std::function<void(ASR::stmt_t**, size_t)> process_nested =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+            for (size_t j = 0; j < n_stmts; j++) {
+                ASR::stmt_t *s = stmts[j];
+                if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                    ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(s);
+                    process_nested(dl->m_body, dl->n_body);
+                } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                    ASR::DoConcurrentLoop_t *dc =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                    process_nested(dc->m_body, dc->n_body);
+                } else if (ASR::is_a<ASR::If_t>(*s)) {
+                    ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(s);
+                    process_nested(ifs->m_body, ifs->n_body);
+                    process_nested(ifs->m_orelse, ifs->n_orelse);
+                } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                    ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(s);
+                    process_nested(wl->m_body, wl->n_body);
+                } else if (ASR::is_a<ASR::Select_t>(*s)) {
+                    gpu_for_each_case_body(ASR::down_cast<ASR::Select_t>(s),
+                        process_nested);
+                }
+                if (!ASR::is_a<ASR::BlockCall_t>(*s)) continue;
                 ASR::BlockCall_t *inner_bc =
-                    ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
-                if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
-                    ASR::Block_t *inner =
-                        ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
-                    std::string inner_name = inner->m_name;
-                    bool host_owned = orig_scope->get_symbol(inner_name)
-                        == inner_bc->m_m;
-                    process_block_for_kernel(inner, host_owned);
-                    if (host_owned) {
-                        orig_scope->erase_symbol(inner_name);
-                        if (!kernel_scope->get_symbol(inner_name)) {
-                            kernel_scope->add_symbol(inner_name,
-                                inner_bc->m_m);
-                        }
+                    ASR::down_cast<ASR::BlockCall_t>(s);
+                if (!ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) continue;
+                ASR::Block_t *inner =
+                    ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
+                std::string inner_name = inner->m_name;
+                bool host_owned = orig_scope->get_symbol(inner_name)
+                    == inner_bc->m_m;
+                process_block_for_kernel(inner, host_owned);
+                if (host_owned) {
+                    orig_scope->erase_symbol(inner_name);
+                    if (!kernel_scope->get_symbol(inner_name)) {
+                        kernel_scope->add_symbol(inner_name,
+                            inner_bc->m_m);
                     }
                 }
             }
-        }
+        };
+        process_nested(block->m_body, block->n_body);
         // Remap type expressions of block-local variables
         // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
         GpuReplaceSymbols block_type_replacer(*kernel_scope);
@@ -2533,6 +2570,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::DoLoop_t *dl =
                     ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
                 move_blocks_to_kernel(dl->m_body, dl->n_body);
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+                ASR::DoConcurrentLoop_t *dc =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+                move_blocks_to_kernel(dc->m_body, dc->n_body);
             } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
                 ASR::If_t *ifs =
                     ASR::down_cast<ASR::If_t>(stmts[i]);
@@ -2542,6 +2583,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::WhileLoop_t *wl =
                     ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
                 move_blocks_to_kernel(wl->m_body, wl->n_body);
+            } else if (ASR::is_a<ASR::Select_t>(*stmts[i])) {
+                gpu_for_each_case_body(
+                    ASR::down_cast<ASR::Select_t>(stmts[i]),
+                    move_blocks_to_kernel);
             }
         }
     };

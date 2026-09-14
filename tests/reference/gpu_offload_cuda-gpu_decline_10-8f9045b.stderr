@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the section of 'a' passed to a procedure changes its extent between iterations in a dimension other than its last
+  --> tests/../integration_tests/gpu_decline_10.f90:34:25
+   |
+34 |     s(i) = weighted_sum(a(1:i,:))
+   |                         ^^^^^^^^ the section of 'a' passed to a procedure changes its extent between iterations in a dimension other than its last

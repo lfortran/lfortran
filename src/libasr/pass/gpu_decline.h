@@ -123,6 +123,19 @@ enum class GpuDeclineReason {
     UnsizedLocalArray,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer, but a dimension before its last has an extent that
+    // changes from one iteration to the next, so no buffer the host sizes
+    // can hold it contiguously.
+    SectionLeadingExtentVaries,
+    // A section passed to a procedure has to be copied into a contiguous
+    // per-thread buffer before the statement that makes the call, but no
+    // such copy serves the call (see GpuSectionConflict): a do while
+    // condition or a FORALL evaluates it again after changing a value it
+    // depends on, a condition it is evaluated under calls a procedure that
+    // is not pure, or a construct has no place for the copy (see
+    // GpuSectionSite).
+    SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
     RecursiveDeviceFunction,
@@ -177,6 +190,42 @@ enum class GpuDeclineReason {
     ScalarKindMismatch,
 };
 
+// Where a section passed to a procedure is evaluated, as far as copying it
+// into a contiguous buffer is concerned. `Statement` is the one site where
+// the copy can be placed: right before the statement that makes the call.
+enum class GpuSectionSite {
+    Statement,
+    WhileCondition,
+    ConditionalExpression,
+    ImpliedDo,
+    Forall,
+    Where,
+    SelectType,
+    SelectRank,
+    Construct,
+};
+
+// Why a copy placed before the statement cannot serve a section evaluated
+// at a site other than `Statement`.
+enum class GpuSectionConflict {
+    // The construct has no place for the copy: a WHERE, a SELECT TYPE, a
+    // SELECT RANK, an implied DO or a construct not known to this pass.
+    NoPlace,
+    // The construct changes a value that the section, or a condition it
+    // is evaluated under, depends on before evaluating it again.
+    ValueChanges,
+    // A condition the section is evaluated under calls a procedure that
+    // is not pure, which the copy would have to call again.
+    ImpureCondition,
+};
+
+// Where a section is evaluated, and why no copy before the statement
+// serves it when that site is not `Statement`.
+struct GpuSectionPlace {
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+};
+
 // A decline, with the little the message quotes alongside it.
 struct GpuDecline {
     GpuDeclineReason reason = GpuDeclineReason::None;
@@ -186,6 +235,10 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // Where the section is evaluated, when the reason is about a section,
+    // and why no copy placed before the statement serves it.
+    GpuSectionSite site = GpuSectionSite::Statement;
+    GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}
@@ -194,6 +247,10 @@ struct GpuDecline {
     GpuDecline(GpuDeclineReason reason_, const std::string &name_,
             ASR::ttype_t *type_)
         : reason(reason_), name(name_), type(type_) {}
+    GpuDecline(GpuDeclineReason reason_, const std::string &name_,
+            const GpuSectionPlace &place)
+        : reason(reason_), name(name_), site(place.site),
+          conflict(place.conflict) {}
 
     bool declined() const { return reason != GpuDeclineReason::None; }
 };
