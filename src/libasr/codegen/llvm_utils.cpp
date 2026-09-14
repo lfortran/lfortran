@@ -10788,12 +10788,22 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             !ASRUtils::is_pointer(mem_type_check) &&
                             !ASRUtils::is_allocatable(mem_type_check) &&
                             !ASRUtils::is_descriptorString(mem_type_check);
-                        if (!is_simple_scalar &&
+                        bool is_nested_struct =
+                            ASR::is_a<ASR::StructType_t>(*mem_type_check) &&
+                            !ASRUtils::is_class_type(mem_type_check);
+                        if (!is_simple_scalar && !is_nested_struct &&
                             !ASRUtils::is_value_constant(ASRUtils::EXPR(
                                 ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
                             continue;
                         }
                         src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
+                        if (is_nested_struct) {
+                            // The member copy function takes a pointer to its source
+                            llvm::Value* src_member_ptr = llvm_utils->CreateAlloca(
+                                *builder, src_member->getType());
+                            builder->CreateStore(src_member, src_member_ptr);
+                            src_member = src_member_ptr;
+                        }
                     } else if (!src->getType()->isPointerTy()) {
                         src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
                     } else {
