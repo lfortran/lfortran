@@ -467,6 +467,17 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(x_copy->m_name));
         ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
+        if (asr_owner == nullptr) {
+            // The symbol was imported into the scope of a region nested in
+            // this one, which is still being moved out; import what it
+            // refers to here as well.
+            ASR::symbol_t* func_sym = import_procedure_implementation(al, copies,
+                current_scope, x.m_name);
+            LCOMPILERS_ASSERT(func_sym != nullptr);
+            x_copy->m_name = func_sym;
+            x_copy->m_original_name = func_sym;
+            return;
+        }
         if (!ASR::is_a<ASR::symbol_t>(*asr_owner)) {
             // A procedure of the translation unit is visible everywhere.
             return;
