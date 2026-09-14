@@ -2301,7 +2301,9 @@ class StructMemberShapeCollector:
     public ASRUtils::BlockBodyWalkVisitor<StructMemberShapeCollector> {
     public:
 
+        // The first shape of each component, and how many there are.
         std::map<GpuStructMemberKey, ASR::alloc_arg_t*> shapes;
+        std::map<GpuStructMemberKey, size_t> counts;
 
         void collect(ASR::alloc_arg_t *args, size_t n_args) {
             for (size_t i = 0; i < n_args; i++) {
@@ -2324,6 +2326,7 @@ class StructMemberShapeCollector:
                     ASRUtils::symbol_name(
                         ASRUtils::symbol_get_past_external(sm->m_m))};
                 shapes.emplace(key, &args[i]);
+                counts[key]++;
             }
         }
 
@@ -2347,6 +2350,139 @@ inline std::map<GpuStructMemberKey, ASR::alloc_arg_t*> struct_member_shapes(
         collector.visit_stmt(*body[i]);
     }
     return collector.shapes;
+}
+
+// Whether statements can stop running before their end other than by
+// stopping the program: a return, a go to, or, when they are the body of a
+// loop, an exit or a cycle of that loop.
+class ControlTransferFinder:
+    public ASRUtils::BlockBodyWalkVisitor<ControlTransferFinder> {
+    public:
+
+        bool found = false;
+        // Whether the statements are the body of a loop.
+        bool loop_body = false;
+        // How many loops of the statements themselves the walk is in.
+        size_t loops = 0;
+
+        void visit_Return(const ASR::Return_t &/*x*/) {
+            found = true;
+        }
+
+        void visit_GoTo(const ASR::GoTo_t &/*x*/) {
+            found = true;
+        }
+
+        void visit_Exit(const ASR::Exit_t &x) {
+            if (loop_body && (loops == 0 || x.m_stmt_name)) found = true;
+        }
+
+        void visit_Cycle(const ASR::Cycle_t &x) {
+            if (loop_body && (loops == 0 || x.m_stmt_name)) found = true;
+        }
+
+        void visit_DoLoop(const ASR::DoLoop_t &x) {
+            loops++;
+            ASR::BaseWalkVisitor<ControlTransferFinder>::visit_DoLoop(x);
+            loops--;
+        }
+
+        void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+            loops++;
+            ASR::BaseWalkVisitor<ControlTransferFinder>::visit_WhileLoop(x);
+            loops--;
+        }
+
+        void visit_Function(const ASR::Function_t &/*x*/) {
+            // A nested routine returns from itself.
+        }
+};
+
+inline bool gpu_transfers_control(ASR::stmt_t **body, size_t n_body,
+        bool loop_body) {
+    ControlTransferFinder finder;
+    finder.loop_body = loop_body;
+    for (size_t i = 0; i < n_body && !finder.found; i++) {
+        finder.visit_stmt(*body[i]);
+    }
+    return finder.found;
+}
+
+// Whether a statement is an Allocate or a ReAlloc that shapes `key`.
+inline bool gpu_shapes_member(ASR::stmt_t *stmt,
+        const GpuStructMemberKey &key) {
+    if (!ASR::is_a<ASR::Allocate_t>(*stmt) &&
+            !ASR::is_a<ASR::ReAlloc_t>(*stmt)) {
+        return false;
+    }
+    return struct_member_shapes(&stmt, 1).count(key) > 0;
+}
+
+// Whether every way through `body` that runs to its end shapes `key`.
+inline bool gpu_shapes_member_on_every_path(ASR::stmt_t **body,
+        size_t n_body, const GpuStructMemberKey &key) {
+    for (size_t i = 0; i < n_body; i++) {
+        if (gpu_shapes_member(body[i], key)) return true;
+        if (ASR::is_a<ASR::If_t>(*body[i])) {
+            ASR::If_t *x = ASR::down_cast<ASR::If_t>(body[i]);
+            if (gpu_shapes_member_on_every_path(x->m_body, x->n_body, key) &&
+                    gpu_shapes_member_on_every_path(x->m_orelse, x->n_orelse,
+                        key)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// How a routine shapes a component of one of its variables.
+struct GpuRoutineShape {
+    // The Allocate or ReAlloc argument that shapes the component: the last
+    // one when `single`, the first one otherwise.
+    ASR::alloc_arg_t *shape = nullptr;
+    // Whether that is the only shape the component can end up with: the
+    // routine shapes it only in statements of its own body, which run one
+    // after the other, each giving it the extents it names, and it runs to
+    // its end.
+    bool single = true;
+    // Whether every run of the routine shapes the component.
+    bool always = true;
+};
+
+inline std::map<GpuStructMemberKey, GpuRoutineShape> routine_member_shapes(
+        ASR::stmt_t **body, size_t n_body) {
+    StructMemberShapeCollector collector;
+    for (size_t i = 0; i < n_body; i++) {
+        collector.visit_stmt(*body[i]);
+    }
+    bool transfers = gpu_transfers_control(body, n_body, false);
+    std::map<GpuStructMemberKey, GpuRoutineShape> result;
+    for (auto &shape : collector.shapes) {
+        const GpuStructMemberKey &key = shape.first;
+        size_t top_level = 0;
+        ASR::alloc_arg_t *last = nullptr;
+        for (size_t i = 0; i < n_body; i++) {
+            if (!ASR::is_a<ASR::Allocate_t>(*body[i]) &&
+                    !ASR::is_a<ASR::ReAlloc_t>(*body[i])) {
+                continue;
+            }
+            StructMemberShapeCollector statement;
+            statement.visit_stmt(*body[i]);
+            auto found = statement.shapes.find(key);
+            if (found != statement.shapes.end()) {
+                top_level += statement.counts[key];
+                last = found->second;
+            }
+        }
+        GpuRoutineShape routine;
+        routine.single = !transfers && top_level > 0 &&
+            collector.counts[key] == top_level;
+        routine.shape = routine.single ? last : shape.second;
+        routine.always = !transfers &&
+            gpu_shapes_member_on_every_path(body, n_body, key);
+        result.emplace(key, routine);
+    }
+    return result;
 }
 
 // The targets a routine's statements associate a pointer variable with.
@@ -2682,11 +2818,28 @@ struct GpuMemberShape {
     // with the subscripts the kernel picks it by, or nullptr when it is not
     // picked by subscripts.
     ASR::ArrayItem_t *element = nullptr;
+    // The tests of the `if` statements of the kernel the write is in,
+    // outermost first, each with whether it holds (the write is in the body)
+    // or not (in the else branch).
+    std::vector<std::pair<ASR::expr_t*, bool>> conditions;
+    // Whether `conditions` are all that decides whether an iteration writes
+    // the component: false when the write is also in another construct (a
+    // loop, a select, a block), or the kernel writes the component in more
+    // than one place.
+    bool conditions_known = true;
+    // Whether `shape` is the only shape the component can get: false when
+    // the kernel, or the routine it calls, can give it another one, or gives
+    // it one only under a condition.
+    bool single = true;
+    // Whether every write of the component gives it a shape, so that it is
+    // allocated afterwards.
+    bool always_shaped = true;
 };
 
 // Every routine a kernel calls with an element of one of its struct arrays,
-// paired with the shapes that routine gives the components of that element.
-// Reported as "struct_array.component" keys of the kernel's own arrays.
+// paired with the shapes that routine gives the components of that element,
+// and the components the kernel shapes itself. Reported as
+// "struct_array.component" keys of the kernel's own arrays.
 class KernelStructMemberShapes:
     public ASRUtils::BlockBodyWalkVisitor<KernelStructMemberShapes> {
     public:
@@ -2694,18 +2847,94 @@ class KernelStructMemberShapes:
         std::map<GpuStructMemberKey, GpuMemberShape> shapes;
         const std::map<std::string, const GpuVlaWorkspace*> *workspaces;
         const ASR::Function_t *kernel;
+        // The `if` tests around the statement the walk is in.
+        std::vector<std::pair<ASR::expr_t*, bool>> conditions;
+        // Whether the statement is also in a construct other than an `if`.
+        bool nested = false;
 
         KernelStructMemberShapes(
             const std::map<std::string, const GpuVlaWorkspace*> *workspaces_,
             const ASR::Function_t *kernel_):
             workspaces(workspaces_), kernel(kernel_) {}
 
+        // Walks the statements of the kernel, keeping the `if` tests around
+        // each one.
+        void walk(ASR::stmt_t **body, size_t n_body) {
+            for (size_t i = 0; i < n_body; i++) {
+                ASR::stmt_t *stmt = body[i];
+                if (ASR::is_a<ASR::If_t>(*stmt)) {
+                    ASR::If_t *x = ASR::down_cast<ASR::If_t>(stmt);
+                    conditions.push_back({x->m_test, true});
+                    walk(x->m_body, x->n_body);
+                    conditions.back().second = false;
+                    walk(x->m_orelse, x->n_orelse);
+                    conditions.pop_back();
+                } else if (ASR::is_a<ASR::BlockCall_t>(*stmt) &&
+                        ASR::is_a<ASR::Block_t>(*ASRUtils::
+                            symbol_get_past_external(ASR::down_cast<
+                                ASR::BlockCall_t>(stmt)->m_m))) {
+                    // A block runs its statements in order.
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m));
+                    walk(block->m_body, block->n_body);
+                } else if (ASR::is_a<ASR::SubroutineCall_t>(*stmt) ||
+                        ASR::is_a<ASR::Allocate_t>(*stmt) ||
+                        ASR::is_a<ASR::ReAlloc_t>(*stmt)) {
+                    visit_stmt(*stmt);
+                } else {
+                    nested = true;
+                    visit_stmt(*stmt);
+                    nested = false;
+                }
+            }
+        }
+
+        void record(const GpuStructMemberKey &key, GpuMemberShape shape) {
+            shape.conditions = conditions;
+            shape.conditions_known = !nested;
+            auto found = shapes.find(key);
+            if (found == shapes.end()) {
+                shapes.emplace(key, shape);
+                return;
+            }
+            // Which elements are written, and with what shape, depends on
+            // which of the places writes them.
+            found->second.single = false;
+            found->second.conditions_known = false;
+            found->second.always_shaped = false;
+        }
+
+        void visit_Allocate(const ASR::Allocate_t &x) {
+            record_own(x.m_args, x.n_args);
+        }
+
+        void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+            record_own(x.m_args, x.n_args);
+        }
+
+        // A component the kernel shapes itself, rather than through a call.
+        void record_own(ASR::alloc_arg_t *args, size_t n_args) {
+            StructMemberShapeCollector collector;
+            collector.collect(args, n_args);
+            GpuExtentContext ctx;
+            ctx.workspaces = workspaces;
+            ctx.kernel = kernel;
+            for (auto &shape : collector.shapes) {
+                ASR::expr_t *base = ASR::down_cast<ASR::StructInstanceMember_t>(
+                    shape.second->m_a)->m_v;
+                record(shape.first, GpuMemberShape{shape.second, ctx,
+                    ASR::is_a<ASR::ArrayItem_t>(*base)
+                        ? ASR::down_cast<ASR::ArrayItem_t>(base) : nullptr});
+            }
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_name);
             if (!ASR::is_a<ASR::Function_t>(*sym)) return;
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-            std::map<GpuStructMemberKey, ASR::alloc_arg_t*> callee_shapes =
-                struct_member_shapes(fn->m_body, fn->n_body);
+            std::map<GpuStructMemberKey, GpuRoutineShape> callee_shapes =
+                routine_member_shapes(fn->m_body, fn->n_body);
             if (callee_shapes.empty()) return;
             for (size_t i = 0; i < x.n_args && i < fn->n_args; i++) {
                 if (!x.m_args[i].m_value) continue;
@@ -2735,9 +2964,11 @@ class KernelStructMemberShapes:
                     ctx.n_args = x.n_args;
                     ctx.workspaces = workspaces;
                     ctx.kernel = kernel;
-                    shapes.emplace(
-                        GpuStructMemberKey{array_name, shape.first.member},
-                        GpuMemberShape{shape.second, ctx, item});
+                    GpuMemberShape member{shape.second.shape, ctx, item};
+                    member.single = shape.second.single;
+                    member.always_shaped = shape.second.always;
+                    record(GpuStructMemberKey{array_name, shape.first.member},
+                        member);
                 }
             }
         }
@@ -2754,20 +2985,7 @@ inline std::map<GpuStructMemberKey, GpuMemberShape>
     kernel_struct_member_shapes(const ASR::Function_t &kernel,
         const std::map<std::string, const GpuVlaWorkspace*> &ws_by_name) {
     KernelStructMemberShapes visitor(&ws_by_name, &kernel);
-    for (size_t i = 0; i < kernel.n_body; i++) {
-        visitor.visit_stmt(*kernel.m_body[i]);
-    }
-    // A component the kernel shapes itself, rather than through a call.
-    GpuExtentContext ctx;
-    ctx.workspaces = &ws_by_name;
-    ctx.kernel = &kernel;
-    for (auto &shape: struct_member_shapes(kernel.m_body, kernel.n_body)) {
-        ASR::expr_t *base = ASR::down_cast<ASR::StructInstanceMember_t>(
-            shape.second->m_a)->m_v;
-        visitor.shapes.emplace(shape.first, GpuMemberShape{shape.second, ctx,
-            ASR::is_a<ASR::ArrayItem_t>(*base)
-                ? ASR::down_cast<ASR::ArrayItem_t>(base) : nullptr});
-    }
+    visitor.walk(kernel.m_body, kernel.n_body);
     return visitor.shapes;
 }
 
@@ -2784,6 +3002,7 @@ inline std::map<GpuStructMemberKey, int64_t>
     }
     std::map<GpuStructMemberKey, int64_t> result;
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
+        if (!shape.second.single) continue;
         int64_t total = 1;
         bool known = true;
         for (size_t d = 0; d < shape.second.shape->n_dims; d++) {
@@ -2810,7 +3029,7 @@ inline std::map<GpuStructMemberKey, GpuStructMemberKey>
     std::map<std::string, const GpuVlaWorkspace*> ws_by_name;
     std::map<GpuStructMemberKey, GpuStructMemberKey> result;
     for (auto &shape: kernel_struct_member_shapes(kernel, ws_by_name)) {
-        if (shape.second.shape->n_dims != 1) continue;
+        if (!shape.second.single || shape.second.shape->n_dims != 1) continue;
         GpuStructMemberKey source;
         if (gpu_extent_member_key(shape.second.shape->m_dims[0].m_length,
                 shape.second.ctx, source)) {

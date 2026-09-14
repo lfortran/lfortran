@@ -138,6 +138,33 @@ ASR::expr_t* duplicate_expression(Allocator &al, ASR::expr_t *e) {
     return duplicator.success ? result : nullptr;
 }
 
+// The number of elements the ranges of `section` that `dim` selects span,
+// each range never below zero, with each bound read through `value`, or
+// nullptr when the section has no such shape or a bound has no value.
+ASR::expr_t* section_element_count(Allocator &al, ASR::expr_t *section,
+        ASR::expr_t *dim, ASR::ttype_t *type,
+        const std::function<ASR::expr_t*(ASR::expr_t*)> &value) {
+    std::vector<ASR::array_index_t*> ranges =
+        gpu_section_extent_ranges(section, dim);
+    if (ranges.empty()) return nullptr;
+    ASRUtils::ASRBuilder b(al, section->base.loc);
+    ASR::expr_t *count = nullptr;
+    for (ASR::array_index_t *range : ranges) {
+        ASR::expr_t *lo = range->m_left ? value(range->m_left) : nullptr;
+        ASR::expr_t *hi = range->m_right ? value(range->m_right) : nullptr;
+        ASR::expr_t *step = range->m_step ? value(range->m_step)
+            : b.i_t(1, type);
+        if (!lo || !hi || !step) return nullptr;
+        lo = b.i2i_t(lo, type);
+        hi = b.i2i_t(hi, type);
+        if (range->m_step) step = b.i2i_t(step, type);
+        ASR::expr_t *one = b.Max(b.Div(b.Add(b.Sub(hi, lo), step), step),
+            b.i_t(0, type));
+        count = count ? b.Mul(count, one) : one;
+    }
+    return count;
+}
+
 // Rewrites an extent a routine the kernel calls writes over its own dummy
 // arguments into the kernel's names, by the actual arguments of the call.
 class CalleeArgumentBinder :
@@ -198,12 +225,45 @@ public:
         }
     }
 
+    // The section a pointer local of the callee is associated with, when
+    // the callee associates it with exactly one.
+    ASR::expr_t* associated_section(ASR::expr_t *array) {
+        ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(array);
+        if (!ASR::is_a<ASR::Var_t>(*v)) return nullptr;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+        size_t index;
+        if (ASRUtils::symbol_parent_symtab(sym) != ctx.callee->m_symtab ||
+                is_dummy(sym, index)) {
+            return nullptr;
+        }
+        ASR::expr_t *target = ctx.associated_target(sym);
+        if (!target) return nullptr;
+        target = ASRUtils::get_past_array_physical_cast(target);
+        return ASR::is_a<ASR::ArraySection_t>(*target) ? target : nullptr;
+    }
+
     void replace_ArraySize(ASR::ArraySize_t *x) {
         if (names_dummy_array(x->m_v)) {
             valid = false;
             return;
         }
-        ASR::BaseExprReplacer<CalleeArgumentBinder>::replace_ArraySize(x);
+        ASR::expr_t *section = associated_section(x->m_v);
+        if (!section) {
+            ASR::BaseExprReplacer<CalleeArgumentBinder>::replace_ArraySize(x);
+            return;
+        }
+        // The section's bounds read the callee's names, bound in turn.
+        ASR::expr_t *count = section_element_count(al, section, x->m_dim,
+            x->m_type, [&](ASR::expr_t *e) {
+                return duplicate_expression(al, e);
+            });
+        if (!count) {
+            valid = false;
+            return;
+        }
+        *current_expr = count;
+        replace_expr(*current_expr);
     }
 
     void replace_ArrayBound(ASR::ArrayBound_t *x) {
@@ -263,33 +323,12 @@ class KernelLocalResolver :
         return ASR::is_a<ASR::ArraySection_t>(*target) ? target : nullptr;
     }
 
-    // The number of elements `range` spans, never below zero.
-    ASR::expr_t* range_extent(ASR::array_index_t *range,
-            ASR::ttype_t *type) {
-        ASRUtils::ASRBuilder b(al, range->loc);
-        ASR::expr_t *lo = b.i2i_t(resolved(range->m_left), type);
-        ASR::expr_t *hi = b.i2i_t(resolved(range->m_right), type);
-        ASR::expr_t *step = range->m_step
-            ? b.i2i_t(resolved(range->m_step), type)
-            : b.i_t(1, type);
-        ASR::expr_t *count = b.Div(b.Add(b.Sub(hi, lo), step), step);
-        return b.Max(count, b.i_t(0, type));
-    }
-
     // The element count of the ranges of `section` that `dim` selects, or
     // nullptr when the section has no such shape.
     ASR::expr_t* section_extent(ASR::expr_t *section, ASR::expr_t *dim,
             ASR::ttype_t *type) {
-        std::vector<ASR::array_index_t*> ranges =
-            gpu_section_extent_ranges(section, dim);
-        if (ranges.empty()) return nullptr;
-        ASRUtils::ASRBuilder b(al, section->base.loc);
-        ASR::expr_t *count = nullptr;
-        for (ASR::array_index_t *range : ranges) {
-            ASR::expr_t *one = range_extent(range, type);
-            count = count ? b.Mul(count, one) : one;
-        }
-        return count;
+        return section_element_count(al, section, dim, type,
+            [&](ASR::expr_t *e) { return resolved(e); });
     }
 
 public:
@@ -427,6 +466,182 @@ ASR::expr_t* as_type(ASRUtils::ASRBuilder &b, ASR::expr_t *e,
     }
     return b.i2i_t(e, type);
 }
+
+// Rewrites each subscript of an element of an array the kernel is handed so
+// that it picks the same element of the array the launch hands over:
+// `lbound(a, d) + (subscript - lower)`, with `lower` the lower bound the
+// kernel declares. The kernel's array is the host's laid end to end.
+class KernelElementRebaser :
+        public ASR::BaseExprReplacer<KernelElementRebaser> {
+    Allocator &al;
+    const ASR::Function_t &kernel;
+    ASR::call_arg_t *args;
+    size_t n_args;
+public:
+    bool valid = true;
+
+    KernelElementRebaser(Allocator &al, const ASR::Function_t &kernel,
+            ASR::call_arg_t *args, size_t n_args)
+        : al(al), kernel(kernel), args(args), n_args(n_args) {}
+
+    void replace_ArrayItem(ASR::ArrayItem_t *x) {
+        ASR::BaseExprReplacer<KernelElementRebaser>::replace_ArrayItem(x);
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(x->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*base)) {
+            valid = false;
+            return;
+        }
+        ASR::symbol_t *parameter = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(base)->m_v);
+        size_t position = kernel.n_args;
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            if (ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v ==
+                    parameter) {
+                position = i;
+            }
+        }
+        if (position >= n_args || !args[position].m_value ||
+                !ASR::is_a<ASR::Variable_t>(*parameter)) {
+            valid = false;
+            return;
+        }
+        ASR::dimension_t *dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(
+            ASR::down_cast<ASR::Variable_t>(parameter)->m_type, dims);
+        if (rank == 0 || rank != x->n_args || rank !=
+                (size_t)ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(args[position].m_value))) {
+            valid = false;
+            return;
+        }
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            x->base.base.loc, 4));
+        for (size_t d = 0; d < rank; d++) {
+            ASR::array_index_t &index = x->m_args[d];
+            if (!index.m_right || index.m_left || index.m_step ||
+                    !dims[d].m_start) {
+                valid = false;
+                return;
+            }
+            // The lower bound of the array bound to the parameter, read at
+            // run time: the kernel's own type need not carry it.
+            ASR::expr_t *lower = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
+                x->base.base.loc, base, b.i32((int)d + 1), index_type,
+                ASR::arrayboundType::LBound, nullptr));
+            index.m_right = b.Add(lower,
+                b.Sub(as_type(b, index.m_right, index_type),
+                    as_type(b, dims[d].m_start, index_type)));
+        }
+    }
+
+    void replace_ArraySection(ASR::ArraySection_t */*x*/) {
+        valid = false;
+    }
+};
+
+// Replaces the dummy arguments of a function in an expression of its own by
+// the actual arguments of a call to it. Any other variable of the function,
+// or one it is not handed, has no counterpart.
+class DummyArgumentSubstituter :
+        public ASR::BaseExprReplacer<DummyArgumentSubstituter> {
+    const ASR::Function_t &callee;
+    const ASR::FunctionCall_t &call;
+public:
+    bool valid = true;
+
+    DummyArgumentSubstituter(const ASR::Function_t &callee,
+            const ASR::FunctionCall_t &call)
+        : callee(callee), call(call) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x->m_v);
+        for (size_t i = 0; i < callee.n_args; i++) {
+            if (ASR::down_cast<ASR::Var_t>(callee.m_args[i])->m_v == sym) {
+                *current_expr = call.m_args[i].m_value;
+                return;
+            }
+        }
+        valid = false;
+    }
+};
+
+// Replaces a call to a function whose body is a single assignment of its
+// result from its scalar dummy arguments, such as the ones intrinsics like
+// `mod` are lowered to, by that expression over the actual arguments. Such a
+// body reads nothing else, so its value is the same wherever it is
+// evaluated. The kernel calls the device's copy of the function, which the
+// host cannot call.
+class ExpressionFunctionInliner :
+        public ASR::BaseExprReplacer<ExpressionFunctionInliner> {
+    Allocator &al;
+    int depth = 0;
+public:
+    bool valid = true;
+
+    explicit ExpressionFunctionInliner(Allocator &al) : al(al) {}
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        ASR::BaseExprReplacer<ExpressionFunctionInliner>
+            ::replace_FunctionCall(x);
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x->m_name);
+        if (!valid || !sym || !ASR::is_a<ASR::Function_t>(*sym) ||
+                depth > 8) {
+            valid = false;
+            return;
+        }
+        ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(sym);
+        if (!callee->m_return_var ||
+                !ASR::is_a<ASR::Var_t>(*callee->m_return_var) ||
+                callee->n_body != 1 ||
+                !ASR::is_a<ASR::Assignment_t>(*callee->m_body[0]) ||
+                x->n_args != callee->n_args) {
+            valid = false;
+            return;
+        }
+        ASR::Assignment_t *result =
+            ASR::down_cast<ASR::Assignment_t>(callee->m_body[0]);
+        if (!ASR::is_a<ASR::Var_t>(*result->m_target) ||
+                ASR::down_cast<ASR::Var_t>(result->m_target)->m_v !=
+                    ASR::down_cast<ASR::Var_t>(callee->m_return_var)->m_v) {
+            valid = false;
+            return;
+        }
+        for (size_t i = 0; i < x->n_args; i++) {
+            if (!x->m_args[i].m_value ||
+                    ASRUtils::is_array(ASRUtils::expr_type(
+                        x->m_args[i].m_value)) ||
+                    !ASR::is_a<ASR::Var_t>(*callee->m_args[i])) {
+                valid = false;
+                return;
+            }
+        }
+        ASR::expr_t *value = duplicate_expression(al, result->m_value);
+        if (!value) {
+            valid = false;
+            return;
+        }
+        DummyArgumentSubstituter substituter(*callee, *x);
+        substituter.current_expr = &value;
+        substituter.replace_expr(value);
+        if (!substituter.valid) {
+            valid = false;
+            return;
+        }
+        value = duplicate_expression(al, value);
+        if (!value) {
+            valid = false;
+            return;
+        }
+        ASR::expr_t **saved = current_expr;
+        depth++;
+        current_expr = &value;
+        replace_expr(value);
+        current_expr = saved;
+        depth--;
+        *current_expr = value;
+    }
+};
 
 } // namespace
 
@@ -574,6 +789,44 @@ std::vector<ASR::expr_t*> gpu_host_element_subscripts(Allocator &al,
                 as_type(b, lower, index_type))));
     }
     return subscripts;
+}
+
+bool gpu_host_write_conditions(Allocator &al, const ASR::Function_t &kernel,
+        ASR::call_arg_t *args, size_t n_args, const GpuMemberShape &shape,
+        const std::map<ASR::symbol_t*, ASR::expr_t*> &indices,
+        std::vector<ASR::expr_t*> &tests) {
+    if (!shape.conditions_known || kernel.n_body == 0) return false;
+    // Past its first statement, `if (position >= count) return`, an
+    // iteration that stops early skips the writes after that point.
+    if (gpu_transfers_control(kernel.m_body + 1, kernel.n_body - 1, true)) {
+        return false;
+    }
+    std::shared_ptr<GpuIterationVaryingSymbols> changed =
+        gpu_symbols_changed_in(kernel.m_body, kernel.n_body);
+    std::set<ASR::symbol_t*> ignored;
+    for (auto &index : indices) ignored.insert(index.first);
+    for (auto &condition : shape.conditions) {
+        ASR::expr_t *test = duplicate_expression(al, condition.first);
+        if (!test) return false;
+        ExpressionFunctionInliner inliner(al);
+        inliner.current_expr = &test;
+        inliner.replace_expr(test);
+        // The host evaluates the test before the loop runs.
+        if (!inliner.valid || reads_call(test) || reads_grid_position(test) ||
+                gpu_reads_changed(*changed, test, &ignored)) {
+            return false;
+        }
+        KernelElementRebaser rebaser(al, kernel, args, n_args);
+        rebaser.current_expr = &test;
+        rebaser.replace_expr(test);
+        if (!rebaser.valid) return false;
+        test = gpu_bind_kernel_expression(al, kernel, args, n_args, test,
+            indices);
+        if (!test) return false;
+        ASRUtils::ASRBuilder b(al, test->base.loc);
+        tests.push_back(condition.second ? test : b.Not(test));
+    }
+    return true;
 }
 
 std::vector<ASR::expr_t*> gpu_host_member_extents(Allocator &al,

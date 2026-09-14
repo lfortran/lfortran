@@ -60,6 +60,18 @@ std::vector<ASR::expr_t*> gpu_host_element_subscripts(Allocator &al,
     const GpuMemberShape &shape, ASR::expr_t *array,
     const std::map<ASR::symbol_t*, ASR::expr_t*> &indices);
 
+// The tests that decide whether the iteration whose loop indices `indices`
+// hold writes the component `shape` shapes, as host expressions, outermost
+// first. False when something the host cannot evaluate before the launch
+// decides it: a test that calls a procedure or reads a value the kernel
+// changes, a construct other than an `if` around the write, or a statement
+// that ends the iteration early. Called for a kernel gpu_host_iterations
+// replays.
+bool gpu_host_write_conditions(Allocator &al, const ASR::Function_t &kernel,
+    ASR::call_arg_t *args, size_t n_args, const GpuMemberShape &shape,
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &indices,
+    std::vector<ASR::expr_t*> &tests);
+
 // The extents a kernel gives a component of one element of its struct
 // array, as expressions the host evaluates before the launch, bound to the
 // launch's arguments `args`. The extents may depend on the iteration that

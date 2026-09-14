@@ -383,8 +383,8 @@ class DeviceLaunchExpandVisitor :
                 std::vector<ASR::stmt_t*> measure;
                 if (written_shape || !uniform_extents.empty()) {
                     fit_written_component(loc, out, measure, arg, member,
-                        rank, k, kernel, launch_args, n_launch_args,
-                        written_shape, uniform_extents);
+                        arg_name, member_name, rank, k, kernel, launch_args,
+                        n_launch_args, written_shape, uniform_extents);
                 }
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
                     total));
@@ -478,20 +478,28 @@ class DeviceLaunchExpandVisitor :
         // it again with another size, only with --realloc-lhs-arrays, as for
         // any assignment; only then does the host do so before the launch.
         // Without it the component has to fit already, which bounds checking
-        // checks with the check an assignment gets. Where the host cannot
-        // work out the size before the loop runs it cannot allocate the
-        // component either, and bounds checking checks that it is allocated.
+        // checks with the check an assignment gets.
         //
-        // Only the elements the loop writes are looked at: another one need
-        // not be allocated, and the size of the component of one the loop
-        // does not write may read past the end of what it is read from.
-        // When the host cannot tell which elements the loop writes, a size
-        // that is the same for every element is given to all of them, and
-        // nothing is checked.
+        // Only the elements the loop writes are looked at, in the iterations
+        // that write them: the host replays the iterations and the `if`
+        // tests around the write, and maps the loop indices through the
+        // element's subscripts. Any other element is left as it is.
+        //
+        // What the host cannot work out before the loop runs it does not
+        // guess:
+        // * When the component can get more than one size, or its size reads
+        //   something the host cannot evaluate, the host cannot allocate it.
+        //   Bounds checking then only checks that a component every write
+        //   gives a size is allocated.
+        // * When the host cannot tell which elements the loop writes, it
+        //   changes no allocated component and checks nothing. With the
+        //   option it gives a component that is not allocated a size that is
+        //   the same for every element.
         void fit_written_component(const Location &loc,
                 Vec<ASR::stmt_t*> &out, std::vector<ASR::stmt_t*> &measure,
-                ASR::expr_t *arg, ASR::symbol_t *member, size_t rank,
-                ASR::expr_t *k, const ASR::Function_t &kernel,
+                ASR::expr_t *arg, ASR::symbol_t *member,
+                const std::string &arg_name, const std::string &member_name,
+                size_t rank, ASR::expr_t *k, const ASR::Function_t &kernel,
                 ASR::call_arg_t *launch_args, size_t n_launch_args,
                 const GpuMemberShape *shape,
                 const std::vector<ASR::expr_t*> &uniform_extents) {
@@ -502,6 +510,9 @@ class DeviceLaunchExpandVisitor :
             auto extents_for = [&](
                     const std::map<ASR::symbol_t*, ASR::expr_t*> &indices) {
                 std::vector<ASR::expr_t*> extents;
+                // A component that can get more than one size has no one
+                // size to give it.
+                if (shape && !shape->single) return extents;
                 if (!uniform_extents.empty()) {
                     ASRUtils::ExprStmtDuplicator duplicator(al);
                     for (ASR::expr_t *extent : uniform_extents) {
@@ -518,18 +529,27 @@ class DeviceLaunchExpandVisitor :
                     ASR::ttype_t *type) {
                 return declare_local(loc, name, type);
             };
-            std::vector<ASR::expr_t*> subscripts;
-            if (shape && gpu_host_iterations(al, kernel, launch_args,
-                    n_launch_args, new_local, iterations)) {
+            std::vector<ASR::expr_t*> subscripts, tests;
+            bool written_known = shape && gpu_host_iterations(al, kernel,
+                launch_args, n_launch_args, new_local, iterations);
+            if (written_known) {
                 subscripts = gpu_host_element_subscripts(al, kernel,
                     launch_args, n_launch_args, *shape, arg,
                     iterations.indices);
+                written_known = !subscripts.empty() &&
+                    gpu_host_write_conditions(al, kernel, launch_args,
+                        n_launch_args, *shape, iterations.indices, tests);
             }
-            if (subscripts.empty()) {
+            if (!written_known) {
                 std::vector<ASR::expr_t*> extents = extents_for({});
                 if (realloc && extents.size() == rank) {
-                    std::vector<ASR::stmt_t*> fit = allocate_to_fit(loc,
-                        struct_member(loc, arg, k, member), extents);
+                    std::vector<ASR::stmt_t*> fit;
+                    std::vector<ASR::expr_t*> lengths =
+                        evaluate_extents(loc, extents, fit);
+                    fit.push_back(b.If(b.Not(is_allocated(loc,
+                        struct_member(loc, arg, k, member))),
+                        {allocate_with(loc, struct_member(loc, arg, k,
+                            member), lengths)}, {}));
                     measure.insert(measure.end(), fit.begin(), fit.end());
                 }
                 return;
@@ -544,12 +564,22 @@ class DeviceLaunchExpandVisitor :
             if (extents.size() == rank) {
                 fit = realloc ? allocate_to_fit(loc, element, extents)
                     : check_fits(loc, element, extents);
-            } else if (checks) {
-                ASRUtils::ExprStmtDuplicator duplicator(al);
-                fit.push_back(debug_check(loc, element,
-                    duplicator.duplicate_expr(element)));
+            } else if (checks && shape->always_shaped) {
+                if (realloc) {
+                    fit.push_back(require_allocated(loc, element, arg_name,
+                        member_name));
+                } else {
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    fit.push_back(debug_check(loc, element,
+                        duplicator.duplicate_expr(element)));
+                }
             }
             if (fit.empty()) return;
+            // Only an iteration the tests let through writes the element,
+            // and a test is only evaluated where the ones around it hold.
+            for (auto test = tests.rbegin(); test != tests.rend(); ++test) {
+                fit = {b.If(*test, fit, {})};
+            }
             std::vector<ASR::stmt_t*> body = iterations.prologue;
             body.insert(body.end(), fit.begin(), fit.end());
             ASR::ttype_t *counter_type =
@@ -634,6 +664,23 @@ class DeviceLaunchExpandVisitor :
             stmts.push_back(debug_check(loc, component, value));
             stmts.push_back(b.Deallocate(value));
             return stmts;
+        }
+
+        // With --realloc-lhs-arrays the assignment would allocate
+        // `component`, but the host cannot work out its size before the
+        // loop runs, so the program has to have allocated it.
+        ASR::stmt_t* require_allocated(const Location &loc,
+                ASR::expr_t *component, const std::string &arg_name,
+                const std::string &member_name) {
+            ASRUtils::ASRBuilder b(al, loc);
+            std::string message = "the size an offloaded loop gives the "
+                "component '" + member_name + "' of '" + arg_name + "' "
+                "cannot be determined before the loop runs, so it cannot be "
+                "allocated automatically; allocate it before the loop";
+            ASR::expr_t *code = b.StringConstant(message,
+                b.String(b.i32(message.size()), ASR::ExpressionLength));
+            return b.If(b.Not(is_allocated(loc, component)),
+                {ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, code))}, {});
         }
 
         ASR::stmt_t* debug_check(const Location &loc, ASR::expr_t *target,

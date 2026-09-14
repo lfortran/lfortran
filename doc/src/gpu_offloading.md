@@ -152,18 +152,40 @@ generates the device source. It never falls back to the CPU:
     assignment"). Allocation status and size are known only at run time, so
     the check cannot be made at compile time. Without bounds checking the
     kernel writes storage that does not exist.
-  * Only the elements the loop writes are allocated or checked. They are
-    found from the loop's index range mapped through the element's subscripts.
-    An element the loop does not write is left as it is.
-  * Sometimes the host cannot evaluate the size before the loop runs. The size
-    may come from a call, from a value the loop itself writes (`s(i) = ...`
-    earlier in the iteration, so the value before the loop would be a wrong
-    size), or from a section with an omitted bound (#12884). Then even with
-    the option the component is not allocated, and bounds checking reports it
-    if it is unallocated. A wrong size is not detected.
-  * When the host cannot tell which elements the loop writes, a size that is
-    the same for every element is given to all of them with the option, and
-    nothing is checked.
+  * Only the elements the loop writes are allocated or checked. The host
+    replays the loop's iterations, evaluates the `if` tests the write is in,
+    and maps the loop indices through the element's subscripts. An element
+    the loop does not write is left as it is.
+  * The host does not guess what it cannot work out before the loop runs:
+    * The size. It may come from a call, from a value the loop itself writes
+      (`s(i) = ...` earlier in the iteration, so the value before the loop
+      would be a wrong size), or from a section with an omitted bound
+      (#12884). Or the called function may give the component one of several
+      sizes (`if (k > 1) then; allocate(r%v(5)); else; allocate(r%v(1));
+      end if`). Then even with the option the component is not allocated.
+      With bounds checking on, the launch stops if the component is not
+      allocated. Without the option the message is the usual "Array ... is
+      not allocated". With the option the message says that the size cannot
+      be determined before the loop runs, and that the component has to be
+      allocated before the loop. That is a limitation: the program is valid
+      with the option, and allocating the component before the loop makes
+      it run. A wrong preallocated size is not detected. Without bounds
+      checking nothing is checked, and the kernel writes storage that does
+      not exist.
+    * Which elements the loop writes. The element may be picked by a call
+      (`t(g(i))`) or by a value the loop writes. An `if` test may call a
+      procedure or read a value the loop writes. The write may be inside
+      another construct (a loop, a `select`), in more than one place, or
+      after a `cycle`, `exit` or `return` that can end the iteration early.
+      Then no allocated component is changed and nothing is checked. With
+      the option, a component that is not allocated is given a size that is
+      the same for every element, if there is one, so an element the loop
+      does not write can end up allocated. Without the option, a written
+      component that is not allocated stays unallocated, even with bounds
+      checking on.
+  * A `do concurrent` mask (`do concurrent (i = 1:n, mask(i))`) is currently
+    ignored on every backend (#12778), so such a loop writes every element of
+    its range.
 
 ## Testing
 
