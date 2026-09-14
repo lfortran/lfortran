@@ -3792,6 +3792,7 @@ RUN(NAME read_95 LABELS gfortran llvm)
 RUN(NAME read_96 LABELS gfortran llvm)
 RUN(NAME read_98 LABELS gfortran llvm)
 RUN(NAME read_99 LABELS gfortran llvm COPY_TO_BIN read_99_data.txt)
+RUN(NAME read_100 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
