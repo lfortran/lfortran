@@ -2470,6 +2470,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
+            remove_original_statement = true;
         }
 
         int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
@@ -2562,26 +2563,7 @@ class ParallelRegionVisitor :
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
-            // Process task body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
-            stmt_visitor.current_expr = nullptr;
-            
-            // Add the task body statements
-            for (size_t i = 0; i < x.n_body; i++) {
-                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
-                    // Handle nested OpenMP constructs if any
-                    std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-                    this->visit_stmt(*x.m_body[i]);
-                    for (size_t j = 0; j < nested_lowered_body.size(); j++) {
-                        fn_body.push_back(al, nested_lowered_body[j]);
-                    }
-                    nested_lowered_body = body_copy;
-                } else {
-                    this->visit_stmt(*x.m_body[i]);
-                    stmt_visitor.visit_stmt(*x.m_body[i]);
-                    fn_body.push_back(al, x.m_body[i]);
-                }
-            }
+            visit_OMPBody(&x, fn_body);
             
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_task_func");
