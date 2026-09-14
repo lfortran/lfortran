@@ -6825,10 +6825,32 @@ _lfortran_open(int32_t unit_num,
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
-        if (!fd && iostat == NULL) {
-            printf("Runtime error: Error in opening the file!\n");
-            perror(f_name_c);
-            exit(1);
+        if (!fd) {
+            if (iostat == NULL) {
+                printf("Runtime error: Error in opening the file!\n");
+                perror(f_name_c);
+                exit(1);
+            } else {
+                *iostat = 2; // file open error
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
+                    char* temp = "Error in opening the file.";
+                    snprintf(iomsg, iomsg_len + 1, "%s", temp);
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+                }
+                internal_free(f_name_c);
+                internal_free(status_c);
+                internal_free(form_c);
+                internal_free(access_c);
+                internal_free(action_c);
+                internal_free(delim_c);
+                internal_free(blank_c);
+                internal_free(encoding_c);
+                internal_free(sign_c);
+                internal_free(decimal_c);
+                internal_free(round_c);
+                internal_free(pad_c);
+                return 0;
+            }
         }
         // Handle position='append': seek to end of file
         if (fd && position != NULL && position_len > 0) {
