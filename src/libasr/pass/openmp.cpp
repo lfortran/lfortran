@@ -2447,8 +2447,9 @@ class ParallelRegionVisitor :
                                     ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
             
             // Constants for GOMP_task call
-            ASR::expr_t* data_size = b.i64(compute_task_data_size(task_data_module.second));
-            ASR::expr_t* data_align = b.i64(8);
+            std::pair<int64_t, int64_t> task_data_size_align = compute_task_data_size_align(task_data_module.second);
+            ASR::expr_t* data_size = b.i64(task_data_size_align.first);
+            ASR::expr_t* data_align = b.i64(task_data_size_align.second);
             ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))); // Always create task (c_bool kind)
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
@@ -2483,35 +2484,39 @@ class ParallelRegionVisitor :
             remove_original_statement = true;
         }
 
-        int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
-            int64_t total_size = 0;
+        // Size and alignment of the task data struct as laid out in memory,
+        // including the padding between members and at the end. GOMP_task
+        // copies exactly this many bytes, so a smaller size would cut off
+        // the trailing members.
+        std::pair<int64_t, int64_t> compute_task_data_size_align(const ASR::symbol_t* task_data_struct_sym) {
             ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
-            SymbolTable* m_symtab = task_data_struct->m_symtab;
-            for (size_t i=0;i< task_data_struct->n_members; i++) {
-                ASR::symbol_t* sym = m_symtab->resolve_symbol(task_data_struct->m_members[i]);
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::ttype_t* type = var->m_type;
-                if (ASR::is_a<ASR::CPtr_t>(*type)) {
-                    // CPtr is typically 8 bytes on 64-bit systems
-                    total_size += 8;
-                } else if (ASR::is_a<ASR::Integer_t>(*type)) {
-                    // Integer (c_int) is 4 bytes
-                    total_size += 4;
-                } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                    // Real (c_float or c_double) depends on kind, assume 4 or 8
-                    ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
-                    total_size += (real_type->m_kind == 4 ? 4 : 8);
-                } else if (ASR::is_a<ASR::Array_t>(*type)) {
-                    // Arrays are stored as CPtr (8 bytes) plus bounds
-                    total_size += 8;
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type)));
-                    total_size += 8 * array_type->n_dims; // 4 bytes each for lbound and ubound per dimension
+            LCOMPILERS_ASSERT(!task_data_struct->m_is_packed && task_data_struct->m_parent == nullptr);
+            int64_t offset = 0;
+            int64_t max_align = 1;
+            for (size_t i = 0; i < task_data_struct->n_members; i++) {
+                ASR::symbol_t* sym = task_data_struct->m_symtab->resolve_symbol(task_data_struct->m_members[i]);
+                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+                std::pair<int64_t, int64_t> size_align;
+                if ((ASR::is_a<ASR::Pointer_t>(*type) || ASR::is_a<ASR::Allocatable_t>(*type)) &&
+                        !ASRUtils::is_array(type)) {
+                    // Pointer and allocatable scalars are stored as a pointer
+                    size_align = {8, 8};
+                } else if (ASR::is_a<ASR::String_t>(*type) &&
+                        ASR::down_cast<ASR::String_t>(type)->m_physical_type == ASR::DescriptorString) {
+                    // A packed {char*, int64 length} descriptor
+                    size_align = {16, 1};
                 } else {
-                    // Fallback for unsupported types, assume 8 bytes
-                    total_size += 8;
+                    size_align = ASRUtils::compute_type_size_align(type);
                 }
+                if (size_align.first < 0) {
+                    throw LCompilersException("the size of the data passed to an OpenMP task cannot be computed");
+                }
+                offset = ((offset + size_align.second - 1) / size_align.second) * size_align.second;
+                offset += size_align.first;
+                max_align = std::max(max_align, size_align.second);
             }
-            return total_size;
+            offset = ((offset + max_align - 1) / max_align) * max_align;
+            return {std::max(offset, max_align), max_align};
         }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
