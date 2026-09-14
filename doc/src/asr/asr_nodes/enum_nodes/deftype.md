@@ -51,10 +51,13 @@ created only when `--implicit-interface` is passed. Without that flag the same
 declaration is a semantic error (*function interface must be specified
 explicitly*), so an ASR produced under the default options never contains one.
 
-The only place that creates it is `create_external_function` in the Fortran
-frontend (`src/lfortran/semantics/ast_common_visitor.h`). No ASR pass and no
-part of `libasr` may introduce one, and no pass may turn an `Interface` back
-into an `ImplicitInterface`.
+Only the Fortran frontend (`src/lfortran/semantics/ast_common_visitor.h`)
+creates it: for an `external` declaration (`create_external_function`), for an
+undeclared name referenced as a procedure (`get_or_create_opaque_procedure`),
+and for a variable referenced as a procedure
+(`replace_variable_with_opaque_procedure`, `make_dummy_opaque_procedure`).
+No ASR pass and no part of `libasr` may introduce one, and no pass may turn an
+`Interface` back into an `ImplicitInterface`.
 
 This is Fortran's own implicit interface (F2018 15.4.2.2, 15.4.3.5). The
 declaration supplies the result type and nothing else: the number, types,
@@ -86,22 +89,10 @@ compare the deftype by hand.
 
 ### How lowering uses it: the interface is built at the reference
 
-An `ImplicitInterface` symbol is a placeholder for a result type, not a
-callable procedure. Every reference synthesizes its own complete `Interface`
-`Function` from the actual arguments at that reference, and calls *that*. So
-
-```fortran
-r = f(1, 2)
-```
-
-produces a `Function f` with `deftype = Interface` and two `integer(4)` dummies
-in the referencing scope, and the `FunctionCall` names it. The call therefore
-agrees with its callee, exactly as any other call in ASR does, and the ordinary
-argument checks apply to it. Both symbols carry the same `bindc_name`, so they
-resolve to the same procedure at link time.
-
-Within a single scope this means the placeholder does not survive: the first
-reference overwrites it with the inferred `Interface`. A final ASR for
+An `ImplicitInterface` symbol stands for a procedure whose characteristics are
+unknown, not for a callable signature. Every reference builds its own complete
+`Interface` `Function` from the actual arguments at that reference, and calls
+the procedure through it. So in
 
 ```fortran
 program p
@@ -112,14 +103,26 @@ program p
 end program p
 ```
 
-contains one symbol `f`, with `deftype = Interface` and two arguments. There is
-no `ImplicitInterface` left in it.
+`f` keeps `deftype = ImplicitInterface`. The reference adds a `Function
+f@fpcast` with `deftype = Interface` and two `integer(4)` dummies, a
+procedure-pointer temporary `f_fpcast` declared with it, and, before the
+statement, the association of the temporary with
+`FunctionPointerCast(f, f@fpcast)` (see
+[FunctionPointerCast](../expression_nodes/FunctionPointerCast.md)). The
+`FunctionCall` calls the temporary, so it agrees with its callee exactly as any
+other call in ASR does, and the ordinary argument checks apply to it. A later
+reference with the same argument types and result reuses `f@fpcast`; one with
+different ones gets its own interface.
+
+A reference outside of a statement body (e.g. in a specification expression),
+or with a character, array or derived-type result, still calls an interface
+installed under the name directly.
 
 ### Why the value is needed at all
 
-The placeholder survives only where this translation unit has no reference to
-infer from — chiefly a module that declares an external for the benefit of its
-users:
+The procedure keeps the value even where this translation unit never
+references it, chiefly a module that declares an external for the benefit of
+its users:
 
 ```fortran
 module m
@@ -151,24 +154,26 @@ Because it must survive a module-file round trip,
 `SymbolTable::mark_all_variables_external` leaves the deftype alone rather than
 rewriting it to `Interface` as it does for other procedures.
 
-### Once the signature becomes known
+### The opaque procedure type
 
-A reference is not the only thing that can supply a signature. When the
-procedure is passed as an actual argument to a procedure that does call it, the
-signature propagates back from the dummy. At that point the arguments are
-filled in and the deftype becomes `Interface`; the symbol stops being a
-placeholder and the invariants above no longer apply to it.
+The type of such a procedure is the opaque procedure type: a
+[FunctionType](../type_nodes/FunctionType.md) with deftype `ImplicitInterface`,
+no argument types (meaning "unknown", not "no arguments") and a result type
+only when the procedure is explicitly typed. `procedure()` entities and dummy
+arguments referenced as procedures without an interface have it too. The type
+is never changed as the procedure is used:
 
-### References that disagree
+* each reference goes through an `Interface` built from its own actual
+  arguments, reached through a
+  [FunctionPointerCast](../expression_nodes/FunctionPointerCast.md), so
+  references that pass different actual types each agree with their callee;
+* a procedure passed to a dummy, or associated with a pointer, of another type
+  is cast to that type; no signature propagates between them.
 
-Two references in the same scope may pass different actual types. One inferred
-`Interface` cannot serve both, so the first-inferred signature stays the
-canonical procedure under the user-visible name and each later reference that
-disagrees gets its own `Interface` symbol, reached through a
-[FunctionPointerCast](../expression_nodes/FunctionPointerCast.md). Such a
-program is not standard-conforming (F2018 15.5.2.5 requires the actual
-arguments to agree with the definition's dummies, so the two references cannot
-both agree), and gfortran needs `-fallow-argument-mismatch` to accept it.
+Two references with different argument lists are not standard-conforming
+(F2018 15.5.2.5 requires the actual arguments to agree with the definition's
+dummies, so the two references cannot both agree), and gfortran needs
+`-fallow-argument-mismatch` to accept it.
 
 ## See Also
 
