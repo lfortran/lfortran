@@ -5129,11 +5129,8 @@ public:
                         type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
                     }
                 }
-                ASR::ttype_t *func_type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                    al, loc, nullptr, 0, type, ASR::abiType::Source,
-                    ASR::deftypeType::Interface, nullptr, false, false,
-                    false, false, false, nullptr, 0, false,
-                    ASR::exec_spaceType::Host));
+                ASR::ttype_t *func_type = ASRUtils::make_opaque_procedure_type(
+                    al, loc, type);
                 std::string iface_name = "__" + sym + "_iface_implicit";
                 SymbolTable *parent_scope = current_scope->parent;
                 if (!parent_scope) parent_scope = current_scope;
@@ -10748,17 +10745,10 @@ public:
             if (!sym_type->m_name) {
                 if (compiler_options.implicit_interface) {
                     // procedure() with no explicit interface is completely
-                    // opaque — we don't know the return type (or whether it's
-                    // a function or subroutine).  Use nullptr (void) so the
-                    // LLVM backend emits a generic void()* function pointer.
-                    ASR::ttype_t *return_type = nullptr;
+                    // opaque: we don't know its arguments, the return type
+                    // or whether it's a function or subroutine.
                     Location &attr_loc = sym_type->base.base.loc;
-                    type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                        al, loc,
-                        nullptr, 0, return_type, ASR::abiType::Source,
-                        ASR::deftypeType::Interface, nullptr,
-                        false, false, false, false, false, nullptr, 0, false,
-                        ASR::exec_spaceType::Host));
+                    type = ASRUtils::make_opaque_procedure_type(al, loc, nullptr);
                     std::string iface_name = "__" + sym + "_iface_implicit";
                     SymbolTable *parent_scope = current_scope->parent;
                     ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
