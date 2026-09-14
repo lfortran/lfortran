@@ -1387,7 +1387,7 @@ bool GpuOffloadVisitor::strided_section_is_gatherable(
 // be written, the scatter to `after`. Returns true when it did.
 bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
         SymbolTable *block_scope, ASR::expr_t **slot, bool writable,
-        std::vector<ASR::stmt_t*> &before,
+        const GpuVaries &varies, std::vector<ASR::stmt_t*> &before,
         std::vector<ASR::stmt_t*> &after) {
     ASR::ArrayPhysicalCast_t *cast = nullptr;
     ASR::expr_t *inner = *slot;
@@ -1415,10 +1415,10 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     // run-time sized local of the BLOCK below, which the workspace
     // machinery binds to a per-thread slice of a buffer the host sizes
     // before the launch, where the loop index has no value. So a last
-    // dimension that does not run over the whole of its base -- whose
-    // extent may change with the iteration, `a(i,1:i)` -- is sized as
-    // that whole base dimension, and the callee is handed the leading
-    // part of the buffer. An earlier dimension has to keep its exact
+    // dimension whose extent changes with the iteration, `a(i,1:i)`, is
+    // sized as the whole of that base dimension, and the callee is
+    // handed the leading part of the buffer. An extent that does not
+    // change is used as it is. An earlier dimension has to keep its exact
     // extent, or that part would not be contiguous;
     // offloadable_before_rewrites declines a loop in which such an
     // extent changes with the iteration.
@@ -1439,8 +1439,11 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
             extents.push_back(al, extent);
         } else {
             extent = section_extent(loc, as->m_args[d]);
+            const ASR::array_index_t &index = as->m_args[d];
             if (k + 1 == range_dims.size()
-                    && !section_dim_is_whole(as, d)) {
+                    && !section_dim_is_whole(as, d)
+                    && (varies(index.m_left) || varies(index.m_right)
+                        || varies(index.m_step))) {
                 ASR::array_index_t whole;
                 whole.loc = loc;
                 whole.m_left = ASRUtils::EXPR(ASR::make_ArrayBound_t(al,
@@ -1495,98 +1498,157 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     return true;
 }
 
-// Rewrite every strided section actual argument of every call in
-// `stmt`, collecting the gather and scatter statements that have to
-// bracket it.
+namespace {
+
+// A call among whose actual arguments a section may have to be gathered.
+struct GpuSectionCall {
+    ASR::symbol_t *name;
+    ASR::call_arg_t *args;
+    size_t n_args;
+};
+
+// A statement list nested in a construct, and the scope that owns it:
+// nullptr when that is the scope that owns the construct itself.
+struct GpuNestedStmts {
+    ASR::stmt_t ***body;
+    size_t *n_body;
+    SymbolTable *scope;
+};
+
+void gpu_add_section_calls(ASR::expr_t *e,
+        std::vector<GpuSectionCall> &calls) {
+    if (!e) return;
+    GpuCallSiteCollector csc;
+    csc.visit_expr(*e);
+    for (const ASR::FunctionCall_t *c : csc.calls) {
+        ASR::FunctionCall_t *fc = const_cast<ASR::FunctionCall_t*>(c);
+        calls.push_back({fc->m_name, fc->m_args, fc->n_args});
+    }
+}
+
+// Where the gather for a section actual argument of `stmt` can go. The
+// gather reads the section's bounds when it runs, and they may read the
+// index of an inner loop or a value tested by an IF, so it has to run
+// next to the innermost statement that makes the call. The statement
+// lists of a loop, an IF, a BLOCK or an ASSOCIATE therefore go to
+// `nested`, to be taken one statement at a time. The calls the construct
+// makes itself go to `once` when they are evaluated before any nested
+// statement runs (a loop head, an IF test), and to `repeated` when they
+// are evaluated again on every pass (a WHILE test), which no gather
+// outside the loop can serve. Any other statement is a single site, and
+// all of its calls go to `once`.
+void gpu_split_section_calls(ASR::stmt_t *stmt,
+        std::vector<GpuNestedStmts> &nested,
+        std::vector<GpuSectionCall> &once,
+        std::vector<GpuSectionCall> &repeated) {
+    if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+        ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(stmt);
+        gpu_add_section_calls(x->m_head.m_start, once);
+        gpu_add_section_calls(x->m_head.m_end, once);
+        gpu_add_section_calls(x->m_head.m_increment, once);
+        nested.push_back({&x->m_body, &x->n_body, nullptr});
+    } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
+        ASR::DoConcurrentLoop_t *x =
+            ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+        for (size_t i = 0; i < x->n_head; i++) {
+            gpu_add_section_calls(x->m_head[i].m_start, once);
+            gpu_add_section_calls(x->m_head[i].m_end, once);
+            gpu_add_section_calls(x->m_head[i].m_increment, once);
+        }
+        nested.push_back({&x->m_body, &x->n_body, nullptr});
+    } else if (ASR::is_a<ASR::If_t>(*stmt)) {
+        ASR::If_t *x = ASR::down_cast<ASR::If_t>(stmt);
+        gpu_add_section_calls(x->m_test, once);
+        nested.push_back({&x->m_body, &x->n_body, nullptr});
+        nested.push_back({&x->m_orelse, &x->n_orelse, nullptr});
+    } else if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
+        ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+        gpu_add_section_calls(x->m_test, repeated);
+        nested.push_back({&x->m_body, &x->n_body, nullptr});
+    } else if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+        if (b && ASR::is_a<ASR::Block_t>(*b)) {
+            ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+            nested.push_back({&blk->m_body, &blk->n_body, blk->m_symtab});
+        }
+    } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
+        if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(b);
+            nested.push_back({&ab->m_body, &ab->n_body, ab->m_symtab});
+        }
+    } else {
+        if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+            ASR::SubroutineCall_t *sc =
+                ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+            once.push_back({sc->m_name, sc->m_args, sc->n_args});
+        }
+        GpuCallSiteCollector csc;
+        csc.visit_stmt(*stmt);
+        for (const ASR::FunctionCall_t *c : csc.calls) {
+            ASR::FunctionCall_t *fc = const_cast<ASR::FunctionCall_t*>(c);
+            once.push_back({fc->m_name, fc->m_args, fc->n_args});
+        }
+    }
+}
+
+} // namespace
+
+// Rewrite every strided section actual argument of the calls `stmt`
+// makes itself (see gpu_split_section_calls), collecting the gather and
+// scatter statements that have to bracket it.
 bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
-        SymbolTable *block_scope, std::vector<ASR::stmt_t*> &before,
+        SymbolTable *block_scope, const GpuVaries &varies,
+        std::vector<ASR::stmt_t*> &before,
         std::vector<ASR::stmt_t*> &after) {
+    std::vector<GpuNestedStmts> nested;
+    std::vector<GpuSectionCall> once, repeated;
+    gpu_split_section_calls(stmt, nested, once, repeated);
     bool changed = false;
     const Location &loc = stmt->base.loc;
-    auto do_call = [&](ASR::symbol_t *name, ASR::call_arg_t *args,
-            size_t n_args) {
+    for (const GpuSectionCall &call : once) {
         ASR::symbol_t *resolved =
-            ASRUtils::symbol_get_past_external(name);
+            ASRUtils::symbol_get_past_external(call.name);
         ASR::Function_t *fn =
             (resolved && ASR::is_a<ASR::Function_t>(*resolved))
                 ? ASR::down_cast<ASR::Function_t>(resolved) : nullptr;
-        for (size_t i = 0; i < n_args; i++) {
-            if (!args[i].m_value) continue;
+        for (size_t i = 0; i < call.n_args; i++) {
+            if (!call.args[i].m_value) continue;
             if (gather_strided_section_arg(loc, block_scope,
-                    &args[i].m_value, dummy_is_written(fn, i),
-                    before, after)) {
+                    &call.args[i].m_value, dummy_is_written(fn, i),
+                    varies, before, after)) {
                 changed = true;
             }
         }
-    };
-    if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
-        ASR::SubroutineCall_t *sc =
-            ASR::down_cast<ASR::SubroutineCall_t>(stmt);
-        do_call(sc->m_name, sc->m_args, sc->n_args);
-    }
-    GpuCallSiteCollector csc;
-    csc.visit_stmt(*stmt);
-    for (const ASR::FunctionCall_t *c : csc.calls) {
-        ASR::FunctionCall_t *fc = const_cast<ASR::FunctionCall_t*>(c);
-        do_call(fc->m_name, fc->m_args, fc->n_args);
     }
     return changed;
 }
 
 // The first strided section actual argument of a call in `body` for
-// which `pred` holds, or nullptr.
+// which `pred` holds, or nullptr. `pred` is also told whether a gather
+// can be placed for that call at all (see gpu_split_section_calls).
 ASR::ArraySection_t* GpuOffloadVisitor::find_strided_section_actual(
         ASR::stmt_t **body, size_t n_body,
-        const std::function<bool(ASR::ArraySection_t*)> &pred) {
+        const std::function<bool(ASR::ArraySection_t*, bool)> &pred) {
     for (size_t si = 0; si < n_body; si++) {
-        ASR::stmt_t *stmt = body[si];
-        if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
-            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+        std::vector<GpuNestedStmts> nested;
+        std::vector<GpuSectionCall> once, repeated;
+        gpu_split_section_calls(body[si], nested, once, repeated);
+        for (const GpuNestedStmts &n : nested) {
             if (ASR::ArraySection_t *as = find_strided_section_actual(
-                    dl->m_body, dl->n_body, pred)) return as;
-            continue;
+                    *n.body, *n.n_body, pred)) return as;
         }
-        if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
-            if (b && ASR::is_a<ASR::Block_t>(*b)) {
-                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                if (ASR::ArraySection_t *as = find_strided_section_actual(
-                        blk->m_body, blk->n_body, pred)) return as;
-            }
-            continue;
-        }
-        if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
-            if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
-                ASR::AssociateBlock_t *ab =
-                    ASR::down_cast<ASR::AssociateBlock_t>(b);
-                if (ASR::ArraySection_t *as = find_strided_section_actual(
-                        ab->m_body, ab->n_body, pred)) return as;
-            }
-            continue;
-        }
-        std::vector<ASR::call_arg_t*> arg_lists;
-        std::vector<size_t> arg_counts;
-        if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
-            ASR::SubroutineCall_t *sc =
-                ASR::down_cast<ASR::SubroutineCall_t>(stmt);
-            arg_lists.push_back(sc->m_args);
-            arg_counts.push_back(sc->n_args);
-        }
-        GpuCallSiteCollector csc;
-        csc.visit_stmt(*stmt);
-        for (const ASR::FunctionCall_t *c : csc.calls) {
-            arg_lists.push_back(c->m_args);
-            arg_counts.push_back(c->n_args);
-        }
-        for (size_t li = 0; li < arg_lists.size(); li++) {
-            for (size_t i = 0; i < arg_counts[li]; i++) {
-                if (!arg_lists[li][i].m_value) continue;
-                ASR::ArraySection_t *as = strided_section_actual(
-                    arg_lists[li][i].m_value);
-                if (as && pred(as)) return as;
+        for (bool placeable : {true, false}) {
+            for (const GpuSectionCall &call : placeable ? once : repeated) {
+                for (size_t i = 0; i < call.n_args; i++) {
+                    if (!call.args[i].m_value) continue;
+                    ASR::ArraySection_t *as = strided_section_actual(
+                        call.args[i].m_value);
+                    if (as && pred(as, placeable)) return as;
+                }
             }
         }
     }
@@ -1594,14 +1656,15 @@ ASR::ArraySection_t* GpuOffloadVisitor::find_strided_section_actual(
 }
 
 // True when some call in `body` takes a strided section this pass
-// cannot gather. Passing it on would drop the stride silently, so the
-// loop is declined for offload instead, while the body is untouched.
+// cannot gather, or cannot gather where the call is made. Passing it on
+// would drop the stride silently, so the loop is declined for offload
+// instead, while the body is untouched.
 bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
         ASR::stmt_t **body,
         size_t n_body) {
     return find_strided_section_actual(body, n_body,
-        [&](ASR::ArraySection_t *as) {
-            return !strided_section_is_gatherable(as);
+        [&](ASR::ArraySection_t *as, bool placeable) {
+            return !placeable || !strided_section_is_gatherable(as);
         }) != nullptr;
 }
 
@@ -1610,7 +1673,7 @@ namespace {
 // The symbols whose value can change from one iteration of a loop to the
 // next. `whole` holds those that can change as a whole -- the ones the
 // body assigns, allocates, associates, counts with or passes to a dummy
-// that may be written, and the loop indices -- and `parts` those only an
+// that may be written, and the index of every loop -- and `parts` those only an
 // element or a component of which is written, which leaves the bounds of
 // an array as they are. A symbol declared in a scope the body opens is
 // new in every iteration.
@@ -1659,6 +1722,21 @@ public:
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         add(x.m_head.m_v);
         Base::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) add(x.m_head[i].m_v);
+        Base::visit_DoConcurrentLoop(x);
+    }
+
+    void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
+        add(x.m_head.m_v);
+        Base::visit_ForAllSingle(x);
+    }
+
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+        add(x.m_var);
+        Base::visit_ImpliedDoLoop(x);
     }
 
     void visit_Allocate(const ASR::Allocate_t &x) {
@@ -1796,27 +1874,39 @@ std::string section_base_name(ASR::expr_t *e) {
 
 } // namespace
 
+namespace {
+
+// Whether an expression reads a value that changes from one iteration of
+// `nest` to the next: one of its indices, the index of any loop in
+// `body`, or anything `body` changes.
+GpuOffloadVisitor::GpuVaries gpu_iteration_varies(
+        const ParallelLoopNest &nest, ASR::stmt_t **body, size_t n_body) {
+    auto varying = std::make_shared<GpuIterationVaryingSymbols>();
+    for (size_t d = 0; d < nest.n_heads(); d++) {
+        varying->add(nest.head(d).m_v);
+    }
+    for (size_t i = 0; i < n_body; i++) {
+        varying->visit_stmt(*body[i]);
+    }
+    return [varying](ASR::expr_t *e) {
+        if (!e) return false;
+        GpuIterationVaryingUse use(*varying);
+        use.visit_expr(*e);
+        return use.found;
+    };
+}
+
+} // namespace
+
 // True when a section that will be gathered has a dimension before its
 // last whose extent changes with the iteration. The gathered buffer is
 // sized on the host, and only its last dimension can be sized from the
 // base array instead (see gather_strided_section_arg).
 bool GpuOffloadVisitor::body_has_varying_leading_section_extent(
         const ParallelLoopNest &work, Location &where, std::string &name) {
-    GpuIterationVaryingSymbols varying;
-    for (size_t d = 0; d < work.n_heads(); d++) {
-        varying.add(work.head(d).m_v);
-    }
-    for (size_t i = 0; i < work.n_body; i++) {
-        varying.visit_stmt(*work.body[i]);
-    }
-    auto varies = [&](ASR::expr_t *e) {
-        if (!e) return false;
-        GpuIterationVaryingUse use(varying);
-        use.visit_expr(*e);
-        return use.found;
-    };
+    GpuVaries varies = gpu_iteration_varies(work, work.body, work.n_body);
     ASR::ArraySection_t *found = find_strided_section_actual(work.body,
-        work.n_body, [&](ASR::ArraySection_t *as) {
+        work.n_body, [&](ASR::ArraySection_t *as, bool) {
             if (!strided_section_is_gatherable(as)) return false;
             std::vector<int> range_dims;
             for (size_t d = 0; d < as->n_args; d++) {
@@ -1845,50 +1935,24 @@ bool GpuOffloadVisitor::body_has_varying_leading_section_extent(
 void GpuOffloadVisitor::gather_strided_section_arguments(
         ParallelLoopNest &nest) {
     NestBodyWriteBack back(nest);
+    // Asked of the body as the rewrites before this one left it, so that
+    // the loops they introduced count too.
+    GpuVaries varies = gpu_iteration_varies(nest, back.body, back.n_body);
     gather_strided_sections_in_body(back.body, back.n_body,
-        current_scope);
+        current_scope, varies);
 }
 
 // `scope` owns the statements in `body`: the new BLOCK has to be
 // registered there, not in the procedure, or it will not resolve from
-// the BlockCall that replaces the statement.
+// the BlockCall that replaces the statement. Each gather brackets the
+// innermost statement that makes its call (see gpu_split_section_calls).
 void GpuOffloadVisitor::gather_strided_sections_in_body(ASR::stmt_t** &body,
-        size_t &n_body, SymbolTable *scope) {
+        size_t &n_body, SymbolTable *scope, const GpuVaries &varies) {
     Vec<ASR::stmt_t*> new_body;
     new_body.reserve(al, n_body);
     bool changed = false;
     for (size_t si = 0; si < n_body; si++) {
         ASR::stmt_t *stmt = body[si];
-        if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
-            ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-            gather_strided_sections_in_body(dl->m_body, dl->n_body,
-                scope);
-            new_body.push_back(al, stmt);
-            continue;
-        }
-        if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
-            if (b && ASR::is_a<ASR::Block_t>(*b)) {
-                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
-                gather_strided_sections_in_body(blk->m_body,
-                    blk->n_body, blk->m_symtab);
-            }
-            new_body.push_back(al, stmt);
-            continue;
-        }
-        if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmt)) {
-            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::AssociateBlockCall_t>(stmt)->m_m);
-            if (b && ASR::is_a<ASR::AssociateBlock_t>(*b)) {
-                ASR::AssociateBlock_t *ab =
-                    ASR::down_cast<ASR::AssociateBlock_t>(b);
-                gather_strided_sections_in_body(ab->m_body,
-                    ab->n_body, ab->m_symtab);
-            }
-            new_body.push_back(al, stmt);
-            continue;
-        }
         // The gathered buffers and their loop counters live in a
         // BLOCK scope nested inside the loop. A variable owned by such
         // a scope travels into the kernel with the block instead of
@@ -1897,8 +1961,19 @@ void GpuOffloadVisitor::gather_strided_sections_in_body(ASR::stmt_t** &body,
         // be a race.
         SymbolTable *block_scope = al.make_new<SymbolTable>(scope);
         std::vector<ASR::stmt_t*> before, after;
-        if (!gather_strided_sections_in_stmt(stmt, block_scope, before,
-                after)) {
+        bool gathered = gather_strided_sections_in_stmt(stmt, block_scope,
+            varies, before, after);
+        // A construct the new BLOCK brackets moves into its scope, and so
+        // do the BLOCKs made for the statements nested in it.
+        std::vector<GpuNestedStmts> nested;
+        std::vector<GpuSectionCall> once, repeated;
+        gpu_split_section_calls(stmt, nested, once, repeated);
+        for (const GpuNestedStmts &n : nested) {
+            gather_strided_sections_in_body(*n.body, *n.n_body,
+                n.scope ? n.scope : (gathered ? block_scope : scope),
+                varies);
+        }
+        if (!gathered) {
             new_body.push_back(al, stmt);
             continue;
         }

@@ -334,13 +334,18 @@ public:
 
     bool strided_section_is_gatherable(ASR::ArraySection_t *as);
 
+    // Whether an expression reads a value that changes from one
+    // iteration of the offloaded loop to the next.
+    using GpuVaries = std::function<bool(ASR::expr_t*)>;
+
     bool gather_strided_section_arg(const Location &loc,
             SymbolTable *block_scope, ASR::expr_t **slot, bool writable,
-            std::vector<ASR::stmt_t*> &before,
+            const GpuVaries &varies, std::vector<ASR::stmt_t*> &before,
             std::vector<ASR::stmt_t*> &after);
 
     bool gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
-            SymbolTable *block_scope, std::vector<ASR::stmt_t*> &before,
+            SymbolTable *block_scope, const GpuVaries &varies,
+            std::vector<ASR::stmt_t*> &before,
             std::vector<ASR::stmt_t*> &after);
 
     bool body_has_ungatherable_strided_section(ASR::stmt_t **body,
@@ -348,7 +353,7 @@ public:
 
     ASR::ArraySection_t* find_strided_section_actual(ASR::stmt_t **body,
             size_t n_body,
-            const std::function<bool(ASR::ArraySection_t*)> &pred);
+            const std::function<bool(ASR::ArraySection_t*, bool)> &pred);
 
     bool body_has_varying_leading_section_extent(
             const ParallelLoopNest &work, Location &where,
@@ -357,7 +362,7 @@ public:
     void gather_strided_section_arguments(ParallelLoopNest &nest);
 
     void gather_strided_sections_in_body(ASR::stmt_t** &body,
-            size_t &n_body, SymbolTable *scope);
+            size_t &n_body, SymbolTable *scope, const GpuVaries &varies);
 
     void inline_elemental_array_var_assignment(ParallelLoopNest &nest);
 

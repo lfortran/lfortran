@@ -2115,8 +2115,9 @@ inline void scan_kernel_scope_alloc_vlas(
 }
 
 // Every BLOCK and ASSOCIATE the statement list opens, at whatever depth,
-// including those nested in `if` / serial `do` / `while`. The pre-flight
-// and the workspace collector ask the same question of the same scopes.
+// including those nested in `if` / serial `do` / `do concurrent` / `while`.
+// The pre-flight and the workspace collector ask the same question of the
+// same scopes.
 template <typename F>
 inline void gpu_walk_scopes(ASR::stmt_t **stmts, size_t n, F &&fn) {
     if (stmts == nullptr) return;
@@ -2141,6 +2142,10 @@ inline void gpu_walk_scopes(ASR::stmt_t **stmts, size_t n, F &&fn) {
         } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
             gpu_walk_scopes(dl->m_body, dl->n_body, fn);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+            gpu_walk_scopes(dc->m_body, dc->n_body, fn);
         } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
             ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
             gpu_walk_scopes(wl->m_body, wl->n_body, fn);
