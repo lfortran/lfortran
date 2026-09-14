@@ -5313,14 +5313,17 @@ RUN(NAME gpu_metal_360 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_361 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_362 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_365 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 # Expected run-time errors on the GPU backends only. gpu_metal_359 and
 # gpu_metal_363 are GPU-only because the llvm backend still allocates array
 # components in `t(i) = f(...)` without --realloc-lhs-arrays (#9738).
-# gpu_metal_358 is a documented limitation, not a user error: the program is
-# valid with --realloc-lhs-arrays (gfortran runs it), but the host cannot
-# work out the size before the loop runs, so it cannot allocate the component
-# (see doc/src/gpu_offloading.md).
+# gpu_metal_358 and gpu_metal_368 are a documented limitation, not a user
+# error: the programs are valid with --realloc-lhs-arrays (gfortran runs them),
+# but the host cannot work out the size before the loop runs, so it cannot
+# allocate the component (see doc/src/gpu_offloading.md).
 RUN(NAME gpu_metal_358 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # a component whose size the host cannot work out before the loop is reported when it is not allocated
+RUN(NAME gpu_metal_368 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # a component sized from a value dummy argument the callee changes is reported when it is not allocated
 RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_364 FAIL NO_FAST LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays

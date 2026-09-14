@@ -9,6 +9,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
@@ -312,6 +313,7 @@ class ComponentShapeCounter :
         std::vector<ASR::expr_t*> extents;
         if (gives_shape(al, &x->base, r, component, extents)) {
             shapes++;
+            shape_extents.push_back(extents);
         } else if (names_variable(x->m_target, r) ||
                 (names_component(x->m_target, r, component) &&
                     shapes_array(x->m_value))) {
@@ -328,7 +330,12 @@ class ComponentShapeCounter :
 
 public:
     size_t shapes = 0;
+    // The extents each statement that shapes the component gives it, as
+    // gives_shape tells them.
+    std::vector<std::vector<ASR::expr_t*>> shape_extents;
     bool poisoned = false;
+    // The variables intrinsic subroutines are passed, which they may change.
+    std::set<ASR::symbol_t*> intrinsic_arguments;
 
     ComponentShapeCounter(Allocator &al, ASR::symbol_t *r,
             const std::string &component)
@@ -338,6 +345,7 @@ public:
         std::vector<ASR::expr_t*> extents;
         if (gives_shape(al, (ASR::stmt_t*)&x, r, component, extents)) {
             shapes++;
+            shape_extents.push_back(extents);
         } else {
             for (size_t i = 0; i < x.n_args; i++) {
                 if (names_variable(x.m_args[i].m_a, r)) poisoned = true;
@@ -380,6 +388,9 @@ public:
             const ASR::IntrinsicImpureSubroutine_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
             if (names(x.m_args[i])) poisoned = true;
+            if (ASR::symbol_t *root = designator_root(x.m_args[i])) {
+                intrinsic_arguments.insert(root);
+            }
         }
     }
 };
@@ -414,35 +425,6 @@ struct ComponentShape {
     // The extents, empty when they cannot be told.
     std::vector<ASR::expr_t*> extents;
 };
-
-// The shape a routine gives the component `component` of its variable `r`:
-// a single one when only statements of its own body shape it, which run
-// one after the other, and it runs to its end, so the last one decides.
-ComponentShape routine_component_shape(Allocator &al,
-        const ASR::Function_t &fn, ASR::symbol_t *r,
-        const std::string &component) {
-    ComponentShape shape;
-    ComponentShapeCounter counter(al, r, component);
-    for (size_t i = 0; i < fn.n_body; i++) counter.visit_stmt(*fn.m_body[i]);
-    if (counter.shapes == 0) return shape;
-    shape.shaped = true;
-    bool transfers = transfers_control(fn.m_body, fn.n_body, false);
-    size_t top_level = 0;
-    std::vector<ASR::expr_t*> last;
-    for (size_t i = 0; i < fn.n_body; i++) {
-        std::vector<ASR::expr_t*> extents;
-        if (gives_shape(al, fn.m_body[i], r, component, extents)) {
-            top_level++;
-            last = extents;
-        }
-    }
-    shape.single = !counter.poisoned && !transfers &&
-        top_level == counter.shapes;
-    shape.always = !counter.poisoned && !transfers &&
-        shaped_on_every_path(al, fn.m_body, fn.n_body, r, component);
-    if (shape.single) shape.extents = last;
-    return shape;
-}
 
 // Rewrites an expression over the dummy arguments of a procedure into one
 // over the actual arguments of a call to it. Anything else of the procedure
@@ -637,6 +619,245 @@ public:
     }
 };
 
+// The variables an expression reads, and whether it calls a procedure.
+class VariableReader : public ASR::BaseWalkVisitor<VariableReader> {
+public:
+    std::set<ASR::symbol_t*> variables;
+    bool calls = false;
+
+    void visit_Var(const ASR::Var_t &x) {
+        variables.insert(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        calls = true;
+        ASR::BaseWalkVisitor<VariableReader>::visit_FunctionCall(x);
+    }
+};
+
+bool logical_value(ASR::expr_t *e, bool &value);
+
+// The value of an integer expression, when it is made of constants.
+bool integer_value(ASR::expr_t *e, int64_t &value) {
+    if (ASR::expr_t *folded = ASRUtils::expr_value(e)) {
+        if (ASR::is_a<ASR::IntegerConstant_t>(*folded)) {
+            value = ASR::down_cast<ASR::IntegerConstant_t>(folded)->m_n;
+            return true;
+        }
+    }
+    int64_t left = 0, right = 0;
+    switch (e->type) {
+        case ASR::exprType::IntegerConstant: {
+            value = ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n;
+            return true;
+        }
+        case ASR::exprType::IntegerUnaryMinus: {
+            if (!integer_value(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)
+                    ->m_arg, left)) {
+                return false;
+            }
+            value = -left;
+            return true;
+        }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t *x = ASR::down_cast<ASR::Cast_t>(e);
+            return x->m_kind == ASR::cast_kindType::IntegerToInteger &&
+                integer_value(x->m_arg, value);
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            if (!integer_value(x->m_left, left) ||
+                    !integer_value(x->m_right, right)) {
+                return false;
+            }
+            switch (x->m_op) {
+                case ASR::binopType::Add: value = left + right; return true;
+                case ASR::binopType::Sub: value = left - right; return true;
+                case ASR::binopType::Mul: value = left * right; return true;
+                case ASR::binopType::Div: {
+                    if (right == 0) return false;
+                    value = left / right;
+                    return true;
+                }
+                default: return false;
+            }
+        }
+        case ASR::exprType::IfExp: {
+            ASR::IfExp_t *x = ASR::down_cast<ASR::IfExp_t>(e);
+            bool test = false;
+            if (!logical_value(x->m_test, test)) return false;
+            return integer_value(test ? x->m_body : x->m_orelse, value);
+        }
+        default: return false;
+    }
+}
+
+bool logical_value(ASR::expr_t *e, bool &value) {
+    if (!ASR::is_a<ASR::IntegerCompare_t>(*e)) return false;
+    ASR::IntegerCompare_t *x = ASR::down_cast<ASR::IntegerCompare_t>(e);
+    int64_t left = 0, right = 0;
+    if (!integer_value(x->m_left, left) || !integer_value(x->m_right, right)) {
+        return false;
+    }
+    switch (x->m_op) {
+        case ASR::cmpopType::Eq: value = left == right; return true;
+        case ASR::cmpopType::NotEq: value = left != right; return true;
+        case ASR::cmpopType::Lt: value = left < right; return true;
+        case ASR::cmpopType::LtE: value = left <= right; return true;
+        case ASR::cmpopType::Gt: value = left > right; return true;
+        case ASR::cmpopType::GtE: value = left >= right; return true;
+    }
+    return false;
+}
+
+// Whether two integer expressions, evaluated at the same point, provably
+// have the same value: they fold to the same constant, or they are the same
+// expression. Anything not understood here compares unequal.
+bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (!a || !b) return false;
+    int64_t x = 0, y = 0;
+    if (integer_value(a, x) && integer_value(b, y)) return x == y;
+    if (a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::Var: {
+            return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(a)->m_v) ==
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(b)->m_v);
+        }
+        case ASR::exprType::IntegerUnaryMinus: {
+            return same_value(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)->m_arg,
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)->m_arg);
+        }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t *p = ASR::down_cast<ASR::Cast_t>(a);
+            ASR::Cast_t *q = ASR::down_cast<ASR::Cast_t>(b);
+            return p->m_kind == q->m_kind &&
+                ASRUtils::extract_kind_from_ttype_t(p->m_type) ==
+                    ASRUtils::extract_kind_from_ttype_t(q->m_type) &&
+                same_value(p->m_arg, q->m_arg);
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t *p = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+            ASR::IntegerBinOp_t *q = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+            return p->m_op == q->m_op && same_value(p->m_left, q->m_left) &&
+                same_value(p->m_right, q->m_right);
+        }
+        case ASR::exprType::IntegerCompare: {
+            ASR::IntegerCompare_t *p = ASR::down_cast<ASR::IntegerCompare_t>(a);
+            ASR::IntegerCompare_t *q = ASR::down_cast<ASR::IntegerCompare_t>(b);
+            return p->m_op == q->m_op && same_value(p->m_left, q->m_left) &&
+                same_value(p->m_right, q->m_right);
+        }
+        case ASR::exprType::IfExp: {
+            ASR::IfExp_t *p = ASR::down_cast<ASR::IfExp_t>(a);
+            ASR::IfExp_t *q = ASR::down_cast<ASR::IfExp_t>(b);
+            return same_value(p->m_test, q->m_test) &&
+                same_value(p->m_body, q->m_body) &&
+                same_value(p->m_orelse, q->m_orelse);
+        }
+        case ASR::exprType::ArraySize: {
+            ASR::ArraySize_t *p = ASR::down_cast<ASR::ArraySize_t>(a);
+            ASR::ArraySize_t *q = ASR::down_cast<ASR::ArraySize_t>(b);
+            return same_value(p->m_dim, q->m_dim) &&
+                gpu_same_designator(p->m_v, q->m_v);
+        }
+        case ASR::exprType::ArrayBound: {
+            ASR::ArrayBound_t *p = ASR::down_cast<ASR::ArrayBound_t>(a);
+            ASR::ArrayBound_t *q = ASR::down_cast<ASR::ArrayBound_t>(b);
+            return p->m_bound == q->m_bound && same_value(p->m_dim, q->m_dim) &&
+                gpu_same_designator(p->m_v, q->m_v);
+        }
+        case ASR::exprType::ArrayItem:
+        case ASR::exprType::StructInstanceMember: {
+            return gpu_same_designator(a, b);
+        }
+        default: return false;
+    }
+}
+
+// The shape a call to `fn` with the actual arguments `args` gives the
+// component `component` of its result `r`, in terms of those arguments.
+// It is a single one when only statements of the body of `fn` itself shape
+// it, which run one after the other, so the last one decides; or when every
+// way through `fn` shapes it and every statement that does gives it the
+// same extents. An extent that reads a dummy argument `fn` changes is not
+// the one the actual argument gives, so it cannot be told.
+ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
+        ASR::symbol_t *r, const std::string &component, ASR::call_arg_t *args,
+        size_t n_args) {
+    ComponentShape shape;
+    ComponentShapeCounter counter(al, r, component);
+    for (size_t i = 0; i < fn.n_body; i++) counter.visit_stmt(*fn.m_body[i]);
+    if (counter.shapes == 0) return shape;
+    shape.shaped = true;
+    if (counter.poisoned || transfers_control(fn.m_body, fn.n_body, false)) {
+        return shape;
+    }
+    shape.always = shaped_on_every_path(al, fn.m_body, fn.n_body, r,
+        component);
+
+    std::shared_ptr<GpuIterationVaryingSymbols> changed =
+        gpu_symbols_changed_in(fn.m_body, fn.n_body);
+    auto bind = [&](const std::vector<ASR::expr_t*> &extents,
+            std::vector<ASR::expr_t*> &bound) {
+        bound.clear();
+        for (ASR::expr_t *extent : extents) {
+            VariableReader reader;
+            reader.visit_expr(*extent);
+            bool reads_changed = gpu_reads_changed(*changed, extent);
+            for (ASR::symbol_t *sym : reader.variables) {
+                reads_changed = reads_changed ||
+                    counter.intrinsic_arguments.count(sym) > 0;
+            }
+            ASR::expr_t *copy = duplicate(al, extent);
+            DummyArgumentBinder binder(al, fn, args, n_args);
+            binder.current_expr = &copy;
+            binder.replace_expr(copy);
+            if (reads_changed || !binder.valid) {
+                bound.clear();
+                return false;
+            }
+            bound.push_back(copy);
+        }
+        return !bound.empty();
+    };
+
+    size_t top_level = 0;
+    std::vector<ASR::expr_t*> last;
+    for (size_t i = 0; i < fn.n_body; i++) {
+        std::vector<ASR::expr_t*> extents;
+        if (gives_shape(al, fn.m_body[i], r, component, extents)) {
+            top_level++;
+            last = extents;
+        }
+    }
+    if (top_level == counter.shapes) {
+        shape.single = true;
+        bind(last, shape.extents);
+        return shape;
+    }
+    if (!shape.always) return shape;
+    std::vector<ASR::expr_t*> first;
+    for (size_t k = 0; k < counter.shape_extents.size(); k++) {
+        std::vector<ASR::expr_t*> bound;
+        if (!bind(counter.shape_extents[k], bound)) return shape;
+        if (k == 0) {
+            first = bound;
+            continue;
+        }
+        if (bound.size() != first.size()) return shape;
+        for (size_t d = 0; d < bound.size(); d++) {
+            if (!same_value(bound[d], first[d])) return shape;
+        }
+    }
+    shape.single = true;
+    shape.extents = first;
+    return shape;
+}
+
 // Replaces variables by other expressions.
 class VariableSubstituter :
         public ASR::BaseExprReplacer<VariableSubstituter> {
@@ -652,22 +873,6 @@ public:
         if (value != values.end()) {
             *current_expr = duplicate(al, value->second);
         }
-    }
-};
-
-// The variables an expression reads, and whether it calls a procedure.
-class VariableReader : public ASR::BaseWalkVisitor<VariableReader> {
-public:
-    std::set<ASR::symbol_t*> variables;
-    bool calls = false;
-
-    void visit_Var(const ASR::Var_t &x) {
-        variables.insert(ASRUtils::symbol_get_past_external(x.m_v));
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        calls = true;
-        ASR::BaseWalkVisitor<VariableReader>::visit_FunctionCall(x);
     }
 };
 
@@ -992,20 +1197,10 @@ class GpuComponentFit {
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
                 }
-                write.shape = routine_component_shape(al, *fn,
+                write.shape = call_component_shape(al, *fn,
                     ASRUtils::symbol_get_past_external(ASR::down_cast<
-                        ASR::Var_t>(fn->m_return_var)->m_v), name);
-                for (ASR::expr_t *&extent : write.shape.extents) {
-                    extent = duplicate(al, extent);
-                    DummyArgumentBinder binder(al, *fn, call->m_args,
-                        call->n_args);
-                    binder.current_expr = &extent;
-                    binder.replace_expr(extent);
-                    if (!binder.valid) {
-                        write.shape.extents.clear();
-                        break;
-                    }
-                }
+                        ASR::Var_t>(fn->m_return_var)->m_v), name,
+                    call->m_args, call->n_args);
             } else if (ASR::is_a<ASR::StructConstructor_t>(*value)) {
                 // `t(i) = tt(...)`
                 ASR::expr_t *given = constructor_value(
