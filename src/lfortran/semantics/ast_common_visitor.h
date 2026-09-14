@@ -10783,7 +10783,8 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeProcedure) {
-            if (!sym_type->m_name) {
+            if (!sym_type->m_name && (!sym_type->m_attr
+                    || !compiler_options.implicit_interface)) {
                 if (compiler_options.implicit_interface) {
                     // procedure() with no explicit interface is completely
                     // opaque: we don't know its arguments, the return type
@@ -10834,12 +10835,25 @@ public:
                     throw SemanticAbort();
                 }
             } else {
-            std::string func_name = to_lower(sym_type->m_name);
+            // `procedure(real(8))`, `procedure(double precision)`, ... carry
+            // their type-spec as a nested attribute; `procedure(real)`, ...
+            // only name the type.
+            std::string func_name = sym_type->m_name ? to_lower(sym_type->m_name)
+                : "typed";
             // procedure(type-spec) declares a procedure with implicit interface
             // and the given return type (e.g., procedure(integer) returns integer).
             ASR::ttype_t *return_type = nullptr;
             if (compiler_options.implicit_interface) {
-                if (func_name == "integer") {
+                if (sym_type->m_attr) {
+                    Vec<ASR::dimension_t> result_dims;
+                    result_dims.reserve(al, 0);
+                    ASR::symbol_t *result_type_declaration = nullptr;
+                    return_type = determine_type(loc, sym, sym_type->m_attr,
+                        false, false, result_dims, nullptr,
+                        result_type_declaration, ASR::abiType::Source, true);
+                } else if (func_name == "doubleprecision") {
+                    return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
+                } else if (func_name == "integer") {
                     return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
                 } else if (func_name == "real") {
                     return_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
@@ -10854,17 +10868,24 @@ public:
                 }
             }
             if (return_type) {
+                // The arguments are unknown: this is the opaque procedure
+                // type returning `return_type`, as for `real, external :: f`,
+                // and each reference is typed by its own call-site interface.
                 Location &attr_loc = sym_type->base.base.loc;
-                type = ASRUtils::TYPE(ASR::make_FunctionType_t(
-                    al, loc,
-                    nullptr, 0, return_type, ASR::abiType::Source,
-                    ASR::deftypeType::Interface, nullptr,
-                    false, false, false, false, false, nullptr, 0, false,
-                    ASR::exec_spaceType::Host));
+                type = ASRUtils::make_opaque_procedure_type(al, loc, return_type);
                 // Create a backing Function symbol so type_declaration is set.
                 std::string iface_name = "__" + sym + "_iface_" + func_name;
                 SymbolTable *parent_scope = current_scope->parent;
                 ASR::symbol_t *existing = parent_scope->get_symbol(iface_name);
+                if (existing && !(ASR::is_a<ASR::Function_t>(*existing)
+                        && ASRUtils::procedure_types_identical(
+                            ASR::down_cast<ASR::FunctionType_t>(
+                                ASR::down_cast<ASR::Function_t>(existing)->m_function_signature),
+                            ASR::down_cast<ASR::FunctionType_t>(type)))) {
+                    // A same-named procedure of another scope has another result.
+                    iface_name = parent_scope->get_unique_name(iface_name, false);
+                    existing = nullptr;
+                }
                 if (!existing) {
                     SymbolTable *fn_scope = al.make_new<SymbolTable>(parent_scope);
                     existing = ASR::down_cast<ASR::symbol_t>(
