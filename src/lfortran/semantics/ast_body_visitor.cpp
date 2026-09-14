@@ -8159,14 +8159,16 @@ public:
             ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
-                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                create_implicit_interface_function(x, sub_name, false, type);
-                original_sym = current_scope->resolve_symbol(sub_name);
-                LCOMPILERS_ASSERT(original_sym!=nullptr);
-            }
-            // check if external sym is updated, or: say if signature of external_sym and original_sym are different
-            if (original_sym && external_sym && is_external && ASRUtils::is_external_sym_changed(original_sym, external_sym)) {
-                changed_external_function_symbol[ASRUtils::symbol_name(original_sym)] = original_sym;
+                // A declared external keeps its symbol; an undeclared name
+                // becomes an opaque procedure. The call itself goes through
+                // an interface built from its actuals below.
+                if (external_sym && ASR::is_a<ASR::Function_t>(
+                        *ASRUtils::symbol_get_past_external(external_sym))) {
+                    original_sym = external_sym;
+                } else {
+                    original_sym = get_or_create_opaque_procedure(sub_name,
+                        x.base.base.loc);
+                }
             }
             // remove from external_procedures_mapping
             if (original_sym && is_external) {
@@ -8382,40 +8384,17 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
-                // Array-section rewriting needs the Function symbol.
-                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
-                // Under --implicit-interface, a BindC Interface function is a
-                // signature inferred from an earlier reference, not a contract.
-                // If this reference's actuals differ, keep the first signature
-                // as the canonical procedure and call through a
-                // FunctionPointerCast to a view matching this reference.
                 if (compiler_options.implicit_interface
-                        && is_synthesized_implicit_interface(final_sym)
-                        && !call_args_match_function(
-                            ASR::down_cast<ASR::Function_t>(
-                                ASRUtils::symbol_get_past_external(final_sym)),
-                            args)) {
-                    ASR::symbol_t* canonical = final_sym;
-                    ASR::ttype_t* ret_type = nullptr;
-                    ASR::Function_t* cf = ASR::down_cast<ASR::Function_t>(
-                        ASRUtils::symbol_get_past_external(canonical));
-                    if (cf->m_return_var) {
-                        ret_type = ASRUtils::expr_type(cf->m_return_var);
-                    }
-                    implicit_interface_fpcast_canonical = nullptr;
-                    implicit_interface_fpcast_target = nullptr;
-                    create_implicit_interface_function(
-                        x, sub_name, cf->m_return_var != nullptr, ret_type);
-                    if (implicit_interface_fpcast_target) {
-                        final_sym = make_fpcast_call_target(
-                            x.base.base.loc,
-                            implicit_interface_fpcast_canonical
-                                ? implicit_interface_fpcast_canonical
-                                : canonical,
-                            implicit_interface_fpcast_target);
-                    } else {
-                        final_sym = current_scope->resolve_symbol(sub_name);
-                    }
+                        && ASRUtils::is_bare_implicit_interface(final_sym)) {
+                    // A procedure with an implicit interface is called
+                    // through an interface built from this call's actuals.
+                    // Rules that need an explicit interface do not apply.
+                    original_sym = final_sym;
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        final_sym, args, nullptr);
+                } else {
+                    // Array-section rewriting needs the Function symbol.
+                    legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 }
                 break;
             }
@@ -8627,42 +8606,26 @@ public:
                 if (compiler_options.implicit_interface &&
                     !ASRUtils::is_symbol_procedure_variable(original_sym)
                 ) {
-                    // In case of implicit_interface, we redefine the symbol
-                    // from a Variable to Function. Example:
+                    // In case of implicit_interface, a variable called as a
+                    // subroutine is a procedure with an implicit interface.
+                    // Example:
                     //
                     //     real :: x
                     //     call x(3, 4)
+                    //
+                    // or a dummy argument `f` declared `real :: f` by
+                    // implicit typing and called as `call f(3, 4)`.
                     //
                     // TODO: We currently do not explictly handle the case
                     // of previously using the variable as a variable and now
                     // using it as a function. This will (eventually) fail
                     // in verify(). But we should give an error earlier as well.
-                    ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(original_sym)->m_type;
-                    current_scope->erase_symbol(sub_name);
-                    create_implicit_interface_function(x, sub_name, false, old_type);
-                    original_sym = current_scope->resolve_symbol(sub_name);
-                    LCOMPILERS_ASSERT(original_sym!=nullptr);
-
-                    // One issue to solve is if `sub_name` is an argument of
-                    // the current function, such as in:
-                    //
-                    //     subroutine(f)
-                    //     call f(3, 4)
-                    //
-                    // With implicit typing `f` would already be declared
-                    // as `real :: f`, so we need to change it.
-                    //
-                    // TODO: we are in the body visitor, which means
-                    // the function might have already been used with the
-                    // incorrect interface, and most likely LFortran gave
-                    // an error message.
-                    //
-                    // We simply redo function arguments based on the updated
-                    // symbol table:
-                    LCOMPILERS_ASSERT(current_scope->asr_owner != nullptr)
-                    ASR::Function_t *current_function = ASR::down_cast2
-                        <ASR::Function_t>(current_scope->asr_owner);
-                    redo_function_argument(*current_function, sub_name);
+                    ASR::symbol_t* canonical = replace_variable_with_opaque_procedure(
+                        sub_name, original_sym, nullptr, x.base.base.loc);
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        canonical, args, nullptr);
+                    original_sym = canonical;
+                    break;
                 } else if (!ASRUtils::is_symbol_procedure_variable(original_sym)) {
                     // Calling a non-procedure variable without implicit-interface
                     diag.add(Diagnostic(
@@ -8674,46 +8637,14 @@ public:
                     throw SemanticAbort();
                 }
                 if (compiler_options.implicit_interface &&
-                        ASRUtils::is_symbol_procedure_variable(original_sym) &&
-                        args.size() > 0) {
-                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(original_sym);
-                    if (proc_var->m_type_declaration != nullptr) {
-                        ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
-                            proc_var->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                            ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                ASR::down_cast<ASR::Function_t>(type_decl)->m_function_signature);
-                            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(proc_var->m_type);
-                            bool var_has_no_args = ASR::is_a<ASR::FunctionType_t>(*var_type) &&
-                                ASR::down_cast<ASR::FunctionType_t>(var_type)->n_arg_types == 0;
-                            if (existing_ft->n_arg_types == 0 && var_has_no_args) {
-                                Vec<ASR::ttype_t*> arg_types;
-                                arg_types.reserve(al, args.size());
-                                Vec<ASR::symbol_t*> arg_type_decls;
-                                arg_type_decls.reserve(al, args.size());
-                                for (size_t i = 0; i < args.size(); i++) {
-                                    if (args[i].m_value == nullptr) continue;
-                                    arg_types.push_back(al, ASRUtils::expr_type(args[i].m_value));
-                                    ASR::symbol_t* td = nullptr;
-                                    if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
-                                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                                            td = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-                                        }
-                                    }
-                                    arg_type_decls.push_back(al, td);
-                                }
-                                SymbolTable* parent_scope = current_scope->parent
-                                    ? current_scope->parent : current_scope;
-                                create_or_update_implicit_interface(
-                                    proc_var, x.base.base.loc,
-                                    arg_types.p, arg_types.size(),
-                                    nullptr, parent_scope, sub_name,
-                                    arg_type_decls, current_scope);
-                            }
-                        }
-                    }
+                        ASRUtils::is_opaque_procedure_type(
+                            ASRUtils::symbol_type(original_sym))) {
+                    // A procedure variable with an implicit interface
+                    // (`procedure()`, an external pointer) is called through
+                    // an interface built from this call's actuals.
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        original_sym, args, nullptr);
+                    break;
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
