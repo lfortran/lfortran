@@ -3026,6 +3026,17 @@ const ASR::intentType intent_inout=ASR::intentType::InOut; // dummy argument, in
 const ASR::intentType intent_return_var=ASR::intentType::ReturnVar; // return variable of a function
 const ASR::intentType intent_unspecified=ASR::intentType::Unspecified; // dummy argument, ambiguous intent
 
+// True if `sym` is a dummy argument of the procedure `fn`.
+static inline bool is_dummy_argument(const ASR::Function_t &fn, const ASR::symbol_t *sym) {
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (ASR::is_a<ASR::Var_t>(*fn.m_args[i]) &&
+                ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v == sym) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static inline bool is_arg_dummy(int intent) {
     return intent == intent_in || intent == intent_out
         || intent == intent_inout || intent == intent_unspecified;

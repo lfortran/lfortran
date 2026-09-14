@@ -332,15 +332,8 @@ static bool is_dummy_procedure(ASR::symbol_t* proc) {
             !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
         return false;
     }
-    ASR::Function_t* owner_fn = ASR::down_cast<ASR::Function_t>(
-        ASR::down_cast<ASR::symbol_t>(owner));
-    for (size_t i = 0; i < owner_fn->n_args; i++) {
-        if (ASR::is_a<ASR::Var_t>(*owner_fn->m_args[i]) &&
-                ASR::down_cast<ASR::Var_t>(owner_fn->m_args[i])->m_v == proc) {
-            return true;
-        }
-    }
-    return false;
+    return ASRUtils::is_dummy_argument(*ASR::down_cast<ASR::Function_t>(
+        ASR::down_cast<ASR::symbol_t>(owner)), proc);
 }
 
 // The symbol in `scope` for `proc`, a procedure referenced by code moved into

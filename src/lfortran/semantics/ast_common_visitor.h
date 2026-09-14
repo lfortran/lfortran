@@ -17374,15 +17374,8 @@ public:
                     host_scope->asr_owner))) {
             return false;
         }
-        ASR::Function_t* host = ASR::down_cast<ASR::Function_t>(
-            ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner));
-        for (size_t i = 0; i < host->n_args; i++) {
-            if (ASR::is_a<ASR::Var_t>(*host->m_args[i]) &&
-                    ASR::down_cast<ASR::Var_t>(host->m_args[i])->m_v == proc) {
-                return true;
-            }
-        }
-        return false;
+        return ASRUtils::is_dummy_argument(*ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(host_scope->asr_owner)), proc);
     }
 
     // The scope that owns the implicit-interface symbols of a call made in
