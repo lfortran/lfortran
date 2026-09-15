@@ -39,6 +39,10 @@ type :: e_t
     integer :: h = 0
     type(c_funptr) :: fp = c_null_funptr
 end type
+type :: d_t
+    type(a_t) :: a = a_t(4)
+    integer :: y = 3
+end type
 integer, target :: tgt = 7
 contains
 integer function fm() result(r)
@@ -115,6 +119,13 @@ integer function f_funptr_comp() result(r)
     s%h = s%h + 1
     r = s%h
 end function
+
+integer function f_nested_default() result(r)
+    type(d_t) :: s = d_t(y=9)
+    if (s%a%x /= 4) error stop 27
+    s%y = s%y + 1
+    r = s%y
+end function
 end module
 
 program save_20
@@ -139,6 +150,7 @@ do i = 1, 2
     if (f_cptr_comp() /= 9 + i) error stop 14
     if (f_cptr_given() /= 9 + i) error stop 15
     if (f_funptr_comp() /= 9 + i) error stop 16
+    if (f_nested_default() /= 9 + i) error stop 17
 end do
 print *, "ok"
 

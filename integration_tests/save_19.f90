@@ -30,6 +30,10 @@ type :: e_t
     integer :: h = 0
     type(c_funptr) :: fp = c_null_funptr
 end type
+type :: d_t
+    type(a_t) :: a = a_t(4)
+    integer :: y = 3
+end type
 contains
 integer function fm() result(r)
     type(t), save :: s = z
@@ -77,11 +81,18 @@ integer function f_funptr() result(r)
     s%h = s%h + 1
     r = s%h
 end function
+
+integer function f_nested_default() result(r)
+    type(d_t), save :: s = d_t(y=9)
+    if (s%a%x /= 4) error stop 18
+    s%y = s%y + 1
+    r = s%y
+end function
 end module
 
 program save_19
 use save_19_mod, only: t, fm, f_folded, f_negative, f_extends, f_cptr, &
-    f_funptr
+    f_funptr, f_nested_default
 implicit none
 type(t), parameter :: zp = t(9, 'xyz', [3, 4], 2.5)
 integer :: i
@@ -95,6 +106,7 @@ do i = 1, 2
     if (f_extends() /= 30 + i) error stop 15
     if (f_cptr() /= 9 + i) error stop 19
     if (f_funptr() /= 9 + i) error stop 20
+    if (f_nested_default() /= 9 + i) error stop 21
 end do
 print *, "ok"
 
