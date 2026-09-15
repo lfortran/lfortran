@@ -2322,7 +2322,6 @@ public:
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
     // mapping of hash int's of scope to 'explicit_intrinsic_procedures'
     std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping;
-    std::map<std::string, ASR::symbol_t*> changed_external_function_symbol;
     std::map<std::string, std::vector<AST::decl_stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
 
@@ -17917,8 +17916,7 @@ public:
         }
         // Earlier references to the variable in this scope now name the
         // procedure.
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface,
-            changed_external_function_symbol);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
         return fn;
     }
 
@@ -19216,7 +19214,7 @@ public:
             if (ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
-                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
+                ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
                 v = v2;
             }
         }

@@ -5406,7 +5406,7 @@ public:
             }
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
 
         starting_m_body = nullptr;
         starting_n_body =  0;
@@ -6191,7 +6191,7 @@ public:
             }
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
 
         starting_m_body = nullptr;
         starting_n_body = 0;
@@ -6300,7 +6300,7 @@ public:
             is_Function = false;
         }
 
-        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
+        ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
 
         starting_m_body = nullptr;
         starting_n_body = 0;
