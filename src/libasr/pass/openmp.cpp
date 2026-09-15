@@ -593,6 +593,8 @@ class ParallelRegionVisitor :
         PassOptions pass_options;
         int current_stmt_index = -1;
         int nesting_lvl = 0;
+        // How many teams regions enclose the statements being lowered
+        int teams_depth = 0;
         ASR::stmt_t** current_m_body = nullptr;
         size_t current_n_body = 0;
         std::vector<ASR::stmt_t*> nested_lowered_body={};
@@ -2010,6 +2012,14 @@ class ParallelRegionVisitor :
                 visit_OMPDistribute(x);
                 break;
 
+                case ASR::omp_region_typeType::DistributeParallelDo:
+                // Outside a teams region there are no teams to distribute
+                // across, so the region is left unclaimed
+                if (teams_depth > 0) {
+                    visit_OMPDistributeParallelDo(x);
+                }
+                break;
+
                 case ASR::omp_region_typeType::Atomic:
                 visit_OMPAtomic(x);
                 break;
@@ -2651,8 +2661,16 @@ class ParallelRegionVisitor :
                                     ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
             
             // Constants for GOMP_task call
-            ASR::expr_t* data_size = b.i64(compute_task_data_size(task_data_module.second));
-            ASR::expr_t* data_align = b.i64(8);
+            // GOMP_task copies arg_size bytes of the task data, so the size
+            // must be the struct's size as laid out by the code generator,
+            // including the padding between members and at the end.
+            ASR::expr_t* data_size = ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
+                ASRUtils::expr_type(task_data_expr),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)), nullptr));
+            // arg_align only aligns libgomp's copy of the data and may be
+            // larger than the struct's alignment. No member type the task
+            // data holds is aligned to more than 16 bytes.
+            ASR::expr_t* data_align = b.i64(16);
             ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))); // Always create task (c_bool kind)
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
@@ -2684,38 +2702,9 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_task"), nullptr, task_call_args.p, task_call_args.n, nullptr, false)));
             
             clauses_heirarchial[nesting_lvl].clear();
+            remove_original_statement = true;
         }
 
-        int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
-            int64_t total_size = 0;
-            ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
-            SymbolTable* m_symtab = task_data_struct->m_symtab;
-            for (size_t i=0;i< task_data_struct->n_members; i++) {
-                ASR::symbol_t* sym = m_symtab->resolve_symbol(task_data_struct->m_members[i]);
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::ttype_t* type = var->m_type;
-                if (ASR::is_a<ASR::CPtr_t>(*type)) {
-                    // CPtr is typically 8 bytes on 64-bit systems
-                    total_size += 8;
-                } else if (ASR::is_a<ASR::Integer_t>(*type)) {
-                    // Integer (c_int) is 4 bytes
-                    total_size += 4;
-                } else if (ASR::is_a<ASR::Real_t>(*type)) {
-                    // Real (c_float or c_double) depends on kind, assume 4 or 8
-                    ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
-                    total_size += (real_type->m_kind == 4 ? 4 : 8);
-                } else if (ASR::is_a<ASR::Array_t>(*type)) {
-                    // Arrays are stored as CPtr (8 bytes) plus bounds
-                    total_size += 8;
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type)));
-                    total_size += 8 * array_type->n_dims; // 4 bytes each for lbound and ubound per dimension
-                } else {
-                    // Fallback for unsupported types, assume 8 bytes
-                    total_size += 8;
-                }
-            }
-            return total_size;
-        }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
                     const std::string &thread_data_module_name,
@@ -2776,26 +2765,7 @@ class ParallelRegionVisitor :
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
-            // Process task body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
-            stmt_visitor.current_expr = nullptr;
-            
-            // Add the task body statements
-            for (size_t i = 0; i < x.n_body; i++) {
-                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
-                    // Handle nested OpenMP constructs if any
-                    std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-                    this->visit_stmt(*x.m_body[i]);
-                    for (size_t j = 0; j < nested_lowered_body.size(); j++) {
-                        fn_body.push_back(al, nested_lowered_body[j]);
-                    }
-                    nested_lowered_body = body_copy;
-                } else {
-                    this->visit_stmt(*x.m_body[i]);
-                    stmt_visitor.visit_stmt(*x.m_body[i]);
-                    fn_body.push_back(al, x.m_body[i]);
-                }
-            }
+            visit_OMPBody(&x, fn_body);
             
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_task_func");
@@ -3176,6 +3146,7 @@ class ParallelRegionVisitor :
             }
             nested_lowered_body = body_copy;
             // Handle nested regions
+            teams_depth++;
             if (x.m_region == ASR::omp_region_typeType::TeamsDistribute) {
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
                 visit_OMPDistribute(x);
@@ -3186,6 +3157,7 @@ class ParallelRegionVisitor :
             } else if(x.m_region == ASR::omp_region_typeType::Teams) {
                 visit_OMPBody(&x, fn_body);
             }
+            teams_depth--;
             thread_data_sym_copy = thread_data_sym;
             tdata_expr_copy = tdata_expr;
             handle_reduction_vars(reduction_clauses, x.base.base.loc);
@@ -3394,8 +3366,14 @@ class ParallelRegionVisitor :
             remove_original_statement = true;
         }
 
-        void visit_OMPDistribute(const ASR::OMPRegion_t &x) {
-            nested_lowered_body = {};
+        // Build the loop over the iterations the current team owns. The
+        // statements computing the team's range are appended to
+        // nested_lowered_body and the loop is returned. The original loop
+        // variables, which the loop body assigns, are appended to loop_vars.
+        // Unless lower_body is set, nested constructs in the loop body are
+        // left for the caller to lower.
+        ASR::stmt_t* create_distributed_loop(const ASR::OMPRegion_t &x,
+                bool lower_body, std::vector<ASR::expr_t*> &loop_vars) {
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             
@@ -3413,8 +3391,10 @@ class ParallelRegionVisitor :
             // Similar to OMPDo but distribute iterations across teams
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
             stmt_visitor.current_expr = nullptr;
-            stmt_visitor.visit_OMPRegion(x);
-            
+            if (lower_body) {
+                stmt_visitor.visit_OMPRegion(x);
+            }
+
             int collapse_levels = 1;
             // Extract collapse levels and process similar to OMPDo
             for(size_t i = 0; i < x.n_clauses; i++) {
@@ -3436,6 +3416,11 @@ class ParallelRegionVisitor :
                         std::to_string(i + 1));
                 }
                 ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(current_stmt);
+                if (!lower_body) {
+                    // Only the bounds are used in this scope. The body is
+                    // rebound by the construct that lowers it.
+                    stmt_visitor.visit_do_loop_head(do_loop->m_head);
+                }
                 heads.push_back(do_loop->m_head);
                 innermost_loop = do_loop;
                 if (i < collapse_levels - 1 && do_loop->n_body > 0) {
@@ -3480,10 +3465,15 @@ class ParallelRegionVisitor :
                 {b.Assignment(team_end, total_iterations)},
                 {}
             ));
+            // The loop runs over team_start + 1 .. team_end. Give it plain
+            // variable bounds, so that a worksharing construct lowering it
+            // finds the variables it needs.
+            nested_lowered_body.push_back(b.Assignment(team_start,
+                b.Add(team_start, b.i32(1))));
             
             // Create distributed loop
             ASR::expr_t* I = b.Variable(current_scope, 
-                current_scope->get_unique_name("I_dist"), int_type, 
+                current_scope->get_unique_name("i_dist"), int_type, 
                 ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             std::vector<ASR::stmt_t*> loop_body;
             
@@ -3519,16 +3509,22 @@ class ParallelRegionVisitor :
                     }
                 }
                 
-                ASR::expr_t* loop_var = b.Var(current_scope->resolve_symbol(
-                    ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v)));
-                loop_body.push_back(b.Assignment(loop_var, computed_var));
+                ASR::symbol_t* loop_var_sym = current_scope->resolve_symbol(
+                    ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v));
+                // The statements computing the team's range share the bounds,
+                // so the loop body gets its own copy, which may be rebound
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                computed_var = duplicator.duplicate_expr(computed_var);
+                loop_body.push_back(b.Assignment(b.Var(loop_var_sym), computed_var));
+                loop_vars.push_back(b.Var(loop_var_sym));
             }
-            
+
             // Add innermost loop's body
             for (size_t i = 0; i < innermost_loop->n_body; i++) {
-                if(!ASR::is_a<ASR::OMPRegion_t>(*innermost_loop->m_body[i]) && 
-                !ASR::is_a<ASR::DoLoop_t>(*innermost_loop->m_body[i]) && 
-                !ASR::is_a<ASR::If_t>(*innermost_loop->m_body[i])) {
+                if(!lower_body ||
+                (!ASR::is_a<ASR::OMPRegion_t>(*innermost_loop->m_body[i]) &&
+                !ASR::is_a<ASR::DoLoop_t>(*innermost_loop->m_body[i]) &&
+                !ASR::is_a<ASR::If_t>(*innermost_loop->m_body[i]))) {
                     loop_body.push_back(innermost_loop->m_body[i]);
                     continue;
                 }
@@ -3541,10 +3537,53 @@ class ParallelRegionVisitor :
             }
             
             // Create the distributed DoLoop
-            ASR::stmt_t* do_loop_stmt = b.DoLoop(I, b.Add(team_start, b.i32(1)), team_end, 
+            ASR::stmt_t* do_loop_stmt = b.DoLoop(I, team_start, team_end, 
                 loop_body, innermost_loop->m_head.m_increment);
-            nested_lowered_body.push_back(do_loop_stmt);
+            return do_loop_stmt;
             
+        }
+
+        void visit_OMPDistribute(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            std::vector<ASR::expr_t*> loop_vars;
+            ASR::stmt_t* team_loop = create_distributed_loop(x, true, loop_vars);
+            nested_lowered_body.push_back(team_loop);
+        }
+
+        // Each team takes its part of the iterations, as with distribute, and
+        // shares that part among its threads, as with parallel do. The loop
+        // over the team's part is already flattened, so collapse no longer
+        // applies, and the original loop variables it assigns must be private
+        // to each thread.
+        void visit_OMPDistributeParallelDo(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            std::vector<ASR::expr_t*> loop_vars;
+            ASR::stmt_t* team_loop = create_distributed_loop(x, false, loop_vars);
+
+            Vec<ASR::omp_clause_t*> clauses;
+            clauses.reserve(al, x.n_clauses + 1);
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                if (x.m_clauses[i]->type != ASR::omp_clauseType::OMPCollapse) {
+                    clauses.push_back(al, x.m_clauses[i]);
+                }
+            }
+            Vec<ASR::expr_t*> private_vars;
+            private_vars.reserve(al, loop_vars.size());
+            for (ASR::expr_t* loop_var : loop_vars) {
+                private_vars.push_back(al, loop_var);
+            }
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPPrivate_t(al, loc, private_vars.p, private_vars.n)));
+
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, team_loop);
+            ASR::OMPRegion_t* parallel_do = ASR::down_cast<ASR::OMPRegion_t>(
+                ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
+                    ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
+                    body.p, body.n, x.m_exec_target)));
+            visit_OMPParallelDo(*parallel_do);
         }
 
         void visit_OMPTeamsDistribute(const ASR::OMPRegion_t &x) {
