@@ -7896,6 +7896,25 @@ public:
             // type->print(llvm::outs()); llvm::outs() << "\n";
             // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
+            ASR::expr_t* init_expr = v->m_symbolic_value;
+            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                for( size_t i = 0; i < v->n_dependencies; i++ ) {
+                    std::string variable_name = v->m_dependencies[i];
+                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
+                    if (dep_sym) {
+                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
+                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
+                            if ( dep_v->m_symbolic_value == nullptr &&
+                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
+                                    ASR::array_physical_typeType::FixedSizeArray)) {
+                                init_expr = nullptr;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            bool save_struct_initialized = false;
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))
@@ -7942,6 +7961,15 @@ public:
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
                         is_intent_out_var);
+                    if (struct_skip_bb != nullptr && init_expr != nullptr && v->m_value &&
+                            ASR::is_a<ASR::StructConstant_t>(*v->m_value)) {
+                        // Store the initial value of a save variable inside
+                        // the one-time guard, after the component defaults,
+                        // so that it is applied exactly once and not
+                        // overwritten by them.
+                        set_VariableInital_value(v, ptr);
+                        save_struct_initialized = true;
+                    }
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
@@ -8020,27 +8048,11 @@ public:
                     allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                 }
             }
-            ASR::expr_t* init_expr = v->m_symbolic_value;
-            if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                for( size_t i = 0; i < v->n_dependencies; i++ ) {
-                    std::string variable_name = v->m_dependencies[i];
-                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
-                    if (dep_sym) {
-                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
-                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
-                            if ( dep_v->m_symbolic_value == nullptr &&
-                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
-                                    ASR::array_physical_typeType::FixedSizeArray)) {
-                                init_expr = nullptr;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
             if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
-                if ((v->m_storage == ASR::Save   ||
+                if (save_struct_initialized) {
+                    // Already stored inside the one-time guard above
+                } else if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
                     &&
                     (ASRUtils::is_string_only(v->m_type) ||

@@ -4121,6 +4121,7 @@ RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
 RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME save_19 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
