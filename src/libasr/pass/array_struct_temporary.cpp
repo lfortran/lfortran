@@ -2051,6 +2051,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.n_args = x_m_args.size();
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+        // Its arguments are constants emitted as static data, not temporaries
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         visit_Call(x, "_subroutine_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
@@ -2380,6 +2384,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_struct_constructor_");
     }
 
+    void replace_StructConstant(ASR::StructConstant_t* /*x*/) {
+        // A StructConstant is emitted as static data, so its arguments
+        // must stay constants and are never replaced by temporaries
+    }
+
     void replace_EnumConstructor(ASR::EnumConstructor_t* x) {
         replace_current_expr(x, "_enum_constructor_");
     }
@@ -2676,6 +2685,10 @@ class ReplaceExprWithTemporaryVisitor:
 
     void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
         // Do nothing
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+        // Its arguments are constants emitted as static data, not temporaries
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {

@@ -3897,6 +3897,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 break;
             }
             case ASR::ttypeType::StructType: {
+                if (llvm::isa<llvm::Constant>(src) && !src->getType()->isPointerTy()) {
+                    // A constant structure (a StructConstant, or a named
+                    // constant holding one) is copied from storage holding
+                    // its value, exactly like a variable in `a = b`. A value
+                    // that refers to other globals (e.g. character data)
+                    // is stored into a stack slot instead of static data:
+                    // its packed string descriptors would place relocated
+                    // pointers at offsets some linkers reject.
+                    llvm::Constant* value = llvm::cast<llvm::Constant>(src);
+                    if (value->needsRelocation()) {
+                        src = CreateAlloca(value->getType());
+                        builder->CreateStore(value, src);
+                    } else {
+                        src = new llvm::GlobalVariable(*module, value->getType(), true,
+                            llvm::GlobalValue::PrivateLinkage, value, "struct_constant");
+                    }
+                }
                 if (ASRUtils::is_unlimited_polymorphic_type(
                     ASRUtils::get_struct_sym_from_struct_expr(src_expr)) && !ASRUtils::is_array(asr_src_type) &&
                     !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_dest_type))) {
@@ -10793,22 +10810,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     int mem_idx = 0;
                     mem_idx = llvm_utils->name2memidx[der_type_name][mem_name];
                     llvm::Value* src_member = nullptr;
-                    if (llvm::isa<llvm::ConstantStruct>(src) ||
-                        llvm::isa<llvm::ConstantAggregateZero>(src)) {
-                        ASR::ttype_t* mem_type_check = ASRUtils::symbol_type(mem_sym);
-                        bool is_simple_scalar =
-                            !LLVM::is_llvm_struct(mem_type_check) &&
-                            !ASRUtils::is_array(mem_type_check) &&
-                            !ASRUtils::is_pointer(mem_type_check) &&
-                            !ASRUtils::is_allocatable(mem_type_check) &&
-                            !ASRUtils::is_descriptorString(mem_type_check);
-                        if (!is_simple_scalar &&
-                            !ASRUtils::is_value_constant(ASRUtils::EXPR(
-                                ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)))) {
-                            continue;
-                        }
-                        src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
-                    } else if (!src->getType()->isPointerTy()) {
+                    if (!src->getType()->isPointerTy()) {
                         src_member = builder->CreateExtractValue(src, {static_cast<unsigned int>(mem_idx)});
                     } else {
                         src_member = llvm_utils->create_gep2(llvm_utils->name2dertype[der_type_name], src, mem_idx);
@@ -10832,8 +10834,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         !ASRUtils::is_array(member_type) &&
                         !ASRUtils::is_pointer(member_type) &&
                         !ASRUtils::is_descriptorString(member_type) &&
-                        !llvm::isa<llvm::ConstantStruct>(src) &&
-                        !llvm::isa<llvm::ConstantAggregateZero>(src) &&
                         src->getType()->isPointerTy()) {
                         src_member = llvm_utils->CreateLoad2(mem_type, src_member);
                     }
