@@ -8845,6 +8845,36 @@ public:
                             init_expr, s.m_initializer->base.loc);
                     }
 
+                    // The procedure symbol does not exist yet while its
+                    // declarations are visited, so use is_Function there.
+                    bool is_local = is_Function;
+                    if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                        ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                        is_local = is_local || ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
+                            ASR::is_a<ASR::Block_t>(*asr_owner_sym);
+                    }
+                    if (init_expr && is_local && !is_derived_type && !is_pointer &&
+                            storage_type != ASR::storage_typeType::Parameter) {
+                        ASR::expr_t* static_init = nullptr;
+                        if (ASR::is_a<ASR::StructType_t>(*type)) {
+                            static_init = get_static_struct_initializer(init_expr);
+                        } else if (ASR::is_a<ASR::CPtr_t>(*type) &&
+                                ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
+                            static_init = init_expr;
+                        }
+                        // A scalar local of a procedure or block whose
+                        // initializer is a constant that is stored once
+                        // implicitly has the save attribute, as in the
+                        // intrinsic-type branch.
+                        if (static_init) {
+                            init_expr = static_init;
+                            if (storage_type != ASR::storage_typeType::Save) {
+                                implicit_save = true;
+                                storage_type = ASR::storage_typeType::Save;
+                            }
+                        }
+                    }
+
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
                         if (is_pointer && ASR::is_a<ASR::Var_t>(*init_expr)) {
@@ -11168,6 +11198,93 @@ public:
             }
         }
         return info;
+    }
+
+    // True if the StructConstant `x` can be stored as it is: every argument
+    // is a literal constant or a StructConstant of the same kind, with its
+    // component's rank, and a character argument has its component's
+    // length, as character arguments are not blank padded or truncated
+    // when the constructor is built.
+    bool is_static_struct_constant(const ASR::StructConstant_t& x) {
+        StructConstructorInfo info = get_struct_constructor_info(x.m_dt_sym);
+        if (!info.kind_indices.empty() || info.members.size() != x.n_args) {
+            return false;
+        }
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t* arg = x.m_args[i].m_value;
+            if (arg == nullptr) {
+                continue;
+            }
+            if (!info.members[i] || !ASR::is_a<ASR::Variable_t>(*info.members[i])) {
+                return false;
+            }
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(info.members[i]);
+            if (ASRUtils::is_allocatable_or_pointer(member_type)) {
+                if (!ASR::is_a<ASR::PointerNullConstant_t>(*arg)) {
+                    return false;
+                }
+                continue;
+            }
+            if (ASRUtils::is_array(member_type) != ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                return false;
+            }
+            switch (arg->type) {
+                case ASR::exprType::IntegerConstant:
+                case ASR::exprType::UnsignedIntegerConstant:
+                case ASR::exprType::RealConstant:
+                case ASR::exprType::ComplexConstant:
+                case ASR::exprType::LogicalConstant:
+                case ASR::exprType::StringConstant:
+                case ASR::exprType::ArrayConstant: {
+                    break;
+                }
+                case ASR::exprType::StructConstant: {
+                    if (!is_static_struct_constant(*ASR::down_cast<ASR::StructConstant_t>(arg))) {
+                        return false;
+                    }
+                    break;
+                }
+                default: {
+                    return false;
+                }
+            }
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
+            if (ASRUtils::is_character(*element_type)) {
+                ASR::String_t* member_str = ASR::down_cast<ASR::String_t>(element_type);
+                ASR::String_t* arg_str = ASRUtils::get_string_type(ASRUtils::expr_type(arg));
+                int64_t member_len = 0, arg_len = 0;
+                if (member_str->m_len == nullptr || arg_str == nullptr || arg_str->m_len == nullptr
+                        || !ASRUtils::extract_value(ASRUtils::expr_value(member_str->m_len), member_len)
+                        || !ASRUtils::extract_value(ASRUtils::expr_value(arg_str->m_len), arg_len)
+                        || member_len != arg_len) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Returns the initializer `init` of a structure variable as a
+    // StructConstant that can be stored once, or nullptr if it is not one.
+    ASR::expr_t* get_static_struct_initializer(ASR::expr_t* init) {
+        ASR::expr_t* constant = nullptr;
+        if (ASR::is_a<ASR::StructConstant_t>(*init)) {
+            constant = init;
+        } else if (ASR::is_a<ASR::StructConstructor_t>(*init)) {
+            ASR::StructConstructor_t* constructor = ASR::down_cast<ASR::StructConstructor_t>(init);
+            if (constructor->m_value) {
+                constant = constructor->m_value;
+            } else {
+                constant = ASRUtils::EXPR(ASR::make_StructConstant_t(al,
+                    init->base.loc, constructor->m_dt_sym, constructor->m_args,
+                    constructor->n_args, constructor->m_type));
+            }
+        }
+        if (constant && ASR::is_a<ASR::StructConstant_t>(*constant) &&
+                is_static_struct_constant(*ASR::down_cast<ASR::StructConstant_t>(constant))) {
+            return constant;
+        }
+        return nullptr;
     }
 
     void resolve_pdt_constructor(const Location& loc, ASR::symbol_t*& v,
