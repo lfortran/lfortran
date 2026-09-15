@@ -5663,7 +5663,6 @@ public:
 
         static bool is_importable(ASR::symbol_t* sym) {
             return sym != nullptr && (ASR::is_a<ASR::Struct_t>(*sym) ||
-                ASR::is_a<ASR::Enum_t>(*sym) || ASR::is_a<ASR::Union_t>(*sym) ||
                 ASR::is_a<ASR::Function_t>(*sym));
         }
 
