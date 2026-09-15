@@ -4633,8 +4633,8 @@ RUN(NAME structure_constructor_args_01 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_02 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_03 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_04 LABELS gfortran llvm)
-RUN(NAME structure_constructor_args_05 LABELS gfortran llvm)
-RUN(NAME structure_constructor_args_06 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_05 LABELS llvm) # `reduce` is not supported by every supported gfortran
+RUN(NAME structure_constructor_args_06 LABELS llvm) # `reduce` is not supported by every supported gfortran
 RUN(NAME structure_constructor_args_07 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
