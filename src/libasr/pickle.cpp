@@ -109,7 +109,12 @@ public:
         } else {
             kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         }
-        int size = x.m_n_data / kind;
+        // m_n_data is the byte size of the data, so dividing by the element
+        // size gives the element count, except for an array of zero-length
+        // strings (`t = ''`), whose data is empty: take the count from the
+        // type instead of dividing by zero.
+        int size = kind > 0 ? x.m_n_data / kind
+                            : ASRUtils::get_fixed_size_of_array(x.m_type);
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {
