@@ -3308,6 +3308,27 @@ public:
                     " does not match member '" + member_name +
                     "' of type " + ASRUtils::get_type_code(member_scalar),
                 arg_loc);
+            if (is_constant && ASR::is_a<ASR::String_t>(*member_scalar)
+                    && ASR::is_a<ASR::String_t>(*actual_scalar)) {
+                ASR::expr_t *member_len_expr =
+                    ASR::down_cast<ASR::String_t>(member_scalar)->m_len;
+                ASR::expr_t *actual_len_expr =
+                    ASR::down_cast<ASR::String_t>(actual_scalar)->m_len;
+                int64_t member_len = 0, actual_len = 0;
+                if (member_len_expr != nullptr && actual_len_expr != nullptr
+                        && ASRUtils::extract_value(
+                            ASRUtils::expr_value(member_len_expr), member_len)
+                        && ASRUtils::extract_value(
+                            ASRUtils::expr_value(actual_len_expr), actual_len)) {
+                    require_with_loc_id(member_len == actual_len,
+                        id + ".argument_length_matches_member",
+                        std::string(node) + " argument of length " +
+                            std::to_string(actual_len) +
+                            " does not match member '" + member_name +
+                            "' of length " + std::to_string(member_len),
+                        arg_loc);
+                }
+            }
             size_t member_rank = ASRUtils::extract_n_dims_from_ttype(declared);
             size_t actual_rank = ASRUtils::extract_n_dims_from_ttype(actual);
             require_with_loc_id(member_rank == actual_rank

@@ -11035,11 +11035,50 @@ public:
         }
     }
 
+    // Returns the character constant `value` (a scalar or an array) with its
+    // length set to `len`, blank padded or truncated, as for
+    // `character(len=3) :: c = "hi"`. Returns nullptr if the length is
+    // already `len` or is not constant.
+    ASR::expr_t* conform_character_constant_length(ASR::expr_t* value,
+            ASR::ttype_t* element_type, int64_t len, const Location& loc) {
+        ASR::String_t* value_str = ASRUtils::get_string_type(ASRUtils::expr_type(value));
+        int64_t value_len = 0;
+        if (value_str == nullptr || value_str->m_len == nullptr
+                || !ASRUtils::extract_value(ASRUtils::expr_value(value_str->m_len), value_len)
+                || value_len == len) {
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+            return adjust_character_length(value, len, value_len, loc, al);
+        }
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            return nullptr;
+        }
+        ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        int64_t size = ASRUtils::get_fixed_size_of_array(array->m_type);
+        if (size < 0 || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> elements;
+        elements.reserve(al, std::max<int64_t>(size, 1));
+        for (int64_t j = 0; j < size; j++) {
+            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, array, j));
+        }
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+        ASR::ttype_t* adjusted_element = ASRUtils::duplicate_type(al, element_type);
+        ASR::ttype_t* adjusted_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            adjusted_element, array_type->m_dims, array_type->n_dims,
+            array_type->m_physical_type, array_type->m_memory_space));
+        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, size * len,
+            ASRUtils::set_ArrayConstant_data(elements.p, elements.size(), adjusted_element),
+            adjusted_type, array->m_storage_format));
+    }
+
     // An argument of a structure constructor is assigned to its component.
     // A StructConstant's arguments are lowered as they are, so a constant
-    // argument is given its component's shape here, as a component's own
-    // default initializer is. A non-constant argument is converted by the
-    // assignment a StructConstructor is lowered into.
+    // argument is given its component's shape and character length here,
+    // as a component's own default initializer is. A non-constant argument
+    // is converted by the assignment a StructConstructor is lowered into.
     void conform_struct_constructor_args(Vec<ASR::call_arg_t>& vals,
             const std::vector<ASR::symbol_t*>& members) {
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
@@ -11049,12 +11088,34 @@ public:
                 continue;
             }
             ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            if (ASRUtils::is_allocatable_or_pointer(member_type)) {
+                continue;
+            }
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
+            int64_t element_len = 0;
+            if (ASRUtils::is_character(*element_type)) {
+                ASR::expr_t* element_len_expr =
+                    ASR::down_cast<ASR::String_t>(element_type)->m_len;
+                if (element_len_expr == nullptr || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(element_len_expr), element_len)) {
+                    continue;
+                }
+            }
+            ASR::expr_t* value = ASRUtils::expr_value(arg);
+            if (value != nullptr && ASRUtils::is_character(*element_type)) {
+                // Case: `t("hi")` for `character(len=3) :: c`.
+                ASR::expr_t* adjusted = conform_character_constant_length(
+                    value, element_type, element_len, arg->base.loc);
+                if (adjusted != nullptr) {
+                    value = adjusted;
+                    arg = adjusted;
+                    vals.p[i].m_value = adjusted;
+                }
+            }
             if (!ASRUtils::is_array(member_type)
-                    || ASRUtils::is_allocatable_or_pointer(member_type)
                     || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
                 continue;
             }
-            ASR::expr_t* value = ASRUtils::expr_value(arg);
             if (value == nullptr || !(ASR::is_a<ASR::IntegerConstant_t>(*value)
                     || ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)
                     || ASR::is_a<ASR::RealConstant_t>(*value)
@@ -11064,12 +11125,7 @@ public:
                 continue;
             }
             int64_t size = ASRUtils::get_fixed_size_of_array(member_type);
-            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
-            int64_t element_len = 0;
-            if (size < 0 || (ASRUtils::is_character(*element_type)
-                    && !ASRUtils::extract_value(ASRUtils::expr_value(
-                        ASR::down_cast<ASR::String_t>(element_type)->m_len),
-                        element_len))) {
+            if (size < 0) {
                 continue;
             }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`.
