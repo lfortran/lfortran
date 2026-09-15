@@ -1583,9 +1583,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 }
 
                 ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
-                if (found && i < stc->n_args) {
-                    value = stc->m_args[i].m_value;
-                }
+                LCOMPILERS_ASSERT(found && i < stc->n_args);
+                value = stc->m_args[i].m_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
