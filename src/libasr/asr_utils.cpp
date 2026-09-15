@@ -1562,16 +1562,30 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
                 ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
                 std::string mem_name = ASRUtils::symbol_name(member);
-                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                // The arguments of a StructConstant hold the members of the
+                // parent types first, so find the index i of the member in
+                // that order and set value to the ith argument.
+                std::vector<ASR::Struct_t*> struct_chain;
+                for (ASR::Struct_t* s = struct_s; s != nullptr;
+                        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+                    struct_chain.push_back(s);
+                }
                 size_t i = 0;
-                for (i = 0; i < struct_s->n_members; i++) {
-                    if (struct_s->m_members[i] == mem_name) {
-                        break;
+                bool found = false;
+                for (auto it = struct_chain.rbegin(); it != struct_chain.rend() && !found; ++it) {
+                    for (size_t j = 0; j < (*it)->n_members; j++, i++) {
+                        if ((*it)->m_members[j] == mem_name) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
                 ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
-                value = stc->m_args[i].m_value;
+                if (found && i < stc->n_args) {
+                    value = stc->m_args[i].m_value;
+                }
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),

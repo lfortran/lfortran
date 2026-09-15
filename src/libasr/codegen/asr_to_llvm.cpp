@@ -5437,34 +5437,41 @@ public:
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
-        std::vector<llvm::Constant *> elements;
-        llvm::StructType* t = llvm::cast<llvm::StructType>(
-            llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym)), module.get()));
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
+        tmp = get_struct_constant(struct_, x.m_args, x.n_args);
+        current_der_type_name = get_type_key(x.m_dt_sym);
+    }
 
-        [[maybe_unused]] size_t n_members = struct_->n_members;
+    // Builds the constant of type `struct_` from `args`, which hold the
+    // members of its parent types first and then its own members. The
+    // parent type is the first element of the LLVM structure, so the
+    // parent members form a nested constant.
+    llvm::Constant* get_struct_constant(ASR::Struct_t* struct_,
+            ASR::call_arg_t* args, [[maybe_unused]] size_t n_args) {
+        std::vector<llvm::Constant *> elements;
+        llvm::StructType* t = llvm::cast<llvm::StructType>(
+            llvm_utils->getStructType(struct_, module.get()));
+        size_t n_parent_members = 0;
         if (struct_->m_parent) {
-            ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_->m_parent));
-            while (parent_struct) {
-                n_members += parent_struct->n_members;
-                if (parent_struct->m_parent) {
-                    parent_struct = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(parent_struct->m_parent));
-                } else {
-                    parent_struct = nullptr;
-                }
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(struct_->m_parent);
+            while (parent_sym) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(parent_sym);
+                n_parent_members += parent_struct->n_members;
+                parent_sym = parent_struct->m_parent
+                    ? ASRUtils::symbol_get_past_external(parent_struct->m_parent) : nullptr;
             }
+            elements.push_back(get_struct_constant(ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_->m_parent)),
+                args, n_parent_members));
         }
 
-        LCOMPILERS_ASSERT(x.n_args == n_members);
-        for (size_t i = 0; i < x.n_args; ++i) {
-            ASR::expr_t *value = x.m_args[i].m_value;
+        LCOMPILERS_ASSERT(n_args == n_parent_members + struct_->n_members);
+        for (size_t i = 0; i < struct_->n_members; ++i) {
+            ASR::expr_t *value = args[n_parent_members + i].m_value;
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
-            ASR::symbol_t* member_sym = i < struct_->n_members
-                ? struct_->m_symtab->get_symbol(struct_->m_members[i]) : nullptr;
+            ASR::symbol_t* member_sym = struct_->m_symtab->get_symbol(struct_->m_members[i]);
             if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
                 ASR::ttype_t* member_type =
                     ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
@@ -5530,8 +5537,7 @@ public:
             }
             elements.push_back(initializer);
         }
-        tmp = llvm::ConstantStruct::get(t, elements);
-        current_der_type_name = get_type_key(x.m_dt_sym);
+        return llvm::ConstantStruct::get(t, elements);
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
