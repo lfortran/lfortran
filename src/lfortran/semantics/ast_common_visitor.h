@@ -1842,7 +1842,6 @@ template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
-    std::vector<ASR::Function_t*> implicit_interfaces_to_sync;
     // Procedure-pointer temporaries of calls through implicit interfaces,
     // per scope, keyed by the called procedure and the call-site interface.
     std::map<SymbolTable*, std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
@@ -5186,7 +5185,6 @@ public:
                             nullptr, ASR::accessType::Private,
                             false, false, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
-                    implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(iface_sym));
                 }
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
                     ASR::make_Pointer_t(al, loc, func_type));
@@ -10984,7 +10982,6 @@ public:
                             )
                         );
                         parent_scope->add_symbol(iface_name, existing);
-                        implicit_interfaces_to_sync.push_back(ASR::down_cast<ASR::Function_t>(existing));
                     } else {
                         // Reuse the existing iface function's FunctionType so that
                         // all variables sharing this iface reference the same object.

@@ -10787,35 +10787,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     }
 
     if (compiler_options.implicit_interface) {
-        // Sync the types of the m_args Variables with the FunctionType's arg_types.
-        // This is necessary because some functions share the m_arg_types array,
-        // and if it was updated in-place by another function, the m_args
-        // variables might have stale m_type pointers.
-        auto sync_func = [&](ASR::Function_t* func) {
-            ASR::FunctionType_t* ft = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
-            if (ft->m_abi == ASR::abiType::Source || ft->m_abi == ASR::abiType::BindC) {
-                if (ft->n_arg_types == func->n_args) {
-                    for (size_t i = 0; i < func->n_args; i++) {
-                        if (ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
-                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v;
-                            if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
-                                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                                // Skip syncing if the new type is StructType to avoid
-                                // incorrectly deducing type_declaration from scope
-                                ASR::ttype_t* base_t = ASRUtils::extract_type(ft->m_arg_types[i]);
-                                if (ASR::is_a<ASR::StructType_t>(*base_t)) {
-                                    continue;
-                                }
-                                arg_var->m_type = ft->m_arg_types[i];
-                            }
-                        }
-                    }
-                }
-            }
-        };
-        for (ASR::Function_t* func : b.implicit_interfaces_to_sync) {
-            sync_func(func);
-        }
         // A procedure with ENTRY points is split into sibling functions that
         // each hold a copy of the same dummy, and an implicit interface is
         // synthesised into whichever of them was being visited. The copies in
