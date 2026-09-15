@@ -4239,52 +4239,6 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
 
-inline ASR::expr_t* broadcast_scalar_constant_to_array(Allocator& al,
-    const Location& loc, ASR::expr_t* value, ASR::ttype_t* array_type);
-
-// Struct "zero" for reductions: component-wise get_constant_zero / nested struct constructors.
-static inline ASR::expr_t* get_struct_type_constructor_zero(
-        Allocator& al, const Location& loc, ASR::symbol_t* struct_sym) {
-    struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
-    if (!ASR::is_a<ASR::Struct_t>(*struct_sym)) {
-        throw LCompilersException("get_struct_type_constructor_zero: expected struct symbol");
-    }
-    ASR::Struct_t* derived = ASR::down_cast<ASR::Struct_t>(struct_sym);
-    ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, struct_sym, true);
-    Vec<ASR::call_arg_t> vals;
-    vals.reserve(al, derived->n_members);
-    for (size_t i = 0; i < derived->n_members; i++) {
-        ASR::symbol_t* mem_sym = derived->m_symtab->get_symbol(derived->m_members[i]);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*mem_sym));
-        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(mem_sym);
-        ASR::call_arg_t ca;
-        ca.loc = loc;
-        ASR::ttype_t* inner = ASRUtils::extract_type(
-            ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(v->m_type)));
-        if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)
-                || ASRUtils::is_pointer(v->m_type)) {
-            // An allocatable component starts unallocated and a pointer
-            // component disassociated.
-            ca.m_value = nullptr;
-        } else if (ASR::is_a<ASR::StructType_t>(*inner) && v->m_type_declaration != nullptr) {
-            ca.m_value = ASRUtils::get_struct_type_constructor_zero(al, loc, v->m_type_declaration);
-        } else {
-            ca.m_value = ASRUtils::get_constant_zero_with_given_type(al, v->m_type);
-            if (ASRUtils::is_array(v->m_type)) {
-                // An array component is zero in every element.
-                ASR::expr_t* zeros = ASRUtils::broadcast_scalar_constant_to_array(
-                    al, loc, ca.m_value, v->m_type);
-                if (zeros != nullptr) {
-                    ca.m_value = zeros;
-                }
-            }
-        }
-        vals.push_back(al, ca);
-    }
-    return ASRUtils::EXPR(ASR::make_StructConstant_t(
-        al, loc, struct_sym, vals.p, vals.size(), der));
-}
-
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
 inline bool ttype_set_dimensions(ASR::ttype_t** x,
