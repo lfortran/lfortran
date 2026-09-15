@@ -433,14 +433,18 @@ class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
 class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisitor<DoConcurrentStatementVisitor> {
     private:
         Allocator& al;
-        SymbolTable* current_scope;
         ProgramProcedureCopies& copies;
         ReplaceExpression replacer;
 
     public:
+        // `current_scope` is the base visitor's, which follows the scopes
+        // nested in a visited procedure (contained procedures, interfaces,
+        // BLOCKs), so their symbols resolve in their own scope.
         DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_,
                 ProgramProcedureCopies &copies_) :
-            al(al_), current_scope(current_scope_), copies(copies_), replacer(al_, copies_) {}
+            al(al_), copies(copies_), replacer(al_, copies_) {
+            current_scope = current_scope_;
+        }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
