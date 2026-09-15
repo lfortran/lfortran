@@ -3535,6 +3535,7 @@ public:
         Vec<ASR::stmt_t*> block_data_body;
         block_data_body.reserve(al, x.n_items);
         current_body = &block_data_body;
+        current_body_scope = current_scope;
         in_block_data = true;
         // Visit DataStmt and set the constant values in the Struct_t symbol
         for (size_t i=0; i<x.n_items; i++) {
