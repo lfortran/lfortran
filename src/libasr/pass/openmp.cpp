@@ -2447,9 +2447,16 @@ class ParallelRegionVisitor :
                                     ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
             
             // Constants for GOMP_task call
-            std::pair<int64_t, int64_t> task_data_size_align = compute_task_data_size_align(task_data_module.second);
-            ASR::expr_t* data_size = b.i64(task_data_size_align.first);
-            ASR::expr_t* data_align = b.i64(task_data_size_align.second);
+            // GOMP_task copies arg_size bytes of the task data, so the size
+            // must be the struct's size as laid out by the code generator,
+            // including the padding between members and at the end.
+            ASR::expr_t* data_size = ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc,
+                ASRUtils::expr_type(task_data_expr),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)), nullptr));
+            // arg_align only aligns libgomp's copy of the data and may be
+            // larger than the struct's alignment. No member type the task
+            // data holds is aligned to more than 16 bytes.
+            ASR::expr_t* data_align = b.i64(16);
             ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1))); // Always create task (c_bool kind)
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
@@ -2484,40 +2491,6 @@ class ParallelRegionVisitor :
             remove_original_statement = true;
         }
 
-        // Size and alignment of the task data struct as laid out in memory,
-        // including the padding between members and at the end. GOMP_task
-        // copies exactly this many bytes, so a smaller size would cut off
-        // the trailing members.
-        std::pair<int64_t, int64_t> compute_task_data_size_align(const ASR::symbol_t* task_data_struct_sym) {
-            ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
-            LCOMPILERS_ASSERT(!task_data_struct->m_is_packed && task_data_struct->m_parent == nullptr);
-            int64_t offset = 0;
-            int64_t max_align = 1;
-            for (size_t i = 0; i < task_data_struct->n_members; i++) {
-                ASR::symbol_t* sym = task_data_struct->m_symtab->resolve_symbol(task_data_struct->m_members[i]);
-                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
-                std::pair<int64_t, int64_t> size_align;
-                if ((ASR::is_a<ASR::Pointer_t>(*type) || ASR::is_a<ASR::Allocatable_t>(*type)) &&
-                        !ASRUtils::is_array(type)) {
-                    // Pointer and allocatable scalars are stored as a pointer
-                    size_align = {8, 8};
-                } else if (ASR::is_a<ASR::String_t>(*type) &&
-                        ASR::down_cast<ASR::String_t>(type)->m_physical_type == ASR::DescriptorString) {
-                    // A packed {char*, int64 length} descriptor
-                    size_align = {16, 1};
-                } else {
-                    size_align = ASRUtils::compute_type_size_align(type);
-                }
-                if (size_align.first < 0) {
-                    throw LCompilersException("the size of the data passed to an OpenMP task cannot be computed");
-                }
-                offset = ((offset + size_align.second - 1) / size_align.second) * size_align.second;
-                offset += size_align.first;
-                max_align = std::max(max_align, size_align.second);
-            }
-            offset = ((offset + max_align - 1) / max_align) * max_align;
-            return {std::max(offset, max_align), max_align};
-        }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
                     const std::string &thread_data_module_name,
