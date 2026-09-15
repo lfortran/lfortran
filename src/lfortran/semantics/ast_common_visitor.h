@@ -5693,9 +5693,13 @@ public:
         }
 
         // A named constant of the declaring module (`t(k)`) is not reachable
-        // either, so it is replaced by its value.
+        // either, so it is replaced by its value. A reference to a derived
+        // type, such as the mold of a `null()` component, is made reachable.
         ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
             ASR::symbol_t* v = ASRUtils::symbol_get_past_external(x->m_v);
+            if (v != nullptr && ASR::is_a<ASR::Struct_t>(*v)) {
+                return ASR::make_Var_t(this->al, x->base.base.loc, reachable_type(x->m_v));
+            }
             if (!ASRUtils::is_visible_from(x->m_v, scope) && v != nullptr &&
                     ASR::is_a<ASR::Variable_t>(*v)) {
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
