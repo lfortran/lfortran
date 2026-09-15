@@ -1392,7 +1392,10 @@ class ParallelRegionVisitor :
 
                 bool noncontiguous = is_array && may_be_noncontiguous_array(current_scope_copy, it.first);
                 bool shares_descriptor = noncontiguous && share_descriptors;
-                if (noncontiguous && !share_descriptors) {
+                // A private array is not associated with the original in the task,
+                // so the task never reaches the original's elements through the copy.
+                bool is_private = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate;
+                if (noncontiguous && !share_descriptors && !is_private) {
                     c->contiguity_checked_arrays.insert(it.first);
                 }
                 // Arrays that may be non-contiguous keep their descriptor in a pointer member.
