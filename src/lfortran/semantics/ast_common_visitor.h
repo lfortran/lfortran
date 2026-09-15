@@ -11059,11 +11059,17 @@ public:
                     || ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)
                     || ASR::is_a<ASR::RealConstant_t>(*value)
                     || ASR::is_a<ASR::ComplexConstant_t>(*value)
-                    || ASR::is_a<ASR::LogicalConstant_t>(*value))) {
+                    || ASR::is_a<ASR::LogicalConstant_t>(*value)
+                    || ASR::is_a<ASR::StringConstant_t>(*value))) {
                 continue;
             }
             int64_t size = ASRUtils::get_fixed_size_of_array(member_type);
-            if (size < 0) {
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
+            int64_t element_len = 0;
+            if (size < 0 || (ASRUtils::is_character(*element_type)
+                    && !ASRUtils::extract_value(ASRUtils::expr_value(
+                        ASR::down_cast<ASR::String_t>(element_type)->m_len),
+                        element_len))) {
                 continue;
             }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`.

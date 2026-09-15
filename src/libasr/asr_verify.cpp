@@ -3311,8 +3311,7 @@ public:
             size_t member_rank = ASRUtils::extract_n_dims_from_ttype(declared);
             size_t actual_rank = ASRUtils::extract_n_dims_from_ttype(actual);
             require_with_loc_id(member_rank == actual_rank
-                    || ((!is_constant || ASRUtils::is_character(*member_scalar))
-                        && actual_rank == 0),
+                    || (!is_constant && actual_rank == 0),
                 id + ".argument_rank_matches_member",
                 std::string(node) + " argument of rank " +
                     std::to_string(actual_rank) + " does not match member '" +
