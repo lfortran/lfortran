@@ -442,6 +442,10 @@ class InvolvedSymbolsCollector:
     public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols;
         std::map<std::string, ASR::omp_clauseType> variable_accessibility;
+        // Arrays that may be non-contiguous; the region receives their descriptor
+        std::set<std::string> descriptor_arrays;
+        // Arrays that may be non-contiguous but are passed by address and bounds
+        std::set<std::string> contiguity_checked_arrays;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
 
@@ -922,16 +926,28 @@ class ParallelRegionVisitor :
                     for (auto it: array_arg_mapping) {
                         func_type->m_arg_types[it.second] = ASRUtils::symbol_type(func->m_symtab->resolve_symbol(it.first));
                     }
+                    // types of the remaining variables, e.g. `y(size(ap)-1)`, can refer to the replaced arrays
+                    for (auto &item: func->m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                            v.visit_symbol(*item.second);
+                        }
+                    }
+                    v.visit_ttype(*func->m_function_signature);
 
+                    // only dummy arguments have a counterpart at the call sites
                     std::vector<int> array_variables_indices;
+                    std::vector<std::string> array_arguments;
                     for (auto it: array_variables) {
-                        array_variables_indices.push_back(array_arg_mapping[it]);
+                        if (array_arg_mapping.find(it) != array_arg_mapping.end()) {
+                            array_variables_indices.push_back(array_arg_mapping[it]);
+                            array_arguments.push_back(it);
+                        }
                     }
 
                     // search for function / subroutine calls to existing function
                     std::vector<SymbolTable*> scopes;
                     scoped_array_variable_map.clear();
-                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes, array_variables_indices, array_variables, scoped_array_variable_map);
+                    FunctionSubroutineCallVisitor fsv(func->m_name, scopes, array_variables_indices, array_arguments, scoped_array_variable_map);
 
                     // get global scope
                     SymbolTable* global_scope = current_scope;
@@ -1224,7 +1240,118 @@ class ParallelRegionVisitor :
             return true;
         }
 
-        std::pair<std::string, ASR::symbol_t*> create_thread_data_module_omp(InvolvedSymbolsCollector* c, const Location& loc, std::string data_struct_name = "thread_data") {
+        ASR::ttype_t* descriptor_pointer_type(ASR::ttype_t* type) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+            ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+            empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+            for (size_t i = 0; i < array_type->n_dims; i++) {
+                dims.push_back(al, empty_dim);
+            }
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global))));
+        }
+
+        /*
+            A deferred task receives the data address and bounds of an array and
+            rebuilds a contiguous array from them. That is the same array only if each
+            dimension with more than one element steps to the next element in storage;
+            a dimension with one element and an array with no elements always match.
+            Build the same view here and compare the address of the element one step
+            from the first element along each dimension. Strides cannot be passed to
+            the task, so an array that does not match stops with a run-time error.
+        */
+        void check_task_array_view(const Location& loc, const std::string& name,
+                ASR::expr_t* array_ref, ASR::expr_t* address, ASR::ttype_t* view_type) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::ttype_t* cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_ref));
+            ASR::expr_t* view = b.Variable(current_scope, current_scope->get_unique_name("task_view_" + name),
+                view_type, ASR::intentType::Local);
+            auto element_address = [&](ASR::expr_t* array, size_t step_dim) {
+                std::vector<ASR::expr_t*> idx;
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::expr_t* lbound = b.ArrayLBound(array_ref, i + 1);
+                    idx.push_back(i == step_dim ? b.Add(lbound, b.i32(1)) : lbound);
+                }
+                ASR::expr_t* item = b.ArrayItem_01(array, idx);
+                return b.PointerToCPtr(ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, item,
+                    ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::expr_type(item))), nullptr)), cptr_type);
+            };
+            Vec<ASR::expr_t*> shape; shape.reserve(al, n_dims);
+            Vec<ASR::expr_t*> lbounds; lbounds.reserve(al, n_dims);
+            for (size_t i = 0; i < n_dims; i++) {
+                shape.push_back(al, b.ArraySize(array_ref, b.i32(i + 1), int_type));
+                lbounds.push_back(al, b.ArrayLBound(array_ref, i + 1));
+            }
+            std::vector<ASR::stmt_t*> checks;
+            // call c_f_pointer(tdata%<sym>, task_view, shape(<sym>), lbound(<sym>))
+            checks.push_back(b.CPtrToPointer(address, view,
+                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, shape.p, shape.n,
+                    int_type, ASR::arraystorageType::ColMajor)),
+                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, lbounds.p, lbounds.n,
+                    int_type, ASR::arraystorageType::ColMajor))));
+            std::string msg = "array '" + name + "' used in an openmp task is not contiguous, which is not supported yet";
+            for (size_t i = 0; i < n_dims; i++) {
+                ASR::stmt_t* error_stop = ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, b.StringConstant(msg,
+                    b.String(b.i32(msg.size()), ASR::ExpressionLength, ASR::DescriptorString, 1))));
+                ASR::expr_t* mismatch = ASRUtils::EXPR(ASR::make_CPtrCompare_t(al, loc,
+                    element_address(array_ref, i), ASR::cmpopType::NotEq, element_address(view, i),
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                checks.push_back(b.If(b.Gt(b.ArraySize(array_ref, b.i32(i + 1), int_type), b.i32(1)),
+                    {b.If(mismatch, {error_stop}, {})}, {}));
+            }
+            nested_lowered_body.push_back(b.If(b.Gt(b.ArraySize(array_ref, nullptr, int_type), b.i32(0)),
+                checks, {}));
+        }
+
+        /*
+            A pointer array, or an assumed-shape array of an enclosing scope, can be
+            associated with a section that has strides, so its data address and bounds
+            do not describe it. The region receives such an array through a pointer
+            member of the data struct, which keeps the strides. The member type is
+            declared in the data module, so arrays whose element type refers to other
+            symbols (derived types, non-constant character lengths) keep the old path.
+        */
+        bool may_be_noncontiguous_array(SymbolTable* scope, const std::string& name) {
+            ASR::symbol_t* sym = scope->resolve_symbol(name);
+            if (sym == nullptr) {
+                return false;
+            }
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return false;
+            }
+            ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+            if (!ASRUtils::is_array(type) || ASR::is_a<ASR::Allocatable_t>(*type)) {
+                return false;
+            }
+            ASR::ttype_t* element_type = ASRUtils::extract_type(type);
+            if (ASR::is_a<ASR::StructType_t>(*element_type)) {
+                return false;
+            }
+            if (ASR::is_a<ASR::String_t>(*element_type)) {
+                ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(element_type);
+                if (string_type->m_len == nullptr || ASRUtils::expr_value(string_type->m_len) == nullptr) {
+                    return false;
+                }
+            }
+            if (ASR::is_a<ASR::Pointer_t>(*type)) {
+                return true;
+            }
+            bool is_host_associated = scope->get_symbol(name) == nullptr;
+            return is_host_associated
+                && ASRUtils::extract_physical_type(type) == ASR::array_physical_typeType::DescriptorArray;
+        }
+
+        /*
+            share_descriptors: the region runs before the enclosing procedure continues, so
+            a pointer member that refers to the enclosing procedure's descriptor stays valid.
+            A deferred task can run later; its data is copied, so it gets address and bounds.
+        */
+        std::pair<std::string, ASR::symbol_t*> create_thread_data_module_omp(InvolvedSymbolsCollector* c, const Location& loc, std::string data_struct_name = "thread_data", bool share_descriptors = true) {
             
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
@@ -1264,9 +1391,21 @@ class ParallelRegionVisitor :
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(current_scope_copy->resolve_symbol(it.first)));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var->m_storage == ASR::storage_typeType::Parameter);
 
-                // For arrays or shared/default variables, use CPtr
+                bool noncontiguous = is_array && may_be_noncontiguous_array(current_scope_copy, it.first);
+                bool shares_descriptor = noncontiguous && share_descriptors;
+                // A private array is not associated with the original in the task,
+                // so the task never reaches the original's elements through the copy.
+                bool is_private = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate;
+                if (noncontiguous && !share_descriptors && !is_private) {
+                    c->contiguity_checked_arrays.insert(it.first);
+                }
+                // Arrays that may be non-contiguous keep their descriptor in a pointer member.
+                // Other arrays and shared/default variables use CPtr.
                 // For private variables, use original type
-                if (is_array || is_shared) {
+                if (shares_descriptor) {
+                    sym_type = descriptor_pointer_type(var->m_type);
+                    c->descriptor_arrays.insert(it.first);
+                } else if (is_array || is_shared) {
                     sym_type = b.CPtr();
                 } else {
                     sym_type = it.second.first;
@@ -1274,7 +1413,7 @@ class ParallelRegionVisitor :
 
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
 
-                if (is_array) {
+                if (is_array && !shares_descriptor) {
                     // Add lbound and ubound variables for arrays
                     ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second.first)));
                     for (size_t i = 0; i < arr_type->n_dims; i++) {
@@ -1350,7 +1489,13 @@ class ParallelRegionVisitor :
                 bool is_array = ASRUtils::is_array(sym_type);
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
 
-                if (is_array) {
+                if (is_array && c->descriptor_arrays.count(it.first)) {
+                    // <sym> => tdata%<sym>
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                        b.Var(current_scope->get_symbol(it.first)),
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)))));
+                } else if (is_array) {
                     // Handle arrays (existing logic)
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
                     Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
@@ -1410,24 +1555,52 @@ class ParallelRegionVisitor :
             // Process arrays first (existing logic with some modifications)
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = it.second.first;
-                if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                ASR::symbol_t* scope_sym = current_scope->resolve_symbol(it.first);
+                if (scope_sym != nullptr && ASRUtils::is_array(sym_type)) {
+                    ASR::ttype_t* scope_type = ASRUtils::symbol_type(scope_sym);
+                    if (ASR::is_a<ASR::Pointer_t>(*scope_type) && ASRUtils::is_array(scope_type)) {
+                        /*
+                            A region nested in an outlined function still refers to the
+                            original dummy argument, which keeps its type. The outlined
+                            function declares that array as a pointer, use its type.
+                        */
+                        sym_type = scope_type;
+                        involved_symbols[it.first].first = scope_type;
+                    }
+                }
+                if (c->descriptor_arrays.count(it.first)) {
+                    // The region associates its own pointer with the array's descriptor
+                    if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                        array_variables.push_back(it.first);
+                    } else {
+                        involved_symbols[it.first].first = descriptor_pointer_type(sym_type);
+                    }
+                    continue;
+                } else if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
                     array_variables.push_back(it.first);
                     continue;
                 } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(sym_type))) {
                     bool is_argument = check_is_argument(current_scope, it.first);
                     bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*sym_type);
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(sym_type));
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
-                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
-                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
-                    for (size_t i = 0; i < array_type->n_dims; i++) {
-                        dims.push_back(al, empty_dim);
+                    ASR::ttype_t* array_pointer_type = descriptor_pointer_type(sym_type);
+                    bool is_host_associated = current_scope->get_symbol(it.first) == nullptr;
+                    if ((is_argument && array_type->m_physical_type == ASR::array_physical_typeType::PointerArray)
+                            || is_host_associated) {
+                        /*
+                            Changing the type of an explicit-shape dummy argument would
+                            change the interface of the procedure, which callers compiled
+                            separately rely on. An array declared in an enclosing scope
+                            must not be replaced by a new local array either. Keep the
+                            array as it is; its storage is contiguous, so the outlined
+                            region receives its data address and bounds and associates
+                            its own pointer with them.
+                        */
+                        involved_symbols[it.first].first = array_pointer_type;
+                        continue;
                     }
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
-                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
-                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
-                                is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
+                            array_pointer_type, is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
                     
                     bool already_allocated = true;
@@ -1472,15 +1645,29 @@ class ParallelRegionVisitor :
 
                 ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
-                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->get_symbol(it.first));
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(it.first));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var_sym->m_storage == ASR::storage_typeType::Parameter);
 
                 if (is_array) {
                     // Handle arrays (existing logic)
+                    ASR::expr_t* array_ref = b.Var(current_scope->resolve_symbol(it.first));
+                    if (c->descriptor_arrays.count(it.first)) {
+                        // tdata%<sym> => <sym>
+                        nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            sym, ASRUtils::symbol_type(sym), nullptr)), array_ref)));
+                        continue;
+                    }
+                    ASR::expr_t* array_var = array_ref;
+                    if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(array_var))) {
+                        // explicit-shape dummy and host arrays keep their type, take their address
+                        array_var = ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, array_var,
+                            sym_type, nullptr));
+                    }
                     nested_lowered_body.push_back(b.Assignment(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
+                        b.PointerToCPtr(array_var, ASRUtils::symbol_type(sym))
                     ));
                     
                     // Add sym, assignment for Ubound and Lbound
@@ -1494,7 +1681,7 @@ class ParallelRegionVisitor :
                         nested_lowered_body.push_back(b.Assignment(
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                             lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr)),
-                            b.ArrayLBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                            b.ArrayLBound(array_ref, i+1)
                         ));
                         
                         std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "ubound_" + it.first + "_" + std::to_string(i);
@@ -1505,8 +1692,14 @@ class ParallelRegionVisitor :
                         nested_lowered_body.push_back(b.Assignment(
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                             ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
-                            b.ArrayUBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                            b.ArrayUBound(array_ref, i+1)
                         ));
+                    }
+                    if (c->contiguity_checked_arrays.count(it.first)) {
+                        check_task_array_view(loc, it.first, array_ref,
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            sym, ASRUtils::symbol_type(sym), nullptr)),
+                            descriptor_pointer_type(sym_type));
                     }
                 } else if (is_shared) {
                     // Handle shared non-array variables using pointer approach
@@ -2410,7 +2603,7 @@ class ParallelRegionVisitor :
                 }
             }
             // Create thread data module for task
-            std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct");
+            std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct", false);
             // Create required modules (iso_c_binding and omp_lib)
             std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(loc);
 
