@@ -14,6 +14,13 @@ type :: u_t
     complex :: w = (0, 0)
 end type
 integer, parameter :: n0 = 4
+type :: a_t
+    integer :: x = 1
+end type
+type, extends(a_t) :: c_t
+    integer :: y = 2
+end type
+type(c_t), parameter :: pc = c_t(5, 6)
 contains
 integer function fm() result(r)
     type(t), save :: s = z
@@ -35,10 +42,20 @@ integer function f_negative() result(r)
     s%h = s%h + 1
     r = s%h
 end function
+
+integer function f_extends() result(r)
+    type(c_t), save :: v = c_t(10, 20)
+    type(c_t), save :: w = pc
+    if (v%x /= 10 .or. w%x /= 5) error stop 13
+    v%y = v%y + 1
+    w%y = w%y + 1
+    if (w%y - 6 /= v%y - 20) error stop 14
+    r = v%x + v%y
+end function
 end module
 
 program save_19
-use save_19_mod, only: t, fm, f_folded, f_negative
+use save_19_mod, only: t, fm, f_folded, f_negative, f_extends
 implicit none
 type(t), parameter :: zp = t(9, 'xyz', [3, 4], 2.5)
 integer :: i
@@ -49,6 +66,7 @@ do i = 1, 2
     call b(i)
     if (f_folded() /= 9 + i) error stop 11
     if (f_negative() /= -9 + i) error stop 12
+    if (f_extends() /= 30 + i) error stop 15
 end do
 print *, "ok"
 
