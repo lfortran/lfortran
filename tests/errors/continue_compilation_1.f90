@@ -1369,3 +1369,16 @@ subroutine structure_constructor_null_component_4()
     a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
     e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
 end subroutine
+
+! `null()` for an integer component of a parameterized derived type.
+subroutine structure_constructor_null_component_5()
+    implicit none
+    type :: t_null_int_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        integer :: j
+    end type
+    type(t_null_int_pdt(4)) :: a
+    a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+end subroutine

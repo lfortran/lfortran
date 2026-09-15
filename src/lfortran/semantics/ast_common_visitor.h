@@ -22694,7 +22694,11 @@ public:
         }
 
         for (size_t i = 0; cast_args && i < constructor_arg_syms.size(); i++) {
-            if( args[i].m_value != nullptr ) {
+            // A null constant has no value to convert. `null()` for a
+            // component that is neither a pointer nor allocatable is
+            // reported by the caller.
+            if( args[i].m_value != nullptr
+                    && !ASR::is_a<ASR::PointerNullConstant_t>(*args[i].m_value) ) {
                 ASR::symbol_t* member_sym = constructor_arg_syms[i];
                 ASR::ttype_t* member_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::symbol_type(member_sym));
