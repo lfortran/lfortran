@@ -18089,7 +18089,7 @@ public:
         }
         if (ASR::is_a<ASR::Var_t>(*actual)) {
             ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(actual)->m_v;
-            if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
+            if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(passed_sym))) {
                 return passed_sym;
             } else if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                 return ASR::down_cast<ASR::Variable_t>(passed_sym)->m_type_declaration;
@@ -18191,7 +18191,8 @@ public:
                 "arg_" + std::to_string(i));
             ASR::expr_t* actual = args[i].m_value;
             if (ASR::is_a<ASR::Var_t>(*actual) &&
-                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(actual)->m_v)) {
+                    ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(actual)->m_v))) {
                 dummies.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                     ASR::down_cast<ASR::Var_t>(actual)->m_v)));
                 continue;
