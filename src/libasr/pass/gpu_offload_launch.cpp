@@ -181,6 +181,48 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
         + plan.liveout_scalars.size());
+    // The limits of the loops are evaluated once, as the loop evaluates
+    // them before its first iteration, into host variables that everything
+    // below reads: the component fit, the kernel's arguments and the grid.
+    std::vector<ASR::expr_t*> starts, ends;
+    {
+        auto evaluate_once = [&](ASR::expr_t *&limit,
+                const std::string &name) {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*limit)) return;
+            ASR::symbol_t *sym = gpu_new_variable(al, loc, current_scope,
+                current_scope->get_unique_name(name),
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(limit)));
+            launch_stmts.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), limit,
+                    nullptr, false, false)));
+            for (size_t i = 0; i < plan.call_args.n; i++) {
+                if (plan.call_args.p[i].m_value == limit) {
+                    plan.call_args.p[i].m_value =
+                        ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                }
+            }
+            limit = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        };
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            evaluate_once(plan.dim_info[d].host_start, "__gpu_loop_start");
+            evaluate_once(plan.dim_info[d].host_end, "__gpu_loop_end");
+            starts.push_back(plan.dim_info[d].host_start);
+            ends.push_back(plan.dim_info[d].host_end);
+        }
+    }
+    // The components the kernel writes are made ready from the loop as the
+    // source wrote it, which the rewrites above left untouched, and before
+    // any element is gathered into a copy.
+    {
+        ParallelLoopNest source;
+        if (parallel_loop_nest(region, source)) {
+            for (ASR::stmt_t *stmt : build_component_fit(source, starts, ends,
+                    loc)) {
+                launch_stmts.push_back(al, stmt);
+            }
+        }
+    }
     for (size_t gi = 0; gi < plan.gather_stmts.n; gi++) {
         launch_stmts.push_back(al, plan.gather_stmts.p[gi]);
     }
