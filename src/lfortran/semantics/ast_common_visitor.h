@@ -11205,9 +11205,10 @@ public:
     // be stored as it is. Every argument must fold to a constant of its
     // component's type, kind and rank, a structure argument must itself be
     // a StructConstant, an allocatable or pointer component only accepts
-    // null(), and a character argument must have its component's length,
-    // as character arguments are not blank padded or truncated when the
-    // constructor is built.
+    // null(), a scalar type(c_ptr) or type(c_funptr) component only accepts
+    // c_null_ptr or c_null_funptr, and a character argument must have its
+    // component's length, as character arguments are not blank padded or
+    // truncated when the constructor is built.
     ASR::expr_t* get_folded_struct_constant(const Location& loc,
             ASR::symbol_t* dt_sym, ASR::call_arg_t* args, size_t n_args,
             ASR::ttype_t* type) {
@@ -11236,6 +11237,13 @@ public:
                 continue;
             }
             ASR::ttype_t* element_type = ASRUtils::type_get_past_array(member_type);
+            if (ASR::is_a<ASR::CPtr_t>(*member_type)) {
+                if (!ASR::is_a<ASR::PointerNullConstant_t>(*arg)) {
+                    return nullptr;
+                }
+                folded_args.push_back(al, folded_arg);
+                continue;
+            }
             if (ASR::is_a<ASR::StructType_t>(*element_type)) {
                 if (!ASR::is_a<ASR::StructConstant_t>(*arg)
                         || ASRUtils::is_array(member_type)) {

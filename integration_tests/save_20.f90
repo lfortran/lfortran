@@ -1,5 +1,6 @@
 module save_20_mod
-use iso_c_binding, only: c_ptr, c_null_ptr, c_associated, c_loc
+use iso_c_binding, only: c_ptr, c_null_ptr, c_associated, c_loc, &
+    c_funptr, c_null_funptr
 implicit none
 type :: t
     integer :: h = 0
@@ -30,6 +31,14 @@ type :: u_t
 end type
 integer, parameter :: n0 = 4
 type(t), parameter :: z = t(9, 30)
+type :: w_t
+    integer :: h = 0
+    type(c_ptr) :: p = c_null_ptr
+end type
+type :: e_t
+    integer :: h = 0
+    type(c_funptr) :: fp = c_null_funptr
+end type
 integer, target :: tgt = 7
 contains
 integer function fm() result(r)
@@ -86,6 +95,26 @@ integer function f_folded() result(r)
     s%h = s%h + 1
     r = s%h
 end function
+
+integer function f_cptr_comp() result(r)
+    type(w_t) :: s = w_t(9)
+    if (c_associated(s%p)) error stop 25
+    s%h = s%h + 1
+    r = s%h
+end function
+
+integer function f_cptr_given() result(r)
+    type(w_t) :: s = w_t(9, c_null_ptr)
+    if (c_associated(s%p)) error stop 26
+    s%h = s%h + 1
+    r = s%h
+end function
+
+integer function f_funptr_comp() result(r)
+    type(e_t) :: s = e_t(9)
+    s%h = s%h + 1
+    r = s%h
+end function
 end module
 
 program save_20
@@ -107,6 +136,9 @@ do i = 1, 2
     if (f_broadcast() /= 15) error stop 11
     if (f_negative() /= -9 + i) error stop 12
     if (f_folded() /= 9 + i) error stop 13
+    if (f_cptr_comp() /= 9 + i) error stop 14
+    if (f_cptr_given() /= 9 + i) error stop 15
+    if (f_funptr_comp() /= 9 + i) error stop 16
 end do
 print *, "ok"
 
