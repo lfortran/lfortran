@@ -49,11 +49,13 @@ end do
 a = a + tmp
 end subroutine
 
-subroutine host_arrays(hs, gs, g43, g01, ws)
+subroutine host_arrays(hs, gs, g43, g01, ws, ps, pt)
 implicit none
-integer, intent(out) :: hs, gs, g43, g01, ws
+integer, intent(out) :: hs, gs, g43, g01, ws, ps, pt
 integer :: h(10), g(0:4, 3)
 integer, allocatable :: w(:)
+integer, target :: t(20)
+integer, pointer :: p(:)
 h = 0
 call fill_host()
 hs = sum(h)
@@ -66,6 +68,14 @@ allocate(w(5))
 w = 0
 call fill_allocatable()
 ws = sum(w)
+t = 0
+p => t
+call fill_pointer()
+ps = sum(t)
+t = 0
+p => t(2:20:2)
+call fill_pointer()
+pt = 1000*sum(t(2:20:2)) + sum(t(1:19:2))
 contains
 subroutine fill_host()
 integer :: k
@@ -91,6 +101,15 @@ integer :: k
 !$omp parallel do
 do k = 1, 5
     w(k) = 2*k
+end do
+!$omp end parallel do
+end subroutine
+
+subroutine fill_pointer()
+integer :: k
+!$omp parallel do
+do k = 1, size(p)
+    p(k) = k
 end do
 !$omp end parallel do
 end subroutine
