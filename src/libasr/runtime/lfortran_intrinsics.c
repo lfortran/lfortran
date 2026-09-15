@@ -6825,10 +6825,32 @@ _lfortran_open(int32_t unit_num,
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
-        if (!fd && iostat == NULL) {
-            printf("Runtime error: Error in opening the file!\n");
-            perror(f_name_c);
-            exit(1);
+        if (!fd) {
+            if (iostat == NULL) {
+                printf("Runtime error: Error in opening the file!\n");
+                perror(f_name_c);
+                exit(1);
+            } else {
+                *iostat = 2; // file open error
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
+                    char* temp = "Error in opening the file.";
+                    snprintf(iomsg, iomsg_len + 1, "%s", temp);
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+                }
+                internal_free(f_name_c);
+                internal_free(status_c);
+                internal_free(form_c);
+                internal_free(access_c);
+                internal_free(action_c);
+                internal_free(delim_c);
+                internal_free(blank_c);
+                internal_free(encoding_c);
+                internal_free(sign_c);
+                internal_free(decimal_c);
+                internal_free(round_c);
+                internal_free(pad_c);
+                return 0;
+            }
         }
         // Handle position='append': seek to end of file
         if (fd && position != NULL && position_len > 0) {
@@ -10660,7 +10682,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
 - Not case sensitive.
 - Not null dependent.
 */
-LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len){
+LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len){
     if(s1_len != s2_len) return false;
     for(int64_t i = 0; i < s1_len; i++){
         if(tolower(s1[i]) != tolower((s2[i]))) return false;
@@ -11653,7 +11675,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     va_start(args, pad_len);
     
     bool pad_no = false;
-    if (pad && pad_len > 0 && is_streql_NCS(pad, pad_len, "no", 2)) {
+    if (pad && pad_len > 0 && _lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
         pad_no = true;
     }
     // Internal files have no connection, so only a DECIMAL= specifier on the
@@ -11696,7 +11718,7 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
     va_start(args, pad_len);
 
     bool pad_no = false;
-    if (pad && pad_len > 0 && is_streql_NCS(pad, pad_len, "no", 2)) {
+    if (pad && pad_len > 0 && _lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
         pad_no = true;
     }
     int decimal_mode = _lfortran_get_decimal_mode(-1);
@@ -11781,7 +11803,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
     bool pad_no = false;
     if (pad && pad_len > 0) {
-        if (is_streql_NCS(pad, pad_len, "no", 2)) {
+        if (_lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
             pad_no = true;
         }
     } else if (unit_num != -1) {
@@ -12040,7 +12062,7 @@ static void common_formatted_read(InputSource *inputSource,
     }
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
-    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
+    const bool advance_no = _lfortran_is_streql_NCS((char*)advance, advance_length, "no", 2);
 
     int64_t start_pos = 0;
     if (fmt_len > 0 && fmt[0] == '(') start_pos = 1;
