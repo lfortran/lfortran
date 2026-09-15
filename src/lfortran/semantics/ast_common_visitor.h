@@ -11040,7 +11040,7 @@ public:
     // `character(len=3) :: c = "hi"`. Returns nullptr if the length is
     // already `len` or is not constant.
     ASR::expr_t* conform_character_constant_length(ASR::expr_t* value,
-            ASR::ttype_t* element_type, int64_t len, const Location& loc) {
+            int64_t len, const Location& loc) {
         ASR::String_t* value_str = ASRUtils::get_string_type(ASRUtils::expr_type(value));
         int64_t value_len = 0;
         if (value_str == nullptr || value_str->m_len == nullptr
@@ -11055,23 +11055,20 @@ public:
             return nullptr;
         }
         ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
-        int64_t size = ASRUtils::get_fixed_size_of_array(array->m_type);
-        if (size < 0 || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
+        if (ASRUtils::get_fixed_size_of_array(array->m_type) < 0
+                || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
             return nullptr;
         }
-        Vec<ASR::expr_t*> elements;
-        elements.reserve(al, std::max<int64_t>(size, 1));
-        for (int64_t j = 0; j < size; j++) {
-            elements.push_back(al, ASRUtils::fetch_ArrayConstant_value(al, array, j));
-        }
-        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
-        ASR::ttype_t* adjusted_element = ASRUtils::duplicate_type(al, element_type);
-        ASR::ttype_t* adjusted_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-            adjusted_element, array_type->m_dims, array_type->n_dims,
-            array_type->m_physical_type, array_type->m_memory_space));
-        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc, size * len,
-            ASRUtils::set_ArrayConstant_data(elements.p, elements.size(), adjusted_element),
-            adjusted_type, array->m_storage_format));
+        // `adjust_array_character_length` rewrites the constant and the
+        // length in its type in place, and `value` may be a named constant's
+        // value, so adjust a copy with its own length.
+        ASR::ttype_t* adjusted_type = ASRUtils::duplicate_type(al, array->m_type);
+        ASRUtils::get_string_type(adjusted_type)->m_len = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, value_len,
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        ASR::expr_t* adjusted = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            array->m_n_data, array->m_data, adjusted_type, array->m_storage_format));
+        return adjust_array_character_length(adjusted, len, value_len, al);
     }
 
     // An array argument of a structure constructor must have its component's
@@ -11166,7 +11163,7 @@ public:
             if (value != nullptr && ASRUtils::is_character(*element_type)) {
                 // Case: `t("hi")` for `character(len=3) :: c`.
                 ASR::expr_t* adjusted = conform_character_constant_length(
-                    value, element_type, element_len, arg->base.loc);
+                    value, element_len, arg->base.loc);
                 if (adjusted != nullptr) {
                     value = adjusted;
                     arg = adjusted;
