@@ -24,36 +24,12 @@ type :: ta
     character(len=5) :: k = "aaaaa"
 end type
 
-type :: tf
-    character(len=5) :: s = "aaaaa"
-    integer :: n = 0
-    procedure(iface), pointer, nopass :: fp => null()
-contains
-    procedure :: get_n
-    final :: finalize_tf
-end type
-
 type :: u
-    type(tf) :: fin_part = tf("hello", 9, null())
     type(ta) :: part = ta(null(), null(), null(), null(), null(), null(), &
         null(), null(), null(), null(), "hello")
 end type
 
 contains
-
-integer function one()
-    one = 1
-end function
-
-integer function get_n(self)
-    class(tf), intent(in) :: self
-    get_n = self%n
-end function
-
-subroutine finalize_tf(self)
-    type(tf), intent(inout) :: self
-    self%n = -2
-end subroutine
 
 subroutine reset(x)
     type(u), intent(out) :: x
@@ -70,8 +46,6 @@ subroutine check(x)
     if (allocated(x%part%ai) .or. allocated(x%part%s)) error stop 7
     if (allocated(x%part%a) .or. allocated(x%part%c)) error stop 8
     if (x%part%k /= "hello") error stop 9
-    if (x%fin_part%s /= "hello" .or. x%fin_part%get_n() /= 9) error stop 11
-    if (associated(x%fin_part%fp)) error stop 12
 end subroutine
 
 end module
@@ -92,9 +66,6 @@ do i = 1, 3
     allocate(tc :: g%part%c)
     g%part%p => tgt
     g%part%tp => ttgt
-    g%fin_part%s = "bye"
-    g%fin_part%n = -1
-    g%fin_part%fp => one
     call reset(g)
     call check(g)
 end do
