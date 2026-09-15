@@ -19175,6 +19175,9 @@ public:
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
                     ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(type));
+                    bool is_descriptor_based =
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray ||
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
                     llvm::Value* descriptor_stride_i32 = llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), 1);
                     if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
@@ -19194,7 +19197,15 @@ public:
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
                         var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
                     }
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                    // A descriptor holds a pointer to its elements, so the
+                    // access above yields a pointer to that pointer and has to
+                    // be dereferenced to get the flat element pointer the
+                    // runtime expects. A fixed size array stores its elements
+                    // inline, so there it already is the element pointer.
+                    // Assumed rank dummies are descriptor based but are neither
+                    // allocatable nor pointer, so they need the load too.
+                    if (is_descriptor_based
+                        || ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
                     }
@@ -19312,7 +19323,7 @@ public:
                     context, *module, *builder, no_str);
                 llvm::Value* no_len = llvm::ConstantInt::get(
                     llvm::Type::getInt64Ty(context), no_str.size());
-                std::string cmp_func_name = "is_streql_NCS";
+                std::string cmp_func_name = "_lfortran_is_streql_NCS";
                 llvm::Function *cmp_fn = module->getFunction(cmp_func_name);
                 if (!cmp_fn) {
                     llvm::FunctionType *cmp_ft = llvm::FunctionType::get(
