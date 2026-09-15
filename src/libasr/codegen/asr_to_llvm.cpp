@@ -19121,6 +19121,9 @@ public:
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
                     ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(type));
+                    bool is_descriptor_based =
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray ||
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
                     llvm::Value* descriptor_stride_i32 = llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), 1);
                     if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
@@ -19140,7 +19143,15 @@ public:
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
                         var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
                     }
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                    // A descriptor holds a pointer to its elements, so the
+                    // access above yields a pointer to that pointer and has to
+                    // be dereferenced to get the flat element pointer the
+                    // runtime expects. A fixed size array stores its elements
+                    // inline, so there it already is the element pointer.
+                    // Assumed rank dummies are descriptor based but are neither
+                    // allocatable nor pointer, so they need the load too.
+                    if (is_descriptor_based
+                        || ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
                     }
@@ -19237,6 +19248,44 @@ public:
             // no_values flag: 1 if no values were read, 0 otherwise
             llvm::Value* no_values_flag = llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), x.n_values == 0 ? 1 : 0);
+            // An empty formatted READ with ADVANCE='no' must leave the
+            // record open, so it must not drain to the next record.
+            // List-directed and internal reads never carry a conforming
+            // ADVANCE=, and value-carrying formatted reads already honor
+            // it inside _lfortran_formatted_read, so only the empty
+            // external formatted drain needs the guard. The frontend
+            // wraps m_advance in StringTrim, so a blank-padded variable
+            // such as character(len=10) :: adv = 'no' arrives here as
+            // ("no", 2); anything but a case-insensitive 'no' keeps the
+            // historical drain, matching the runtime's own check in
+            // common_formatted_read.
+            bool has_advance_guard = (x.m_advance && x.m_fmt && !is_string);
+            llvm::Value* should_drain = nullptr;
+            if (has_advance_guard) {
+                // Reuse the runtime's own matcher instead of open-coding
+                // the comparison here.
+                std::string no_str("no");
+                llvm::Value* no_data = LCompilers::create_global_string_ptr(
+                    context, *module, *builder, no_str);
+                llvm::Value* no_len = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), no_str.size());
+                std::string cmp_func_name = "_lfortran_is_streql_NCS";
+                llvm::Function *cmp_fn = module->getFunction(cmp_func_name);
+                if (!cmp_fn) {
+                    llvm::FunctionType *cmp_ft = llvm::FunctionType::get(
+                        llvm::Type::getInt1Ty(context), {
+                            character_type, llvm::Type::getInt64Ty(context),
+                            character_type, llvm::Type::getInt64Ty(context)
+                        }, false);
+                    cmp_fn = llvm::Function::Create(cmp_ft,
+                        llvm::Function::ExternalLinkage, cmp_func_name,
+                        module.get());
+                }
+                llvm::Value* is_advance_no = builder->CreateCall(cmp_fn,
+                    {advance, advance_length, no_data, no_len});
+                should_drain = builder->CreateNot(is_advance_no);
+            }
+            auto emit_drain = [&]() {
             // When x.m_iostat is provided and values were read (n_values > 0),
             // only call empty_read if no error occurred during value reads.
             // When n_values == 0, no reads happened yet so call unconditionally.
@@ -19250,6 +19299,12 @@ public:
                 }, [](){});
             } else {
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
+            }
+            };
+            if (has_advance_guard) {
+                llvm_utils->create_if_else(should_drain, emit_drain, [](){});
+            } else {
+                emit_drain();
             }
             }
         }
