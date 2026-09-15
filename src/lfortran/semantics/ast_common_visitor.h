@@ -11157,9 +11157,11 @@ public:
     // components `members`. A `null()` argument is a disassociated pointer or
     // unallocated allocatable of its component's type, like the component's
     // own `=> null()` default initializer; it must not take the type of the
-    // variable being declared or assigned.
+    // variable being declared or assigned. `null_args` records, for each
+    // argument, whether it is a reference to the intrinsic `null()`.
     void visit_struct_constructor_args(AST::fnarg_t *args, size_t n,
-            const std::vector<ASR::symbol_t*>& members, Vec<ASR::call_arg_t>& vals) {
+            const std::vector<ASR::symbol_t*>& members, Vec<ASR::call_arg_t>& vals,
+            std::vector<bool>& null_args) {
         vals.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
@@ -11171,7 +11173,18 @@ public:
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
             vals.push_back(al, val[0]);
+            null_args.push_back(is_null_intrinsic_reference(args[i].m_end, val[0].m_value));
         }
+    }
+
+    // True if the argument `arg`, which was visited into `value`, is a
+    // reference to the intrinsic `null()` (with or without `mold`). The named
+    // constants `c_null_ptr` and `c_null_funptr` are names, not function
+    // references, and a user procedure named `null` is a function call, so
+    // neither is one, although `c_null_ptr` is a null constant too.
+    bool is_null_intrinsic_reference(AST::expr_t* arg, ASR::expr_t* value) {
+        return value != nullptr && AST::is_a<AST::FuncCallOrArray_t>(*arg)
+            && ASR::is_a<ASR::PointerNullConstant_t>(*value);
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -11353,55 +11366,22 @@ public:
         }
     }
 
-    // Returns the argument expression written for each member of `info` in
-    // the structure constructor `x`, or nullptr for an omitted member.
-    std::vector<AST::expr_t*> get_struct_constructor_arg_exprs(
-            const AST::FuncCallOrArray_t& x, const StructConstructorInfo& info) {
-        std::vector<AST::expr_t*> exprs(info.members.size(), nullptr);
-        if (!info.kind_indices.empty() && x.n_subargs > 0) {
-            // Case: `t(4)(x)`, type parameters first, then components.
-            for (size_t i = 0; i < x.n_args && i < info.kind_indices.size(); i++) {
-                exprs[info.kind_indices[i]] = x.m_args[i].m_end;
-            }
-            size_t component = 0;
-            for (size_t i = 0; i < info.members.size() && component < x.n_subargs; i++) {
-                if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
-                        == info.kind_indices.end()) {
-                    exprs[i] = x.m_subargs[component++].m_end;
-                }
-            }
-        } else {
-            for (size_t i = 0; i < x.n_args && i < info.members.size(); i++) {
-                exprs[i] = x.m_args[i].m_end;
-            }
-        }
-        for (size_t i = 0; i < x.n_keywords; i++) {
-            std::string name = to_lower(x.m_keywords[i].m_arg);
-            for (size_t j = 0; j < info.members.size(); j++) {
-                if (info.members[j] != nullptr
-                        && ASRUtils::symbol_name(info.members[j]) == name) {
-                    exprs[j] = x.m_keywords[i].m_value;
-                    break;
-                }
-            }
-        }
-        return exprs;
-    }
-
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
         StructConstructorInfo info = get_struct_constructor_info(v);
         bool is_pdt = !info.kind_indices.empty();
         Vec<ASR::call_arg_t> vals;
+        // Whether each argument in `vals` is a reference to `null()`.
+        std::vector<bool> null_args;
         if (is_pdt && x.n_subargs > 0) {
             std::vector<ASR::symbol_t*> kind_members;
             for (size_t index : info.kind_indices) {
                 kind_members.push_back(info.members[index]);
             }
-            visit_struct_constructor_args(x.m_args, x.n_args, kind_members, vals);
+            visit_struct_constructor_args(x.m_args, x.n_args, kind_members, vals, null_args);
         } else {
-            visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals);
+            visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals, null_args);
         }
         if (is_pdt && x.n_subargs > 0) {
             if (vals.size() > info.kind_indices.size()
@@ -11418,9 +11398,12 @@ public:
                 }
             }
             Vec<ASR::call_arg_t> components;
-            visit_struct_constructor_args(x.m_subargs, x.n_subargs, component_members, components);
+            std::vector<bool> component_null_args;
+            visit_struct_constructor_args(x.m_subargs, x.n_subargs, component_members,
+                components, component_null_args);
             Vec<ASR::call_arg_t> combined;
             combined.reserve(al, info.members.size());
+            std::vector<bool> combined_null_args(info.members.size(), false);
             for (size_t i = 0; i < info.members.size(); i++) {
                 ASR::call_arg_t arg;
                 arg.loc = loc;
@@ -11429,27 +11412,31 @@ public:
             }
             for (size_t i = 0; i < vals.size(); i++) {
                 combined.p[info.kind_indices[i]] = vals[i];
+                combined_null_args[info.kind_indices[i]] = null_args[i];
             }
             size_t component = 0;
             for (size_t i = 0; i < info.members.size() && component < components.size(); i++) {
                 if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
                         == info.kind_indices.end()) {
+                    combined_null_args[i] = component_null_args[component];
                     combined.p[i] = components[component++];
                 }
             }
             vals = combined;
+            null_args = combined_null_args;
         }
         if (is_pdt) {
-            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false);
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false,
+                &null_args);
             resolve_pdt_constructor(loc, v, vals);
         } else {
-            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag);
+            visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, true, true,
+                &null_args);
         }
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
         std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
-        std::vector<AST::expr_t*> arg_exprs = get_struct_constructor_arg_exprs(x, info);
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
             if (vals[i].m_value == nullptr
                     || !ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value)
@@ -11461,9 +11448,8 @@ public:
             // The named constants `c_null_ptr` and `c_null_funptr` are also
             // null constants, and are valid for a plain `type(c_ptr)` or
             // `type(c_funptr)` component, as is a component default taken for
-            // an omitted argument. Only a function reference is `null()`.
-            bool is_null_reference = i < arg_exprs.size() && arg_exprs[i] != nullptr
-                && AST::is_a<AST::FuncCallOrArray_t>(*arg_exprs[i]);
+            // an omitted argument. Only a written `null()` is rejected.
+            bool is_null_reference = i < null_args.size() && null_args[i];
             if (ASRUtils::is_allocatable(member_var->m_type)) {
                 // `null()` for an allocatable component means it is not
                 // allocated, which is how an omitted allocatable component
@@ -22598,9 +22584,13 @@ public:
         }
     }
 
+    // `null_args`, if given, has an entry for each positional argument in
+    // `args`; it is extended to every component and records whether each
+    // keyword argument is a reference to the intrinsic `null()`.
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
         const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag,
-        bool cast_args = true, bool fill_component_defaults = true) {
+        bool cast_args = true, bool fill_component_defaults = true,
+        std::vector<bool>* null_args = nullptr) {
         fn = ASRUtils::symbol_get_past_external(fn);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn));
         StructConstructorInfo info = get_struct_constructor_info(fn);
@@ -22626,6 +22616,9 @@ public:
         }
 
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
+        if (null_args != nullptr) {
+            null_args->resize(args.size(), false);
+        }
 
         for (size_t i = 0; i < n; i++) {
             std::string name = to_lower(kwargs[i].m_arg);
@@ -22657,6 +22650,9 @@ public:
             }
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
+            if (null_args != nullptr) {
+                (*null_args)[idx] = is_null_intrinsic_reference(kwargs[i].m_value, expr);
+            }
         }
 
         // If value is not specified in args nor in keyword argument, set to default initializer if it exists
