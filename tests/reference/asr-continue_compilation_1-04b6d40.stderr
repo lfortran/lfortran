@@ -658,6 +658,36 @@ semantic error: equivalence between two common block variables is not allowed
 1228 |         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
      |                      ^^^^^^ both variables are in a common block
 
+semantic error: type mismatch in initialization: `type(init_mismatch_a_t)` cannot be assigned to `type(init_mismatch_b_t)`
+    --> tests/errors/continue_compilation_1.f90:1243:51
+     |
+1243 |     type(init_mismatch_b_t) :: init_mismatch_mv = init_mismatch_pa  ! {Error} type mismatch in initialization
+     |                                                   ^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `type(init_mismatch_a_t)` cannot be assigned to `type(init_mismatch_b_t)`
+    --> tests/errors/continue_compilation_1.f90:1246:40
+     |
+1246 |         type(init_mismatch_b_t) :: x = init_mismatch_pa  ! {Error} type mismatch in initialization
+     |                                        ^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `integer(4)` cannot be assigned to `type(init_mismatch_a_t)`
+    --> tests/errors/continue_compilation_1.f90:1247:40
+     |
+1247 |         type(init_mismatch_a_t) :: y = init_mismatch_ip  ! {Error} type mismatch in initialization
+     |                                        ^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `type(init_mismatch_a_t)` cannot be assigned to `integer(4)`
+    --> tests/errors/continue_compilation_1.f90:1248:30
+     |
+1248 |         type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
+     |                              ^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `imported_init_t` is not defined
+    --> tests/errors/continue_compilation_1.f90:1278:5
+     |
+1278 |     type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
+     |     ^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
