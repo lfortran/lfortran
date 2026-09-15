@@ -5682,14 +5682,16 @@ public:
     }
 
     // Copies the value of a use- or host-associated parameter so that every
-    // derived type it names is reachable from `scope`. The value names the
-    // types of the module that declares the parameter, and a reference that
-    // `scope` cannot reach is written to the .mod file as a dangling symbol.
-    // A type already imported into the scope chain (under any name, e.g.
-    // `use m, only: u => t`) is reused. Otherwise it is imported under a
-    // `1_`-prefixed name no user code can spell, so the enclosing module does
-    // not start exporting the type under a name users can reference. `scope`
-    // must not be a derived type's own scope, which holds only its members.
+    // derived type and procedure interface it names is reachable from
+    // `scope`. The value names the symbols of the module that declares the
+    // parameter, such as the interface of a procedure pointer's `null()`, and
+    // a reference that `scope` cannot reach is written to the .mod file as a
+    // dangling symbol. A symbol already imported into the scope chain (under
+    // any name, e.g. `use m, only: u => t`) is reused. Otherwise it is
+    // imported under a `1_`-prefixed name no user code can spell, so the
+    // enclosing module does not start exporting it under a name users can
+    // reference. `scope` must not be a derived type's own scope, which holds
+    // only its members.
     class ImportedValueDuplicator: public ASR::BaseExprStmtDuplicator<ImportedValueDuplicator> {
     public:
         SymbolTable* scope;
@@ -5697,9 +5699,14 @@ public:
         ImportedValueDuplicator(Allocator &al, SymbolTable* scope):
             ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>(al), scope(scope) {}
 
-        ASR::symbol_t* reachable_type(ASR::symbol_t* sym) {
+        static bool is_importable(ASR::symbol_t* sym) {
+            return sym != nullptr && (ASR::is_a<ASR::Struct_t>(*sym) ||
+                ASR::is_a<ASR::Function_t>(*sym));
+        }
+
+        ASR::symbol_t* reachable_symbol(ASR::symbol_t* sym) {
             ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(sym);
-            if (type_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*type_sym)) {
+            if (!is_importable(type_sym)) {
                 return sym;
             }
             if (ASRUtils::is_visible_from(sym, scope)) {
@@ -5732,11 +5739,12 @@ public:
 
         // A named constant of the declaring module (`t(k)`) is not reachable
         // either, so it is replaced by its value. A reference to a derived
-        // type, such as the mold of a `null()` component, is made reachable.
+        // type or a procedure, such as the mold of a `null()` component or
+        // the interface of a procedure pointer, is made reachable.
         ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
             ASR::symbol_t* v = ASRUtils::symbol_get_past_external(x->m_v);
-            if (v != nullptr && ASR::is_a<ASR::Struct_t>(*v)) {
-                return ASR::make_Var_t(this->al, x->base.base.loc, reachable_type(x->m_v));
+            if (is_importable(v)) {
+                return ASR::make_Var_t(this->al, x->base.base.loc, reachable_symbol(x->m_v));
             }
             if (!ASRUtils::is_visible_from(x->m_v, scope) && v != nullptr &&
                     ASR::is_a<ASR::Variable_t>(*v)) {
@@ -5752,14 +5760,14 @@ public:
         ASR::asr_t* duplicate_StructConstant(ASR::StructConstant_t* x) {
             ASR::asr_t* copy = ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>::duplicate_StructConstant(x);
             ASR::StructConstant_t* c = ASR::down_cast2<ASR::StructConstant_t>(copy);
-            c->m_dt_sym = reachable_type(c->m_dt_sym);
+            c->m_dt_sym = reachable_symbol(c->m_dt_sym);
             return copy;
         }
 
         ASR::asr_t* duplicate_StructConstructor(ASR::StructConstructor_t* x) {
             ASR::asr_t* copy = ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>::duplicate_StructConstructor(x);
             ASR::StructConstructor_t* c = ASR::down_cast2<ASR::StructConstructor_t>(copy);
-            c->m_dt_sym = reachable_type(c->m_dt_sym);
+            c->m_dt_sym = reachable_symbol(c->m_dt_sym);
             return copy;
         }
     };
