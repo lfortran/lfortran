@@ -254,13 +254,14 @@ bool is_single_assignment_binding(ASR::symbol_t *sym,
 class GpuLocalVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuLocalVarCollector> {
 public:
-    std::set<std::string> &local_vars;
     std::set<std::string> &assigned_vars;
+    std::set<std::string> &inner_loop_vars;
     std::set<SymbolTable*> enclosing_scopes;
 
-    GpuLocalVarCollector(std::set<std::string> &lv, std::set<std::string> &av,
+    GpuLocalVarCollector(std::set<std::string> &av,
+        std::set<std::string> &ilv,
         const std::set<SymbolTable*> &scopes = {})
-        : local_vars(lv), assigned_vars(av), enclosing_scopes(scopes) {}
+        : assigned_vars(av), inner_loop_vars(ilv), enclosing_scopes(scopes) {}
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         // Check if target is a simple Var (not ArrayItem)
@@ -309,8 +310,21 @@ public:
             ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_head.m_v);
             std::string name = ASRUtils::symbol_name(v->m_v);
             assigned_vars.insert(name);
+            inner_loop_vars.insert(name);
         }
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_DoLoop(x);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t i = 0; i < x.n_head; i++) {
+            if (x.m_head[i].m_v && ASR::is_a<ASR::Var_t>(*x.m_head[i].m_v)) {
+                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_head[i].m_v);
+                std::string name = ASRUtils::symbol_name(v->m_v);
+                assigned_vars.insert(name);
+                inner_loop_vars.insert(name);
+            }
+        }
+        ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_DoConcurrentLoop(x);
     }
 };
 

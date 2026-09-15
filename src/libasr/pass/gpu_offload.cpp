@@ -246,8 +246,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Find local scalar temporaries (assigned but not arrays, not loop vars)
-    std::set<std::string> local_vars, assigned_vars;
-    GpuLocalVarCollector lv_collector(local_vars, assigned_vars, enclosing_block_scopes);
+    std::set<std::string> assigned_vars, inner_loop_vars;
+    GpuLocalVarCollector lv_collector(assigned_vars, inner_loop_vars, enclosing_block_scopes);
     for (size_t i = 0; i < work.n_body; i++) {
         lv_collector.visit_stmt(*work.body[i]);
     }
@@ -323,7 +323,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (auto &name : assigned_vars) {
         if (loop_var_set.count(name)) continue;
         if (all_reduction_targets.count(name)) continue;
-        if (post_loop_vars.count(name)) continue;
+        if (post_loop_vars.count(name) && !inner_loop_vars.count(name)) continue;
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
