@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface_pure-48d054d",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/implicit_interface_pure.f90",
+    "infile_hash": "6178f9ef05d5214acbab9f944e1f39614dc294aff2bc8b7169321f3a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_interface_pure-48d054d.stderr",
+    "stderr_hash": "6425f8b4e913128aa5f28a61e456b2375e21da9eb99d6090ce93b70c",
+    "returncode": 1
+}

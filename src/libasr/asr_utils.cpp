@@ -836,6 +836,8 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             return nullptr;
         }
         case ASR::exprType::FunctionPointerCast: {
+            // A cast without `to` targets the opaque procedure type, which
+            // has no interface symbol.
             ASR::symbol_t* to = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionPointerCast_t>(expr)->m_to);
             if (to && ASR::is_a<ASR::Function_t>(*to)) {

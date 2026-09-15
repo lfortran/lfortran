@@ -72,10 +72,42 @@
                                     (SymbolTable
                                         3
                                         {
-                                            driver_arg_0:
+                                            
+                                        })
+                                    driver
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            driver~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            driver~arg_0:
                                                 (Variable
-                                                    3
-                                                    driver_arg_0
+                                                    4
+                                                    driver~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -102,10 +134,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            driver_arg_1:
+                                            driver~arg_1:
                                                 (Variable
-                                                    3
-                                                    driver_arg_1
+                                                    4
+                                                    driver~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -133,7 +165,7 @@
                                                     []
                                                 )
                                         })
-                                    driver
+                                    driver~fpcast
                                     (FunctionType
                                         [(Array
                                             (Integer 4)
@@ -163,14 +195,67 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 driver_arg_0)
-                                    (Var 3 driver_arg_1)]
+                                    [(Var 4 driver~arg_0)
+                                    (Var 4 driver~arg_1)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            driver~fpcast_ptr:
+                                (Variable
+                                    2
+                                    driver~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 driver~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             n:
                                 (Variable
@@ -239,9 +324,45 @@
                     [(Var 2 a)
                     (Var 2 b)
                     (Var 2 n)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 driver~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 driver)
+                            2 driver~fpcast
+                            (FunctionType
+                                [(Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 driver~fpcast_ptr
                         2 driver
-                        ()
                         [((Var 2 a))
                         ((Var 2 b))]
                         ()
