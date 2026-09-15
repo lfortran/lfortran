@@ -5643,6 +5643,143 @@ public:
         }
     }
 
+    // Copies the value of a use- or host-associated parameter so that every
+    // derived type it names is reachable from `scope`. The value names the
+    // types of the module that declares the parameter, and a reference that
+    // `scope` cannot reach is written to the .mod file as a dangling symbol.
+    // A type already imported into the scope chain (under any name, e.g.
+    // `use m, only: u => t`) is reused. Otherwise it is imported under a
+    // `1_`-prefixed name no user code can spell, so the enclosing module does
+    // not start exporting the type under a name users can reference. `scope`
+    // must not be a derived type's own scope, which holds only its members.
+    class ImportedValueDuplicator: public ASR::BaseExprStmtDuplicator<ImportedValueDuplicator> {
+    public:
+        SymbolTable* scope;
+
+        ImportedValueDuplicator(Allocator &al, SymbolTable* scope):
+            ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>(al), scope(scope) {}
+
+        ASR::symbol_t* reachable_type(ASR::symbol_t* sym) {
+            ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(sym);
+            if (type_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*type_sym)) {
+                return sym;
+            }
+            if (ASRUtils::is_visible_from(sym, scope)) {
+                return sym;
+            }
+            if (ASRUtils::is_visible_from(type_sym, scope)) {
+                return type_sym;
+            }
+            for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+                for (auto &item : s->get_scope()) {
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
+                            ASRUtils::symbol_get_past_external(item.second) == type_sym) {
+                        return item.second;
+                    }
+                }
+            }
+            ASR::symbol_t* module_sym = ASRUtils::get_asr_owner(type_sym);
+            if (module_sym == nullptr || !ASR::is_a<ASR::Module_t>(*module_sym)) {
+                return sym;
+            }
+            std::string type_name = ASRUtils::symbol_name(type_sym);
+            std::string local_name = scope->get_unique_name("1_" + type_name, false);
+            ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(this->al, type_sym->base.loc, scope,
+                    s2c(this->al, local_name), type_sym, ASRUtils::symbol_name(module_sym),
+                    nullptr, 0, s2c(this->al, type_name), ASR::accessType::Private));
+            scope->add_symbol(local_name, imported);
+            return imported;
+        }
+
+        // A named constant of the declaring module (`t(k)`) is not reachable
+        // either, so it is replaced by its value.
+        ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
+            ASR::symbol_t* v = ASRUtils::symbol_get_past_external(x->m_v);
+            if (!ASRUtils::is_visible_from(x->m_v, scope) && v != nullptr &&
+                    ASR::is_a<ASR::Variable_t>(*v)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
+                if (var->m_storage == ASR::storage_typeType::Parameter &&
+                        var->m_value != nullptr) {
+                    return &(this->duplicate_expr(var->m_value)->base);
+                }
+            }
+            return ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>::duplicate_Var(x);
+        }
+
+        ASR::asr_t* duplicate_StructConstant(ASR::StructConstant_t* x) {
+            ASR::asr_t* copy = ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>::duplicate_StructConstant(x);
+            ASR::StructConstant_t* c = ASR::down_cast2<ASR::StructConstant_t>(copy);
+            c->m_dt_sym = reachable_type(c->m_dt_sym);
+            return copy;
+        }
+
+        ASR::asr_t* duplicate_StructConstructor(ASR::StructConstructor_t* x) {
+            ASR::asr_t* copy = ASR::BaseExprStmtDuplicator<ImportedValueDuplicator>::duplicate_StructConstructor(x);
+            ASR::StructConstructor_t* c = ASR::down_cast2<ASR::StructConstructor_t>(copy);
+            c->m_dt_sym = reachable_type(c->m_dt_sym);
+            return copy;
+        }
+    };
+
+    // A `type(...)` entity may only be initialized with a value of its own
+    // declared type. A different derived type, a parent or extension of it,
+    // or an intrinsic value is rejected, as is a derived-type value for an
+    // intrinsic `type(...)` entity.
+    void check_type_initializer_type(ASR::ttype_t *decl_type,
+            ASR::symbol_t *decl_type_declaration, ASR::expr_t *init_expr,
+            const Location &loc) {
+        ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
+        bool decl_is_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(decl_type));
+        bool init_is_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::extract_type(init_type));
+        if (!decl_is_struct && !init_is_struct) {
+            return;
+        }
+        ASR::symbol_t *decl_struct_sym = decl_is_struct
+            ? decl_type_declaration : nullptr;
+        ASR::symbol_t *init_struct_sym = init_is_struct
+            ? ASRUtils::get_struct_sym_from_struct_expr(init_expr) : nullptr;
+        if ((decl_is_struct && decl_struct_sym == nullptr) ||
+                (init_is_struct && init_struct_sym == nullptr)) {
+            return;
+        }
+        if (decl_struct_sym) {
+            decl_struct_sym = ASRUtils::symbol_get_past_external(decl_struct_sym);
+        }
+        if (init_struct_sym) {
+            init_struct_sym = ASRUtils::symbol_get_past_external(init_struct_sym);
+        }
+        if (decl_is_struct && init_is_struct) {
+            if (!ASR::is_a<ASR::Struct_t>(*decl_struct_sym) ||
+                    !ASR::is_a<ASR::Struct_t>(*init_struct_sym)) {
+                return;
+            }
+            ASR::Struct_t *decl_struct = ASR::down_cast<ASR::Struct_t>(decl_struct_sym);
+            ASR::Struct_t *init_struct = ASR::down_cast<ASR::Struct_t>(init_struct_sym);
+            if (decl_struct == init_struct ||
+                    (!ASRUtils::is_parent(decl_struct, init_struct) &&
+                     !ASRUtils::is_parent(init_struct, decl_struct) &&
+                     ASRUtils::is_derived_type_similar(decl_struct, init_struct))) {
+                return;
+            }
+        }
+        auto type_name = [](ASR::ttype_t *t, ASR::symbol_t *struct_sym) {
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))) {
+                return "type(" + std::string(ASRUtils::symbol_name(struct_sym)) + ")";
+            }
+            return ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(t), nullptr);
+        };
+        diag.add(Diagnostic(
+            "type mismatch in initialization: `" + type_name(init_type, init_struct_sym) +
+            "` cannot be assigned to `" + type_name(decl_type, decl_struct_sym) + "`",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        throw SemanticAbort();
+    }
+
     void emit_fortran_slash_init_warning(const AST::var_sym_t &s) {
         LCOMPILERS_ASSERT(s.m_initializer != nullptr);
         std::string init_str = "<expr>";
@@ -8493,8 +8630,11 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
+                            // The name may come from `use` or host association
+                            // of a submodule, so look through ExternalSymbol.
+                            ASR::symbol_t *sym_resolved = ASRUtils::symbol_get_past_external(sym_found);
                             if (is_pointer) {
-                                if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                                if (!ASR::is_a<ASR::Variable_t>(*sym_resolved)) {
                                     diag.add(Diagnostic(
                                         "Pointer initialization target `" + sym_name + "` is not a variable",
                                         Level::Error, Stage::Semantic, {
@@ -8502,7 +8642,7 @@ public:
                                         }));
                                     throw SemanticAbort();
                                 }
-                                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_resolved);
                                 if (!var->m_target_attr) {
                                     diag.add(Diagnostic(
                                         "Pointer initialization target `" + sym_name +
@@ -8523,7 +8663,7 @@ public:
                                         &variable_added_to_symtab->base));
                                 }
                                 ASR::expr_t* rhs_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
-                                    var->base.base.loc, &var->base));
+                                    var->base.base.loc, sym_found));
                                 if (!ASRUtils::check_equal_type(lhs_type, rhs_type,
                                         lhs_var_expr, rhs_var_expr)) {
                                     diag.add(Diagnostic(
@@ -8540,7 +8680,7 @@ public:
                             } else {
                                 // Handle initialization with named parameter constants
                                 // Check if the symbol is a parameter variable
-                            if (!ASR::is_a<ASR::Variable_t>(*sym_found)) {
+                            if (!ASR::is_a<ASR::Variable_t>(*sym_resolved)) {
                                 diag.add(Diagnostic(
                                     "Named initialization not supported with: " + sym_name,
                                     Level::Error, Stage::Semantic, {
@@ -8548,7 +8688,7 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_found);
+                            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym_resolved);
                             if (var->m_storage != ASR::storage_typeType::Parameter) {
                                 diag.add(Diagnostic(
                                     "Initialization with non-constant variable `" + sym_name + "` is not allowed",
@@ -8568,6 +8708,19 @@ public:
                                         Label("",{x.base.base.loc})
                                     }));
                                 throw SemanticAbort();
+                            }
+                            if (sym_found != sym_resolved) {
+                                // The value of an imported parameter refers to the
+                                // Struct symbols of the module that declares it.
+                                // A component default is processed in the type's
+                                // own scope; its imports belong to the scope
+                                // around the type.
+                                SymbolTable *import_scope = current_scope;
+                                if (is_derived_type && current_scope->parent) {
+                                    import_scope = current_scope->parent;
+                                }
+                                ImportedValueDuplicator duplicator(al, import_scope);
+                                param_init = duplicator.duplicate_expr(param_init);
                             }
                             ASR::expr_t* param_value = ASRUtils::expr_value(param_init);
                             if (is_struct_const && param_value &&
@@ -8643,6 +8796,11 @@ public:
                                 Label("",{x.base.base.loc})
                             }));
                         throw SemanticAbort();
+                    }
+
+                    if (init_expr && !is_pointer) {
+                        check_type_initializer_type(type, type_declaration,
+                            init_expr, s.m_initializer->base.loc);
                     }
 
                     value = ASRUtils::expr_value(init_expr);
@@ -17674,8 +17832,10 @@ public:
             arg_name = to_lower(arg_name);
             ASR::expr_t *var_expr = c_args[i].m_value;
             ASR::symbol_t *v;
+            // A procedure actual may be use-associated, i.e. an ExternalSymbol.
             if (ASR::is_a<ASR::Var_t>(*var_expr) &&
-                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
+                    ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(var_expr)->m_v))) {
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);

@@ -1229,6 +1229,55 @@ contains
     end subroutine
 end module
 
+! A `type(...)` entity can only be initialized with a value of its own type.
+module init_type_mismatch_1
+    implicit none
+    type :: init_mismatch_a_t
+        integer :: h = 0
+    end type
+    type :: init_mismatch_b_t
+        integer :: h = 0
+    end type
+    type(init_mismatch_a_t), parameter :: init_mismatch_pa = init_mismatch_a_t(1)
+    integer, parameter :: init_mismatch_ip = 3
+    type(init_mismatch_b_t) :: init_mismatch_mv = init_mismatch_pa  ! {Error} type mismatch in initialization
+contains
+    subroutine init_type_mismatch_local()
+        type(init_mismatch_b_t) :: x = init_mismatch_pa  ! {Error} type mismatch in initialization
+        type(init_mismatch_a_t) :: y = init_mismatch_ip  ! {Error} type mismatch in initialization
+        type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
+    end subroutine
+end module
+
+! Initializing an entity from an imported parameter does not make a module
+! export the parameter's type, whether it was imported under another name or
+! only inside a procedure.
+module imported_init_export_a
+    implicit none
+    type :: imported_init_t
+        integer :: i = 0
+    end type
+    type(imported_init_t), parameter :: imported_init_z = imported_init_t(7)
+end module
+
+module imported_init_export_b
+    use imported_init_export_a, only: imported_init_u => imported_init_t, imported_init_z
+    implicit none
+    type(imported_init_u) :: imported_init_mv = imported_init_z
+contains
+    integer function imported_init_local()
+        use imported_init_export_a, only: imported_init_t, imported_init_z
+        type(imported_init_t) :: x = imported_init_z
+        imported_init_local = x%i
+    end function
+end module
+
+subroutine imported_init_no_export()
+    use imported_init_export_b
+    implicit none
+    type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
+end subroutine
+
 ! A structure constructor argument is the value of its component, so an array
 ! argument must have the component's rank and extents.
 subroutine structure_constructor_argument_shape_1()
