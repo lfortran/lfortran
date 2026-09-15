@@ -5437,34 +5437,41 @@ public:
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
-        std::vector<llvm::Constant *> elements;
-        llvm::StructType* t = llvm::cast<llvm::StructType>(
-            llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym)), module.get()));
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
+        tmp = get_struct_constant(struct_, x.m_args, x.n_args);
+        current_der_type_name = get_type_key(x.m_dt_sym);
+    }
 
-        [[maybe_unused]] size_t n_members = struct_->n_members;
+    // Builds the constant of type `struct_` from `args`, which hold the
+    // members of its parent types first and then its own members. The
+    // parent type is the first element of the LLVM structure, so the
+    // parent members form a nested constant.
+    llvm::Constant* get_struct_constant(ASR::Struct_t* struct_,
+            ASR::call_arg_t* args, [[maybe_unused]] size_t n_args) {
+        std::vector<llvm::Constant *> elements;
+        llvm::StructType* t = llvm::cast<llvm::StructType>(
+            llvm_utils->getStructType(struct_, module.get()));
+        size_t n_parent_members = 0;
         if (struct_->m_parent) {
-            ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_->m_parent));
-            while (parent_struct) {
-                n_members += parent_struct->n_members;
-                if (parent_struct->m_parent) {
-                    parent_struct = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(parent_struct->m_parent));
-                } else {
-                    parent_struct = nullptr;
-                }
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(struct_->m_parent);
+            while (parent_sym) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(parent_sym);
+                n_parent_members += parent_struct->n_members;
+                parent_sym = parent_struct->m_parent
+                    ? ASRUtils::symbol_get_past_external(parent_struct->m_parent) : nullptr;
             }
+            elements.push_back(get_struct_constant(ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_->m_parent)),
+                args, n_parent_members));
         }
 
-        LCOMPILERS_ASSERT(x.n_args == n_members);
-        for (size_t i = 0; i < x.n_args; ++i) {
-            ASR::expr_t *value = x.m_args[i].m_value;
+        LCOMPILERS_ASSERT(n_args == n_parent_members + struct_->n_members);
+        for (size_t i = 0; i < struct_->n_members; ++i) {
+            ASR::expr_t *value = args[n_parent_members + i].m_value;
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
-            ASR::symbol_t* member_sym = i < struct_->n_members
-                ? struct_->m_symtab->get_symbol(struct_->m_members[i]) : nullptr;
+            ASR::symbol_t* member_sym = struct_->m_symtab->get_symbol(struct_->m_members[i]);
             if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
                 ASR::ttype_t* member_type =
                     ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
@@ -5530,8 +5537,7 @@ public:
             }
             elements.push_back(initializer);
         }
-        tmp = llvm::ConstantStruct::get(t, elements);
-        current_der_type_name = get_type_key(x.m_dt_sym);
+        return llvm::ConstantStruct::get(t, elements);
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
@@ -7890,6 +7896,25 @@ public:
             // type->print(llvm::outs()); llvm::outs() << "\n";
             // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
+            ASR::expr_t* init_expr = v->m_symbolic_value;
+            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                for( size_t i = 0; i < v->n_dependencies; i++ ) {
+                    std::string variable_name = v->m_dependencies[i];
+                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
+                    if (dep_sym) {
+                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
+                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
+                            if ( dep_v->m_symbolic_value == nullptr &&
+                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
+                                    ASR::array_physical_typeType::FixedSizeArray)) {
+                                init_expr = nullptr;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            bool save_struct_initialized = false;
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))
@@ -7936,6 +7961,15 @@ public:
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
                         is_intent_out_var);
+                    if (struct_skip_bb != nullptr && init_expr != nullptr && v->m_value &&
+                            ASR::is_a<ASR::StructConstant_t>(*v->m_value)) {
+                        // Store the initial value of a save variable inside
+                        // the one-time guard, after the component defaults,
+                        // so that it is applied exactly once and not
+                        // overwritten by them.
+                        set_VariableInital_value(v, ptr);
+                        save_struct_initialized = true;
+                    }
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
@@ -8014,27 +8048,11 @@ public:
                     allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                 }
             }
-            ASR::expr_t* init_expr = v->m_symbolic_value;
-            if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                for( size_t i = 0; i < v->n_dependencies; i++ ) {
-                    std::string variable_name = v->m_dependencies[i];
-                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
-                    if (dep_sym) {
-                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
-                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
-                            if ( dep_v->m_symbolic_value == nullptr &&
-                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
-                                    ASR::array_physical_typeType::FixedSizeArray)) {
-                                init_expr = nullptr;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
             if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
-                if ((v->m_storage == ASR::Save   ||
+                if (save_struct_initialized) {
+                    // Already stored inside the one-time guard above
+                } else if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
                     &&
                     (ASRUtils::is_string_only(v->m_type) ||
