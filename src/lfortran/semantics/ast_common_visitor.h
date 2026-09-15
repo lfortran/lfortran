@@ -11267,10 +11267,31 @@ public:
                 vals.p[i].m_value = nullptr;
             } else if (!ASRUtils::is_pointer(member_var->m_type)) {
                 // Case: `t(null())` for `integer :: x`.
+                ASR::ttype_t* member_scalar = ASRUtils::extract_type(member_var->m_type);
+                std::string member_type = ASRUtils::type_to_str_fortran_symbol(
+                    member_scalar, member_var->m_type_declaration, true);
+                if (ASR::is_a<ASR::StructType_t>(*member_scalar)) {
+                    member_type = "type(" + member_type + ")";
+                }
+                ASR::dimension_t* member_dims = nullptr;
+                size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
+                    member_var->m_type, member_dims);
+                for (size_t d = 0; d < member_rank; d++) {
+                    member_type += d == 0 ? ", dimension(" : ", ";
+                    int64_t extent = 0;
+                    if (member_dims[d].m_length != nullptr && ASRUtils::extract_value(
+                            ASRUtils::expr_value(member_dims[d].m_length), extent)) {
+                        member_type += std::to_string(extent);
+                    } else {
+                        member_type += ":";
+                    }
+                    if (d + 1 == member_rank) {
+                        member_type += ")";
+                    }
+                }
                 diag.add(Diagnostic("null() cannot be the value of component '"
                     + std::string(member_var->m_name) + "' of type "
-                    + ASRUtils::type_to_str_fortran_symbol(member_var->m_type,
-                        member_var->m_type_declaration, true)
+                    + member_type
                     + ", which is neither a pointer nor allocatable",
                     Level::Error, Stage::Semantic, {
                         Label("", {vals[i].m_value->base.loc})}));

@@ -676,11 +676,17 @@ semantic error: null() cannot be the value of component 'x' of type integer(4), 
 1266 |     type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
      |                                                                ^^^^^^ 
 
-semantic error: null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+semantic error: null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
     --> tests/errors/continue_compilation_1.f90:1267:56
      |
-1267 |     type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+1267 |     type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
      |                                                        ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1281:65
+     |
+1281 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+     |                                                                 ^^^^^^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -2198,3 +2204,9 @@ semantic error: null() cannot be the value of component 'c' of type character(le
      |
 1269 |     v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
      |                                                 ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1283:44
+     |
+1283 |     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+     |                                            ^^^^^^ 

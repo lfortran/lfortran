@@ -1264,7 +1264,21 @@ subroutine structure_constructor_null_component_1()
         integer, pointer :: p
     end type
     type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
-    type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+    type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
     type(t_null_component) :: v2
     v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine structure_constructor_null_component_2()
+    implicit none
+    type :: t_null_inner_2
+        integer :: k
+    end type
+    type :: t_null_array_component
+        real(8) :: x(2)
+        type(t_null_inner_2) :: ins(3, 2)
+    end type
+    type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+    type(t_null_array_component) :: v2
+    v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
 end subroutine
