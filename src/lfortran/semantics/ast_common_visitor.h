@@ -11353,6 +11353,41 @@ public:
         }
     }
 
+    // Returns the argument expression written for each member of `info` in
+    // the structure constructor `x`, or nullptr for an omitted member.
+    std::vector<AST::expr_t*> get_struct_constructor_arg_exprs(
+            const AST::FuncCallOrArray_t& x, const StructConstructorInfo& info) {
+        std::vector<AST::expr_t*> exprs(info.members.size(), nullptr);
+        if (!info.kind_indices.empty() && x.n_subargs > 0) {
+            // Case: `t(4)(x)`, type parameters first, then components.
+            for (size_t i = 0; i < x.n_args && i < info.kind_indices.size(); i++) {
+                exprs[info.kind_indices[i]] = x.m_args[i].m_end;
+            }
+            size_t component = 0;
+            for (size_t i = 0; i < info.members.size() && component < x.n_subargs; i++) {
+                if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
+                        == info.kind_indices.end()) {
+                    exprs[i] = x.m_subargs[component++].m_end;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < x.n_args && i < info.members.size(); i++) {
+                exprs[i] = x.m_args[i].m_end;
+            }
+        }
+        for (size_t i = 0; i < x.n_keywords; i++) {
+            std::string name = to_lower(x.m_keywords[i].m_arg);
+            for (size_t j = 0; j < info.members.size(); j++) {
+                if (info.members[j] != nullptr
+                        && ASRUtils::symbol_name(info.members[j]) == name) {
+                    exprs[j] = x.m_keywords[i].m_value;
+                    break;
+                }
+            }
+        }
+        return exprs;
+    }
+
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
@@ -11414,6 +11449,7 @@ public:
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
         std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
+        std::vector<AST::expr_t*> arg_exprs = get_struct_constructor_arg_exprs(x, info);
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
             if (vals[i].m_value == nullptr
                     || !ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value)
@@ -11422,13 +11458,20 @@ public:
                 continue;
             }
             ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(members[i]);
+            // The named constants `c_null_ptr` and `c_null_funptr` are also
+            // null constants, and are valid for a plain `type(c_ptr)` or
+            // `type(c_funptr)` component, as is a component default taken for
+            // an omitted argument. Only a function reference is `null()`.
+            bool is_null_reference = i < arg_exprs.size() && arg_exprs[i] != nullptr
+                && AST::is_a<AST::FuncCallOrArray_t>(*arg_exprs[i]);
             if (ASRUtils::is_allocatable(member_var->m_type)) {
                 // `null()` for an allocatable component means it is not
                 // allocated, which is how an omitted allocatable component
                 // is represented.
                 vals.p[i].m_value = nullptr;
-            } else if (!ASRUtils::is_pointer(member_var->m_type)) {
-                // Case: `t(null())` for `integer :: x`.
+            } else if (is_null_reference && !ASRUtils::is_pointer(member_var->m_type)) {
+                // Case: `t(null())` for `integer :: x`, while `t(c_null_ptr)`
+                // for `type(c_ptr) :: p` is valid.
                 ASR::ttype_t* member_scalar = ASRUtils::extract_type(member_var->m_type);
                 std::string member_type = ASRUtils::type_to_str_fortran_symbol(
                     member_scalar, member_var->m_type_declaration, true);

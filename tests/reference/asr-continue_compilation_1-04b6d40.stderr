@@ -718,6 +718,12 @@ semantic error: null() cannot be the value of component 'x' of type real(8), dim
 1330 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
      |                                                                 ^^^^^^ 
 
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1345:71
+     |
+1345 |     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                                                       ^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2240,3 +2246,9 @@ semantic error: null() cannot be the value of component 'ins' of type type(t_nul
      |
 1332 |     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
      |                                            ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1347:46
+     |
+1347 |     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                              ^^^^^^ 

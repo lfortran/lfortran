@@ -1331,3 +1331,18 @@ subroutine structure_constructor_null_component_2()
     type(t_null_array_component) :: v2
     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
 end subroutine
+
+! `c_null_ptr` and `c_null_funptr` are valid for a plain `type(c_ptr)` or
+! `type(c_funptr)` component, but `null()` is not.
+subroutine structure_constructor_null_component_3()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_c_component
+        integer :: h
+        type(c_ptr) :: p = c_null_ptr
+        type(c_funptr) :: f = c_null_funptr
+    end type
+    type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    type(t_null_c_component) :: v1
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
