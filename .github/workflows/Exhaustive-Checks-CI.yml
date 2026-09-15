@@ -7,7 +7,7 @@ on:
     tags:
       - 'v*'
   pull_request:
-    types: [labeled, unlabeled, synchronize]
+    types: [opened, reopened, synchronize, labeled, unlabeled]
     branches:
       - main
 
@@ -30,11 +30,8 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    # Run on push to main, or when the PR has the label at the time of the event
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' &&
-           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Runs on every PR: hosts option-combination tests moved out of Quick
+    # checks (llvm -sc, --detect-leaks, C++ compiler build).
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,6 +76,22 @@ jobs:
         run: ctest --output-on-failure
         working-directory: builddir
 
+      - name: Test option combinations
+        shell: bash -e -l {0}
+        run: |
+            export PATH="$(pwd)/inst/bin:$PATH"
+            NPROC=$(nproc)
+            cd src/integration_tests
+            ./run_tests.py -b llvm -sc -j${NPROC}
+            ./run_tests.py -b llvm_submodule -sc -j${NPROC}
+            ./run_tests.py -b llvm --detect-leaks -j${NPROC}
+
+      - name: Test C++ compiler build
+        shell: bash -e -l {0}
+        working-directory: src
+        run: |
+            shell ci/test_cpp_version.sh
+
       - name: Test Moved Installation
         shell: bash -e -l {0}
         run: |
@@ -95,10 +108,9 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    # Run on push to main, or only when the specific label is modified on a PR
-    if: >-
-      ${{ github.event_name == 'push' ||
-          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    # Runs on every PR: hosts --std=f23 and llvm_single_invocation, which
+    # were moved out of Quick checks. llvm / llvm -f here also cover the
+    # Release build (Quick checks builds Debug).
     steps:
       - uses: actions/checkout@v7
         with:
@@ -148,8 +160,12 @@ jobs:
             ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f -nf16
+            NPROC=$(nproc)
+            ./run_tests.py -b llvm -j${NPROC}
+            ./run_tests.py -b llvm -f -nf16 -j${NPROC}
+            ./run_tests.py -b llvm_single_invocation -j${NPROC}
+            ./run_tests.py -b llvm --std=f23 -j${NPROC}
+            ./run_tests.py -b llvm -f --std=f23 -nf16 -j${NPROC}
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -212,25 +228,18 @@ jobs:
       matrix:
         # this is only run on ubuntu intentionally (except macOS LLVM 22)
         os: ["ubuntu-latest"]
-        # Note: The LLVM 11 test is redundant, since it is already tested by
-        # most other tests (since LLVM 11 is our default version), but we have
-        # it here as well for consistency, and that way other tests can freely
-        # switch to other versions as needed. We test all versions here in
-        # exactly the same manner, to ensure that users can just change the
-        # `llvmdev` version in their conda environment and everything will just
-        # work.
-        #
         # Rotation: every LLVM version is tested on every push to main (i.e.
         # on every merge), so a version-specific break is caught within one
         # merge. On a pull request we test only the versions where breakage
         # actually originates:
-        #   8  - oldest supported; catches use of newer LLVM APIs
-        #   11 - our default version
-        #   19 - the only job that runs the llvm_wasm / llvm_wasm_emcc tests
-        #   23 - newest; catches removed/deprecated LLVM APIs
-        # The intermediate versions differ from their neighbours only in ways
-        # these four already bracket. macOS LLVM 22 is in `include` below and
-        # so runs in both cases.
+        #   8  - oldest supported; integration tests (newer LLVM APIs)
+        #   11 - default version; third-party codes (full LAPACK)
+        #   19 - third-party codes (smoke, Release). WASM is a separate job.
+        #   23 - newest; integration tests (removed/deprecated LLVM APIs)
+        # Third-party codes exercise LFortran, not LLVM, so they run on two
+        # Ubuntu versions only. Every other Ubuntu version runs the LLVM
+        # integration-test option combinations instead. macOS LLVM 22 stays
+        # on third-party because Fiats/Formal Metal tests are Darwin-only.
         llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"8\",\"11\",\"19\",\"23\"]') }}"
         python-version: ["3.10"]
         include:
@@ -241,24 +250,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        if: contains(matrix.llvm-version, '19')
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            nodejs=18.20.4
-            openmpi=5.0.6=hb85ec53_102
-            xonsh=0.16.0
-            zlib=1.3.1
-            zstd-static=1.5.6
 
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
@@ -387,7 +378,7 @@ jobs:
             openmpi=5.0.3
 
       - uses: mamba-org/setup-micromamba@v2.0.2
-        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
+        if: ${{! ( contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '20') || contains(matrix.llvm-version, '21') || contains(matrix.llvm-version, '22') || contains(matrix.llvm-version, '23') )}}
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
@@ -409,8 +400,86 @@ jobs:
         if: matrix.llvm-version > 11 && contains(matrix.os, 'ubuntu')
         run: micromamba install -y -n lf libunwind=1.7.2
 
+      - name: Build
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test third party codes
+        shell: bash -e -l {0}
+        if: ${{ matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos') }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            LAPACK_MODE="smoke"
+            # The full Reference-LAPACK suite costs ~10 min more than smoke.
+            # It exercises LFortran, not LLVM, so run it on the default
+            # version only. LLVM 19 and macOS stay on smoke.
+            if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
+                LAPACK_MODE="full"
+            fi
+            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
+
+      - name: Test LLVM integration tests
+        shell: bash -e -l {0}
+        if: ${{ matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos') }}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            bash ci/test_llvm_integration.sh
+
+  test_llvm_wasm:
+    name: Test LLVM 19 WASM (ubuntu-latest)
+    runs-on: ubuntu-latest
+    # llvm_wasm / llvm_wasm_emcc need a Debug build with WITH_TARGET_WASM.
+    # Kept separate from Test LLVM 19 so third-party codes use a Release
+    # compiler. Same PR/main gating as the other LLVM version jobs.
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            llvmdev=19
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.4
+            openmpi=5.0.6=hb85ec53_102
+            xonsh=0.16.0
+            zlib=1.3.1
+            zstd-static=1.5.6
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest-19
+
+      - name: Install libunwind
+        run: micromamba install -y -n lf libunwind=1.7.2
+
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -423,7 +492,6 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -433,7 +501,6 @@ jobs:
           wasmtime --version
 
       - name: Setup Emscripten SDK
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           mkdir -p $HOME/ext
@@ -448,7 +515,6 @@ jobs:
           ./emsdk activate 3.1.35
 
       - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
@@ -470,7 +536,6 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/ext/wasi-sdk
@@ -479,44 +544,6 @@ jobs:
             export WASMTIME_NEW_CLI=0
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-
-      - name: Build
-        if: ${{! contains(matrix.llvm-version, '19')}}
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test third party codes
-        shell: bash -e -l {0}
-        if: ${{! (matrix.llvm-version == '7') }}
-        run: |
-            export PATH="$(pwd)/src/bin:$PATH"
-            LAPACK_MODE="smoke"
-            # The full Reference-LAPACK suite costs ~10 min more than smoke.
-            # It exercises LFortran, not LLVM, so run it on the default
-            # version only; every other version still runs it in smoke mode.
-            if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
-                LAPACK_MODE="full"
-            fi
-            echo "Running LAPACK third-party mode: ${LAPACK_MODE}"
-            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh --lapack-mode "${LAPACK_MODE}"
-
-      - name: Test coarray runtime with Caffeine
-        shell: bash -e -l {0}
-        run: ci/test_caffeine.sh
 
   upload_tarball:
     name: Upload Tarball
