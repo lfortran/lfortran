@@ -5648,9 +5648,10 @@ public:
     // types of the module that declares the parameter, and a reference that
     // `scope` cannot reach is written to the .mod file as a dangling symbol.
     // A type already imported into the scope chain (under any name, e.g.
-    // `use m, only: u => t`) is reused. Otherwise it is imported privately
-    // under a name no user code can spell, so the enclosing module does not
-    // start exporting the type.
+    // `use m, only: u => t`) is reused. Otherwise it is imported under a
+    // `1_`-prefixed name no user code can spell, so the enclosing module does
+    // not start exporting the type under a name users can reference. `scope`
+    // must not be a derived type's own scope, which holds only its members.
     class ImportedValueDuplicator: public ASR::BaseExprStmtDuplicator<ImportedValueDuplicator> {
     public:
         SymbolTable* scope;
@@ -5681,21 +5682,13 @@ public:
             if (module_sym == nullptr || !ASR::is_a<ASR::Module_t>(*module_sym)) {
                 return sym;
             }
-            // A component default is declared inside the type's own scope,
-            // which holds only components; import into the scope around it.
-            SymbolTable* target = scope;
-            while (target->parent != nullptr && target->asr_owner != nullptr &&
-                    ASR::is_a<ASR::symbol_t>(*target->asr_owner) &&
-                    ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(target->asr_owner))) {
-                target = target->parent;
-            }
             std::string type_name = ASRUtils::symbol_name(type_sym);
-            std::string local_name = target->get_unique_name("1_" + type_name, false);
+            std::string local_name = scope->get_unique_name("1_" + type_name, false);
             ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
-                ASR::make_ExternalSymbol_t(this->al, type_sym->base.loc, target,
+                ASR::make_ExternalSymbol_t(this->al, type_sym->base.loc, scope,
                     s2c(this->al, local_name), type_sym, ASRUtils::symbol_name(module_sym),
                     nullptr, 0, s2c(this->al, type_name), ASR::accessType::Private));
-            target->add_symbol(local_name, imported);
+            scope->add_symbol(local_name, imported);
             return imported;
         }
 
@@ -8719,7 +8712,14 @@ public:
                             if (sym_found != sym_resolved) {
                                 // The value of an imported parameter refers to the
                                 // Struct symbols of the module that declares it.
-                                ImportedValueDuplicator duplicator(al, current_scope);
+                                // A component default is processed in the type's
+                                // own scope; its imports belong to the scope
+                                // around the type.
+                                SymbolTable *import_scope = current_scope;
+                                if (is_derived_type && current_scope->parent) {
+                                    import_scope = current_scope->parent;
+                                }
+                                ImportedValueDuplicator duplicator(al, import_scope);
                                 param_init = duplicator.duplicate_expr(param_init);
                             }
                             ASR::expr_t* param_value = ASRUtils::expr_value(param_init);
