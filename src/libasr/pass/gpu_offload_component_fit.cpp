@@ -1354,7 +1354,7 @@ class GpuComponentFit {
     }
 
     std::vector<ASR::stmt_t*> assignment(ASR::Assignment_t *x, bool replayed,
-            bool top) {
+            [[maybe_unused]] bool top) {
         std::vector<ASR::stmt_t*> out;
         ASR::symbol_t *scalar = assigned_scalar(&x->base);
         if (scalar && trackable.count(scalar)) {
