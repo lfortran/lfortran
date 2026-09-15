@@ -17,8 +17,15 @@ type :: a_t
     class(base_t), pointer :: cp => null()
     integer :: x = 1
 end type
+type :: ptr_t
+    integer, pointer :: p => null()
+    procedure(f_i), pointer, nopass :: fp => null()
+    type(a_t), pointer :: next => null()
+    class(base_t), pointer :: cp => null()
+    integer :: x = 1
+end type
 type :: u_t
-    type(a_t) :: part = a_t(null(), null(), null(), null(), null(), null(), 6)
+    type(ptr_t) :: part = ptr_t(null(), null(), null(), null(), 6)
 end type
 type(a_t) :: mv = a_t(null(), null(), null(), null(), null(), null(), 7)
 type(a_t), parameter :: pa = a_t(null(), null(), null(), null(), null(), null(), 10)
@@ -47,7 +54,11 @@ subroutine mixed(n)
     call check(la, n)
     la = a_t(x=n + 1, next=null(), al=null(), fp=null())
     call check(la, n + 1)
-    call check(lu%part, 6)
+    if (associated(lu%part%p)) error stop 8
+    if (associated(lu%part%fp)) error stop 9
+    if (associated(lu%part%next)) error stop 10
+    if (associated(lu%part%cp)) error stop 11
+    if (lu%part%x /= 6) error stop 12
 end subroutine
 end module
 
