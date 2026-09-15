@@ -11074,6 +11074,60 @@ public:
             adjusted_type, array->m_storage_format));
     }
 
+    // An array argument of a structure constructor must have its component's
+    // rank, and its extents when the component is neither allocatable nor a
+    // pointer. Case: `t([1, 2])` for `integer :: a(3)`. Returns false after
+    // reporting a mismatch when compilation continues past errors.
+    bool check_struct_constructor_array_arg_shape(ASR::expr_t* arg,
+            ASR::symbol_t* member) {
+        ASR::ttype_t* member_type = ASRUtils::symbol_type(member);
+        std::string member_name = ASRUtils::symbol_name(member);
+        ASR::dimension_t* member_dims = nullptr;
+        ASR::dimension_t* arg_dims = nullptr;
+        size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
+            member_type, member_dims);
+        size_t arg_rank = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(arg), arg_dims);
+        if (member_rank != arg_rank) {
+            diag.add(Diagnostic("component '" + member_name + "' has rank "
+                + std::to_string(member_rank) + ", but the structure constructor "
+                "argument has rank " + std::to_string(arg_rank),
+                Level::Error, Stage::Semantic, {
+                    Label("rank " + std::to_string(arg_rank) + " argument",
+                        {arg->base.loc})}));
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+            return false;
+        }
+        if (ASRUtils::is_allocatable_or_pointer(member_type)) {
+            return true;
+        }
+        for (size_t d = 0; d < member_rank; d++) {
+            int64_t member_extent = 0, arg_extent = 0;
+            if (member_dims[d].m_length == nullptr || arg_dims[d].m_length == nullptr
+                    || !ASRUtils::extract_value(ASRUtils::expr_value(
+                        member_dims[d].m_length), member_extent)
+                    || !ASRUtils::extract_value(ASRUtils::expr_value(
+                        arg_dims[d].m_length), arg_extent)
+                    || member_extent == arg_extent) {
+                continue;
+            }
+            diag.add(Diagnostic("component '" + member_name + "' has extent "
+                + std::to_string(member_extent) + " in dimension "
+                + std::to_string(d + 1) + ", but the structure constructor "
+                "argument has extent " + std::to_string(arg_extent),
+                Level::Error, Stage::Semantic, {
+                    Label("extent " + std::to_string(arg_extent) + " in dimension "
+                        + std::to_string(d + 1), {arg->base.loc})}));
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+            return false;
+        }
+        return true;
+    }
+
     // An argument of a structure constructor is assigned to its component.
     // A StructConstant's arguments are lowered as they are, so a constant
     // argument is given its component's shape and character length here,
@@ -11088,6 +11142,13 @@ public:
                 continue;
             }
             ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            if (ASRUtils::is_array(ASRUtils::expr_type(arg))
+                    && !check_struct_constructor_array_arg_shape(arg, members[i])) {
+                // The mismatch is reported; drop the argument so the
+                // constructor stays well formed.
+                vals.p[i].m_value = nullptr;
+                continue;
+            }
             if (ASRUtils::is_allocatable_or_pointer(member_type)) {
                 continue;
             }

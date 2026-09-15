@@ -658,6 +658,18 @@ semantic error: equivalence between two common block variables is not allowed
 1228 |         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
      |                      ^^^^^^ both variables are in a common block
 
+semantic error: component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    --> tests/errors/continue_compilation_1.f90:1242:29
+     |
+1242 |         t_constructor_shape([1, 2], 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+     |                             ^^^^^^ extent 2 in dimension 1
+
+semantic error: component 's' has rank 0, but the structure constructor argument has rank 1
+    --> tests/errors/continue_compilation_1.f90:1243:70
+     |
+1243 |     type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+     |                                                                      ^^^^^^ rank 1 argument
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2150,3 +2162,21 @@ semantic error: Duplicate value of `decimal` found
      |
 1217 |     write(*, *, decimal="POINT", decimal="COMMA") 1.0
      |                                          ^^^^^^^ 
+
+semantic error: component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    --> tests/errors/continue_compilation_1.f90:1248:30
+     |
+1248 |     v2 = t_constructor_shape(b, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+     |                              ^ extent 2 in dimension 1
+
+semantic error: component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+    --> tests/errors/continue_compilation_1.f90:1249:44
+     |
+1249 |     v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+     |                                            ^ extent 3 in dimension 1
+
+semantic error: component 'a' has rank 1, but the structure constructor argument has rank 2
+    --> tests/errors/continue_compilation_1.f90:1250:30
+     |
+1250 |     v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
+     |                              ^ rank 2 argument

@@ -1228,3 +1228,24 @@ contains
         equivalence (lhs(1), rhs(1))  ! {Error} equivalence between two common block variables is not allowed
     end subroutine
 end module
+
+! A structure constructor argument is the value of its component, so an array
+! argument must have the component's rank and extents.
+subroutine structure_constructor_argument_shape_1()
+    implicit none
+    type :: t_constructor_shape
+        integer :: a(3)
+        integer :: s
+        integer :: m(2, 2)
+    end type
+    type(t_constructor_shape), parameter :: p1 = &
+        t_constructor_shape([1, 2], 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+    type(t_constructor_shape) :: v2
+    integer :: b(2), c(3, 2)
+    b = 1
+    c = 1
+    v2 = t_constructor_shape(b, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+    v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
+end subroutine
