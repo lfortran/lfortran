@@ -4261,13 +4261,11 @@ static inline ASR::expr_t* get_struct_type_constructor_zero(
         ca.loc = loc;
         ASR::ttype_t* inner = ASRUtils::extract_type(
             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(v->m_type)));
-        if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
-            // An allocatable component starts unallocated.
+        if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)
+                || ASRUtils::is_pointer(v->m_type)) {
+            // An allocatable component starts unallocated and a pointer
+            // component disassociated.
             ca.m_value = nullptr;
-        } else if (ASRUtils::is_pointer(v->m_type)) {
-            // A pointer component starts disassociated.
-            ca.m_value = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
-                al, loc, v->m_type, nullptr));
         } else if (ASR::is_a<ASR::StructType_t>(*inner) && v->m_type_declaration != nullptr) {
             ca.m_value = ASRUtils::get_struct_type_constructor_zero(al, loc, v->m_type_declaration);
         } else {

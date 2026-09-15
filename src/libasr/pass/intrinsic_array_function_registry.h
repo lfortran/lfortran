@@ -1138,6 +1138,32 @@ static inline ASR::expr_t* get_reduce_initial_value(Allocator& al, const Locatio
     return ASRUtils::get_constant_zero_with_given_type(al, value_type);
 }
 
+// Assigns the initial value of a reduction to `target`. A derived type's
+// zero is assigned component by component, because a StructConstant is
+// lowered as a static value and its allocatable and pointer components,
+// which start unallocated or disassociated, have no value to copy.
+static inline void push_reduce_initial_assignment(Allocator& al, const Location& loc,
+        ASRBuilder& builder, ASR::expr_t* target, ASR::expr_t* initial_val,
+        Vec<ASR::stmt_t*>& body) {
+    if (!ASR::is_a<ASR::StructConstant_t>(*initial_val)) {
+        body.push_back(al, builder.Assignment(target, initial_val));
+        return;
+    }
+    ASR::StructConstant_t* zero = ASR::down_cast<ASR::StructConstant_t>(initial_val);
+    ASR::Struct_t* derived = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(zero->m_dt_sym));
+    for (size_t i = 0; i < zero->n_args && i < derived->n_members; i++) {
+        if (zero->m_args[i].m_value == nullptr) {
+            continue;
+        }
+        ASR::symbol_t* member = derived->m_symtab->get_symbol(derived->m_members[i]);
+        ASR::expr_t* member_ref = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+            al, loc, target, member, ASRUtils::symbol_type(member), nullptr));
+        push_reduce_initial_assignment(al, loc, builder, member_ref,
+            zero->m_args[i].m_value, body);
+    }
+}
+
 static inline void generate_body_for_reduce_array_input(Allocator& al, const Location& loc,
     ASR::expr_t* array, ASR::expr_t* operation, ASR::expr_t* return_var, SymbolTable* fn_scope,
     Vec<ASR::stmt_t*>& fn_body,
@@ -1153,8 +1179,7 @@ static inline void generate_body_for_reduce_array_input(Allocator& al, const Loc
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
                 al, loc, element_type, array, caller_array_struct_sym);
-            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
-            fn_body.push_back(al, return_var_init);
+            push_reduce_initial_assignment(al, loc, builder, return_var, initial_val, fn_body);
         },
         [=, &al, &idx_vars, &doloop_body, &builder, &operation] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
@@ -1182,8 +1207,7 @@ static inline void generate_body_for_reduce_array_mask_input(Allocator& al, cons
             ASR::ttype_t* element_type = ASRUtils::duplicate_type_without_dims(al, array_type, loc);
             ASR::expr_t* initial_val = ArrIntrinsic::get_reduce_initial_value(
                 al, loc, element_type, array, caller_array_struct_sym);
-            ASR::stmt_t* return_var_init = builder.Assignment(return_var, initial_val);
-            fn_body.push_back(al, return_var_init);
+            push_reduce_initial_assignment(al, loc, builder, return_var, initial_val, fn_body);
         },
         [=, &al, &idx_vars, &doloop_body, &builder, &operation] () {
             ASR::expr_t* array_ref = PassUtils::create_array_ref(array, idx_vars, al);
