@@ -405,18 +405,37 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al,
     return declaration;
 }
 
+// The symbol named `name` in `scope` or in a scope enclosing it, up to and
+// including `outermost`: a scope nested in a visited procedure sees the
+// symbols of the scopes of the procedure that enclose it, but not the symbols
+// outside of the procedure.
+static ASR::symbol_t* resolve_symbol_within(SymbolTable* scope,
+        SymbolTable* outermost, const std::string &name) {
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (ASR::symbol_t* sym = s->get_symbol(name)) {
+            return sym;
+        }
+        if (s == outermost) {
+            break;
+        }
+    }
+    return nullptr;
+}
+
 class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
     private:
         Allocator& al;
         ProgramProcedureCopies& copies;
     public:
         SymbolTable* current_scope;
+        SymbolTable* outermost_scope;
 
         ReplaceExpression(Allocator& al_, ProgramProcedureCopies& copies_) :
             al(al_), copies(copies_) {}
 
         void replace_Var(ASR::Var_t* x) {
-            ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
+            ASR::symbol_t* sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x->m_v));
             if (sym == nullptr) {
                 sym = import_procedure_declaration(al, copies, current_scope, x->m_v);
             }
@@ -435,20 +454,25 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         Allocator& al;
         ProgramProcedureCopies& copies;
         ReplaceExpression replacer;
+        // The scope the visitor starts in: a region, or a copied procedure.
+        SymbolTable* outermost_scope;
 
     public:
         // `current_scope` is the base visitor's, which follows the scopes
         // nested in a visited procedure (contained procedures, interfaces,
-        // BLOCKs), so their symbols resolve in their own scope.
+        // BLOCKs), so their symbols resolve in their own scope first, then in
+        // the enclosing scopes up to `outermost_scope`.
         DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_,
                 ProgramProcedureCopies &copies_) :
-            al(al_), copies(copies_), replacer(al_, copies_) {
+            al(al_), copies(copies_), replacer(al_, copies_),
+            outermost_scope(current_scope_) {
             current_scope = current_scope_;
         }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
+        replacer.outermost_scope = outermost_scope;
         replacer.replace_expr(*current_expr);
     }
 
@@ -457,8 +481,9 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         T* x_copy = const_cast<T*>(&x);
         if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
             // A call through a procedure variable, which is declared in
-            // `current_scope` like every other variable of the region.
-            ASR::symbol_t* var_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
+            // the visited scopes like every other variable of the region.
+            ASR::symbol_t* var_sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x.m_name));
             LCOMPILERS_ASSERT(var_sym != nullptr);
             x_copy->m_name = var_sym;
             if (x_copy->m_original_name) {
@@ -490,7 +515,8 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
             func_sym = import_procedure_implementation(al, copies, current_scope, x.m_name);
         } else {
-            func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
+            func_sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x.m_name));
             if (func_sym == nullptr &&
                     ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
                 func_sym = current_scope->resolve_symbol(fn->m_name);
