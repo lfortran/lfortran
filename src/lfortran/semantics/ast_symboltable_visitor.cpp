@@ -4333,6 +4333,46 @@ public:
         return false;
     }
 
+    class PlaceholderVarReplacer : public ASR::BaseExprReplacer<PlaceholderVarReplacer> {
+    public:
+        ASR::symbol_t *placeholder_sym;
+        ASR::symbol_t *real_sym;
+
+        PlaceholderVarReplacer(ASR::symbol_t *placeholder_sym_, ASR::symbol_t *real_sym_)
+            : placeholder_sym(placeholder_sym_), real_sym(real_sym_) {}
+
+        void replace_Var(ASR::Var_t *x) {
+            if (x->m_v == placeholder_sym) {
+                x->m_v = real_sym;
+            }
+        }
+    };
+
+    // A procedure pointer `null()` in an initializer, such as a constructor
+    // argument or a component default filled into a constructor, refers to
+    // the interface of its component. If the interface is a procedure
+    // defined later, that is the placeholder, so refer to the procedure in
+    // the initializers of `scope` and its nested scopes instead.
+    void replace_placeholder_in_initializers(SymbolTable *scope,
+            PlaceholderVarReplacer &replacer) {
+        for (auto &[sym_name, sym] : scope->get_scope()) {
+            if (sym == replacer.placeholder_sym) continue;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                replacer.current_expr = &var->m_symbolic_value;
+                replacer.replace_expr(var->m_symbolic_value);
+                replacer.current_expr = &var->m_value;
+                replacer.replace_expr(var->m_value);
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                replace_placeholder_in_initializers(
+                    ASR::down_cast<ASR::Struct_t>(sym)->m_symtab, replacer);
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                replace_placeholder_in_initializers(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab, replacer);
+            }
+        }
+    }
+
     void resolve_proc_pointer_placeholders() {
         // After all interfaces/functions have been processed, update
         // m_type_declaration and m_type for procedure pointer variables
@@ -4345,6 +4385,8 @@ public:
             if (!ASR::is_a<ASR::Function_t>(*real_sym_underlying)) continue;
             ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(real_sym_underlying);
             ASR::ttype_t *real_func_type = real_func->m_function_signature;
+            PlaceholderVarReplacer replacer(placeholder_sym, real_sym);
+            replace_placeholder_in_initializers(current_scope, replacer);
             for (auto &[sym_name, sym] : current_scope->get_scope()) {
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
