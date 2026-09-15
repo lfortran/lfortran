@@ -612,6 +612,7 @@ public:
         
         simd_variables.clear();
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         in_program = true;
         for (size_t i=0; i<x.n_items; i++) {
@@ -780,6 +781,7 @@ public:
 
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
     }
 
     bool subroutine_contains_entry_function(std::string subroutine_name, AST::decl_stmt_t** body, size_t n_body) {
@@ -1427,6 +1429,7 @@ public:
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
@@ -1816,6 +1819,7 @@ public:
         is_template = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -1983,6 +1987,7 @@ public:
 
         // iterate over declarations and check if global save is present
         bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
@@ -2628,6 +2633,7 @@ public:
         in_Subroutine = false;
         mark_common_blocks_as_declared();
         is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
