@@ -22,6 +22,13 @@ end type
 type :: v_t
     integer :: a(3) = 0
 end type
+type :: u_t
+    integer :: h = 0
+    real :: x = 0
+    integer(8) :: k = 0
+    complex :: z = (0, 0)
+end type
+integer, parameter :: n0 = 4
 type(t), parameter :: z = t(9, 30)
 integer, target :: tgt = 7
 contains
@@ -63,6 +70,22 @@ integer function f_broadcast() result(r)
     type(v_t) :: w = v_t(5)
     r = sum(w%a)
 end function
+
+integer function f_negative() result(r)
+    type(t) :: s = t(-9, -30)
+    if (s%k /= -30) error stop 21
+    s%h = s%h + 1
+    r = s%h
+end function
+
+integer function f_folded() result(r)
+    type(u_t) :: s = u_t(-9 + 18, 1, n0, (1.0, -2.0))
+    if (abs(s%x - 1.0) > 1e-6) error stop 22
+    if (s%k /= 4_8) error stop 23
+    if (abs(s%z - (1.0, -2.0)) > 1e-6) error stop 24
+    s%h = s%h + 1
+    r = s%h
+end function
 end module
 
 program save_20
@@ -82,6 +105,8 @@ do i = 1, 2
     if (f_nested() /= 40) error stop 9
     if (f_char() /= 5) error stop 10
     if (f_broadcast() /= 15) error stop 11
+    if (f_negative() /= -9 + i) error stop 12
+    if (f_folded() /= 9 + i) error stop 13
 end do
 print *, "ok"
 
