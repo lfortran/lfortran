@@ -15,10 +15,6 @@ end type
 type, extends(a_t) :: c_t
     integer :: y = 2
 end type
-type :: s_t
-    character(len=4) :: c = "zz"
-    integer :: n = 0
-end type
 type :: v_t
     integer :: a(3) = 0
 end type
@@ -62,12 +58,6 @@ end function
 integer function f_nested() result(r)
     type(b_t) :: lb = b_t(a_t(10), 30)
     r = lb%a%x + lb%y
-end function
-
-integer function f_char() result(r)
-    type(s_t) :: cs = s_t("ab", 5)
-    if (cs%c /= "ab") error stop 20
-    r = cs%n
 end function
 
 integer function f_broadcast() result(r)
@@ -114,7 +104,6 @@ do i = 1, 2
     if (f_extends() /= 30 + i) error stop 7
     if (.not. f_cptr(i)) error stop 8
     if (f_nested() /= 40) error stop 9
-    if (f_char() /= 5) error stop 10
     if (f_broadcast() /= 15) error stop 11
     if (f_negative() /= -9 + i) error stop 12
     if (f_folded() /= 9 + i) error stop 13

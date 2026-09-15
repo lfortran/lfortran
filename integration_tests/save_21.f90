@@ -5,6 +5,10 @@ type :: t
     character(len=3) :: c = 'abc'
 end type
 character(len=3), parameter :: cu = 'uvw'
+type :: s_t
+    character(len=4) :: c = "zz"
+    integer :: n = 0
+end type
 contains
 integer function fm_explicit() result(r)
     type(t), save :: s = t(9, 'xyz')
@@ -29,10 +33,16 @@ integer function fm_implicit() result(r)
     s%c = 'pqr'
     r = s%h
 end function
+
+integer function f_char() result(r)
+    type(s_t) :: cs = s_t("ab", 5)
+    if (cs%c /= "ab") error stop 20
+    r = cs%n
+end function
 end module
 
 program save_21
-use save_21_mod, only: t, cu, fm_explicit, fm_implicit
+use save_21_mod, only: t, cu, fm_explicit, fm_implicit, f_char
 implicit none
 character(len=3), parameter :: cl = 'klm'
 integer :: i
@@ -44,6 +54,7 @@ do i = 1, 3
     if (f_explicit_named() /= 9 + i) error stop 15
     if (f_implicit_named() /= 9 + i) error stop 16
     if (f_implicit_imported() /= 9 + i) error stop 17
+    if (f_char() /= 5) error stop 10
 end do
 print *, 'ok'
 contains
