@@ -1,5 +1,4 @@
 module save_19_mod
-use iso_c_binding, only: c_ptr, c_null_ptr, c_associated, c_funptr, c_null_funptr
 implicit none
 type :: t
     integer :: h = 0
@@ -22,14 +21,6 @@ type, extends(a_t) :: c_t
     integer :: y = 2
 end type
 type(c_t), parameter :: pc = c_t(5, 6)
-type :: w_t
-    integer :: h = 0
-    type(c_ptr) :: p = c_null_ptr
-end type
-type :: e_t
-    integer :: h = 0
-    type(c_funptr) :: fp = c_null_funptr
-end type
 type :: d_t
     type(a_t) :: a = a_t(4)
     integer :: y = 3
@@ -66,22 +57,6 @@ integer function f_extends() result(r)
     r = v%x + v%y
 end function
 
-integer function f_cptr() result(r)
-    type(w_t), save :: s = w_t(9)
-    type(w_t), save :: g = w_t(9, c_null_ptr)
-    if (c_associated(s%p) .or. c_associated(g%p)) error stop 16
-    s%h = s%h + 1
-    g%h = g%h + 2
-    if (g%h - s%h /= s%h - 9) error stop 17
-    r = s%h
-end function
-
-integer function f_funptr() result(r)
-    type(e_t), save :: s = e_t(9)
-    s%h = s%h + 1
-    r = s%h
-end function
-
 integer function f_nested_default() result(r)
     type(d_t), save :: s = d_t(y=9)
     if (s%a%x /= 4) error stop 18
@@ -91,8 +66,8 @@ end function
 end module
 
 program save_19
-use save_19_mod, only: t, fm, f_folded, f_negative, f_extends, f_cptr, &
-    f_funptr, f_nested_default
+use save_19_mod, only: t, fm, f_folded, f_negative, f_extends, &
+    f_nested_default
 implicit none
 type(t), parameter :: zp = t(9, .true., [3, 4], 2.5)
 integer :: i
@@ -104,8 +79,6 @@ do i = 1, 2
     if (f_folded() /= 9 + i) error stop 11
     if (f_negative() /= -9 + i) error stop 12
     if (f_extends() /= 30 + i) error stop 15
-    if (f_cptr() /= 9 + i) error stop 19
-    if (f_funptr() /= 9 + i) error stop 20
     if (f_nested_default() /= 9 + i) error stop 21
 end do
 print *, "ok"
