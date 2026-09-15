@@ -11153,6 +11153,10 @@ public:
         visit_kwargs(vals, nullptr, 0, loc, v, diag);
     }
 
+    // Whether a structure constructor argument is a reference to the
+    // intrinsic `null()`, and whether that reference gives a `mold`.
+    enum class NullReference { none, without_mold, with_mold };
+
     // Visits the constructor arguments `args` that correspond to the
     // components `members`. A `null()` argument is a disassociated pointer or
     // unallocated allocatable of its component's type, like the component's
@@ -11161,7 +11165,7 @@ public:
     // argument, whether it is a reference to the intrinsic `null()`.
     void visit_struct_constructor_args(AST::fnarg_t *args, size_t n,
             const std::vector<ASR::symbol_t*>& members, Vec<ASR::call_arg_t>& vals,
-            std::vector<bool>& null_args) {
+            std::vector<NullReference>& null_args) {
         vals.reserve(al, n);
         for (size_t i = 0; i < n; i++) {
             ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
@@ -11173,18 +11177,72 @@ public:
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
             vals.push_back(al, val[0]);
-            null_args.push_back(is_null_intrinsic_reference(args[i].m_end, val[0].m_value));
+            null_args.push_back(get_null_reference(args[i].m_end, val[0].m_value));
         }
     }
 
-    // True if the argument `arg`, which was visited into `value`, is a
-    // reference to the intrinsic `null()` (with or without `mold`). The named
-    // constants `c_null_ptr` and `c_null_funptr` are names, not function
-    // references, and a user procedure named `null` is a function call, so
-    // neither is one, although `c_null_ptr` is a null constant too.
-    bool is_null_intrinsic_reference(AST::expr_t* arg, ASR::expr_t* value) {
-        return value != nullptr && AST::is_a<AST::FuncCallOrArray_t>(*arg)
-            && ASR::is_a<ASR::PointerNullConstant_t>(*value);
+    // The reference to the intrinsic `null()` that the argument `arg`, which
+    // was visited into `value`, is. The named constants `c_null_ptr` and
+    // `c_null_funptr` are names, not function references, and a user
+    // procedure named `null` is a function call, so neither is one, although
+    // `c_null_ptr` is a null constant too.
+    NullReference get_null_reference(AST::expr_t* arg, ASR::expr_t* value) {
+        if (value == nullptr || !AST::is_a<AST::FuncCallOrArray_t>(*arg)
+                || !ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            return NullReference::none;
+        }
+        AST::FuncCallOrArray_t* call = AST::down_cast<AST::FuncCallOrArray_t>(arg);
+        return call->n_args + call->n_keywords > 0
+            ? NullReference::with_mold : NullReference::without_mold;
+    }
+
+    // Whether the null constant `value`, such as `c_null_ptr` or
+    // `null(mold)`, has a type that a component of type `member_type`
+    // accepts. A mold-less `null()` takes its component's type instead.
+    // Derived type and procedure components are checked by ASR verification.
+    bool null_constant_fits_component(ASR::expr_t* value, ASR::ttype_t* member_type) {
+        ASR::ttype_t* value_scalar = ASRUtils::extract_type(ASRUtils::expr_type(value));
+        ASR::ttype_t* member_scalar = ASRUtils::extract_type(member_type);
+        bool value_is_c_pointer = ASR::is_a<ASR::CPtr_t>(*value_scalar);
+        bool member_is_c_pointer = ASR::is_a<ASR::CPtr_t>(*member_scalar);
+        if (value_is_c_pointer || member_is_c_pointer) {
+            return value_is_c_pointer && member_is_c_pointer;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*value_scalar)
+                || ASR::is_a<ASR::StructType_t>(*member_scalar)
+                || ASR::is_a<ASR::FunctionType_t>(*value_scalar)
+                || ASR::is_a<ASR::FunctionType_t>(*member_scalar)) {
+            return true;
+        }
+        return ASRUtils::check_equal_type(member_scalar, value_scalar, nullptr, nullptr);
+    }
+
+    // The type of the component `member` as written in a diagnostic, such as
+    // `integer(4)` or `real(8), dimension(2)`.
+    std::string struct_component_type_to_str(ASR::Variable_t* member) {
+        ASR::ttype_t* member_scalar = ASRUtils::extract_type(member->m_type);
+        std::string member_type = ASRUtils::type_to_str_fortran_symbol(
+            member_scalar, member->m_type_declaration, true);
+        if (ASR::is_a<ASR::StructType_t>(*member_scalar)) {
+            member_type = "type(" + member_type + ")";
+        }
+        ASR::dimension_t* member_dims = nullptr;
+        size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
+            member->m_type, member_dims);
+        for (size_t d = 0; d < member_rank; d++) {
+            member_type += d == 0 ? ", dimension(" : ", ";
+            int64_t extent = 0;
+            if (member_dims[d].m_length != nullptr && ASRUtils::extract_value(
+                    ASRUtils::expr_value(member_dims[d].m_length), extent)) {
+                member_type += std::to_string(extent);
+            } else {
+                member_type += ":";
+            }
+            if (d + 1 == member_rank) {
+                member_type += ")";
+            }
+        }
+        return member_type;
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -11373,7 +11431,7 @@ public:
         bool is_pdt = !info.kind_indices.empty();
         Vec<ASR::call_arg_t> vals;
         // Whether each argument in `vals` is a reference to `null()`.
-        std::vector<bool> null_args;
+        std::vector<NullReference> null_args;
         if (is_pdt && x.n_subargs > 0) {
             std::vector<ASR::symbol_t*> kind_members;
             for (size_t index : info.kind_indices) {
@@ -11398,12 +11456,13 @@ public:
                 }
             }
             Vec<ASR::call_arg_t> components;
-            std::vector<bool> component_null_args;
+            std::vector<NullReference> component_null_args;
             visit_struct_constructor_args(x.m_subargs, x.n_subargs, component_members,
                 components, component_null_args);
             Vec<ASR::call_arg_t> combined;
             combined.reserve(al, info.members.size());
-            std::vector<bool> combined_null_args(info.members.size(), false);
+            std::vector<NullReference> combined_null_args(info.members.size(),
+                NullReference::none);
             for (size_t i = 0; i < info.members.size(); i++) {
                 ASR::call_arg_t arg;
                 arg.loc = loc;
@@ -11449,40 +11508,39 @@ public:
             // null constants, and are valid for a plain `type(c_ptr)` or
             // `type(c_funptr)` component, as is a component default taken for
             // an omitted argument. Only a written `null()` is rejected.
-            bool is_null_reference = i < null_args.size() && null_args[i];
+            NullReference null_reference = i < null_args.size()
+                ? null_args[i] : NullReference::none;
+            if (null_reference != NullReference::without_mold
+                    && !null_constant_fits_component(vals[i].m_value, member_var->m_type)) {
+                // Case: `t(c_null_ptr)` for `integer, pointer :: p`, or
+                // `t(null(ip))` for `real, pointer :: p` with an integer `ip`.
+                ASR::ttype_t* value_scalar = ASRUtils::extract_type(
+                    ASRUtils::expr_type(vals[i].m_value));
+                diag.add(Diagnostic("type mismatch in structure constructor: a null value of type "
+                    + ASRUtils::type_to_str_fortran_symbol(value_scalar, nullptr, true)
+                    + " cannot be the value of component '"
+                    + std::string(member_var->m_name) + "' of type "
+                    + struct_component_type_to_str(member_var),
+                    Level::Error, Stage::Semantic, {
+                        Label("", {vals[i].m_value->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+                vals.p[i].m_value = nullptr;
+                continue;
+            }
             if (ASRUtils::is_allocatable(member_var->m_type)) {
                 // `null()` for an allocatable component means it is not
                 // allocated, which is how an omitted allocatable component
                 // is represented.
                 vals.p[i].m_value = nullptr;
-            } else if (is_null_reference && !ASRUtils::is_pointer(member_var->m_type)) {
+            } else if (null_reference != NullReference::none
+                    && !ASRUtils::is_pointer(member_var->m_type)) {
                 // Case: `t(null())` for `integer :: x`, while `t(c_null_ptr)`
                 // for `type(c_ptr) :: p` is valid.
-                ASR::ttype_t* member_scalar = ASRUtils::extract_type(member_var->m_type);
-                std::string member_type = ASRUtils::type_to_str_fortran_symbol(
-                    member_scalar, member_var->m_type_declaration, true);
-                if (ASR::is_a<ASR::StructType_t>(*member_scalar)) {
-                    member_type = "type(" + member_type + ")";
-                }
-                ASR::dimension_t* member_dims = nullptr;
-                size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
-                    member_var->m_type, member_dims);
-                for (size_t d = 0; d < member_rank; d++) {
-                    member_type += d == 0 ? ", dimension(" : ", ";
-                    int64_t extent = 0;
-                    if (member_dims[d].m_length != nullptr && ASRUtils::extract_value(
-                            ASRUtils::expr_value(member_dims[d].m_length), extent)) {
-                        member_type += std::to_string(extent);
-                    } else {
-                        member_type += ":";
-                    }
-                    if (d + 1 == member_rank) {
-                        member_type += ")";
-                    }
-                }
                 diag.add(Diagnostic("null() cannot be the value of component '"
                     + std::string(member_var->m_name) + "' of type "
-                    + member_type
+                    + struct_component_type_to_str(member_var)
                     + ", which is neither a pointer nor allocatable",
                     Level::Error, Stage::Semantic, {
                         Label("", {vals[i].m_value->base.loc})}));
@@ -22590,7 +22648,7 @@ public:
     void visit_kwargs(Vec<ASR::call_arg_t>& args, AST::keyword_t *kwargs, size_t n,
         const Location &loc, ASR::symbol_t* fn, diag::Diagnostics& diag,
         bool cast_args = true, bool fill_component_defaults = true,
-        std::vector<bool>* null_args = nullptr) {
+        std::vector<NullReference>* null_args = nullptr) {
         fn = ASRUtils::symbol_get_past_external(fn);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*fn));
         StructConstructorInfo info = get_struct_constructor_info(fn);
@@ -22617,7 +22675,7 @@ public:
 
         LCOMPILERS_ASSERT(args.size() == constructor_args.size());
         if (null_args != nullptr) {
-            null_args->resize(args.size(), false);
+            null_args->resize(args.size(), NullReference::none);
         }
 
         for (size_t i = 0; i < n; i++) {
@@ -22651,7 +22709,7 @@ public:
             args.p[idx].loc = expr->base.loc;
             args.p[idx].m_value = expr;
             if (null_args != nullptr) {
-                (*null_args)[idx] = is_null_intrinsic_reference(kwargs[i].m_value, expr);
+                (*null_args)[idx] = get_null_reference(kwargs[i].m_value, expr);
             }
         }
 
@@ -22695,8 +22753,9 @@ public:
 
         for (size_t i = 0; cast_args && i < constructor_arg_syms.size(); i++) {
             // A null constant has no value to convert. `null()` for a
-            // component that is neither a pointer nor allocatable is
-            // reported by the caller.
+            // component that is neither a pointer nor allocatable, and a null
+            // constant of a type the component does not accept, are reported
+            // by the caller.
             if( args[i].m_value != nullptr
                     && !ASR::is_a<ASR::PointerNullConstant_t>(*args[i].m_value) ) {
                 ASR::symbol_t* member_sym = constructor_arg_syms[i];

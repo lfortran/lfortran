@@ -1382,3 +1382,30 @@ subroutine structure_constructor_null_component_5()
     a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
     a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
 end subroutine
+
+! A null constant whose type the component does not accept: `c_null_ptr` for
+! an integer or real component, and `null(mold)` with a mold of another type.
+subroutine structure_constructor_null_component_6()
+    use iso_c_binding, only: c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_mismatch
+        integer, pointer :: ip
+        integer, allocatable :: ia(:)
+        real, pointer :: rp
+        integer :: h
+        real :: r
+    end type
+    type :: t_null_mismatch_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+    end type
+    type(t_null_mismatch) :: v
+    type(t_null_mismatch_pdt(4)) :: a
+    integer, pointer :: ip
+    v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+    a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+end subroutine

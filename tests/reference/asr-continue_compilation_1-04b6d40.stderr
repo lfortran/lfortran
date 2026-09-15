@@ -2276,3 +2276,39 @@ semantic error: null() cannot be the value of component 'h' of type integer(4), 
      |
 1383 |     a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
      |                             ^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1405:25
+     |
+1405 |     v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+     |                         ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    --> tests/errors/continue_compilation_1.f90:1406:33
+     |
+1406 |     v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+     |                                 ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    --> tests/errors/continue_compilation_1.f90:1407:41
+     |
+1407 |     v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+     |                                         ^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1408:49
+     |
+1408 |     v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+     |                                                 ^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+    --> tests/errors/continue_compilation_1.f90:1409:54
+     |
+1409 |     v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+     |                                                      ^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    --> tests/errors/continue_compilation_1.f90:1410:32
+     |
+1410 |     a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+     |                                ^^^^^^^^^^ 
