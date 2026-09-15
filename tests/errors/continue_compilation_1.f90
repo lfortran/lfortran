@@ -1346,3 +1346,26 @@ subroutine structure_constructor_null_component_3()
     type(t_null_c_component) :: v1
     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
 end subroutine
+
+! The same for a parameterized derived type and for an extended type, whose
+! parent components come first.
+subroutine structure_constructor_null_component_4()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: t_null_c_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        type(c_ptr) :: p = c_null_ptr
+    end type
+    type :: t_null_c_base
+        integer :: h
+        type(c_ptr) :: q = c_null_ptr
+    end type
+    type, extends(t_null_c_base) :: t_null_c_ext
+        type(c_ptr) :: p
+    end type
+    type(t_null_c_pdt(4)) :: a
+    type(t_null_c_ext) :: e
+    a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine

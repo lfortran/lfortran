@@ -2252,3 +2252,15 @@ semantic error: null() cannot be the value of component 'f' of type type(c_ptr),
      |
 1347 |     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
      |                                              ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1369:32
+     |
+1369 |     a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1370:37
+     |
+1370 |     e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                                     ^^^^^^ 
