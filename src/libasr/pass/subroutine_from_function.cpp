@@ -147,6 +147,91 @@ public:
 };
 
 /**
+ * Every use of an interface that CreateFunctionFromSubroutine turned into a
+ * subroutine takes the interface's new signature, in every symbol table
+ * (procedures, BLOCK, ASSOCIATE and SELECT bodies, ...): a cast of a procedure
+ * to the interface, and a procedure variable declared by it, so that the cast,
+ * the procedure variable it is associated with and the calls through it
+ * agree.
+ */
+class UpdateFunctionPointerCastTypes: public ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes> {
+    private:
+        Allocator &al;
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
+
+        // The interface `sym` names, if it was turned into a subroutine.
+        ASR::Function_t* transformed_interface(ASR::symbol_t* sym) {
+            if (sym == nullptr) {
+                return nullptr;
+            }
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if (Function__TO__ReturnType_MAP_.find(fn) == Function__TO__ReturnType_MAP_.end()) {
+                return nullptr;
+            }
+            return fn;
+        }
+
+    public:
+        UpdateFunctionPointerCastTypes(Allocator &al_,
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
+            : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP) {}
+
+        void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_FunctionPointerCast(x);
+            ASR::Function_t* to_fn = transformed_interface(x.m_to);
+            if (to_fn == nullptr) {
+                return;
+            }
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
+        }
+
+        // The type of the procedure variable `x` declared by a transformed
+        // interface, or null.
+        ASR::ttype_t* transformed_procedure_variable_type(const ASR::Variable_t &x) {
+            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))) {
+                return nullptr;
+            }
+            ASR::Function_t* decl = transformed_interface(x.m_type_declaration);
+            if (decl == nullptr) {
+                return nullptr;
+            }
+            ASR::ttype_t* new_type = decl->m_function_signature;
+            if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+                new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
+            }
+            return new_type;
+        }
+
+        void visit_Variable(const ASR::Variable_t &x) {
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
+            ASR::ttype_t* new_type = transformed_procedure_variable_type(x);
+            if (new_type != nullptr) {
+                const_cast<ASR::Variable_t&>(x).m_type = new_type;
+            }
+        }
+
+        // A reference to a procedure component (e.g. a procedure variable
+        // copied into the data of an outlined region) has the component's
+        // type.
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+            ASR::BaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_StructInstanceMember(x);
+            ASR::symbol_t* member = ASRUtils::symbol_get_past_external(x.m_m);
+            if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+                return;
+            }
+            ASR::ttype_t* new_type = transformed_procedure_variable_type(
+                *ASR::down_cast<ASR::Variable_t>(member));
+            if (new_type != nullptr) {
+                const_cast<ASR::StructInstanceMember_t&>(x).m_type = new_type;
+            }
+        }
+};
+
+/**
  * @class AllocateVarBasedOnFuncCall
  * @brief This class is responsible for inserting an ALLOCATE statement for a variable based on the return type of a function call.
  *
@@ -304,6 +389,12 @@ public :
                                         " -- If it got modified into subroutine,"
                                         " You'll probably find type in the Function_returnType MAP.")
                 return_t_ = func_ret_type;
+            }
+            // An assumed-length character result has the length the
+            // reference declares.
+            if (ASRUtils::is_string_only(return_t_) &&
+                    ASRUtils::get_string_type(return_t_)->m_len_kind == ASR::AssumedLength) {
+                return_t_ = f_call->m_type;
             }
             return_t = ASRUtils::duplicate_type(al, return_t_);
         }
@@ -909,6 +1000,8 @@ void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t 
     std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
     CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
     v.visit_TranslationUnit(unit);
+    UpdateFunctionPointerCastTypes c(al, Function__TO__ReturnType_MAP);
+    c.visit_TranslationUnit(unit);
     ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

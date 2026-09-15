@@ -17,10 +17,10 @@
                                     ()
                                     Default
                                     (FunctionType
-                                        [(Integer 4)]
+                                        []
                                         (String 1 () AssumedLength DescriptorString)
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -45,15 +45,15 @@
                                     ()
                                     []
                                 ),
-                            ~implicit_interface_mess_3:
+                            mess~fpcast:
                                 (Function
                                     (SymbolTable
-                                        3
+                                        4
                                         {
-                                            ~implicit_interface_mess_3_arg_0:
+                                            mess~arg_0:
                                                 (Variable
-                                                    3
-                                                    ~implicit_interface_mess_3_arg_0
+                                                    4
+                                                    mess~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -74,10 +74,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            ~implicit_interface_mess_3_return_var:
+                                            mess~result:
                                                 (Variable
-                                                    3
-                                                    ~implicit_interface_mess_3_return_var
+                                                    4
+                                                    mess~result
                                                     []
                                                     ReturnVar
                                                     ()
@@ -99,7 +99,7 @@
                                                     []
                                                 )
                                         })
-                                    ~implicit_interface_mess_3
+                                    mess~fpcast
                                     (FunctionType
                                         [(Integer 4)]
                                         (String 1 () AssumedLength DescriptorString)
@@ -116,10 +116,82 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 ~implicit_interface_mess_3_arg_0)]
+                                    [(Var 4 mess~arg_0)]
                                     []
-                                    (Var 3 ~implicit_interface_mess_3_return_var)
+                                    (Var 4 mess~result)
                                     Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            mess~fpcast_ptr:
+                                (Variable
+                                    2
+                                    mess~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)]
+                                            (String 1 () AssumedLength DescriptorString)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 mess~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            ~implicit_interface_mess_3:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    ~implicit_interface_mess_3
+                                    (FunctionType
+                                        []
+                                        (String 1 () AssumedLength DescriptorString)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Private
                                     .false.
                                     .false.
                                     ()
@@ -128,10 +200,10 @@
                     xerror
                     (FunctionType
                         [(FunctionType
-                            [(Integer 4)]
+                            []
                             (String 1 () AssumedLength DescriptorString)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -157,9 +229,32 @@
                     )
                     []
                     [(Var 2 mess)]
-                    [(Print
+                    [(Associate
+                        (Var 2 mess~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 mess)
+                            2 mess~fpcast
+                            (FunctionType
+                                [(Integer 4)]
+                                (String 1 () AssumedLength DescriptorString)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Print
                         (FunctionCall
-                            2 mess
+                            2 mess~fpcast_ptr
                             ()
                             [((IntegerConstant 1 (Integer 4) Decimal))]
                             (String 1 () AssumedLength DescriptorString)

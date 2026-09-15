@@ -1277,3 +1277,57 @@ subroutine imported_init_no_export()
     implicit none
     type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
 end subroutine
+
+! A structure constructor argument is the value of its component, so an array
+! argument must have the component's rank and extents.
+subroutine structure_constructor_argument_shape_1()
+    implicit none
+    type :: t_constructor_shape
+        integer :: a(3)
+        integer :: s
+        integer :: m(2, 2)
+    end type
+    type(t_constructor_shape), parameter :: p1 = &
+        t_constructor_shape([1, 2], 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+    type(t_constructor_shape) :: v2
+    integer :: b(2), c(3, 2)
+    b = 1
+    c = 1
+    v2 = t_constructor_shape(b, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+    v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
+end subroutine
+
+! `null()` is a disassociated pointer or an unallocated allocatable, so it
+! cannot be the value of a component that is neither.
+subroutine structure_constructor_null_component_1()
+    implicit none
+    type :: t_null_inner
+        integer :: k
+    end type
+    type :: t_null_component
+        integer :: x
+        type(t_null_inner) :: in
+        character(len=2) :: c
+        integer, pointer :: p
+    end type
+    type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+    type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
+    type(t_null_component) :: v2
+    v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine structure_constructor_null_component_2()
+    implicit none
+    type :: t_null_inner_2
+        integer :: k
+    end type
+    type :: t_null_array_component
+        real(8) :: x(2)
+        type(t_null_inner_2) :: ins(3, 2)
+    end type
+    type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+    type(t_null_array_component) :: v2
+    v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+end subroutine

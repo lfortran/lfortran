@@ -1152,6 +1152,9 @@ namespace LCompilers {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(type_declaration));
                     type = get_function_type(*fn, module)->getPointerTo();
+                } else if (ASRUtils::is_opaque_procedure_type(asr_type)) {
+                    type = get_opaque_procedure_ptr_type(
+                        *ASR::down_cast<ASR::FunctionType_t>(asr_type), module);
                 } else {
                     // No type declaration available (e.g., procedure parameter
                     // of implicit interface). Create function type directly
@@ -1289,6 +1292,14 @@ namespace LCompilers {
             }
         }
         return args;
+    }
+
+    llvm::PointerType* LLVMUtils::get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
+            llvm::Module* module) {
+        llvm::Type* return_type = x.m_return_var_type != nullptr
+            ? get_type_from_ttype_t_util(nullptr, x.m_return_var_type, module)
+            : llvm::Type::getVoidTy(context);
+        return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
     }
 
     llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
@@ -1777,6 +1788,9 @@ namespace LCompilers {
                     }
                     if (fn_from_expr) {
                         llvm_type = get_function_type(*fn_from_expr, module)->getPointerTo();
+                    } else if (ASRUtils::is_opaque_procedure_type(asr_type)) {
+                        llvm_type = get_opaque_procedure_ptr_type(
+                            *ASR::down_cast<ASR::FunctionType_t>(asr_type), module);
                     } else {
                         // For implicit interfaces / null procedure pointers, arg_expr
                         // can be null or not resolve to a concrete Function_t.
