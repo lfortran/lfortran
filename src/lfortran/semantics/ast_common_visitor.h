@@ -2996,7 +2996,7 @@ public:
 	                abi = ASR::abiType::Source;
 	            }
 	            get_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope,
-	                                                    s.m_name, nullptr, 0, intent, nullptr,
+	                                                    s2c(al, sym), nullptr, 0, intent, nullptr,
 	                                                    nullptr, ASR::storage_typeType::Default, nullptr, nullptr,
 	                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
 	                                                    false, false, false));
