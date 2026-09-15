@@ -11035,6 +11035,64 @@ public:
         }
     }
 
+    // An argument of a structure constructor is assigned to its component.
+    // A StructConstant's arguments are lowered as they are, so a constant
+    // argument is given its component's shape here, as a component's own
+    // default initializer is. A non-constant argument is converted by the
+    // assignment a StructConstructor is lowered into.
+    void conform_struct_constructor_args(Vec<ASR::call_arg_t>& vals,
+            const std::vector<ASR::symbol_t*>& members) {
+        for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
+            ASR::expr_t* arg = vals[i].m_value;
+            if (arg == nullptr || members[i] == nullptr
+                    || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                continue;
+            }
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            if (!ASRUtils::is_array(member_type)
+                    || ASRUtils::is_allocatable_or_pointer(member_type)
+                    || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                continue;
+            }
+            ASR::expr_t* value = ASRUtils::expr_value(arg);
+            if (value == nullptr || !(ASR::is_a<ASR::IntegerConstant_t>(*value)
+                    || ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)
+                    || ASR::is_a<ASR::RealConstant_t>(*value)
+                    || ASR::is_a<ASR::ComplexConstant_t>(*value)
+                    || ASR::is_a<ASR::LogicalConstant_t>(*value))) {
+                continue;
+            }
+            int64_t size = ASRUtils::get_fixed_size_of_array(member_type);
+            if (size < 0) {
+                continue;
+            }
+            // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`.
+            const Location& arg_loc = arg->base.loc;
+            ASR::ttype_t* array_type = ASRUtils::duplicate_type(al, member_type);
+            ASR::expr_t* broadcast = nullptr;
+            if (size == 0) {
+                broadcast = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, arg_loc,
+                    0, nullptr, array_type, ASR::arraystorageType::ColMajor));
+            } else {
+                Vec<ASR::expr_t*> elements;
+                elements.reserve(al, size);
+                for (int64_t j = 0; j < size; j++) {
+                    elements.push_back(al, value);
+                }
+                broadcast = ASRUtils::expr_value(ASRUtils::EXPR(
+                    ASRUtils::make_ArrayConstructor_t_util(al, arg_loc, elements.p,
+                        elements.n, array_type, ASR::arraystorageType::ColMajor)));
+                if (broadcast == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*broadcast)) {
+                    continue;
+                }
+                // The elements are stored in column-major order; keep the
+                // component's rank and bounds.
+                ASR::down_cast<ASR::ArrayConstant_t>(broadcast)->m_type = array_type;
+            }
+            vals.p[i].m_value = broadcast;
+        }
+    }
+
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
@@ -11105,6 +11163,7 @@ public:
                 vals.p[i].m_value = nullptr;
             }
         }
+        conform_struct_constructor_args(vals, members);
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
