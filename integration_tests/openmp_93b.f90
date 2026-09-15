@@ -57,3 +57,41 @@ do i = 0, m
 end do
 !$omp end parallel do
 end subroutine
+
+subroutine task_pointers(tc, ye, ts, tz)
+implicit none
+integer, intent(out) :: tc, ye, ts, tz
+integer, target :: t(20), y(4, 5), u(20), v(20)
+integer, pointer :: pc(:), q(:, :), r(:, :), ps(:), pz(:)
+t = 0
+y = 0
+u = 0
+v = 0
+pc => t
+q => y(:, 2:4)
+r => y(2:3, 5:5)
+ps => u(3:3:2)
+pz => v(5:4:2)
+!$omp parallel
+!$omp single
+!$omp task shared(pc)
+pc(1) = 3
+pc(20) = 7
+!$omp end task
+!$omp task shared(q, r)
+q(2, 2) = 9
+r(2, 1) = 4
+!$omp end task
+!$omp task shared(ps)
+ps(1) = 5
+!$omp end task
+!$omp task shared(pz)
+pz = 1
+!$omp end task
+!$omp end single
+!$omp end parallel
+tc = 100*t(1) + 10*t(20) + sum(t)
+ye = 100*y(2, 3) + 10*y(3, 5) + sum(y)
+ts = 10*u(3) + sum(u)
+tz = sum(v)
+end subroutine

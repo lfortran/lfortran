@@ -21,9 +21,13 @@ interface
     real, intent(in) :: a(0:n-1)
     real, intent(out) :: s
     end subroutine
+    subroutine task_pointers(tc, ye, ts, tz)
+    integer, intent(out) :: tc, ye, ts, tz
+    end subroutine
 end interface
 real :: x(20), s
 integer :: i
+integer :: tc, ye, ts, tz
 
 x = 1.0
 call task_in_parallel(x, 20)
@@ -48,6 +52,12 @@ if (abs(x(11) + 1.0) > 1e-6) error stop
 
 call sum_lbound(x, 10, s)
 if (abs(s - 90.0) > 1e-6) error stop
+
+call task_pointers(tc, ye, ts, tz)
+if (tc /= 380) error stop
+if (ye /= 953) error stop
+if (ts /= 55) error stop
+if (tz /= 0) error stop
 
 print *, "ok"
 end program

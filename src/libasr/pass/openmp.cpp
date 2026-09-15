@@ -1253,6 +1253,60 @@ class ParallelRegionVisitor :
         }
 
         /*
+            A deferred task receives the data address and bounds of an array and
+            rebuilds a contiguous array from them. That is the same array only if each
+            dimension with more than one element steps to the next element in storage;
+            a dimension with one element and an array with no elements always match.
+            Build the same view here and compare the address of the element one step
+            from the first element along each dimension. Strides cannot be passed to
+            the task, so an array that does not match stops with a run-time error.
+        */
+        void check_task_array_view(const Location& loc, const std::string& name,
+                ASR::expr_t* array_ref, ASR::expr_t* address, ASR::ttype_t* view_type) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::ttype_t* cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_ref));
+            ASR::expr_t* view = b.Variable(current_scope, current_scope->get_unique_name("task_view_" + name),
+                view_type, ASR::intentType::Local);
+            auto element_address = [&](ASR::expr_t* array, size_t step_dim) {
+                std::vector<ASR::expr_t*> idx;
+                for (size_t i = 0; i < n_dims; i++) {
+                    ASR::expr_t* lbound = b.ArrayLBound(array_ref, i + 1);
+                    idx.push_back(i == step_dim ? b.Add(lbound, b.i32(1)) : lbound);
+                }
+                ASR::expr_t* item = b.ArrayItem_01(array, idx);
+                return b.PointerToCPtr(ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, item,
+                    ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::expr_type(item))), nullptr)), cptr_type);
+            };
+            Vec<ASR::expr_t*> shape; shape.reserve(al, n_dims);
+            Vec<ASR::expr_t*> lbounds; lbounds.reserve(al, n_dims);
+            for (size_t i = 0; i < n_dims; i++) {
+                shape.push_back(al, b.ArraySize(array_ref, b.i32(i + 1), int_type));
+                lbounds.push_back(al, b.ArrayLBound(array_ref, i + 1));
+            }
+            std::vector<ASR::stmt_t*> checks;
+            // call c_f_pointer(tdata%<sym>, task_view, shape(<sym>), lbound(<sym>))
+            checks.push_back(b.CPtrToPointer(address, view,
+                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, shape.p, shape.n,
+                    int_type, ASR::arraystorageType::ColMajor)),
+                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, lbounds.p, lbounds.n,
+                    int_type, ASR::arraystorageType::ColMajor))));
+            std::string msg = "array '" + name + "' used in an openmp task is not contiguous, which is not supported yet";
+            for (size_t i = 0; i < n_dims; i++) {
+                ASR::stmt_t* error_stop = ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, b.StringConstant(msg,
+                    b.String(b.i32(msg.size()), ASR::ExpressionLength, ASR::DescriptorString, 1))));
+                ASR::expr_t* mismatch = ASRUtils::EXPR(ASR::make_CPtrCompare_t(al, loc,
+                    element_address(array_ref, i), ASR::cmpopType::NotEq, element_address(view, i),
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                checks.push_back(b.If(b.Gt(b.ArraySize(array_ref, b.i32(i + 1), int_type), b.i32(1)),
+                    {b.If(mismatch, {error_stop}, {})}, {}));
+            }
+            nested_lowered_body.push_back(b.If(b.Gt(b.ArraySize(array_ref, nullptr, int_type), b.i32(0)),
+                checks, {}));
+        }
+
+        /*
             A pointer array, or an assumed-shape array of an enclosing scope, can be
             associated with a section that has strides, so its data address and bounds
             do not describe it. The region receives such an array through a pointer
@@ -1600,15 +1654,6 @@ class ParallelRegionVisitor :
                             sym, ASRUtils::symbol_type(sym), nullptr)), array_ref)));
                         continue;
                     }
-                    if (c->contiguity_checked_arrays.count(it.first)) {
-                        std::string msg = "array '" + it.first + "' used in an openmp task is not contiguous, which is not supported yet";
-                        ASR::expr_t* is_contiguous = ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc, array_ref,
-                            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-                        nested_lowered_body.push_back(b.If(b.Not(is_contiguous), {
-                            ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, b.StringConstant(msg,
-                                b.String(b.i32(msg.size()), ASR::ExpressionLength, ASR::DescriptorString, 1))))
-                        }, {}));
-                    }
                     ASR::expr_t* array_var = array_ref;
                     if (!ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(array_var))) {
                         // explicit-shape dummy and host arrays keep their type, take their address
@@ -1645,6 +1690,12 @@ class ParallelRegionVisitor :
                             ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
                             b.ArrayUBound(array_ref, i+1)
                         ));
+                    }
+                    if (c->contiguity_checked_arrays.count(it.first)) {
+                        check_task_array_view(loc, it.first, array_ref,
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            sym, ASRUtils::symbol_type(sym), nullptr)),
+                            descriptor_pointer_type(sym_type));
                     }
                 } else if (is_shared) {
                     // Handle shared non-array variables using pointer approach
