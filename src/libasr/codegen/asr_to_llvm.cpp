@@ -19258,7 +19258,7 @@ public:
                     context, *module, *builder, no_str);
                 llvm::Value* no_len = llvm::ConstantInt::get(
                     llvm::Type::getInt64Ty(context), no_str.size());
-                std::string cmp_func_name = "is_streql_NCS";
+                std::string cmp_func_name = "_lfortran_is_streql_NCS";
                 llvm::Function *cmp_fn = module->getFunction(cmp_func_name);
                 if (!cmp_fn) {
                     llvm::FunctionType *cmp_ft = llvm::FunctionType::get(
