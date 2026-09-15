@@ -670,6 +670,18 @@ semantic error: component 's' has rank 0, but the structure constructor argument
 1243 |     type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
      |                                                                      ^^^^^^ rank 1 argument
 
+semantic error: null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1266:64
+     |
+1266 |     type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+     |                                                                ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1267:56
+     |
+1267 |     type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+     |                                                        ^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2180,3 +2192,9 @@ semantic error: component 'a' has rank 1, but the structure constructor argument
      |
 1250 |     v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
      |                              ^ rank 2 argument
+
+semantic error: null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1269:49
+     |
+1269 |     v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+     |                                                 ^^^^^^ 

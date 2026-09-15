@@ -11251,13 +11251,32 @@ public:
 
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
 
-        // `null()` for an allocatable component means it is not allocated,
-        // which is how an omitted allocatable component is represented.
         std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
-            if (vals[i].m_value &&
-                    ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value) &&
-                    ASRUtils::is_allocatable(ASRUtils::symbol_type(members[i]))) {
+            if (vals[i].m_value == nullptr
+                    || !ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value)
+                    || members[i] == nullptr
+                    || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                continue;
+            }
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(members[i]);
+            if (ASRUtils::is_allocatable(member_var->m_type)) {
+                // `null()` for an allocatable component means it is not
+                // allocated, which is how an omitted allocatable component
+                // is represented.
+                vals.p[i].m_value = nullptr;
+            } else if (!ASRUtils::is_pointer(member_var->m_type)) {
+                // Case: `t(null())` for `integer :: x`.
+                diag.add(Diagnostic("null() cannot be the value of component '"
+                    + std::string(member_var->m_name) + "' of type "
+                    + ASRUtils::type_to_str_fortran_symbol(member_var->m_type,
+                        member_var->m_type_declaration, true)
+                    + ", which is neither a pointer nor allocatable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {vals[i].m_value->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
                 vals.p[i].m_value = nullptr;
             }
         }

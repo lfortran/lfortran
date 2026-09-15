@@ -1249,3 +1249,22 @@ subroutine structure_constructor_argument_shape_1()
     v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
     v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
 end subroutine
+
+! `null()` is a disassociated pointer or an unallocated allocatable, so it
+! cannot be the value of a component that is neither.
+subroutine structure_constructor_null_component_1()
+    implicit none
+    type :: t_null_inner
+        integer :: k
+    end type
+    type :: t_null_component
+        integer :: x
+        type(t_null_inner) :: in
+        character(len=2) :: c
+        integer, pointer :: p
+    end type
+    type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+    type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type t_null_inner, which is neither a pointer nor allocatable
+    type(t_null_component) :: v2
+    v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+end subroutine
