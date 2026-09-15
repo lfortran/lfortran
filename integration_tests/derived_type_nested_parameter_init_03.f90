@@ -62,8 +62,11 @@ end subroutine
 end module
 
 program derived_type_nested_parameter_init_03
-use derived_type_nested_parameter_init_03_m, only: check_locals, check_assignment
+use derived_type_nested_parameter_init_03_m
 implicit none
+type(b_t) :: lp = pb
+call check_a(lp%a, [7, 8, 9], 'qq  ', 10)
+if (lp%t /= 'ab ' .or. lp%y /= 30) error stop
 call check_locals()
 call check_assignment()
 print *, "ok"

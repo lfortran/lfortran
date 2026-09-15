@@ -3372,7 +3372,59 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
     }
 
+    // A type parameter of a parameterized derived type, whose value is
+    // known only once the type is instantiated
+    bool is_struct_type_parameter(ASR::expr_t *arg) {
+        if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(arg)->m_v);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        ASR::asr_t *owner =
+            ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
+        return owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)
+            && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+    }
+
+    // The backends emit a StructConstant as static data, so each argument
+    // must be a constant: a literal, a named constant, or a structure
+    // constructor of constants. A variable, such as a temporary created by
+    // a pass, cannot be part of static data.
+    bool is_struct_constant_argument(ASR::expr_t *arg) {
+        if (ASRUtils::is_value_constant(arg)
+                || ASRUtils::is_value_constant(ASRUtils::expr_value(arg))
+                || is_struct_type_parameter(arg)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            return sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)
+                && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    == ASR::storage_typeType::Parameter;
+        }
+        if (ASR::is_a<ASR::StructConstructor_t>(*arg)) {
+            ASR::StructConstructor_t *sc =
+                ASR::down_cast<ASR::StructConstructor_t>(arg);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                if (sc->m_args[i].m_value != nullptr
+                        && !is_struct_constant_argument(sc->m_args[i].m_value)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     void visit_StructConstant(const StructConstant_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value == nullptr) continue;
+            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
+                "asr.verify.struct_constant.argument_is_constant",
+                "StructConstant argument " + std::to_string(i + 1)
+                    + " is not a constant",
+                x.m_args[i].m_value->base.loc);
+        }
         verify_struct_constructor_arguments("StructConstant",
             "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,
             true, x.base.base.loc);
