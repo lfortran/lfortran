@@ -6845,8 +6845,8 @@ public:
         // `type(t) :: part = t("hello")`. Its arguments, which list parent
         // components first, replace the members' own defaults. A null()
         // argument for a pointer member is stored like a `=> null()` default.
-        // An allocatable member has no default and is already unallocated,
-        // so its null() argument needs no store.
+        // null() for an allocatable member reaches here as an omitted
+        // argument, so every null() argument belongs to a pointer member.
         std::map<std::string, ASR::expr_t*> init_sc_args;
         if (init_sc) {
             std::vector<ASR::Struct_t*> chain;
@@ -6859,13 +6859,9 @@ public:
                 for (size_t j = 0; j < (*s)->n_members; j++, i++) {
                     LCOMPILERS_ASSERT(i < init_sc->n_args);
                     ASR::expr_t* arg = init_sc->m_args[i].m_value;
-                    if (arg && ASR::is_a<ASR::PointerNullConstant_t>(*arg)) {
-                        ASR::symbol_t* member = (*s)->m_symtab->get_symbol((*s)->m_members[j]);
-                        LCOMPILERS_ASSERT(member);
-                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(member))) {
-                            continue;
-                        }
-                    }
+                    LCOMPILERS_ASSERT(!arg || !ASR::is_a<ASR::PointerNullConstant_t>(*arg) ||
+                        !ASRUtils::is_allocatable(ASRUtils::symbol_type(
+                            (*s)->m_symtab->get_symbol((*s)->m_members[j]))));
                     if (arg) {
                         init_sc_args[(*s)->m_members[j]] = arg;
                     }
