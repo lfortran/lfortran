@@ -119,6 +119,38 @@
                                         []
                                         ()
                                         BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            messpr~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    messpr~fpcast
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
                                         Interface
                                         ()
                                         .false.
@@ -138,6 +170,46 @@
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            messpr~fpcast_ptr:
+                                (Variable
+                                    4
+                                    messpr~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            []
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    4 messpr~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     prini_main__lcompilers
@@ -158,7 +230,53 @@
                     )
                     []
                     [(Var 4 entry__lcompilers)]
-                    [(If
+                    [(Associate
+                        (Var 4 messpr~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 4 messpr)
+                            4 messpr~fpcast
+                            (FunctionType
+                                []
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Associate
+                        (Var 4 messpr~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 4 messpr)
+                            4 messpr~fpcast
+                            (FunctionType
+                                []
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (If
                         ()
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
@@ -198,8 +316,8 @@
                         2
                     )
                     (SubroutineCall
+                        4 messpr~fpcast_ptr
                         4 messpr
-                        ()
                         []
                         ()
                         .false.

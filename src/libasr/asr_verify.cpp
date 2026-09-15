@@ -2779,6 +2779,58 @@ public:
         if( x.m_return_var_type ) {
             verify_nonscoped_ttype(x.m_return_var_type);
         }
+        require_id(x.m_deftype != ASR::deftypeType::ImplicitInterface ||
+                x.n_arg_types == 0,
+            "asr.verify.function_type.implicit_interface_has_no_arg_types",
+            "a procedure type with an implicit interface must not list "
+            "argument types");
+    }
+
+    // A FunctionPointerCast views a procedure through another procedure type:
+    // either an interface symbol `to` whose signature is the cast's type, or,
+    // without `to`, the opaque procedure type.
+    void visit_FunctionPointerCast(const FunctionPointerCast_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_FunctionPointerCast(x);
+        require_id(ASR::is_a<ASR::FunctionType_t>(*x.m_type),
+            "asr.verify.function_pointer_cast.type_is_procedure",
+            "FunctionPointerCast type must be a procedure type");
+        // The argument's type can only be taken once ExternalSymbols are
+        // resolved: while a modfile is loaded the argument can be a
+        // use-associated procedure of a module that is not loaded yet.
+        if (check_external) {
+            require_id(as_procedure_type(ASRUtils::expr_type(x.m_arg)) != nullptr,
+                "asr.verify.function_pointer_cast.arg_is_procedure",
+                "FunctionPointerCast argument must be a procedure");
+        }
+        if (x.m_to == nullptr) {
+            require_id(ASRUtils::is_opaque_procedure_type(x.m_type),
+                "asr.verify.function_pointer_cast.no_interface_is_opaque",
+                "FunctionPointerCast without an interface must cast to the "
+                "opaque procedure type");
+            return;
+        }
+        require(symtab_in_scope(current_symtab, x.m_to),
+            "FunctionPointerCast::m_to '" + std::string(symbol_name(x.m_to)) +
+            "' cannot point outside of its symbol table");
+        if (!check_external) return;
+        ASR::symbol_t *to = ASRUtils::symbol_get_past_external(x.m_to);
+        require_id(ASR::is_a<ASR::Function_t>(*to),
+            "asr.verify.function_pointer_cast.interface_is_function",
+            "FunctionPointerCast interface must be a procedure");
+        if (!ASR::is_a<ASR::Function_t>(*to) ||
+                !ASR::is_a<ASR::FunctionType_t>(*x.m_type)) {
+            return;
+        }
+        ASR::Function_t *to_fn = ASR::down_cast<ASR::Function_t>(to);
+        require_id(!ASRUtils::is_bare_implicit_interface(*to_fn),
+            "asr.verify.function_pointer_cast.interface_is_explicit",
+            "FunctionPointerCast interface '" + std::string(to_fn->m_name) +
+            "' must be explicit");
+        require_id(ASR::down_cast<ASR::FunctionType_t>(x.m_type)->n_arg_types
+                == to_fn->n_args,
+            "asr.verify.function_pointer_cast.type_matches_interface",
+            "FunctionPointerCast type must have the arguments of interface '" +
+            std::string(to_fn->m_name) + "'");
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {

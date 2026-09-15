@@ -527,8 +527,17 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
     const llvm::Target *target = get_llvm_target(config.triple);
     llvm::TargetOptions options;
 #if LLVM_VERSION_MAJOR >= 8
+    llvm::Triple triple(config.triple);
+    // WebAssembly objects are linked into static executables (wasm-ld for
+    // WASI, emcc for Emscripten), which do not need position independent
+    // code; clang also defaults to the static model there. In the PIC model
+    // the WebAssembly backend lowers a call through a pointer that was just
+    // loaded with a function's address as a direct `call` with a GOT
+    // relocation, which produces an invalid module.
+    bool is_wasm = triple.getArch() == llvm::Triple::wasm32
+        || triple.getArch() == llvm::Triple::wasm64;
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> relocation_model
-        = llvm::Reloc::Model::PIC_;
+        = is_wasm ? llvm::Reloc::Model::Static : llvm::Reloc::Model::PIC_;
     RM_OPTIONAL_TYPE<llvm::CodeModel::Model> code_model;
     llvm::TargetMachine *machine = target->createTargetMachine(
 #if LLVM_VERSION_MAJOR >= 21

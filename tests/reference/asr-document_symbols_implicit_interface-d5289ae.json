@@ -1,0 +1,13 @@
+{
+    "basename": "asr-document_symbols_implicit_interface-d5289ae",
+    "cmd": "lfortran --show-document-symbols --no-color {infile}",
+    "infile": "tests/document_symbols_implicit_interface.f90",
+    "infile_hash": "a88635da5b550504bc05c5a942c13fdb4ef2bd96c055a13efb33c258",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-document_symbols_implicit_interface-d5289ae.stdout",
+    "stdout_hash": "254ac3abf68b31fc026d29efd14ae1459ecb921dd9181aa553f0fd40",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
