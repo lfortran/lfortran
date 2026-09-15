@@ -635,6 +635,8 @@ class InvolvedSymbolsCollector:
         std::set<std::string> descriptor_arrays;
         // Arrays that may be non-contiguous but are passed by address and bounds
         std::set<std::string> contiguity_checked_arrays;
+        // Arrays listed in a private or firstprivate clause, with that clause
+        std::map<std::string, ASR::omp_clauseType> private_arrays;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
 
@@ -1154,6 +1156,7 @@ class ParallelRegionVisitor :
                                                 array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                             is_arg ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
+                                pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
                                     We skip allocation for dummy arguments as the caller provides the memory.
@@ -1267,6 +1270,7 @@ class ParallelRegionVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                                 ASR::intentType::Local);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                     new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
@@ -1498,6 +1502,63 @@ class ParallelRegionVisitor :
             }
             // Default behavior: variables are shared unless explicitly made private
             return true;
+        }
+
+        // Array variables that this pass declared as pointers itself, to
+        // pass them to outlined functions; any other pointer array is a
+        // pointer array of the program
+        std::set<ASR::symbol_t*> pass_pointer_arrays;
+
+        bool is_program_pointer_array(SymbolTable* scope, const std::string& name) {
+            ASR::symbol_t* sym = scope->resolve_symbol(name);
+            if (sym == nullptr) {
+                return false;
+            }
+            ASR::ttype_t* sym_type = ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sym));
+            return ASRUtils::is_array(sym_type) && ASRUtils::is_pointer(sym_type)
+                && pass_pointer_arrays.find(sym) == pass_pointer_arrays.end();
+        }
+
+        // Records the arrays that the private and firstprivate clauses of
+        // the region name, so that the outlined function gives each of them
+        // storage of its own instead of pointing at the original array.
+        // Pointer arrays of the program own no storage: each thread already
+        // gets a pointer of its own that is associated with the original
+        // target, and the pass must neither allocate nor free that target
+        void collect_private_arrays(const ASR::OMPRegion_t& x, InvolvedSymbolsCollector& c) {
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                ASR::expr_t** vars = nullptr;
+                size_t n_vars = 0;
+                if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPPrivate) {
+                    ASR::OMPPrivate_t* private_clause = ASR::down_cast<ASR::OMPPrivate_t>(x.m_clauses[i]);
+                    vars = private_clause->m_vars;
+                    n_vars = private_clause->n_vars;
+                } else if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPFirstPrivate) {
+                    ASR::OMPFirstPrivate_t* firstprivate_clause = ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                    vars = firstprivate_clause->m_vars;
+                    n_vars = firstprivate_clause->n_vars;
+                }
+                for (size_t j = 0; j < n_vars; j++) {
+                    std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(vars[j])->m_v);
+                    auto sym = c.symbols.find(var_name);
+                    if (sym != c.symbols.end() && ASRUtils::is_array(sym->second.first)
+                            && !is_program_pointer_array(current_scope, var_name)) {
+                        c.private_arrays[var_name] = x.m_clauses[i]->type;
+                    }
+                }
+            }
+        }
+
+        // Frees the storage of the private arrays of the outlined function
+        // whose scope is current_scope, at the end of its body
+        void deallocate_private_arrays(const Location& loc, InvolvedSymbolsCollector* c, Vec<ASR::stmt_t*>& body) {
+            ASRUtils::ASRBuilder b(al, loc);
+            for (auto& it: c->private_arrays) {
+                ASR::expr_t* private_array = b.Var(current_scope->get_symbol(it.first));
+                ASR::expr_t* is_associated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                    private_array, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                body.push_back(al, b.If(is_associated, {b.Deallocate(private_array)}, {}));
+            }
         }
 
         ASR::ttype_t* descriptor_pointer_type(ASR::ttype_t* type) {
@@ -1759,11 +1820,44 @@ class ParallelRegionVisitor :
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
 
                 if (is_array && c->descriptor_arrays.count(it.first)) {
-                    // <sym> => tdata%<sym>
-                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-                        b.Var(current_scope->get_symbol(it.first)),
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)))));
+                    ASR::expr_t* descriptor = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr));
+                    auto private_array = c->private_arrays.find(it.first);
+                    if (private_array == c->private_arrays.end()) {
+                        // <sym> => tdata%<sym>
+                        body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                            b.Var(current_scope->get_symbol(it.first)), descriptor)));
+                        continue;
+                    }
+                    // A private copy exists only if the original is associated, which an
+                    // array the pass turned into a pointer may not be, and then has the
+                    // bounds of the original, which may have strides:
+                    // original_<sym> => tdata%<sym>
+                    // if (associated(original_<sym>)) then
+                    //     allocate(<sym>(lbound(original_<sym>):ubound(original_<sym>)))
+                    //     <sym> = original_<sym>    ! firstprivate
+                    // end if
+                    ASR::expr_t* original = b.Variable(current_scope,
+                        current_scope->get_unique_name("original_" + it.first), ASRUtils::expr_type(descriptor),
+                        ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor)));
+                    ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(sym_type);
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
+                    for (size_t i = 0; i < n_dims; i++) {
+                        ASR::dimension_t dim;
+                        dim.loc = loc;
+                        dim.m_start = b.ArrayLBound(original, i + 1);
+                        dim.m_length = b.ArraySize(original, b.i32(i + 1), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+                        dims.push_back(al, dim);
+                    }
+                    std::vector<ASR::stmt_t*> allocate_copy = {b.Allocate(copy, dims.p, dims.n)};
+                    if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
+                        allocate_copy.push_back(b.Assignment(copy, original));
+                    }
+                    ASR::expr_t* is_associated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                        original, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    body.push_back(al, b.If(is_associated, allocate_copy, {}));
                 } else if (is_array) {
                     // Handle arrays (existing logic)
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
@@ -1794,15 +1888,49 @@ class ParallelRegionVisitor :
                         size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
                     ASR::expr_t* lbounds_constructor = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                         lbounds.p, lbounds.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
-                    
-                    // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
-                    body.push_back(al, b.CPtrToPointer(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first)),
-                        shape,
-                        lbounds_constructor
-                    ));
+                    ASR::expr_t* original_data = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr));
+
+                    auto private_array = c->private_arrays.find(it.first);
+                    if (private_array == c->private_arrays.end()) {
+                        // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
+                        body.push_back(al, b.CPtrToPointer(
+                            original_data,
+                            b.Var(current_scope->get_symbol(it.first)),
+                            shape,
+                            lbounds_constructor
+                        ));
+                        continue;
+                    }
+
+                    // A private copy exists only if the original array is
+                    // allocated, and then has the bounds of the original:
+                    // if (c_associated(tdata%<sym>)) then
+                    //     allocate(<sym>(lbound:ubound))
+                    //     call c_f_pointer(tdata%<sym>, original_<sym>, [ubound-lbound+1], [lbound])  ! firstprivate
+                    //     <sym> = original_<sym>                                                    ! firstprivate
+                    // end if
+                    ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        ASR::dimension_t dim;
+                        dim.loc = loc;
+                        dim.m_start = lbounds[i];
+                        dim.m_length = size_args[i];
+                        dims.push_back(al, dim);
+                    }
+                    std::vector<ASR::stmt_t*> allocate_copy = {b.Allocate(copy, dims.p, dims.n)};
+                    if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
+                        ASR::expr_t* original = b.Variable(current_scope,
+                            current_scope->get_unique_name("original_" + it.first), sym_type,
+                            ASR::intentType::Local, involved_type_declaration(it.second.second),
+                            ASR::abiType::BindC);
+                        allocate_copy.push_back(b.CPtrToPointer(original_data, original, shape, lbounds_constructor));
+                        allocate_copy.push_back(b.Assignment(copy, original));
+                    }
+                    ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                        original_data, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    body.push_back(al, b.If(is_allocated, allocate_copy, {}));
                 } else if (is_shared) {
                     // Handle shared non-array variables using CPtr approach
                     // call c_f_pointer(tdata%<sym>, temp_ptr)
@@ -1867,13 +1995,23 @@ class ParallelRegionVisitor :
                             array as it is; its storage is contiguous, so the outlined
                             region receives its data address and bounds and associates
                             its own pointer with them.
+                            The region's statements move to the outlined function, which
+                            replaces their variables in place, also in the dimensions of
+                            expression types that share the array's declared type. Give
+                            the declaration a type of its own, so that its dimensions keep
+                            referring to variables of its own scope.
                         */
+                        ASR::Variable_t* array_variable = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(it.first)));
+                        array_variable->m_type = ASRUtils::duplicate_type(al, array_variable->m_type,
+                            nullptr, array_type->m_physical_type, true);
                         involved_symbols[it.first].first = array_pointer_type;
                         continue;
                     }
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
                             array_pointer_type, is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                     
                     bool already_allocated = true;
                     if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
@@ -2146,7 +2284,12 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
 
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
@@ -2198,6 +2341,7 @@ class ParallelRegionVisitor :
                 fn_body.push_back(al,nested_lowered_body[i]);
             }
             nested_lowered_body = body_copy;
+            deallocate_private_arrays(x.base.base.loc, c, fn_body);
 
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_parallel_func");
@@ -2322,6 +2466,8 @@ class ParallelRegionVisitor :
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
             }
+
+            collect_private_arrays(x, c);
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module_omp(&c, x.base.base.loc);
@@ -2882,6 +3028,7 @@ class ParallelRegionVisitor :
                     }
                 }
             }
+            collect_private_arrays(x, c);
             // Create thread data module for task
             std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct", false);
             // Create required modules (iso_c_binding and omp_lib)
@@ -3030,12 +3177,18 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
             visit_OMPBody(&x, fn_body);
+            deallocate_private_arrays(loc, c, fn_body);
             
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_task_func");
@@ -3385,8 +3538,13 @@ class ParallelRegionVisitor :
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, 
-                    ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type,
+                    ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             // Unpack data
@@ -3436,6 +3594,7 @@ class ParallelRegionVisitor :
             }
             nested_lowered_body = body_copy;
             reduction_variables=reduction_vars_copy;
+            deallocate_private_arrays(x.base.base.loc, c, fn_body);
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_teams_func");
             ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
@@ -3489,6 +3648,8 @@ class ParallelRegionVisitor :
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
             }
+
+            collect_private_arrays(x, c);
 
             // Create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = 
