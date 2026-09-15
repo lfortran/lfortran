@@ -11124,34 +11124,12 @@ public:
                     || ASR::is_a<ASR::StringConstant_t>(*value))) {
                 continue;
             }
-            int64_t size = ASRUtils::get_fixed_size_of_array(member_type);
-            if (size < 0) {
-                continue;
-            }
             // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`.
-            const Location& arg_loc = arg->base.loc;
-            ASR::ttype_t* array_type = ASRUtils::duplicate_type(al, member_type);
-            ASR::expr_t* broadcast = nullptr;
-            if (size == 0) {
-                broadcast = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, arg_loc,
-                    0, nullptr, array_type, ASR::arraystorageType::ColMajor));
-            } else {
-                Vec<ASR::expr_t*> elements;
-                elements.reserve(al, size);
-                for (int64_t j = 0; j < size; j++) {
-                    elements.push_back(al, value);
-                }
-                broadcast = ASRUtils::expr_value(ASRUtils::EXPR(
-                    ASRUtils::make_ArrayConstructor_t_util(al, arg_loc, elements.p,
-                        elements.n, array_type, ASR::arraystorageType::ColMajor)));
-                if (broadcast == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*broadcast)) {
-                    continue;
-                }
-                // The elements are stored in column-major order; keep the
-                // component's rank and bounds.
-                ASR::down_cast<ASR::ArrayConstant_t>(broadcast)->m_type = array_type;
+            ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
+                al, arg->base.loc, value, member_type);
+            if (broadcast != nullptr) {
+                vals.p[i].m_value = broadcast;
             }
-            vals.p[i].m_value = broadcast;
         }
     }
 

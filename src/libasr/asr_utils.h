@@ -4239,6 +4239,9 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
 
+inline ASR::expr_t* broadcast_scalar_constant_to_array(Allocator& al,
+    const Location& loc, ASR::expr_t* value, ASR::ttype_t* array_type);
+
 // Struct "zero" for reductions: component-wise get_constant_zero / nested struct constructors.
 static inline ASR::expr_t* get_struct_type_constructor_zero(
         Allocator& al, const Location& loc, ASR::symbol_t* struct_sym) {
@@ -4258,10 +4261,25 @@ static inline ASR::expr_t* get_struct_type_constructor_zero(
         ca.loc = loc;
         ASR::ttype_t* inner = ASRUtils::extract_type(
             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(v->m_type)));
-        if (ASR::is_a<ASR::StructType_t>(*inner) && v->m_type_declaration != nullptr) {
+        if (ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
+            // An allocatable component starts unallocated.
+            ca.m_value = nullptr;
+        } else if (ASRUtils::is_pointer(v->m_type)) {
+            // A pointer component starts disassociated.
+            ca.m_value = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, loc, v->m_type, nullptr));
+        } else if (ASR::is_a<ASR::StructType_t>(*inner) && v->m_type_declaration != nullptr) {
             ca.m_value = ASRUtils::get_struct_type_constructor_zero(al, loc, v->m_type_declaration);
         } else {
             ca.m_value = ASRUtils::get_constant_zero_with_given_type(al, v->m_type);
+            if (ASRUtils::is_array(v->m_type)) {
+                // An array component is zero in every element.
+                ASR::expr_t* zeros = ASRUtils::broadcast_scalar_constant_to_array(
+                    al, loc, ca.m_value, v->m_type);
+                if (zeros != nullptr) {
+                    ca.m_value = zeros;
+                }
+            }
         }
         vals.push_back(al, ca);
     }
@@ -8596,6 +8614,38 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
     }
 
     return arr_ctor_asr;
+}
+
+// Returns the array constant of the fixed size type `array_type` whose every
+// element is the scalar constant `value`, as for `real :: x(3) = 5.0`, or
+// nullptr if `array_type` does not have a fixed size or the elements do not
+// fold.
+inline ASR::expr_t* broadcast_scalar_constant_to_array(Allocator& al,
+        const Location& loc, ASR::expr_t* value, ASR::ttype_t* array_type) {
+    int64_t size = ASRUtils::get_fixed_size_of_array(array_type);
+    if (size < 0) {
+        return nullptr;
+    }
+    array_type = ASRUtils::duplicate_type(al, array_type);
+    if (size == 0) {
+        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            0, nullptr, array_type, ASR::arraystorageType::ColMajor));
+    }
+    Vec<ASR::expr_t*> elements;
+    elements.reserve(al, size);
+    for (int64_t j = 0; j < size; j++) {
+        elements.push_back(al, value);
+    }
+    ASR::expr_t* broadcast = ASRUtils::expr_value(ASRUtils::EXPR(
+        ASRUtils::make_ArrayConstructor_t_util(al, loc, elements.p,
+            elements.n, array_type, ASR::arraystorageType::ColMajor)));
+    if (broadcast == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*broadcast)) {
+        return nullptr;
+    }
+    // The elements are stored in column-major order; keep the rank and
+    // bounds of `array_type`.
+    ASR::down_cast<ASR::ArrayConstant_t>(broadcast)->m_type = array_type;
+    return broadcast;
 }
 
 void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
