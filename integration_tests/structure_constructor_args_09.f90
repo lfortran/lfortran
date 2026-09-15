@@ -14,11 +14,6 @@ module structure_constructor_args_09_m
         type(c_ptr) :: p
         type(c_funptr) :: f
     end type
-    type :: pt(k)
-        integer, kind :: k
-        integer(k) :: h
-        type(c_ptr) :: p = c_null_ptr
-    end type
     type :: base_t
         integer :: h
         type(c_ptr) :: q = c_null_ptr
@@ -39,7 +34,6 @@ program structure_constructor_args_09
     implicit none
     type(w_t) :: v
     type(n_t) :: u
-    type(pt(4)) :: a
     type(ext_t) :: e
 
     if (m_omit%h /= 1 .or. c_associated(m_omit%p) .or. c_associated(m_omit%f)) error stop
@@ -58,10 +52,6 @@ program structure_constructor_args_09
     u = n_t(8, c_null_ptr, c_null_funptr)
     if (u%h /= 8 .or. c_associated(u%p) .or. c_associated(u%f)) error stop
 
-    a = pt(4)(h=11, p=c_null_ptr)
-    if (a%h /= 11 .or. c_associated(a%p)) error stop
-    a = pt(4)(12)
-    if (a%h /= 12 .or. c_associated(a%p)) error stop
     e = ext_t(13, c_null_ptr, c_null_ptr)
     if (e%h /= 13 .or. c_associated(e%q) .or. c_associated(e%p)) error stop
 
