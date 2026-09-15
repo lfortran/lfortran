@@ -8054,7 +8054,7 @@ public:
         // The label of the reference belongs to the selection that replaces
         // it, so that a branch to it still reaches the whole thing.
         AST::If_t *selection = AST::down_cast2<AST::If_t>(AST::make_If_t(al,
-            x.base.base.loc, x.m_label, nullptr, c->m_test, &calls[0], 1,
+            x.base.base.loc, x.m_label, nullptr, 0, c->m_test, &calls[0], 1,
             &calls[1], 1, nullptr, nullptr, nullptr));
         this->visit_If(*selection);
         return true;
