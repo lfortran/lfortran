@@ -54,6 +54,9 @@ program structure_constructor_args_10
     call check_locals()
     d%hp => h
     if (.not. associated(d%hp, h)) error stop 12
+    a%fp => g
+    b = a
+    if (b%fp(5) /= 10) error stop 13
     print *, "ok"
 contains
     integer function h(i)

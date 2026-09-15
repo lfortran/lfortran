@@ -15,5 +15,12 @@ contains
         type(o_t) :: y = z
         local_x = y%x
         if (associated(y%fp) .or. associated(y%gp)) local_x = -1
+        y%gp => twice
+        if (y%gp(4) /= 8) local_x = -2
+    end function
+
+    integer function twice(i)
+        integer, intent(in) :: i
+        twice = 2*i
     end function
 end module
