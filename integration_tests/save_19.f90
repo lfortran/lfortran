@@ -3,11 +3,11 @@ use iso_c_binding, only: c_ptr, c_null_ptr, c_associated, c_funptr, c_null_funpt
 implicit none
 type :: t
     integer :: h = 0
-    character(len=3) :: c = 'abc'
+    logical :: c = .false.
     integer :: a(2) = [1, 2]
     real :: x = 1.5
 end type
-type(t), parameter :: z = t(9, 'xyz', [3, 4], 2.5)
+type(t), parameter :: z = t(9, .true., [3, 4], 2.5)
 type :: u_t
     integer :: h = 0
     real :: x = 0
@@ -94,7 +94,7 @@ program save_19
 use save_19_mod, only: t, fm, f_folded, f_negative, f_extends, f_cptr, &
     f_funptr, f_nested_default
 implicit none
-type(t), parameter :: zp = t(9, 'xyz', [3, 4], 2.5)
+type(t), parameter :: zp = t(9, .true., [3, 4], 2.5)
 integer :: i
 
 do i = 1, 2
@@ -116,7 +116,7 @@ integer function f() result(r)
     type(t), save :: s = zp
     s%h = s%h + 1
     s%a(1) = s%a(1) + 1
-    if (s%c /= 'xyz') error stop 3
+    if (.not. s%c) error stop 3
     if (s%a(2) /= 4) error stop 4
     if (abs(s%x - 2.5) > 1e-6) error stop 5
     if (s%a(1) /= s%h - 6) error stop 6
