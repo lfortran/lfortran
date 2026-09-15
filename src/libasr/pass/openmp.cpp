@@ -3447,6 +3447,8 @@ void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
         v.visit_TranslationUnit(unit);
         RepointCallArguments r(al);
         r.visit_TranslationUnit(unit);
+        PassUtils::UpdateDependenciesVisitor u(al);
+        u.visit_TranslationUnit(unit);
     }
     return;
 }

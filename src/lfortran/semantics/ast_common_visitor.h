@@ -17407,8 +17407,10 @@ public:
             arg_name = to_lower(arg_name);
             ASR::expr_t *var_expr = c_args[i].m_value;
             ASR::symbol_t *v;
+            // A procedure actual may be use-associated, i.e. an ExternalSymbol.
             if (ASR::is_a<ASR::Var_t>(*var_expr) &&
-                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::Var_t>(var_expr)->m_v)) {
+                    ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(var_expr)->m_v))) {
                 v = ASR::down_cast<ASR::Var_t>(var_expr)->m_v;
             } else {
                 ASR::ttype_t *var_type = ASRUtils::expr_type(var_expr);
