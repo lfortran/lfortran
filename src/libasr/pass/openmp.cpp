@@ -3647,8 +3647,8 @@ void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
         v.visit_TranslationUnit(unit);
         RepointCallArguments r(al);
         r.visit_TranslationUnit(unit);
-        // The outlined procedures call and reference procedures of the
-        // code they were moved from.
+        // The outlined procedures call omp_lib (GOMP) functions and call and
+        // reference procedures of the code they were moved from.
         PassUtils::UpdateDependenciesVisitor u(al);
         u.visit_TranslationUnit(unit);
     }
