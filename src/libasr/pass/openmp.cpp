@@ -1867,7 +1867,16 @@ class ParallelRegionVisitor :
                             array as it is; its storage is contiguous, so the outlined
                             region receives its data address and bounds and associates
                             its own pointer with them.
+                            The region's statements move to the outlined function, which
+                            replaces their variables in place, also in the dimensions of
+                            expression types that share the array's declared type. Give
+                            the declaration a type of its own, so that its dimensions keep
+                            referring to variables of its own scope.
                         */
+                        ASR::Variable_t* array_variable = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(it.first)));
+                        array_variable->m_type = ASRUtils::duplicate_type(al, array_variable->m_type,
+                            nullptr, array_type->m_physical_type, true);
                         involved_symbols[it.first].first = array_pointer_type;
                         continue;
                     }
