@@ -2696,6 +2696,7 @@ RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_w
 RUN(NAME derived_type_with_default_init_02 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_03 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_04 LABELS gfortran llvm)
+RUN(NAME derived_type_with_default_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm)
