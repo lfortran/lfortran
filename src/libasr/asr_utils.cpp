@@ -894,8 +894,7 @@ void extract_module_python(const ASR::TranslationUnit_t &m,
     }
 }
 
-void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
-        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol) {
+void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface) {
     /*
         Iterate over body of program, check if there are any subroutine calls if yes, iterate over its args
         and update the args if they are equal to the old symbol
@@ -927,9 +926,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         Allocator &al;
         SymbolTable* scope = current_scope;
         ArgsReplacer replacer;
-        std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol;
-        ArgsVisitor(Allocator &al_, std::map<std::string, ASR::symbol_t*> &changed_external_function_symbol_) : al(al_), replacer(al_),
-                    changed_external_function_symbol(changed_external_function_symbol_) {}
+        ArgsVisitor(Allocator &al_) : al(al_), replacer(al_) {}
 
         void call_replacer_(ASR::symbol_t* new_sym) {
             replacer.current_expr = current_expr;
@@ -988,21 +985,6 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
         void visit_Function(const ASR::Function_t& x) {
             ASR::Function_t* func = (ASR::Function_t*)(&x);
             scope = func->m_symtab;
-            ASRUtils::SymbolDuplicator symbol_duplicator(al);
-            std::map<std::string, ASR::symbol_t*> scope_ = scope->get_scope();
-            std::vector<std::string> symbols_to_duplicate;
-            for (auto it: scope_) {
-                if (changed_external_function_symbol.find(it.first) != changed_external_function_symbol.end() &&
-                    is_external_sym_changed(it.second, changed_external_function_symbol[it.first])) {
-                    symbols_to_duplicate.push_back(it.first);
-                }
-            }
-
-            for (auto it: symbols_to_duplicate) {
-                scope->erase_symbol(it);
-                symbol_duplicator.duplicate_symbol(changed_external_function_symbol[it], scope);
-            }
-
             for (size_t i = 0; i < func->n_args; i++) {
                 ASR::expr_t* arg_expr = func->m_args[i];
                 if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
@@ -1031,7 +1013,7 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     };
 
     if (implicit_interface) {
-        ArgsVisitor v(al, changed_external_function_symbol);
+        ArgsVisitor v(al);
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
         ASR::asr_t* asr_ = tu_symtab->asr_owner;
         ASR::TranslationUnit_t* tu = ASR::down_cast2<ASR::TranslationUnit_t>(asr_);
@@ -1562,15 +1544,28 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
                 ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
                 std::string mem_name = ASRUtils::symbol_name(member);
-                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                // The arguments of a StructConstant hold the members of the
+                // parent types first, so find the index i of the member in
+                // that order and set value to the ith argument.
+                std::vector<ASR::Struct_t*> struct_chain;
+                for (ASR::Struct_t* s = struct_s; s != nullptr;
+                        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+                    struct_chain.push_back(s);
+                }
                 size_t i = 0;
-                for (i = 0; i < struct_s->n_members; i++) {
-                    if (struct_s->m_members[i] == mem_name) {
-                        break;
+                bool found = false;
+                for (auto it = struct_chain.rbegin(); it != struct_chain.rend() && !found; ++it) {
+                    for (size_t j = 0; j < (*it)->n_members; j++, i++) {
+                        if ((*it)->m_members[j] == mem_name) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
                 ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
+                LCOMPILERS_ASSERT(found && i < stc->n_args);
                 value = stc->m_args[i].m_value;
             }
         }
