@@ -26,7 +26,13 @@
             (AttrType
                 TypeProcedure
                 []
-                ()
+                (AttrType
+                    TypeDoublePrecision
+                    []
+                    ()
+                    ()
+                    None
+                )
                 ()
                 None
             )
@@ -126,7 +132,15 @@
             (AttrType
                 TypeProcedure
                 []
-                ()
+                (AttrType
+                    TypeReal
+                    [(()
+                    8
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 ()
                 None
             )
@@ -176,7 +190,15 @@
             (AttrType
                 TypeProcedure
                 []
-                ()
+                (AttrType
+                    TypeReal
+                    [(()
+                    dp
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 ()
                 None
             )
@@ -196,7 +218,18 @@
             (AttrType
                 TypeProcedure
                 []
-                ()
+                (AttrType
+                    TypeCharacter
+                    [(()
+                    1
+                    Value)
+                    (()
+                    1
+                    Value)]
+                    ()
+                    ()
+                    None
+                )
                 ()
                 None
             )

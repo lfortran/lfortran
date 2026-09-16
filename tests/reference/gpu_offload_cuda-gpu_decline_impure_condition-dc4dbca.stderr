@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the section of 'a' passed to a procedure in one arm of a conditional expression is copied into a contiguous buffer before the statement under the same condition, but that condition calls a procedure that is not pure
+  --> tests/gpu_decline_impure_condition.f90:32:33
+   |
+32 |     v(i) = (h(i) <= 2 ? row_sum(a(i,:)) : 0.0)
+   |                                 ^^^^^^ the section of 'a' passed to a procedure in one arm of a conditional expression is copied into a contiguous buffer before the statement under the same condition, but that condition calls a procedure that is not pure

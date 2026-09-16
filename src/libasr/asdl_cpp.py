@@ -1129,12 +1129,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_case_stmt = []
         self.duplicate_type_stmt = []
         self.duplicate_rank_stmt = []
+        self.duplicate_omp_clause = []
         self.is_stmt = False
         self.is_expr = False
         self.is_ttype = False
         self.is_case_stmt = False
         self.is_type_stmt = False
         self.is_rank_stmt = False
+        self.is_omp_clause = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
 
@@ -1195,6 +1197,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_rank_stmt.append(("    }", 1))
         self.duplicate_rank_stmt.append(("", 0))
         self.duplicate_rank_stmt.append(("    switch(x->type) {", 1))
+
+        self.duplicate_omp_clause.append(("    ASR::omp_clause_t* duplicate_omp_clause(ASR::omp_clause_t* x) {", 0))
+        self.duplicate_omp_clause.append(("    if( !x ) {", 1))
+        self.duplicate_omp_clause.append(("    return nullptr;", 2))
+        self.duplicate_omp_clause.append(("    }", 1))
+        self.duplicate_omp_clause.append(("", 0))
+        self.duplicate_omp_clause.append(("    switch(x->type) {", 1))
 
         super(ExprStmtDuplicatorVisitor, self).visitModule(mod)
         self.duplicate_stmt.append(("    default: {", 2))
@@ -1258,7 +1267,17 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.emit(line, level=level)
         for line, level in self.duplicate_type_stmt:
             self.emit(line, level=level)
+        self.duplicate_omp_clause.append(("    default: {", 2))
+        self.duplicate_omp_clause.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " OpenMP clause is not supported yet.");', 3))
+        self.duplicate_omp_clause.append(("    }", 2))
+        self.duplicate_omp_clause.append(("    }", 1))
+        self.duplicate_omp_clause.append(("", 0))
+        self.duplicate_omp_clause.append(("    return nullptr;", 1))
+        self.duplicate_omp_clause.append(("    }", 0))
+
         for line, level in self.duplicate_rank_stmt:
+            self.emit(line, level=level)
+        for line, level in self.duplicate_omp_clause:
             self.emit(line, level=level)
         self.emit("")
         self.emit("};")
@@ -1275,8 +1294,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.is_case_stmt = args[0] == 'case_stmt'
         self.is_type_stmt = args[0] == 'type_stmt'
         self.is_rank_stmt = args[0] == 'rank_stmt'
+        self.is_omp_clause = args[0] == 'omp_clause'
         if (self.is_stmt or self.is_expr or self.is_case_stmt or
-                self.is_type_stmt or self.is_rank_stmt or self.is_ttype):
+                self.is_type_stmt or self.is_rank_stmt or self.is_ttype or
+                self.is_omp_clause):
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -1335,6 +1356,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.duplicate_rank_stmt.append(("    case ASR::rank_stmtType::%s: {" % name, 2))
             self.duplicate_rank_stmt.append(("    return down_cast<ASR::rank_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_rank_stmt.append(("    }", 2))
+        elif self.is_omp_clause:
+            self.duplicate_omp_clause.append(("    case ASR::omp_clauseType::%s: {" % name, 2))
+            self.duplicate_omp_clause.append(("    return down_cast<ASR::omp_clause_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_omp_clause.append(("    }", 2))
         self.emit("}", 1)
         self.emit("")
 
@@ -1350,6 +1375,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "case_stmt" or
             field.type == "type_stmt" or
             field.type == "rank_stmt" or
+            field.type == "omp_clause" or
             field.type == "ttype" or
             field.type == "dimension"):
             level = 2

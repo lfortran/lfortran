@@ -1,0 +1,5 @@
+code generation error: gpu offload: 'p' is associated with an array section whose stride is not one, and a gpu kernel addresses it with a pointer that cannot carry a stride; only its size can be used inside the kernel
+  --> tests/../integration_tests/gpu_metal_338.f90:19:25
+   |
+19 |                 s = s + p(k)
+   |                         ^^^^ 

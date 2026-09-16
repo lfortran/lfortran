@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: a device function cannot be inlined
+  --> tests/../integration_tests/gpu_metal_167.f90:42:5 - 46:10
+   |
+42 |        do concurrent (i = 1:nb)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+46 |        end do
+   | ...^^^^^^^^^^ a device function cannot be inlined

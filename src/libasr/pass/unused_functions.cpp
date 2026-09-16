@@ -36,6 +36,16 @@ public:
             if( ASR::is_a<ASR::Function_t>(*arg_var->m_v) ) {
                 uint64_t h = get_hash((ASR::asr_t*)arg_var->m_v);
                 fn_used[h] = ASR::down_cast<ASR::Function_t>(arg_var->m_v)->m_name;
+            } else if( ASR::is_a<ASR::ExternalSymbol_t>(*arg_var->m_v) ) {
+                // A use-associated procedure as a dummy argument, e.g. the
+                // procedure actual an interface built for a call is declared
+                // with.
+                ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(
+                    arg_var->m_v);
+                fn_used[get_hash((ASR::asr_t*)ext)] = ext->m_name;
+                if (ext->m_external != nullptr) {
+                    fn_used[get_hash((ASR::asr_t*)ext->m_external)] = ext->m_name;
+                }
             } else if( ASR::is_a<ASR::Variable_t>(*arg_var->m_v) ){
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(arg_var->m_v);
                 if(v->m_type_declaration){
@@ -170,6 +180,23 @@ public:
             fn_used[h] = name;
             h = get_hash((ASR::asr_t*)x.m_v);
             fn_used[h] = name;
+        }
+    }
+
+    // A cast of a procedure to another interface names that interface, and
+    // nothing calls it.
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_FunctionPointerCast(x);
+        if (x.m_to == nullptr) return;
+        ASR::symbol_t *to = x.m_to;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*to)) {
+            fn_used[get_hash((ASR::asr_t*)to)] =
+                ASR::down_cast<ASR::ExternalSymbol_t>(to)->m_name;
+            to = ASR::down_cast<ASR::ExternalSymbol_t>(to)->m_external;
+        }
+        if (to != nullptr && ASR::is_a<ASR::Function_t>(*to)) {
+            fn_used[get_hash((ASR::asr_t*)to)] =
+                ASR::down_cast<ASR::Function_t>(to)->m_name;
         }
     }
 

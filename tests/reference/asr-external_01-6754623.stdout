@@ -58,35 +58,11 @@
                             f:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        3
                                         {
-                                            f_arg_0:
-                                                (Variable
-                                                    4
-                                                    f_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Complex 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
                                             f_return_var_name:
                                                 (Variable
-                                                    4
+                                                    3
                                                     f_return_var_name
                                                     []
                                                     ReturnVar
@@ -111,6 +87,85 @@
                                         })
                                     f
                                     (FunctionType
+                                        []
+                                        (Complex 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            f~arg_0:
+                                                (Variable
+                                                    4
+                                                    f~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            f~result:
+                                                (Variable
+                                                    4
+                                                    f~result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    f~fpcast
+                                    (FunctionType
                                         [(Complex 4)]
                                         (Complex 4)
                                         BindC
@@ -126,13 +181,53 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 f_arg_0)]
+                                    [(Var 4 f~arg_0)]
                                     []
-                                    (Var 4 f_return_var_name)
+                                    (Var 4 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            f~fpcast_ptr:
+                                (Variable
+                                    2
+                                    f~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Complex 4)]
+                                            (Complex 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 f~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     foo
@@ -140,10 +235,10 @@
                         [(Complex 4)
                         (Complex 4)
                         (FunctionType
-                            [(Complex 4)]
+                            []
                             (Complex 4)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -171,10 +266,33 @@
                     [(Var 2 a)
                     (Var 2 b)
                     (Var 2 f)]
-                    [(Assignment
+                    [(Associate
+                        (Var 2 f~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 f)
+                            2 f~fpcast
+                            (FunctionType
+                                [(Complex 4)]
+                                (Complex 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
                         (Var 2 a)
                         (FunctionCall
-                            2 f
+                            2 f~fpcast_ptr
                             ()
                             [((Var 2 b))]
                             (Complex 4)

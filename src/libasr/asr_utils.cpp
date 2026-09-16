@@ -836,6 +836,8 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             return nullptr;
         }
         case ASR::exprType::FunctionPointerCast: {
+            // A cast without `to` targets the opaque procedure type, which
+            // has no interface symbol.
             ASR::symbol_t* to = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionPointerCast_t>(expr)->m_to);
             if (to && ASR::is_a<ASR::Function_t>(*to)) {
@@ -1560,15 +1562,28 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
                 ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
                 std::string mem_name = ASRUtils::symbol_name(member);
-                // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
+                // The arguments of a StructConstant hold the members of the
+                // parent types first, so find the index i of the member in
+                // that order and set value to the ith argument.
+                std::vector<ASR::Struct_t*> struct_chain;
+                for (ASR::Struct_t* s = struct_s; s != nullptr;
+                        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+                    struct_chain.push_back(s);
+                }
                 size_t i = 0;
-                for (i = 0; i < struct_s->n_members; i++) {
-                    if (struct_s->m_members[i] == mem_name) {
-                        break;
+                bool found = false;
+                for (auto it = struct_chain.rbegin(); it != struct_chain.rend() && !found; ++it) {
+                    for (size_t j = 0; j < (*it)->n_members; j++, i++) {
+                        if ((*it)->m_members[j] == mem_name) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
                 ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
+                LCOMPILERS_ASSERT(found && i < stc->n_args);
                 value = stc->m_args[i].m_value;
             }
         }
@@ -3071,7 +3086,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     }
                 }
 
-                ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
+                ASR::symbol_t* s1 = nullptr;
                 ASR::symbol_t* s2 = nullptr;
                 ASR::ttype_t* arg2_ext = ASRUtils::extract_type(arg2);
                 bool is_elemental = ASRUtils::get_FunctionType(sub)->m_elemental;
@@ -3080,6 +3095,9 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                             (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1) && !ASRUtils::is_assumed_rank_array(arg2)) ||
                             (!is_elemental && !ASRUtils::is_array(arg2) && ASRUtils::is_array(arg1))) {
                         return false;
+                    }
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg1)) || ASRUtils::is_class_type(ASRUtils::extract_type(arg1))) {
+                        s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                     }
                     s2 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(sub.m_args[i]));
                 }

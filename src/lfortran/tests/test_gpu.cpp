@@ -9,65 +9,109 @@
 
 using namespace LCompilers;
 
-TEST_CASE("GPU declines require explicit fallback regardless of category") {
+TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     Allocator allocator(1024 * 1024);
     Location loc{0, 0};
     ASR::ttype_t *real8 = ASRUtils::TYPE(ASR::make_Real_t(allocator, loc, 8));
     ASR::ttype_t *logical8 = ASRUtils::TYPE(ASR::make_Logical_t(allocator, loc, 8));
-    auto metal = gpu_device_capabilities(GpuDevice::Metal);
-    auto cuda = gpu_device_capabilities(GpuDevice::Cuda);
     GpuDecline wide_real(GpuDeclineReason::SymbolTypeNotRepresentable, "x", real8);
     GpuDecline wide_logical(GpuDeclineReason::ArrayElementTypeWidth, "x", logical8);
-    CHECK(gpu_decline_class(wide_real, metal) == GpuDeclineClass::BackendCannot);
-    CHECK(gpu_decline_class(wide_real, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(wide_logical, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(GpuDecline(GpuDeclineReason::ScalarNotNumeric),
-        cuda) == GpuDeclineClass::NotImplemented);
 
-    // A statement is classified by what the device has to run it with: CUDA
-    // has a printf and a trap of its own, so what is missing there is the
-    // lowering; Metal has neither, so no lowering would help.
-    GpuDecline device_stop(GpuDeclineReason::StatementStop);
-    GpuDecline device_io(GpuDeclineReason::StatementIo);
-    CHECK(gpu_decline_class(device_stop, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(device_stop, metal) == GpuDeclineClass::BackendCannot);
-    CHECK(gpu_decline_class(device_io, cuda) == GpuDeclineClass::NotImplemented);
-    CHECK(gpu_decline_class(device_io, metal) == GpuDeclineClass::BackendCannot);
-
+    // A missing lowering is an error, even though the loop could run on the
+    // CPU.
     PassOptions options;
     options.gpu_offload_cuda = true;
-    diag::Diagnostics strict;
-    options.diagnostics = &strict;
+    diag::Diagnostics missing;
+    options.diagnostics = &missing;
     report_gpu_decline(options, loc, wide_logical);
-    CHECK(strict.has_error());
+    CHECK(missing.has_error());
+    CHECK(missing.diagnostics.size() == 1);
 
-    diag::Diagnostics waived;
-    options.diagnostics = &waived;
-    options.gpu_allow_cpu_fallback = true;
-    report_gpu_decline(options, loc, wide_logical);
-    CHECK_FALSE(waived.has_error());
-    CHECK(waived.diagnostics.size() == 1);
-
+    // So is a width the device has no type for, and the flag that softens
+    // the unsupported list does not change that: the decline comes after the
+    // loop was committed to the device, so the message suggests no flag.
     diag::Diagnostics limited;
     options.diagnostics = &limited;
-    options.gpu_allow_cpu_fallback = false;
     options.gpu_offload_cuda = false;
     options.gpu_offload_metal = true;
-    report_gpu_decline(options, loc, wide_real);
-    CHECK(limited.has_error());
-    CHECK(limited.diagnostics.size() == 1);
-
-    diag::Diagnostics limited_waived;
-    options.diagnostics = &limited_waived;
     options.gpu_allow_cpu_fallback = true;
     report_gpu_decline(options, loc, wide_real);
-    CHECK_FALSE(limited_waived.has_error());
-    CHECK(limited_waived.diagnostics.size() == 1);
+    CHECK(limited.has_error());
+    REQUIRE(limited.diagnostics.size() == 1);
+    CHECK(limited.diagnostics[0].message.find(
+        gpu_decline_message(wide_real)) != std::string::npos);
+    CHECK(limited.diagnostics[0].message.find("--gpu-allow-cpu-fallback")
+        == std::string::npos);
 
-    diag::Diagnostics no_alternative;
-    options.diagnostics = &no_alternative;
-    report_gpu_decline(options, loc, wide_real, false);
-    CHECK(no_alternative.has_error());
+    // So is showing the kernels: there is no host loop left to show instead.
+    diag::Diagnostics shown;
+    options.diagnostics = &shown;
+    options.gpu_allow_cpu_fallback = false;
+    options.gpu_offload_metal = false;
+    options.gpu_offload_cuda = true;
+    options.gpu_kernel_source_only = true;
+    report_gpu_decline(options, loc, wide_logical);
+    CHECK(shown.has_error());
+    CHECK(shown.diagnostics.size() == 1);
+}
+
+// A loop that uses a construct on the unsupported list is reported for the
+// construct the source wrote, before any lowering: a `print` lowers to an
+// `iomsg` buffer of a type no device has, and naming that buffer would name
+// something the source never mentions. Without the flag it is an error that
+// suggests the flag; with it, the loop runs on the CPU with a warning.
+TEST_CASE("An unsupported construct is reported where the source wrote it") {
+    const std::string source = R"(
+program p
+    implicit none
+    integer :: i
+    real :: a(4)
+    a = 0.0
+    do concurrent (i = 1:4)
+        a(i) = real(i)
+        print *, a(i)
+    end do
+end program
+)";
+    auto compile = [&](bool allow_cpu_fallback) {
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.po.gpu_allow_cpu_fallback = allow_cpu_fallback;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_unsupported_io.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(source.size());
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        std::string pass = "gpu_kernel_finalize", skip;
+        passes.parse_pass_arg(pass, skip);
+        options.po.pass_cumulative = true;
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        return diagnostics;
+    };
+
+    diag::Diagnostics strict = compile(false);
+    std::string rendered = strict.render2();
+    INFO(rendered);
+    CHECK(strict.has_error());
+    CHECK(rendered.find("input/output") != std::string::npos);
+    CHECK(rendered.find("--gpu-allow-cpu-fallback") != std::string::npos);
+    CHECK(rendered.find("iomsg") == std::string::npos);
+
+    diag::Diagnostics allowed = compile(true);
+    rendered = allowed.render2();
+    INFO(rendered);
+    CHECK_FALSE(allowed.has_error());
+    CHECK(rendered.find("runs on the CPU") != std::string::npos);
+    CHECK(rendered.find("input/output") != std::string::npos);
 }
 
 TEST_CASE("GPU layouts preserve identity, extents and device closure") {

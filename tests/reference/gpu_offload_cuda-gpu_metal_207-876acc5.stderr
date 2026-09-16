@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the loop has a stride the gpu index arithmetic cannot express
+  --> tests/../integration_tests/gpu_metal_207.f90:10:1 - 12:6
+   |
+10 |    do concurrent (i = 1:n:2)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |    end do
+   | ...^^^^^^ the loop has a stride the gpu index arithmetic cannot express

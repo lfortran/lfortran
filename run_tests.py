@@ -85,7 +85,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     gpu_cuda_kernel = is_included("gpu_cuda_kernel")
-    gpu_offload_strict = is_included("gpu_offload_strict")
+    gpu_offload_cuda = is_included("gpu_offload_cuda")
+    gpu_offload_metal = is_included("gpu_offload_metal")
     wat = is_included("wat")
     obj = is_included("obj")
     x86 = is_included("x86")
@@ -723,12 +724,17 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
-    if gpu_offload_strict:
+    for gpu_offload, device in ((gpu_offload_cuda, "cuda"),
+                                (gpu_offload_metal, "metal")):
+        if not gpu_offload:
+            continue
+        name = "gpu_offload_" + device
         if no_llvm:
-            log.info(f"{filename} * gpu_offload_strict   SKIPPED because LLVM is not enabled")
+            log.info(f"{filename} * {name}   SKIPPED because LLVM is not enabled")
         else:
-            run_test(filename, "gpu_offload_strict",
-                    "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
+            run_test(filename, name,
+                    "lfortran --no-color --gpu=" + device +
+                    " -c {infile} -o {outfile}",
                     filename,
                     update_reference,
                     verify_hash,
