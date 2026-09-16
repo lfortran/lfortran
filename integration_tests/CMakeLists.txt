@@ -2700,7 +2700,7 @@ RUN(NAME derived_type_with_default_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_06 LABELS llvm flang) # gfortran 14 and older do not apply a component default of a type with a finalizer to an intent(out) dummy
 RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
-RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm NO_DETECT_LEAKS) # #13089 and #13093: default initialized locals leak; tracked by #13164, remove once fixed
+RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_04 LABELS gfortran llvm)
 RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -4133,8 +4133,9 @@ RUN(NAME save_14 LABELS gfortran llvm)
 RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME save_19 LABELS gfortran llvm)
 RUN(NAME save_20 LABELS gfortran llvm)
-RUN(NAME save_21 LABELS gfortran llvm NO_DETECT_LEAKS) # #13093: a save local with a character component leaks its string
+RUN(NAME save_21 LABELS gfortran llvm)
 RUN(NAME save_22 LABELS gfortran llvm)
+RUN(NAME save_23 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

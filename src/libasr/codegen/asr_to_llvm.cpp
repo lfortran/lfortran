@@ -6866,12 +6866,14 @@ public:
                 }
             }
         }
-        // `init_sc` is a constructor default of the enclosing member, such as
-        // `type(t) :: part = t("hello")`. Its arguments, which list parent
-        // components first, replace the members' own defaults. A null()
-        // argument for a pointer member is stored like a `=> null()` default.
-        // null() for an allocatable member reaches here as an omitted
-        // argument, so every null() argument belongs to a pointer member.
+        // `init_sc` is a structure constant to apply member by member: a
+        // constructor default of the enclosing member, such as
+        // `type(t) :: part = t("hello")`, or the initial value of a save
+        // variable. Its arguments, which list parent components first,
+        // replace the members' own defaults. A null() argument for a pointer
+        // member is stored like a `=> null()` default; for an allocatable
+        // member it denotes the unallocated state the member setup below
+        // already produces, so it is treated like an omitted argument.
         std::map<std::string, ASR::expr_t*> init_sc_args;
         if (init_sc) {
             std::vector<ASR::Struct_t*> chain;
@@ -6884,9 +6886,11 @@ public:
                 for (size_t j = 0; j < (*s)->n_members; j++, i++) {
                     LCOMPILERS_ASSERT(i < init_sc->n_args);
                     ASR::expr_t* arg = init_sc->m_args[i].m_value;
-                    LCOMPILERS_ASSERT(!arg || !ASR::is_a<ASR::PointerNullConstant_t>(*arg) ||
-                        !ASRUtils::is_allocatable(ASRUtils::symbol_type(
-                            (*s)->m_symtab->get_symbol((*s)->m_members[j]))));
+                    if (arg && ASR::is_a<ASR::PointerNullConstant_t>(*arg) &&
+                            ASRUtils::is_allocatable(ASRUtils::symbol_type(
+                                (*s)->m_symtab->get_symbol((*s)->m_members[j])))) {
+                        continue;
+                    }
                     if (arg) {
                         init_sc_args[(*s)->m_members[j]] = arg;
                     }
@@ -8046,18 +8050,22 @@ public:
                     }
                 } else {
                     bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);
-                    allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
-                        is_intent_out_var);
+                    ASR::StructConstant_t* save_init_sc = nullptr;
                     if (struct_skip_bb != nullptr && init_expr != nullptr && v->m_value &&
                             ASR::is_a<ASR::StructConstant_t>(*v->m_value)) {
-                        // Store the initial value of a save variable inside
-                        // the one-time guard, after the component defaults,
-                        // so that it is applied exactly once and not
-                        // overwritten by them.
-                        set_VariableInital_value(v, ptr);
+                        // Apply the initial value of a save variable inside
+                        // the one-time guard, so that it is applied exactly
+                        // once and not overwritten by the component defaults.
+                        // It goes member by member: storing the whole constant
+                        // afterwards would replace the members' own heap string
+                        // buffers with pointers into the read-only constant it
+                        // lives in, which the finalizer would then try to free.
+                        save_init_sc = ASR::down_cast<ASR::StructConstant_t>(v->m_value);
                         save_struct_initialized = true;
                     }
+                    allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
+                        is_intent_out_var, true, false, save_init_sc);
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
