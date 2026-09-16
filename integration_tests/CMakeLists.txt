@@ -2698,6 +2698,7 @@ RUN(NAME derived_type_with_default_init_03 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_04 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_06 LABELS llvm flang) # gfortran 14 and older do not apply a component default of a type with a finalizer to an intent(out) dummy
+RUN(NAME derived_type_with_default_init_07 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm NO_DETECT_LEAKS) # #13089 and #13093: default initialized locals leak; tracked by #13164, remove once fixed
