@@ -2702,6 +2702,7 @@ RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm NO_DETECT_LEAKS) # #13089 and #13093: default initialized locals leak; tracked by #13164, remove once fixed
 RUN(NAME derived_type_nested_parameter_init_04 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
