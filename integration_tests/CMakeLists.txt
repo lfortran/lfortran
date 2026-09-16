@@ -10,7 +10,7 @@ endif ()
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
-set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast when llvm < 17")
+set(NOFAST_LLVM16 no CACHE BOOL "With FAST, skip --fast only on tests marked NOFAST_TILL_LLVM16 (LLVM < 17)")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
 
@@ -308,8 +308,10 @@ macro(RUN)
         set(RUN_NAME "${RUN_NAME}_DETECT_LEAKS")
     endif()
 
-    if (FAST AND ((NOT NOFAST_LLVM16))
-            AND (NOT RUN_NO_FAST))
+    # -f enables --fast on every test except NO_FAST.
+    # -f -nf16 (NOFAST_LLVM16) still enables --fast, except on tests marked
+    # NOFAST_TILL_LLVM16, which stay without --fast (LLVM < 17).
+    if (FAST AND (NOT RUN_NO_FAST) AND NOT (NOFAST_LLVM16 AND RUN_NOFAST_TILL_LLVM16))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         if (RUN_NO_FAST_MATH)
             set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --no-fast-math)
@@ -890,7 +892,7 @@ RUN(NAME arrays_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_60 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME arrays_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_61 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16)
 RUN(NAME arrays_62 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1515,7 +1517,7 @@ RUN(NAME intrinsics_143 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # dot_pro
 RUN(NAME intrinsics_144 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
 RUN(NAME intrinsics_145 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dot_product
 RUN(NAME intrinsics_146 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dprod
-RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
+RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM16) # pack
 RUN(NAME intrinsics_148 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH) # pack
 RUN(NAME intrinsics_149 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # unpack
 RUN(NAME unpack_scalar_field_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1529,7 +1531,7 @@ RUN(NAME intrinsics_155 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_156 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # blt
 RUN(NAME intrinsics_157 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ble
 RUN(NAME intrinsics_158 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bge
-RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # matmul
+RUN(NAME intrinsics_159 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16) # matmul
 RUN(NAME intrinsics_160 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ior
 RUN(NAME intrinsics_161 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # ieor
 RUN(NAME intrinsics_162 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # Not
@@ -1737,7 +1739,7 @@ RUN(NAME intrinsics_360 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
+RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16) # cshift
 RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_366 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl, shiftr, trailz, btest, ibclr
 RUN(NAME intrinsics_367 LABELS gfortran llvm) # get_environment_variable
@@ -2698,10 +2700,12 @@ RUN(NAME derived_type_with_default_init_03 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_04 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_with_default_init_06 LABELS llvm flang) # gfortran 14 and older do not apply a component default of a type with a finalizer to an intent(out) dummy
+RUN(NAME derived_type_with_default_init_07 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
-RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm NO_DETECT_LEAKS) # #13089 and #13093: default initialized locals leak; tracked by #13164, remove once fixed
+RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_04 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_05 LABELS gfortran llvm)
 RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
@@ -3129,7 +3133,7 @@ RUN(NAME return_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 
-RUN(NAME exponent_inf_01 LABELS gfortran llvm)
+RUN(NAME exponent_inf_01 LABELS gfortran llvm NO_FAST_MATH NOFAST_TILL_LLVM16) # exponent(Inf/NaN); --fast sets no-infs/no-nans
 
 RUN(NAME file_01 LABELS gfortran llvm COPY_TO_BIN file_01_data.txt)
 RUN(NAME file_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
@@ -4133,7 +4137,9 @@ RUN(NAME save_14 LABELS gfortran llvm)
 RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME save_19 LABELS gfortran llvm)
 RUN(NAME save_20 LABELS gfortran llvm)
-RUN(NAME save_21 LABELS gfortran llvm NO_DETECT_LEAKS) # #13093: a save local with a character component leaks its string
+RUN(NAME save_21 LABELS gfortran llvm)
+RUN(NAME save_22 LABELS gfortran llvm)
+RUN(NAME save_23 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4722,7 +4728,9 @@ RUN(NAME structure_constructor_args_05 LABELS llvm) # `reduce` is not supported 
 RUN(NAME structure_constructor_args_06 LABELS llvm) # `reduce` is not supported by every supported gfortran
 RUN(NAME structure_constructor_args_07 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_08 LABELS gfortran llvm EXTRAFILES structure_constructor_args_08_a.f90 structure_constructor_args_08_b.f90)
+RUN(NAME structure_constructor_args_09 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_10 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_11 LABELS llvm flang) # `pdt(k)(...)` constructors are not accepted by every supported gfortran
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function

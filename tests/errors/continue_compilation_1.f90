@@ -1331,3 +1331,81 @@ subroutine structure_constructor_null_component_2()
     type(t_null_array_component) :: v2
     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
 end subroutine
+
+! `c_null_ptr` and `c_null_funptr` are valid for a plain `type(c_ptr)` or
+! `type(c_funptr)` component, but `null()` is not.
+subroutine structure_constructor_null_component_3()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_c_component
+        integer :: h
+        type(c_ptr) :: p = c_null_ptr
+        type(c_funptr) :: f = c_null_funptr
+    end type
+    type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    type(t_null_c_component) :: v1
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+! The same for a parameterized derived type and for an extended type, whose
+! parent components come first.
+subroutine structure_constructor_null_component_4()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: t_null_c_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        type(c_ptr) :: p = c_null_ptr
+    end type
+    type :: t_null_c_base
+        integer :: h
+        type(c_ptr) :: q = c_null_ptr
+    end type
+    type, extends(t_null_c_base) :: t_null_c_ext
+        type(c_ptr) :: p
+    end type
+    type(t_null_c_pdt(4)) :: a
+    type(t_null_c_ext) :: e
+    a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+! `null()` for an integer component of a parameterized derived type.
+subroutine structure_constructor_null_component_5()
+    implicit none
+    type :: t_null_int_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        integer :: j
+    end type
+    type(t_null_int_pdt(4)) :: a
+    a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+! A null constant whose type the component does not accept: `c_null_ptr` for
+! an integer or real component, and `null(mold)` with a mold of another type.
+subroutine structure_constructor_null_component_6()
+    use iso_c_binding, only: c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_mismatch
+        integer, pointer :: ip
+        integer, allocatable :: ia(:)
+        real, pointer :: rp
+        integer :: h
+        real :: r
+    end type
+    type :: t_null_mismatch_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+    end type
+    type(t_null_mismatch) :: v
+    type(t_null_mismatch_pdt(4)) :: a
+    integer, pointer :: ip
+    v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+    a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+end subroutine
