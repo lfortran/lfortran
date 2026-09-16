@@ -3600,6 +3600,10 @@ filename = "external_04.f90"
 asr_implicit_interface_and_typing_with_llvm = true
 
 [[test]]
+filename = "../integration_tests/external_24.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "dimension_attr2.f90"
 asr_implicit_typing = true
 
