@@ -22,7 +22,13 @@ cd integration_tests
 ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}"
 ./run_tests.py -b llvm -sc -j"${NPROC}"
 ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}"
-./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}"
+# LLVM < 17 cannot run the full llvm --fast suite (same as Quick checks
+# using -nf16 on LLVM 11).
+if [[ "${LFORTRAN_LLVM_VERSION}" -lt 17 ]]; then
+    ./run_tests.py -b llvm llvmImplicit -f -nf16 -j"${NPROC}"
+else
+    ./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}"
+fi
 ./run_tests.py -b llvm_submodule -j"${NPROC}"
 ./run_tests.py -b llvm_submodule -sc -j"${NPROC}"
 ./run_tests.py -b llvm --detect-leaks -j"${NPROC}"
