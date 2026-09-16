@@ -3653,10 +3653,14 @@ public:
                 // `x`. Report it here: an alloc_arg with no target would
                 // crash the checks that run after this loop.
                 std::string label_msg = "this expression cannot be allocated";
-                if (ASR::is_a<ASR::FunctionCall_t>(*array_stmt)) {
-                    ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(array_stmt);
-                    std::string fn_name = ASRUtils::symbol_name(
-                        ASRUtils::symbol_get_past_external(fc->m_name));
+                AST::expr_t* alloc_obj = x.m_args[i].m_end ? x.m_args[i].m_end
+                                                           : x.m_args[i].m_step;
+                if (ASR::is_a<ASR::FunctionCall_t>(*array_stmt) && alloc_obj &&
+                        AST::is_a<AST::FuncCallOrArray_t>(*alloc_obj)) {
+                    // Name the entity as written: the call's own target is a
+                    // generated procedure-pointer temporary (`x~fpcast_ptr`).
+                    std::string fn_name =
+                        AST::down_cast<AST::FuncCallOrArray_t>(alloc_obj)->m_func;
                     label_msg = "`" + fn_name + "` is not an array variable, "
                         "so this resolves to a function call";
                 }
