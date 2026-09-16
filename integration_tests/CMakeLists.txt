@@ -2693,9 +2693,14 @@ RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_type_with_default_init_02 LABELS gfortran llvm)
+RUN(NAME derived_type_with_default_init_03 LABELS gfortran llvm)
+RUN(NAME derived_type_with_default_init_04 LABELS gfortran llvm)
+RUN(NAME derived_type_with_default_init_05 LABELS gfortran llvm)
+RUN(NAME derived_type_with_default_init_06 LABELS llvm flang) # gfortran 14 and older do not apply a component default of a type with a finalizer to an intent(out) dummy
 RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
 RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
-RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm NO_DETECT_LEAKS) # #13089 and #13093: default initialized locals leak; tracked by #13164, remove once fixed
 RUN(NAME derived_type_nested_parameter_init_04 LABELS gfortran llvm)
 RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
@@ -4717,6 +4722,8 @@ RUN(NAME structure_constructor_args_04 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_05 LABELS llvm) # `reduce` is not supported by every supported gfortran
 RUN(NAME structure_constructor_args_06 LABELS llvm) # `reduce` is not supported by every supported gfortran
 RUN(NAME structure_constructor_args_07 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_08 LABELS gfortran llvm EXTRAFILES structure_constructor_args_08_a.f90 structure_constructor_args_08_b.f90)
+RUN(NAME structure_constructor_args_10 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function

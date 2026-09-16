@@ -3171,19 +3171,7 @@ static inline bool procedure_types_identical(ASR::FunctionType_t *a,
     return true;
 }
 
-static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
-    if (!ASR::is_a<ASR::Function_t>(*original_sym) || !ASR::is_a<ASR::Function_t>(*external_sym)) {
-        return false;
-    }
-    ASR::Function_t* original_func = ASR::down_cast<ASR::Function_t>(original_sym);
-    ASR::Function_t* external_func = ASR::down_cast<ASR::Function_t>(external_sym);
-    bool same_number_of_args = original_func->n_args == external_func->n_args;
-    // TODO: Check if the arguments are the same
-    return !(same_number_of_args);
-}
-
-void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface,
-        std::map<std::string, ASR::symbol_t*> changed_external_function_symbol);
+void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_interface);
 
 
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
