@@ -151,7 +151,7 @@ jobs:
 
       # --std=f23, llvm -sc, --detect-leaks, llvm_single_invocation, and
       # ci/test_cpp_version.sh run in Exhaustive checks (release /
-      # debug_outOfSource) on every PR.
+      # debug_outOfSource) on main and on PRs labeled Tests::Run-Exhaustive.
 
       - name: Test Metal GPU backend (macOS)
         shell: bash -e -l {0}

@@ -30,8 +30,13 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    # Runs on every PR: hosts option-combination tests moved out of Quick
-    # checks (llvm -sc, --detect-leaks, C++ compiler build).
+    # Main and Tests::Run-Exhaustive PRs only. Hosts option-combination
+    # tests moved out of Quick checks (llvm -sc, --detect-leaks, C++
+    # compiler build).
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+           contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -108,9 +113,12 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    # Runs on every PR: hosts --std=f23 and llvm_single_invocation, which
-    # were moved out of Quick checks. llvm / llvm -f here also cover the
-    # Release build (Quick checks builds Debug).
+    # Main and Tests::Run-Exhaustive PRs only. Hosts --std=f23 and
+    # llvm_single_invocation, moved out of Quick checks. llvm / llvm -f
+    # here also cover the Release build (Quick checks builds Debug).
+    if: >-
+      ${{ github.event_name == 'push' ||
+          (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive')) }}
     steps:
       - uses: actions/checkout@v7
         with:
