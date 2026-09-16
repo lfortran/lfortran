@@ -21,13 +21,17 @@
 
 namespace LCompilers::LFortran {
 
+// `implicit_interface_procedures`: the procedure variables that calls through
+// an implicit interface are made through, mapped to the called procedure.
 static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
-        size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation) {
+        size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation,
+        const std::map<const ASR::symbol_t*, ASR::symbol_t*> &implicit_interface_procedures) {
     ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
     if (!fn_type->m_pure) {
         return;
     }
     ASR::SideEffectFinder finder;
+    finder.implicit_interface_procedures = &implicit_interface_procedures;
     for (size_t i = 0; i < n_stmts && !finder.found; i++) {
         finder.visit_stmt(*stmts[i]);
     }
@@ -48,7 +52,9 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     // are exempt, as are plain (non-pointer) procedure dummy arguments.
     for (size_t i = 0; i < v->n_args; i++) {
         ASR::expr_t *arg = v->m_args[i];
-        if (ASR::is_a<ASR::Var_t>(*arg)) {
+        // A dummy procedure is not a dummy data object.
+        if (ASR::is_a<ASR::Var_t>(*arg) &&
+                ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
             ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
             ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
             ASR::ttype_t *v_type_nopointer = ASRUtils::type_get_past_pointer(v_var->m_type);
@@ -299,8 +305,7 @@ public:
     // The `body` Vec must already be reserved
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
-        Vec<ASR::stmt_t*>* current_body_copy = current_body;
-        current_body = &body;
+        CurrentBodyScope body_scope(*this, &body, current_scope);
         for (size_t i=0; i<n_body; i++) {
             // A program unit hands us its whole `items` list, the declarations
             // in it were already handled by the symbol table visitor
@@ -342,7 +347,6 @@ public:
             // To avoid last statement to be entered twice once we exit this node
             tmp = nullptr;
         }
-        current_body = current_body_copy;
     }
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -3205,6 +3209,23 @@ public:
                     }
                     tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
                 }
+            } else if (ASRUtils::is_opaque_procedure_type(value_type)) {
+                // A procedure with an implicit interface associated with a
+                // pointer of an explicit interface is cast to that interface.
+                ASR::symbol_t* target_sym = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*target)) {
+                    target_sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    target_sym = ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m;
+                }
+                ASR::symbol_t* target_decl = nullptr;
+                if (target_sym && ASR::is_a<ASR::Variable_t>(
+                        *ASRUtils::symbol_get_past_external(target_sym))) {
+                    target_decl = ASR::down_cast<ASR::Variable_t>(
+                        ASRUtils::symbol_get_past_external(target_sym))->m_type_declaration;
+                }
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target,
+                    cast_procedure(value, target_func_type, target_decl));
             } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
@@ -3235,53 +3256,70 @@ public:
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
 
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                create_associate_stmt = true;
-                ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
-                tmp_storage = variable->m_storage;
-                tmp_type = variable->m_type;
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-                ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
-                tmp_type = sim->m_type;
-            } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
-                       ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
-                // Complex parts are designators. Associate them with the
-                // original storage instead of copying their current value.
-                create_associate_stmt = true;
-            } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
-                create_associate_stmt = true;
-                ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
-                ASR::ttype_t* base_type = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
-                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+            // A parenthesized selector `(x)` is a primary (R1001), not a
+            // designator, so per F2018 11.1.3.3 the selector is an expression.
+            // It is evaluated when the ASSOCIATE statement executes and the
+            // associate name holds a copy of its value, so a later redefinition
+            // of `x` is not visible through the associate name. None of the
+            // designator cases below, which alias the associate name to the
+            // selector's storage, may therefore apply. The parentheses are
+            // dropped by visit_Parenthesis, so this is decided on the AST.
+            if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
+                if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
+                    create_associate_stmt = true;
+                    ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                     tmp_storage = variable->m_storage;
-                    base_type = variable->m_type;
-                } else {
-                    base_type = ASRUtils::expr_type(tmp_array_section->m_v);
-                }
-                ASR::dimension_t *var_dims;
-                ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
-                Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
-                for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
-                    if (tmp_array_section->m_args[i].m_left) {
-                        tmp_dims.push_back(al, var_dims[i]);
+                    tmp_type = variable->m_type;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                    ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                    tmp_type = sim->m_type;
+                } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
+                           ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
+                    // Complex parts are designators. Associate them with the
+                    // original storage instead of copying their current value.
+                    create_associate_stmt = true;
+                } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
+                    create_associate_stmt = true;
+                    ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
+                    ASR::ttype_t* base_type = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
+                        ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
+                        tmp_storage = variable->m_storage;
+                        base_type = variable->m_type;
+                    } else {
+                        base_type = ASRUtils::expr_type(tmp_array_section->m_v);
                     }
+                    ASR::dimension_t *var_dims;
+                    ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
+                    Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
+                    for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
+                        if (tmp_array_section->m_args[i].m_left) {
+                            tmp_dims.push_back(al, var_dims[i]);
+                        }
+                    }
+                    tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
+                    create_associate_stmt = true;
+                } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
+                           ASRUtils::is_pointer(tmp_type)) {
+                    // A reference to a function with a data pointer result is a
+                    // variable, so the associate name must be associated with the
+                    // target the pointer refers to instead of being assigned a
+                    // copy of its value.
+                    create_associate_stmt = true;
                 }
-                tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
-                create_associate_stmt = true;
-            } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
-                       ASRUtils::is_pointer(tmp_type)) {
-                // A reference to a function with a data pointer result is a
-                // variable, so the associate name must be associated with the
-                // target the pointer refers to instead of being assigned a
-                // copy of its value.
-                create_associate_stmt = true;
+            }
+
+            if ( !create_associate_stmt && ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
+                // The value of a pointer expression is copied into the
+                // associate name, which is an ordinary variable holding that
+                // copy and is not itself a pointer.
+                tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
@@ -5956,6 +5994,7 @@ public:
         current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
+        current_body_scope = current_scope;
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
@@ -6041,7 +6080,7 @@ public:
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
+                compiler_options.continue_compilation, implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -6149,7 +6188,7 @@ public:
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
+                compiler_options.continue_compilation, implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -6250,7 +6289,7 @@ public:
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
             check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation);
+                compiler_options.continue_compilation, implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -6605,7 +6644,16 @@ public:
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         statement_function_parent_scope = parent_scope;
-        this->visit_expr(*x.m_value);
+        statement_function_host_body = current_body;
+        statement_function_host_body_scope = current_body_scope;
+        {
+            // The statements the expression needs run in the statement
+            // function, before its result is assigned, not in the host.
+            CurrentBodyScope body_scope(*this, &body, current_scope);
+            this->visit_expr(*x.m_value);
+        }
+        statement_function_host_body = nullptr;
+        statement_function_host_body_scope = nullptr;
         statement_function_parent_scope = nullptr;
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
@@ -8155,14 +8203,16 @@ public:
             ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;
             original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
             if (!original_sym && compiler_options.implicit_interface) {
-                ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 8));
-                create_implicit_interface_function(x, sub_name, false, type);
-                original_sym = current_scope->resolve_symbol(sub_name);
-                LCOMPILERS_ASSERT(original_sym!=nullptr);
-            }
-            // check if external sym is updated, or: say if signature of external_sym and original_sym are different
-            if (original_sym && external_sym && is_external && ASRUtils::is_external_sym_changed(original_sym, external_sym)) {
-                changed_external_function_symbol[ASRUtils::symbol_name(original_sym)] = original_sym;
+                // A declared external keeps its symbol; an undeclared name
+                // becomes an opaque procedure. The call itself goes through
+                // an interface built from its actuals below.
+                if (external_sym && ASR::is_a<ASR::Function_t>(
+                        *ASRUtils::symbol_get_past_external(external_sym))) {
+                    original_sym = external_sym;
+                } else {
+                    original_sym = get_or_create_opaque_procedure(sub_name,
+                        x.base.base.loc);
+                }
             }
             // remove from external_procedures_mapping
             if (original_sym && is_external) {
@@ -8378,40 +8428,17 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
-                // Array-section rewriting needs the Function symbol.
-                legacy_array_sections_helper(final_sym, args, x.base.base.loc);
-                // Under --implicit-interface, a BindC Interface function is a
-                // signature inferred from an earlier reference, not a contract.
-                // If this reference's actuals differ, keep the first signature
-                // as the canonical procedure and call through a
-                // FunctionPointerCast to a view matching this reference.
                 if (compiler_options.implicit_interface
-                        && is_synthesized_implicit_interface(final_sym)
-                        && !call_args_match_function(
-                            ASR::down_cast<ASR::Function_t>(
-                                ASRUtils::symbol_get_past_external(final_sym)),
-                            args)) {
-                    ASR::symbol_t* canonical = final_sym;
-                    ASR::ttype_t* ret_type = nullptr;
-                    ASR::Function_t* cf = ASR::down_cast<ASR::Function_t>(
-                        ASRUtils::symbol_get_past_external(canonical));
-                    if (cf->m_return_var) {
-                        ret_type = ASRUtils::expr_type(cf->m_return_var);
-                    }
-                    implicit_interface_fpcast_canonical = nullptr;
-                    implicit_interface_fpcast_target = nullptr;
-                    create_implicit_interface_function(
-                        x, sub_name, cf->m_return_var != nullptr, ret_type);
-                    if (implicit_interface_fpcast_target) {
-                        final_sym = make_fpcast_call_target(
-                            x.base.base.loc,
-                            implicit_interface_fpcast_canonical
-                                ? implicit_interface_fpcast_canonical
-                                : canonical,
-                            implicit_interface_fpcast_target);
-                    } else {
-                        final_sym = current_scope->resolve_symbol(sub_name);
-                    }
+                        && ASRUtils::is_bare_implicit_interface(final_sym)) {
+                    // A procedure with an implicit interface is called
+                    // through an interface built from this call's actuals.
+                    // Rules that need an explicit interface do not apply.
+                    original_sym = final_sym;
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        final_sym, args, nullptr);
+                } else {
+                    // Array-section rewriting needs the Function symbol.
+                    legacy_array_sections_helper(final_sym, args, x.base.base.loc);
                 }
                 break;
             }
@@ -8613,6 +8640,15 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                    if (compiler_options.implicit_interface
+                            && ASRUtils::is_bare_implicit_interface(final_sym)) {
+                        // A use-associated procedure with an implicit
+                        // interface is called like a local one: through an
+                        // interface built from this call's actuals.
+                        final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                            original_sym, args, nullptr);
+                        break;
+                    }
                     final_sym=original_sym;
                     original_sym = nullptr;
                     legacy_array_sections_helper(final_sym, args, x.base.base.loc);
@@ -8623,42 +8659,26 @@ public:
                 if (compiler_options.implicit_interface &&
                     !ASRUtils::is_symbol_procedure_variable(original_sym)
                 ) {
-                    // In case of implicit_interface, we redefine the symbol
-                    // from a Variable to Function. Example:
+                    // In case of implicit_interface, a variable called as a
+                    // subroutine is a procedure with an implicit interface.
+                    // Example:
                     //
                     //     real :: x
                     //     call x(3, 4)
+                    //
+                    // or a dummy argument `f` declared `real :: f` by
+                    // implicit typing and called as `call f(3, 4)`.
                     //
                     // TODO: We currently do not explictly handle the case
                     // of previously using the variable as a variable and now
                     // using it as a function. This will (eventually) fail
                     // in verify(). But we should give an error earlier as well.
-                    ASR::ttype_t* old_type = ASR::down_cast<ASR::Variable_t>(original_sym)->m_type;
-                    current_scope->erase_symbol(sub_name);
-                    create_implicit_interface_function(x, sub_name, false, old_type);
-                    original_sym = current_scope->resolve_symbol(sub_name);
-                    LCOMPILERS_ASSERT(original_sym!=nullptr);
-
-                    // One issue to solve is if `sub_name` is an argument of
-                    // the current function, such as in:
-                    //
-                    //     subroutine(f)
-                    //     call f(3, 4)
-                    //
-                    // With implicit typing `f` would already be declared
-                    // as `real :: f`, so we need to change it.
-                    //
-                    // TODO: we are in the body visitor, which means
-                    // the function might have already been used with the
-                    // incorrect interface, and most likely LFortran gave
-                    // an error message.
-                    //
-                    // We simply redo function arguments based on the updated
-                    // symbol table:
-                    LCOMPILERS_ASSERT(current_scope->asr_owner != nullptr)
-                    ASR::Function_t *current_function = ASR::down_cast2
-                        <ASR::Function_t>(current_scope->asr_owner);
-                    redo_function_argument(*current_function, sub_name);
+                    ASR::symbol_t* canonical = replace_variable_with_opaque_procedure(
+                        sub_name, original_sym, nullptr, x.base.base.loc);
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        canonical, args, nullptr);
+                    original_sym = canonical;
+                    break;
                 } else if (!ASRUtils::is_symbol_procedure_variable(original_sym)) {
                     // Calling a non-procedure variable without implicit-interface
                     diag.add(Diagnostic(
@@ -8670,46 +8690,14 @@ public:
                     throw SemanticAbort();
                 }
                 if (compiler_options.implicit_interface &&
-                        ASRUtils::is_symbol_procedure_variable(original_sym) &&
-                        args.size() > 0) {
-                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(original_sym);
-                    if (proc_var->m_type_declaration != nullptr) {
-                        ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(
-                            proc_var->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                            ASR::FunctionType_t* existing_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                ASR::down_cast<ASR::Function_t>(type_decl)->m_function_signature);
-                            ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(proc_var->m_type);
-                            bool var_has_no_args = ASR::is_a<ASR::FunctionType_t>(*var_type) &&
-                                ASR::down_cast<ASR::FunctionType_t>(var_type)->n_arg_types == 0;
-                            if (existing_ft->n_arg_types == 0 && var_has_no_args) {
-                                Vec<ASR::ttype_t*> arg_types;
-                                arg_types.reserve(al, args.size());
-                                Vec<ASR::symbol_t*> arg_type_decls;
-                                arg_type_decls.reserve(al, args.size());
-                                for (size_t i = 0; i < args.size(); i++) {
-                                    if (args[i].m_value == nullptr) continue;
-                                    arg_types.push_back(al, ASRUtils::expr_type(args[i].m_value));
-                                    ASR::symbol_t* td = nullptr;
-                                    if (ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
-                                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                                            ASR::down_cast<ASR::Var_t>(args[i].m_value)->m_v);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                                            td = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-                                        }
-                                    }
-                                    arg_type_decls.push_back(al, td);
-                                }
-                                SymbolTable* parent_scope = current_scope->parent
-                                    ? current_scope->parent : current_scope;
-                                create_or_update_implicit_interface(
-                                    proc_var, x.base.base.loc,
-                                    arg_types.p, arg_types.size(),
-                                    nullptr, parent_scope, sub_name,
-                                    arg_type_decls, current_scope);
-                            }
-                        }
-                    }
+                        ASRUtils::is_opaque_procedure_type(
+                            ASRUtils::symbol_type(original_sym))) {
+                    // A procedure variable with an implicit interface
+                    // (`procedure()`, an external pointer) is called through
+                    // an interface built from this call's actuals.
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        original_sym, args, nullptr);
+                    break;
                 }
                 final_sym = original_sym;
                 original_sym = nullptr;
@@ -8800,170 +8788,11 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            // Create interface for procedure variable passed as argument
-                            // using the expected parameter type for the correct signature.
-                            if (compiler_options.implicit_interface &&
-                                    ASR::is_a<ASR::Var_t>(*passed_arg)) {
-                                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
-                                if (ASRUtils::is_symbol_procedure_variable(sym)) {
-                                    ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(sym);
-                                    ASR::FunctionType_t* expected_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                        ASRUtils::type_get_past_array(param_type));
-                                    // Create interface if none exists. If one exists but has no
-                                    // arg info and expected has arg info, update it. Don't override
-                                    // existing arg info with empty expected (preserves info from calls).
-                                    bool has_type_decl = proc_var->m_type_declaration != nullptr;
-                                    bool has_arg_info = false;
-                                    if (has_type_decl) {
-                                        // Follow ExternalSymbol to get actual Function
-                                        ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(
-                                            proc_var->m_type_declaration);
-                                        if (ASR::is_a<ASR::Function_t>(*actual_decl)) {
-                                            has_arg_info = ASR::down_cast<ASR::FunctionType_t>(
-                                                ASR::down_cast<ASR::Function_t>(actual_decl)->m_function_signature
-                                            )->n_arg_types > 0;
-                                        }
-                                    }
-                                    if (!has_type_decl || (!has_arg_info && expected_ft->n_arg_types > 0)) {
-                                        // Extract type_declarations from the parameter function's args
-                                        Vec<ASR::symbol_t*> param_arg_type_decls;
-                                        param_arg_type_decls.reserve(al, expected_ft->n_arg_types);
-                                        if (v->m_type_declaration) {
-                                            ASR::symbol_t* param_decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-                                            if (ASR::is_a<ASR::Function_t>(*param_decl)) {
-                                                ASR::Function_t* param_func = ASR::down_cast<ASR::Function_t>(param_decl);
-                                                LCOMPILERS_ASSERT(param_func->n_args == expected_ft->n_arg_types)
-                                                for (size_t pi = 0; pi < expected_ft->n_arg_types; pi++) {
-                                                    ASR::symbol_t* td = nullptr;
-                                                    if (ASR::is_a<ASR::Var_t>(*param_func->m_args[pi])) {
-                                                        ASR::symbol_t* ps = ASR::down_cast<ASR::Var_t>(param_func->m_args[pi])->m_v;
-                                                        if (ASR::is_a<ASR::Variable_t>(*ps)) {
-                                                            td = ASR::down_cast<ASR::Variable_t>(ps)->m_type_declaration;
-                                                        }
-                                                    }
-                                                    param_arg_type_decls.push_back(al, td);
-                                                }
-                                            }
-                                        }
-                                        if (param_arg_type_decls.size() == 0) {
-                                            // No type_declaration info found; fill with nullptrs
-                                            for (size_t pi = 0; pi < expected_ft->n_arg_types; pi++) {
-                                                param_arg_type_decls.push_back(al, nullptr);
-                                            }
-                                        }
-                                        create_interface_for_procedure_variable(
-                                            proc_var, passed_arg->base.loc,
-                                            param_arg_type_decls, expected_ft);
-                                    } else if (has_arg_info && expected_ft->n_arg_types == 0) {
-                                        // Reverse: passed has arg_types but param doesn't.
-                                        // Update the parameter's type to match what we're passing.
-                                        ASR::symbol_t* actual_decl = ASRUtils::symbol_get_past_external(
-                                            proc_var->m_type_declaration);
-                                        ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                            ASR::down_cast<ASR::Function_t>(actual_decl)->m_function_signature);
-                                        // Update the parameter's FunctionType
-                                        ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                            ASRUtils::type_get_past_array(v->m_type));
-                                        param_ft->m_arg_types = passed_ft->m_arg_types;
-                                        param_ft->n_arg_types = passed_ft->n_arg_types;
-                                        param_ft->m_deftype = ASR::deftypeType::Interface;
-                                        // Also update the callee's function signature
-                                        ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                            f->m_function_signature);
-                                        callee_ft->m_arg_types[i + offset] = v->m_type;
-                                    }
-                                } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(sym))) {
-                                    // Passed argument is a Function (not a procedure variable).
-                                    // If the parameter has incomplete type info but the passed
-                                    // Function has complete type info, update the parameter's interface.
-                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(
-                                        ASRUtils::symbol_get_past_external(sym));
-                                    ASR::FunctionType_t* passed_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                        passed_func->m_function_signature);
-                                    ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                        ASRUtils::type_get_past_array(param_type));
-                                    // If parameter has no arg info but passed function does,
-                                    // create/update the parameter's interface using the passed function's type info.
-                                    if (param_ft->n_arg_types == 0 && passed_ft->n_arg_types > 0) {
-                                        {
-                                            // Use create_or_update_implicit_interface to properly
-                                            // create/update the interface with matching args and arg_types.
-                                            // Extract type_declarations from the passed function's args.
-                                            SymbolTable* callee_scope = f->m_symtab;
-                                            SymbolTable* iface_parent = callee_scope->parent ? callee_scope->parent : callee_scope;
-                                            std::string var_name = v->m_name;
-                                            ASR::ttype_t* return_type = passed_ft->m_return_var_type;
-                                            Vec<ASR::symbol_t*> fn_arg_type_decls;
-                                            fn_arg_type_decls.reserve(al, passed_ft->n_arg_types);
-                                            LCOMPILERS_ASSERT(passed_func->n_args == passed_ft->n_arg_types)
-                                            for (size_t pi = 0; pi < passed_ft->n_arg_types; pi++) {
-                                                ASR::symbol_t* td = nullptr;
-                                                if (ASR::is_a<ASR::Var_t>(*passed_func->m_args[pi])) {
-                                                    ASR::symbol_t* ps = ASR::down_cast<ASR::Var_t>(passed_func->m_args[pi])->m_v;
-                                                    if (ASR::is_a<ASR::Variable_t>(*ps)) {
-                                                        td = ASR::down_cast<ASR::Variable_t>(ps)->m_type_declaration;
-                                                    }
-                                                }
-                                                fn_arg_type_decls.push_back(al, td);
-                                            }
-                                            ASR::ttype_t* iface_type = create_or_update_implicit_interface(
-                                                v, passed_arg->base.loc,
-                                                passed_ft->m_arg_types, passed_ft->n_arg_types,
-                                                return_type, iface_parent, var_name,
-                                                fn_arg_type_decls);
-                                            // Update the callee function's signature
-                                            ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                                f->m_function_signature);
-                                            callee_ft->m_arg_types[i + offset] = v->m_type;
-                                            (void)iface_type;
-                                        }
-                                    } else if (ASRUtils::is_bare_implicit_interface(*passed_func)
-                                            && param_ft->n_arg_types > 0) {
-                                        // Reverse propagation: parameter has type info (from being called
-                                        // in the callee) but the passed function is a bare ImplicitInterface
-                                        // (argument list unknown). Fill in that placeholder only — a genuine
-                                        // zero-argument Implementation or Interface must not be rewritten.
-                                        passed_ft->m_arg_types = param_ft->m_arg_types;
-                                        passed_ft->n_arg_types = param_ft->n_arg_types;
-                                        passed_ft->m_return_var_type = param_ft->m_return_var_type;
-                                        // Signature is now known; no longer ImplicitInterface.
-                                        passed_ft->m_deftype = ASR::deftypeType::Interface;
-
-                                        // Create matching argument variables in the passed Function's symtab
-                                        Vec<ASR::expr_t*> new_args;
-                                        new_args.reserve(al, param_ft->n_arg_types);
-                                        for (size_t j = 0; j < param_ft->n_arg_types; j++) {
-                                            ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
-                                            std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
-                                            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
-                                                ASR::make_Variable_t(al, passed_arg->base.loc, passed_func->m_symtab,
-                                                    s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
-                                                    nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                                                    nullptr, ASR::abiType::BindC, ASR::accessType::Public,
-                                                    ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                                    ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                                            passed_func->m_symtab->add_symbol(arg_name, arg_sym);
-                                            new_args.push_back(al, ASRUtils::EXPR(
-                                                ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
-                                        }
-                                        passed_func->m_args = new_args.p;
-                                        passed_func->n_args = new_args.size();
-                                        if (param_ft->m_return_var_type == nullptr) {
-                                            passed_func->m_return_var = nullptr;
-                                        }
-                                    } else if (ASRUtils::is_bare_implicit_interface(*passed_func)
-                                            && param_ft->n_arg_types == 0) {
-                                        // Placeholder still has no signature, and neither does the dummy.
-                                        // Revisit after the callee body is seen.
-                                        needs_implicit_interface_postprocessing = true;
-                                    }
-                                    if (param_ft->m_return_var_type == nullptr
-                                            && passed_ft->m_return_var_type != nullptr) {
-                                        passed_ft->m_return_var_type = nullptr;
-                                        passed_func->m_return_var = nullptr;
-                                    }
-                                }
-                            }
+                            // A procedure actual of another type than the dummy
+                            // is cast to the dummy's type.
+                            passed_arg = cast_procedure_actual(passed_arg, f->m_args[i + offset]);
+                            args.p[i].m_value = passed_arg;
+                            passed_type = ASRUtils::expr_type(passed_arg);
                         }
                         // Skip type checking for function types (procedure dummy
                         // arguments are validated separately above).
@@ -9030,126 +8859,12 @@ public:
                             throw SemanticAbort();
                         }
                     }
-                } else if (ASR::is_a<ASR::Function_t>(*var->m_v) &&
-                           compiler_options.implicit_interface) {
-                    // Handle procedure parameters represented as Function (interface) symbols.
-                    // When passing a Function with complete type info to a parameter with
-                    // incomplete type info, update the parameter's interface.
-                    ASR::Function_t* param_func = ASR::down_cast<ASR::Function_t>(var->m_v);
-                    ASR::FunctionType_t* param_ft = ASR::down_cast<ASR::FunctionType_t>(
-                        param_func->m_function_signature);
-
+                } else if (ASR::is_a<ASR::Function_t>(*var->m_v)) {
+                    // A procedure actual of another type than the dummy
+                    // procedure is cast to the dummy's type.
                     if (i < args.size() && args[i].m_value != nullptr) {
-                        ASR::expr_t* passed_arg = args[i].m_value;
-                        if (ASR::is_a<ASR::Var_t>(*passed_arg)) {
-                            ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg)->m_v;
-                            passed_sym = ASRUtils::symbol_get_past_external(passed_sym);
-
-                            ASR::FunctionType_t* passed_ft = nullptr;
-
-                            // Handle passed Function symbol
-                            if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
-                                ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
-                                passed_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                    passed_func->m_function_signature);
-                            }
-                            // Handle passed procedure variable (Variable with FunctionType)
-                            else if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
-                                ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
-                                ASR::ttype_t* passed_type = ASRUtils::type_get_past_array(passed_var->m_type);
-                                if (ASR::is_a<ASR::FunctionType_t>(*passed_type)) {
-                                    passed_ft = ASR::down_cast<ASR::FunctionType_t>(passed_type);
-                                }
-                            }
-
-                            // If passed has arg info but param doesn't, update param interface
-                            if (passed_ft && passed_ft->n_arg_types > 0 && param_ft->n_arg_types == 0) {
-                                // Update the FunctionType's arg_types
-                                param_ft->m_arg_types = passed_ft->m_arg_types;
-                                param_ft->n_arg_types = passed_ft->n_arg_types;
-                                param_ft->m_deftype = ASR::deftypeType::Interface;
-
-                                // Create matching argument variables in the Function's symtab
-                                Vec<ASR::expr_t*> new_args;
-                                new_args.reserve(al, passed_ft->n_arg_types);
-                                for (size_t j = 0; j < passed_ft->n_arg_types; j++) {
-                                    ASR::ttype_t* arg_type = passed_ft->m_arg_types[j];
-                                    std::string arg_name = std::string(param_func->m_name) + "_arg_" + std::to_string(j);
-                                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
-                                        ASR::make_Variable_t(al, passed_arg->base.loc, param_func->m_symtab,
-                                            s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
-                                            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                                            nullptr, ASR::abiType::BindC, ASR::accessType::Public,
-                                            ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                            ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                                    param_func->m_symtab->add_symbol(arg_name, arg_sym);
-                                    new_args.push_back(al, ASRUtils::EXPR(
-                                        ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
-                                }
-                                param_func->m_args = new_args.p;
-                                param_func->n_args = new_args.size();
-
-                                // Update the callee's signature arg_types as well
-                                ASR::FunctionType_t* callee_ft = ASR::down_cast<ASR::FunctionType_t>(
-                                    f->m_function_signature);
-                                callee_ft->m_arg_types[i + offset] = param_func->m_function_signature;
-                            } else if (passed_ft && param_ft->n_arg_types > 0
-                                    && ASR::is_a<ASR::Function_t>(*passed_sym)
-                                    && ASRUtils::is_bare_implicit_interface(
-                                        *ASR::down_cast<ASR::Function_t>(passed_sym))) {
-                                // Reverse propagation: parameter has type info but the passed
-                                // function is a bare ImplicitInterface. Only rewrite that
-                                // placeholder — a genuine zero-argument procedure is left alone.
-                                ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
-                                passed_ft->m_arg_types = param_ft->m_arg_types;
-                                passed_ft->n_arg_types = param_ft->n_arg_types;
-                                passed_ft->m_return_var_type = param_ft->m_return_var_type;
-                                // Signature is now known; no longer ImplicitInterface.
-                                passed_ft->m_deftype = ASR::deftypeType::Interface;
-
-                                // Create matching argument variables in the passed Function's symtab
-                                Vec<ASR::expr_t*> new_args;
-                                new_args.reserve(al, param_ft->n_arg_types);
-                                for (size_t j = 0; j < param_ft->n_arg_types; j++) {
-                                    ASR::ttype_t* arg_type = param_ft->m_arg_types[j];
-                                    std::string arg_name = std::string(passed_func->m_name) + "_arg_" + std::to_string(j);
-                                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::symbol_t>(
-                                        ASR::make_Variable_t(al, passed_arg->base.loc, passed_func->m_symtab,
-                                            s2c(al, arg_name), nullptr, 0, ASR::intentType::Unspecified,
-                                            nullptr, nullptr, ASR::storage_typeType::Default, arg_type,
-                                            nullptr, ASR::abiType::BindC, ASR::accessType::Public,
-                                            ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                                            ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                                    passed_func->m_symtab->add_symbol(arg_name, arg_sym);
-                                    new_args.push_back(al, ASRUtils::EXPR(
-                                        ASR::make_Var_t(al, passed_arg->base.loc, arg_sym)));
-                                }
-                                passed_func->m_args = new_args.p;
-                                passed_func->n_args = new_args.size();
-                                if (param_ft->m_return_var_type == nullptr) {
-                                    passed_func->m_return_var = nullptr;
-                                }
-                            } else if (passed_ft && param_ft->n_arg_types == 0
-                                    && ASR::is_a<ASR::Function_t>(*passed_sym)
-                                    && ASRUtils::is_bare_implicit_interface(
-                                        *ASR::down_cast<ASR::Function_t>(passed_sym))) {
-                                // Placeholder still has no signature, and neither does the dummy.
-                                // Revisit after the callee body is seen.
-                                ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
-                                passed_ft->m_return_var_type = param_ft->m_return_var_type;
-                                if (param_ft->m_return_var_type == nullptr) {
-                                    passed_func->m_return_var = nullptr;
-                                }
-                                needs_implicit_interface_postprocessing = true;
-                            }
-                            if (passed_ft && param_ft && param_ft->m_return_var_type == nullptr) {
-                                if (ASR::is_a<ASR::Function_t>(*passed_sym)) {
-                                    ASR::Function_t* passed_func = ASR::down_cast<ASR::Function_t>(passed_sym);
-                                    passed_ft->m_return_var_type = nullptr;
-                                    passed_func->m_return_var = nullptr;
-                                }
-                            }
-                        }
+                        args.p[i].m_value = cast_procedure_actual(args.p[i].m_value,
+                            f->m_args[i + offset]);
                     }
                 }
             }
@@ -9566,10 +9281,38 @@ public:
         all_loops_blocks_nesting += 1;
         bool in_loop_copy = in_loop;
         in_loop = true;
-        visit_expr(*x.m_test);
+        // Statements the condition needs (e.g. associating the
+        // procedure-pointer temporary of a call through an implicit
+        // interface) must run before every evaluation of the condition.
+        Vec<ASR::stmt_t*> test_stmts;
+        test_stmts.reserve(al, 1);
+        {
+            CurrentBodyScope body_scope(*this, &test_stmts, current_scope);
+            visit_expr(*x.m_test);
+        }
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
+        body.reserve(al, x.n_body + test_stmts.size() + 1);
+        if (test_stmts.size() > 0) {
+            // do while (.true.)
+            //     <test_stmts>
+            //     if (.not. test) exit
+            //     <body>
+            // end do
+            const Location &loc = test->base.loc;
+            ASR::ttype_t* logical_type = ASRUtils::expr_type(test);
+            for (size_t i = 0; i < test_stmts.size(); i++) {
+                body.push_back(al, test_stmts[i]);
+            }
+            Vec<ASR::stmt_t*> exit_body;
+            exit_body.reserve(al, 1);
+            exit_body.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al, loc, x.m_stmt_name)));
+            ASR::expr_t* not_test = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, test,
+                ASRUtils::expr_type(test), nullptr));
+            body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, not_test,
+                exit_body.p, exit_body.size(), nullptr, 0)));
+            test = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical_type));
+        }
         transform_stmts(body, x.n_body, x.m_body);
         tmp = ASR::make_WhileLoop_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), nullptr, 0);
@@ -9609,7 +9352,8 @@ public:
         if (x.m_start) {
             visit_expr(*x.m_start);
             start = ASRUtils::EXPR(tmp);
-            type = ASRUtils::expr_type(start);
+            type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(start));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
                 diag.semantic_warning_label(
                     "Start expression in DO loop must be integer",
@@ -9622,7 +9366,8 @@ public:
         if (x.m_end) {
             visit_expr(*x.m_end);
             end = ASRUtils::EXPR(tmp);
-            type = ASRUtils::expr_type(end);
+            type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(end));
             if (!ASR::is_a<ASR::Integer_t>(*type)) {
                 diag.semantic_warning_label(
                     "End expression in DO loop must be integer",
@@ -9649,7 +9394,8 @@ public:
                     throw SemanticAbort();
                 }
             } else {
-                type = ASRUtils::expr_type(increment);
+                type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(increment));
                 if (!ASR::is_a<ASR::Integer_t>(*type)) {
                     diag.semantic_warning_label(
                         "Step expression (increment) in DO loop must be integer",
@@ -10683,6 +10429,26 @@ public:
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
                         ASR::make_OMPReduction_t(al, loc, op, vars.p, vars.n)));
                 }
+            } else if (clause_name == "default") {
+                std::string kind;
+                if (clause.find('(') != std::string::npos && clause.back() == ')') {
+                    kind = clause.substr(clause.find('(') + 1, clause.size() - clause.find('(') - 2);
+                    kind.erase(0, kind.find_first_not_of(" "));
+                    LCompilers::rtrim(kind);
+                }
+                if (kind == "shared" || kind == "none") {
+                    // A variable that no data-sharing clause names is shared,
+                    // which is what default(shared) asks for. default(none)
+                    // only requires every such variable to be named, so a
+                    // valid program means the same without the clause.
+                    continue;
+                } else if (kind == "private" || kind == "firstprivate") {
+                    diag.add(Diagnostic("the default(" + kind + ") clause is not supported yet", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                } else {
+                    diag.add(Diagnostic("the default clause expects one of shared, none, private or firstprivate", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
             } else {
                 diag.add(Diagnostic("The clause " + clause_name + " is not supported for parallel sections", Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
@@ -10996,6 +10762,63 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+
+    // A dummy argument declared as a variable is known to be a procedure only
+    // once the body of its procedure is visited. A call to that procedure
+    // built before then passes procedure actuals to it without the cast to
+    // the dummy's opaque procedure type.
+    if (!b.procedures_with_late_procedure_dummies.empty()) {
+        class CastLateProcedureActuals :
+                public ASR::BaseWalkVisitor<CastLateProcedureActuals> {
+        public:
+            Allocator &al;
+            std::set<ASR::symbol_t*> &procedures;
+            CastLateProcedureActuals(Allocator &al,
+                std::set<ASR::symbol_t*> &procedures)
+                : al{al}, procedures{procedures} {}
+
+            void cast_actuals(ASR::symbol_t* name, ASR::call_arg_t* args,
+                    size_t n_args, ASR::expr_t* dt) {
+                ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(name);
+                if (dt != nullptr || procedures.find(callee) == procedures.end()) {
+                    return;
+                }
+                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(callee);
+                for (size_t i = 0; i < n_args && i < fn->n_args; i++) {
+                    ASR::expr_t* actual = args[i].m_value;
+                    if (actual == nullptr) {
+                        continue;
+                    }
+                    ASR::ttype_t* formal = ASRUtils::expr_type(fn->m_args[i]);
+                    ASR::ttype_t* actual_type = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(actual));
+                    if (ASRUtils::is_pointer(formal) ||
+                            !ASRUtils::is_opaque_procedure_type(formal) ||
+                            !ASR::is_a<ASR::FunctionType_t>(*actual_type) ||
+                            ASRUtils::procedure_types_identical(
+                                ASR::down_cast<ASR::FunctionType_t>(actual_type),
+                                ASR::down_cast<ASR::FunctionType_t>(formal))) {
+                        continue;
+                    }
+                    args[i].m_value = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
+                        al, actual->base.loc, actual, nullptr,
+                        ASRUtils::duplicate_type(al, formal), nullptr));
+                }
+            }
+
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                cast_actuals(x.m_name, x.m_args, x.n_args, x.m_dt);
+                ASR::BaseWalkVisitor<CastLateProcedureActuals>::visit_SubroutineCall(x);
+            }
+
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                cast_actuals(x.m_name, x.m_args, x.n_args, x.m_dt);
+                ASR::BaseWalkVisitor<CastLateProcedureActuals>::visit_FunctionCall(x);
+            }
+        };
+        CastLateProcedureActuals cast_late(al, b.procedures_with_late_procedure_dummies);
+        cast_late.visit_TranslationUnit(*tu);
+    }
 
     // Post-processing: propagate procedure types for implicit interfaces.
     // This handles the case where callee body is visited after caller body,

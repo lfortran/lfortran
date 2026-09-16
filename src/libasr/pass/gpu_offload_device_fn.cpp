@@ -376,9 +376,9 @@ ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
     // also where the shader has to be judged buildable. A callee that
     // holds an implied-do reaches the Metal code generator with no
     // rendering for it, and the driver is handed a shader that will
-    // not compile -- worse than leaving the loop on the host. Declining
-    // to gather leaves the nested section standing, and the loop is
-    // then declined further down exactly as before.
+    // not compile -- worse than an error at the loop. Declining to
+    // gather leaves the nested section standing, and the loop is then
+    // reported further down exactly as before.
     GpuImpliedDoFinder implied_do;
     for (size_t i = 0; i < fn->n_body; i++) {
         implied_do.visit_stmt(*fn->m_body[i]);

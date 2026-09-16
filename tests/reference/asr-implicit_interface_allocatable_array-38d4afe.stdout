@@ -76,74 +76,14 @@
                                     (SymbolTable
                                         3
                                         {
-                                            sub1_arg_0:
-                                                (Variable
-                                                    3
-                                                    sub1_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            sub1_arg_1:
-                                                (Variable
-                                                    3
-                                                    sub1_arg_1
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Real 4)
-                                                        [(()
-                                                        ())]
-                                                        PointerArray
-                                                        Global
-                                                    )
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
+                                            
                                         })
                                     sub1
                                     (FunctionType
-                                        [(Integer 4)
-                                        (Array
-                                            (Real 4)
-                                            [(()
-                                            ())]
-                                            PointerArray
-                                            Global
-                                        )]
+                                        []
                                         ()
                                         BindC
-                                        Interface
+                                        ImplicitInterface
                                         ()
                                         .false.
                                         .false.
@@ -155,8 +95,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 3 sub1_arg_0)
-                                    (Var 3 sub1_arg_1)]
+                                    []
                                     []
                                     ()
                                     Public
@@ -164,15 +103,15 @@
                                     .false.
                                     ()
                                 ),
-                            sub2:
+                            sub1~fpcast:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            sub2_arg_0:
+                                            sub1~arg_0:
                                                 (Variable
                                                     4
-                                                    sub2_arg_0
+                                                    sub1~arg_0
                                                     []
                                                     Unspecified
                                                     ()
@@ -193,10 +132,10 @@
                                                     ()
                                                     []
                                                 ),
-                                            sub2_arg_1:
+                                            sub1~arg_1:
                                                 (Variable
                                                     4
-                                                    sub2_arg_1
+                                                    sub1~arg_1
                                                     []
                                                     Unspecified
                                                     ()
@@ -224,7 +163,7 @@
                                                     []
                                                 )
                                         })
-                                    sub2
+                                    sub1~fpcast
                                     (FunctionType
                                         [(Integer 4)
                                         (Array
@@ -248,14 +187,233 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 sub2_arg_0)
-                                    (Var 4 sub2_arg_1)]
+                                    [(Var 4 sub1~arg_0)
+                                    (Var 4 sub1~arg_1)]
                                     []
                                     ()
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            sub1~fpcast_ptr:
+                                (Variable
+                                    2
+                                    sub1~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 sub1~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            sub2:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    sub2
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            sub2~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            sub2~arg_0:
+                                                (Variable
+                                                    6
+                                                    sub2~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            sub2~arg_1:
+                                                (Variable
+                                                    6
+                                                    sub2~arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    sub2~fpcast
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            PointerArray
+                                            Global
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 sub2~arg_0)
+                                    (Var 6 sub2~arg_1)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            sub2~fpcast_ptr:
+                                (Variable
+                                    2
+                                    sub2~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
+                                            )]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 sub2~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 )
                         })
                     implicit_interface_allocatable_array
@@ -276,9 +434,39 @@
                     )
                     []
                     []
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 sub1~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 sub1)
+                            2 sub1~fpcast
+                            (FunctionType
+                                [(Integer 4)
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 sub1~fpcast_ptr
                         2 sub1
-                        ()
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 2 r_g)
@@ -296,9 +484,39 @@
                         ()
                         .false.
                     )
+                    (Associate
+                        (Var 2 sub2~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 sub2)
+                            2 sub2~fpcast
+                            (FunctionType
+                                [(Integer 4)
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    PointerArray
+                                    Global
+                                )]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (SubroutineCall
+                        2 sub2~fpcast_ptr
                         2 sub2
-                        ()
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 2 r_t)

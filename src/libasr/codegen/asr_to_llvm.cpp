@@ -5437,34 +5437,41 @@ public:
     }
 
     void visit_StructConstant(const ASR::StructConstant_t& x) {
-        std::vector<llvm::Constant *> elements;
-        llvm::StructType* t = llvm::cast<llvm::StructType>(
-            llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym)), module.get()));
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
+        tmp = get_struct_constant(struct_, x.m_args, x.n_args);
+        current_der_type_name = get_type_key(x.m_dt_sym);
+    }
 
-        [[maybe_unused]] size_t n_members = struct_->n_members;
+    // Builds the constant of type `struct_` from `args`, which hold the
+    // members of its parent types first and then its own members. The
+    // parent type is the first element of the LLVM structure, so the
+    // parent members form a nested constant.
+    llvm::Constant* get_struct_constant(ASR::Struct_t* struct_,
+            ASR::call_arg_t* args, [[maybe_unused]] size_t n_args) {
+        std::vector<llvm::Constant *> elements;
+        llvm::StructType* t = llvm::cast<llvm::StructType>(
+            llvm_utils->getStructType(struct_, module.get()));
+        size_t n_parent_members = 0;
         if (struct_->m_parent) {
-            ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_->m_parent));
-            while (parent_struct) {
-                n_members += parent_struct->n_members;
-                if (parent_struct->m_parent) {
-                    parent_struct = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(parent_struct->m_parent));
-                } else {
-                    parent_struct = nullptr;
-                }
+            ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(struct_->m_parent);
+            while (parent_sym) {
+                ASR::Struct_t* parent_struct = ASR::down_cast<ASR::Struct_t>(parent_sym);
+                n_parent_members += parent_struct->n_members;
+                parent_sym = parent_struct->m_parent
+                    ? ASRUtils::symbol_get_past_external(parent_struct->m_parent) : nullptr;
             }
+            elements.push_back(get_struct_constant(ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_->m_parent)),
+                args, n_parent_members));
         }
 
-        LCOMPILERS_ASSERT(x.n_args == n_members);
-        for (size_t i = 0; i < x.n_args; ++i) {
-            ASR::expr_t *value = x.m_args[i].m_value;
+        LCOMPILERS_ASSERT(n_args == n_parent_members + struct_->n_members);
+        for (size_t i = 0; i < struct_->n_members; ++i) {
+            ASR::expr_t *value = args[n_parent_members + i].m_value;
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
-            ASR::symbol_t* member_sym = i < struct_->n_members
-                ? struct_->m_symtab->get_symbol(struct_->m_members[i]) : nullptr;
+            ASR::symbol_t* member_sym = struct_->m_symtab->get_symbol(struct_->m_members[i]);
             if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
                 ASR::ttype_t* member_type =
                     ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
@@ -5530,8 +5537,7 @@ public:
             }
             elements.push_back(initializer);
         }
-        tmp = llvm::ConstantStruct::get(t, elements);
-        current_der_type_name = get_type_key(x.m_dt_sym);
+        return llvm::ConstantStruct::get(t, elements);
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
@@ -7890,6 +7896,25 @@ public:
             // type->print(llvm::outs()); llvm::outs() << "\n";
             // type_->print(llvm::outs()); llvm::outs() << "\n";
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
+            ASR::expr_t* init_expr = v->m_symbolic_value;
+            if( v->m_storage != ASR::storage_typeType::Parameter ) {
+                for( size_t i = 0; i < v->n_dependencies; i++ ) {
+                    std::string variable_name = v->m_dependencies[i];
+                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
+                    if (dep_sym) {
+                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
+                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
+                            if ( dep_v->m_symbolic_value == nullptr &&
+                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
+                                    ASR::array_physical_typeType::FixedSizeArray)) {
+                                init_expr = nullptr;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            bool save_struct_initialized = false;
             // Initialize non-primitve types
             if( ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))
@@ -7936,6 +7961,15 @@ public:
                     allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr))), ptr, v->m_type,
                         is_intent_out_var);
+                    if (struct_skip_bb != nullptr && init_expr != nullptr && v->m_value &&
+                            ASR::is_a<ASR::StructConstant_t>(*v->m_value)) {
+                        // Store the initial value of a save variable inside
+                        // the one-time guard, after the component defaults,
+                        // so that it is applied exactly once and not
+                        // overwritten by them.
+                        set_VariableInital_value(v, ptr);
+                        save_struct_initialized = true;
+                    }
                 }
                 if (struct_skip_bb != nullptr) {
                     builder->CreateBr(struct_skip_bb);
@@ -8014,27 +8048,11 @@ public:
                     allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
                 }
             }
-            ASR::expr_t* init_expr = v->m_symbolic_value;
-            if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                for( size_t i = 0; i < v->n_dependencies; i++ ) {
-                    std::string variable_name = v->m_dependencies[i];
-                    ASR::symbol_t* dep_sym = x.m_symtab->resolve_symbol(variable_name);
-                    if (dep_sym) {
-                        if (ASR::is_a<ASR::Variable_t>(*dep_sym)) {
-                            ASR::Variable_t* dep_v = ASR::down_cast<ASR::Variable_t>(dep_sym);
-                            if ( dep_v->m_symbolic_value == nullptr &&
-                                !(ASRUtils::is_array(dep_v->m_type) && ASRUtils::extract_physical_type(dep_v->m_type) ==
-                                    ASR::array_physical_typeType::FixedSizeArray)) {
-                                init_expr = nullptr;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
             if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
-                if ((v->m_storage == ASR::Save   ||
+                if (save_struct_initialized) {
+                    // Already stored inside the one-time guard above
+                } else if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
                     &&
                     (ASRUtils::is_string_only(v->m_type) ||
@@ -8484,9 +8502,15 @@ public:
                             new_F, F->getType());
                         F->replaceAllUsesWith(cast);
                     }
+                    // Every procedure resolved to the placeholder (each
+                    // external of this name) now resolves to the definition.
+                    for (auto &entry : llvm_symtab_fn) {
+                        if (entry.second == F) {
+                            entry.second = new_F;
+                        }
+                    }
                     F->eraseFromParent();
                     F = new_F;
-                    llvm_symtab_fn[old_h] = F;
                     llvm_symtab_fn_names[fn_name] = h;
                     llvm_fn_from_bare_implicit_interface.erase(old_h);
                 }
@@ -16423,13 +16447,11 @@ public:
             }
             case ASR::symbolType::Function: {
                 const uint32_t h = get_hash((ASR::asr_t*)x_m_v);
-                if(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()){ // Callback fn arg.
-                    tmp = llvm_symtab_fn_arg[h];
-                } else if( llvm_symtab_fn.find(h) != llvm_symtab_fn.end() ) {
-                    tmp = llvm_symtab_fn[h];
-                } else {
+                if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
+                        llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
                     throw CodeGenError(std::string("Can't resolve var to Function '") + ASRUtils::symbol_name(x_m_v) + "'");
                 }
+                tmp = get_procedure_value(ASR::down_cast<ASR::Function_t>(x_m_v));
             break;
             }
             default: {
@@ -16780,45 +16802,95 @@ public:
         return alloc;
     }
 
+    // The address of procedure `fn`, typed by its own ASR signature. The
+    // LLVM function that owns the link name may have been declared with
+    // another signature, e.g. a definition in this file for an external
+    // with an implicit interface.
+    llvm::Value* get_procedure_value(ASR::Function_t* fn) {
+        uint32_t h = get_hash((ASR::asr_t*)fn);
+        llvm::Value* value = nullptr;
+        if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
+            value = llvm_symtab_fn_arg[h];
+        } else {
+            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                instantiate_function(*fn);
+            }
+            if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+                throw CodeGenError(std::string("Can't resolve var to Function '")
+                    + fn->m_name + "'");
+            }
+            value = llvm_symtab_fn[h];
+        }
+        llvm::Type* own_type = llvm_utils->get_function_type(*fn,
+            module.get())->getPointerTo();
+        if (value->getType() != own_type) {
+            value = builder->CreateBitCast(value, own_type);
+        }
+        return value;
+    }
+
+    // The LLVM type of the procedure called with interface `callee`. A call
+    // through a procedure variable is typed by the variable's interface;
+    // otherwise the declared LLVM function of the called name is used.
+    llvm::FunctionType* get_callee_llvm_function_type(ASR::FunctionType_t* callee,
+            ASR::symbol_t* func_subrout, bool call_through_variable) {
+        if (call_through_variable) {
+            return llvm_utils->get_function_type(
+                *ASR::down_cast<ASR::Function_t>(func_subrout), module.get());
+        }
+        const char* fn_name = callee->m_bindc_name;
+        if (!fn_name) {
+            fn_name = ASRUtils::symbol_name(func_subrout);
+        }
+        llvm::Function* fn = module->getFunction(fn_name);
+        return fn ? fn->getFunctionType() : nullptr;
+    }
+
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
-        // Cast a procedure to the function-pointer type of `m_to`. The two
-        // interfaces describe the same link-time procedure under an implicit
-        // interface; only the signature used at this call changes.
+        // View a procedure through another procedure type: the interface
+        // `m_to`, or without it the opaque procedure type. Only the type of
+        // the pointer changes.
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        LCOMPILERS_ASSERT(x.m_to);
-        ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
-        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
-        llvm::FunctionType* target_ft = llvm_utils->get_function_type(
-            *to_fn, module.get());
-
+        llvm::Type* target_type = nullptr;
+        if (x.m_to) {
+            ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
+            target_type = llvm_utils->get_function_type(
+                *ASR::down_cast<ASR::Function_t>(to_sym), module.get())->getPointerTo();
+        } else {
+            target_type = llvm_utils->get_opaque_procedure_ptr_type(
+                *ASR::down_cast<ASR::FunctionType_t>(x.m_type), module.get());
+        }
         llvm::Value* src = nullptr;
         if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
             ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v);
             if (ASR::is_a<ASR::Function_t>(*arg_sym)) {
-                uint32_t h = get_hash((ASR::asr_t*)arg_sym);
-                if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
-                    // Ensure the source procedure has been declared.
-                    instantiate_function(*ASR::down_cast<ASR::Function_t>(arg_sym));
+                src = get_procedure_value(ASR::down_cast<ASR::Function_t>(arg_sym));
+            } else if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                // A procedure variable stored in memory (a local or a
+                // pointer) holds the procedure; a dummy is the procedure.
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                this->visit_expr(*x.m_arg);
+                ptr_loads = ptr_loads_copy;
+                src = tmp;
+                if (ASRUtils::is_pointer(v->m_type) || v->m_intent == ASRUtils::intent_local) {
+                    src = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                        x.m_arg, ASRUtils::type_get_past_pointer(v->m_type), module.get()), src);
                 }
-                LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                src = llvm_symtab_fn[h];
             }
         }
         if (!src) {
-            this->visit_expr(*x.m_arg);
+            this->visit_expr_wrapper(x.m_arg, true);
             src = tmp;
-            if (src && src->getType()->isPointerTy()) {
-                // May be a pointer-to-function-pointer (procedure pointer var).
-                // Leave as-is; bitcast handles pointer types.
-            }
         }
         LCOMPILERS_ASSERT(src);
-        tmp = builder->CreateBitCast(src, target_ft->getPointerTo());
+        tmp = builder->CreateBitCast(src, target_type);
     }
 
 
@@ -19121,6 +19193,9 @@ public:
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
                     ASR::Array_t *arr_tp = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable_pointer(type));
+                    bool is_descriptor_based =
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray ||
+                        arr_tp->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
                     llvm::Value* descriptor_stride_i32 = llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), 1);
                     if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
@@ -19140,7 +19215,15 @@ public:
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
                         var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
                     }
-                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                    // A descriptor holds a pointer to its elements, so the
+                    // access above yields a pointer to that pointer and has to
+                    // be dereferenced to get the flat element pointer the
+                    // runtime expects. A fixed size array stores its elements
+                    // inline, so there it already is the element pointer.
+                    // Assumed rank dummies are descriptor based but are neither
+                    // allocatable nor pointer, so they need the load too.
+                    if (is_descriptor_based
+                        || ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
                         var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
                     }
@@ -19237,6 +19320,44 @@ public:
             // no_values flag: 1 if no values were read, 0 otherwise
             llvm::Value* no_values_flag = llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), x.n_values == 0 ? 1 : 0);
+            // An empty formatted READ with ADVANCE='no' must leave the
+            // record open, so it must not drain to the next record.
+            // List-directed and internal reads never carry a conforming
+            // ADVANCE=, and value-carrying formatted reads already honor
+            // it inside _lfortran_formatted_read, so only the empty
+            // external formatted drain needs the guard. The frontend
+            // wraps m_advance in StringTrim, so a blank-padded variable
+            // such as character(len=10) :: adv = 'no' arrives here as
+            // ("no", 2); anything but a case-insensitive 'no' keeps the
+            // historical drain, matching the runtime's own check in
+            // common_formatted_read.
+            bool has_advance_guard = (x.m_advance && x.m_fmt && !is_string);
+            llvm::Value* should_drain = nullptr;
+            if (has_advance_guard) {
+                // Reuse the runtime's own matcher instead of open-coding
+                // the comparison here.
+                std::string no_str("no");
+                llvm::Value* no_data = LCompilers::create_global_string_ptr(
+                    context, *module, *builder, no_str);
+                llvm::Value* no_len = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), no_str.size());
+                std::string cmp_func_name = "_lfortran_is_streql_NCS";
+                llvm::Function *cmp_fn = module->getFunction(cmp_func_name);
+                if (!cmp_fn) {
+                    llvm::FunctionType *cmp_ft = llvm::FunctionType::get(
+                        llvm::Type::getInt1Ty(context), {
+                            character_type, llvm::Type::getInt64Ty(context),
+                            character_type, llvm::Type::getInt64Ty(context)
+                        }, false);
+                    cmp_fn = llvm::Function::Create(cmp_ft,
+                        llvm::Function::ExternalLinkage, cmp_func_name,
+                        module.get());
+                }
+                llvm::Value* is_advance_no = builder->CreateCall(cmp_fn,
+                    {advance, advance_length, no_data, no_len});
+                should_drain = builder->CreateNot(is_advance_no);
+            }
+            auto emit_drain = [&]() {
             // When x.m_iostat is provided and values were read (n_values > 0),
             // only call empty_read if no error occurred during value reads.
             // When n_values == 0, no reads happened yet so call unconditionally.
@@ -19250,6 +19371,12 @@ public:
                 }, [](){});
             } else {
                 builder->CreateCall(fn, {unit_val, iostat_for_empty_read, no_values_flag});
+            }
+            };
+            if (has_advance_guard) {
+                llvm_utils->create_if_else(should_drain, emit_drain, [](){});
+            } else {
+                emit_drain();
             }
             }
         }
@@ -22530,6 +22657,39 @@ public:
                                     tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                 }
                             } else if ( x_abi == ASR::abiType::BindC && orig_arg != nullptr ) {
+                                // A procedure variable stored in memory (a
+                                // local or a pointer) passes the procedure it
+                                // holds to a dummy that is not a pointer.
+                                if (ASR::is_a<ASR::FunctionType_t>(
+                                        *ASRUtils::type_get_past_pointer(arg->m_type)) &&
+                                        !ASRUtils::is_pointer(orig_arg->m_type) &&
+                                        (arg->m_intent == intent_local ||
+                                         (ASRUtils::is_pointer(arg->m_type) &&
+                                          ASRUtils::is_arg_dummy(arg->m_intent)))) {
+                                    tmp = llvm_utils->CreateLoad2(
+                                        llvm_utils->get_type_from_ttype_t_util(
+                                            ASRUtils::EXPR(ASR::make_Var_t(al,
+                                                arg->base.base.loc, &arg->base)),
+                                            ASRUtils::type_get_past_pointer(arg->m_type),
+                                            module.get()), tmp);
+                                }
+                                // A pointer or allocatable scalar (e.g. an
+                                // ASSOCIATE name) passed by reference to a
+                                // scalar dummy that is neither passes its
+                                // target. An array dummy (e.g. assumed rank)
+                                // builds its descriptor from the actual.
+                                if (!using_deep_copy && !orig_arg->m_value_attr &&
+                                        !ASRUtils::is_array(orig_arg->m_type) &&
+                                        !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                                        LLVM::is_llvm_pointer(*arg->m_type) &&
+                                        !ASR::is_a<ASR::FunctionType_t>(
+                                            *ASRUtils::type_get_past_pointer(arg->m_type)) &&
+                                        !ASRUtils::is_character(*arg->m_type) &&
+                                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type)) &&
+                                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                                    tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                                        x.m_args[i].m_value, arg->m_type, module.get()), tmp);
+                                }
                                 if (orig_arg->m_abi == ASR::abiType::BindC && orig_arg->m_value_attr) {
                                     ASR::ttype_t* arg_type = arg->m_type;
                                     llvm::Type* arg_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
@@ -22765,20 +22925,16 @@ public:
                     uint32_t h = get_hash((ASR::asr_t*)fn);
                     if (ASRUtils::get_FunctionType(fn)->m_deftype == ASR::deftypeType::Implementation) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                        tmp = llvm_symtab_fn[h];
                     } else if (llvm_symtab_fn_arg.find(h) == llvm_symtab_fn_arg.end() &&
                                 ASR::is_a<ASR::Function_t>(*var_sym) &&
                                 ASRUtils::is_declaration_deftype(
                                     ASRUtils::get_FunctionType(fn)->m_deftype) ) {
                         LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
-                        tmp = llvm_symtab_fn[h];
-                        LCOMPILERS_ASSERT(tmp != nullptr)
                     } else {
                         // Must be an argument/chained procedure pass
                         LCOMPILERS_ASSERT(llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end());
-                        tmp = llvm_symtab_fn_arg[h];
-                        LCOMPILERS_ASSERT(tmp != nullptr)
                     }
+                    tmp = get_procedure_value(fn);
 #if LLVM_VERSION_MAJOR < 15
                     // Bitcast function pointer if LLVM types don't match.
                     // Handles implicit interfaces and typed-pointer LLVM
@@ -23551,6 +23707,11 @@ public:
             // descriptor format.  Detect by looking for a Source/
             // Implementation function with the same name in the
             // global scope.
+            // A call through a procedure variable has no LLVM function of
+            // its own: the variable's interface gives the parameter types,
+            // and the procedure named in the call is its original name.
+            bool call_through_variable = ASR::is_a<ASR::Variable_t>(
+                *ASRUtils::symbol_get_past_external(x.m_name));
             bool is_implicit_interface = false;
             if (callee_fn_type &&
                 callee_fn_type->m_abi == ASR::abiType::BindC &&
@@ -23558,11 +23719,15 @@ public:
                 !callee_fn_type->m_bindc_name) {
                 ASR::Function_t* called_fn =
                     ASR::down_cast<ASR::Function_t>(func_subrout);
+                std::string called_name = called_fn->m_name;
+                if (call_through_variable && x.m_original_name) {
+                    called_name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(x.m_original_name));
+                }
                 SymbolTable* scope = called_fn->m_symtab->parent;
                 while (scope && scope->parent) scope = scope->parent;
                 if (scope) {
-                    ASR::symbol_t* impl = scope->get_symbol(
-                        called_fn->m_name);
+                    ASR::symbol_t* impl = scope->get_symbol(called_name);
                     if (impl && impl != (ASR::symbol_t*)called_fn &&
                         ASR::is_a<ASR::Function_t>(*impl)) {
                         ASR::FunctionType_t* impl_ft =
@@ -23759,13 +23924,10 @@ public:
                     // Bitcast descriptor pointer to match the formal parameter's
                     // descriptor type when element types differ (e.g., actual
                     // integer(c_int) passed to type(*) formal parameter).
-                    const char* fn_name = callee_fn_type->m_bindc_name;
-                    if (!fn_name) {
-                        fn_name = ASRUtils::symbol_name(func_subrout);
-                    }
-                    llvm::Function* fn = module->getFunction(fn_name);
-                    if (fn) {
-                        llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
+                    llvm::FunctionType* fn_type = get_callee_llvm_function_type(
+                        callee_fn_type, func_subrout, call_through_variable);
+                    if (fn_type && i < fn_type->getNumParams()) {
+                        llvm::Type* expected_type = fn_type->getParamType(i);
                         if (tmp->getType() != expected_type) {
                             tmp = builder->CreateBitCast(tmp, expected_type);
                         }
@@ -23847,13 +24009,10 @@ public:
             // CFI descriptor (%array*) to a function declared with i8**
             // parameter type.
             if (x_abi == ASR::abiType::BindC && callee_fn_type) {
-                const char* fn_name = callee_fn_type->m_bindc_name;
-                if (!fn_name) {
-                    fn_name = ASRUtils::symbol_name(func_subrout);
-                }
-                llvm::Function* fn = module->getFunction(fn_name);
-                if (fn && i < fn->getFunctionType()->getNumParams()) {
-                    llvm::Type* expected_type = fn->getFunctionType()->getParamType(i);
+                llvm::FunctionType* fn_type = get_callee_llvm_function_type(
+                    callee_fn_type, func_subrout, call_through_variable);
+                if (fn_type && i < fn_type->getNumParams()) {
+                    llvm::Type* expected_type = fn_type->getParamType(i);
                     if (tmp->getType() != expected_type) {
                         if (!tmp->getType()->isPointerTy() && expected_type->isPointerTy()) {
                             // Non-pointer value (e.g. loaded struct) needs to become

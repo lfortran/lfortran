@@ -82,29 +82,32 @@ bool gpu_function_result_allocation_is_supported(const ASR::Function_t &fn);
 // the parent chain has to be walked as well. `visited` guards against
 // self-referential types such as `type(node), pointer :: next`, whose
 // member graph is cyclic.
+//
+// A type turned down is turned down for one member's scalar type, found at
+// any depth, and `unsupported_type` (which the caller starts at nullptr) is
+// set to it. When some member is a real wider than any the device has, that
+// member is the one reported: the type the decline is classified on has to
+// be the one with no device equivalent, not whichever member came first.
 bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         std::set<ASR::Struct_t*> &visited,
         const GpuDeviceCapabilities &caps, ASR::ttype_t **unsupported_type = nullptr);
 
-// Answers whether the selected device can represent the type of `e` with
-// the same in-memory width the host uses. A device whose type set is
-// narrower than the host's -- no 64-bit floating point type, no 64-bit
-// boolean, no complex type -- lowers such data to a narrower (or bogus)
-// type. Offloading a `do concurrent` that touches it would make the kernel
-// reinterpret the host buffers and the by-value scalar-argument struct at
-// the wrong element size, silently producing wrong results, so such a loop
-// has to stay on the CPU.
+// The scalar type, of a width the shared width table permits, that the
+// selected device narrows in the type of `e`: its element type, or for a
+// derived type a member's at any depth (a real wider than any the device
+// has is preferred). A device with no 64-bit floating point type lowers
+// such data to a narrower type, and a kernel reading it would reinterpret
+// the host buffers and the by-value scalar-argument struct at the wrong
+// element size, silently producing wrong results. Returns nullptr when the
+// device narrows nothing in the type.
 //
-// The rule itself is the capability descriptor's, so that the decline this
-// raises and the class that decline is given cannot disagree about what the
-// device has a type for.
-bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type = nullptr);
-
-// The scalar element type behind `t`, for a decline that has to be
-// classified against what the device has a type for. A derived type has no
-// single element type -- the width that offends is one member's -- so it
-// answers with nothing, and the decline is classified on its reason alone.
+// Only width is asked here. What else a type needs of the device -- a
+// character or complex member, a kind no device has -- is asked by the
+// kernel-argument checks every device runs, and only of what the kernel is
+// actually handed: the component buffers of a derived type it reads, say,
+// not the members it never touches.
+ASR::ttype_t* gpu_device_narrowed_type(const GpuDeviceCapabilities &caps,
+        ASR::ttype_t *t, ASR::expr_t *e);
 
 // A variable declared inside the `do concurrent` body by a BLOCK or an
 // ASSOCIATE construct is carried into the generated kernel as a
@@ -209,9 +212,8 @@ class GpuLocalWidthChecker :
 public:
     bool unsupported = false;
     std::string bad_name;
-    // The element type that was turned down, when it is a scalar one. A
-    // derived type leaves this null: the width that offends is a member's,
-    // and the message names the local rather than a type.
+    // The scalar type that was turned down: the local's element type, or
+    // for a derived type the member's that offends.
     ASR::ttype_t *bad_type = nullptr;
     // What the selected device has a scalar type of.
     GpuDeviceCapabilities caps;
@@ -221,13 +223,13 @@ public:
         if (ASR::is_a<ASR::StructType_t>(*base)) {
             // A BLOCK-local is not a kernel argument, so the symbol
             // collector never hands this type to
-            // gpu_device_can_represent_type. Walk the members here: a
+            // the representability sweep. Walk the members here: a
             // real(8) or complex component is the same silent-wrong-width
             // hole the scalar path already closed.
             if (!var->m_type_declaration) return false;
             std::set<ASR::Struct_t*> visited;
             return gpu_struct_members_ok(var->m_type_declaration, visited,
-                caps);
+                caps, &offending);
         }
         offending = base;
         return caps.has_scalar_type(base);
@@ -341,8 +343,8 @@ public:
 // from an assumed-shape or deferred-shape dummy argument, or from a
 // local allocatable whose ALLOCATE bounds are themselves only known at
 // run time, would have to be a VLA inside the device function -- which
-// Metal cannot express. Detect that shape here so the loop can be
-// declined and run on the host instead. Elements sized from a local
+// Metal cannot express. Detect that shape here so the loop is reported
+// as an error instead. Elements sized from a local
 // allocatable with constant ALLOCATE bounds are fine: the Metal backend
 // resolves those extents from the ALLOCATE statement.
 class GpuDeviceFunctionArrayTempChecker :
@@ -480,6 +482,151 @@ public:
             visit_ArrayConstructor(x);
     }
 };
+
+// --- reductions -------------------------------------------------------
+//
+// A reduction is lowered as one accumulator per thread plus a fold on the
+// host. Both halves are written from the three functions below, so the
+// value a thread starts from, the way it accumulates and the way the host
+// folds the slots cannot describe different operators.
+
+// Whether this operator has a lowering here at all.
+inline bool gpu_reduction_op_supported(ASR::reduction_opType op) {
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceMul:
+        case ASR::reduction_opType::ReduceMIN:
+        case ASR::reduction_opType::ReduceMAX:
+        case ASR::reduction_opType::ReduceIAND:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return true;
+    }
+    return false;
+}
+
+// Whether the identity of `op` can be written down in `type`. The bitwise
+// operators are only defined on integers, and MIN and MAX need the
+// extreme value of the kind they run over.
+inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
+        ASR::ttype_t *type) {
+    ASR::ttype_t *t = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    bool is_int = ASR::is_a<ASR::Integer_t>(*t);
+    bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceMul:
+            return is_int || is_real;
+        case ASR::reduction_opType::ReduceMIN:
+        case ASR::reduction_opType::ReduceMAX:
+            return is_int || is_real;
+        case ASR::reduction_opType::ReduceIAND:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return is_int;
+    }
+    return false;
+}
+
+// Whether the host folds two accumulators by comparing them rather than by
+// combining them with an operator. MIN and MAX are the two that do.
+inline bool gpu_reduction_folds_by_compare(ASR::reduction_opType op) {
+    return op == ASR::reduction_opType::ReduceMIN
+        || op == ASR::reduction_opType::ReduceMAX;
+}
+
+// The operator the host folds two accumulators with.
+inline ASR::binopType gpu_reduction_fold_binop(ASR::reduction_opType op) {
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+            // Each thread accumulated its own run of subtractions, so the
+            // runs are added: (a-x)+(b-y) is what (a+b)-(x+y) means here.
+            return ASR::binopType::Add;
+        case ASR::reduction_opType::ReduceMul:
+            return ASR::binopType::Mul;
+        case ASR::reduction_opType::ReduceIAND:
+            return ASR::binopType::BitAnd;
+        case ASR::reduction_opType::ReduceIOR:
+            return ASR::binopType::BitOr;
+        case ASR::reduction_opType::ReduceIEOR:
+            return ASR::binopType::BitXor;
+        default:
+            break;
+    }
+    LCOMPILERS_ASSERT(false);
+    return ASR::binopType::Add;
+}
+
+// The value a thread's accumulator starts from: the one that leaves the
+// result unchanged when folded in, so a thread whose body never reached
+// the accumulator contributes nothing.
+inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
+        const Location &loc, ASR::reduction_opType op, ASR::ttype_t *type) {
+    ASR::ttype_t *t = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(type));
+    const bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    const int kind = ASRUtils::extract_kind_from_ttype_t(t);
+    auto whole = [&](int64_t v) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t),
+            ASR::integerbozType::Decimal));
+    };
+    auto fraction = [&](double v) {
+        return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t)));
+    };
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+        case ASR::reduction_opType::ReduceIOR:
+        case ASR::reduction_opType::ReduceIEOR:
+            return is_real ? fraction(0.0) : whole(0);
+        case ASR::reduction_opType::ReduceMul:
+            return is_real ? fraction(1.0) : whole(1);
+        case ASR::reduction_opType::ReduceIAND:
+            // Every bit set, so folding with AND keeps what it is folded
+            // into.
+            return whole(-1);
+        case ASR::reduction_opType::ReduceMIN:
+            if (is_real) {
+                return fraction(kind == 8 ? 1.7976931348623157e308
+                                          : 3.40282347e38);
+            }
+            return whole(kind == 8 ? INT64_MAX : INT32_MAX);
+        case ASR::reduction_opType::ReduceMAX:
+            if (is_real) {
+                return fraction(kind == 8 ? -1.7976931348623157e308
+                                          : -3.40282347e38);
+            }
+            return whole(kind == 8 ? INT64_MIN : INT32_MIN);
+    }
+    LCOMPILERS_ASSERT(false);
+    return nullptr;
+}
+
+// `buffer(slot)`: the accumulator this thread owns. Built in one place so
+// the slot the kernel initialises and the slot it accumulates into are
+// spelled the same way.
+inline ASR::expr_t* gpu_reduction_slot(Allocator &al, const Location &loc,
+        ASR::symbol_t *buffer, ASR::expr_t *slot_index,
+        ASR::ttype_t *scalar_type) {
+    Vec<ASR::array_index_t> args;
+    args.reserve(al, 1);
+    ASR::array_index_t index;
+    index.loc = loc;
+    index.m_left = nullptr;
+    index.m_right = slot_index;
+    index.m_step = nullptr;
+    args.push_back(al, index);
+    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)),
+        args.p, args.n, ASRUtils::duplicate_type(al, scalar_type),
+        ASR::arraystorageType::ColMajor, nullptr));
+}
 
 } // namespace LCompilers
 

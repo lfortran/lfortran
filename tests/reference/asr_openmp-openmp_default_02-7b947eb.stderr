@@ -1,0 +1,5 @@
+semantic error: the default(firstprivate) clause is not supported yet
+ --> tests/errors/openmp_default_02.f90:4:1
+  |
+4 | !$omp parallel do default(firstprivate) shared(a)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

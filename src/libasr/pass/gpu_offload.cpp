@@ -16,10 +16,9 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
-#include <libasr/pass/gpu_offload_undo.h>
 #include <libasr/pass/gpu_offload_visitor.h>
-#include <libasr/pass/parallel_dispatch.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_gpu_offload.h>
 
@@ -30,18 +29,14 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
-// A GPU backend was asked for, so a loop left on the host is a failure to
-// deliver what was asked for: report it as an error and let the user opt
-// into host execution with --gpu-allow-cpu-fallback. Every declining loop
-// in the unit is reported before the compilation is stopped, so one run
-// lists all of the gaps rather than only the first.
+// The loop was assigned to the device by the unsupported-construct check,
+// so a decline here is a lowering this pass is missing and is reported as
+// an error (see report_gpu_decline). Every loop of the round that finds
+// one is reported before the compilation is stopped, so one run lists the
+// gaps rather than only the first.
 void GpuOffloadVisitor::report_not_offloaded(const Location &where,
         const GpuDecline &decline) {
-    if (pass_options.diagnostics == nullptr) return;
-    if (region_being_decided != nullptr &&
-            !reported_regions.insert(region_being_decided).second) {
-        return;
-    }
+    declined = true;
     report_gpu_decline(pass_options, where, decline);
 }
 
@@ -94,7 +89,6 @@ void GpuOffloadVisitor::decline(const ASR::OMPRegion_t &x) {
 }
 
 void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
-    DecisionScope decision(*this, &region);
     ParallelLoopNest nest;
     if (!offloadable_loop_nest(region, nest)) return;
 
@@ -102,26 +96,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     size_t n_dims = nest.n_heads();
 
     // Everything below rewrites the loop as it goes -- inlining an
-    // intrinsic, splicing a callee, gathering an argument -- and
-    // several of those rewrites change a statement in place. A rewrite
-    // must not reach the loop the host would run, because the offload
-    // can still be declined further down. So the region's loop nest is
-    // copied and it is the copy that is rewritten, the original
-    // standing until the launch replaces it.
-    //
-    // A BLOCK or ASSOCIATE in the nest is copied with it. The kernel
-    // takes that copy and the host keeps its own, so a rewrite on the
-    // way to a kernel cannot reach the host, and a decline has
-    // nothing to put back.
+    // intrinsic, splicing a callee, gathering an argument -- and several
+    // of those rewrites change a statement, an expression or a BLOCK local
+    // in place. The kernel is built from its own copy of the nest, BLOCKs
+    // and ASSOCIATEs included, so that no rewrite reaches a node the loop
+    // shares with the rest of the program.
     ParallelLoopNest work;
     kernel_blocks.clear();
-    // From here on the pass is drafting a kernel: it copies the blocks of
-    // the nest into this scope and takes a kernel number. Every exit
-    // below that leaves the loop on the host drops both, whichever exit
-    // it is; the draft is handed to the kernel by committing the guard
-    // once the launch is known to be supported.
-    GpuKernelDraftGuard draft_guard(current_scope, kernel_blocks,
-        gpu_kernel_counter);
     {
         ASRUtils::ExprStmtDuplicator dup(al);
         dup.allow_procedure_calls = true;
@@ -130,8 +111,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         if (loop_copy == nullptr ||
                 !parallel_loop_nest_of(loop_copy,
                     parallel_collapse_count(region), work)) {
-            // Nothing here can be rewritten safely.
-            decline(region);
+            report_not_offloaded(loc,
+                GpuDecline(GpuDeclineReason::LoopNestNotCopyable));
             return;
         }
     }
@@ -173,20 +154,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // component -- `x%c_(k)` -- is copied to a temporary of this
     // scope before the launch, and the loop body reads the temporary.
     // This runs ahead of the checks below on purpose: they must judge
-    // the shape the kernel would really be built from. The guard puts
-    // the loop back untouched if any of them declines.
+    // the shape the kernel would really be built from.
     Vec<ASR::stmt_t*> gather_stmts;
     gather_stmts.reserve(al, 1);
     Vec<ASR::stmt_t*> scatter_stmts;
     scatter_stmts.reserve(al, 1);
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> gather_undo;
-    std::vector<std::string> gather_temp_names;
-    GpuGatherGuard gather_guard(current_scope, gather_undo,
-        gather_temp_names);
     // The gather is a copy the host makes before it launches, so this
     // holds for every dialect.
     if (!hoist_struct_element_gathers(work, gather_stmts,
-            scatter_stmts, gather_undo, gather_temp_names)) {
+            scatter_stmts)) {
         // The element could not be hoisted -- a subscript that moves
         // with the loop, or a write to the object that the copy back
         // after the launch could not reproduce exactly. Passing
@@ -198,14 +174,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return;
     }
 
-    // Decide whether this loop can be offloaded at all *before* any of
-    // the inline_* helpers below rewrite the loop body. Those helpers
-    // are destructive: they lower array-section and intrinsic-array
-    // assignments into explicit element loops, a half-lowered shape
-    // that only the kernel extractor understands. If we declined the
-    // offload after rewriting, the loop would stay on the host in a
-    // form the later array_op pass no longer normalizes, and codegen
-    // would fail. So: no mutation until the decision is made.
+    // What can be asked of the loop as it was written is asked before the
+    // inline_* helpers below rewrite the body, so that an error names what
+    // the source wrote rather than the shape a rewrite left.
     if (!offloadable_before_rewrites(work, enclosing_block_scopes, loc)) {
         return;
     }
@@ -213,16 +184,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Splice the planned device functions into the loop body. This
     // must come first among the rewrites below: the intrinsic and
     // array-section inliners then see the spliced-in statements too.
-    // The splice is recorded so that it can be undone: the workspace
-    // pre-flight right below needs the spliced shape, but must still
-    // be able to leave the loop untouched when it declines.
-    GpuLoopBodySnapshot splice_snapshot;
-    std::vector<ScopeArrayDims> scope_dims_undo;
-    std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>>
-        member_extent_undo;
-    GpuSpliceRestoreGuard splice_guard(splice_snapshot, scope_dims_undo);
     {
-        splice_snapshot.record(work, current_scope);
         if (!inline_device_function_calls(work.body, work.n_body)) {
             functions_to_inline.clear();
             report_not_offloaded(loc,
@@ -232,10 +194,24 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         functions_to_inline.clear();
         // Run-time sized alias temporaries become BLOCK locals here,
         // ahead of the workspace pre-flight below, so that the
-        // pre-flight sizes them too and can still decline the loop.
+        // pre-flight sizes them too.
         materialize_runtime_alias_blocks(work);
-        size_scope_array_temporaries(work.body, work.n_body,
-            scope_dims_undo);
+        size_scope_array_temporaries(work.body, work.n_body);
+    }
+
+    // A spliced callee can bring a section into a place no gather can
+    // serve, such as its own do while condition, which the check before
+    // the rewrites did not see.
+    {
+        Location where = loc;
+        std::string name;
+        GpuSectionPlace place;
+        if (body_has_unplaceable_section(work.body, work.n_body, where,
+                name, place)) {
+            report_not_offloaded(where, GpuDecline(
+                GpuDeclineReason::SectionCopyNotPlaceable, name, place));
+            return;
+        }
     }
 
     // Splicing a callee is what can leave a section of a section in the
@@ -387,9 +363,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::ttype_t *int4_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
         std::vector<std::string> liveout_names;
+        std::set<std::string> reduction_names;
+        for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
         for (auto &name : assigned_vars) {
             if (loop_var_set.count(name)) continue;
             if (local_scalar_names.count(name)) continue;
+            // A reduction accumulator is written by every thread. One
+            // shared slot would be a race, so it gets a slot per thread
+            // below instead of the single liveout buffer.
+            if (reduction_names.count(name)) continue;
             auto it = involved_syms.find(name);
             if (it != involved_syms.end()) {
                 ASR::ttype_t *type = it->second.first;
@@ -429,6 +411,38 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
             liveout_scalars.push_back(
                 {name, buf_name, buf_sym, orig_sym, scalar_type});
+        }
+
+        // One accumulator per iteration. The extent is only known when the
+        // launch has worked out how many threads it is dispatching, so the
+        // host array is deferred-shape and the launch allocates it.
+        for (auto &r : pending_reductions) {
+            auto it = involved_syms.find(r.orig_name);
+            if (it == involved_syms.end()) continue;
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            Vec<ASR::dimension_t> dims_vec;
+            dims_vec.reserve(al, 1);
+            dims_vec.push_back(al, dim);
+            ASR::ttype_t *arr_type = ASRUtils::TYPE(
+                ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, r.scalar_type),
+                    dims_vec.p, 1,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global));
+            ASR::ttype_t *alloc_type = ASRUtils::TYPE(
+                ASR::make_Allocatable_t(al, loc, arr_type));
+            r.buf_name = current_scope->get_unique_name(
+                "__gpu_red_" + r.orig_name);
+            r.host_buf_sym = gpu_new_variable(al, loc, current_scope,
+                r.buf_name, ASRUtils::duplicate_type(al, alloc_type));
+            // The kernel takes the accumulators, not the scalar. The host
+            // side is allocatable because the launch sizes it; the kernel
+            // side is a plain array dummy, which is what an allocatable
+            // actual is passed to anywhere else.
+            it->second.first = arr_type;
         }
     }
 
@@ -508,6 +522,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         // For struct-typed variables, import the Struct into kernel scope
         ASR::symbol_t *type_decl = nullptr;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (orig_sym == nullptr && sym_info.second != nullptr
                 && ASR::is_a<ASR::Var_t>(*sym_info.second)) {
             // A name the loop body reads that the enclosing scope
@@ -586,6 +609,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (ls.orig_name == sym_name) {
                 carg.m_value = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, ls.host_buf_sym));
+                is_liveout = true;
+                break;
+            }
+        }
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                carg.m_value = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, r.host_buf_sym));
                 is_liveout = true;
                 break;
             }
@@ -778,6 +809,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASRUtils::type_get_past_allocatable_pointer(k_type));
 
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
 
@@ -852,6 +892,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 *ASRUtils::extract_type(inner_t)))
             continue;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
         ASR::Variable_t *orig_var =
             down_cast<ASR::Variable_t>(orig_sym);
@@ -962,6 +1011,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 *ASRUtils::extract_type(inner_t)))
             continue;
         ASR::symbol_t *orig_sym = orig_scope->resolve_symbol(sym_name);
+        // A reduction accumulator reaches the kernel as its per-thread
+        // buffer, so that is the actual whose shape is measured and
+        // passed; the scalar the source named has none.
+        for (auto &r : pending_reductions) {
+            if (r.host_buf_sym && r.orig_name == sym_name) {
+                orig_sym = r.host_buf_sym;
+                break;
+            }
+        }
         if (!orig_sym || !is_a<ASR::Variable_t>(*orig_sym)) continue;
         ASR::Variable_t *orig_var =
             down_cast<ASR::Variable_t>(orig_sym);
@@ -1925,6 +1983,41 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // The accumulator slot this thread owns. Created here because the
+    // substitution below has to run before the body is remapped into
+    // kernel scope: the name being replaced is still the host's scalar,
+    // and what replaces it already names the kernel's buffer, so the
+    // replacement contains nothing that would be replaced again.
+    ASR::expr_t *slot_index = nullptr;
+    if (!pending_reductions.empty()) {
+        ASR::ttype_t *slot_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 4));
+        gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
+            ASRUtils::duplicate_type(al, slot_type));
+        slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                kernel_scope->get_symbol("__gpu_slot"))),
+            ASR::binopType::Add,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                ASRUtils::duplicate_type(al, slot_type),
+                ASR::integerbozType::Decimal)),
+            ASRUtils::duplicate_type(al, slot_type), nullptr));
+        std::map<ASR::symbol_t*, ASR::expr_t*> slot_map;
+        for (auto &r : pending_reductions) {
+            if (!r.host_buf_sym) continue;
+            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            if (!param) continue;
+            slot_map[r.orig_scalar_sym] = gpu_reduction_slot(al, loc,
+                param, slot_index, r.scalar_type);
+        }
+        if (!slot_map.empty()) {
+            AssociateVarResolverVisitor slot_replacer(al, slot_map);
+            for (size_t i = 0; i < body_copy.n; i++) {
+                slot_replacer.visit_stmt(*body_copy.p[i]);
+            }
+        }
+    }
+
     // 3. Replace Var references in copied body to point to kernel scope
     GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
     for (size_t i = 0; i < body_copy.n; i++) {
@@ -2082,6 +2175,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // __flat_idx = flat_idx (the raw thread index)
     kernel_body.push_back(al, ASRUtils::STMT(
         ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false)));
+
+    // The loop indices below are recovered by dividing __flat_idx down,
+    // which destroys it, so the thread keeps its own number separately.
+    // Every slot starts at the identity, so a thread whose body never
+    // reaches the accumulator still leaves something the fold can use.
+    if (slot_index != nullptr) {
+        kernel_body.push_back(al, ASRUtils::STMT(
+            ASR::make_Assignment_t(al, loc,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    kernel_scope->get_symbol("__gpu_slot"))),
+                remain_var, nullptr, false, false)));
+        for (auto &r : pending_reductions) {
+            if (!r.host_buf_sym) continue;
+            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            if (!param) continue;
+            kernel_body.push_back(al, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc,
+                    gpu_reduction_slot(al, loc, param, slot_index,
+                        r.scalar_type),
+                    gpu_reduction_identity(al, loc, r.op, r.scalar_type),
+                    nullptr, false, false)));
+        }
+    }
 
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *dim_range = ASRUtils::EXPR(
@@ -2344,28 +2460,50 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
-        // Recursively process nested BlockCall statements
-        for (size_t j = 0; j < block->n_body; j++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*block->m_body[j])) {
+        // Recursively process nested BlockCall statements, including
+        // those inside a loop or an IF of the block.
+        std::function<void(ASR::stmt_t**, size_t)> process_nested =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+            for (size_t j = 0; j < n_stmts; j++) {
+                ASR::stmt_t *s = stmts[j];
+                if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                    ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(s);
+                    process_nested(dl->m_body, dl->n_body);
+                } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                    ASR::DoConcurrentLoop_t *dc =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                    process_nested(dc->m_body, dc->n_body);
+                } else if (ASR::is_a<ASR::If_t>(*s)) {
+                    ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(s);
+                    process_nested(ifs->m_body, ifs->n_body);
+                    process_nested(ifs->m_orelse, ifs->n_orelse);
+                } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                    ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(s);
+                    process_nested(wl->m_body, wl->n_body);
+                } else if (ASR::is_a<ASR::Select_t>(*s)) {
+                    gpu_for_each_case_body(ASR::down_cast<ASR::Select_t>(s),
+                        process_nested);
+                }
+                if (!ASR::is_a<ASR::BlockCall_t>(*s)) continue;
                 ASR::BlockCall_t *inner_bc =
-                    ASR::down_cast<ASR::BlockCall_t>(block->m_body[j]);
-                if (ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) {
-                    ASR::Block_t *inner =
-                        ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
-                    std::string inner_name = inner->m_name;
-                    bool host_owned = orig_scope->get_symbol(inner_name)
-                        == inner_bc->m_m;
-                    process_block_for_kernel(inner, host_owned);
-                    if (host_owned) {
-                        orig_scope->erase_symbol(inner_name);
-                        if (!kernel_scope->get_symbol(inner_name)) {
-                            kernel_scope->add_symbol(inner_name,
-                                inner_bc->m_m);
-                        }
+                    ASR::down_cast<ASR::BlockCall_t>(s);
+                if (!ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) continue;
+                ASR::Block_t *inner =
+                    ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
+                std::string inner_name = inner->m_name;
+                bool host_owned = orig_scope->get_symbol(inner_name)
+                    == inner_bc->m_m;
+                process_block_for_kernel(inner, host_owned);
+                if (host_owned) {
+                    orig_scope->erase_symbol(inner_name);
+                    if (!kernel_scope->get_symbol(inner_name)) {
+                        kernel_scope->add_symbol(inner_name,
+                            inner_bc->m_m);
                     }
                 }
             }
-        }
+        };
+        process_nested(block->m_body, block->n_body);
         // Remap type expressions of block-local variables
         // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
         GpuReplaceSymbols block_type_replacer(*kernel_scope);
@@ -2432,6 +2570,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::DoLoop_t *dl =
                     ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
                 move_blocks_to_kernel(dl->m_body, dl->n_body);
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+                ASR::DoConcurrentLoop_t *dc =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+                move_blocks_to_kernel(dc->m_body, dc->n_body);
             } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
                 ASR::If_t *ifs =
                     ASR::down_cast<ASR::If_t>(stmts[i]);
@@ -2441,6 +2583,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::WhileLoop_t *wl =
                     ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
                 move_blocks_to_kernel(wl->m_body, wl->n_body);
+            } else if (ASR::is_a<ASR::Select_t>(*stmts[i])) {
+                gpu_for_each_case_body(
+                    ASR::down_cast<ASR::Select_t>(stmts[i]),
+                    move_blocks_to_kernel);
             }
         }
     };
@@ -2459,7 +2605,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         for (size_t i = 0; i < body_copy.n; i++) {
             mev.visit_stmt(*body_copy.p[i]);
         }
-        member_extent_undo = mev.replacer.undo;
         for (auto &pair : member_extent_args) {
             kernel_args.push_back(al,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, pair.first)));
@@ -2516,11 +2661,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
 
-    // This commits the draft, not the offload decision. GpuOffload retains
-    // the host alternative until the lowered kernel has a verified layout.
-    draft_guard.commit();
-    splice_guard.commit();
-
     GpuLaunchPlan plan;
     plan.kernel_func = kernel_func;
     plan.kernel_name = kernel_name;
@@ -2531,29 +2671,62 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.gather_stmts = gather_stmts;
     plan.scatter_stmts = scatter_stmts;
     plan.liveout_scalars = liveout_scalars;
+    plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
-    plan.gather_guard = &gather_guard;
     build_kernel_launch(region, work, loc, plan);
 }
 
-// A loop the offload pass turned down is still a parallel loop, so it goes
-// back to whoever else can run it rather than to a single thread by default.
-class DeclinedLoopVisitor : public ASR::BaseWalkVisitor<DeclinedLoopVisitor>
-{
+// Every loop assigned to the device is either offloaded or an error, so a
+// loop still assigned to it once the pass is done is one the pass missed. It
+// is reported rather than left to the passes below, which would run it on
+// the CPU.
+class UnloweredDeviceLoopReporter :
+        public ASR::BaseWalkVisitor<UnloweredDeviceLoopReporter> {
 public:
     const PassOptions &pass_options;
 
-    DeclinedLoopVisitor(const PassOptions &pass_options_) :
-        pass_options(pass_options_) {
+    explicit UnloweredDeviceLoopReporter(const PassOptions &pass_options_) :
+        pass_options(pass_options_) {}
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (x.m_exec_target == ASR::exec_targetType::ExecDevice) {
+            report_gpu_decline(pass_options, x.base.base.loc,
+                GpuDecline(GpuDeclineReason::LoopNotLowered));
+            return;
+        }
+        ASR::BaseWalkVisitor<UnloweredDeviceLoopReporter>::visit_OMPRegion(x);
     }
+};
+
+// A parallel loop inside a kernel is run serially by the thread that runs
+// the kernel, so once no more kernels are being built it is written as the
+// loop it is. Every analysis of device code below -- the memory space of a
+// local array, the workspaces the host sizes, the kernel source itself --
+// walks loops, and a loop still wrapped in a region would hide what it
+// allocates from all of them.
+class KernelSerialRegionFlattener :
+        public ASR::StatementWalkVisitor<KernelSerialRegionFlattener> {
+public:
+    explicit KernelSerialRegionFlattener(Allocator &al) :
+        StatementWalkVisitor(al) {}
 
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
         ASR::OMPRegion_t &xx = const_cast<ASR::OMPRegion_t&>(x);
-        if (xx.m_exec_target == ASR::exec_targetType::ExecDevice) {
-            xx.m_exec_target = host_exec_target(pass_options);
+        transform_stmts(xx.m_body, xx.n_body);
+        if (xx.m_exec_target != ASR::exec_targetType::ExecSerial) return;
+        remove_original_stmt = true;
+        pass_result.reserve(al, xx.n_body);
+        for (size_t i = 0; i < xx.n_body; i++) {
+            pass_result.push_back(al, xx.m_body[i]);
         }
-        ASR::BaseWalkVisitor<DeclinedLoopVisitor>::visit_OMPRegion(x);
+    }
+
+    void flatten(ASR::TranslationUnit_t &unit) {
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(item.second)) continue;
+            visit_Function(*ASR::down_cast<ASR::Function_t>(item.second));
+        }
     }
 };
 
@@ -2566,9 +2739,17 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
         v.asr_changed = false;
         v.mark_regions_device_code_runs();
         v.visit_TranslationUnit(unit);
+        // A loop this pass cannot lower is an error, and the compilation
+        // stops after the pass. What was drafted for that loop is not
+        // taken back, so another round could walk into it.
+        if (v.declined) return;
     }
-    DeclinedLoopVisitor d(pass_options);
-    d.visit_TranslationUnit(unit);
+    // The last round built no kernel, so every region a kernel holds was
+    // marked serial at the start of it.
+    KernelSerialRegionFlattener kernels(al);
+    kernels.flatten(unit);
+    UnloweredDeviceLoopReporter unlowered(pass_options);
+    unlowered.visit_TranslationUnit(unit);
     // Kernel extraction moves Block symbols out of their enclosing
     // function, which can leave stale entries in that function's
     // dependency list. Recompute all dependencies to fix this.

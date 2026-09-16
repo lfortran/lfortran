@@ -34,59 +34,11 @@
                             lsame:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        3
                                         {
-                                            lsame_arg_0:
-                                                (Variable
-                                                    4
-                                                    lsame_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            lsame_arg_1:
-                                                (Variable
-                                                    4
-                                                    lsame_arg_1
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
                                             lsame_return_var_name:
                                                 (Variable
-                                                    4
+                                                    3
                                                     lsame_return_var_name
                                                     []
                                                     ReturnVar
@@ -111,6 +63,109 @@
                                         })
                                     lsame
                                     (FunctionType
+                                        []
+                                        (Logical 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 lsame_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lsame~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            lsame~arg_0:
+                                                (Variable
+                                                    4
+                                                    lsame~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            lsame~arg_1:
+                                                (Variable
+                                                    4
+                                                    lsame~arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            lsame~result:
+                                                (Variable
+                                                    4
+                                                    lsame~result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    lsame~fpcast
+                                    (FunctionType
                                         [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
                                         (Logical 4)
@@ -127,14 +182,55 @@
                                         Host
                                     )
                                     []
-                                    [(Var 4 lsame_arg_0)
-                                    (Var 4 lsame_arg_1)]
+                                    [(Var 4 lsame~arg_0)
+                                    (Var 4 lsame~arg_1)]
                                     []
-                                    (Var 4 lsame_return_var_name)
+                                    (Var 4 lsame~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            lsame~fpcast_ptr:
+                                (Variable
+                                    2
+                                    lsame~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            (Logical 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 lsame~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             uplo:
                                 (Variable
@@ -186,12 +282,60 @@
                         .false.
                         .false.
                     )
+                    (Associate
+                        (Var 2 lsame~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 lsame)
+                            2 lsame~fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                (Logical 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Associate
+                        (Var 2 lsame~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 lsame)
+                            2 lsame~fpcast
+                            (FunctionType
+                                [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                (Logical 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
                     (If
                         ()
                         (LogicalBinOp
                             (LogicalNot
                                 (FunctionCall
-                                    2 lsame
+                                    2 lsame~fpcast_ptr
                                     ()
                                     [((Var 2 uplo))
                                     ((StringConstant
@@ -208,7 +352,7 @@
                             And
                             (LogicalNot
                                 (FunctionCall
-                                    2 lsame
+                                    2 lsame~fpcast_ptr
                                     ()
                                     [((Var 2 uplo))
                                     ((StringConstant

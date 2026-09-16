@@ -436,9 +436,25 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
         // Already on the walk stack; its members are checked there.
         return true;
     }
+    // The walk does not stop at the first member turned down while a later
+    // one may be a real wider than any the device has: that member is the
+    // one no lowering could ever put on the device, so it is the one to
+    // report, whatever member -- a character component, say -- came first.
+    auto settled = [&]() {
+        return unsupported_type == nullptr
+            || caps.lacks_real_width(*unsupported_type);
+    };
+    auto record = [&](ASR::ttype_t *t) {
+        if (unsupported_type == nullptr) return;
+        if (*unsupported_type == nullptr || caps.lacks_real_width(t)) {
+            *unsupported_type = t;
+        }
+    };
+    bool ok = true;
     if (st->m_parent
             && !gpu_struct_members_ok(st->m_parent, visited, caps, unsupported_type)) {
-        return false;
+        ok = false;
+        if (settled()) return false;
     }
     for (size_t i = 0; i < st->n_members; i++) {
         ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
@@ -451,28 +467,66 @@ bool gpu_struct_members_ok(ASR::symbol_t *struct_sym,
             if (!mvar->m_type_declaration
                     || !gpu_struct_members_ok(
                         mvar->m_type_declaration, visited, caps, unsupported_type)) {
-                return false;
+                ok = false;
             }
         } else if (!caps.has_scalar_type(mtype)) {
-            if (unsupported_type) *unsupported_type = mtype;
-            return false;
+            record(mtype);
+            ok = false;
         }
+        if (!ok && settled()) return false;
     }
-    return true;
+    return ok;
 }
 
-bool gpu_device_can_represent_type(const GpuDeviceCapabilities &caps,
-        ASR::ttype_t *t, ASR::expr_t *e, ASR::ttype_t **unsupported_type) {
+// Records in `narrowed` a member type the device narrows, preferring a real
+// wider than any the device has: that is the width no lowering could put on
+// the device, so it is the one the decline is classified on.
+static void gpu_struct_narrowed_member(ASR::symbol_t *struct_sym,
+        std::set<ASR::Struct_t*> &visited,
+        const GpuDeviceCapabilities &caps, ASR::ttype_t *&narrowed) {
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(struct_sym);
+    // A type that cannot be inspected is the shared checks' to turn down.
+    if (!s || !ASR::is_a<ASR::Struct_t>(*s)) return;
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+    if (!visited.insert(st).second) return;
+    auto settled = [&]() {
+        return narrowed != nullptr && caps.lacks_real_width(narrowed);
+    };
+    if (st->m_parent) {
+        gpu_struct_narrowed_member(st->m_parent, visited, caps, narrowed);
+    }
+    for (size_t i = 0; !settled() && i < st->n_members; i++) {
+        ASR::symbol_t *msym = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!msym) continue;
+        msym = ASRUtils::symbol_get_past_external(msym);
+        if (!ASR::is_a<ASR::Variable_t>(*msym)) continue;
+        ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(msym);
+        ASR::ttype_t *mtype = ASRUtils::extract_type(mvar->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*mtype)) {
+            if (mvar->m_type_declaration) {
+                gpu_struct_narrowed_member(mvar->m_type_declaration,
+                    visited, caps, narrowed);
+            }
+        } else if (caps.narrows_scalar_type(mtype)
+                && (narrowed == nullptr || caps.lacks_real_width(mtype))) {
+            narrowed = mtype;
+        }
+    }
+}
+
+ASR::ttype_t* gpu_device_narrowed_type(const GpuDeviceCapabilities &caps,
+        ASR::ttype_t *t, ASR::expr_t *e) {
     ASR::ttype_t *base_t = ASRUtils::extract_type(t);
     if (ASR::is_a<ASR::StructType_t>(*base_t)) {
-        if (!e) return false;
+        if (!e) return nullptr;
         std::set<ASR::Struct_t*> visited;
-        return gpu_struct_members_ok(
+        ASR::ttype_t *narrowed = nullptr;
+        gpu_struct_narrowed_member(
             ASRUtils::get_struct_sym_from_struct_expr(e), visited, caps,
-            unsupported_type);
+            narrowed);
+        return narrowed;
     }
-    if (unsupported_type && !caps.has_scalar_type(base_t)) *unsupported_type = base_t;
-    return caps.has_scalar_type(base_t);
+    return caps.narrows_scalar_type(base_t) ? base_t : nullptr;
 }
 
 GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,

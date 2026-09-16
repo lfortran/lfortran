@@ -2642,16 +2642,6 @@ public:
             "every generated GPU parameter must belong to a workspace dimension");
     }
 
-    void visit_GpuOffload(const GpuOffload_t &x) {
-        require_id(ASRUtils::is_device_kernel(x.m_kernel),
-            "asr.verify.gpu_offload.kernel",
-            "a GPU offload candidate must name a kernel");
-        require_id(x.n_body > 0 && x.n_fallback > 0,
-            "asr.verify.gpu_offload.alternatives",
-            "a GPU offload candidate must retain both execution alternatives");
-        BaseWalkVisitor<VerifyVisitor>::visit_GpuOffload(x);
-    }
-
     void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
         require_id(ASRUtils::is_device_kernel(x.m_kernel),
             "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
@@ -2789,6 +2779,58 @@ public:
         if( x.m_return_var_type ) {
             verify_nonscoped_ttype(x.m_return_var_type);
         }
+        require_id(x.m_deftype != ASR::deftypeType::ImplicitInterface ||
+                x.n_arg_types == 0,
+            "asr.verify.function_type.implicit_interface_has_no_arg_types",
+            "a procedure type with an implicit interface must not list "
+            "argument types");
+    }
+
+    // A FunctionPointerCast views a procedure through another procedure type:
+    // either an interface symbol `to` whose signature is the cast's type, or,
+    // without `to`, the opaque procedure type.
+    void visit_FunctionPointerCast(const FunctionPointerCast_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_FunctionPointerCast(x);
+        require_id(ASR::is_a<ASR::FunctionType_t>(*x.m_type),
+            "asr.verify.function_pointer_cast.type_is_procedure",
+            "FunctionPointerCast type must be a procedure type");
+        // The argument's type can only be taken once ExternalSymbols are
+        // resolved: while a modfile is loaded the argument can be a
+        // use-associated procedure of a module that is not loaded yet.
+        if (check_external) {
+            require_id(as_procedure_type(ASRUtils::expr_type(x.m_arg)) != nullptr,
+                "asr.verify.function_pointer_cast.arg_is_procedure",
+                "FunctionPointerCast argument must be a procedure");
+        }
+        if (x.m_to == nullptr) {
+            require_id(ASRUtils::is_opaque_procedure_type(x.m_type),
+                "asr.verify.function_pointer_cast.no_interface_is_opaque",
+                "FunctionPointerCast without an interface must cast to the "
+                "opaque procedure type");
+            return;
+        }
+        require(symtab_in_scope(current_symtab, x.m_to),
+            "FunctionPointerCast::m_to '" + std::string(symbol_name(x.m_to)) +
+            "' cannot point outside of its symbol table");
+        if (!check_external) return;
+        ASR::symbol_t *to = ASRUtils::symbol_get_past_external(x.m_to);
+        require_id(ASR::is_a<ASR::Function_t>(*to),
+            "asr.verify.function_pointer_cast.interface_is_function",
+            "FunctionPointerCast interface must be a procedure");
+        if (!ASR::is_a<ASR::Function_t>(*to) ||
+                !ASR::is_a<ASR::FunctionType_t>(*x.m_type)) {
+            return;
+        }
+        ASR::Function_t *to_fn = ASR::down_cast<ASR::Function_t>(to);
+        require_id(!ASRUtils::is_bare_implicit_interface(*to_fn),
+            "asr.verify.function_pointer_cast.interface_is_explicit",
+            "FunctionPointerCast interface '" + std::string(to_fn->m_name) +
+            "' must be explicit");
+        require_id(ASR::down_cast<ASR::FunctionType_t>(x.m_type)->n_arg_types
+                == to_fn->n_args,
+            "asr.verify.function_pointer_cast.type_matches_interface",
+            "FunctionPointerCast type must have the arguments of interface '" +
+            std::string(to_fn->m_name) + "'");
     }
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
@@ -3223,82 +3265,222 @@ public:
     // therefore surfaces as a broken assignment inside that pass rather than
     // here, so it is checked up front. The pass also indexes the member list
     // positionally, so a count mismatch is a memory error waiting to happen.
-    void visit_StructConstructor(const StructConstructor_t &x) {
-        ASR::symbol_t *struct_sym = x.m_dt_sym == nullptr
-            ? nullptr : ASRUtils::symbol_get_past_external(x.m_dt_sym);
-        if (!diagnostics.has_error() && struct_sym != nullptr
-                && ASR::is_a<ASR::Struct_t>(*struct_sym)) {
-            std::vector<ASR::Struct_t*> chain;
-            std::set<ASR::Struct_t*> seen;
-            ASR::Struct_t *struct_type =
-                ASR::down_cast<ASR::Struct_t>(struct_sym);
-            while (struct_type != nullptr) {
-                require_id(seen.insert(struct_type).second,
-                    "asr.verify.struct_constructor.parent_chain_acyclic",
-                    "StructConstructor type '" +
-                        std::string(struct_type->m_name) +
-                        "' has a cyclic parent chain");
-                chain.push_back(struct_type);
-                if (struct_type->m_parent == nullptr) break;
-                ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
-                    struct_type->m_parent);
-                if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
-                    break;
-                }
-                struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+    //
+    // A StructConstant is lowered directly by the backends, which read each
+    // argument as a value of its member, so its arguments must also have
+    // the member's rank and shape. A StructConstructor's arguments are
+    // assigned, so a scalar argument may still fill an array member.
+    void verify_struct_constructor_arguments(const char *node,
+            const std::string &id, ASR::symbol_t *dt_sym,
+            const ASR::call_arg_t *args, size_t n_args, bool is_constant,
+            const Location &loc) {
+        ASR::symbol_t *struct_sym = dt_sym == nullptr
+            ? nullptr : ASRUtils::symbol_get_past_external(dt_sym);
+        if (diagnostics.has_error() || struct_sym == nullptr
+                || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return;
+        }
+        std::vector<ASR::Struct_t*> chain;
+        std::set<ASR::Struct_t*> seen;
+        ASR::Struct_t *struct_type =
+            ASR::down_cast<ASR::Struct_t>(struct_sym);
+        while (struct_type != nullptr) {
+            require_with_loc_id(seen.insert(struct_type).second,
+                id + ".parent_chain_acyclic",
+                std::string(node) + " type '" +
+                    std::string(struct_type->m_name) +
+                    "' has a cyclic parent chain", loc);
+            chain.push_back(struct_type);
+            if (struct_type->m_parent == nullptr) break;
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                struct_type->m_parent);
+            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                break;
             }
-            std::vector<ASR::symbol_t*> members;
-            for (auto it = chain.rbegin(); it != chain.rend(); it++) {
-                for (size_t i = 0; i < (*it)->n_members; i++) {
-                    members.push_back(
-                        (*it)->m_symtab->get_symbol((*it)->m_members[i]));
+            struct_type = ASR::down_cast<ASR::Struct_t>(parent);
+        }
+        std::vector<ASR::symbol_t*> members;
+        for (auto it = chain.rbegin(); it != chain.rend(); it++) {
+            for (size_t i = 0; i < (*it)->n_members; i++) {
+                members.push_back(
+                    (*it)->m_symtab->get_symbol((*it)->m_members[i]));
+            }
+        }
+        require_with_loc_id(members.size() == n_args,
+            id + ".argument_count",
+            std::string(node) + " has " + std::to_string(n_args) +
+                " arguments but the type has " +
+                std::to_string(members.size()) + " members", loc);
+        if (members.size() != n_args) {
+            return;
+        }
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::ttype_t *actual = typed_expr_type(args[i].m_value);
+            if (actual == nullptr || members[i] == nullptr
+                    || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                continue;
+            }
+            ASR::ttype_t *declared =
+                ASR::down_cast<ASR::Variable_t>(members[i])->m_type;
+            if (declared == nullptr) continue;
+            std::string member_name = ASRUtils::symbol_name(members[i]);
+            const Location &arg_loc = args[i].m_value->base.loc;
+            ASR::ttype_t *member_scalar =
+                ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(declared));
+            ASR::ttype_t *actual_scalar =
+                ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(actual));
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*args[i].m_value)) {
+                // A null() argument has the type of its member, so it is a
+                // derived type or procedure exactly when the member is.
+                require_with_loc_id(
+                    is_struct_like_type(member_scalar)
+                        == is_struct_like_type(actual_scalar)
+                    && is_procedure_type(member_scalar)
+                        == is_procedure_type(actual_scalar),
+                    id + ".null_argument_type_matches_member",
+                    "null() argument type does not match member '" +
+                        member_name + "'",
+                    arg_loc);
+                continue;
+            }
+            if (is_struct_like_type(member_scalar)
+                    || is_procedure_type(member_scalar)
+                    || is_struct_like_type(actual_scalar)
+                    || is_procedure_type(actual_scalar)) {
+                continue;
+            }
+            require_with_loc_id(
+                ASRUtils::check_equal_type(
+                    member_scalar, actual_scalar, nullptr, nullptr),
+                id + ".argument_type_matches_member",
+                std::string(node) + " argument type " +
+                    ASRUtils::get_type_code(actual_scalar) +
+                    " does not match member '" + member_name +
+                    "' of type " + ASRUtils::get_type_code(member_scalar),
+                arg_loc);
+            if (is_constant && ASR::is_a<ASR::String_t>(*member_scalar)
+                    && ASR::is_a<ASR::String_t>(*actual_scalar)) {
+                ASR::expr_t *member_len_expr =
+                    ASR::down_cast<ASR::String_t>(member_scalar)->m_len;
+                ASR::expr_t *actual_len_expr =
+                    ASR::down_cast<ASR::String_t>(actual_scalar)->m_len;
+                int64_t member_len = 0, actual_len = 0;
+                if (member_len_expr != nullptr && actual_len_expr != nullptr
+                        && ASRUtils::extract_value(
+                            ASRUtils::expr_value(member_len_expr), member_len)
+                        && ASRUtils::extract_value(
+                            ASRUtils::expr_value(actual_len_expr), actual_len)) {
+                    require_with_loc_id(member_len == actual_len,
+                        id + ".argument_length_matches_member",
+                        std::string(node) + " argument of length " +
+                            std::to_string(actual_len) +
+                            " does not match member '" + member_name +
+                            "' of length " + std::to_string(member_len),
+                        arg_loc);
                 }
             }
-            require_id(members.size() == x.n_args,
-                "asr.verify.struct_constructor.argument_count",
-                "StructConstructor has " + std::to_string(x.n_args) +
-                    " arguments but the type has " +
-                    std::to_string(members.size()) + " members");
-            if (members.size() == x.n_args) {
-                for (size_t i = 0; i < x.n_args; i++) {
-                    ASR::ttype_t *actual =
-                        typed_expr_type(x.m_args[i].m_value);
-                    if (actual == nullptr || members[i] == nullptr
-                            || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+            size_t member_rank = ASRUtils::extract_n_dims_from_ttype(declared);
+            size_t actual_rank = ASRUtils::extract_n_dims_from_ttype(actual);
+            require_with_loc_id(member_rank == actual_rank
+                    || (!is_constant && actual_rank == 0),
+                id + ".argument_rank_matches_member",
+                std::string(node) + " argument of rank " +
+                    std::to_string(actual_rank) + " does not match member '" +
+                    member_name + "' of rank " + std::to_string(member_rank),
+                arg_loc);
+            if (is_constant && member_rank == actual_rank && member_rank > 0) {
+                ASR::dimension_t *member_dims = nullptr, *actual_dims = nullptr;
+                ASRUtils::extract_dimensions_from_ttype(declared, member_dims);
+                ASRUtils::extract_dimensions_from_ttype(actual, actual_dims);
+                for (size_t d = 0; d < member_rank; d++) {
+                    int64_t member_length = 0, actual_length = 0;
+                    if (member_dims[d].m_length == nullptr
+                            || actual_dims[d].m_length == nullptr
+                            || !ASRUtils::extract_value(ASRUtils::expr_value(
+                                member_dims[d].m_length), member_length)
+                            || !ASRUtils::extract_value(ASRUtils::expr_value(
+                                actual_dims[d].m_length), actual_length)) {
                         continue;
                     }
-                    ASR::ttype_t *declared =
-                        ASR::down_cast<ASR::Variable_t>(members[i])->m_type;
-                    if (declared == nullptr) continue;
-                    ASR::ttype_t *member_scalar =
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable_pointer(
-                                declared));
-                    ASR::ttype_t *actual_scalar =
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable_pointer(
-                                actual));
-                    if (is_struct_like_type(member_scalar)
-                            || is_procedure_type(member_scalar)
-                            || is_struct_like_type(actual_scalar)
-                            || is_procedure_type(actual_scalar)) {
-                        continue;
-                    }
-                    require_with_loc_id(
-                        ASRUtils::check_equal_type(
-                            member_scalar, actual_scalar, nullptr, nullptr),
-                        "asr.verify.struct_constructor.argument_type_matches_member",
-                        "StructConstructor argument type " +
-                            ASRUtils::get_type_code(actual_scalar) +
-                            " does not match member '" +
-                            std::string(ASRUtils::symbol_name(members[i])) +
-                            "' of type " +
-                            ASRUtils::get_type_code(member_scalar),
-                        x.m_args[i].m_value->base.loc);
+                    require_with_loc_id(member_length == actual_length,
+                        id + ".argument_shape_matches_member",
+                        std::string(node) + " argument extent " +
+                            std::to_string(actual_length) + " in dimension " +
+                            std::to_string(d + 1) + " does not match member '" +
+                            member_name + "' extent " +
+                            std::to_string(member_length),
+                        arg_loc);
                 }
             }
         }
+    }
+
+    void visit_StructConstructor(const StructConstructor_t &x) {
+        verify_struct_constructor_arguments("StructConstructor",
+            "asr.verify.struct_constructor", x.m_dt_sym, x.m_args, x.n_args,
+            false, x.base.base.loc);
         BaseWalkVisitor<VerifyVisitor>::visit_StructConstructor(x);
+    }
+
+    // A type parameter of a parameterized derived type, whose value is
+    // known only once the type is instantiated
+    bool is_struct_type_parameter(ASR::expr_t *arg) {
+        if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(arg)->m_v);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        ASR::asr_t *owner =
+            ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
+        return owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)
+            && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+    }
+
+    // The backends emit a StructConstant as static data, so each argument
+    // must be a constant: a literal, a named constant, or a structure
+    // constructor of constants. A variable, such as a temporary created by
+    // a pass, cannot be part of static data.
+    bool is_struct_constant_argument(ASR::expr_t *arg) {
+        if (ASRUtils::is_value_constant(arg)
+                || ASRUtils::is_value_constant(ASRUtils::expr_value(arg))
+                || is_struct_type_parameter(arg)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            return sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)
+                && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    == ASR::storage_typeType::Parameter;
+        }
+        if (ASR::is_a<ASR::StructConstructor_t>(*arg)) {
+            ASR::StructConstructor_t *sc =
+                ASR::down_cast<ASR::StructConstructor_t>(arg);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                if (sc->m_args[i].m_value != nullptr
+                        && !is_struct_constant_argument(sc->m_args[i].m_value)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void visit_StructConstant(const StructConstant_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value == nullptr) continue;
+            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
+                "asr.verify.struct_constant.argument_is_constant",
+                "StructConstant argument " + std::to_string(i + 1)
+                    + " is not a constant",
+                x.m_args[i].m_value->base.loc);
+        }
+        verify_struct_constructor_arguments("StructConstant",
+            "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,
+            true, x.base.base.loc);
+        BaseWalkVisitor<VerifyVisitor>::visit_StructConstant(x);
     }
 
     // `dim` selects one of the array's dimensions, so a constant outside
@@ -3408,7 +3590,10 @@ public:
         require(ASRUtils::is_supported_character_kind(x.m_kind),
             "String kind must be 1 or 4, found " + std::to_string(x.m_kind));
 /*General Check on the length*/ 
-        if(x.m_len){
+        // The length may reference an ExternalSymbol, which cannot be
+        // dereferenced before externals are resolved (e.g. during modfile
+        // deserialization), so only check it when check_external is set.
+        if(x.m_len && check_external){
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_len)))),
                 "String length must be of type INTEGER,"
@@ -3416,7 +3601,7 @@ public:
                 ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
-        if(x.m_len && ASRUtils::is_value_constant(x.m_len)){
+        if(x.m_len && check_external && ASRUtils::is_value_constant(x.m_len)){
             int64_t len{};
             ASRUtils::is_value_constant(x.m_len, len);
             require(len >= 0,
