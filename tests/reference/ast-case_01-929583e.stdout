@@ -129,6 +129,7 @@
         (If
             0
             ()
+            0
             (/= out 40)
             [(ErrorStop
                 0
@@ -201,6 +202,7 @@
         (If
             0
             ()
+            0
             (/= out 22)
             [(ErrorStop
                 0

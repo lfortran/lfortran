@@ -99,6 +99,7 @@
         (If
             0
             ()
+            0
             (FuncCallOrArray
                 present
                 []
@@ -113,6 +114,7 @@
             [(If
                 0
                 ()
+                0
                 (FuncCallOrArray
                     present
                     []
@@ -127,6 +129,7 @@
                 [(If
                     0
                     ()
+                    0
                     (BoolOp
                         (BoolOp
                             (> dim 0)
@@ -197,6 +200,7 @@
                 [(If
                     0
                     ()
+                    0
                     (== (FuncCallOrArray
                         rank
                         []
