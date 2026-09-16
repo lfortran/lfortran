@@ -71,7 +71,6 @@ if [[ $WIN != "1" ]]; then
 
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
     if [[ $MACOS != "1" ]]; then
-        ./run_tests.py -b llvm -sc -j${NPROC}
         ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
     fi
     if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
@@ -84,15 +83,8 @@ if [[ $WIN != "1" ]]; then
         fi
     fi
     ./run_tests.py -b llvm_submodule -j${NPROC}
-    if [[ $MACOS != "1" ]]; then
-        ./run_tests.py -b llvm_submodule -sc -j${NPROC}
-    fi
-    # Leak detection is a compile-flag sweep over the whole suite; it is not
-    # platform specific, so run it on Linux only (a full pass costs ~7x more
-    # on the 3-core macOS runners).
-    if [[ $MACOS != "1" ]]; then
-        ./run_tests.py -b llvm --detect-leaks -j${NPROC}
-    fi
+    # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
+    # checks (debug_outOfSource) so this Quick job stays under an hour.
     cd ..
 
     pip install src/server/tests tests/server
