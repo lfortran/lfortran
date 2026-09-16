@@ -455,6 +455,7 @@ jobs:
         if: ${{ matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos') }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh
 
   test_llvm_wasm:

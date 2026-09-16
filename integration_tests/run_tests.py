@@ -147,6 +147,9 @@ def run_test(backend, std, test_pattern=None):
         ctest_cmd += " -V"
     if test_pattern:
         ctest_cmd += f" -R {test_pattern}"
+    extra = os.environ.get("LFORTRAN_CTEST_EXTRA", "").strip()
+    if extra:
+        ctest_cmd += f" {extra}"
     run_cmd(ctest_cmd, cwd=cwd)
 
 
