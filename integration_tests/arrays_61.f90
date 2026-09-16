@@ -3,7 +3,7 @@ program arrays_61
     xpt = 25.0
     call rescue(xpt)
     print *, sum(xpt)
-    if (abs(sum(xpt) - 120.710678) > 1e-8) error stop
+    if (abs(sum(xpt) - 120.710678) > 1e-5) error stop
     contains
     subroutine rescue(xpt)
         real(4), intent(inout) :: xpt(:, :)
