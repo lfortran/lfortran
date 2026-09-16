@@ -170,10 +170,10 @@ jobs:
             ./run_tests.py -m
             NPROC=$(nproc)
             ./run_tests.py -b llvm -j${NPROC}
-            ./run_tests.py -b llvm -f -nf16 -j${NPROC}
+            ./run_tests.py -b llvm -f -j${NPROC}
             ./run_tests.py -b llvm_single_invocation -j${NPROC}
             ./run_tests.py -b llvm --std=f23 -j${NPROC}
-            ./run_tests.py -b llvm -f --std=f23 -nf16 -j${NPROC}
+            ./run_tests.py -b llvm -f --std=f23 -j${NPROC}
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -242,9 +242,9 @@ jobs:
         # actually originates:
         #   8  - oldest supported; integration tests (newer LLVM APIs)
         #   11 - default version; third-party codes (full LAPACK)
-        #   17 - first version that runs the full llvm --fast suite
-        #        (8/10/15 use -nf16). LLVM 17/18 optimize Inf/NaN under
-        #        --fast differently than 21+.
+        #   17 - first LLVM that used to run llvm --fast without -nf16;
+        #        keep it on labeled PRs so Inf/NaN --fast differences vs 21+
+        #        are not main-only.
         #   19 - third-party codes (smoke, Release). WASM is a separate job.
         #   23 - newest; integration tests (removed/deprecated LLVM APIs)
         # Third-party codes exercise LFortran, not LLVM, so they run on two
