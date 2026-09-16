@@ -3026,6 +3026,17 @@ const ASR::intentType intent_inout=ASR::intentType::InOut; // dummy argument, in
 const ASR::intentType intent_return_var=ASR::intentType::ReturnVar; // return variable of a function
 const ASR::intentType intent_unspecified=ASR::intentType::Unspecified; // dummy argument, ambiguous intent
 
+// True if `sym` is a dummy argument of the procedure `fn`.
+static inline bool is_dummy_argument(const ASR::Function_t &fn, const ASR::symbol_t *sym) {
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (ASR::is_a<ASR::Var_t>(*fn.m_args[i]) &&
+                ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v == sym) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static inline bool is_arg_dummy(int intent) {
     return intent == intent_in || intent == intent_out
         || intent == intent_inout || intent == intent_unspecified;
@@ -3086,12 +3097,15 @@ static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
         || deftype == ASR::deftypeType::ImplicitInterface;
 }
 
-// True if `x` has deftype ImplicitInterface: declared (e.g. `integer, external
-// :: f`) with no interface. ASR states that the argument list is unknown. It
-// is never a call target and never code-generated; every reference
-// synthesizes a concrete Interface from the actuals at that reference. Once
-// an interface is inferred (including from a dummy/procedure-pointer use),
-// deftype becomes Interface and this returns false.
+// True if `x` has deftype ImplicitInterface: the opaque procedure type of a
+// procedure with an implicit interface (e.g. `integer, external :: f`, an
+// `external f` dummy or a `procedure()` pointer).
+//   * `arg_types` is always empty and means "unknown", not "no arguments".
+//   * `return_var_type` is set only when the procedure is explicitly typed.
+//   * The type is never changed as uses of the procedure are seen.
+// An opaque procedure is never a call target. Every call goes through a
+// FunctionPointerCast to an interface built from that call's actuals, and a
+// procedure passed to a dummy of a different type is cast to the dummy's type.
 static inline bool is_bare_implicit_interface(const ASR::FunctionType_t &x) {
     return x.m_deftype == ASR::deftypeType::ImplicitInterface;
 }
@@ -3110,6 +3124,51 @@ static inline bool is_bare_implicit_interface(ASR::symbol_t *v) {
         return false;
     }
     return is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(f2));
+}
+
+// True if `t`, past pointer and allocatable, is the opaque procedure type.
+static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
+    if (t == nullptr) {
+        return false;
+    }
+    t = type_get_past_allocatable(type_get_past_pointer(t));
+    return ASR::is_a<ASR::FunctionType_t>(*t) && is_bare_implicit_interface(
+        *ASR::down_cast<ASR::FunctionType_t>(t));
+}
+
+// The opaque procedure type, returning `return_type` (null for a procedure
+// that is not explicitly typed).
+static inline ASR::ttype_t* make_opaque_procedure_type(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type) {
+    return ASRUtils::TYPE(ASR::make_FunctionType_t(al, loc, nullptr, 0,
+        return_type, ASR::abiType::BindC, ASR::deftypeType::ImplicitInterface,
+        nullptr, false, false, false, false, false, nullptr, 0, false,
+        ASR::exec_spaceType::Host));
+}
+
+// True if a procedure of type `a` can be used where type `b` is expected
+// without a FunctionPointerCast: both are opaque or both are explicit, with
+// the same arguments, result and abi. Unlike `types_equal`, an opaque type is
+// never identical to an explicit zero-argument one.
+static inline bool procedure_types_identical(ASR::FunctionType_t *a,
+        ASR::FunctionType_t *b) {
+    if (is_bare_implicit_interface(*a) != is_bare_implicit_interface(*b)
+            || a->n_arg_types != b->n_arg_types || a->m_abi != b->m_abi
+            || (a->m_return_var_type == nullptr)
+                != (b->m_return_var_type == nullptr)) {
+        return false;
+    }
+    if (a->m_return_var_type && !types_equal(a->m_return_var_type,
+            b->m_return_var_type, nullptr, nullptr, true)) {
+        return false;
+    }
+    for (size_t i = 0; i < a->n_arg_types; i++) {
+        if (!types_equal(a->m_arg_types[i], b->m_arg_types[i], nullptr,
+                nullptr, true)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 static inline bool is_external_sym_changed(ASR::symbol_t* original_sym, ASR::symbol_t* external_sym) {
@@ -6449,6 +6508,24 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
     }
 
+    ASR::asr_t* duplicate_FunctionPointerCast(ASR::FunctionPointerCast_t* x) {
+        ASR::expr_t* m_arg = duplicate_expr(x->m_arg);
+        ASR::symbol_t* m_to = x->m_to;
+        if (m_to != nullptr) {
+            std::string name = ASRUtils::symbol_name(m_to);
+            ASR::symbol_t* resolved = use_resolve_symbol
+                ? current_scope->resolve_symbol(name)
+                : current_scope->get_symbol(name);
+            if (resolved != nullptr) {
+                m_to = resolved;
+            }
+        }
+        ASR::ttype_t* m_type = duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = duplicate_expr(x->m_value);
+        return ASR::make_FunctionPointerCast_t(al, x->base.base.loc, m_arg, m_to,
+            m_type, m_value);
+    }
+
     ASR::asr_t* duplicate_AssociateBlockCall(ASR::AssociateBlockCall_t* x) {
         std::string name = ASRUtils::symbol_name(x->m_m);
         ASR::symbol_t* m_m = current_scope->get_symbol(name);
@@ -6674,6 +6751,7 @@ class SymbolDuplicator {
         for( auto& item: symbol_table->get_scope() ) {
             duplicate_symbol(item.second, destination_symtab);
         }
+        fixup_local_type_declarations(destination_symtab, symbol_table);
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
@@ -6854,6 +6932,60 @@ class SymbolDuplicator {
     // and Blocks (including nested ones) and re-duplicates from the
     // original bodies using a scoped duplicator that resolves symbols
     // through the new scope chain.
+    // A variable copied from `orig_scope` into `new_scope` whose type is
+    // declared by a symbol of `orig_scope` (e.g. a procedure variable
+    // declared with an interface of the same procedure) is declared by the
+    // copy of that symbol, so the copy does not refer into the original.
+    // The same holds for a variable of a scope nested in the copy (a BLOCK,
+    // ASSOCIATE or contained procedure) declared by a symbol of any
+    // enclosing copied scope.
+    void fixup_local_type_declarations(SymbolTable *new_scope,
+            SymbolTable *orig_scope) {
+        std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
+        fixup_type_declarations_in_scope(new_scope, orig_scope, copied_scopes);
+    }
+
+    void fixup_type_declarations_in_scope(SymbolTable *new_scope,
+            SymbolTable *orig_scope,
+            std::vector<std::pair<SymbolTable*, SymbolTable*>> &copied_scopes) {
+        copied_scopes.push_back({orig_scope, new_scope});
+        for (auto &item : new_scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_type_declaration == nullptr) continue;
+                SymbolTable *declared_in =
+                    ASRUtils::symbol_parent_symtab(v->m_type_declaration);
+                for (auto &scopes : copied_scopes) {
+                    if (declared_in != scopes.first) continue;
+                    ASR::symbol_t *copy = scopes.second->get_symbol(
+                        ASRUtils::symbol_name(v->m_type_declaration));
+                    if (copy != nullptr) {
+                        v->m_type_declaration = copy;
+                    }
+                    break;
+                }
+                continue;
+            }
+            SymbolTable *new_nested = nullptr;
+            if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*item.second) ||
+                    ASR::is_a<ASR::Function_t>(*item.second)) {
+                new_nested = ASRUtils::symbol_symtab(item.second);
+            }
+            ASR::symbol_t *orig_sym = orig_scope->get_symbol(item.first);
+            if (new_nested == nullptr || orig_sym == nullptr ||
+                    orig_sym->type != item.second->type) {
+                continue;
+            }
+            SymbolTable *orig_nested = ASRUtils::symbol_symtab(orig_sym);
+            if (orig_nested != nullptr && orig_nested != new_nested) {
+                fixup_type_declarations_in_scope(new_nested, orig_nested,
+                    copied_scopes);
+            }
+        }
+        copied_scopes.pop_back();
+    }
+
     void fixup_nested_block_bodies(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         for (auto &item : new_scope->get_scope()) {

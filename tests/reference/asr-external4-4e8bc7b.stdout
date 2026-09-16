@@ -64,6 +64,38 @@
                                         })
                                     dqk15w
                                     (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            dqk15w~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    dqk15w~fpcast
+                                    (FunctionType
                                         [(FunctionType
                                             []
                                             (Real 8)
@@ -101,38 +133,68 @@
                                     .false.
                                     ()
                                 ),
+                            dqk15w~fpcast_ptr:
+                                (Variable
+                                    2
+                                    dqk15w~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(FunctionType
+                                                []
+                                                (Real 8)
+                                                BindC
+                                                ImplicitInterface
+                                                ()
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                []
+                                                .false.
+                                                Host
+                                            )]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 dqk15w~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
                             f:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        3
                                         {
-                                            f_arg_0:
-                                                (Variable
-                                                    5
-                                                    f_arg_0
-                                                    []
-                                                    Unspecified
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Real 4)
-                                                    ()
-                                                    BindC
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
                                             f_return_var_name:
                                                 (Variable
-                                                    5
+                                                    3
                                                     f_return_var_name
                                                     []
                                                     ReturnVar
@@ -157,6 +219,85 @@
                                         })
                                     f
                                     (FunctionType
+                                        []
+                                        (Real 8)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            f~arg_0:
+                                                (Variable
+                                                    6
+                                                    f~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            f~result:
+                                                (Variable
+                                                    6
+                                                    f~result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    f~fpcast
+                                    (FunctionType
                                         [(Real 4)]
                                         (Real 8)
                                         BindC
@@ -172,13 +313,53 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 f_arg_0)]
+                                    [(Var 6 f~arg_0)]
                                     []
-                                    (Var 5 f_return_var_name)
+                                    (Var 6 f~result)
                                     Public
                                     .false.
                                     .false.
                                     ()
+                                ),
+                            f~fpcast_ptr:
+                                (Variable
+                                    2
+                                    f~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 4)]
+                                            (Real 8)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 f~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
                                 ),
                             hlgth:
                                 (Variable
@@ -208,10 +389,10 @@
                     dqc25s
                     (FunctionType
                         [(FunctionType
-                            [(Real 4)]
+                            []
                             (Real 8)
                             BindC
-                            Interface
+                            ImplicitInterface
                             ()
                             .false.
                             .false.
@@ -237,18 +418,78 @@
                     )
                     []
                     [(Var 2 f)]
-                    [(SubroutineCall
+                    [(Associate
+                        (Var 2 dqk15w~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 dqk15w)
+                            2 dqk15w~fpcast
+                            (FunctionType
+                                [(FunctionType
+                                    []
+                                    (Real 8)
+                                    BindC
+                                    ImplicitInterface
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                    Host
+                                )]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        2 dqk15w~fpcast_ptr
                         2 dqk15w
-                        ()
                         [((Var 2 f))]
                         ()
                         .false.
+                    )
+                    (Associate
+                        (Var 2 f~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 f)
+                            2 f~fpcast
+                            (FunctionType
+                                [(Real 4)]
+                                (Real 8)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
                     )
                     (Print
                         (StringFormat
                             ()
                             [(FunctionCall
-                                2 f
+                                2 f~fpcast_ptr
                                 ()
                                 [((RealBinOp
                                     (Var 2 hlgth)

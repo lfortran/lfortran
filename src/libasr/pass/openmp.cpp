@@ -314,18 +314,137 @@ class ReductionVariableVisitor: public ASR::CallReplacerOnExpressionsVisitor<Red
         }
 };
 
+// The copies of procedures contained in a program that code moved out of the
+// program uses, keyed by the original procedure (see
+// import_procedure_implementation).
+using ProgramProcedureCopies = std::map<ASR::Function_t*, ASR::symbol_t*>;
+
+static ASR::symbol_t* import_procedure_implementation(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc);
+
+// True if `proc` is a procedure (not a procedure variable) that is a dummy
+// argument of the procedure that declares it.
+static bool is_dummy_procedure(ASR::symbol_t* proc) {
+    if (!ASR::is_a<ASR::Function_t>(*proc)) {
+        return false;
+    }
+    ASR::asr_t* owner = ASR::down_cast<ASR::Function_t>(proc)->m_symtab->parent->asr_owner;
+    if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        return false;
+    }
+    return ASRUtils::is_dummy_argument(*ASR::down_cast<ASR::Function_t>(
+        ASR::down_cast<ASR::symbol_t>(owner)), proc);
+}
+
+// The symbol in `scope` for `proc`, a procedure referenced by code moved into
+// `scope`, e.g. a procedure actual, the source or the interface of a procedure
+// cast, or the interface of a procedure variable. A procedure without a body
+// (an interface, or a procedure with an implicit interface) is declared in
+// `scope`; a procedure with a body is imported (see
+// import_procedure_implementation). Null for any other procedure.
+static ASR::symbol_t* import_procedure_declaration(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc) {
+    std::string name = ASRUtils::symbol_name(proc);
+    ASR::symbol_t* existing = scope->get_symbol(name);
+    if (existing != nullptr) {
+        return existing;
+    }
+    if (ASR::is_a<ASR::ExternalSymbol_t>(*proc)) {
+        ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(proc);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(ext->m_external);
+        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+            return nullptr;
+        }
+        ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, proc->base.loc, scope, ext->m_name, ext->m_external, ext->m_module_name,
+            ext->m_scope_names, ext->n_scope_names, ext->m_original_name, ext->m_access));
+        scope->add_symbol(name, imported);
+        return imported;
+    }
+    if (!ASR::is_a<ASR::Function_t>(*proc)) {
+        return nullptr;
+    }
+    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
+    ASR::deftypeType deftype = ASRUtils::get_FunctionType(fn)->m_deftype;
+    if (deftype == ASR::deftypeType::Implementation) {
+        return import_procedure_implementation(al, copies, scope, proc);
+    }
+    if (deftype != ASR::deftypeType::Interface &&
+            deftype != ASR::deftypeType::ImplicitInterface) {
+        return nullptr;
+    }
+    // A dummy procedure is a value of the procedure it belongs to, not a
+    // procedure that can be declared elsewhere.
+    if (is_dummy_procedure(proc)) {
+        return nullptr;
+    }
+    ASRUtils::SymbolDuplicator duplicator(al);
+    ASR::symbol_t* declaration = duplicator.duplicate_Function(fn, scope);
+    if (declaration == nullptr) {
+        return nullptr;
+    }
+    scope->add_symbol(name, declaration);
+    // A dummy argument of the declaration can be a procedure outside of it
+    // (a call-site interface names a procedure actual itself), which is
+    // imported as well.
+    ASR::Function_t* declaration_fn = ASR::down_cast<ASR::Function_t>(declaration);
+    for (size_t i = 0; i < declaration_fn->n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*declaration_fn->m_args[i])) {
+            continue;
+        }
+        ASR::Var_t* arg = ASR::down_cast<ASR::Var_t>(declaration_fn->m_args[i]);
+        if (declaration_fn->m_symtab->resolve_symbol(ASRUtils::symbol_name(arg->m_v))
+                == arg->m_v) {
+            continue;
+        }
+        ASR::symbol_t* imported = import_procedure_declaration(al, copies, scope, arg->m_v);
+        if (imported != nullptr) {
+            arg->m_v = imported;
+        }
+    }
+    return declaration;
+}
+
+// The symbol named `name` in `scope` or in a scope enclosing it, up to and
+// including `outermost`: a scope nested in a visited procedure sees the
+// symbols of the scopes of the procedure that enclose it, but not the symbols
+// outside of the procedure.
+static ASR::symbol_t* resolve_symbol_within(SymbolTable* scope,
+        SymbolTable* outermost, const std::string &name) {
+    for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+        if (ASR::symbol_t* sym = s->get_symbol(name)) {
+            return sym;
+        }
+        if (s == outermost) {
+            break;
+        }
+    }
+    return nullptr;
+}
+
 class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
     private:
         Allocator& al;
+        ProgramProcedureCopies& copies;
     public:
         SymbolTable* current_scope;
+        SymbolTable* outermost_scope;
 
-        ReplaceExpression(Allocator& al_) :
-            al(al_) {}
+        ReplaceExpression(Allocator& al_, ProgramProcedureCopies& copies_) :
+            al(al_), copies(copies_) {}
 
         void replace_Var(ASR::Var_t* x) {
-            ASR::symbol_t* sym = current_scope->get_symbol(ASRUtils::symbol_name(x->m_v));
-            LCOMPILERS_ASSERT(sym != nullptr);
+            ASR::symbol_t* sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x->m_v));
+            if (sym == nullptr) {
+                sym = import_procedure_declaration(al, copies, current_scope, x->m_v);
+            }
+            if (sym == nullptr) {
+                // Nothing to import: the verifier reports a reference that
+                // is out of scope.
+                return;
+            }
             *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, sym));
         }
 
@@ -334,87 +453,73 @@ class ReplaceExpression: public ASR::BaseExprReplacer<ReplaceExpression> {
 class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisitor<DoConcurrentStatementVisitor> {
     private:
         Allocator& al;
-        SymbolTable* current_scope;
+        ProgramProcedureCopies& copies;
         ReplaceExpression replacer;
+        // The scope the visitor starts in: a region, or a copied procedure.
+        SymbolTable* outermost_scope;
 
     public:
-        DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_) :
-            al(al_), current_scope(current_scope_), replacer(al_) {}
+        // `current_scope` is the base visitor's, which follows the scopes
+        // nested in a visited procedure (contained procedures, interfaces,
+        // BLOCKs), so their symbols resolve in their own scope first, then in
+        // the enclosing scopes up to `outermost_scope`.
+        DoConcurrentStatementVisitor(Allocator &al_, SymbolTable* current_scope_,
+                ProgramProcedureCopies &copies_) :
+            al(al_), copies(copies_), replacer(al_, copies_),
+            outermost_scope(current_scope_) {
+            current_scope = current_scope_;
+        }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
+        replacer.outermost_scope = outermost_scope;
         replacer.replace_expr(*current_expr);
     }
 
     template <typename T>
     void visit_Call(const T &x) {
         T* x_copy = const_cast<T*>(&x);
+        if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
+            // A call through a procedure variable, which is declared in
+            // the visited scopes like every other variable of the region.
+            ASR::symbol_t* var_sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x.m_name));
+            LCOMPILERS_ASSERT(var_sym != nullptr);
+            x_copy->m_name = var_sym;
+            if (x_copy->m_original_name) {
+                ASR::symbol_t* original = import_procedure_declaration(al, copies,
+                    current_scope, x_copy->m_original_name);
+                x_copy->m_original_name = original ? original : var_sym;
+            }
+            return;
+        }
         ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(x_copy->m_name));
         ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
-        ASR::symbol_t* fun_sym_for_module = nullptr;
-        char* module_name = nullptr;
-        // Steps:
-        // Create a module add it to current_scope->parent symtab
-        // Add func to that module symtab
-        // Overwrite External symbol to x's asr_owner's symtab
-        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-            ASRUtils::SymbolDuplicator duplicator(al);
-            SymbolTable* module_scope = al.make_new<SymbolTable>(current_scope->parent);
-
-            module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
-            ASR::asr_t* mo = ASR::make_Module_t(
-                                al, x.base.base.loc, module_scope,
-                                s2c(al, module_name), nullptr,
-                                nullptr, 0, false, false, false);
-            if (current_scope->parent->get_symbol(module_name) == nullptr) {
-                current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
-            }
-
-            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
-            fun_sym_for_module = duplicator.duplicate_Function(fn, module_scope);
-            module->m_symtab->add_symbol(fn->m_name, fun_sym_for_module);
-
-            ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
-                                al,
-                                x.base.base.loc,
-                                ASRUtils::symbol_parent_symtab(x.m_name),
-                                fn->m_name,
-                                fun_sym_for_module,
-                                s2c(al, module_name),
-                                nullptr,
-                                0,
-                                x_copy->m_original_name
-                                    ? ASRUtils::symbol_name(x_copy->m_original_name)
-                                    : ASRUtils::symbol_name(x_copy->m_name),
-                                ASR::accessType::Public);
-            ASR::Program_t* program = ASR::down_cast<ASR::Program_t>(
-                                    ASR::down_cast<ASR::symbol_t>(asr_owner));
-            program->m_symtab->add_or_overwrite_symbol(fn->m_name,
-                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+        if (asr_owner == nullptr) {
+            // The symbol was imported into the scope of a region nested in
+            // this one, which is still being moved out; import what it
+            // refers to here as well.
+            ASR::symbol_t* func_sym = import_procedure_implementation(al, copies,
+                current_scope, x.m_name);
+            LCOMPILERS_ASSERT(func_sym != nullptr);
+            x_copy->m_name = func_sym;
+            x_copy->m_original_name = func_sym;
+            return;
         }
-
-        ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
-        if (func_sym == nullptr) {
-            if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-                ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
-                                        al,
-                                        x.base.base.loc,
-                                        current_scope,
-                                        fn->m_name,
-                                        fun_sym_for_module,
-                                        s2c(al, module_name),
-                                        nullptr,
-                                        0,
-                                        x_copy->m_original_name
-                                            ? ASRUtils::symbol_name(x_copy->m_original_name)
-                                            : ASRUtils::symbol_name(x_copy->m_name),
-                                        ASR::accessType::Public);
-                current_scope->add_or_overwrite_symbol(fn->m_name,
-                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
-                func_sym = current_scope->get_symbol(fn->m_name);
-            } else if (ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+        if (!ASR::is_a<ASR::symbol_t>(*asr_owner)) {
+            // A procedure of the translation unit is visible everywhere.
+            return;
+        }
+        ASR::symbol_t* func_sym = nullptr;
+        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+            func_sym = import_procedure_implementation(al, copies, current_scope, x.m_name);
+        } else {
+            func_sym = resolve_symbol_within(current_scope, outermost_scope,
+                ASRUtils::symbol_name(x.m_name));
+            if (func_sym == nullptr &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
                 func_sym = current_scope->resolve_symbol(fn->m_name);
             }
         }
@@ -432,7 +537,91 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         visit_Call(x);
         CallReplacerOnExpressionsVisitor::visit_SubroutineCall(x);
     }
+
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        CallReplacerOnExpressionsVisitor::visit_FunctionPointerCast(x);
+        if (x.m_to != nullptr) {
+            ASR::symbol_t* to = import_procedure_declaration(al, copies, current_scope, x.m_to);
+            LCOMPILERS_ASSERT(to != nullptr);
+            const_cast<ASR::FunctionPointerCast_t&>(x).m_to = to;
+        }
+    }
 };
+
+// The symbol in `scope` for `proc`, a procedure with a body used by code moved
+// into `scope`. A module procedure is imported from its module. A procedure
+// contained in a program cannot be imported from the program, so it is copied,
+// once, into a module of its own, and the procedures, interfaces and
+// declarations the copy refers to are imported into it the same way. The
+// copy is recorded in `copies`. The program keeps its own procedure, which
+// the rest of the program refers to.
+static ASR::symbol_t* import_procedure_implementation(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc) {
+    std::string name = ASRUtils::symbol_name(proc);
+    if (ASR::symbol_t* existing = scope->get_symbol(name)) {
+        return existing;
+    }
+    ASR::symbol_t* target = ASRUtils::symbol_get_past_external(proc);
+    if (!ASR::is_a<ASR::Function_t>(*target)) {
+        return nullptr;
+    }
+    ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(target);
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
+    if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
+        ASR::symbol_t*& copy = copies[fn];
+        if (copy == nullptr) {
+            SymbolTable* tu_scope = ASRUtils::symbol_parent_symtab(target)->parent;
+            SymbolTable* module_scope = al.make_new<SymbolTable>(tu_scope);
+            ASRUtils::SymbolDuplicator duplicator(al);
+            ASR::symbol_t* moved = duplicator.duplicate_Function(fn, module_scope);
+            if (moved == nullptr) {
+                return nullptr;
+            }
+            char* module_name = s2c(al, tu_scope->get_unique_name(
+                "lcompilers_user_defined_functions"));
+            ASR::symbol_t* module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al,
+                fn->base.base.loc, module_scope, module_name, nullptr, nullptr, 0,
+                false, false, false));
+            tu_scope->add_symbol(module_name, module);
+            module_scope->add_symbol(fn->m_name, moved);
+            // Recorded before the copy's body is visited, which can refer to
+            // the procedure again.
+            copy = moved;
+            ASR::Function_t* moved_fn = ASR::down_cast<ASR::Function_t>(moved);
+            for (auto &item : moved_fn->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    continue;
+                }
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (v->m_type_declaration == nullptr || moved_fn->m_symtab->resolve_symbol(
+                        ASRUtils::symbol_name(v->m_type_declaration)) == v->m_type_declaration) {
+                    continue;
+                }
+                ASR::symbol_t* decl = import_procedure_declaration(al, copies,
+                    moved_fn->m_symtab, v->m_type_declaration);
+                if (decl != nullptr) {
+                    v->m_type_declaration = decl;
+                }
+            }
+            DoConcurrentStatementVisitor moved_visitor(al, moved_fn->m_symtab, copies);
+            moved_visitor.visit_Function(*moved_fn);
+        }
+        target = copy;
+        owner = ASRUtils::get_asr_owner(target);
+    }
+    if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
+        return nullptr;
+    }
+    if (scope->resolve_symbol(name) == target) {
+        return target;
+    }
+    ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+        proc->base.loc, scope, s2c(al, name), target,
+        ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
+        ASRUtils::symbol_name(target), ASR::accessType::Public));
+    scope->add_symbol(name, imported);
+    return imported;
+}
 
 class InvolvedSymbolsCollector:
     public ASR::BaseWalkVisitor<InvolvedSymbolsCollector>
@@ -446,6 +635,8 @@ class InvolvedSymbolsCollector:
         std::set<std::string> descriptor_arrays;
         // Arrays that may be non-contiguous but are passed by address and bounds
         std::set<std::string> contiguity_checked_arrays;
+        // Arrays listed in a private or firstprivate clause, with that clause
+        std::map<std::string, ASR::omp_clauseType> private_arrays;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
 
@@ -454,10 +645,46 @@ class InvolvedSymbolsCollector:
             if(symbols.find(to_lower(ASRUtils::symbol_name(x.m_v))) != symbols.end()) {
                 return; // Already added
             }
-            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = ASRUtils::symbol_type(x.m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_v))) {
+                // A procedure is not data: it is declared where the region
+                // is moved to (see import_procedure_declaration).
+                return;
+            }
+            ASR::ttype_t* type = ASRUtils::symbol_type(x.m_v);
+            if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+                // A procedure that is not a pointer, e.g. a dummy procedure
+                // with an explicit interface, is a procedure value, not the
+                // address of one: it enters the region as a procedure
+                // pointer associated with it.
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+            }
+            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = type;
             symbols[to_lower(ASRUtils::symbol_name(x.m_v))].second = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v));
-            variable_accessibility[ASRUtils::symbol_name(x.m_v)] = ASR::omp_clauseType::OMPShared;
+            // A procedure variable is passed to the region by value.
+            variable_accessibility[ASRUtils::symbol_name(x.m_v)] =
+                ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                    ASRUtils::symbol_type(x.m_v)))
+                ? ASR::omp_clauseType::OMPPrivate : ASR::omp_clauseType::OMPShared;
             return;
+        }
+
+        // A call through a procedure variable involves the variable.
+        template <typename T>
+        void visit_procedure_variable_call(const T &x) {
+            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
+                visit_Var(*ASR::down_cast<ASR::Var_t>(ASRUtils::EXPR(
+                    ASR::make_Var_t(al, x.base.base.loc, x.m_name))));
+            }
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            visit_procedure_variable_call(x);
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_SubroutineCall(x);
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            visit_procedure_variable_call(x);
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_FunctionCall(x);
         }
 
         void visit_do_loop_head(const ASR::do_loop_head_t &x) {
@@ -602,11 +829,44 @@ class ParallelRegionVisitor :
         std::map<int,std::vector<ASR::omp_clause_t*>> clauses_heirarchial;
         ASR::expr_t* tdata_expr_copy;
         ASR::symbol_t* thread_data_sym_copy;
+        ProgramProcedureCopies program_procedure_copies;
     public:
         ParallelRegionVisitor(Allocator& al_, PassOptions pass_options_) :
         al(al_), remove_original_statement(false), pass_options(pass_options_) {
             pass_result.n = 0;
             pass_result_allocatable.n = 0;
+        }
+
+        // The type declaration, in `current_scope`, of a variable `var`
+        // involved in a region: its derived type, or the interface of a
+        // procedure variable.
+        ASR::symbol_t* involved_type_declaration(ASR::expr_t* var) {
+            if (var != nullptr && ASR::is_a<ASR::Var_t>(*var)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(var)->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(v->m_type))) {
+                        return import_procedure_declaration(al, program_procedure_copies,
+                            current_scope,
+                            v->m_type_declaration);
+                    }
+                }
+            }
+            return ASRUtils::get_struct_sym_from_struct_expr(var);
+        }
+
+        // `target = value` for a variable passed to a region by value. A
+        // procedure pointer is copied by pointer association.
+        ASR::stmt_t* copy_value(ASR::expr_t* target, ASR::expr_t* value) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+            if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(target_type))) {
+                return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
+                    target, value));
+            }
+            return ASRUtils::ASRBuilder(al, target->base.loc).Assignment(target, value);
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -896,6 +1156,7 @@ class ParallelRegionVisitor :
                                                 array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                             is_arg ? ASR::intentType::InOut : ASR::intentType::Local);
                                 LCOMPILERS_ASSERT(array_expr != nullptr);
+                                pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                 /*
                                     We allocate memory for array variables only if we have information about their sizes.
                                     We skip allocation for dummy arguments as the caller provides the memory.
@@ -1009,6 +1270,7 @@ class ParallelRegionVisitor :
                                                     array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global)))),
                                                 ASR::intentType::Local);
                                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                                     new_body.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                                 } else {
                                     // we have no information about what size to allocate
@@ -1091,7 +1353,7 @@ class ParallelRegionVisitor :
             if(nesting_lvl) {
                 ASRUtils::ASRBuilder b(al, x.base.base.loc);
                     std::vector<ASR::stmt_t*> if_body={}, else_body={};
-                    DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                    DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
                     stmt_visitor.current_expr = nullptr;
                     nested_lowered_body={};
     
@@ -1139,7 +1401,7 @@ class ParallelRegionVisitor :
         }
 
         void visit_OMPBody(const ASR::OMPRegion_t* omp_region, Vec<ASR::stmt_t*>& dest_body) {
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
 
             for (size_t j = 0; j < omp_region->n_body; j++) {
@@ -1175,7 +1437,7 @@ class ParallelRegionVisitor :
             } else {
                 ASRUtils::ASRBuilder b(al, x.base.base.loc);
                 std::vector<ASR::stmt_t*> loop_body={};
-                DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
                 stmt_visitor.current_expr = nullptr;
                 nested_lowered_body={};
                 stmt_visitor.visit_do_loop_head(x.m_head);
@@ -1240,6 +1502,63 @@ class ParallelRegionVisitor :
             }
             // Default behavior: variables are shared unless explicitly made private
             return true;
+        }
+
+        // Array variables that this pass declared as pointers itself, to
+        // pass them to outlined functions; any other pointer array is a
+        // pointer array of the program
+        std::set<ASR::symbol_t*> pass_pointer_arrays;
+
+        bool is_program_pointer_array(SymbolTable* scope, const std::string& name) {
+            ASR::symbol_t* sym = scope->resolve_symbol(name);
+            if (sym == nullptr) {
+                return false;
+            }
+            ASR::ttype_t* sym_type = ASRUtils::symbol_type(ASRUtils::symbol_get_past_external(sym));
+            return ASRUtils::is_array(sym_type) && ASRUtils::is_pointer(sym_type)
+                && pass_pointer_arrays.find(sym) == pass_pointer_arrays.end();
+        }
+
+        // Records the arrays that the private and firstprivate clauses of
+        // the region name, so that the outlined function gives each of them
+        // storage of its own instead of pointing at the original array.
+        // Pointer arrays of the program own no storage: each thread already
+        // gets a pointer of its own that is associated with the original
+        // target, and the pass must neither allocate nor free that target
+        void collect_private_arrays(const ASR::OMPRegion_t& x, InvolvedSymbolsCollector& c) {
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                ASR::expr_t** vars = nullptr;
+                size_t n_vars = 0;
+                if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPPrivate) {
+                    ASR::OMPPrivate_t* private_clause = ASR::down_cast<ASR::OMPPrivate_t>(x.m_clauses[i]);
+                    vars = private_clause->m_vars;
+                    n_vars = private_clause->n_vars;
+                } else if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPFirstPrivate) {
+                    ASR::OMPFirstPrivate_t* firstprivate_clause = ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                    vars = firstprivate_clause->m_vars;
+                    n_vars = firstprivate_clause->n_vars;
+                }
+                for (size_t j = 0; j < n_vars; j++) {
+                    std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(vars[j])->m_v);
+                    auto sym = c.symbols.find(var_name);
+                    if (sym != c.symbols.end() && ASRUtils::is_array(sym->second.first)
+                            && !is_program_pointer_array(current_scope, var_name)) {
+                        c.private_arrays[var_name] = x.m_clauses[i]->type;
+                    }
+                }
+            }
+        }
+
+        // Frees the storage of the private arrays of the outlined function
+        // whose scope is current_scope, at the end of its body
+        void deallocate_private_arrays(const Location& loc, InvolvedSymbolsCollector* c, Vec<ASR::stmt_t*>& body) {
+            ASRUtils::ASRBuilder b(al, loc);
+            for (auto& it: c->private_arrays) {
+                ASR::expr_t* private_array = b.Var(current_scope->get_symbol(it.first));
+                ASR::expr_t* is_associated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                    private_array, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                body.push_back(al, b.If(is_associated, {b.Deallocate(private_array)}, {}));
+            }
         }
 
         ASR::ttype_t* descriptor_pointer_type(ASR::ttype_t* type) {
@@ -1413,7 +1732,16 @@ class ParallelRegionVisitor :
                     sym_type = it.second.first;
                 }
 
-                b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
+                // A procedure variable passed by value keeps its interface.
+                ASR::symbol_t* type_decl = nullptr;
+                if (!is_array && !is_shared && var->m_type_declaration &&
+                        ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(sym_type))) {
+                    type_decl = import_procedure_declaration(al, program_procedure_copies,
+                        parent_scope,
+                        var->m_type_declaration);
+                }
+                b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local,
+                    type_decl);
 
                 if (is_array && !shares_descriptor) {
                     // Add lbound and ubound variables for arrays
@@ -1474,7 +1802,7 @@ class ParallelRegionVisitor :
                 
                 // Handle private non-array variables (direct value assignment)
                 if (!is_array && !is_shared) {
-                    body.push_back(al, b.Assignment(
+                    body.push_back(al, copy_value(
                         b.Var(current_scope->get_symbol(it.first)),
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr))
@@ -1492,11 +1820,44 @@ class ParallelRegionVisitor :
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
 
                 if (is_array && c->descriptor_arrays.count(it.first)) {
-                    // <sym> => tdata%<sym>
-                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-                        b.Var(current_scope->get_symbol(it.first)),
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)))));
+                    ASR::expr_t* descriptor = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr));
+                    auto private_array = c->private_arrays.find(it.first);
+                    if (private_array == c->private_arrays.end()) {
+                        // <sym> => tdata%<sym>
+                        body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                            b.Var(current_scope->get_symbol(it.first)), descriptor)));
+                        continue;
+                    }
+                    // A private copy exists only if the original is associated, which an
+                    // array the pass turned into a pointer may not be, and then has the
+                    // bounds of the original, which may have strides:
+                    // original_<sym> => tdata%<sym>
+                    // if (associated(original_<sym>)) then
+                    //     allocate(<sym>(lbound(original_<sym>):ubound(original_<sym>)))
+                    //     <sym> = original_<sym>    ! firstprivate
+                    // end if
+                    ASR::expr_t* original = b.Variable(current_scope,
+                        current_scope->get_unique_name("original_" + it.first), ASRUtils::expr_type(descriptor),
+                        ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor)));
+                    ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(sym_type);
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
+                    for (size_t i = 0; i < n_dims; i++) {
+                        ASR::dimension_t dim;
+                        dim.loc = loc;
+                        dim.m_start = b.ArrayLBound(original, i + 1);
+                        dim.m_length = b.ArraySize(original, b.i32(i + 1), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+                        dims.push_back(al, dim);
+                    }
+                    std::vector<ASR::stmt_t*> allocate_copy = {b.Allocate(copy, dims.p, dims.n)};
+                    if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
+                        allocate_copy.push_back(b.Assignment(copy, original));
+                    }
+                    ASR::expr_t* is_associated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                        original, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    body.push_back(al, b.If(is_associated, allocate_copy, {}));
                 } else if (is_array) {
                     // Handle arrays (existing logic)
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
@@ -1527,15 +1888,49 @@ class ParallelRegionVisitor :
                         size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
                     ASR::expr_t* lbounds_constructor = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                         lbounds.p, lbounds.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
-                    
-                    // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
-                    body.push_back(al, b.CPtrToPointer(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first)),
-                        shape,
-                        lbounds_constructor
-                    ));
+                    ASR::expr_t* original_data = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr));
+
+                    auto private_array = c->private_arrays.find(it.first);
+                    if (private_array == c->private_arrays.end()) {
+                        // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
+                        body.push_back(al, b.CPtrToPointer(
+                            original_data,
+                            b.Var(current_scope->get_symbol(it.first)),
+                            shape,
+                            lbounds_constructor
+                        ));
+                        continue;
+                    }
+
+                    // A private copy exists only if the original array is
+                    // allocated, and then has the bounds of the original:
+                    // if (c_associated(tdata%<sym>)) then
+                    //     allocate(<sym>(lbound:ubound))
+                    //     call c_f_pointer(tdata%<sym>, original_<sym>, [ubound-lbound+1], [lbound])  ! firstprivate
+                    //     <sym> = original_<sym>                                                    ! firstprivate
+                    // end if
+                    ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        ASR::dimension_t dim;
+                        dim.loc = loc;
+                        dim.m_start = lbounds[i];
+                        dim.m_length = size_args[i];
+                        dims.push_back(al, dim);
+                    }
+                    std::vector<ASR::stmt_t*> allocate_copy = {b.Allocate(copy, dims.p, dims.n)};
+                    if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
+                        ASR::expr_t* original = b.Variable(current_scope,
+                            current_scope->get_unique_name("original_" + it.first), sym_type,
+                            ASR::intentType::Local, involved_type_declaration(it.second.second),
+                            ASR::abiType::BindC);
+                        allocate_copy.push_back(b.CPtrToPointer(original_data, original, shape, lbounds_constructor));
+                        allocate_copy.push_back(b.Assignment(copy, original));
+                    }
+                    ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                        original_data, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+                    body.push_back(al, b.If(is_allocated, allocate_copy, {}));
                 } else if (is_shared) {
                     // Handle shared non-array variables using CPtr approach
                     // call c_f_pointer(tdata%<sym>, temp_ptr)
@@ -1557,6 +1952,9 @@ class ParallelRegionVisitor :
             // Process arrays first (existing logic with some modifications)
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = it.second.first;
+                if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(sym_type))) {
+                    continue;
+                }
                 ASR::symbol_t* scope_sym = current_scope->resolve_symbol(it.first);
                 if (scope_sym != nullptr && ASRUtils::is_array(sym_type)) {
                     ASR::ttype_t* scope_type = ASRUtils::symbol_type(scope_sym);
@@ -1597,13 +1995,23 @@ class ParallelRegionVisitor :
                             array as it is; its storage is contiguous, so the outlined
                             region receives its data address and bounds and associates
                             its own pointer with them.
+                            The region's statements move to the outlined function, which
+                            replaces their variables in place, also in the dimensions of
+                            expression types that share the array's declared type. Give
+                            the declaration a type of its own, so that its dimensions keep
+                            referring to variables of its own scope.
                         */
+                        ASR::Variable_t* array_variable = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(it.first)));
+                        array_variable->m_type = ASRUtils::duplicate_type(al, array_variable->m_type,
+                            nullptr, array_type->m_physical_type, true);
                         involved_symbols[it.first].first = array_pointer_type;
                         continue;
                     }
                     ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
                             array_pointer_type, is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
                     LCOMPILERS_ASSERT(array_expr != nullptr);
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(array_expr)->m_v);
                     
                     bool already_allocated = true;
                     if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
@@ -1728,7 +2136,7 @@ class ParallelRegionVisitor :
                     ));
                 } else {
                     // Handle private variables (direct value assignment)
-                    nested_lowered_body.push_back(b.Assignment(
+                    nested_lowered_body.push_back(copy_value(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
                         b.Var(current_scope->get_symbol(it.first))
@@ -1876,12 +2284,17 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
 
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             // stmt_visitor.visit_OMPRegion(x);
 
@@ -1928,6 +2341,7 @@ class ParallelRegionVisitor :
                 fn_body.push_back(al,nested_lowered_body[i]);
             }
             nested_lowered_body = body_copy;
+            deallocate_private_arrays(x.base.base.loc, c, fn_body);
 
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_parallel_func");
@@ -2052,6 +2466,8 @@ class ParallelRegionVisitor :
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
             }
+
+            collect_private_arrays(x, c);
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module_omp(&c, x.base.base.loc);
@@ -2190,7 +2606,7 @@ class ParallelRegionVisitor :
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             stmt_visitor.visit_OMPRegion(x);
 
@@ -2612,6 +3028,7 @@ class ParallelRegionVisitor :
                     }
                 }
             }
+            collect_private_arrays(x, c);
             // Create thread data module for task
             std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct", false);
             // Create required modules (iso_c_binding and omp_lib)
@@ -2760,12 +3177,18 @@ class ParallelRegionVisitor :
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
             visit_OMPBody(&x, fn_body);
+            deallocate_private_arrays(loc, c, fn_body);
             
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_task_func");
@@ -2788,7 +3211,7 @@ class ParallelRegionVisitor :
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             
             // Count the number of sections in the body
@@ -2896,7 +3319,7 @@ class ParallelRegionVisitor :
             Vec<ASR::stmt_t*> single_body;
             single_body.reserve(al, x.n_body);
             // Process body, handling nested OMPRegions recursively
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             visit_OMPBody(&x, single_body);
             std::vector<ASR::stmt_t*> single_body_s={};
@@ -2920,7 +3343,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the critical section body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             Vec<ASR::stmt_t*> critical_body;
             critical_body.reserve(al,1);
@@ -2952,7 +3375,7 @@ class ParallelRegionVisitor :
                 current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr, false)));
 
             // Process the atomic section body
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             Vec<ASR::stmt_t*> atomic_body;
             atomic_body.reserve(al,1);
@@ -3115,8 +3538,13 @@ class ParallelRegionVisitor :
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, 
-                    ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
+                ASR::expr_t* var = b.Variable(current_scope, it.first, var_type,
+                    ASR::intentType::Local, involved_type_declaration(it.second.second), ASR::abiType::BindC);
+                LCOMPILERS_ASSERT(var != nullptr);
+                if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
+                        && !is_program_pointer_array(current_scope_copy, it.first)) {
+                    pass_pointer_arrays.insert(ASR::down_cast<ASR::Var_t>(var)->m_v);
+                }
             }
             
             // Unpack data
@@ -3125,7 +3553,7 @@ class ParallelRegionVisitor :
             Vec<ASR::OMPReduction_t*> reduction_clauses;
             reduction_clauses.reserve(al,0);
 
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             for(size_t i=0; i<x.n_clauses; i++){
                 stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
@@ -3166,6 +3594,7 @@ class ParallelRegionVisitor :
             }
             nested_lowered_body = body_copy;
             reduction_variables=reduction_vars_copy;
+            deallocate_private_arrays(x.base.base.loc, c, fn_body);
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_teams_func");
             ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
@@ -3219,7 +3648,9 @@ class ParallelRegionVisitor :
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
             }
-            
+
+            collect_private_arrays(x, c);
+
             // Create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = 
                 create_thread_data_module_omp(&c, x.base.base.loc, "teams_thread_data");
@@ -3389,7 +3820,7 @@ class ParallelRegionVisitor :
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
             
             // Similar to OMPDo but distribute iterations across teams
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
             if (lower_body) {
                 stmt_visitor.visit_OMPRegion(x);
@@ -3661,6 +4092,8 @@ void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
         v.visit_TranslationUnit(unit);
         RepointCallArguments r(al);
         r.visit_TranslationUnit(unit);
+        // The outlined procedures call omp_lib (GOMP) functions and call and
+        // reference procedures of the code they were moved from.
         PassUtils::UpdateDependenciesVisitor u(al);
         u.visit_TranslationUnit(unit);
     }

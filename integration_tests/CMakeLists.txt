@@ -2249,6 +2249,67 @@ RUN(NAME implicit_interface_64 LABELS gfortran llvm EXTRA_ARGS --implicit-interf
     EXTRAFILES implicit_interface_64b.f90)
 RUN(NAME implicit_interface_65 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_66 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+RUN(NAME implicit_interface_67 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_68 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_68b.f90)
+RUN(NAME implicit_interface_69 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_69b.f90)
+RUN(NAME implicit_interface_70 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_71 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_71c.f90 implicit_interface_71b.f90)
+RUN(NAME implicit_interface_72 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_72b.f90)
+RUN(NAME implicit_interface_73 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_74 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_74b.f90)
+RUN(NAME implicit_interface_75 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_76 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_76b.f90)
+RUN(NAME implicit_interface_77 LABELS gfortran llvm
+    EXTRA_ARGS --separate-compilation --implicit-interface
+    EXTRAFILES implicit_interface_77c.f90 implicit_interface_77b.f90)
+RUN(NAME implicit_interface_78 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_78b.f90)
+RUN(NAME implicit_interface_79 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_79b.f90)
+RUN(NAME implicit_interface_80 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_80b.f90)
+RUN(NAME implicit_interface_81 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_81b.f90)
+RUN(NAME implicit_interface_82 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_82b.f90)
+RUN(NAME implicit_interface_83 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_84 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_84b.f90)
+RUN(NAME implicit_interface_85 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_86 LABELS gfortran llvm llvm_omp EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_87 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_88 LABELS gfortran llvm EXTRA_ARGS --implicit-interface
+    EXTRAFILES implicit_interface_88b.f90 implicit_interface_88c.f90)
+RUN(NAME implicit_interface_89 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_90 LABELS gfortran llvm llvm_omp EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_91 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_92 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_93 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_94 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_95 LABELS gfortran llvm_omp EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_96 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_97 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_98 LABELS gfortran llvm_omp EXTRA_ARGS --implicit-interface
+    GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_99 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_100 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_101 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_102 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_103 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_104 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_105 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_106 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_107 LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME implicit_interface_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -2632,6 +2693,10 @@ RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_type_with_default_init_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_type_nested_parameter_init_01 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_02 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_03 LABELS gfortran llvm)
+RUN(NAME derived_type_nested_parameter_init_04 LABELS gfortran llvm)
 RUN(NAME derived_type_c_funptr_array_01 LABELS gfortran llvm)
 RUN(NAME multi_file_member_access_01 LABELS gfortran llvm llvm_single_invocation EXTRAFILES multi_file_member_access_01_mod.f90)
 RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTRAFILES multi_file_member_access_02_mod.f90)
@@ -2846,6 +2911,7 @@ RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmImplicit fortran)
+RUN(NAME attr_dim_05 LABELS gfortran llvm)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -4060,6 +4126,9 @@ RUN(NAME save_12 LABELS gfortran llvmImplicit)
 RUN(NAME save_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME save_14 LABELS gfortran llvm)
 RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME save_19 LABELS gfortran llvm)
+RUN(NAME save_20 LABELS gfortran llvm)
+RUN(NAME save_21 LABELS gfortran llvm NO_DETECT_LEAKS) # #13093: a save local with a character component leaks its string
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4594,11 +4663,14 @@ RUN(NAME openmp_82 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_83 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_84 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_85 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_86 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_87 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_88 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_90 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_91 LABELS gfortran llvm_omp EXTRAFILES openmp_91_mod.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_92 LABELS gfortran llvm_omp EXTRAFILES openmp_92b.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_93 LABELS gfortran llvm_omp EXTRAFILES openmp_93b.f90 GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_94 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -4622,6 +4694,7 @@ RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME struct_constant_extends_01 LABELS gfortran llvm)
 RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME struct_type_02 LABELS gfortran llvm)
 RUN(NAME struct_type_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -1,0 +1,29 @@
+semantic error: Call to impure procedure 'g' is not allowed inside a PURE procedure
+  --> tests/errors/implicit_interface_pure.f90:15:25
+   |
+15 |         pure_external = g(x)
+   |                         ^^^^ 
+
+semantic error: Call to impure procedure 's' is not allowed inside a PURE procedure
+  --> tests/errors/implicit_interface_pure.f90:21:9
+   |
+21 |         call s(x)
+   |         ^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'ext_mod' is not allowed inside a PURE procedure
+  --> tests/errors/implicit_interface_pure.f90:26:31
+   |
+26 |         pure_use_associated = ext_mod(x)
+   |                               ^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'f' is not allowed inside a PURE procedure
+  --> tests/errors/implicit_interface_pure.f90:32:22
+   |
+32 |         pure_dummy = f(x)
+   |                      ^^^^ 
+
+semantic error: Call to impure procedure 's' is not allowed inside a PURE procedure
+  --> tests/errors/implicit_interface_pure.f90:38:9
+   |
+38 |         call s(x)
+   |         ^^^^^^^^^ 

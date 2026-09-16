@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface_specification_function-51e1e29",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/implicit_interface_specification_function.f90",
+    "infile_hash": "da6a92b0a5fd1063540167a0b8f9454bf0fabef5470a4d46c82962b2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_interface_specification_function-51e1e29.stderr",
+    "stderr_hash": "5e192260ebcf01525693b81796f4f225676c2d8d0a1b588f0a03eb4e",
+    "returncode": 1
+}
