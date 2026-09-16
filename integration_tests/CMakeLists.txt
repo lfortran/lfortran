@@ -10,7 +10,7 @@ endif ()
 set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the given backend")
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
-set(NOFAST_LLVM16 no CACHE BOOL "With FAST, skip --fast only on tests marked NOFAST_TILL_LLVM16 (LLVM < 17)")
+set(NOFAST_LLVM16 no CACHE BOOL "With FAST, skip --fast only on tests marked NOFAST_TILL_LLVM16 (LLVM 8)")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
 
@@ -310,7 +310,7 @@ macro(RUN)
 
     # -f enables --fast on every test except NO_FAST.
     # -f -nf16 (NOFAST_LLVM16) still enables --fast, except on tests marked
-    # NOFAST_TILL_LLVM16, which stay without --fast (LLVM < 17).
+    # NOFAST_TILL_LLVM16, which stay without --fast (LLVM 8).
     if (FAST AND (NOT RUN_NO_FAST) AND NOT (NOFAST_LLVM16 AND RUN_NOFAST_TILL_LLVM16))
         set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --fast)
         if (RUN_NO_FAST_MATH)

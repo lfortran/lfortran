@@ -22,8 +22,10 @@ cd integration_tests
 ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j"${NPROC}"
 ./run_tests.py -b llvm -sc -j"${NPROC}"
 ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j"${NPROC}"
-# LLVM < 17: still run --fast, but skip tests marked NOFAST_TILL_LLVM16.
-if [[ "${LFORTRAN_LLVM_VERSION}" -lt 17 ]]; then
+# LLVM 8: still run --fast, but skip tests marked NOFAST_TILL_LLVM16
+# (arrays_61, pack/matmul/sum, exponent Inf/NaN). LLVM 10 and 15 now run
+# full --fast on main; if they fail there, re-add -nf16 for those versions.
+if [[ "${LFORTRAN_LLVM_VERSION}" == "8" ]]; then
     ./run_tests.py -b llvm llvmImplicit -f -nf16 -j"${NPROC}"
 else
     ./run_tests.py -b llvm llvmImplicit -f -j"${NPROC}"
