@@ -1,0 +1,1253 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            apply_fun:
+                (Function
+                    (SymbolTable
+                        10
+                        {
+                            h:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            h_return_var_name:
+                                                (Variable
+                                                    11
+                                                    h_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    h
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 11 h_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            h~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            h~arg_0:
+                                                (Variable
+                                                    15
+                                                    h~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            h~result:
+                                                (Variable
+                                                    15
+                                                    h~result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    h~fpcast
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 15 h~arg_0)]
+                                    []
+                                    (Var 15 h~result)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            h~fpcast_ptr:
+                                (Variable
+                                    10
+                                    h~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)]
+                                            (Integer 4)
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    10 h~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            i:
+                                (Variable
+                                    10
+                                    i
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    apply_fun
+                    (FunctionType
+                        [(FunctionType
+                            []
+                            (Integer 4)
+                            BindC
+                            ImplicitInterface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                            Host
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 10 h)
+                    (Var 10 i)]
+                    [(Associate
+                        (Var 10 h~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 10 h)
+                            10 h~fpcast
+                            (FunctionType
+                                [(Integer 4)]
+                                (Integer 4)
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 10 i)
+                        (FunctionCall
+                            10 h~fpcast_ptr
+                            ()
+                            [((Var 10 i))]
+                            (Integer 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            apply_sub:
+                (Function
+                    (SymbolTable
+                        8
+                        {
+                            g:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            
+                                        })
+                                    g
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            g~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            g~arg_0:
+                                                (Variable
+                                                    14
+                                                    g~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    g~fpcast
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 14 g~arg_0)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            g~fpcast_ptr:
+                                (Variable
+                                    8
+                                    g~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    8 g~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            i:
+                                (Variable
+                                    8
+                                    i
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    apply_sub
+                    (FunctionType
+                        [(FunctionType
+                            []
+                            ()
+                            BindC
+                            ImplicitInterface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                            Host
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 8 g)
+                    (Var 8 i)]
+                    [(Associate
+                        (Var 8 g~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 8 g)
+                            8 g~fpcast
+                            (FunctionType
+                                [(Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        8 g~fpcast_ptr
+                        8 g
+                        [((Var 8 i))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            external_24:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            apply_fun:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            
+                                        })
+                                    apply_fun
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            apply_fun~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            apply_fun~arg_1:
+                                                (Variable
+                                                    13
+                                                    apply_fun~arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    apply_fun~fpcast
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Integer 4)]
+                                            (Integer 4)
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 twice)
+                                    (Var 13 apply_fun~arg_1)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            apply_fun~fpcast_ptr:
+                                (Variable
+                                    5
+                                    apply_fun~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(FunctionType
+                                                [(Integer 4)]
+                                                (Integer 4)
+                                                Source
+                                                Implementation
+                                                ()
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                []
+                                                .false.
+                                                Host
+                                            )
+                                            (Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    5 apply_fun~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            apply_sub:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    apply_sub
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            apply_sub~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            apply_sub~arg_1:
+                                                (Variable
+                                                    12
+                                                    apply_sub~arg_1
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    apply_sub~fpcast
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Integer 4)]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                        (Integer 4)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 incr)
+                                    (Var 12 apply_sub~arg_1)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            apply_sub~fpcast_ptr:
+                                (Variable
+                                    5
+                                    apply_sub~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(FunctionType
+                                                [(Integer 4)]
+                                                ()
+                                                Source
+                                                Implementation
+                                                ()
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                []
+                                                .false.
+                                                Host
+                                            )
+                                            (Integer 4)]
+                                            ()
+                                            BindC
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    5 apply_sub~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            i:
+                                (Variable
+                                    5
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            incr:
+                                (ExternalSymbol
+                                    5
+                                    incr
+                                    2 incr
+                                    external_24_mod
+                                    []
+                                    incr
+                                    Public
+                                ),
+                            twice:
+                                (ExternalSymbol
+                                    5
+                                    twice
+                                    2 twice
+                                    external_24_mod
+                                    []
+                                    twice
+                                    Public
+                                )
+                        })
+                    external_24
+                    [external_24_mod]
+                    [(Assignment
+                        (Var 5 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Associate
+                        (Var 5 apply_sub~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 5 apply_sub)
+                            5 apply_sub~fpcast
+                            (FunctionType
+                                [(FunctionType
+                                    [(Integer 4)]
+                                    ()
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                    Host
+                                )
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        5 apply_sub~fpcast_ptr
+                        5 apply_sub
+                        [((Var 5 incr))
+                        ((Var 5 i))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 5 i)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Associate
+                        (Var 5 apply_sub~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 5 apply_sub)
+                            5 apply_sub~fpcast
+                            (FunctionType
+                                [(FunctionType
+                                    [(Integer 4)]
+                                    ()
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                    Host
+                                )
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        5 apply_sub~fpcast_ptr
+                        5 apply_sub
+                        [((Var 5 incr))
+                        ((Var 5 i))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 5 i)
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Associate
+                        (Var 5 apply_fun~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 5 apply_fun)
+                            5 apply_fun~fpcast
+                            (FunctionType
+                                [(FunctionType
+                                    [(Integer 4)]
+                                    (Integer 4)
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                    Host
+                                )
+                                (Integer 4)]
+                                ()
+                                BindC
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                    )
+                    (SubroutineCall
+                        5 apply_fun~fpcast_ptr
+                        5 apply_fun
+                        [((Var 5 twice))
+                        ((Var 5 i))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 5 i)
+                            NotEq
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 5 i)]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                ),
+            external_24_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            incr:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    incr
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    [(Assignment
+                                        (Var 3 x)
+                                        (IntegerBinOp
+                                            (Var 3 x)
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            twice:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            twice:
+                                                (Variable
+                                                    4
+                                                    twice
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    twice
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 x)]
+                                    [(Assignment
+                                        (Var 4 twice)
+                                        (IntegerBinOp
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            Mul
+                                            (Var 4 x)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 twice)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    external_24_mod
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

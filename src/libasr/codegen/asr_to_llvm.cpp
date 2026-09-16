@@ -6822,7 +6822,8 @@ public:
 
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
             ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
-            bool skip_allocatable_array_descriptor_init = false) {
+            bool skip_allocatable_array_descriptor_init = false,
+            ASR::StructConstant_t* init_sc = nullptr) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -6846,6 +6847,36 @@ public:
                 }
             }
         }
+        // `init_sc` is a constructor default of the enclosing member, such as
+        // `type(t) :: part = t("hello")`. Its arguments, which list parent
+        // components first, replace the members' own defaults. A null()
+        // argument for a pointer member is stored like a `=> null()` default.
+        // null() for an allocatable member reaches here as an omitted
+        // argument, so every null() argument belongs to a pointer member.
+        std::map<std::string, ASR::expr_t*> init_sc_args;
+        if (init_sc) {
+            std::vector<ASR::Struct_t*> chain;
+            for (ASR::Struct_t* s = struct_sym; s; s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+                chain.push_back(s);
+            }
+            size_t i = 0;
+            for (auto s = chain.rbegin(); s != chain.rend(); ++s) {
+                for (size_t j = 0; j < (*s)->n_members; j++, i++) {
+                    LCOMPILERS_ASSERT(i < init_sc->n_args);
+                    ASR::expr_t* arg = init_sc->m_args[i].m_value;
+                    LCOMPILERS_ASSERT(!arg || !ASR::is_a<ASR::PointerNullConstant_t>(*arg) ||
+                        !ASRUtils::is_allocatable(ASRUtils::symbol_type(
+                            (*s)->m_symtab->get_symbol((*s)->m_members[j]))));
+                    if (arg) {
+                        init_sc_args[(*s)->m_members[j]] = arg;
+                    }
+                }
+            }
+            LCOMPILERS_ASSERT(i == init_sc->n_args);
+        }
+        bool apply_init = initialize_val &&
+            (init_sc || !(is_intent_out && struct_has_finalizer));
 
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
@@ -6868,6 +6899,11 @@ public:
                     continue ;
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
+                ASR::expr_t* member_init = nullptr;
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    member_init = init_sc ? init_sc_args[item.first]
+                        : ASR::down_cast<ASR::Variable_t>(sym)->m_symbolic_value;
+                }
                 // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
                 // as a flat [count*len x i8] blob in place: there is no string
                 // descriptor to allocate or initialize at runtime (scalars and
@@ -6875,6 +6911,12 @@ public:
                 if (ASR::is_a<ASR::Variable_t>(*sym)
                         && ASRUtils::is_inline_character_struct_member(
                             struct_type_t, symbol_type)) {
+                    if (init_sc && member_init) {
+                        builder->CreateStore(
+                            get_inline_char_member_constant(symbol_type, member_init),
+                            llvm_utils->create_gep2(name2dertype[struct_type_name], ptr,
+                                name2memidx[struct_type_name][item.first]));
+                    }
                     continue;
                 }
                 int idx = 0;
@@ -6999,8 +7041,18 @@ public:
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
+                    // Apply a constructor default member by member. Storing the
+                    // whole constant struct afterwards would replace the members'
+                    // own heap string buffers with pointers into read-only
+                    // constant data, which the scope-exit finalizer would then
+                    // try to free.
+                    ASR::expr_t* init_value = member_init ? ASRUtils::expr_value(member_init) : nullptr;
+                    ASR::StructConstant_t* member_sc = nullptr;
+                    if (apply_init && init_value && ASR::is_a<ASR::StructConstant_t>(*init_value)) {
+                        member_sc = ASR::down_cast<ASR::StructConstant_t>(init_value);
+                    }
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type,
-                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init);
+                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init, member_sc);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C)/SEQUENCE struct
                     // non-pointer character members (inline [len x i8]).
@@ -7023,11 +7075,10 @@ public:
                         }
                     }
                 }
-                if( ASR::is_a<ASR::Variable_t>(*sym) && initialize_val &&
-                    !(is_intent_out && struct_has_finalizer)) {
+                if( ASR::is_a<ASR::Variable_t>(*sym) && apply_init ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
-                    if( v->m_symbolic_value ) {
-                        ASR::expr_t* init_value = ASRUtils::expr_value(v->m_symbolic_value);
+                    if( member_init ) {
+                        ASR::expr_t* init_value = ASRUtils::expr_value(member_init);
                         ASR::ttype_t* init_type = ASRUtils::extract_type(symbol_type);
                         bool use_constant_init = init_value != nullptr &&
                             !ASRUtils::is_array(symbol_type) &&
@@ -7040,12 +7091,18 @@ public:
                              ASR::is_a<ASR::Complex_t>(*init_type));
                         if( use_constant_init ) {
                             llvm::Constant* init_constant =
-                                create_llvm_constant_from_asr_expr(v->m_symbolic_value, symbol_type);
+                                create_llvm_constant_from_asr_expr(member_init, symbol_type);
                             LLVM::CreateStore(*builder, init_constant, ptr_member);
                             continue;
                         }
-                        visit_expr(*v->m_symbolic_value);
-                        if( ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) &&
+                        if( init_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*init_value) &&
+                            ASR::is_a<ASR::StructType_t>(*symbol_type) &&
+                            !ASRUtils::is_class_type(symbol_type) ) {
+                            // Already applied member by member above.
+                            continue;
+                        }
+                        visit_expr(*member_init);
+                        if( ASR::is_a<ASR::PointerNullConstant_t>(*member_init) &&
                             ASRUtils::is_array(v->m_type)){ // Store into array's data pointer.
                             if(ASR::is_a<ASR::Pointer_t>(*v->m_type)){
                                 // Pointer array: store null into descriptor's data pointer.
@@ -7075,15 +7132,15 @@ public:
                                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), total_bytes),
                                     llvm::MaybeAlign());
                             }
-                        } else if(ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) &&
-                                  ASRUtils::is_string_only(expr_type(v->m_symbolic_value))) {
+                        } else if(ASR::is_a<ASR::PointerNullConstant_t>(*member_init) &&
+                                  ASRUtils::is_string_only(expr_type(member_init))) {
                             // Scalar character pointer initialized with `=> null()`:
                             // the zeroed descriptor is already the null state.
-                        } else if(ASRUtils::is_string_only(expr_type(v->m_symbolic_value))) {
+                        } else if(ASRUtils::is_string_only(expr_type(member_init))) {
                             llvm_utils->lfortran_str_copy(
                             ptr_member, tmp,
                             ASRUtils::get_string_type(symbol_type),
-                            ASRUtils::get_string_type(expr_type(v->m_symbolic_value)),
+                            ASRUtils::get_string_type(expr_type(member_init)),
                             ASRUtils::is_allocatable(symbol_type));
                         } else if (ASRUtils::is_array_of_strings(v->m_type) &&
                                    ASRUtils::extract_physical_type(v->m_type) ==
@@ -7094,7 +7151,7 @@ public:
                             // would leave the member pointing at the read-only
                             // constant the initializer lives in, which the
                             // scope-exit finalizer would then try to free.
-                            ASR::ttype_t* value_type = ASRUtils::expr_type(v->m_symbolic_value);
+                            ASR::ttype_t* value_type = ASRUtils::expr_type(member_init);
                             ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
                             llvm::Value* n_bytes = builder->CreateMul(
                                 llvm_utils->get_string_length(str_type, ptr_member),
@@ -7107,12 +7164,12 @@ public:
                                 llvm::MaybeAlign(),
                                 n_bytes, v->m_is_volatile);
                         } else if (ASRUtils::is_array(v->m_type)) {
-                            ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(v->m_symbolic_value));
-                            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_value(v->m_symbolic_value), arr_const->m_type, module.get());
+                            ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(member_init));
+                            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_value(member_init), arr_const->m_type, module.get());
                             llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                             llvm::APInt(32, ASRUtils::get_fixed_size_of_array(arr_const->m_type)));
-                            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_value(v->m_symbolic_value),
-                                ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_symbolic_value)), module.get());
+                            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_value(member_init),
+                                ASRUtils::type_get_past_array(ASRUtils::expr_type(member_init)), module.get());
                             llvm::DataLayout data_layout(module->getDataLayout());
                             size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                             arg_size = builder->CreateMul(llvm::ConstantInt::get(
@@ -7121,7 +7178,7 @@ public:
                                 llvm::MaybeAlign(), tmp, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
                         } else if ((ASRUtils::is_pointer(v->m_type) &&
                                 !ASR::is_a<ASR::PointerNullConstant_t>(
-                                    *v->m_symbolic_value) &&
+                                    *member_init) &&
                                 !ASR::is_a<ASR::FunctionType_t>(
                                     *ASRUtils::type_get_past_pointer(v->m_type)))  ||
                             ASRUtils::is_allocatable(v->m_type)) { // Any non primitve
