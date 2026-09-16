@@ -1993,12 +1993,6 @@ if_statement_single
             $$ = IFARITHMETIC($3, INTEGER3($5), INTEGER3($7), INTEGER3($9), @$); }
     ;
 
-// `endif` is consumed inside if_block/elseif_block (rather than once in
-// if_statement) so that its optional statement label (`86 end if`) is
-// shifted in the same production as `statements`: the parser can then
-// postpone the statement-vs-endif decision past TK_LABEL, exactly like
-// `enddo` in do_statement. A trailing `endif` after `if_block` would need
-// the block reduced before the label is seen, an essential s/r conflict.
 if_block
     : KW_IF "(" expr ")" KW_THEN id_opt sep statements endif {
             $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); IF_END_LABEL($$, $9); }
