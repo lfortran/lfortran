@@ -2615,10 +2615,10 @@ public:
                             wrapper, mold_wrapper, class_type, num_elements);
                     }
                     if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))
-                        && !ASRUtils::is_unlimited_polymorphic_type(tmp_expr) ) {
+                        && (!ASRUtils::is_unlimited_polymorphic_type(tmp_expr) || curr_arg.m_sym_subclass) ) {
                         llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                         allocate_array_members_of_struct_arrays(tmp_expr, x_arr_,
-                            ASRUtils::expr_type(tmp_expr));
+                            ASRUtils::expr_type(tmp_expr), curr_arg.m_sym_subclass);
                     }
                 };
                 if (m_stat && !realloc && is_allocated != nullptr) {
@@ -7198,7 +7198,10 @@ public:
         }
     }
 
-    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type) {
+    void allocate_array_members_of_struct_arrays(ASR::expr_t* expr, llvm::Value* ptr, ASR::ttype_t* v_m_type,
+            ASR::symbol_t* alloc_subclass = nullptr) {
+        ASR::Struct_t* elem_struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+            alloc_subclass ? alloc_subclass : ASRUtils::get_struct_sym_from_struct_expr(expr)));
         ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(v_m_type);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::extract_type(v_m_type), module.get());
@@ -7265,8 +7268,23 @@ public:
                                 ASRUtils::extract_type(v_m_type));
                             llvm::Value* class_wrapper = llvm_utils->CreateLoad2(el_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(ptr_i_type, ptr));
-                            ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
-                                class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            if (alloc_subclass) {
+                                // Allocated with a type-spec: walk elements as the dynamic type
+                                // so its own components get default-initialized too.
+                                llvm::Type* class_type = llvm_utils->getClassType(struct_sym);
+                                llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+                                    llvm_utils->create_gep2(class_type, class_wrapper, 0));
+                                llvm::Value* data = llvm_utils->CreateLoad2(
+                                    ASRUtils::is_unlimited_polymorphic_type(&struct_sym->base)
+                                        ? llvm_utils->i8_ptr : llvm_utils->getStructType(struct_sym, module.get(), true),
+                                    llvm_utils->create_gep2(class_type, class_wrapper, 1));
+                                ptr_i = builder->CreateBitCast(
+                                    llvm_utils->get_polymorphic_array_data_ptr(data, llvm_utils->CreateLoad2(t, llvmi), vptr),
+                                    llvm_utils->getStructType(elem_struct_sym, module.get(), true));
+                            } else {
+                                ptr_i = llvm_utils->get_class_element_from_array(struct_sym, struct_type,
+                                    class_wrapper, llvm_utils->CreateLoad2(t, llvmi));
+                            }
                         } else {
                             ptr_i = llvm_utils->create_ptr_gep2(el_type,
                                 llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(ptr_i_type, ptr)),
@@ -7282,9 +7300,9 @@ public:
                         LCOMPILERS_ASSERT(false);
                     }
                 }
-                allocate_array_members_of_struct(
-                    ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
-                        ptr_i, ASRUtils::extract_type(v_m_type), false, true, true);
+                allocate_array_members_of_struct(elem_struct_sym, ptr_i,
+                    alloc_subclass ? ASRUtils::symbol_type(&elem_struct_sym->base) : ASRUtils::extract_type(v_m_type),
+                    false, true, true);
                 LLVM::CreateStore(*builder,
                     builder->CreateAdd(llvm_utils->CreateLoad2(t, llvmi),
                         llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1))),
