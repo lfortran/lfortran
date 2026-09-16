@@ -4134,6 +4134,7 @@ RUN(NAME save_15 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME save_19 LABELS gfortran llvm)
 RUN(NAME save_20 LABELS gfortran llvm)
 RUN(NAME save_21 LABELS gfortran llvm NO_DETECT_LEAKS) # #13093: a save local with a character component leaks its string
+RUN(NAME save_22 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

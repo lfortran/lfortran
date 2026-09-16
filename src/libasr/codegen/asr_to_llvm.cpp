@@ -463,6 +463,12 @@ public:
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
     };
     std::vector<variable_inital_value> variable_inital_value_vec; /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
+    struct saved_struct_variable { /* A procedure's save variable of struct type, whose members are finalized at program exit */
+        ASR::Variable_t* v;
+        llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
+        llvm::Value* init_guard; // True once the members have been initialized.
+    };
+    std::vector<saved_struct_variable> saved_struct_variable_vec;
 
     // Pool of allocas for call arguments, keyed by LLVM type.
     // This avoids creating a new alloca for every expression argument at every
@@ -6642,6 +6648,19 @@ public:
                 }
             }
         }
+        // Same for the save variables of struct type that procedures and
+        // blocks allocated member storage for. Their initialization runs on
+        // the first call only, so a procedure that was never called has
+        // nothing to free: finalize under the same guard that initialized it.
+        for(saved_struct_variable saved_var : saved_struct_variable_vec){
+            llvm::Value* initialized = builder->CreateLoad(
+                llvm::Type::getInt1Ty(context), saved_var.init_guard);
+            llvm_utils->create_if_else(initialized, [&](){
+                llvm_symtab_finalizer.finalize_saved_struct_variable(
+                    saved_var.v, saved_var.target_var);
+            }, [](){});
+        }
+        saved_struct_variable_vec.clear();
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = module->getFunction(
@@ -8004,6 +8023,18 @@ public:
                     llvm_fn_insert_bb(fn, struct_init_bb);
                     builder->SetInsertPoint(struct_init_bb);
                     builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+
+                    // The member storage allocated below lives until the
+                    // program ends, and the variable outlives every call to
+                    // its procedure, so nothing frees it at scope exit. A
+                    // save variable of the main program is finalized there,
+                    // but one of a procedure or a block is not, so remember
+                    // it and finalize it at program exit to keep the leak
+                    // report clean, as with the module globals.
+                    if (compiler_options.detect_leaks &&
+                            x.class_type != ASR::symbolType::Program) {
+                        saved_struct_variable_vec.push_back({v, ptr, guard});
+                    }
                 }
                 if( ASRUtils::is_array(v->m_type) ) {
                     // For DescriptorArray, the array descriptor (ndim, dim_desc, data
