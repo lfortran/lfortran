@@ -1,7 +1,13 @@
 (TranslationUnit
     [(Program
         if3
-        ()
+        (TriviaNode
+            [(EndOfLine)
+            (Comment
+                "! Runtime counterpart: integration_tests/if_08.f90"
+            )]
+            []
+        )
         [(Declaration
             (AttrType
                 TypeInteger

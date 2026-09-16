@@ -1,4 +1,5 @@
 program if3
+    ! Runtime counterpart: integration_tests/if_08.f90
     integer :: i
     i = 1
     if (i > 0) then
