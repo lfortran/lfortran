@@ -73,19 +73,12 @@ if [[ $WIN != "1" ]]; then
     if [[ $MACOS != "1" ]]; then
         ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
     fi
-    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
-        if [[ $MACOS != "1" ]]; then
-            ./run_tests.py -b llvm llvmImplicit -f -nf16 -j${NPROC}
-        fi
-    else
-        if [[ $MACOS != "1" ]]; then
-            ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
-        fi
+    if [[ $MACOS != "1" ]]; then
+        ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
     fi
     ./run_tests.py -b llvm_submodule -j${NPROC}
     # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
     # checks (debug_outOfSource) so this Quick job stays under an hour.
-    # -nf16 still runs --fast; it only skips tests marked NOFAST_TILL_LLVM16.
     cd ..
 
     pip install src/server/tests tests/server

@@ -152,7 +152,7 @@ only once, redirect to a log file and then examine the log file.
     - Build: `bash ci/build.sh`
     - Quick integration run (LLVM):
       - `bash ci/test.sh` (runs a CMake+CTest LLVM pass and runner passes)
-      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f -nf16 &> log`
+      - or: `cd integration_tests && ./run_tests.py -b llvm && ./run_tests.py -b llvm -f &> log`
   - GFortran pass: `cd integration_tests && ./run_tests.py -b gfortran &> log`
   - Other backends as in CI:
     - `./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma &> log && ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma -f &> log`
@@ -162,7 +162,7 @@ only once, redirect to a log file and then examine the log file.
 
 - Minimal local (without micromamba):
   - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=ON -DWITH_RUNTIME_STACKTRACE=yes`
-  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f -nf16 &> log`
+  - Run: `cd integration_tests && ./run_tests.py -b llvm &> log && ./run_tests.py -b llvm -f &> log`
 - If builds fail with messages about missing debug info:
   - Install LLVM tools so `llvm-dwarfdump` is available (e.g., `sudo pacman -S llvm`,
     `apt install llvm`, or `conda install -c conda-forge llvm-tools`).
