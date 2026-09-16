@@ -242,16 +242,15 @@ jobs:
         # actually originates:
         #   8  - oldest supported; integration tests (newer LLVM APIs)
         #   11 - default version; third-party codes (full LAPACK)
-        #   17 - first LLVM that used to run llvm --fast without -nf16;
-        #        keep it on labeled PRs so Inf/NaN --fast differences vs 21+
-        #        are not main-only.
         #   19 - third-party codes (smoke, Release). WASM is a separate job.
         #   23 - newest; integration tests (removed/deprecated LLVM APIs)
+        # llvm --fast now runs on Quick LLVM 11 for every PR, so LLVM 17 is
+        # main-only (with 10/15/18/21/22).
         # Third-party codes exercise LFortran, not LLVM, so they run on two
         # Ubuntu versions only. Every other Ubuntu version runs the LLVM
         # integration-test option combinations instead. macOS LLVM 22 stays
         # on third-party because Fiats/Formal Metal tests are Darwin-only.
-        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"8\",\"11\",\"17\",\"19\",\"23\"]') }}"
+        llvm-version: "${{ github.event_name == 'push' && fromJSON('[\"8\",\"10\",\"11\",\"15\",\"17\",\"18\",\"19\",\"21\",\"22\",\"23\"]') || fromJSON('[\"8\",\"11\",\"19\",\"23\"]') }}"
         python-version: ["3.10"]
         include:
           - os: macos-latest
