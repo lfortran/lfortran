@@ -72,7 +72,13 @@ if [[ $WIN != "1" ]]; then
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 llvmImplicit -j${NPROC}
     if [[ $MACOS != "1" ]]; then
         ./run_tests.py -b llvm2 llvm_rtlib llvm_nopragma llvm_integer_8 -f -j${NPROC}
-        ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
+        # Ubuntu x86 LLVM 11 --fast still error-stops on NOFAST_TILL_LLVM16
+        # tests (arrays_61, pack/matmul/sum). -nf16 skips those labels only.
+        if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
+            ./run_tests.py -b llvm llvmImplicit -f -nf16 -j${NPROC}
+        else
+            ./run_tests.py -b llvm llvmImplicit -f -j${NPROC}
+        fi
     fi
     ./run_tests.py -b llvm_submodule -j${NPROC}
     # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
