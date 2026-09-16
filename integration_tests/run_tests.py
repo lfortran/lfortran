@@ -3,6 +3,7 @@
 import argparse
 import subprocess as sp
 import os
+import shlex
 
 # Initialization
 NO_OF_THREADS = 8 # default no of threads is 8
@@ -147,9 +148,9 @@ def run_test(backend, std, test_pattern=None):
         ctest_cmd += " -V"
     if test_pattern:
         ctest_cmd += f" -R {test_pattern}"
-    extra = os.environ.get("LFORTRAN_CTEST_EXTRA", "").strip()
-    if extra:
-        ctest_cmd += f" {extra}"
+    exclude = os.environ.get("LFORTRAN_CTEST_EXCLUDE", "").strip()
+    if exclude:
+        ctest_cmd += f" -E {shlex.quote(exclude)}"
     run_cmd(ctest_cmd, cwd=cwd)
 
 

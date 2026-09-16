@@ -14,8 +14,8 @@ echo "LFORTRAN_LLVM_VERSION: ${LFORTRAN_LLVM_VERSION:-unset}"
 # real(16)/real128 (gpu_metal_291 error-stops "real16"; real128_compare_01
 # error-stops 1). Keep compiling them; skip running them on LLVM 8.
 if [[ "${LFORTRAN_LLVM_VERSION}" == "8" ]]; then
-    export LFORTRAN_CTEST_EXTRA='-E (gpu_metal_291|real128_compare_01)'
-    echo "LFORTRAN_CTEST_EXTRA=${LFORTRAN_CTEST_EXTRA}"
+    export LFORTRAN_CTEST_EXCLUDE='gpu_metal_291|real128_compare_01'
+    echo "LFORTRAN_CTEST_EXCLUDE=${LFORTRAN_CTEST_EXCLUDE}"
 fi
 
 cd integration_tests
