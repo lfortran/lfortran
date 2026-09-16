@@ -587,3 +587,13 @@ contains
         res = x + y
     end function
 end module pure_intent_check_mod
+! Test for a duplicate statement label on end-if
+subroutine duplicate_end_if_label()
+    integer :: i
+    i = 0
+86  continue
+    i = i + 1
+    if (i < 3) then
+        go to 86
+86  end if  ! {Error} duplicate statement label 86
+end subroutine
