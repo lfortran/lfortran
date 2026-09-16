@@ -1739,7 +1739,7 @@ RUN(NAME intrinsics_360 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_361 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME intrinsics_362 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_363 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift
-RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16) # cshift
+RUN(NAME intrinsics_364 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NOFAST_TILL_LLVM16) # sum/reshape
 RUN(NAME intrinsics_365 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # is_contiguous
 RUN(NAME intrinsics_366 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # shiftl, shiftr, trailz, btest, ibclr
 RUN(NAME intrinsics_367 LABELS gfortran llvm) # get_environment_variable
@@ -1916,7 +1916,7 @@ RUN(NAME modules_12 LABELS gfortran llvm)
 RUN(NAME modules_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME modules_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES modules_14_a.f90)
 RUN(NAME modules_15 LABELS gfortran llvm EXTRAFILES
-        modules_15b.f90 modules_15c.c)
+        modules_15b.f90 modules_15c.c NOFAST_TILL_LLVM16)
 RUN(NAME modules_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES modules_16b.f90)
 RUN(NAME modules_18 LABELS gfortran llvm EXTRAFILES
         modules_18b.f90 modules_18c.c)
@@ -3576,8 +3576,8 @@ RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_simple_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_simple_04 LABELS llvm llvm_wasm llvm_wasm_emcc)                      # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM16)
+RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc NOFAST_TILL_LLVM16)
 RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
