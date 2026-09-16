@@ -85,6 +85,7 @@ if [[ $WIN != "1" ]]; then
     ./run_tests.py -b llvm_submodule -j${NPROC}
     # llvm -sc, llvm_submodule -sc, and --detect-leaks live in Exhaustive
     # checks (debug_outOfSource) so this Quick job stays under an hour.
+    # -nf16 still runs --fast; it only skips tests marked NOFAST_TILL_LLVM16.
     cd ..
 
     pip install src/server/tests tests/server

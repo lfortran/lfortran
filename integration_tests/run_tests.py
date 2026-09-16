@@ -203,7 +203,7 @@ def get_args():
     parser.add_argument("-sc", "--separate_compilation", action='store_true',
                 help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
-                help="Don't run unsupported tests with --fast when LLVM < 17")
+                help="With -f, skip --fast only on tests marked NOFAST_TILL_LLVM16 (LLVM < 17)")
     parser.add_argument("-t", "--test", type=str,
                 help="Run specific tests matching pattern (regex)")
     parser.add_argument("--ninja", action='store_true',
