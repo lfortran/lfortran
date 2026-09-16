@@ -82,6 +82,23 @@ std::string GpuOffloadVisitor::unhonoured_clause(
     }
 }
 
+static ASR::expr_t *ensure_int_type(Allocator &al, const Location &loc,
+        ASR::expr_t *expr, ASR::ttype_t *target_type) {
+    if (!expr) return nullptr;
+    ASR::ttype_t *expr_type = ASRUtils::expr_type(expr);
+    if (ASRUtils::extract_kind_from_ttype_t(expr_type) ==
+        ASRUtils::extract_kind_from_ttype_t(target_type)) {
+        return expr;
+    }
+    if (ASR::is_a<ASR::IntegerConstant_t>(*expr)) {
+        ASR::IntegerConstant_t *ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ic->m_n, target_type, ic->m_intboz_type));
+    }
+    return ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, loc, expr,
+        ASR::cast_kindType::IntegerToInteger, target_type));
+}
+
 // A region this pass does not take is left exactly as it was, and is
 // looked inside for the regions it can take.
 void GpuOffloadVisitor::decline(const ASR::OMPRegion_t &x) {
@@ -1940,10 +1957,35 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // Inspect loop dimensions to determine integer kind needed for bounds & indexing
+    int max_loop_kind = 4;
+    for (size_t d = 0; d < n_dims; d++) {
+        if (work.head(d).m_v) {
+            ASR::ttype_t *vt = ASRUtils::expr_type(work.head(d).m_v);
+            max_loop_kind = std::max(max_loop_kind, ASRUtils::extract_kind_from_ttype_t(vt));
+        }
+        if (work.head(d).m_start) {
+            ASR::ttype_t *st = ASRUtils::expr_type(work.head(d).m_start);
+            max_loop_kind = std::max(max_loop_kind, ASRUtils::extract_kind_from_ttype_t(st));
+        }
+        if (work.head(d).m_end) {
+            ASR::ttype_t *et = ASRUtils::expr_type(work.head(d).m_end);
+            max_loop_kind = std::max(max_loop_kind, ASRUtils::extract_kind_from_ttype_t(et));
+        }
+        if (work.head(d).m_increment) {
+            ASR::ttype_t *it = ASRUtils::expr_type(work.head(d).m_increment);
+            max_loop_kind = std::max(max_loop_kind, ASRUtils::extract_kind_from_ttype_t(it));
+        }
+    }
+    ASR::ttype_t *loop_int_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, max_loop_kind));
+
     // Save host-side head expressions BEFORE in-place replacement
     std::vector<DimInfo> dim_info;
     for (size_t d = 0; d < n_dims; d++) {
-        dim_info.push_back({work.head(d).m_start, work.head(d).m_end});
+        ASR::expr_t *h_start = ensure_int_type(al, loc, work.head(d).m_start, loop_int_type);
+        ASR::expr_t *h_end = ensure_int_type(al, loc, work.head(d).m_end, loop_int_type);
+        dim_info.push_back({h_start, h_end});
     }
 
     // Deep-copy the body statements so that in-place symbol remapping
@@ -1990,8 +2032,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // replacement contains nothing that would be replaced again.
     ASR::expr_t *slot_index = nullptr;
     if (!pending_reductions.empty()) {
-        ASR::ttype_t *slot_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, loop_int_type);
         gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
             ASRUtils::duplicate_type(al, slot_type));
         slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -2028,8 +2069,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     Vec<ASR::stmt_t*> kernel_body;
     kernel_body.reserve(al, work.n_body + 2 * n_dims + 1);
 
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = loop_int_type;
 
     ASR::expr_t *thread_idx = ASRUtils::EXPR(
         ASR::make_GpuThreadIndex_t(al, loc, 0, int_type, nullptr));
@@ -2230,8 +2270,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::make_IntegerBinOp_t(al, loc,
                     mod_val, ASR::binopType::Add,
                     kernel_starts[d], int_type, nullptr));
+            ASR::ttype_t *kvar_type = ASRUtils::symbol_type(kvar);
+            ASR::expr_t *assigned_val = ensure_int_type(al, loc, val, kvar_type);
             kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+                ASR::make_Assignment_t(al, loc, kvar_expr, assigned_val, nullptr, false, false)));
 
             // __flat_idx = __flat_idx / dim_range
             ASR::expr_t *div_val = ASRUtils::EXPR(
@@ -2246,8 +2288,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::make_IntegerBinOp_t(al, loc,
                     remain_var, ASR::binopType::Add,
                     kernel_starts[d], int_type, nullptr));
+            ASR::ttype_t *kvar_type = ASRUtils::symbol_type(kvar);
+            ASR::expr_t *assigned_val = ensure_int_type(al, loc, val, kvar_type);
             kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+                ASR::make_Assignment_t(al, loc, kvar_expr, assigned_val, nullptr, false, false)));
         }
     }
 
