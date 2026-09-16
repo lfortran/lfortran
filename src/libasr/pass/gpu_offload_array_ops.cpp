@@ -1503,15 +1503,6 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
 
 namespace {
 
-class GpuIterationVaryingSymbols;
-
-// What `body` changes (see GpuIterationVaryingSymbols), and whether an
-// expression reads any of it.
-std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
-    ASR::stmt_t **body, size_t n_body);
-// A symbol in `ignored` does not count as changed.
-bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
-    ASR::expr_t *e, const std::set<ASR::symbol_t*> *ignored = nullptr);
 // Whether a procedure `e` calls may read a changed symbol without being
 // handed it: one of a module, or of a scope the procedure is nested in.
 bool gpu_calls_may_read_changed(const GpuIterationVaryingSymbols &changed,
@@ -2206,8 +2197,6 @@ bool GpuOffloadVisitor::body_has_ungatherable_strided_section(
         }) != nullptr;
 }
 
-namespace {
-
 // The symbols whose value can change from one iteration of a loop to the
 // next. `whole` holds those that can change as a whole -- the ones the
 // body assigns, allocates, associates, counts with or passes to a dummy
@@ -2353,6 +2342,8 @@ public:
     }
 };
 
+namespace {
+
 // Whether an expression reads a value that changes with the iteration.
 // A bound or the size of an array variable, or of a component of one,
 // only changes when the array as a whole does.
@@ -2410,6 +2401,8 @@ public:
     }
 };
 
+} // namespace
+
 std::shared_ptr<GpuIterationVaryingSymbols> gpu_symbols_changed_in(
         ASR::stmt_t **body, size_t n_body) {
     auto changed = std::make_shared<GpuIterationVaryingSymbols>();
@@ -2426,6 +2419,13 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
     use.visit_expr(*e);
     return use.found;
 }
+
+bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
+        ASR::symbol_t *s) {
+    return changed.whole.count(s) > 0 || changed.parts.count(s) > 0;
+}
+
+namespace {
 
 // The procedures an expression calls.
 class GpuCalledFunctions : public ASR::BaseWalkVisitor<GpuCalledFunctions> {

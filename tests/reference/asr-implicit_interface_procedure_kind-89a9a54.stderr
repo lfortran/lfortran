@@ -1,0 +1,35 @@
+semantic error: Subroutine `sub_defined` called as a function
+  --> tests/errors/implicit_interface_procedure_kind.f90:10:9
+   |
+10 |     x = sub_defined(1.0)
+   |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Subroutine `sub_defined` called as a function
+  --> tests/errors/implicit_interface_procedure_kind.f90:17:9
+   |
+17 |     x = sub_defined(1.0)
+   |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Subroutine `s` called as a function
+  --> tests/errors/implicit_interface_procedure_kind.f90:25:9
+   |
+25 |     x = s(1.0)
+   |         ^^^^^^ 
+
+semantic error: Function `fun` called as a subroutine
+  --> tests/errors/implicit_interface_procedure_kind.f90:33:5
+   |
+33 |     call fun(x)
+   |     ^^^^^^^^^^^ 
+
+semantic error: Function `g` called as a subroutine
+  --> tests/errors/implicit_interface_procedure_kind.f90:41:5
+   |
+41 |     call g(x)
+   |     ^^^^^^^^^ 
+
+semantic error: Subroutine `sub_other` called as a function
+  --> tests/errors/implicit_interface_procedure_kind.f90:55:9
+   |
+55 |     x = sub_other(1.0)
+   |         ^^^^^^^^^^^^^^ 

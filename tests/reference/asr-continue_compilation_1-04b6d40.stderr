@@ -682,11 +682,59 @@ semantic error: type mismatch in initialization: `type(init_mismatch_a_t)` canno
 1248 |         type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
      |                              ^^^^^^^^^^^^^^^^ 
 
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:1270:34
+     |
+1270 |         type(imported_init_t) :: x = imported_init_z
+     |                                  ^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
 semantic error: Derived type `imported_init_t` is not defined
     --> tests/errors/continue_compilation_1.f90:1278:5
      |
 1278 |     type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
      |     ^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    --> tests/errors/continue_compilation_1.f90:1291:29
+     |
+1291 |         t_constructor_shape([1, 2], 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+     |                             ^^^^^^ extent 2 in dimension 1
+
+semantic error: component 's' has rank 0, but the structure constructor argument has rank 1
+    --> tests/errors/continue_compilation_1.f90:1292:70
+     |
+1292 |     type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+     |                                                                      ^^^^^^ rank 1 argument
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:1292:34
+     |
+1292 |     type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1315:64
+     |
+1315 |     type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+     |                                                                ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1316:56
+     |
+1316 |     type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
+     |                                                        ^^^^^^ 
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:1316:31
+     |
+1316 |     type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
+     |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1330:65
+     |
+1330 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+     |                                                                 ^^^^^^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
@@ -2180,3 +2228,33 @@ semantic error: Duplicate value of `decimal` found
      |
 1217 |     write(*, *, decimal="POINT", decimal="COMMA") 1.0
      |                                          ^^^^^^^ 
+
+semantic error: component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    --> tests/errors/continue_compilation_1.f90:1297:30
+     |
+1297 |     v2 = t_constructor_shape(b, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+     |                              ^ extent 2 in dimension 1
+
+semantic error: component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+    --> tests/errors/continue_compilation_1.f90:1298:44
+     |
+1298 |     v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+     |                                            ^ extent 3 in dimension 1
+
+semantic error: component 'a' has rank 1, but the structure constructor argument has rank 2
+    --> tests/errors/continue_compilation_1.f90:1299:30
+     |
+1299 |     v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
+     |                              ^ rank 2 argument
+
+semantic error: null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1318:49
+     |
+1318 |     v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+     |                                                 ^^^^^^ 
+
+semantic error: null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1332:44
+     |
+1332 |     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+     |                                            ^^^^^^ 
