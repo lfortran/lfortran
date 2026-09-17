@@ -155,7 +155,7 @@
                                     ()
                                     Default
                                     (CPtr)
-                                    ()
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required
@@ -185,7 +185,7 @@
                                     )
                                     Default
                                     (CPtr)
-                                    ()
+                                    2 c_ptr
                                     Source
                                     Public
                                     Required

@@ -336,7 +336,7 @@
                                     ()
                                     Default
                                     (CPtr)
-                                    ()
+                                    2 c_ptr
                                     BindC
                                     Public
                                     Required

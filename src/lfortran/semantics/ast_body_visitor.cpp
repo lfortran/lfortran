@@ -7006,6 +7006,7 @@ public:
         }
         // Handle Conversion from BOZ to Real Type for assign statements
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        bool rhs_is_null_intrinsic = is_null_intrinsic_reference(x.m_value);
         if (AST::is_a<AST::BOZ_t>(*x.m_value)){
             //For assigning Scalar Variable
             if (ASR::is_a<ASR::Var_t>(*target)){
@@ -7026,6 +7027,9 @@ public:
                 }
             }
         }
+        if (rhs_is_null_intrinsic) {
+            current_variable_type_ = ASRUtils::expr_type(target);
+        }
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
@@ -7036,6 +7040,15 @@ public:
             throw SemanticAbort();
         }
         ASR::expr_t *value = ASRUtils::EXPR(tmp);
+        if (rhs_is_null_intrinsic && !ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+            diag.add(Diagnostic("null() cannot be assigned to an entity of type "
+                + ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(target), target)
+                + ", which is not a pointer",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_value->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(value)) &&
                 ASR::is_a<ASR::Var_t>(*value)) {
             std::string var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(value)->m_v);
@@ -8926,8 +8939,8 @@ public:
                         }
                         // Check if types are equal
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
-                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, nullptr);
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, nullptr);
+                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
+                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
                             diag.add(diag::Diagnostic(
                                 "Type mismatch in argument `" + std::string(v->m_name) +
                                 "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",

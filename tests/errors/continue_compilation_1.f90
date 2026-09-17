@@ -1141,6 +1141,75 @@ program continue_compilation_1
         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
     end subroutine
 
+    subroutine null_assignment_nonpointer_cptr()
+        use iso_c_binding, only: c_ptr
+        implicit none
+        type(c_ptr) :: p
+        p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+    end subroutine
+
+    subroutine pointer_component_constructor_target()
+        use iso_c_binding, only: c_ptr, c_null_ptr
+        implicit none
+        type :: cptr_pointer_component_t
+            type(c_ptr), pointer :: cp
+        end type
+        type :: integer_pointer_component_t
+            integer, pointer :: ip
+        end type
+        integer :: v
+        type(cptr_pointer_component_t) :: a
+        type(integer_pointer_component_t) :: b
+        a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+        b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+        b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+    end subroutine
+
+    subroutine cptr_component_constructor_type_mismatch()
+        use iso_c_binding, only: c_ptr
+        implicit none
+        type :: payload_t
+            integer :: k
+        end type
+        type :: cptr_component_t
+            type(c_ptr) :: p
+        end type
+        type(payload_t), parameter :: payload = payload_t(1)
+        type(cptr_component_t) :: a
+        a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+        a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+    end subroutine
+
+    subroutine cfunptr_diagnostic_type_name()
+        use iso_c_binding, only: c_funptr
+        implicit none
+        type(c_funptr) :: f
+        call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+        if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+    contains
+        subroutine takes_integer(x)
+            integer, intent(in) :: x
+        end subroutine
+    end subroutine
+
+    subroutine null_initializer_nonpointer_integer()
+        implicit none
+        integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+    end subroutine
+
+    subroutine null_initializer_nonpointer_cptr()
+        use iso_c_binding, only: c_ptr
+        implicit none
+        type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    end subroutine
+
+    subroutine null_initializer_nonpointer_component()
+        implicit none
+        type :: null_init_t
+            integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+        end type
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.
@@ -1344,7 +1413,7 @@ subroutine structure_constructor_null_component_3()
     end type
     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
     type(t_null_c_component) :: v1
-    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
 end subroutine
 
 ! The same for a parameterized derived type and for an extended type, whose

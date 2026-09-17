@@ -1308,6 +1308,17 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
+            if (struct_sym != nullptr) {
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*struct_sym)) {
+                    ASR::ExternalSymbol_t* ext =
+                        ASR::down_cast<ASR::ExternalSymbol_t>(struct_sym);
+                    if (std::string(ext->m_original_name) == "c_funptr") {
+                        return "type(c_funptr)";
+                    }
+                } else if (std::string(ASRUtils::symbol_name(struct_sym)) == "c_funptr") {
+                    return "type(c_funptr)";
+                }
+            }
             return "type(c_ptr)";
         }
         case ASR::ttypeType::SymbolicExpression: {
@@ -1352,6 +1363,21 @@ static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::e
     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
         LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+    } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
+                   const_cast<ASR::ttype_t*>(t))) && expr != nullptr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
+        }
     }
 
     return type_to_str_fortran_symbol(t, struct_sym);
@@ -1367,6 +1393,21 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(const_cast<ASR::ttype_t*>(t)))) {
         if (expr != nullptr) {
             struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+        }
+    } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
+                   const_cast<ASR::ttype_t*>(t))) && expr != nullptr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
         }
     }
 
@@ -1758,6 +1799,13 @@ static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
     if( v_name == "" ) {
         v_name = ASRUtils::symbol_name(v);
     }
+    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+        ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(v);
+        if (std::string(ext->m_original_name) == "c_ptr" &&
+                startswith(std::string(ext->m_module_name), "lfortran_intrinsic")) {
+            return true;
+        }
+    }
     ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
     if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
         ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
@@ -1772,6 +1820,13 @@ static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
 static inline bool is_c_funptr(ASR::symbol_t* v, std::string v_name="") {
     if( v_name == "" ) {
         v_name = ASRUtils::symbol_name(v);
+    }
+    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
+        ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(v);
+        if (std::string(ext->m_original_name) == "c_funptr" &&
+                startswith(std::string(ext->m_module_name), "lfortran_intrinsic")) {
+            return true;
+        }
     }
     ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
     if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {

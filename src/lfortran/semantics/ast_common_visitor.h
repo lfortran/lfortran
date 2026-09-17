@@ -2500,6 +2500,21 @@ public:
     }
 
 
+    bool is_iso_c_binding_external_symbol(ASR::symbol_t *sym,
+            const std::string &original_name) {
+        if (sym == nullptr || !ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            return false;
+        }
+        ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+        return std::string(ext->m_original_name) == original_name
+            && startswith(std::string(ext->m_module_name), "lfortran_intrinsic");
+    }
+
+    bool is_iso_c_null_symbol(ASR::symbol_t *sym) {
+        return is_iso_c_binding_external_symbol(sym, "c_null_ptr")
+            || is_iso_c_binding_external_symbol(sym, "c_null_funptr");
+    }
+
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
@@ -2519,16 +2534,10 @@ public:
             }
         }
 
-        if (var_name == "c_null_ptr" || var_name == "c_null_funptr") {
-            // Check if c_null_ptr is imported from iso_c_binding (intrinsic module)
-            if (v && ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-                std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
-                if (startswith(m_name, "lfortran_intrinsic")) {
-                    ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-                    tmp = ASR::make_PointerNullConstant_t(al, loc, type_, nullptr);
-                    return tmp;
-                }
-            }
+        if (is_iso_c_null_symbol(v)) {
+            ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            tmp = ASR::make_PointerNullConstant_t(al, loc, type_, nullptr);
+            return tmp;
         }
         if (!v) {
             if (check_is_explicit_intrinsic(var_name)) {
@@ -8677,40 +8686,26 @@ public:
                     } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
                         std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
                         sym_name = to_lower(sym_name);
-                        if (sym_name == "c_null_ptr" || sym_name == "c_null_funptr") {
-                            ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
+                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
+                        if (is_iso_c_null_symbol(sym_found)) {
                             if (sym_found == nullptr) {
                                 diag.add(Diagnostic(
                                     "Symbol not found: `" + sym_name + "`",
                                     Level::Error, Stage::Semantic, {
                                         Label("",{x.base.base.loc})
                                     }));
-                                throw SemanticAbort();
+                                    throw SemanticAbort();
                             }
-                            // Check if c_null_ptr/c_null_funptr is imported from iso_c_binding (intrinsic module)
-                            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym_found)) {
-                                std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(sym_found)->m_module_name;
-                                if (startswith(m_name, "lfortran_intrinsic")) {
-                                    init_expr = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al,
-                                                    x.base.base.loc, current_variable_type_, current_struct_type_var_expr));
-                                }
-                            } else {
-                                diag.add(Diagnostic(
-                                    "Named initialization not supported with: " + sym_name,
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
+                            init_expr = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al,
+                                                x.base.base.loc, current_variable_type_, current_struct_type_var_expr));
 
                         } else {
                             // Handle declaration-time initialization by name:
                             //   (1) pointer association: type(t), pointer :: p => target_var
                             //   (2) named parameter initialization for non-pointer variables
-                            ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                             if (sym_found == nullptr) {
-                                diag.add(Diagnostic(
-                                    "Symbol not found: `" + sym_name + "`",
+                                    diag.add(Diagnostic(
+                                        "Symbol not found: `" + sym_name + "`",
                                     Level::Error, Stage::Semantic, {
                                         Label("",{x.base.base.loc})
                                     }));
@@ -8887,6 +8882,26 @@ public:
                     if (init_expr && !is_pointer) {
                         check_type_initializer_type(type, type_declaration,
                             init_expr, s.m_initializer->base.loc);
+                    }
+                    if (init_expr && is_null_intrinsic_reference(s.m_initializer)
+                            && !is_pointer && !is_allocatable) {
+                        std::string init_type_name;
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))
+                                && type_declaration != nullptr) {
+                            init_type_name = "type(" + std::string(
+                                ASRUtils::symbol_name(type_declaration)) + ")";
+                        } else {
+                            init_type_name = ASRUtils::type_to_str_fortran_symbol(
+                                ASRUtils::extract_type(type), type_declaration, true);
+                        }
+                        diag.add(Diagnostic("null() cannot initialize '"
+                            + std::string(s.m_name) + "' of type "
+                            + init_type_name
+                            + ", which is neither a pointer nor allocatable",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {s.m_initializer->base.loc})
+                            }));
+                        throw SemanticAbort();
                     }
                     if (init_expr && !is_pointer
                             && ASR::is_a<ASR::StructType_t>(
@@ -9104,6 +9119,27 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+
+                    if (is_null_intrinsic_reference(s.m_initializer)
+                            && !is_pointer && !is_allocatable) {
+                        std::string init_type_name;
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))
+                                && type_declaration != nullptr) {
+                            init_type_name = "type(" + std::string(
+                                ASRUtils::symbol_name(type_declaration)) + ")";
+                        } else {
+                            init_type_name = ASRUtils::type_to_str_fortran_symbol(
+                                ASRUtils::extract_type(type), type_declaration, true);
+                        }
+                        diag.add(Diagnostic("null() cannot initialize '"
+                            + std::string(s.m_name) + "' of type "
+                            + init_type_name
+                            + ", which is neither a pointer nor allocatable",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {s.m_initializer->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
 
                     if (value == nullptr &&
                             storage_type == ASR::storage_typeType::Parameter &&
@@ -10829,6 +10865,7 @@ public:
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
             } else if (v && ASRUtils::is_c_ptr(v, derived_type_name)) {
+                type_declaration = v;
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
@@ -10841,6 +10878,7 @@ public:
                     type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
                 }
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
+                type_declaration = v;
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
@@ -11578,6 +11616,41 @@ public:
         return member_type;
     }
 
+    std::string expr_type_to_str_with_kind(ASR::expr_t* expr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(expr);
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+            ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+            if (sym != nullptr) {
+                return "type(" + std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(sym))) + ")";
+            }
+        }
+        return ASRUtils::type_to_str_with_kind(type, expr);
+    }
+
+    ASR::Variable_t* get_designator_variable(ASR::expr_t* expr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                return ASR::down_cast<ASR::Variable_t>(sym);
+            }
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                return ASR::down_cast<ASR::Variable_t>(sym);
+            }
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            return get_designator_variable(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            return get_designator_variable(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
+            return get_designator_variable(ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+        }
+        return nullptr;
+    }
+
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
         current_variable_type_ = nullptr;
         current_struct_type_var_expr = nullptr;
@@ -11862,7 +11935,21 @@ public:
                 vals.p[i].m_value = nullptr;
                 continue;
             }
-            if (ASRUtils::is_allocatable(member_var->m_type)) {
+            if (ASRUtils::is_pointer(member_var->m_type)
+                    && !ASRUtils::is_pointer(ASRUtils::expr_type(vals[i].m_value))) {
+                diag.add(Diagnostic("the value of pointer component '"
+                    + std::string(member_var->m_name)
+                    + "' must be a pointer, a target or null()",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {vals[i].m_value->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+                vals.p[i].m_value = nullptr;
+                continue;
+            }
+            if (ASRUtils::is_allocatable(member_var->m_type)
+                    && null_reference != NullReference::none) {
                 // `null()` for an allocatable component means it is not
                 // allocated, which is how an omitted allocatable component
                 // is represented.
@@ -11877,6 +11964,51 @@ public:
                     + ", which is neither a pointer nor allocatable",
                     Level::Error, Stage::Semantic, {
                         Label("", {vals[i].m_value->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+                vals.p[i].m_value = nullptr;
+            }
+        }
+        for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
+            if (vals[i].m_value == nullptr || members[i] == nullptr
+                    || !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                continue;
+            }
+            ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(members[i]);
+            if (!ASRUtils::is_pointer(member_var->m_type)
+                    || ASR::is_a<ASR::PointerNullConstant_t>(*vals[i].m_value)) {
+                continue;
+            }
+            ASR::expr_t* arg = vals[i].m_value;
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+            ASR::Variable_t* arg_var = get_designator_variable(arg);
+            bool valid_target = ASRUtils::is_pointer(arg_type)
+                || (arg_var != nullptr && arg_var->m_target_attr);
+            if (!valid_target) {
+                diag.add(Diagnostic("the value of pointer component '"
+                    + std::string(member_var->m_name)
+                    + "' must be a pointer, a target or null()",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {arg->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+                vals.p[i].m_value = nullptr;
+                continue;
+            }
+            ASR::ttype_t* member_target_type = ASRUtils::type_get_past_pointer(
+                member_var->m_type);
+            ASR::ttype_t* arg_target_type = ASRUtils::type_get_past_pointer(arg_type);
+            if (!ASRUtils::check_equal_type(member_target_type, arg_target_type,
+                    nullptr, nullptr)) {
+                diag.add(Diagnostic("type mismatch in structure constructor: value of type "
+                    + expr_type_to_str_with_kind(arg)
+                    + " cannot be the value of pointer component '"
+                    + std::string(member_var->m_name) + "' of type "
+                    + struct_component_type_to_str(member_var),
+                    Level::Error, Stage::Semantic, {
+                        Label("", {arg->base.loc})}));
                 if (!compiler_options.continue_compilation) {
                     throw SemanticAbort();
                 }
@@ -17346,7 +17478,14 @@ public:
         if( mold_ ) {
             null_ptr_type_ = ASRUtils::expr_type(mold_);
         } else {
-            LCOMPILERS_ASSERT(current_variable_type_ != nullptr);
+            if (current_variable_type_ == nullptr) {
+                diag.add(Diagnostic(
+                    "null() must have a pointer or allocatable context or a mold argument",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
             null_ptr_type_ = current_variable_type_;
         }
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
@@ -22787,6 +22926,15 @@ public:
         return current_scope->resolve_symbol("null") == nullptr;
     }
 
+    bool is_null_intrinsic_reference(AST::expr_t* e) {
+        if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
+            return false;
+        }
+        AST::FuncCallOrArray_t* f = AST::down_cast<AST::FuncCallOrArray_t>(e);
+        return to_lower(f->m_func) == "null" && f->n_member == 0
+            && current_scope->resolve_symbol("null") == nullptr;
+    }
+
     // The dummy argument of `proc` that the `i`-th actual argument of a call
     // corresponds to, or nullptr if it cannot be determined here (for example
     // for a generic procedure, which is resolved later on).
@@ -23141,6 +23289,28 @@ public:
                     ASRUtils::symbol_type(member_sym));
                 ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::expr_type(args[i].m_value));
+                ASR::ttype_t* member_scalar = ASRUtils::extract_type(member_type);
+                ASR::ttype_t* arg_scalar = ASRUtils::extract_type(arg_type);
+                if ((ASR::is_a<ASR::CPtr_t>(*member_scalar)
+                        || ASR::is_a<ASR::CPtr_t>(*arg_scalar))
+                        && !ASRUtils::check_equal_type(member_type, arg_type,
+                            nullptr, nullptr)) {
+                    std::string member_name = ASRUtils::symbol_name(member_sym);
+                    ASR::Variable_t* member_var = ASR::is_a<ASR::Variable_t>(
+                        *member_sym) ? ASR::down_cast<ASR::Variable_t>(
+                            member_sym) : nullptr;
+                    std::string member_type_name = member_var
+                        ? struct_component_type_to_str(member_var)
+                        : ASRUtils::type_to_str_fortran_symbol(member_type,
+                            nullptr, true);
+                    diag.add(Diagnostic("type mismatch in structure constructor: value of type "
+                        + expr_type_to_str_with_kind(args[i].m_value)
+                        + " cannot be the value of component '" + member_name
+                        + "' of type " + member_type_name,
+                        Level::Error, Stage::Semantic, {
+                            Label("", {args[i].m_value->base.loc})}));
+                    throw SemanticAbort();
+                }
                 ImplicitCastRules::set_converted_value(al, loc,
                     &args.p[i].m_value, arg_type, member_type, diag);
             }

@@ -1816,7 +1816,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -1864,7 +1864,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_funptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2163,7 +2163,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2187,7 +2187,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2211,7 +2211,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2259,7 +2259,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2384,7 +2384,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_ptr
                                                     BindC
                                                     Public
                                                     Required
@@ -2408,7 +2408,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    8 c_funptr
                                                     BindC
                                                     Public
                                                     Required

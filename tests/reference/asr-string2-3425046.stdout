@@ -198,7 +198,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -222,7 +222,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    2 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -444,7 +444,7 @@
                                                                     ()
                                                                     Default
                                                                     (CPtr)
-                                                                    ()
+                                                                    4 c_ptr
                                                                     BindC
                                                                     Public
                                                                     Required
@@ -494,7 +494,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    4 c_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -629,7 +629,7 @@
                                                     ()
                                                     Default
                                                     (CPtr)
-                                                    ()
+                                                    4 c_ptr
                                                     Source
                                                     Public
                                                     Required
