@@ -1720,6 +1720,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 value = nullptr;
             }
         }
+        value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, member_type, value);
     }

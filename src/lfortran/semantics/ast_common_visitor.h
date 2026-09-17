@@ -2500,47 +2500,59 @@ public:
     }
 
 
-    bool is_iso_c_binding_external_symbol(ASR::symbol_t *sym,
-            const std::string &original_name) {
-        if (sym == nullptr || !ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-            return false;
+    ASR::Module_t* get_loaded_iso_c_binding_module() {
+        SymbolTable *tu_scope = ASRUtils::get_tu_symtab(current_scope);
+        if (tu_scope == nullptr) {
+            return nullptr;
         }
-        ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
-        return std::string(ext->m_original_name) == original_name
-            && startswith(std::string(ext->m_module_name), "lfortran_intrinsic");
+        ASR::symbol_t *mod = tu_scope->resolve_symbol("iso_c_binding");
+        if (mod == nullptr || !ASR::is_a<ASR::Module_t>(*mod)) {
+            return nullptr;
+        }
+        ASR::Module_t *iso_c_binding = ASR::down_cast<ASR::Module_t>(mod);
+        return iso_c_binding->m_intrinsic ? iso_c_binding : nullptr;
     }
 
-    bool is_iso_c_null_symbol(ASR::symbol_t *sym) {
-        return is_iso_c_binding_external_symbol(sym, "c_null_ptr")
-            || is_iso_c_binding_external_symbol(sym, "c_null_funptr");
-    }
-
-    bool is_iso_c_binding_type_symbol(ASR::symbol_t *sym,
-            const std::string &original_name, const std::string &local_name) {
+    bool is_iso_c_binding_symbol(ASR::symbol_t *sym,
+            const std::string &original_name) {
         if (sym == nullptr) {
             return false;
         }
-        if (is_iso_c_binding_external_symbol(sym, original_name)) {
-            return true;
+        ASR::Module_t *iso_c_binding = get_loaded_iso_c_binding_module();
+        if (iso_c_binding == nullptr) {
+            return false;
+        }
+        ASR::symbol_t *expected = iso_c_binding->m_symtab->resolve_symbol(original_name);
+        if (expected == nullptr) {
+            return false;
+        }
+        return ASRUtils::symbol_get_past_external(sym)
+            == ASRUtils::symbol_get_past_external(expected);
+    }
+
+    bool is_iso_c_null_symbol(ASR::symbol_t *sym) {
+        return is_iso_c_binding_symbol(sym, "c_null_ptr")
+            || is_iso_c_binding_symbol(sym, "c_null_funptr");
+    }
+
+    bool is_iso_c_binding_type_symbol(ASR::symbol_t *sym,
+            const std::string &original_name) {
+        if (sym == nullptr) {
+            return false;
         }
         ASR::symbol_t* sym_orig = ASRUtils::symbol_get_past_external(sym);
         if (!ASR::is_a<ASR::Struct_t>(*sym_orig)) {
             return false;
         }
-        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(sym_orig);
-        return der_type_module && der_type_module->m_intrinsic
-            && std::string(der_type_module->m_name) == "lfortran_intrinsic_iso_c_binding"
-            && local_name == original_name;
+        return is_iso_c_binding_symbol(sym, original_name);
     }
 
-    bool is_iso_c_ptr_type_symbol(ASR::symbol_t *sym,
-            const std::string &local_name) {
-        return is_iso_c_binding_type_symbol(sym, "c_ptr", local_name);
+    bool is_iso_c_ptr_type_symbol(ASR::symbol_t *sym) {
+        return is_iso_c_binding_type_symbol(sym, "c_ptr");
     }
 
-    bool is_iso_c_funptr_type_symbol(ASR::symbol_t *sym,
-            const std::string &local_name) {
-        return is_iso_c_binding_type_symbol(sym, "c_funptr", local_name);
+    bool is_iso_c_funptr_type_symbol(ASR::symbol_t *sym) {
+        return is_iso_c_binding_type_symbol(sym, "c_funptr");
     }
 
     ASR::expr_t* make_iso_c_null_constant(const Location& loc,
@@ -11048,7 +11060,7 @@ public:
                                         s2c(al, derived_type_name)));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
-            } else if (v && is_iso_c_ptr_type_symbol(v, derived_type_name)) {
+            } else if (v && is_iso_c_ptr_type_symbol(v)) {
                 type_declaration = v;
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 type = ASRUtils::make_Array_t_util(
@@ -11061,7 +11073,7 @@ public:
                 if (is_allocatable) {
                     type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
                 }
-            } else if (v && is_iso_c_funptr_type_symbol(v, derived_type_name)) {
+            } else if (v && is_iso_c_funptr_type_symbol(v)) {
                 type_declaration = v;
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 type = ASRUtils::make_Array_t_util(
@@ -23596,6 +23608,8 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
+                        value = ASRUtils::externalize_struct_refs_in_init(
+                            al, value, current_scope);
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
                     ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
@@ -23613,6 +23627,8 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
+                        value = ASRUtils::externalize_struct_refs_in_init(
+                            al, value, current_scope);
                     }
                 }
                 tmp = ASR::make_StructInstanceMember_t(
@@ -23682,6 +23698,8 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
+                    value = ASRUtils::externalize_struct_refs_in_init(
+                        al, value, current_scope);
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
                 ASR::StructInstanceMember_t* v =
@@ -23700,6 +23718,8 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
+                    value = ASRUtils::externalize_struct_refs_in_init(
+                        al, value, current_scope);
                 }
             }
 

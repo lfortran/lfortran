@@ -2,7 +2,7 @@ program c_ptr_18
 use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr, &
     np => c_null_ptr, c_associated
 use c_ptr_18_mod, only: imported_null_ptr, imported_null_funptr, &
-    check_imported_nulls
+    imported_pair, check_imported_nulls
 implicit none
 
 type :: plain_cptr_t
@@ -60,6 +60,8 @@ if (c_associated(fp_param)) error stop "c_funptr parameter associated"
 if (c_associated(s_param%p)) error stop "c_ptr component parameter associated"
 if (c_associated(imported_null_ptr)) error stop "imported c_ptr parameter associated"
 if (c_associated(imported_null_funptr)) error stop "imported c_funptr parameter associated"
+if (c_associated(imported_pair%p)) error stop "imported c_ptr pair parameter associated"
+if (c_associated(imported_pair%fp)) error stop "imported c_funptr pair parameter associated"
 
 fp = c_null_funptr
 if (c_associated(fp)) error stop "c_funptr assignment associated"
