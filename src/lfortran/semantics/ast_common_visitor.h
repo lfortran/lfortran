@@ -12343,26 +12343,64 @@ public:
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
-                // For now we will only handle 1D arrays
-                if (args.size() == 1) {
-                    ASR::array_index_t arg = args[0];
-                    if (arg.m_left == nullptr && arg.m_step == nullptr) {
-                        ASR::expr_t *val = ASRUtils::expr_value(v_Var);
-                        ASR::expr_t *index = ASRUtils::expr_value(arg.m_right);
-                        if (val && index) {
-                            val = ASRUtils::expr_value(val);
-                            ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
-                            ASR::IntegerConstant_t *index2 = ASR::down_cast<ASR::IntegerConstant_t>(index);
-                            int based_indexing = get_based_indexing(v);
-                            int64_t index3 = index2->m_n-based_indexing;
-                            size_t index4 = index3;
-                            if (index3 < 0 || index4 >= (size_t) ASRUtils::get_fixed_size_of_array(val2->m_type)) {
-                                diag.add(Diagnostic("The index is out of bounds",
-                                    Level::Error, Stage::Semantic, {Label("", {index2->base.base.loc})}));
-                                throw SemanticAbort();
-                            }
-                            arr_ref_val = ASRUtils::fetch_ArrayConstant_value(al, val2, index4);
+                ASR::expr_t *val = ASRUtils::expr_value(v_Var);
+                if (val == nullptr &&
+                        ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
+                    ASR::StructInstanceMember_t* member_expr =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(v_Var);
+                    val = ASRUtils::get_struct_member_value_from_constant(
+                        ASRUtils::expr_value(member_expr->m_v),
+                        member_expr->m_m);
+                }
+                if (val) {
+                    val = ASRUtils::expr_value(val);
+                }
+                if (val && ASR::is_a<ASR::ArrayConstant_t>(*val)) {
+                    ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(v_Var), dims);
+                    int64_t flat_index = 0;
+                    int64_t stride = 1;
+                    bool can_fold = (args.size() == n_dims);
+                    for (size_t i = 0; can_fold && i < args.size(); i++) {
+                        if (args[i].m_left != nullptr || args[i].m_step != nullptr
+                                || args[i].m_right == nullptr) {
+                            can_fold = false;
+                            break;
                         }
+                        ASR::expr_t *index =
+                            ASRUtils::expr_value(args[i].m_right);
+                        if (index == nullptr ||
+                                !ASR::is_a<ASR::IntegerConstant_t>(*index)) {
+                            can_fold = false;
+                            break;
+                        }
+                        int64_t lower_bound = 1;
+                        if (dims[i].m_start) {
+                            ASR::expr_t* lb_value =
+                                ASRUtils::expr_value(dims[i].m_start);
+                            if (lb_value &&
+                                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                                can_fold = false;
+                                break;
+                            }
+                        }
+                        int64_t length = 0;
+                        if (dims[i].m_length == nullptr ||
+                                !ASRUtils::extract_value(dims[i].m_length, length)) {
+                            can_fold = false;
+                            break;
+                        }
+                        flat_index += (ASR::down_cast<ASR::IntegerConstant_t>(
+                            index)->m_n - lower_bound) * stride;
+                        stride *= length;
+                    }
+                    size_t index = flat_index;
+                    if (can_fold && flat_index >= 0 && index < (size_t)
+                            ASRUtils::get_fixed_size_of_array(val2->m_type)) {
+                        arr_ref_val = ASRUtils::fetch_ArrayConstant_value(
+                            al, val2, index);
                     }
                 }
             }
@@ -14838,30 +14876,62 @@ public:
             validate_fixed_size_array_index_bounds(expr, indices.p,
                 indices.size(), loc);
             ASR::expr_t* array_item_value = nullptr;
-            if (indices.size() == 1 && indices[0].m_left == nullptr
-                    && indices[0].m_step == nullptr
-                    && indices[0].m_right != nullptr) {
+            if (indices.size() > 0) {
                 ASR::expr_t* base_value = ASRUtils::expr_value(expr);
-                ASR::expr_t* index_value = ASRUtils::expr_value(indices[0].m_right);
-                if (base_value && index_value &&
-                        ASR::is_a<ASR::ArrayConstant_t>(*base_value) &&
-                        ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+                if (base_value == nullptr &&
+                        ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+                    ASR::StructInstanceMember_t* member_expr =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                    base_value = ASRUtils::get_struct_member_value_from_constant(
+                        ASRUtils::expr_value(member_expr->m_v),
+                        member_expr->m_m);
+                }
+                if (base_value && ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
                     ASR::ArrayConstant_t* array_constant =
                         ASR::down_cast<ASR::ArrayConstant_t>(base_value);
-                    int64_t lower_bound = 1;
                     ASR::dimension_t* dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(expr), dims);
-                    if (n_dims > 0 && dims[0].m_start) {
-                        ASR::expr_t* lb_value = ASRUtils::expr_value(dims[0].m_start);
-                        if (lb_value) {
-                            ASRUtils::extract_value(lb_value, lower_bound);
+                    int64_t flat_index = 0;
+                    int64_t stride = 1;
+                    bool can_fold = (n_dims == indices.size());
+                    for (size_t i = 0; can_fold && i < indices.size(); i++) {
+                        if (indices[i].m_left != nullptr
+                                || indices[i].m_step != nullptr
+                                || indices[i].m_right == nullptr) {
+                            can_fold = false;
+                            break;
                         }
+                        ASR::expr_t* index_value =
+                            ASRUtils::expr_value(indices[i].m_right);
+                        if (index_value == nullptr ||
+                                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+                            can_fold = false;
+                            break;
+                        }
+                        int64_t lower_bound = 1;
+                        if (dims[i].m_start) {
+                            ASR::expr_t* lb_value =
+                                ASRUtils::expr_value(dims[i].m_start);
+                            if (lb_value &&
+                                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                                can_fold = false;
+                                break;
+                            }
+                        }
+                        int64_t length = 0;
+                        if (dims[i].m_length == nullptr ||
+                                !ASRUtils::extract_value(dims[i].m_length, length)) {
+                            can_fold = false;
+                            break;
+                        }
+                        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+                            index_value)->m_n - lower_bound;
+                        flat_index += index * stride;
+                        stride *= length;
                     }
-                    int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
-                        index_value)->m_n - lower_bound;
-                    size_t index_unsigned = index;
-                    if (index >= 0 && index_unsigned < (size_t)
+                    size_t index_unsigned = flat_index;
+                    if (can_fold && flat_index >= 0 && index_unsigned < (size_t)
                             ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
                         array_item_value = ASRUtils::fetch_ArrayConstant_value(
                             al, array_constant, index_unsigned);
@@ -17350,7 +17420,15 @@ public:
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
-        return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_, associated_type_, nullptr);
+        ASR::expr_t* associated_value = nullptr;
+        if (ASR::expr_t* ptr_value = ASRUtils::expr_value(ptr_)) {
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*ptr_value)) {
+                associated_value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                    al, x.base.base.loc, false, associated_type_));
+            }
+        }
+        return ASR::make_PointerAssociated_t(al, x.base.base.loc, ptr_, tgt_,
+            associated_type_, associated_value);
     }
 
     ASR::asr_t* create_Complex(const AST::FuncCallOrArray_t& x) {
