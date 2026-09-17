@@ -2424,3 +2424,68 @@ semantic error: Cannot assign to a constant variable
      |
 1473 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1490:13
+     |
+1490 |             r%y = 88  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1489 |            associate (r => q)
+     |            ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1491 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1496:13
+     |
+1496 |             r%x = 99  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1495 |            associate (r => q%a)
+     |            ~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1497 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1502:13
+     |
+1502 |             r = 77  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^ assignment here
+     |
+1501 |            associate (r => q%a%x)
+     |            ~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1503 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1508:13
+     |
+1508 |             r%a%x = 66  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^^^ assignment here
+     |
+1507 |            associate (r => q(1))
+     |            ~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1509 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1515:17
+     |
+1515 |                 s%y = 55  ! {Error} Cannot assign to a constant variable
+     |                 ^^^^^^^^ assignment here
+     |
+1514 |                associate (s => r)
+     |                ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1516 |                end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~~~~~ associated with constant selector

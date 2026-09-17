@@ -1472,3 +1472,48 @@ subroutine associate_constant_selector_assignment()
         q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
     end associate
 end subroutine
+
+subroutine associate_nested_constant_selector_assignment()
+    implicit none
+    type :: associate_nested_const_a_t
+        integer :: x
+    end type
+    type :: associate_nested_const_b_t
+        type(associate_nested_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_nested_const_b_t), parameter :: pb = associate_nested_const_b_t(associate_nested_const_a_t(10), 30)
+    type(associate_nested_const_b_t), parameter :: pba(1) = [associate_nested_const_b_t(associate_nested_const_a_t(11), 31)]
+
+    associate (q => pb)
+        associate (r => q)
+            r%y = 88  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a)
+            r%x = 99  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a%x)
+            r = 77  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pba)
+        associate (r => q(1))
+            r%a%x = 66  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q)
+            associate (s => r)
+                s%y = 55  ! {Error} Cannot assign to a constant variable
+            end associate
+        end associate
+    end associate
+end subroutine

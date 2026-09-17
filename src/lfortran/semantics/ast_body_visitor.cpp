@@ -223,6 +223,21 @@ public:
         }
     }
 
+    bool selector_has_non_definable_associate_base(ASR::expr_t* expr) {
+        ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
+        if (!base_sym) {
+            return false;
+        }
+        if (non_definable_associate_variables.find(base_sym) !=
+                non_definable_associate_variables.end()) {
+            return true;
+        }
+        ASR::symbol_t* resolved_sym = ASRUtils::symbol_get_past_external(base_sym);
+        return resolved_sym != base_sym &&
+            non_definable_associate_variables.find(resolved_sym) !=
+                non_definable_associate_variables.end();
+    }
+
     void add_assignment_to_constant_variable_error(const Location& assignment_loc,
             const Location& constant_loc, const std::string& constant_label) {
         diag.add(diag::Diagnostic(
@@ -3303,7 +3318,8 @@ public:
             ASR::ttype_t* tmp_type = ASRUtils::expr_type(tmp_expr);
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
-            bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr);
+            bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr) ||
+                selector_has_non_definable_associate_base(tmp_expr);
 
             // A parenthesized selector `(x)` is a primary (R1001), not a
             // designator, so per F2018 11.1.3.3 the selector is an expression.
