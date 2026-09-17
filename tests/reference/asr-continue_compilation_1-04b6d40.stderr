@@ -776,13 +776,13 @@ semantic error: array of derived type initialized with a scalar structure constr
     --> tests/errors/continue_compilation_1.f90:1435:40
      |
 1435 |         type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
-     |                                        ^^^^^^^^^^^^^^^^^
+     |                                        ^^^^^^^^^^^^^^^^^ 
 
 semantic error: array of derived type initialized with a scalar structure constructor must have constant explicit shape
     --> tests/errors/continue_compilation_1.f90:1443:40
      |
 1443 |         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
-     |                                        ^^^^^^^^^^^^^^^^^
+     |                                        ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
