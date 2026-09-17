@@ -11259,13 +11259,24 @@ public:
                 continue;
             }
             if (ASR::is_a<ASR::StructType_t>(*element_type)) {
-                if (!ASR::is_a<ASR::StructConstant_t>(*arg)
-                        || ASRUtils::is_array(member_type)) {
+                if (ASRUtils::is_array(member_type)) {
                     return nullptr;
                 }
-                ASR::StructConstant_t* nested = ASR::down_cast<ASR::StructConstant_t>(arg);
-                folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
-                    nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                ASR::expr_t* nested_arg_value = ASRUtils::expr_value(arg);
+                ASR::expr_t* nested_arg =
+                    (nested_arg_value && ASR::is_a<ASR::StructConstant_t>(*nested_arg_value))
+                    ? nested_arg_value : arg;
+                if (ASR::is_a<ASR::StructConstructor_t>(*nested_arg)) {
+                    ASR::StructConstructor_t* nested = ASR::down_cast<ASR::StructConstructor_t>(nested_arg);
+                    folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
+                        nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                } else if (ASR::is_a<ASR::StructConstant_t>(*nested_arg)) {
+                    ASR::StructConstant_t* nested = ASR::down_cast<ASR::StructConstant_t>(nested_arg);
+                    folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
+                        nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                } else {
+                    return nullptr;
+                }
                 if (folded_arg.m_value == nullptr) {
                     return nullptr;
                 }

@@ -10,6 +10,19 @@ type :: u
     type(t) :: parts(2) = t(4, 2.5)
 end type
 
+type :: nested_leaf
+    integer :: h
+    character(len=3) :: tag
+end type
+
+type :: nested_mid
+    type(nested_leaf) :: leaf
+end type
+
+type :: nested_outer
+    type(nested_mid) :: mid
+end type
+
 type(t), parameter :: z = t(6, 1.5)
 type(t), parameter :: pz(2, 2) = t(11, 6.5)
 type(t) :: marr(3) = t(4, 2.5)
@@ -32,6 +45,23 @@ subroutine check_procedure_local()
     type(t) :: larr(2) = t(9, 5.5)
     if (any(larr%h /= 9)) error stop 11
     if (any(abs(larr%r - 5.5) > 1.e-6)) error stop 12
+end subroutine
+
+subroutine check_nested_procedure_local()
+    type(nested_outer) :: larr(3) = nested_outer(nested_mid(nested_leaf(21, "cat")))
+    integer :: i
+
+    do i = 1, 3
+        if (larr(i)%mid%leaf%h /= 21) error stop 19
+        if (larr(i)%mid%leaf%tag /= "cat") error stop 20
+    end do
+
+    larr(1)%mid%leaf%h = 42
+    larr(1)%mid%leaf%tag = "dog"
+    if (larr(2)%mid%leaf%h /= 21) error stop 21
+    if (larr(2)%mid%leaf%tag /= "cat") error stop 22
+    if (larr(3)%mid%leaf%h /= 21) error stop 23
+    if (larr(3)%mid%leaf%tag /= "cat") error stop 24
 end subroutine
 
 end module
@@ -71,6 +101,7 @@ call check_t(parr(2), 8, 4.5)
 call check_t(parr(3), 8, 4.5)
 
 call check_procedure_local()
+call check_nested_procedure_local()
 
 print *, "ok"
 end program

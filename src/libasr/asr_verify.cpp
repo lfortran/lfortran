@@ -1207,7 +1207,8 @@ public:
                 continue;
             }
             bool scalar_struct_initializer =
-                ASR::is_a<ASR::StructConstant_t>(*initial);
+                ASR::is_a<ASR::StructConstant_t>(*initial)
+                || ASR::is_a<ASR::StructConstructor_t>(*initial);
             if (ASRUtils::is_array(x.m_type)
                     && !ASRUtils::is_array(initial_type)
                     && ASR::is_a<ASR::StructType_t>(
