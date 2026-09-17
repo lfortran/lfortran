@@ -43,4 +43,10 @@ program derived_types_172
     if (.not. associated(from_section%p)) error stop "array section target"
     if (size(from_section%p) /= 2) error stop "array section size"
     if (from_section%p(1) /= 2 .or. from_section%p(2) /= 3) error stop "array section value"
+    call payload_pointer_dummy(null())
+contains
+    subroutine payload_pointer_dummy(p)
+        type(payload_t), pointer, intent(in) :: p
+        if (associated(p)) error stop "derived pointer dummy null"
+    end subroutine
 end program derived_types_172

@@ -1,5 +1,8 @@
 program c_ptr_18
-use iso_c_binding, only: c_ptr, c_null_ptr, np => c_null_ptr, c_associated
+use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr, &
+    np => c_null_ptr, c_associated
+use c_ptr_18_mod, only: imported_null_ptr, imported_null_funptr, &
+    check_imported_nulls
 implicit none
 
 type :: plain_cptr_t
@@ -22,11 +25,15 @@ type :: param_cptr_t
 end type
 
 type(c_ptr) :: p, q
+type(c_funptr) :: fp
 type(c_ptr), parameter :: p_param = c_null_ptr
+type(c_funptr), parameter :: fp_param = c_null_funptr
 type(param_cptr_t), parameter :: s_param = param_cptr_t(1)
 type(plain_cptr_t) :: plain
 type(default_cptr_t) :: defaulted
 type(alloc_cptr_t) :: allocated_from_null, allocated_from_var
+
+call check_imported_nulls()
 
 plain = plain_cptr_t(9, np)
 if (plain%h /= 9) error stop "renamed constructor integer"
@@ -49,7 +56,13 @@ if (c_associated(allocated_from_var%p)) error stop "allocated c_ptr variable ass
 if (allocated_from_var%h /= 2) error stop "allocated c_ptr variable integer"
 
 if (c_associated(p_param)) error stop "c_ptr parameter associated"
+if (c_associated(fp_param)) error stop "c_funptr parameter associated"
 if (c_associated(s_param%p)) error stop "c_ptr component parameter associated"
+if (c_associated(imported_null_ptr)) error stop "imported c_ptr parameter associated"
+if (c_associated(imported_null_funptr)) error stop "imported c_funptr parameter associated"
+
+fp = c_null_funptr
+if (c_associated(fp)) error stop "c_funptr assignment associated"
 
 deallocate(allocated_from_null%p)
 deallocate(allocated_from_var%p)

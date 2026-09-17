@@ -6272,14 +6272,13 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
         if (pnc->m_var_expr != nullptr) {
-            // The var_expr references a symbol in the struct's scope which may
-            // not be accessible from the current scope. Replace it with the
-            // struct type symbol resolved from the current scope.
+            // The var_expr references a type-identity symbol in another scope
+            // which may not be accessible from the current scope. Replace it
+            // with that symbol as imported or otherwise visible here.
             ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(pnc->m_var_expr);
             if (struct_sym != nullptr) {
-                std::string struct_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(struct_sym));
-                ASR::symbol_t* resolved = scope->resolve_symbol(struct_name);
+                ASR::symbol_t* resolved = ASRUtils::import_type_declaration(
+                    al, struct_sym, scope);
                 if (resolved != nullptr) {
                     ASR::expr_t* new_var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, init_expr->base.loc, resolved));

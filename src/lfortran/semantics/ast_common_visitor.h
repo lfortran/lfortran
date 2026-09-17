@@ -2554,6 +2554,25 @@ public:
             al, loc, type_, null_sym_expr));
     }
 
+    void anchor_cptr_null_constant_to_type_declaration(ASR::expr_t* expr,
+            ASR::Variable_t* var) {
+        if (expr == nullptr || var == nullptr ||
+                !ASR::is_a<ASR::PointerNullConstant_t>(*expr)) {
+            return;
+        }
+        ASR::PointerNullConstant_t* pnc =
+            ASR::down_cast<ASR::PointerNullConstant_t>(expr);
+        if (!ASR::is_a<ASR::CPtr_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(expr)))) {
+            return;
+        }
+        if (var->m_type_declaration == nullptr) {
+            return;
+        }
+        pnc->m_var_expr = ASRUtils::EXPR(ASR::make_Var_t(
+            al, expr->base.loc, var->m_type_declaration));
+    }
+
     ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym) {
         if (sym == nullptr) {
             return nullptr;
@@ -2573,8 +2592,12 @@ public:
             return get_cptr_type_declaration_from_expr(
                 ASR::down_cast<ASR::PointerNullConstant_t>(expr)->m_var_expr);
         } else if (ASR::is_a<ASR::Var_t>(*expr)) {
-            ASR::Variable_t* var = get_variable_from_symbol(
-                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            ASR::symbol_t* sym_orig = ASRUtils::symbol_get_past_external(sym);
+            if (ASR::is_a<ASR::Struct_t>(*sym_orig)) {
+                return sym;
+            }
+            ASR::Variable_t* var = get_variable_from_symbol(sym);
             return var != nullptr ? var->m_type_declaration : nullptr;
         } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
             ASR::Variable_t* var = get_variable_from_symbol(
@@ -9846,6 +9869,12 @@ public:
                     variable_added_to_symtab->m_value = value;
                     variable_added_to_symtab->m_symbolic_value = init_expr;
                     variable_added_to_symtab->m_storage = storage_type;
+                    anchor_cptr_null_constant_to_type_declaration(
+                        variable_added_to_symtab->m_value,
+                        variable_added_to_symtab);
+                    anchor_cptr_null_constant_to_type_declaration(
+                        variable_added_to_symtab->m_symbolic_value,
+                        variable_added_to_symtab);
                     if ( !is_implicitly_declared && !is_external) {
                         if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
                             ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
@@ -11808,6 +11837,25 @@ public:
             member_null = ASRUtils::externalize_struct_refs_in_init(al, member_null, current_scope);
             current_struct_type_var_expr =
                 ASR::down_cast<ASR::PointerNullConstant_t>(member_null)->m_var_expr;
+        }
+    }
+
+    void set_null_context_to_dummy(ASR::Variable_t* dummy, const Location& loc) {
+        current_variable_type_ = nullptr;
+        current_struct_type_var_expr = nullptr;
+        if (dummy == nullptr) {
+            return;
+        }
+        current_variable_type_ = dummy->m_type;
+        ASR::ttype_t* dummy_type = ASRUtils::extract_type(dummy->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*dummy_type) ||
+                ASR::is_a<ASR::FunctionType_t>(*dummy_type)) {
+            ASR::symbol_t* type_decl = ASRUtils::import_type_declaration(
+                al, dummy->m_type_declaration, current_scope);
+            if (type_decl != nullptr) {
+                current_struct_type_var_expr = ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, type_decl));
+            }
         }
     }
 
@@ -23133,13 +23181,15 @@ public:
                 continue;
             }
             ASR::ttype_t* prev_variable_type = current_variable_type_;
+            ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
             if( null_dummy != nullptr ) {
                 // Otherwise `NULL()` is a disassociated pointer of the type of
                 // the dummy argument it is passed to.
-                current_variable_type_ = null_dummy->m_type;
+                set_null_context_to_dummy(null_dummy, ast_list[i].m_end->base.loc);
             }
             this->visit_expr(*ast_list[i].m_end);
             current_variable_type_ = prev_variable_type;
+            current_struct_type_var_expr = prev_struct_type_var_expr;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (ASR::is_a<ASR::Var_t>(*expr) &&
                     ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
