@@ -2282,6 +2282,9 @@ class ASRToLLVMVisitor;
                     }
                     if (ASR::is_a<ASR::StructType_t>(*base_t)
                             && v->m_symbolic_value != nullptr) {
+                        if (ASR::is_a<ASR::ArrayBroadcast_t>(*v->m_symbolic_value)) {
+                            return false;
+                        }
                         return true;
                     }
                 }

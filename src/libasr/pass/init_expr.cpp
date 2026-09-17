@@ -66,6 +66,21 @@ class ReplaceInitExpr: public ASR::BaseExprReplacer<ReplaceInitExpr> {
         *current_expr = nullptr;
     }
 
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
+            Vec<ASR::stmt_t*> result_vec_;
+            result_vec_.reserve(al, 0);
+            symtab2decls[current_scope] = result_vec_;
+        }
+        Vec<ASR::stmt_t*>* result_vec = &symtab2decls[current_scope];
+        ASR::expr_t* broadcast = ASRUtils::EXPR((ASR::asr_t*)x);
+        result_vec->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(
+                al, x->base.base.loc, result_var, broadcast, nullptr,
+                false, false)));
+        *current_expr = nullptr;
+    }
+
     void replace_StructConstructor(ASR::StructConstructor_t* x) {
         if( symtab2decls.find(current_scope) == symtab2decls.end() ) {
             Vec<ASR::stmt_t*> result_vec_;
@@ -209,14 +224,26 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             if( symbolic_value && ASR::is_a<ASR::Cast_t>(*symbolic_value) ) {
                 symbolic_value = ASR::down_cast<ASR::Cast_t>(symbolic_value)->m_arg;
             }
+            bool is_struct_array_broadcast = symbolic_value &&
+                ASR::is_a<ASR::ArrayBroadcast_t>(*symbolic_value) &&
+                ASRUtils::is_array(ASRUtils::expr_type(symbolic_value)) &&
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(
+                        ASRUtils::expr_type(symbolic_value)));
+            bool can_lower_struct_array_broadcast = is_struct_array_broadcast &&
+                x.m_storage != ASR::storage_typeType::Parameter &&
+                x.m_storage != ASR::storage_typeType::Save &&
+                !(asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner));
             if( !(symbolic_value &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||
                    ASR::is_a<ASR::StructConstructor_t>(*symbolic_value) ||
                    (ASR::is_a<ASR::Cast_t>(*x.m_symbolic_value) && ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value)) ||
-                   ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value))) ||
+                   ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value) ||
+                   can_lower_struct_array_broadcast)) ||
                  (asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner) &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||
-                  ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value))) ||
+                   ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value) ||
+                   ASR::is_a<ASR::ArrayBroadcast_t>(*symbolic_value))) ||
                 (x.m_storage == ASR::storage_typeType::Save &&
                 ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)))) {
                 return ;

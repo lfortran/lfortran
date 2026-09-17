@@ -3558,6 +3558,53 @@ public:
         return true;
     }
 
+    void validate_fixed_size_array_index_bounds(ASR::expr_t* array,
+            ASR::array_index_t* args, size_t n_args, const Location& loc) {
+        if (_processing_common_block_object) {
+            return;
+        }
+        ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(array)));
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+        for (size_t i = 0; i < std::min(n_dims, n_args); i++) {
+            if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
+                continue;
+            }
+            ASR::expr_t* idx_expr = args[i].m_right;
+            if (idx_expr == nullptr) {
+                continue;
+            }
+            ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
+            int64_t idx = 0;
+            if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
+                int64_t lb = 1;
+                if (m_dims[i].m_start) {
+                    ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
+                    if (start_val) {
+                        ASRUtils::extract_value(start_val, lb);
+                    }
+                }
+                if (m_dims[i].m_length) {
+                    ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
+                    int64_t len = 0;
+                    if (len_val && ASRUtils::extract_value(len_val, len)) {
+                        int64_t ub = lb + len - 1;
+                        if (idx < lb || idx > ub) {
+                            diag.add(Diagnostic(
+                                "Array index " + std::to_string(idx) +
+                                " is out of bounds (" + std::to_string(lb) +
+                                " to " + std::to_string(ub) +
+                                ") in dimension " + std::to_string(i + 1),
+                                Level::Error, Stage::Semantic, {Label("", {loc})}));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(obj_type));
@@ -8849,6 +8896,16 @@ public:
                         check_type_initializer_type(type, type_declaration,
                             init_expr, s.m_initializer->base.loc);
                     }
+                    if (init_expr && !is_pointer
+                            && ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::type_get_past_array(type))) {
+                        ASR::expr_t* array_init =
+                            broadcast_struct_scalar_to_array_initializer(
+                                s.m_initializer->base.loc, init_expr, type);
+                        if (array_init) {
+                            init_expr = array_init;
+                        }
+                    }
 
                     // The procedure symbol does not exist yet while its
                     // declarations are visited, so use is_Function there.
@@ -11249,13 +11306,24 @@ public:
                 continue;
             }
             if (ASR::is_a<ASR::StructType_t>(*element_type)) {
-                if (!ASR::is_a<ASR::StructConstant_t>(*arg)
-                        || ASRUtils::is_array(member_type)) {
+                if (ASRUtils::is_array(member_type)) {
                     return nullptr;
                 }
-                ASR::StructConstant_t* nested = ASR::down_cast<ASR::StructConstant_t>(arg);
-                folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
-                    nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                ASR::expr_t* nested_arg_value = ASRUtils::expr_value(arg);
+                ASR::expr_t* nested_arg =
+                    (nested_arg_value && ASR::is_a<ASR::StructConstant_t>(*nested_arg_value))
+                    ? nested_arg_value : arg;
+                if (ASR::is_a<ASR::StructConstructor_t>(*nested_arg)) {
+                    ASR::StructConstructor_t* nested = ASR::down_cast<ASR::StructConstructor_t>(nested_arg);
+                    folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
+                        nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                } else if (ASR::is_a<ASR::StructConstant_t>(*nested_arg)) {
+                    ASR::StructConstant_t* nested = ASR::down_cast<ASR::StructConstant_t>(nested_arg);
+                    folded_arg.m_value = get_folded_struct_constant(arg->base.loc,
+                        nested->m_dt_sym, nested->m_args, nested->n_args, nested->m_type);
+                } else {
+                    return nullptr;
+                }
                 if (folded_arg.m_value == nullptr) {
                     return nullptr;
                 }
@@ -11324,6 +11392,71 @@ public:
                 c->m_args, c->n_args, c->m_type);
         }
         return nullptr;
+    }
+
+    ASR::expr_t* broadcast_struct_scalar_to_array_initializer(
+            const Location& loc, ASR::expr_t* init, ASR::ttype_t* type) {
+        if (init == nullptr || !ASRUtils::is_array(type)
+                || !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(type))
+                || ASRUtils::is_array(ASRUtils::expr_type(init))) {
+            return nullptr;
+        }
+        ASR::expr_t* value = ASRUtils::expr_value(init);
+        ASR::expr_t* element = (value && ASR::is_a<ASR::StructConstant_t>(*value)) ? value : init;
+        if (!ASR::is_a<ASR::StructConstant_t>(*element)) {
+            ASR::expr_t* static_init = get_static_struct_initializer(init);
+            if (static_init) {
+                element = static_init;
+            }
+        }
+        if (!ASR::is_a<ASR::StructConstant_t>(*element)) {
+            return nullptr;
+        }
+        ASR::dimension_t* mdims = nullptr;
+        size_t ndims = ASRUtils::extract_dimensions_from_ttype(type, mdims);
+        Vec<ASR::expr_t*> lengths;
+        lengths.reserve(al, ndims);
+        for (size_t i = 0; i < ndims; i++) {
+            ASR::expr_t* length = mdims[i].m_length;
+            if (length == nullptr) {
+                diag.add(Diagnostic(
+                    "array of derived type initialized with a scalar structure constructor must have constant explicit shape",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+            ASR::expr_t* length_value = ASRUtils::expr_value(length);
+            if (length_value == nullptr ||
+                    !ASR::is_a<ASR::IntegerConstant_t>(*length_value)) {
+                diag.add(Diagnostic(
+                    "array of derived type initialized with a scalar structure constructor must have constant explicit shape",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+            lengths.push_back(al, length_value);
+        }
+        Vec<ASR::dimension_t> shape_dims;
+        shape_dims.reserve(al, 1);
+        ASR::dimension_t shape_dim;
+        shape_dim.loc = loc;
+        shape_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        shape_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ndims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        shape_dims.push_back(al, shape_dim);
+        ASR::ttype_t* shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            shape_dims.p, shape_dims.size(),
+            ASR::array_physical_typeType::FixedSizeArray,
+            ASR::memory_spaceType::Global));
+        ASR::expr_t* shape = ASRUtils::EXPR(
+            ASRUtils::make_ArrayConstructor_t_util(al, loc, lengths.p,
+                lengths.size(), shape_type, ASR::arraystorageType::ColMajor));
+        return ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc,
+            element, shape, type, nullptr));
     }
 
     void resolve_pdt_constructor(const Location& loc, ASR::symbol_t*& v,
@@ -12229,50 +12362,8 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
-                if (!_processing_common_block_object) {
-                    // Compile-time bounds check for fixed-size arrays
-                    ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(v_Var)));
-                    ASR::dimension_t* m_dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
-                    for (size_t i = 0; i < std::min(n_dims, args.size()); i++) {
-                        // Only check scalar indices (m_left=null, m_step=null, m_right=index)
-                        if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
-                            continue;
-                        }
-                        ASR::expr_t* idx_expr = args[i].m_right;
-                        if (idx_expr == nullptr) continue;
-                        ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
-                        int64_t idx = 0;
-                        if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
-                            // Get lower bound (default 1)
-                            int64_t lb = 1;
-                            if (m_dims[i].m_start) {
-                                ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
-                                if (start_val) {
-                                    ASRUtils::extract_value(start_val, lb);
-                                }
-                            }
-                            // Get upper bound if length is known
-                            if (m_dims[i].m_length) {
-                                ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
-                                int64_t len = 0;
-                                if (len_val && ASRUtils::extract_value(len_val, len)) {
-                                    int64_t ub = lb + len - 1;
-                                    if (idx < lb || idx > ub) {
-                                        diag.add(Diagnostic(
-                                            "Array index " + std::to_string(idx) +
-                                            " is out of bounds (" + std::to_string(lb) +
-                                            " to " + std::to_string(ub) +
-                                            ") in dimension " + std::to_string(i + 1),
-                                            Level::Error, Stage::Semantic, {Label("", {loc})}));
-                                        throw SemanticAbort();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                validate_fixed_size_array_index_bounds(v_Var, args.p,
+                    args.size(), loc);
                 return (ASR::asr_t*) replace_with_common_block_variables(ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), final_type,
                     ASR::arraystorageType::ColMajor, arr_ref_val)));
@@ -14643,6 +14734,8 @@ public:
             array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
                 indices.size(), array_section_type, nullptr);
         } else {
+            validate_fixed_size_array_index_bounds(expr, indices.p,
+                indices.size(), loc);
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, nullptr);
@@ -22983,10 +23076,14 @@ public:
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
 
                     if (var->m_storage == ASR::storage_typeType::Parameter) {
+                        ASR::expr_t* parameter_value = var->m_value ?
+                            var->m_value : var->m_symbolic_value;
+                        value = ASRUtils::get_struct_member_value_from_constant(
+                            parameter_value, tmp2_m_m_ext);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                             ASR::Variable_t* mem_var =
                                 ASR::down_cast<ASR::Variable_t>(mem_sym);
 
@@ -22998,10 +23095,12 @@ public:
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
                     ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                     if (v->m_value) {
+                        value = ASRUtils::get_struct_member_value_from_constant(
+                            v->m_value, tmp2_m_m_ext);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                             ASR::Variable_t* mem_var =
                                 ASR::down_cast<ASR::Variable_t>(mem_sym);
 
@@ -23057,10 +23156,32 @@ public:
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
 
                 if (var->m_storage == ASR::storage_typeType::Parameter) {
+                    ASR::expr_t* parameter_value = var->m_value ?
+                        var->m_value : var->m_symbolic_value;
+                    value = ASRUtils::get_struct_member_value_from_constant(
+                        parameter_value, tmp2_m_m_ext);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                    if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        ASR::Variable_t* mem_var =
+                            ASR::down_cast<ASR::Variable_t>(mem_sym);
+
+                        if (mem_var->m_symbolic_value) {
+                            value = mem_var->m_symbolic_value; // ArrayConstant
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
+                ASR::StructInstanceMember_t* v =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
+                if (v->m_value) {
+                    value = ASRUtils::get_struct_member_value_from_constant(
+                        v->m_value, tmp2_m_m_ext);
+                    ASR::symbol_t* mem_sym =
+                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+
+                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                         ASR::Variable_t* mem_var =
                             ASR::down_cast<ASR::Variable_t>(mem_sym);
 

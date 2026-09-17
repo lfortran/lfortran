@@ -32,7 +32,6 @@
 
 "expr.NamedExpr" = "helper:named expression value"
 "expr.IntrinsicArrayFunction" = "lowered:intrinsic_function"
-"expr.StructConstructor" = "lowered:class_constructor"
 "expr.ImpliedDoLoop" = "lowered:implied_do_loops"
 "expr.ListConcat" = "lowered:pass_list_expr"
 "expr.ListContains" = "helper:container runtime"
