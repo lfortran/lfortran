@@ -18134,7 +18134,10 @@ public:
                 std::string runtime_func_name;
                 llvm::Type *type_arg;
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                if ( a_kind == 2 ) {
+                if ( a_kind == 1 ) {
+                    runtime_func_name = "_lfortran_read_int8";
+                    type_arg = llvm::Type::getInt8Ty(context);
+                } else if ( a_kind == 2 ) {
                     runtime_func_name = "_lfortran_read_int16";
                     type_arg = llvm::Type::getInt16Ty(context);
                 } else if (a_kind == 4) {
@@ -18410,6 +18413,144 @@ public:
         llvm::Value* next_idx = builder->CreateAdd(cur_idx,
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
         builder->CreateStore(next_idx, idx);
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_end);
+    }
+
+    void emit_scalar_read_call(ASR::ttype_t* elem_type, llvm::Value* elem_ptr,
+            llvm::Value* unit_val, llvm::Value* iostat) {
+        llvm::Function* read_fn = get_read_function(elem_type);
+        if (ASRUtils::is_logical(*elem_type)) {
+            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                llvm::Type::getInt1Ty(context));
+            builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+            int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+            llvm::Value* loaded = llvm_utils->CreateLoad2(
+                llvm::Type::getInt1Ty(context), tmp_bool);
+            llvm::Value* widened = builder->CreateZExt(loaded,
+                llvm_utils->getIntType(kind));
+            builder->CreateStore(widened, elem_ptr);
+        } else if (ASRUtils::is_character(*elem_type)) {
+            llvm::Value* str_data, *str_len;
+            std::tie(str_data, str_len) = llvm_utils->get_string_length_data(
+                ASRUtils::get_string_type(elem_type), elem_ptr, true);
+            builder->CreateCall(read_fn, {str_data, str_len, unit_val, iostat});
+        } else {
+            builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
+        }
+    }
+
+    void emit_descriptor_read_loop(llvm::Type* llvm_arr_type, llvm::Value* descriptor,
+            llvm::Value* data_ptr, llvm::Value* array_size, ASR::ttype_t* elem_type,
+            llvm::Type* llvm_elem_type, llvm::Value* unit_val, llvm::Value* iostat) {
+        llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+        if (array_size->getType() != i32_type) {
+            array_size = builder->CreateIntCast(array_size, i32_type, true);
+        }
+        llvm::Value* rank = arr_descr->get_rank(llvm_arr_type, descriptor, false);
+        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+            llvm_arr_type, descriptor);
+
+        llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
+        llvm::Value* size_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+            nullptr, "desc_read_size");
+        llvm::Value* size_dim_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+            nullptr, "desc_read_size_dim");
+        builder->CreateStore(llvm::ConstantInt::get(i32_type, 1), size_ptr);
+        builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), size_dim_ptr);
+
+        llvm::BasicBlock* size_cond = llvm::BasicBlock::Create(
+            context, "desc_read.size.cond", parent_fn);
+        llvm::BasicBlock* size_body = llvm::BasicBlock::Create(
+            context, "desc_read.size.body", parent_fn);
+        llvm::BasicBlock* size_end = llvm::BasicBlock::Create(
+            context, "desc_read.size.end", parent_fn);
+        builder->CreateBr(size_cond);
+        builder->SetInsertPoint(size_cond);
+        llvm::Value* size_dim = builder->CreateLoad(i32_type, size_dim_ptr);
+        builder->CreateCondBr(builder->CreateICmpSLT(size_dim, rank), size_body, size_end);
+
+        builder->SetInsertPoint(size_body);
+        llvm::Value* extent_for_size = arr_descr->get_dimension_size(dim_des_arr, size_dim);
+        extent_for_size = builder->CreateSExtOrTrunc(extent_for_size, i32_type);
+        llvm::Value* cur_size = builder->CreateLoad(i32_type, size_ptr);
+        llvm::Value* next_size = builder->CreateMul(cur_size, extent_for_size);
+        next_size = builder->CreateSelect(
+            builder->CreateICmpSGT(extent_for_size, llvm::ConstantInt::get(i32_type, 0)),
+            next_size, llvm::ConstantInt::get(i32_type, 0));
+        builder->CreateStore(next_size, size_ptr);
+        builder->CreateStore(builder->CreateAdd(size_dim,
+            llvm::ConstantInt::get(i32_type, 1)), size_dim_ptr);
+        builder->CreateBr(size_cond);
+
+        builder->SetInsertPoint(size_end);
+        array_size = builder->CreateLoad(i32_type, size_ptr);
+
+        llvm::Value* idx_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+            nullptr, "desc_read_idx");
+        builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), idx_ptr);
+
+        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(
+            context, "desc_read.cond", parent_fn);
+        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(
+            context, "desc_read.body", parent_fn);
+        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(
+            context, "desc_read.end", parent_fn);
+
+        builder->CreateBr(loop_cond);
+        builder->SetInsertPoint(loop_cond);
+        llvm::Value* cur_idx = builder->CreateLoad(i32_type, idx_ptr);
+        llvm::Value* cond = builder->CreateICmpSLT(cur_idx, array_size);
+        builder->CreateCondBr(cond, loop_body, loop_end);
+
+        builder->SetInsertPoint(loop_body);
+        llvm::Value* remaining_ptr = llvm_utils->CreateAlloca(*builder, i64_type,
+            nullptr, "desc_read_remaining");
+        llvm::Value* offset_ptr = llvm_utils->CreateAlloca(*builder, i64_type,
+            nullptr, "desc_read_offset");
+        llvm::Value* dim_idx_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+            nullptr, "desc_read_dim");
+        builder->CreateStore(builder->CreateSExt(cur_idx, i64_type), remaining_ptr);
+        builder->CreateStore(llvm::ConstantInt::get(i64_type, 0), offset_ptr);
+        builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), dim_idx_ptr);
+
+        llvm::BasicBlock* dim_cond = llvm::BasicBlock::Create(
+            context, "desc_read.dim.cond", parent_fn);
+        llvm::BasicBlock* dim_body = llvm::BasicBlock::Create(
+            context, "desc_read.dim.body", parent_fn);
+        llvm::BasicBlock* dim_end = llvm::BasicBlock::Create(
+            context, "desc_read.dim.end", parent_fn);
+        builder->CreateBr(dim_cond);
+        builder->SetInsertPoint(dim_cond);
+        llvm::Value* cur_dim = builder->CreateLoad(i32_type, dim_idx_ptr);
+        builder->CreateCondBr(builder->CreateICmpSLT(cur_dim, rank), dim_body, dim_end);
+
+        builder->SetInsertPoint(dim_body);
+        llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(
+            dim_des_arr, cur_dim);
+        llvm::Value* extent = arr_descr->get_dimension_size(dim_des_arr, cur_dim);
+        extent = builder->CreateSExtOrTrunc(extent, i64_type);
+        llvm::Value* remaining = builder->CreateLoad(i64_type, remaining_ptr);
+        llvm::Value* dim_pos = builder->CreateSRem(remaining, extent);
+        builder->CreateStore(builder->CreateSDiv(remaining, extent), remaining_ptr);
+        llvm::Value* stride = arr_descr->get_stride(dim_desc);
+        stride = builder->CreateSExtOrTrunc(stride, i64_type);
+        llvm::Value* offset = builder->CreateLoad(i64_type, offset_ptr);
+        offset = builder->CreateAdd(offset, builder->CreateMul(dim_pos, stride));
+        builder->CreateStore(offset, offset_ptr);
+        builder->CreateStore(builder->CreateAdd(cur_dim,
+            llvm::ConstantInt::get(i32_type, 1)), dim_idx_ptr);
+        builder->CreateBr(dim_cond);
+
+        builder->SetInsertPoint(dim_end);
+        llvm::Value* offset_val = builder->CreateLoad(i64_type, offset_ptr);
+        llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(
+            llvm_elem_type, data_ptr, offset_val);
+        emit_scalar_read_call(elem_type, elem_ptr, unit_val, iostat);
+        llvm::Value* next_idx = builder->CreateAdd(cur_idx,
+            llvm::ConstantInt::get(i32_type, 1));
+        builder->CreateStore(next_idx, idx_ptr);
         builder->CreateBr(loop_cond);
         builder->SetInsertPoint(loop_end);
     }
@@ -19350,22 +19491,12 @@ public:
                         arr_tp->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
                     llvm::Value* descriptor_stride_i32 = llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), 1);
-                    if (arr_tp->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                        llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_values[i],
-                            ASRUtils::type_get_past_allocatable_pointer(type),
-                            module.get());
-                        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                            llvm_arr_type, original_array_representation);
-                        llvm::Value* dim_zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
-                        llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(
-                            dim_des_arr, dim_zero);
-                        llvm::Value* stride_val = arr_descr->get_stride(dim_desc);
-                        descriptor_stride_i32 = builder->CreateIntCast(
-                            stride_val, llvm::Type::getInt32Ty(context), true);
-                    }
+                    llvm::Type* llvm_arr_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_values[i],
+                        ASRUtils::type_get_past_allocatable_pointer(type),
+                        module.get());
                     if (arr_tp->m_physical_type != ASR::array_physical_typeType::PointerArray) {
-                        var_to_read_into = arr_descr->get_pointer_to_data(llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::type_get_past_allocatable_pointer(type), module.get()), var_to_read_into);
+                        var_to_read_into = arr_descr->get_pointer_to_data(llvm_arr_type, var_to_read_into);
                     }
                     // A descriptor holds a pointer to its elements, so the
                     // access above yields a pointer to that pointer and has to
@@ -19389,6 +19520,47 @@ public:
                             llvm_utils->get_stringArray_data(type, original_array_representation),
                             llvm_utils->get_stringArray_length(type, original_array_representation),
                             tmp, unit_val, iostat});
+                        tmp = nullptr;
+                    } else if (is_descriptor_based) {
+                        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(type));
+                        llvm::Value* rank = arr_descr->get_rank(
+                            llvm_arr_type, original_array_representation, false);
+                        llvm::Value* rank_is_one = builder->CreateICmpEQ(
+                            rank, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                        llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* flat_block = llvm::BasicBlock::Create(
+                            context, "descriptor_read_rank1", current_fn);
+                        llvm::BasicBlock* descriptor_block = llvm::BasicBlock::Create(
+                            context, "descriptor_read_full", current_fn);
+                        llvm::BasicBlock* after_descriptor_block = llvm::BasicBlock::Create(
+                            context, "descriptor_read_after", current_fn);
+                        builder->CreateCondBr(rank_is_one, flat_block, descriptor_block);
+
+                        builder->SetInsertPoint(flat_block);
+                        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            llvm_arr_type, original_array_representation);
+                        llvm::Value* dim_zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                        llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(
+                            dim_des_arr, dim_zero);
+                        llvm::Value* stride_val = arr_descr->get_stride(dim_desc);
+                        llvm::Value* rank1_stride_i32 = builder->CreateIntCast(
+                            stride_val, llvm::Type::getInt32Ty(context), true);
+                        if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+                            int a_kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                            llvm::Value* kind_val = llvm::ConstantInt::get(context, llvm::APInt(32, a_kind));
+                            builder->CreateCall(fn, {arr, tmp, kind_val, rank1_stride_i32, unit_val, iostat});
+                        } else {
+                            builder->CreateCall(fn, {arr, tmp, rank1_stride_i32, unit_val, iostat});
+                        }
+                        builder->CreateBr(after_descriptor_block);
+
+                        builder->SetInsertPoint(descriptor_block);
+                        emit_descriptor_read_loop(llvm_arr_type, original_array_representation,
+                            arr, tmp, elem_type, el_type, unit_val, iostat);
+                        builder->CreateBr(after_descriptor_block);
+
+                        builder->SetInsertPoint(after_descriptor_block);
                         tmp = nullptr;
                     } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(
                             ASRUtils::type_get_past_allocatable_pointer(type)))) {

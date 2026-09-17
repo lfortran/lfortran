@@ -8104,6 +8104,150 @@ static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t 
     }
 }
 
+LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat)
+{
+    char lsep = list_directed_separator(unit_num);
+    if (iostat) *iostat = 0;
+    if (unit_num == -1) {
+        char buffer[100];
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
+            return;
+        }
+
+        char *token = buffer;
+        if (token == NULL) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t.\n");
+            exit(1);
+        }
+
+        char *endptr = NULL;
+        errno = 0;
+        long long_val = strtol(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t.\n");
+            exit(1);
+        }
+
+        if (errno == ERANGE || long_val < INT8_MIN || long_val > INT8_MAX) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Value %ld is out of integer(1) range.\n", long_val);
+            exit(1);
+        }
+
+        *p = (int8_t)long_val;
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_mode;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_mode == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int8_t.\n");
+                exit(1);
+            }
+            if (find_unit(unit_num)->seq_unf_pending < (int32_t)sizeof(int8_t)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int8_t.\n");
+                exit(1);
+            }
+            if (fread(p, sizeof(int8_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int8_t from sequential binary file.\n");
+                exit(1);
+            }
+            find_unit(unit_num)->seq_unf_pending -= (int32_t)sizeof(int8_t);
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker while reading int8_t.\n");
+                exit(1);
+            }
+        } else {
+            if (fread(p, sizeof(*p), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int8_t from binary file.\n");
+                exit(1);
+            }
+        }
+    } else {
+        if (list_directed_check_null_repeat(unit_num)) {
+            return;
+        }
+        int c;
+        while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+        if (c == EOF) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Invalid int8_t input from file (EOF).\n");
+            exit(1);
+        }
+        if (c == lsep) {
+            return;
+        }
+        if (c == '/') {
+            ungetc(c, filep);
+            return;
+        }
+        char buffer[40];
+        int len = 0;
+        do {
+            if (len < 39) buffer[len++] = (char)c;
+            c = fgetc(filep);
+        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
+        buffer[len] = '\0';
+        if (c == lsep) {
+        } else if (c != EOF) {
+            ungetc(c, filep);
+        }
+        int null_count = list_directed_parse_null_repeat(buffer);
+        if (null_count > 0) {
+            struct UNIT_FILE *uf_ = find_unit(unit_num);
+            if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
+            return;
+        }
+        char *endptr = NULL;
+        errno = 0;
+        long temp = strtol(buffer, &endptr, 10);
+        if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t from file.\n");
+            exit(1);
+        }
+
+        if (temp < INT8_MIN || temp > INT8_MAX) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Value %ld is out of integer(1) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int8_t)temp;
+        if (c != lsep) {
+            skip_trailing_comma(filep, lsep);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat)
 {
     char lsep = list_directed_separator(unit_num);
