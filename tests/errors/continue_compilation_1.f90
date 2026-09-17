@@ -1443,3 +1443,32 @@ contains
         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
     end subroutine
 end module
+
+subroutine associate_constant_selector_assignment()
+    implicit none
+    type :: associate_const_a_t
+        integer :: x
+    end type
+    type :: associate_const_b_t
+        type(associate_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_const_b_t), parameter :: pb = associate_const_b_t(associate_const_a_t(10), 30)
+    type(associate_const_b_t), parameter :: pba(1) = [associate_const_b_t(associate_const_a_t(11), 31)]
+
+    associate (q => pb)
+        q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pb)
+        q%a%x = 5  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pb%a)
+        r%x = 6  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pba)
+        q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
