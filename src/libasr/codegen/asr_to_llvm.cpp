@@ -5703,7 +5703,8 @@ public:
     }
 
     void store_array_broadcast_to_target(ASR::ArrayBroadcast_t* broadcast,
-            llvm::Value* target, ASR::ttype_t* target_type,
+            llvm::Value* target, ASR::expr_t* target_expr,
+            ASR::ttype_t* target_type,
             [[maybe_unused]] bool is_volatile) {
         int64_t n_eles = ASRUtils::get_fixed_size_of_array(target_type);
         if (n_eles < 0) {
@@ -5718,17 +5719,8 @@ public:
         }
         llvm::Type* elem_type = elem_value->getType();
         llvm::Value* data_ptr = nullptr;
-        ASR::expr_t* target_expr = nullptr;
-        llvm::Type* target_llvm_type = nullptr;
-#if LLVM_VERSION_MAJOR < 15
-        if (target->getType()->isPointerTy()) {
-            target_llvm_type = target->getType()->getPointerElementType();
-        }
-#endif
-        if (target_llvm_type == nullptr) {
-            target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                target_expr, target_type, module.get());
-        }
+        llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+            target_expr, target_type, module.get());
         if (ASRUtils::extract_physical_type(target_type) ==
                 ASR::array_physical_typeType::DescriptorArray) {
             data_ptr = llvm_utils->CreateLoad2(elem_type->getPointerTo(),
@@ -5757,7 +5749,7 @@ public:
 
     void append_struct_array_broadcast_global_ctor(const std::string& name,
             ASR::ArrayBroadcast_t* broadcast, llvm::GlobalVariable* global,
-            ASR::ttype_t* target_type) {
+            ASR::expr_t* target_expr, ASR::ttype_t* target_type) {
         llvm::BasicBlock* saved_block = builder->GetInsertBlock();
         llvm::FunctionType* function_type = llvm::FunctionType::get(
             llvm::Type::getVoidTy(context), {}, false);
@@ -5768,7 +5760,8 @@ public:
             module.get());
         llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", init_fn);
         builder->SetInsertPoint(entry);
-        store_array_broadcast_to_target(broadcast, global, target_type, false);
+        store_array_broadcast_to_target(broadcast, global, target_expr,
+            target_type, false);
         builder->CreateRetVoid();
         llvm::appendToGlobalCtors(*module, init_fn, 65535);
         if (saved_block != nullptr) {
@@ -5970,8 +5963,12 @@ public:
                              llvm::GlobalVariable* global =
                                  module->getNamedGlobal(llvm_var_name);
                              global->setInitializer(llvm::ConstantArray::getNullValue(type));
+                             ASR::expr_t* target_expr = ASRUtils::EXPR(
+                                 ASR::make_Var_t(al, x.base.base.loc,
+                                     const_cast<ASR::symbol_t*>(&x.base)));
                              append_struct_array_broadcast_global_ctor(
-                                 llvm_var_name, broadcast, global, x.m_type);
+                                 llvm_var_name, broadcast, global, target_expr,
+                                 x.m_type);
                           } else {
                              llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
                              module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
@@ -7263,7 +7260,8 @@ public:
                         if (ASR::ArrayBroadcast_t* broadcast =
                                 get_struct_array_broadcast(member_init)) {
                             store_array_broadcast_to_target(broadcast,
-                                ptr_member, v->m_type, v->m_is_volatile);
+                                ptr_member, ASRUtils::get_expr_from_sym(al, sym),
+                                v->m_type, v->m_is_volatile);
                             continue;
                         }
                         visit_expr(*member_init);
@@ -7751,8 +7749,10 @@ public:
         ASR::expr_t* initial_expr = v->m_value ? v->m_value : v->m_symbolic_value;
         if (ASR::ArrayBroadcast_t* broadcast =
                 get_struct_array_broadcast(initial_expr)) {
+            ASR::expr_t* target_expr = ASRUtils::EXPR(ASR::make_Var_t(
+                al, v->base.base.loc, &v->base));
             store_array_broadcast_to_target(broadcast,
-                target_var, v->m_type, v->m_is_volatile);
+                target_var, target_expr, v->m_type, v->m_is_volatile);
             return;
         }
         bool pointer_null_array_init = has_pointer_null_array_initializer(v);
@@ -8253,7 +8253,7 @@ public:
                             if (ASR::ArrayBroadcast_t* broadcast =
                                     get_struct_array_broadcast(init_expr)) {
                                 store_array_broadcast_to_target(broadcast,
-                                    ptr, v->m_type, v->m_is_volatile);
+                                    ptr, var_expr, v->m_type, v->m_is_volatile);
                                 save_struct_initialized = true;
                             }
                         }
