@@ -2171,7 +2171,10 @@ namespace LCompilers {
                         val_expr, ASRUtils::type_get_past_allocatable_pointer(expr_type_full), module);
             llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(
                         val_expr, val_type, module);
-            llvm::Value* desc_ptr = llvm_utils->CreateLoad2(llvm_desc_type->getPointerTo(), var_ptr);
+            llvm::Value* desc_ptr = var_ptr;
+            if (ASRUtils::is_allocatable_or_pointer(expr_type_full)) {
+                desc_ptr = llvm_utils->CreateLoad2(llvm_desc_type->getPointerTo(), var_ptr);
+            }
             llvm::Value* data_field = get_pointer_to_data(llvm_desc_type, desc_ptr);
             llvm::Value* data_ptr_val = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), 
                                         data_field);
