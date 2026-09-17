@@ -19556,7 +19556,6 @@ public:
         return ASR::is_a<ASR::Complex_t>(*val_type) ? 2 : 1;
     }
 
-
     void emit_seek_record(llvm::Value* unit_val, llvm::Value* rec_val, llvm::Value* iostat) {
         llvm::Value *unit_i32 = unit_val;
         if (unit_i32->getType()->isPointerTy()) {
@@ -19674,11 +19673,27 @@ public:
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
         } else if (ASRUtils::is_array(expr_type_full)) {
-            // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             single_args.push_back(pad_data);
             single_args.push_back(pad_len);
-            arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
-                    val_type, var_ptr, module.get(), single_args);
+            ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(expr_type_full);
+            if (ASR::is_a<ASR::Var_t>(*val_expr) &&
+                    (phys_type == ASR::array_physical_typeType::PointerArray ||
+                     phys_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                    !ASRUtils::is_allocatable_or_pointer(expr_type_full)) {
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, val_expr->base.loc, 4));
+                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                    ASR::make_ArraySize_t(al, val_expr->base.loc,
+                        val_expr, nullptr, type32, nullptr));
+                visit_ArraySize(*array_size);
+                arr_descr->push_data_array_args(val_type, val_expr, var_ptr, tmp,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1),
+                    single_args);
+            } else {
+                arr_descr->push_descriptor_array_args(val_expr, expr_type_full,
+                        val_type, var_ptr, module.get(), single_args);
+            }
         } else {
             // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
@@ -20148,10 +20163,24 @@ public:
                     add_formatted_read_arg(args, val_type, elem_ptr);
                 }
             } else if (ASRUtils::is_array(expr_type_full)) {
-                // DescriptorArray target: push is_descriptor_array=1, elem_tc, 
-                // data_ptr, n_elems, stride
-                arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
-                            val_type, var_ptr, module.get(), args);
+                ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(expr_type_full);
+                if (ASR::is_a<ASR::Var_t>(*val_expr) &&
+                        (phys_type == ASR::array_physical_typeType::PointerArray ||
+                         phys_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                        !ASRUtils::is_allocatable_or_pointer(expr_type_full)) {
+                    ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, val_expr->base.loc, 4));
+                    ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                        ASR::make_ArraySize_t(al, val_expr->base.loc,
+                            val_expr, nullptr, type32, nullptr));
+                    visit_ArraySize(*array_size);
+                    arr_descr->push_data_array_args(val_type, val_expr, var_ptr,
+                        tmp, llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), 1), args);
+                } else {
+                    arr_descr->push_descriptor_array_args(val_expr, expr_type_full,
+                                val_type, var_ptr, module.get(), args);
+                }
             } else {
                 add_formatted_read_arg(args, val_type, var_ptr);
             }

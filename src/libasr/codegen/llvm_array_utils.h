@@ -395,6 +395,12 @@ namespace LCompilers {
                     int n_dims, uint64_t elem_size) = 0;
 
                 virtual
+                void push_data_array_args(
+                    ASR::ttype_t* val_type, ASR::expr_t* val_expr,
+                    llvm::Value* data_ptr, llvm::Value* n_elems,
+                    llvm::Value* stride, std::vector<llvm::Value*>& args) = 0;
+
+                virtual
                 void push_descriptor_array_args(
                     ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
                     ASR::ttype_t* val_type, llvm::Value* var_ptr,
@@ -674,11 +680,14 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size);
                 
+                void push_data_array_args(
+                    ASR::ttype_t* val_type, ASR::expr_t* val_expr,
+                    llvm::Value* data_ptr, llvm::Value* n_elems,
+                    llvm::Value* stride, std::vector<llvm::Value*>& args);
+
                 /*
                  * Extracts descriptor fields from a DescriptorArray and appends
-                 * { is_descriptor_array=1, type_code, data_ptr, n_elems, stride }
-                 * to `args`.  Used by formatted read codegen for
-                 * descriptor-unwrapping logic.
+                 * the descriptor-array formatted-read protocol to `args`.
                  */
                 void push_descriptor_array_args(
                     ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
