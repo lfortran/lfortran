@@ -9537,18 +9537,28 @@ public:
         visit_expr_wrapper(x.m_ptr, false);
         ptr = tmp;
         if(ASRUtils::is_character(*p_type)){ // String OR array of strings
-            if (ASRUtils::is_array_of_strings(p_type) &&
-                LLVM::is_llvm_pointer(*p_type)) {
-                // For pointer/allocatable arrays of strings the storage is a
-                // pointer to the array descriptor pointer; load once so that
-                // get_stringArray_data sees `array_descriptor*`.
-                llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    x.m_ptr, p_type, module.get());
-                ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            if (ASRUtils::is_array_of_strings(p_type)) {
+                if (LLVM::is_llvm_pointer(*p_type)) {
+                    // For pointer/allocatable arrays of strings the storage is a
+                    // pointer to the array descriptor pointer; load once so that
+                    // the descriptor data field can be inspected.
+                    llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_ptr, p_type, module.get());
+                    ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+                }
+                if (x.m_tgt) {
+                    ptr = llvm_utils->get_stringArray_data(p_type, ptr);
+                } else {
+                    llvm::Type* string_type = llvm_utils->get_StringType(
+                        ASRUtils::extract_type(p_type))->getPointerTo();
+                    ptr = llvm_utils->CreateLoad2(string_type,
+                        arr_descr->get_pointer_to_data(x.m_ptr,
+                            ASRUtils::type_get_past_allocatable_pointer(p_type),
+                            ptr, module.get()));
+                }
+            } else {
+                ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
             }
-            ptr = ASRUtils::is_array_of_strings(p_type) ?
-                llvm_utils->get_stringArray_data(p_type, ptr) :
-                llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
         } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
             bool load_cptr = true;
@@ -9570,7 +9580,7 @@ public:
             llvm::Type* array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), ptr);
-            if (ASRUtils::is_unlimited_polymorphic_type(x.m_ptr)) { // {VTable*, i8*} -- Check equality on data field
+            if (x.m_tgt && ASRUtils::is_unlimited_polymorphic_type(x.m_ptr)) { // {VTable*, i8*} -- Check equality on data field
                 ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                     llvm_utils->create_gep2(array_inner_type, ptr, 1));
             }
