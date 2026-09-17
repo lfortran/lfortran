@@ -1443,3 +1443,114 @@ contains
         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
     end subroutine
 end module
+
+subroutine associate_constant_selector_assignment()
+    implicit none
+    type :: associate_const_a_t
+        integer :: x
+    end type
+    type :: associate_const_b_t
+        type(associate_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_const_b_t), parameter :: pb = associate_const_b_t(associate_const_a_t(10), 30)
+    type(associate_const_b_t), parameter :: pba(1) = [associate_const_b_t(associate_const_a_t(11), 31)]
+
+    associate (q => pb)
+        q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pb)
+        q%a%x = 5  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pb%a)
+        r%x = 6  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pba)
+        q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
+
+subroutine associate_nested_constant_selector_assignment()
+    implicit none
+    type :: associate_nested_const_a_t
+        integer :: x
+    end type
+    type :: associate_nested_const_b_t
+        type(associate_nested_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_nested_const_b_t), parameter :: pb = associate_nested_const_b_t(associate_nested_const_a_t(10), 30)
+    type(associate_nested_const_b_t), parameter :: pba(1) = [associate_nested_const_b_t(associate_nested_const_a_t(11), 31)]
+
+    associate (q => pb)
+        associate (r => q)
+            r%y = 88  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a)
+            r%x = 99  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a%x)
+            r = 77  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pba)
+        associate (r => q(1))
+            r%a%x = 66  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q)
+            associate (s => r)
+                s%y = 55  ! {Error} Cannot assign to a constant variable
+            end associate
+        end associate
+    end associate
+end subroutine
+
+subroutine associate_parameter_array_selector_assignment()
+    implicit none
+    type :: associate_param_array_a_t
+        integer :: x
+    end type
+    type :: associate_param_array_b_t
+        type(associate_param_array_a_t) :: a
+        integer :: y
+    end type
+    type(associate_param_array_b_t), parameter :: pba(2) = [ &
+        associate_param_array_b_t(associate_param_array_a_t(11), 31), &
+        associate_param_array_b_t(associate_param_array_a_t(12), 32)]
+    integer :: i
+
+    i = 1
+
+    associate (r => pba(1))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(i))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1:2))
+        r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a)
+        r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a%x)
+        r = 1  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
