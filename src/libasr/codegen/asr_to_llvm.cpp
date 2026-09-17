@@ -1081,7 +1081,8 @@ public:
         LCOMPILERS_ASSERT(llvm_utils->is_proper_array_of_strings_llvm_var(expr_type(expr), str))
         ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(expr));
         switch(ASRUtils::extract_physical_type(expr_type(expr))){
-            case ASR::DescriptorArray : {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 switch(str_type->m_physical_type){
                     case ASR::DescriptorString : {
                         llvm::Value* temp{};
@@ -21918,7 +21919,8 @@ public:
                             tmp = llvm_utils->CreateLoad2(llvm_type->getPointerTo(), tmp);
                         } else {
                             ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(arr_t);
-                            if (phys == ASR::array_physical_typeType::DescriptorArray) {
+                            if (phys == ASR::array_physical_typeType::DescriptorArray ||
+                                    phys == ASR::array_physical_typeType::AssumedRankArray) {
                                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
                                     m_values[i], ASRUtils::type_get_past_allocatable_pointer(arr_t),
                                     tmp, module.get());

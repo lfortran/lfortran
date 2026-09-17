@@ -10541,17 +10541,10 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
             }
         }
     } else {
-        char length_format[23];
-        sprintf(length_format, "%%%" PRId64, length);
-        strcat(length_format, "s");
         for (int i = 0; i < array_size; i++) {
-            int scan_ret = fscanf(filep, length_format, p + (i * length));
-            if (scan_ret != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid read (scan)\n");
-                exit(1);
-            }
-            (void)!fscanf(filep, "%*[^\n \t]");
+            char *elem = p + ((int64_t)i * length);
+            _lfortran_read_char(&elem, length, unit_num, iostat);
+            if (iostat && *iostat != 0) return;
         }
     }
 }
