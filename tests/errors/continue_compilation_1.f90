@@ -1517,3 +1517,40 @@ subroutine associate_nested_constant_selector_assignment()
         end associate
     end associate
 end subroutine
+
+subroutine associate_parameter_array_selector_assignment()
+    implicit none
+    type :: associate_param_array_a_t
+        integer :: x
+    end type
+    type :: associate_param_array_b_t
+        type(associate_param_array_a_t) :: a
+        integer :: y
+    end type
+    type(associate_param_array_b_t), parameter :: pba(2) = [ &
+        associate_param_array_b_t(associate_param_array_a_t(11), 31), &
+        associate_param_array_b_t(associate_param_array_a_t(12), 32)]
+    integer :: i
+
+    i = 1
+
+    associate (r => pba(1))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(i))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1:2))
+        r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a)
+        r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a%x)
+        r = 1  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine

@@ -223,7 +223,7 @@ public:
         }
     }
 
-    bool selector_has_non_definable_associate_base(ASR::expr_t* expr) {
+    bool selector_has_constant_or_non_definable_base(ASR::expr_t* expr) {
         ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
         if (!base_sym) {
             return false;
@@ -233,9 +233,16 @@ public:
             return true;
         }
         ASR::symbol_t* resolved_sym = ASRUtils::symbol_get_past_external(base_sym);
-        return resolved_sym != base_sym &&
-            non_definable_associate_variables.find(resolved_sym) !=
-                non_definable_associate_variables.end();
+        if (resolved_sym != base_sym &&
+                non_definable_associate_variables.find(resolved_sym) !=
+                    non_definable_associate_variables.end()) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Variable_t>(*resolved_sym)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(resolved_sym);
+            return v->m_storage == ASR::storage_typeType::Parameter;
+        }
+        return false;
     }
 
     void add_assignment_to_constant_variable_error(const Location& assignment_loc,
@@ -3319,7 +3326,7 @@ public:
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
             bool selector_is_constant = ASRUtils::is_value_constant(tmp_expr) ||
-                selector_has_non_definable_associate_base(tmp_expr);
+                selector_has_constant_or_non_definable_base(tmp_expr);
 
             // A parenthesized selector `(x)` is a primary (R1001), not a
             // designator, so per F2018 11.1.3.3 the selector is an expression.
@@ -3339,24 +3346,26 @@ public:
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
                     ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
-                    if (!ASRUtils::is_value_constant(sim->m_value)) {
+                    if (!selector_is_constant && !ASRUtils::is_value_constant(sim->m_value)) {
                         create_associate_stmt = true;
                         tmp_type = sim->m_type;
                     }
                 } else if (ASR::is_a<ASR::StringSection_t>(*tmp_expr)) {
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::ComplexRe_t>(*tmp_expr) ||
                            ASR::is_a<ASR::ComplexIm_t>(*tmp_expr)) {
                     // Complex parts are designators. Associate them with the
                     // original storage instead of copying their current value.
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                 } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                     ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
                     ASR::ttype_t* base_type = nullptr;
                     if (ASR::is_a<ASR::Var_t>(*tmp_array_section->m_v)) {
                         ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_array_section->m_v);
-                        tmp_storage = variable->m_storage;
+                        if (!selector_is_constant) {
+                            tmp_storage = variable->m_storage;
+                        }
                         base_type = variable->m_type;
                     } else {
                         base_type = ASRUtils::expr_type(tmp_array_section->m_v);
@@ -3371,16 +3380,16 @@ public:
                     }
                     tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
                            ASRUtils::is_pointer(tmp_type)) {
                     // A reference to a function with a data pointer result is a
                     // variable, so the associate name must be associated with the
                     // target the pointer refers to instead of being assigned a
                     // copy of its value.
-                    create_associate_stmt = true;
+                    create_associate_stmt = !selector_is_constant;
                 }
             }
 

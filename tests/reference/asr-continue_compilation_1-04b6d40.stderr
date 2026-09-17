@@ -2489,3 +2489,68 @@ semantic error: Cannot assign to a constant variable
      |
 1516 |                end associate
      | ...~~~~~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1538:9
+     |
+1538 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1537 |        associate (r => pba(1))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1539 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1542:9
+     |
+1542 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1541 |        associate (r => pba(i))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1543 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1546:9
+     |
+1546 |         r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1545 |        associate (r => pba(1:2))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1547 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1550:9
+     |
+1550 |         r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1549 |        associate (r => pba(1)%a)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1551 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1554:9
+     |
+1554 |         r = 1  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^ assignment here
+     |
+1553 |        associate (r => pba(1)%a%x)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1555 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
