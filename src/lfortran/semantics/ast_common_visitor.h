@@ -8849,6 +8849,16 @@ public:
                         check_type_initializer_type(type, type_declaration,
                             init_expr, s.m_initializer->base.loc);
                     }
+                    if (init_expr && !is_pointer
+                            && ASR::is_a<ASR::StructType_t>(
+                                *ASRUtils::type_get_past_array(type))) {
+                        ASR::expr_t* array_init =
+                            broadcast_struct_scalar_to_array_initializer(
+                                s.m_initializer->base.loc, init_expr, type);
+                        if (array_init) {
+                            init_expr = array_init;
+                        }
+                    }
 
                     // The procedure symbol does not exist yet while its
                     // declarations are visited, so use is_Function there.
@@ -11324,6 +11334,71 @@ public:
                 c->m_args, c->n_args, c->m_type);
         }
         return nullptr;
+    }
+
+    ASR::expr_t* broadcast_struct_scalar_to_array_initializer(
+            const Location& loc, ASR::expr_t* init, ASR::ttype_t* type) {
+        if (init == nullptr || !ASRUtils::is_array(type)
+                || !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(type))
+                || ASRUtils::is_array(ASRUtils::expr_type(init))) {
+            return nullptr;
+        }
+        ASR::expr_t* value = ASRUtils::expr_value(init);
+        ASR::expr_t* element = (value && ASR::is_a<ASR::StructConstant_t>(*value)) ? value : init;
+        if (!ASR::is_a<ASR::StructConstant_t>(*element)) {
+            ASR::expr_t* static_init = get_static_struct_initializer(init);
+            if (static_init) {
+                element = static_init;
+            }
+        }
+        if (!ASR::is_a<ASR::StructConstant_t>(*element)) {
+            return nullptr;
+        }
+        ASR::dimension_t* mdims = nullptr;
+        size_t ndims = ASRUtils::extract_dimensions_from_ttype(type, mdims);
+        Vec<ASR::expr_t*> lengths;
+        lengths.reserve(al, ndims);
+        for (size_t i = 0; i < ndims; i++) {
+            ASR::expr_t* length = mdims[i].m_length;
+            if (length == nullptr) {
+                diag.add(Diagnostic(
+                    "array of derived type initialized with a scalar structure constructor must have constant explicit shape",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+            ASR::expr_t* length_value = ASRUtils::expr_value(length);
+            if (length_value == nullptr ||
+                    !ASR::is_a<ASR::IntegerConstant_t>(*length_value)) {
+                diag.add(Diagnostic(
+                    "array of derived type initialized with a scalar structure constructor must have constant explicit shape",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+            lengths.push_back(al, length_value);
+        }
+        Vec<ASR::dimension_t> shape_dims;
+        shape_dims.reserve(al, 1);
+        ASR::dimension_t shape_dim;
+        shape_dim.loc = loc;
+        shape_dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        shape_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ndims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        shape_dims.push_back(al, shape_dim);
+        ASR::ttype_t* shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+            shape_dims.p, shape_dims.size(),
+            ASR::array_physical_typeType::FixedSizeArray,
+            ASR::memory_spaceType::Global));
+        ASR::expr_t* shape = ASRUtils::EXPR(
+            ASRUtils::make_ArrayConstructor_t_util(al, loc, lengths.p,
+                lengths.size(), shape_type, ASR::arraystorageType::ColMajor));
+        return ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc,
+            element, shape, type, nullptr));
     }
 
     void resolve_pdt_constructor(const Location& loc, ASR::symbol_t*& v,

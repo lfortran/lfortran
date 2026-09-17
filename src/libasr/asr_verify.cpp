@@ -1206,6 +1206,19 @@ public:
                     || x.m_type == nullptr) {
                 continue;
             }
+            bool scalar_struct_initializer =
+                ASR::is_a<ASR::StructConstant_t>(*initial);
+            if (ASRUtils::is_array(x.m_type)
+                    && !ASRUtils::is_array(initial_type)
+                    && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(x.m_type))
+                    && scalar_struct_initializer) {
+                require_id(false,
+                    "asr.verify.variable.array_struct_initializer_is_array",
+                    "Variable '" + std::string(x.m_name) +
+                        "' is an array of derived type, so its initializer "
+                        "must be an array expression");
+            }
             ASR::ttype_t *declared = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(x.m_type));
             ASR::ttype_t *actual = ASRUtils::type_get_past_array(

@@ -2058,7 +2058,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             return true;
         } case ASR::exprType::ArrayBroadcast: {
             ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
-            return is_value_constant(array_broadcast->m_value);
+            return is_value_constant(array_broadcast->m_value) ||
+                is_value_constant(array_broadcast->m_array);
         } case ASR::exprType::Var: {
             ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
             if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
@@ -9697,11 +9698,21 @@ class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArra
     public:
 
     Allocator& al;
+    bool preserve_struct_array_broadcast;
 
     RemoveArrayProcessingNodeReplacer(Allocator& al_): al(al_) {
+        preserve_struct_array_broadcast = false;
     }
 
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        if (preserve_struct_array_broadcast
+                && ASRUtils::is_array(x->m_type)
+                && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(x->m_type))) {
+            ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::
+                replace_ArrayBroadcast(x);
+            return;
+        }
         *current_expr = x->m_array;
     }
 
@@ -9731,6 +9742,25 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
     }
 
     RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
+
+    void visit_Variable(const ASR::Variable_t& x) {
+        ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        bool preserve_copy = replacer.preserve_struct_array_broadcast;
+        replacer.preserve_struct_array_broadcast = true;
+        if (xx.m_symbolic_value != nullptr) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(xx.m_symbolic_value);
+            call_replacer();
+            current_expr = current_expr_copy;
+        }
+        if (xx.m_value != nullptr) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(xx.m_value);
+            call_replacer();
+            current_expr = current_expr_copy;
+        }
+        replacer.preserve_struct_array_broadcast = preserve_copy;
+    }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         if( x.m_new == ASR::array_physical_typeType::SIMDArray ) {
