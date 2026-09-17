@@ -15,13 +15,25 @@ contains
             error stop "unexpected rank"
         end select
     end subroutine
+
+    subroutine read_real_iostat(iunit, x, ios)
+        integer, intent(in) :: iunit
+        real(8), intent(inout) :: x(..)
+        integer, intent(out) :: ios
+        select rank (x)
+        rank (2)
+            read(iunit, *, iostat=ios) x
+        rank default
+            error stop "unexpected rank"
+        end select
+    end subroutine
 end module
 
 program assumed_rank_22
 use assumed_rank_22_mod
 implicit none
 real(8) :: a1(5), a2(5,2), w(3,3), a3(3,3,3), c(3)
-integer :: u
+integer :: u, ios
 
 open(newunit=u, file="assumed_rank_22_data.txt", status="replace", action="readwrite")
 write(u, *) 100.0d0, 200.0d0, 300.0d0
@@ -64,6 +76,50 @@ w(1:3:2, 1:3:2) = -1.0d0
 if (any(w /= -1.0d0)) then
     print *, w
     error stop "rank-2 two-dimension strided read overwrote wrong elements"
+end if
+
+open(newunit=u, file="assumed_rank_22_data.txt", status="replace", action="readwrite")
+write(u, *) 10.0d0, 20.0d0
+rewind(u)
+w = -1.0d0
+ios = 0
+call read_real_iostat(u, w(1:3:2, 1:3:2), ios)
+close(u, status="delete")
+if (ios >= 0) then
+    print *, ios
+    error stop "rank-2 short-record read did not report end-of-file"
+end if
+if (w(1,1) /= 10.0d0 .or. w(3,1) /= 20.0d0 .or. &
+        w(1,3) /= -1.0d0 .or. w(3,3) /= -1.0d0) then
+    print *, w
+    error stop "rank-2 short-record read modified wrong elements"
+end if
+w(1:3:2, 1:3:2) = -1.0d0
+if (any(w /= -1.0d0)) then
+    print *, w
+    error stop "rank-2 short-record read overwrote unselected elements"
+end if
+
+open(newunit=u, file="assumed_rank_22_data.txt", status="replace", action="readwrite")
+write(u, '(A)') '10.0 bad 30.0 40.0'
+rewind(u)
+w = -1.0d0
+ios = 0
+call read_real_iostat(u, w(1:3:2, 1:3:2), ios)
+close(u, status="delete")
+if (ios <= 0) then
+    print *, ios
+    error stop "rank-2 invalid-data read did not report an error"
+end if
+if (w(1,1) /= 10.0d0 .or. w(3,1) /= -1.0d0 .or. &
+        w(1,3) /= -1.0d0 .or. w(3,3) /= -1.0d0) then
+    print *, w
+    error stop "rank-2 invalid-data read modified wrong elements"
+end if
+w(1:3:2, 1:3:2) = -1.0d0
+if (any(w /= -1.0d0)) then
+    print *, w
+    error stop "rank-2 invalid-data read overwrote unselected elements"
 end if
 
 open(newunit=u, file="assumed_rank_22_data.txt", status="replace", action="readwrite")

@@ -18547,7 +18547,64 @@ public:
         llvm::Value* offset_val = builder->CreateLoad(i64_type, offset_ptr);
         llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(
             llvm_elem_type, data_ptr, offset_val);
-        emit_scalar_read_call(elem_type, elem_ptr, unit_val, iostat);
+        llvm::BasicBlock* loop_continue = llvm::BasicBlock::Create(
+            context, "desc_read.continue", parent_fn);
+        if (!llvm::isa<llvm::ConstantPointerNull>(iostat) &&
+                !ASRUtils::is_character(*elem_type)) {
+            llvm::Function* read_fn = get_read_function(elem_type);
+            llvm::BasicBlock* store_block = llvm::BasicBlock::Create(
+                context, "desc_read.store", parent_fn);
+            if (ASRUtils::is_logical(*elem_type)) {
+                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt1Ty(context));
+                int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+                llvm::Value* cur_val = llvm_utils->CreateLoad2(
+                    llvm_utils->getIntType(kind), elem_ptr);
+                llvm::Value* cur_bool = builder->CreateTrunc(cur_val,
+                    llvm::Type::getInt1Ty(context));
+                builder->CreateStore(cur_bool, tmp_bool);
+                builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                llvm::Value* iostat_val = builder->CreateLoad(i32_type, iostat);
+                llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
+                    iostat_val, llvm::ConstantInt::get(i32_type, 0));
+                builder->CreateCondBr(iostat_is_zero, store_block, loop_end);
+
+                builder->SetInsertPoint(store_block);
+                llvm::Value* loaded = llvm_utils->CreateLoad2(
+                    llvm::Type::getInt1Ty(context), tmp_bool);
+                llvm::Value* widened = builder->CreateZExt(loaded,
+                    llvm_utils->getIntType(kind));
+                builder->CreateStore(widened, elem_ptr);
+            } else {
+                llvm::Value* tmp_elem_ptr = llvm_utils->CreateAlloca(*builder,
+                    llvm_elem_type, nullptr, "desc_read_elem");
+                builder->CreateStore(
+                    llvm_utils->CreateLoad2(llvm_elem_type, elem_ptr),
+                    tmp_elem_ptr);
+                builder->CreateCall(read_fn, {tmp_elem_ptr, unit_val, iostat});
+                llvm::Value* iostat_val = builder->CreateLoad(i32_type, iostat);
+                llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
+                    iostat_val, llvm::ConstantInt::get(i32_type, 0));
+                builder->CreateCondBr(iostat_is_zero, store_block, loop_end);
+
+                builder->SetInsertPoint(store_block);
+                builder->CreateStore(
+                    llvm_utils->CreateLoad2(llvm_elem_type, tmp_elem_ptr),
+                    elem_ptr);
+            }
+            builder->CreateBr(loop_continue);
+        } else {
+            emit_scalar_read_call(elem_type, elem_ptr, unit_val, iostat);
+            if (!llvm::isa<llvm::ConstantPointerNull>(iostat)) {
+                llvm::Value* iostat_val = builder->CreateLoad(i32_type, iostat);
+                llvm::Value* iostat_is_zero = builder->CreateICmpEQ(
+                    iostat_val, llvm::ConstantInt::get(i32_type, 0));
+                builder->CreateCondBr(iostat_is_zero, loop_continue, loop_end);
+            } else {
+                builder->CreateBr(loop_continue);
+            }
+        }
+        builder->SetInsertPoint(loop_continue);
         llvm::Value* next_idx = builder->CreateAdd(cur_idx,
             llvm::ConstantInt::get(i32_type, 1));
         builder->CreateStore(next_idx, idx_ptr);
