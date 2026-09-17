@@ -104,12 +104,36 @@ the subagents that need it.
 Never, under any circumstances:
 
 - push to the upstream `lfortran/lfortran` repository;
-- force-push, or rebase a branch that already has an open PR (merge
-  `upstream/main` into it instead, per `AGENTS.md`);
+- use an unconditional force-push; when the policy below calls for rebasing,
+  update the fork branch only with `git push --force-with-lease`;
 - comment on, close, or relabel the original issue, add any other label to
   the PR, comment on other issues or PRs (including existing issues found in
   a duplicate search), or post review comments on other people's PRs;
 - run `./run_tests.py -u` without reviewing every reference change.
+
+### Keeping the PR branch current
+
+Keep commit history clean by rebasing the PR branch onto `upstream/main` while
+the PR is a draft. Run `git rebase <upstream-remote>/main`, resolve any
+conflicts, rebuild and retest, then update the fork with
+`git push --force-with-lease`.
+
+Switch permanently to merging `<upstream-remote>/main` when any of these
+review-sensitive events occurs:
+
+- the PR is marked ready for review;
+- a human other than the PR author submits a formal review;
+- a human other than the PR author leaves an inline code-review comment;
+- the user explicitly says not to rebase the PR.
+
+Top-level PR conversation comments, reactions, bot activity, and comments by
+the PR author do not change the mode. Before updating the branch, use `gh` to
+inspect the PR's draft state, author, submitted reviews, and inline review
+comments. Once the mode changes to `merge`, preserve the commits reviewers may
+have seen: merge `<upstream-remote>/main` for all later updates and push
+normally. Never return to rebasing that PR even if a review or inline comment
+is later dismissed, hidden, or deleted. Record the chosen mode (`rebase` or
+`merge`) in `state.md`.
 
 ## Inputs
 
@@ -397,8 +421,12 @@ comments are new. It should:
   unfixed; list them for the final report.
 - For human review comments: address each one in code, or draft a reply in
   `round_<k>.md`. Do not post replies automatically; the user decides.
-- For merge conflicts: `git merge <upstream-remote>/main`, resolve, rebuild,
-  and retest. Never rebase or force-push.
+- For base conflicts or an outdated branch: follow **Keeping the PR branch
+  current**. Rebase onto `<upstream-remote>/main` and push with
+  `--force-with-lease` while the PR remains in `rebase` mode; once a
+  review-sensitive event switches it to `merge` mode, merge
+  `<upstream-remote>/main` and push normally. Resolve conflicts, rebuild, and
+  retest either way.
 - Rebuild, rerun the MRE, the new integration test, and the affected suites
   (the full integration and reference suites whenever compiler source
   changed). Update `pr_body.md` and the PR description
@@ -445,8 +473,8 @@ Human comments needing your reply: <list or none>
   `git log`, `gh pr view`, and the `.fix-issue/<id>/` artifacts, then continue
   from the first phase that is not finished.
 - **Base freshness:** if `main` moved a lot during a long loop and CI failures
-  look unrelated to the PR, have the fix subagent merge `upstream/main` before
-  debugging.
+  look unrelated to the PR, have the fix subagent update from `upstream/main`
+  before debugging, using the review-aware rebase-or-merge policy above.
 - **Build errors in CI only:** other platforms (Windows/MSVC, WASM, other
   backends) often fail where macOS/Linux pass. The fix subagent should read
   the CI step's exact command and reproduce that backend locally where
