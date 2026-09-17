@@ -11777,8 +11777,8 @@ public:
         bool is_target_set = ASR::is_a<ASR::Set_t>(*asr_target_type);
         bool is_value_set = ASR::is_a<ASR::Set_t>(*asr_value_type);
         bool is_target_struct = ASR::is_a<ASR::StructType_t>(
-            *ASRUtils::type_get_past_allocatable(asr_target_type)) &&
-            !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_target_type));
+            *ASRUtils::type_get_past_allocatable_pointer(asr_target_type)) &&
+            !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(asr_target_type));
         bool is_value_struct = ASR::is_a<ASR::StructType_t>(
             *ASRUtils::type_get_past_allocatable_pointer(asr_value_type)) &&
              !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(asr_value_type));
