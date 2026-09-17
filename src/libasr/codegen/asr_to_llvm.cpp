@@ -2138,7 +2138,8 @@ public:
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
-                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type)) {
+                          ASR::is_a<ASR::Logical_t>(*curr_arg_m_a_type) ||
+                          ASR::is_a<ASR::CPtr_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                     auto do_scalar_alloc = [&]() {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
@@ -9980,14 +9981,44 @@ public:
                 ptr = llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
             }
         } else if (!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_ptr)) {
+            if (ASRUtils::is_allocatable(p_type)
+                    && ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(p_type))) {
+                llvm::Type* cptr_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_ptr, ASRUtils::extract_type(p_type), module.get());
+                llvm::Type* cptr_storage_type = cptr_llvm_type->getPointerTo();
+                llvm::Value* cptr_storage = llvm_utils->CreateLoad2(
+                    cptr_storage_type, ptr);
+                llvm::Value* cptr_value = llvm_utils->CreateAlloca(
+                    cptr_llvm_type, nullptr, "cptr_associated_value");
+                builder->CreateStore(
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(cptr_llvm_type)),
+                    cptr_value);
+                llvm::Value* storage_not_null = builder->CreateICmpNE(
+                    cptr_storage,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(cptr_storage_type)));
+                llvm_utils->create_if_else(storage_not_null, [&]() {
+                    builder->CreateStore(
+                        llvm_utils->CreateLoad2(cptr_llvm_type, cptr_storage),
+                        cptr_value);
+                }, [](){});
+                ptr = llvm_utils->CreateLoad2(cptr_llvm_type, cptr_value);
+            } else {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr, p_type, module.get());
             bool load_cptr = true;
             if (ASR::is_a<ASR::CPtr_t>(*p_type) && ASR::is_a<ASR::Var_t>(*x.m_ptr)) {
                 ASR::Variable_t* p_var = ASRUtils::EXPR2VAR(x.m_ptr);
-                load_cptr = !is_cptr_dummy_passed_by_value(p_var);
+                load_cptr = !is_cptr_dummy_passed_by_value(p_var)
+                    && !(p_var->m_storage == ASR::storage_typeType::Parameter
+                        && p_var->m_value != nullptr);
+            } else if (ASR::is_a<ASR::CPtr_t>(*p_type)
+                    && ASRUtils::expr_value(x.m_ptr) != nullptr) {
+                load_cptr = false;
             }
             if (load_cptr) {
                 ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
+            }
             }
         }
         if( ASRUtils::is_array(p_type) &&
@@ -10924,6 +10955,11 @@ public:
                     ASRUtils::type_get_past_allocatable(value_type)));
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                if (ASRUtils::is_allocatable(target_type)
+                        && !ASRUtils::is_array(target_type)) {
+                    check_and_allocate_scalar(x.m_target, x.m_value,
+                        ASRUtils::type_get_past_allocatable(target_type));
+                }
                 if(ASRUtils::is_array(target_type) ){ // Fetch data ptr
                     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(target_type) ==
                         ASR::array_physical_typeType::DescriptorArray);
@@ -12226,6 +12262,13 @@ public:
 
         llvm::Type* asr_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
 
+        if (ASRUtils::is_allocatable(asr_target_type) &&
+                !ASRUtils::is_array(asr_target_type) &&
+                ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(asr_target_type)) &&
+                ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(asr_value_type))) {
+            check_and_allocate_scalar(x.m_target, x.m_value,
+                ASRUtils::type_get_past_allocatable(asr_target_type));
+        }
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
