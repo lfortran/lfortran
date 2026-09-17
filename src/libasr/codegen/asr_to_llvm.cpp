@@ -5703,7 +5703,8 @@ public:
     }
 
     void store_array_broadcast_to_target(ASR::ArrayBroadcast_t* broadcast,
-            llvm::Value* target, ASR::ttype_t* target_type, bool is_volatile) {
+            llvm::Value* target, ASR::ttype_t* target_type,
+            [[maybe_unused]] bool is_volatile) {
         int64_t n_eles = ASRUtils::get_fixed_size_of_array(target_type);
         if (n_eles < 0) {
             throw CodeGenError("array broadcast initializer requires a fixed-size array");
@@ -5747,7 +5748,8 @@ public:
             llvm::Value* idx = llvm_utils->CreateLoad2(index_type, idx_ptr);
             llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(
                 elem_type, data_ptr, idx);
-            builder->CreateStore(elem_value, elem_ptr, is_volatile);
+            llvm_utils->deepcopy(broadcast->m_array, elem_value, elem_ptr,
+                elem_asr_type, elem_asr_type, module.get());
             builder->CreateStore(builder->CreateAdd(idx,
                 llvm::ConstantInt::get(index_type, 1)), idx_ptr);
         });
@@ -8247,6 +8249,14 @@ public:
                     if (ASRUtils::extract_physical_type(v->m_type) !=
                             ASR::array_physical_typeType::DescriptorArray) {
                         allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
+                        if (struct_skip_bb != nullptr) {
+                            if (ASR::ArrayBroadcast_t* broadcast =
+                                    get_struct_array_broadcast(init_expr)) {
+                                store_array_broadcast_to_target(broadcast,
+                                    ptr, v->m_type, v->m_is_volatile);
+                                save_struct_initialized = true;
+                            }
+                        }
                     }
                 } else {
                     bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);

@@ -23,6 +23,18 @@ type :: nested_outer
     type(nested_mid) :: mid = nested_mid(nested_leaf(-3, "out"))
 end type
 
+type :: char_leaf
+    character(len=5) :: s = "empty"
+end type
+
+type :: char_outer
+    type(char_leaf) :: leaf = char_leaf("outer")
+end type
+
+type :: char_holder
+    type(char_leaf) :: items(3) = char_leaf("hlder")
+end type
+
 type(t), parameter :: z = t(6, 1.5)
 type(t), parameter :: pz(2, 2) = t(11, 6.5)
 integer, parameter :: pz_h = pz(2, 1)%h
@@ -39,11 +51,16 @@ character(len=3), parameter :: pnest_tag = pnest(3)%mid%leaf%tag
 integer, parameter :: pnest_hs(3) = pnest%mid%leaf%h
 character(len=3), parameter :: pnest_tags(3) = pnest%mid%leaf%tag
 integer, parameter :: pnest_h_plus = pnest_h + 1
+type(char_leaf), parameter :: pchar(3) = char_leaf("param")
+character(len=5), parameter :: pchar_s = pchar(2)%s
 type(t) :: marr(3) = t(4, 2.5)
 type(t) :: narr(2) = z
 type(t) :: mat(2, 2) = t(7, 3.5)
 type(t), save :: saved_arr(2) = t(12, 7.5)
 type(u) :: gu
+type(char_outer) :: mchar_arr(3) = char_outer(char_leaf("modul"))
+type(nested_outer) :: mnest_arr(3) = nested_outer(nested_mid(nested_leaf(41, "owl")))
+type(char_holder) :: mholder
 
 contains
 
@@ -76,6 +93,50 @@ subroutine check_nested_procedure_local()
     if (larr(2)%mid%leaf%tag /= "cat") error stop 22
     if (larr(3)%mid%leaf%h /= 21) error stop 23
     if (larr(3)%mid%leaf%tag /= "cat") error stop 24
+end subroutine
+
+subroutine check_plain_char_local()
+    type(char_outer) :: larr(3) = char_outer(char_leaf("local"))
+    type(char_leaf) :: from_param(3) = pchar
+
+    if (larr(2)%leaf%s /= "local") error stop 39
+    if (larr(3)%leaf%s /= "local") error stop 40
+    larr(1)%leaf%s = "editl"
+    if (larr(2)%leaf%s /= "local") error stop 41
+    if (larr(3)%leaf%s /= "local") error stop 42
+
+    if (from_param(2)%s /= "param") error stop 43
+    from_param(1)%s = "editp"
+    if (from_param(2)%s /= "param") error stop 44
+    if (from_param(3)%s /= "param") error stop 45
+end subroutine
+
+subroutine check_save_char_local()
+    type(char_outer), save :: saved(3) = char_outer(char_leaf("saved"))
+
+    if (saved(2)%leaf%s /= "saved") error stop 46
+    if (saved(3)%leaf%s /= "saved") error stop 47
+    saved(1)%leaf%s = "edits"
+    if (saved(2)%leaf%s /= "saved") error stop 48
+    if (saved(3)%leaf%s /= "saved") error stop 49
+end subroutine
+
+subroutine check_plain_component_default()
+    type(char_holder) :: holder
+
+    if (holder%items(2)%s /= "hlder") error stop 50
+    holder%items(1)%s = "edith"
+    if (holder%items(2)%s /= "hlder") error stop 51
+    if (holder%items(3)%s /= "hlder") error stop 52
+end subroutine
+
+subroutine check_save_component_default()
+    type(char_holder), save :: holder
+
+    if (holder%items(2)%s /= "hlder") error stop 53
+    holder%items(1)%s = "editq"
+    if (holder%items(2)%s /= "hlder") error stop 54
+    if (holder%items(3)%s /= "hlder") error stop 55
 end subroutine
 
 subroutine check_nested_parameter_actual(x)
@@ -121,6 +182,7 @@ if (pnest_tag /= "fox") error stop 33
 if (any(pnest_hs /= 31)) error stop 34
 if (any(pnest_tags /= "fox")) error stop 35
 if (pnest_h_plus /= 32) error stop 36
+if (pchar_s /= "param") error stop 56
 call check_nested_parameter_actual(pnest)
 
 do j = 1, 2
@@ -136,6 +198,20 @@ call check_t(parr(3), 8, 4.5)
 
 call check_procedure_local()
 call check_nested_procedure_local()
+call check_plain_char_local()
+call check_save_char_local()
+call check_plain_component_default()
+call check_save_component_default()
+
+mchar_arr(1)%leaf%s = "editm"
+if (mchar_arr(2)%leaf%s /= "modul") error stop 57
+if (mchar_arr(3)%leaf%s /= "modul") error stop 58
+mnest_arr(1)%mid%leaf%tag = "hen"
+if (mnest_arr(2)%mid%leaf%tag /= "owl") error stop 59
+if (mnest_arr(3)%mid%leaf%tag /= "owl") error stop 60
+mholder%items(1)%s = "editg"
+if (mholder%items(2)%s /= "hlder") error stop 61
+if (mholder%items(3)%s /= "hlder") error stop 62
 
 print *, "ok"
 end program
