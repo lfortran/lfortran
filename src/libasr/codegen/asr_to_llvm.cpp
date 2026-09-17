@@ -7701,7 +7701,7 @@ public:
                 return get_struct_constant(struct_, sc->m_args, sc->n_args);
             }
             case ASR::exprType::StructConstructor: {
-                llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
+                [[maybe_unused]] llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(
                     llvm_utils->get_type_from_ttype_t_util(expr, ASRUtils::expr_type(expr), module.get()));
                 ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(
