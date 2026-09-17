@@ -2214,7 +2214,8 @@ namespace LCompilers {
 #if LLVM_VERSION_MAJOR < 15
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
-            case ASR::DescriptorArray:{
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray:{
                 switch (str_type->m_physical_type){
                     // A pointer to the Array Descriptor => `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }`
                     case ASR::DescriptorString:{
@@ -2664,7 +2665,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
@@ -2685,7 +2687,8 @@ namespace LCompilers {
         ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(type));
         ASR::String_t* str = ASRUtils::get_string_type(arr->m_type);
         switch(arr->m_physical_type){
-            case ASR::DescriptorArray: {
+            case ASR::DescriptorArray:
+            case ASR::AssumedRankArray: {
                 llvm::Type* type_ = get_type_from_ttype_t_util(nullptr, ASRUtils::type_get_past_allocatable_pointer(type), module);
                 llvm::Value* str_desc = builder->CreateLoad(
                     get_StringType(ASRUtils::extract_type(type))->getPointerTo(),
