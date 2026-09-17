@@ -23069,10 +23069,14 @@ public:
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
 
                     if (var->m_storage == ASR::storage_typeType::Parameter) {
+                        ASR::expr_t* parameter_value = var->m_value ?
+                            var->m_value : var->m_symbolic_value;
+                        value = ASRUtils::get_struct_member_value_from_constant(
+                            parameter_value, tmp2_m_m_ext);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                             ASR::Variable_t* mem_var =
                                 ASR::down_cast<ASR::Variable_t>(mem_sym);
 
@@ -23084,10 +23088,12 @@ public:
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
                     ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                     if (v->m_value) {
+                        value = ASRUtils::get_struct_member_value_from_constant(
+                            v->m_value, tmp2_m_m_ext);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                        if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                             ASR::Variable_t* mem_var =
                                 ASR::down_cast<ASR::Variable_t>(mem_sym);
 
@@ -23143,10 +23149,32 @@ public:
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v->m_v);
 
                 if (var->m_storage == ASR::storage_typeType::Parameter) {
+                    ASR::expr_t* parameter_value = var->m_value ?
+                        var->m_value : var->m_symbolic_value;
+                    value = ASRUtils::get_struct_member_value_from_constant(
+                        parameter_value, tmp2_m_m_ext);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
-                    if (ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
+                        ASR::Variable_t* mem_var =
+                            ASR::down_cast<ASR::Variable_t>(mem_sym);
+
+                        if (mem_var->m_symbolic_value) {
+                            value = mem_var->m_symbolic_value; // ArrayConstant
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
+                ASR::StructInstanceMember_t* v =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
+                if (v->m_value) {
+                    value = ASRUtils::get_struct_member_value_from_constant(
+                        v->m_value, tmp2_m_m_ext);
+                    ASR::symbol_t* mem_sym =
+                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+
+                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
                         ASR::Variable_t* mem_var =
                             ASR::down_cast<ASR::Variable_t>(mem_sym);
 

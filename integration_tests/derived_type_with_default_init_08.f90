@@ -11,20 +11,30 @@ type :: u
 end type
 
 type :: nested_leaf
-    integer :: h
-    character(len=3) :: tag
+    integer :: h = -1
+    character(len=3) :: tag = "bad"
 end type
 
 type :: nested_mid
-    type(nested_leaf) :: leaf
+    type(nested_leaf) :: leaf = nested_leaf(-2, "mid")
 end type
 
 type :: nested_outer
-    type(nested_mid) :: mid
+    type(nested_mid) :: mid = nested_mid(nested_leaf(-3, "out"))
 end type
 
 type(t), parameter :: z = t(6, 1.5)
 type(t), parameter :: pz(2, 2) = t(11, 6.5)
+integer, parameter :: pz_h = pz(2, 1)%h
+real, parameter :: pz_r = pz(1, 2)%r
+integer, parameter :: pz_hs(2, 2) = pz%h
+integer, parameter :: pz_h_plus = pz_h + 1
+type(nested_outer), parameter :: pnest(3) = nested_outer(nested_mid(nested_leaf(31, "fox")))
+integer, parameter :: pnest_h = pnest(2)%mid%leaf%h
+character(len=3), parameter :: pnest_tag = pnest(3)%mid%leaf%tag
+integer, parameter :: pnest_hs(3) = pnest%mid%leaf%h
+character(len=3), parameter :: pnest_tags(3) = pnest%mid%leaf%tag
+integer, parameter :: pnest_h_plus = pnest_h + 1
 type(t) :: marr(3) = t(4, 2.5)
 type(t) :: narr(2) = z
 type(t) :: mat(2, 2) = t(7, 3.5)
@@ -64,6 +74,13 @@ subroutine check_nested_procedure_local()
     if (larr(3)%mid%leaf%tag /= "cat") error stop 24
 end subroutine
 
+subroutine check_nested_parameter_actual(x)
+    type(nested_outer), intent(in) :: x(:)
+
+    if (x(1)%mid%leaf%h /= 31) error stop 25
+    if (x(2)%mid%leaf%tag /= "fox") error stop 26
+end subroutine
+
 end module
 
 program derived_type_with_default_init_08
@@ -88,6 +105,16 @@ if (any(qarr%h /= 11)) error stop 15
 if (any(abs(qarr%r - 6.5) > 1.e-6)) error stop 16
 if (any(saved_arr%h /= 12)) error stop 17
 if (any(abs(saved_arr%r - 7.5) > 1.e-6)) error stop 18
+if (pz_h /= 11) error stop 27
+if (abs(pz_r - 6.5) > 1.e-6) error stop 28
+if (any(pz_hs /= 11)) error stop 29
+if (pz_h_plus /= 12) error stop 30
+if (pnest_h /= 31) error stop 32
+if (pnest_tag /= "fox") error stop 33
+if (any(pnest_hs /= 31)) error stop 34
+if (any(pnest_tags /= "fox")) error stop 35
+if (pnest_h_plus /= 32) error stop 36
+call check_nested_parameter_actual(pnest)
 
 do j = 1, 2
     do i = 1, 2

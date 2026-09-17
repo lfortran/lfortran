@@ -1482,6 +1482,55 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
     return submodules_collector;
 }
 
+ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
+                            ASR::symbol_t* member) {
+    if (value == nullptr) {
+        return nullptr;
+    }
+    member = ASRUtils::symbol_get_past_external(member);
+    if (ASR::is_a<ASR::ArrayBroadcast_t>(*value)) {
+        ASR::ArrayBroadcast_t *array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(value);
+        ASR::expr_t* scalar_value = ASRUtils::expr_value(array_broadcast->m_array);
+        if (scalar_value == nullptr) {
+            scalar_value = array_broadcast->m_array;
+        }
+        return get_struct_member_value_from_constant(scalar_value, member);
+    }
+    ASR::expr_t* expr_value = ASRUtils::expr_value(value);
+    if (expr_value != nullptr && expr_value != value) {
+        value = expr_value;
+    }
+    if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
+        return nullptr;
+    }
+
+    ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(value);
+    ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(stc->m_dt_sym));
+    std::string mem_name = ASRUtils::symbol_name(member);
+    // The arguments of a StructConstant hold the members of the parent types
+    // first, so find the index i of the member in that order.
+    std::vector<ASR::Struct_t*> struct_chain;
+    for (ASR::Struct_t* s = struct_s; s != nullptr;
+            s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+        struct_chain.push_back(s);
+    }
+    size_t i = 0;
+    bool found = false;
+    for (auto it = struct_chain.rbegin(); it != struct_chain.rend() && !found; ++it) {
+        for (size_t j = 0; j < (*it)->n_members; j++, i++) {
+            if ((*it)->m_members[j] == mem_name) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    LCOMPILERS_ASSERT(found && i < stc->n_args);
+    return stc->m_args[i].m_value;
+}
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
@@ -1539,34 +1588,13 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             if (member_variable->m_symbolic_value != nullptr) {
                 value = expr_value(member_variable->m_symbolic_value);
             }
-            // Check for compile time value in StructConstant
             ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
-            if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
-                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
-                std::string mem_name = ASRUtils::symbol_name(member);
-                // The arguments of a StructConstant hold the members of the
-                // parent types first, so find the index i of the member in
-                // that order and set value to the ith argument.
-                std::vector<ASR::Struct_t*> struct_chain;
-                for (ASR::Struct_t* s = struct_s; s != nullptr;
-                        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
-                    struct_chain.push_back(s);
-                }
-                size_t i = 0;
-                bool found = false;
-                for (auto it = struct_chain.rbegin(); it != struct_chain.rend() && !found; ++it) {
-                    for (size_t j = 0; j < (*it)->n_members; j++, i++) {
-                        if ((*it)->m_members[j] == mem_name) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                ASR::StructConstant_t *stc = ASR::down_cast<ASR::StructConstant_t>(v_variable_s->m_value);
-                LCOMPILERS_ASSERT(found && i < stc->n_args);
-                value = stc->m_args[i].m_value;
+            ASR::expr_t* parameter_value = v_variable_s->m_value ?
+                v_variable_s->m_value : v_variable_s->m_symbolic_value;
+            ASR::expr_t* init_value = get_struct_member_value_from_constant(
+                parameter_value, member);
+            if (init_value != nullptr) {
+                value = init_value;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),

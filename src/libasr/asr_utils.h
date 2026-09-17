@@ -3222,6 +3222,9 @@ static inline bool is_const(ASR::expr_t *x) {
     return false;
 }
 
+ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
+                            ASR::symbol_t* member);
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);
