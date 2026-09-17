@@ -613,15 +613,15 @@
                                                 (Variable
                                                     13
                                                     ptr
-                                                    []
+                                                    [c_null_ptr]
                                                     Local
                                                     (PointerNullConstant
                                                         (CPtr)
-                                                        ()
+                                                        (Var 2 c_null_ptr)
                                                     )
                                                     (PointerNullConstant
                                                         (CPtr)
-                                                        ()
+                                                        (Var 2 c_null_ptr)
                                                     )
                                                     Default
                                                     (CPtr)

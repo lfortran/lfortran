@@ -2632,3 +2632,21 @@ semantic error: Cannot assign to a constant variable
      |
 1555 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1528:5
+     |
+1528 |     fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1529:23
+     |
+1529 |     v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+     |                       ^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+    --> tests/errors/continue_compilation_1.f90:1530:35
+     |
+1530 |     v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+     |                                   ^^^^^^^^^^ 

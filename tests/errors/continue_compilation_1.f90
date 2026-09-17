@@ -1623,3 +1623,19 @@ subroutine associate_parameter_array_selector_assignment()
         r = 1  ! {Error} Cannot assign to a constant variable
     end associate
 end subroutine
+
+subroutine cptr_funptr_mismatch()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    type :: cptr_funptr_t
+        type(c_ptr) :: p
+        type(c_funptr) :: f
+    end type
+    type(cptr_funptr_t) :: v
+    cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+end subroutine

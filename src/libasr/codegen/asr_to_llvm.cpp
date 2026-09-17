@@ -6234,46 +6234,27 @@ public:
                 init_value = llvm::ConstantStruct::get(llvm_struct_type, field_values);
             }
             if (!is_class) {
-                if( x.m_type_declaration && ASRUtils::is_c_ptr(x.m_type_declaration) ) {
-                    llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
-                    llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                        void_ptr);
-                    if (!external) {
-                        if (init_value) {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    init_value);
-                        } else {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    llvm::ConstantPointerNull::get(
-                                        static_cast<llvm::PointerType*>(void_ptr))
-                                    );
-                            set_global_variable_linkage_as_common(ptr, x);
-                        }
-                    }
-                    llvm_symtab[h] = ptr;
-                } else {
-                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
                     ASR::make_Var_t(al, x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base))), x.m_type, module.get());
-                    llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                        type);
-                    if (!external) {
-                        if (init_value) {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    init_value);
-                            // For common blocks (structs with zeroinitializer), use CommonLinkage
-                            // to allow multiple definitions across compilation units to be merged.
-                            if (init_value->isNullValue()) {
-                                set_global_variable_linkage_as_common(ptr, x);
-                            }
-                        } else {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                    llvm::Constant::getNullValue(type)
-                                );
+                llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
+                    type);
+                if (!external) {
+                    if (init_value) {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                init_value);
+                        // For common blocks (structs with zeroinitializer), use CommonLinkage
+                        // to allow multiple definitions across compilation units to be merged.
+                        if (init_value->isNullValue()) {
                             set_global_variable_linkage_as_common(ptr, x);
                         }
+                    } else {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                llvm::Constant::getNullValue(type)
+                            );
+                        set_global_variable_linkage_as_common(ptr, x);
                     }
-                    llvm_symtab[h] = ptr;
                 }
+                llvm_symtab[h] = ptr;
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_type_declaration)),

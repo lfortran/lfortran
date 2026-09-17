@@ -1309,15 +1309,8 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         }
         case ASR::ttypeType::CPtr: {
             if (struct_sym != nullptr) {
-                if (ASR::is_a<ASR::ExternalSymbol_t>(*struct_sym)) {
-                    ASR::ExternalSymbol_t* ext =
-                        ASR::down_cast<ASR::ExternalSymbol_t>(struct_sym);
-                    if (std::string(ext->m_original_name) == "c_funptr") {
-                        return "type(c_funptr)";
-                    }
-                } else if (std::string(ASRUtils::symbol_name(struct_sym)) == "c_funptr") {
-                    return "type(c_funptr)";
-                }
+                return "type(" + std::string(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(struct_sym))) + ")";
             }
             return "type(c_ptr)";
         }
@@ -1377,6 +1370,12 @@ static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::e
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
             }
+        } else if (ASR::is_a<ASR::PointerNullConstant_t>(*expr)) {
+            ASR::PointerNullConstant_t* pnc =
+                ASR::down_cast<ASR::PointerNullConstant_t>(expr);
+            if (pnc->m_var_expr != nullptr) {
+                return type_to_str_fortran_expr(t, pnc->m_var_expr);
+            }
         }
     }
 
@@ -1407,6 +1406,12 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
                 ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
+        } else if (ASR::is_a<ASR::PointerNullConstant_t>(*expr)) {
+            ASR::PointerNullConstant_t* pnc =
+                ASR::down_cast<ASR::PointerNullConstant_t>(expr);
+            if (pnc->m_var_expr != nullptr) {
+                return type_to_str_with_kind(t, pnc->m_var_expr);
             }
         }
     }
@@ -1793,50 +1798,6 @@ static inline ASR::Module_t *get_sym_module0(const ASR::symbol_t *sym) {
         s = s->parent;
     }
     return nullptr;
-}
-
-static inline bool is_c_ptr(ASR::symbol_t* v, std::string v_name="") {
-    if( v_name == "" ) {
-        v_name = ASRUtils::symbol_name(v);
-    }
-    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-        ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-        if (std::string(ext->m_original_name) == "c_ptr" &&
-                startswith(std::string(ext->m_module_name), "lfortran_intrinsic")) {
-            return true;
-        }
-    }
-    ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
-        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
-        return (der_type_module && std::string(der_type_module->m_name) ==
-                "lfortran_intrinsic_iso_c_binding" &&
-                der_type_module->m_intrinsic &&
-                v_name == "c_ptr");
-    }
-    return false;
-}
-
-static inline bool is_c_funptr(ASR::symbol_t* v, std::string v_name="") {
-    if( v_name == "" ) {
-        v_name = ASRUtils::symbol_name(v);
-    }
-    if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-        ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-        if (std::string(ext->m_original_name) == "c_funptr" &&
-                startswith(std::string(ext->m_module_name), "lfortran_intrinsic")) {
-            return true;
-        }
-    }
-    ASR::symbol_t* v_orig = ASRUtils::symbol_get_past_external(v);
-    if( ASR::is_a<ASR::Struct_t>(*v_orig) ) {
-        ASR::Module_t* der_type_module = ASRUtils::get_sym_module0(v_orig);
-        return (der_type_module && std::string(der_type_module->m_name) ==
-                "lfortran_intrinsic_iso_c_binding" &&
-                der_type_module->m_intrinsic &&
-                v_name == "c_funptr");
-    }
-    return false;
 }
 
 // Returns true if the Function is intrinsic, otherwise false

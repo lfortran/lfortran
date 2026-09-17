@@ -173,15 +173,15 @@
                                 (Variable
                                     2
                                     queries2
-                                    []
+                                    [c_null_ptr]
                                     Local
                                     (PointerNullConstant
                                         (CPtr)
-                                        ()
+                                        (Var 2 c_null_ptr)
                                     )
                                     (PointerNullConstant
                                         (CPtr)
-                                        ()
+                                        (Var 2 c_null_ptr)
                                     )
                                     Default
                                     (CPtr)
@@ -812,7 +812,7 @@
                         (Var 2 queries)
                         (PointerNullConstant
                             (CPtr)
-                            ()
+                            (Var 2 c_null_ptr)
                         )
                         ()
                         .false.
