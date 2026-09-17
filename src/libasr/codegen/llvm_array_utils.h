@@ -361,6 +361,12 @@ namespace LCompilers {
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
 
+                virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, llvm::Value* rank,
+                    llvm::Value* num_elements, llvm::Module* module) = 0;
+
                 /*
                 * Copies contiguous data into a potentially-strided descriptor array.
                 * The inverse of create_contiguous_copy_from_descriptor.
@@ -627,6 +633,12 @@ namespace LCompilers {
                 llvm::Value* create_contiguous_copy_from_descriptor(
                     llvm::Type* source_llvm_type, llvm::Value* source_desc,
                     llvm::Type* elem_type, int rank, llvm::Module* module);
+
+                virtual
+                llvm::Value* create_contiguous_copy_from_descriptor(
+                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
+                    llvm::Type* elem_type, llvm::Value* rank,
+                    llvm::Value* num_elements, llvm::Module* module);
 
                 virtual
                 void copy_contiguous_data_to_descriptor(
