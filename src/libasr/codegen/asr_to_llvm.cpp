@@ -21685,6 +21685,7 @@ public:
         }
         ptr_loads = ptr_loads_copy;
 
+        std::vector<llvm::Value*> unformatted_copies_to_free;
         if (x.m_iostat) {
             int ptr_copy = ptr_loads;
             ptr_loads = 0;
@@ -21849,9 +21850,9 @@ public:
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(ASR::make_ArraySize_t(al, m_values[i]->base.loc,
                         m_values[i], nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);
+                    llvm::Value* array_size_val = tmp;
                     llvm::Value* total_size = builder->CreateMul(kind_val, tmp);
                     if (ASR::is_a<ASR::String_t>(*value_type_base)) {
-                        llvm::Value* array_size_val = tmp;
                         ASR::StringLen_t* str_len = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
                             m_values[i]->base.loc, m_values[i], type32, nullptr));
                         visit_StringLen(*str_len);
@@ -21880,13 +21881,28 @@ public:
                             tmp = llvm_utils->CreateLoad2(llvm_type->getPointerTo(), tmp);
                         } else {
                             ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(arr_t);
-                            if (phys == ASR::array_physical_typeType::DescriptorArray) {
-                                llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
-                                    m_values[i], ASRUtils::type_get_past_allocatable_pointer(arr_t),
-                                    tmp, module.get());
+                            if (phys == ASR::array_physical_typeType::DescriptorArray ||
+                                    phys == ASR::array_physical_typeType::AssumedRankArray) {
                                 llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
                                     m_values[i], ASRUtils::extract_type(arr_t), module.get());
-                                tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), data_ptr);
+                                if (phys == ASR::array_physical_typeType::AssumedRankArray &&
+                                        !ASR::is_a<ASR::String_t>(*value_type_base)) {
+                                    llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                        m_values[i],
+                                        ASRUtils::type_get_past_allocatable_pointer(arr_t),
+                                        module.get());
+                                    llvm::Value* rank = arr_descr->get_rank(desc_type, tmp);
+                                    tmp = arr_descr->create_contiguous_copy_from_descriptor(
+                                        desc_type, tmp, el_type, rank,
+                                        array_size_val, module.get());
+                                    unformatted_copies_to_free.push_back(tmp);
+                                } else {
+                                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
+                                        m_values[i],
+                                        ASRUtils::type_get_past_allocatable_pointer(arr_t),
+                                        tmp, module.get());
+                                    tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), data_ptr);
+                                }
                             }
                         }
                     }
@@ -22047,6 +22063,9 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, printf_args);
+        for (llvm::Value* copy_ptr : unformatted_copies_to_free) {
+            llvm_utils->lfortran_free(copy_ptr);
+        }
         llvm_utils->stringFormat_return.free();
 
         this->current_decimal_mode = nullptr;
