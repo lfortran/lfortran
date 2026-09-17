@@ -42,6 +42,14 @@ contains
         read(u, '(3I3)') x
     end subroutine
 
+    subroutine read_assumed_shape_empty_then_int(u, empty, x)
+        integer, intent(in) :: u
+        integer, intent(inout) :: empty(:)
+        integer, intent(out) :: x
+
+        read(u, '(I1,I3)') empty, x
+    end subroutine
+
     subroutine read_assumed_shape_logicals(u, x)
         integer, intent(in) :: u
         logical, intent(inout) :: x(:)
@@ -56,6 +64,19 @@ contains
         select rank (x)
         rank (1)
             read(u, '(3F6.1)') x
+        rank default
+            error stop
+        end select
+    end subroutine
+
+    subroutine read_assumed_rank_empty_then_int(u, empty, x)
+        integer, intent(in) :: u
+        integer, intent(inout) :: empty(..)
+        integer, intent(out) :: x
+
+        select rank (empty)
+        rank (1)
+            read(u, '(I1,I3)') empty, x
         rank default
             error stop
         end select
@@ -88,6 +109,7 @@ program assumed_rank_20
     integer :: iz(3)
     logical :: l(3)
     character(len=3) :: s(2)
+    integer :: ix
 
     a = 0.0d0
     call fill_file_and_read_shape(a)
@@ -124,6 +146,18 @@ program assumed_rank_20
     iz = -1
     call fill_file_and_read_shape_ints(iz(1:0))
     if (any(iz /= -1)) error stop
+
+    iz = -1
+    ix = -1
+    call fill_file_and_read_shape_empty_then_int(iz(1:0), ix)
+    if (any(iz /= -1)) error stop
+    if (ix /= 1) error stop
+
+    iz = -1
+    ix = -1
+    call fill_file_and_read_rank_empty_then_int(iz(1:0), ix)
+    if (any(iz /= -1)) error stop
+    if (ix /= 1) error stop
 
     l = .false.
     call fill_file_and_read_shape_logicals(l)
@@ -207,6 +241,32 @@ contains
         write(u, '(3I3)') 1, 2, 3
         rewind(u)
         call read_assumed_shape_ints(u, x)
+        close(u, status='delete')
+    end subroutine
+
+    subroutine fill_file_and_read_shape_empty_then_int(empty, x)
+        integer, intent(inout) :: empty(:)
+        integer, intent(out) :: x
+        integer :: u
+
+        open(newunit=u, file='assumed_rank_20_empty_then_int_shape.tmp', &
+             status='replace', action='readwrite')
+        write(u, '(A)') '123'
+        rewind(u)
+        call read_assumed_shape_empty_then_int(u, empty, x)
+        close(u, status='delete')
+    end subroutine
+
+    subroutine fill_file_and_read_rank_empty_then_int(empty, x)
+        integer, intent(inout) :: empty(..)
+        integer, intent(out) :: x
+        integer :: u
+
+        open(newunit=u, file='assumed_rank_20_empty_then_int_rank.tmp', &
+             status='replace', action='readwrite')
+        write(u, '(A)') '123'
+        rewind(u)
+        call read_assumed_rank_empty_then_int(u, empty, x)
         close(u, status='delete')
     end subroutine
 

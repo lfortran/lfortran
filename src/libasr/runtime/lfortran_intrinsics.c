@@ -11107,6 +11107,56 @@ typedef struct {
     int64_t char_len;
 } ArrayReadCont;
 
+static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
+        int *arg_idx)
+{
+    if (*arg_idx >= no_of_args) {
+        return false;
+    }
+
+    va_list probe;
+    va_copy(probe, *args);
+    int32_t is_descriptor_array = va_arg(probe, int32_t);
+    if (!is_descriptor_array) {
+        va_end(probe);
+        return false;
+    }
+
+    int32_t elem_tc = va_arg(probe, int32_t);
+    (void)va_arg(probe, void*);
+    int32_t n_elems = va_arg(probe, int32_t);
+    (void)va_arg(probe, int32_t);
+    (void)va_arg(probe, int32_t*);
+    (void)va_arg(probe, int32_t*);
+    if (elem_tc == 0 || elem_tc == 8) {
+        (void)va_arg(probe, int64_t);
+        if (elem_tc == 8) {
+            (void)va_arg(probe, int32_t);
+        }
+    }
+    va_end(probe);
+
+    if (n_elems > 0) {
+        return false;
+    }
+
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, void*);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t*);
+    (void)va_arg(*args, int32_t*);
+    if (elem_tc == 0 || elem_tc == 8) {
+        (void)va_arg(*args, int64_t);
+        if (elem_tc == 8) {
+            (void)va_arg(*args, int32_t);
+        }
+    }
+    (*arg_idx)++;
+    return true;
+}
+
 static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
 {
     int64_t offset = 0;
@@ -12137,7 +12187,18 @@ static void process_fmt_items_read(InputSource *inputSource,
         if (spec == 'F' || spec == 'E' || spec == 'D' || spec == 'G') {
             decimal_places = parse_decimals(fmt, fmt_len, &fmt_pos);
         }
+        bool is_data_descriptor = (spec == 'A' || spec == 'L' || spec == 'I' ||
+            spec == 'O' || spec == 'Z' || spec == 'F' || spec == 'E' ||
+            spec == 'D' || spec == 'G' || (spec == 'B' && width > 0));
         for (int rep = 0; rep < repeat_count; rep++)  {
+            if (is_data_descriptor) {
+                while (!arr_cont->active && *arg_idx < no_of_args &&
+                        skip_empty_descriptor_read_target(args, no_of_args, arg_idx)) {
+                }
+                if (*arg_idx >= no_of_args && !arr_cont->active) {
+                    return;
+                }
+            }
             switch (spec) {
             case 'B':
                 // Bw: binary integer descriptor on read; otherwise BN/BZ blank mode
