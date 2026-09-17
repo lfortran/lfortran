@@ -7632,6 +7632,10 @@ public:
                 return llvm::ConstantStruct::get(complex_type, {re, im});
             }
             case ASR::exprType::ArrayBroadcast: {
+                // Executable ArrayBroadcast assignments are lowered by
+                // init_expr + array_op before LLVM. Reaching this constant
+                // builder means a static aggregate needs a constant value,
+                // such as a derived-type component default.
                 ASR::ArrayBroadcast_t* broadcast =
                     ASR::down_cast<ASR::ArrayBroadcast_t>(expr);
                 if (ASR::is_a<ASR::StructType_t>(
