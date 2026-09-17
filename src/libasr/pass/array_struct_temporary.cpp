@@ -45,6 +45,80 @@ bool is_vectorise_able(ASR::expr_t* x) {
     }
 }
 
+bool struct_type_has_character_member(ASR::Struct_t* struct_type,
+        std::vector<ASR::Struct_t*> seen = {}) {
+    while (struct_type) {
+        if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
+            return false;
+        }
+        seen.push_back(struct_type);
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_character(*member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_type_has_character_member(nested, seen)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
+bool struct_type_has_array_member(ASR::Struct_t* struct_type,
+        std::vector<ASR::Struct_t*> seen = {}) {
+    while (struct_type) {
+        if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
+            return false;
+        }
+        seen.push_back(struct_type);
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_array(member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_type_has_array_member(nested, seen)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
 enum targetType {
     GeneratedTarget,
     OriginalTarget,
@@ -3040,19 +3114,38 @@ class TransformVariableInitialiser:
                 }
             }
         }
+        bool parameter_struct_type = false;
+        bool parameter_value_is_array = false;
+        bool parameter_struct_has_character_member = false;
+        bool parameter_struct_has_array_member = false;
+        if (value != nullptr &&
+                x.m_storage == ASR::storage_typeType::Parameter &&
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(value)))) {
+            parameter_struct_type = true;
+            parameter_value_is_array = ASRUtils::is_array(ASRUtils::expr_type(value));
+            ASR::symbol_t* struct_sym = x.m_type_declaration;
+            if (struct_sym == nullptr) {
+                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+            }
+            if (struct_sym != nullptr) {
+                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                parameter_struct_has_character_member =
+                    struct_type_has_character_member(struct_type);
+                parameter_struct_has_array_member =
+                    struct_type_has_array_member(struct_type);
+            }
+        }
+        bool skip_parameter_constant = x.m_storage == ASR::storage_typeType::Parameter &&
+            ASRUtils::is_value_constant(value) &&
+            (!parameter_struct_type || parameter_value_is_array ||
+                (parameter_struct_has_array_member &&
+                    !parameter_struct_has_character_member));
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
-            ( x.m_storage == ASR::storage_typeType::Parameter &&
-                // this condition ensures that currently constants
-                // not evaluated at compile time like
-                // real(4), parameter :: z(1) = [x % y]
-                // are converted to an assignment for now
-                ASRUtils::is_value_constant(value) &&
-                !ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(ASRUtils::expr_type(value))
-                )
-            ) || (
+            skip_parameter_constant || (
                 x.m_storage == ASR::storage_typeType::Save &&
                 value &&
                 ASRUtils::is_value_constant(value)

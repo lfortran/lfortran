@@ -5592,6 +5592,16 @@ public:
                 int kind = ASRUtils::extract_kind_from_ttype_t(logical_const->m_type);
                 arr_elements.push_back(llvm::ConstantInt::get(
                     context, llvm::APInt(kind * 8, logical_const->m_value)));
+            } else if (ASR::is_a<ASR::StructConstant_t>(*elem)) {
+                llvm::Constant* elem_constant = create_llvm_constant_from_asr_expr(
+                    elem, ASRUtils::type_get_past_array(arr_const->m_type));
+                if (elem_constant == nullptr) {
+                    throw CodeGenError("Non-constant value found in struct array initializer");
+                }
+                arr_elements.push_back(elem_constant);
+            } else if (ASR::is_a<ASR::PointerNullConstant_t>(*elem)) {
+                arr_elements.push_back(llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(elem_type)));
             } else if (ASR::is_a<ASR::ComplexConstant_t>(*elem)) {
                 ASR::ComplexConstant_t* comp_const = ASR::down_cast<ASR::ComplexConstant_t>(elem);
                 llvm::Constant *re, *im;
@@ -5625,6 +5635,65 @@ public:
     bool isNullValueArray(const std::vector<llvm::Constant*>& elements) {
         return std::all_of(elements.begin(), elements.end(),
             [](llvm::Constant* elem) { return elem->isNullValue(); });
+    }
+
+    bool is_parameter_designator(ASR::expr_t* expr) {
+        while (expr != nullptr) {
+            if (ASR::is_a<ASR::Var_t>(*expr)) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                return ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                        ASR::storage_typeType::Parameter;
+            }
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+                expr = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    bool struct_has_character_member(ASR::Struct_t* struct_type,
+            std::vector<ASR::Struct_t*> seen = {}) {
+        while (struct_type) {
+            if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
+                return false;
+            }
+            seen.push_back(struct_type);
+            for (size_t i = 0; i < struct_type->n_members; i++) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    continue;
+                }
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+                if (ASRUtils::is_character(*member_type)) {
+                    return true;
+                }
+                ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(member_type));
+                if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                        && var->m_type_declaration != nullptr) {
+                    ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                    if (struct_has_character_member(nested, seen)) {
+                        return true;
+                    }
+                }
+            }
+            struct_type = struct_type->m_parent
+                ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_type->m_parent))
+                : nullptr;
+        }
+        return false;
     }
 
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
@@ -8203,10 +8272,22 @@ public:
             }
             bool save_struct_initialized = false;
             // Initialize non-primitve types
-            if( ASR::is_a<ASR::StructType_t>(
+            bool is_struct_variable = ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))
                 && !ASRUtils::is_class_type(
-                    ASRUtils::type_get_past_array(v->m_type))) {
+                    ASRUtils::type_get_past_array(v->m_type));
+            bool parameter_needs_member_initialization = false;
+            if (is_struct_variable &&
+                    v->m_storage == ASR::storage_typeType::Parameter) {
+                ASR::Struct_t* parameter_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(var_expr)));
+                parameter_needs_member_initialization =
+                    struct_has_character_member(parameter_struct);
+            }
+            if( is_struct_variable &&
+                (v->m_storage != ASR::storage_typeType::Parameter ||
+                    parameter_needs_member_initialization) ) {
                 // For save variables of struct type, member initialization
                 // (default values, string descriptors, array descriptors) must
                 // run exactly once rather than on every call, otherwise saved
@@ -12865,10 +12946,20 @@ public:
             return ;
         }
         ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
         ASR::expr_t *m_value = x.m_value;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*m_value)) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(m_value);
+            if (member->m_value != nullptr &&
+                    is_parameter_designator(member->m_v) &&
+                    ASRUtils::is_value_constant(member->m_value)) {
+                m_value = member->m_value;
+            }
+        }
+        ASR::ttype_t* value_type = ASRUtils::expr_type(m_value);
         if (ASRUtils::is_simd_array(x.m_target) && ASR::is_a<ASR::ArraySection_t>(*m_value)) {
             m_value = ASR::down_cast<ASR::ArraySection_t>(m_value)->m_v;
+            value_type = ASRUtils::expr_type(m_value);
         }
         int ptr_loads_copy = ptr_loads;
         if(ASRUtils::is_string_only(value_type)){
@@ -13007,7 +13098,7 @@ public:
         }
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
-            ASRUtils::check_equal_type(target_type, value_type, x.m_target, x.m_value) ) {
+            ASRUtils::check_equal_type(target_type, value_type, x.m_target, m_value) ) {
             bool data_only_copy = false;
             ASR::array_physical_typeType target_ptype = ASRUtils::extract_physical_type(target_type);
             ASR::array_physical_typeType value_ptype = ASRUtils::extract_physical_type(value_type);
@@ -13023,7 +13114,7 @@ public:
             llvm::Type* target_el_type = llvm_utils->get_el_type(
                 x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_el_type(
-                x.m_value, ASRUtils::extract_type(value_type), module.get());
+                m_value, ASRUtils::extract_type(value_type), module.get());
             bool is_allocatable_descriptor_target = (ASRUtils::is_allocatable(target_type) && target_ptype == ASR::array_physical_typeType::DescriptorArray);
             if( is_allocatable_descriptor_target && !x.m_realloc_lhs && !x.m_move_allocation ) {
                 llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
@@ -13359,10 +13450,26 @@ public:
 
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
+            Vec<ASR::expr_t*> components;
+            components.reserve(al, x.n_components);
+            for (size_t i = 0; i < x.n_components; i++) {
+                ASR::expr_t* component = x.m_components[i];
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*component)) {
+                    ASR::StructInstanceMember_t* member =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(component);
+                    if (member->m_value != nullptr &&
+                                is_parameter_designator(member->m_v) &&
+                                ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
+                                ASRUtils::is_value_constant(member->m_value)) {
+                        component = member->m_value;
+                    }
+                }
+                components.push_back(al, component);
+            }
             // Check for errors in array operations in the RHS of the assignment
-            generate_binop_checks(x.m_components, x.n_components);
+            generate_binop_checks(components.p, components.size());
 
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_components[0]->base.loc, 4));
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, components[0]->base.loc, 4));
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
@@ -13374,18 +13481,41 @@ public:
             }
             ASR::dimension_t* m_dims = nullptr;
             size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
+            ASR::dimension_t* component_dims = nullptr;
+            size_t component_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(components[0]), component_dims);
             for (size_t dim = 0; dim < rank; dim++) {
+                if (dim < component_rank && m_dims[dim].m_length != nullptr
+                        && component_dims[dim].m_length != nullptr) {
+                    int64_t target_len = 0, component_len = 0;
+                    if (ASRUtils::extract_value(m_dims[dim].m_length, target_len) &&
+                            ASRUtils::extract_value(component_dims[dim].m_length,
+                                component_len) &&
+                            target_len == component_len) {
+                        continue;
+                    }
+                }
                 ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
                 llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
 
                 ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
                     x.m_target, dim_asr, type32, nullptr));
+
+                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
+                    components[0], dim_asr, type32, nullptr));
+                ASR::expr_t* target_size_value = ASRUtils::expr_value(target_size_asr);
+                ASR::expr_t* component_size_value = ASRUtils::expr_value(x_m_components_0_size);
+                if (target_size_value && component_size_value &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*target_size_value) &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*component_size_value) &&
+                        ASR::down_cast<ASR::IntegerConstant_t>(target_size_value)->m_n ==
+                        ASR::down_cast<ASR::IntegerConstant_t>(component_size_value)->m_n) {
+                    continue;
+                }
                 visit_expr(*target_size_asr);
                 llvm::Value* target_size = tmp;
 
-                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_components[0]->base.loc,
-                    x.m_components[0], dim_asr, type32, nullptr));
                 visit_expr(*x_m_components_0_size);
                 llvm::Value* value_size = tmp;
 
@@ -13407,7 +13537,7 @@ public:
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                                 "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.",
                                                                 {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                                LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                                LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
                                                                 infile,
                                                                 location_manager,
                                                                 LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
@@ -13423,7 +13553,7 @@ public:
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                             "Array shape mismatch in assignment to '%s'. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                      {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                         LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                         LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
                                                           infile,
                                                         location_manager,
                                                             LCompilers::create_global_string_ptr(context, *module, *builder, target_variable->m_name),
@@ -13436,7 +13566,7 @@ public:
                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(value_size, target_size),
                                                         "Array shape mismatch in assignment. Tried to match size %d of dimension %d of LHS with size %d of dimension %d of RHS.",
                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                                                       LLVMUtils::RuntimeLabel("RHS size is %d", {x.m_components[0]->base.loc}, {value_size})},
+                                                       LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})},
                                                         infile,
                                                         location_manager,
                                                         target_size,
@@ -16388,6 +16518,11 @@ public:
             } else {
                 LCOMPILERS_ASSERT(false);
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
+            el_type = llvm_utils->get_type_from_ttype_t_util(
+                const_cast<ASR::expr_t*>(&x.base), x_m_type, module.get());
+        } else if (ASR::is_a<ASR::CPtr_t>(*x_m_type)) {
+            el_type = llvm::Type::getVoidTy(context)->getPointerTo();
         } else {
             throw CodeGenError("ConstArray type not supported yet");
         }
@@ -16430,6 +16565,24 @@ public:
                         {llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_re),
                         llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_im)}));
                 }
+            }
+        } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                llvm::Constant* elem_constant = create_llvm_constant_from_asr_expr(el, x_m_type);
+                if (elem_constant == nullptr) {
+                    throw CodeGenError("Non-constant value found in struct array constant");
+                }
+                values.push_back(elem_constant);
+            }
+        } else if (ASR::is_a<ASR::CPtr_t>(*x_m_type)) {
+            for (size_t i=0; i < (size_t) arr_size; i++) {
+                ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
+                if (!ASR::is_a<ASR::PointerNullConstant_t>(*el)) {
+                    throw CodeGenError("Only null C pointer array constants are supported");
+                }
+                values.push_back(llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(el_type)));
             }
         } else if (ASRUtils::is_character(*x_m_type)) { // Sepcial Case.
             tmp = llvm_utils->declare_constant_stringArray(al, &x);

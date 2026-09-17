@@ -8671,6 +8671,10 @@ public:
                                 *ASRUtils::symbol_get_past_external(sym_found)) ) {
                                 init_expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
                                                 *func_call, sym_found, is_struct_const));
+                            } else if (ASR::is_a<ASR::Variable_t>(
+                                    *ASRUtils::symbol_get_past_external(sym_found))) {
+                                visit_FuncCallOrArray(*func_call);
+                                init_expr = ASRUtils::EXPR(tmp);
                             } else {
                                 std::string func_name = func_call->m_func ?
                                     std::string(func_call->m_func) : "function";
@@ -11964,6 +11968,79 @@ public:
         return arg;
     }
 
+    ASR::expr_t* get_struct_member_value_from_constant_array(
+            ASR::expr_t* value, ASR::symbol_t* member,
+            ASR::ttype_t* result_type) {
+        ASR::expr_t* scalar_value =
+            ASRUtils::get_struct_member_value_from_constant(value, member);
+        if (scalar_value) {
+            if (ASRUtils::is_array(result_type)
+                    && !ASRUtils::is_array(ASRUtils::expr_type(scalar_value))) {
+                ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
+                    al, scalar_value->base.loc, scalar_value, result_type);
+                if (broadcast) {
+                    return broadcast;
+                }
+            }
+            return scalar_value;
+        }
+
+        ASR::expr_t* expr_value = ASRUtils::expr_value(value);
+        if (expr_value && expr_value != value) {
+            value = expr_value;
+        }
+        Vec<ASR::expr_t*> elements;
+        Location loc = value->base.loc;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t* array_constant =
+                ASR::down_cast<ASR::ArrayConstant_t>(value);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(array_constant->m_type))) {
+                return nullptr;
+            }
+            int64_t size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+            if (size < 0) {
+                return nullptr;
+            }
+            elements.reserve(al, size);
+            for (int64_t i = 0; i < size; i++) {
+                ASR::expr_t* element =
+                    ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+                ASR::expr_t* member_value =
+                    ASRUtils::get_struct_member_value_from_constant(element, member);
+                if (member_value == nullptr) {
+                    return nullptr;
+                }
+                elements.push_back(al, member_value);
+            }
+        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+            ASR::ArrayConstructor_t* array_constructor =
+                ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            elements.reserve(al, array_constructor->n_args);
+            for (size_t i = 0; i < array_constructor->n_args; i++) {
+                ASR::expr_t* element = ASRUtils::expr_value(array_constructor->m_args[i]);
+                if (element == nullptr) {
+                    element = array_constructor->m_args[i];
+                }
+                ASR::expr_t* member_value =
+                    ASRUtils::get_struct_member_value_from_constant(element, member);
+                if (member_value == nullptr) {
+                    return nullptr;
+                }
+                elements.push_back(al, member_value);
+            }
+        } else {
+            return nullptr;
+        }
+
+        if (!ASRUtils::is_array(result_type)) {
+            return nullptr;
+        }
+        return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+            loc, elements.p, elements.size(), result_type,
+            ASR::arraystorageType::ColMajor));
+    }
+
     int get_based_indexing(ASR::symbol_t* v) {
         if (v != nullptr && ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(v))) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
@@ -13018,8 +13095,32 @@ public:
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
         for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[i]);
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+            ASR::expr_t *expr = nullptr;
+            ASR::ttype_t* array_context_type = current_variable_type_;
+            if (type != nullptr && ASRUtils::is_array(type)) {
+                array_context_type = type;
+            }
+            if (array_context_type != nullptr
+                    && ASRUtils::is_array(array_context_type)
+                    && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(array_context_type))
+                    && AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i])) {
+                AST::FuncCallOrArray_t* func_call =
+                    AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
+                if (func_call->m_func != nullptr) {
+                    ASR::symbol_t* sym_found =
+                        current_scope->resolve_symbol(func_call->m_func);
+                    if (sym_found != nullptr && ASR::is_a<ASR::Struct_t>(
+                            *ASRUtils::symbol_get_past_external(sym_found))) {
+                        expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
+                            *func_call, sym_found, true));
+                    }
+                }
+            }
+            if (expr == nullptr) {
+                this->visit_expr(*x.m_args[i]);
+                expr = ASRUtils::EXPR(tmp);
+            }
 
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
                 ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
@@ -14736,9 +14837,40 @@ public:
         } else {
             validate_fixed_size_array_index_bounds(expr, indices.p,
                 indices.size(), loc);
+            ASR::expr_t* array_item_value = nullptr;
+            if (indices.size() == 1 && indices[0].m_left == nullptr
+                    && indices[0].m_step == nullptr
+                    && indices[0].m_right != nullptr) {
+                ASR::expr_t* base_value = ASRUtils::expr_value(expr);
+                ASR::expr_t* index_value = ASRUtils::expr_value(indices[0].m_right);
+                if (base_value && index_value &&
+                        ASR::is_a<ASR::ArrayConstant_t>(*base_value) &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+                    ASR::ArrayConstant_t* array_constant =
+                        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+                    int64_t lower_bound = 1;
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(expr), dims);
+                    if (n_dims > 0 && dims[0].m_start) {
+                        ASR::expr_t* lb_value = ASRUtils::expr_value(dims[0].m_start);
+                        if (lb_value) {
+                            ASRUtils::extract_value(lb_value, lower_bound);
+                        }
+                    }
+                    int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+                        index_value)->m_n - lower_bound;
+                    size_t index_unsigned = index;
+                    if (index >= 0 && index_unsigned < (size_t)
+                            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+                        array_item_value = ASRUtils::fetch_ArrayConstant_value(
+                            al, array_constant, index_unsigned);
+                    }
+                }
+            }
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
-                ASR::arraystorageType::ColMajor, nullptr);
+                ASR::arraystorageType::ColMajor, array_item_value);
         }
         array_item_node = (ASR::asr_t*) replace_with_common_block_variables(
             ASRUtils::EXPR(array_item_node));
@@ -23063,12 +23195,23 @@ public:
                 ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al,
                                                     tmp2->m_m, current_scope);
                 if( is_tmp_array ) {
-                    ASR::dimension_t* m_dims = nullptr;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(ASRUtils::EXPR(tmp)), m_dims);
-                    Vec<ASR::dimension_t> m_dims_vec;
-                    m_dims_vec.from_pointer_n(m_dims, n_dims);
-                    tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
+                    ASR::symbol_t* mem_sym =
+                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+                    bool member_declared_array = ASR::is_a<ASR::Variable_t>(*mem_sym) &&
+                        ASRUtils::is_array(ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type);
+                    if (member_declared_array) {
+                        diag.add(Diagnostic(
+                            "The expression with derived types contains two or more arrays.", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    if (!ASRUtils::is_array(tmp2_mem_type)) {
+                        ASR::dimension_t* m_dims = nullptr;
+                        int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                            ASRUtils::expr_type(ASRUtils::EXPR(tmp)), m_dims);
+                        Vec<ASR::dimension_t> m_dims_vec;
+                        m_dims_vec.from_pointer_n(m_dims, n_dims);
+                        tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
+                    }
                 }
                 ASR::expr_t* value = nullptr;
                 if (ASR::is_a<ASR::Var_t>(*ASRUtils::EXPR(tmp))) {
@@ -23078,8 +23221,8 @@ public:
                     if (var->m_storage == ASR::storage_typeType::Parameter) {
                         ASR::expr_t* parameter_value = var->m_value ?
                             var->m_value : var->m_symbolic_value;
-                        value = ASRUtils::get_struct_member_value_from_constant(
-                            parameter_value, tmp2_m_m_ext);
+                        value = get_struct_member_value_from_constant_array(
+                            parameter_value, tmp2_m_m_ext, tmp2_mem_type);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
@@ -23095,8 +23238,8 @@ public:
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))) {
                     ASR::StructInstanceMember_t* v = ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                     if (v->m_value) {
-                        value = ASRUtils::get_struct_member_value_from_constant(
-                            v->m_value, tmp2_m_m_ext);
+                        value = get_struct_member_value_from_constant_array(
+                            v->m_value, tmp2_m_m_ext, tmp2_mem_type);
                         ASR::symbol_t* mem_sym =
                             ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
@@ -23136,18 +23279,24 @@ public:
             ASR::symbol_t* tmp2_m_m_ext = ASRUtils::import_struct_instance_member(al, tmp2->m_m,
                                             current_scope);
             if( is_tmp_array ) {
-                if( ASRUtils::is_array(tmp2_mem_type) ) {
+                ASR::symbol_t* mem_sym =
+                    ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
+                bool member_declared_array = ASR::is_a<ASR::Variable_t>(*mem_sym) &&
+                    ASRUtils::is_array(ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type);
+                if( member_declared_array ) {
                     diag.add(Diagnostic(
                         "The expression with derived types contains two or more arrays.",
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
-                ASR::dimension_t* m_dims = nullptr;
-                int n_dims = ASRUtils::extract_dimensions_from_ttype(
-                    ASRUtils::expr_type(ASRUtils::EXPR(tmp)), m_dims);
-                Vec<ASR::dimension_t> m_dims_vec;
-                m_dims_vec.from_pointer_n(m_dims, n_dims);
-                tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
+                if (!ASRUtils::is_array(tmp2_mem_type)) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    int n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(ASRUtils::EXPR(tmp)), m_dims);
+                    Vec<ASR::dimension_t> m_dims_vec;
+                    m_dims_vec.from_pointer_n(m_dims, n_dims);
+                    tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
+                }
             }
             ASR::expr_t* value = nullptr;
 
@@ -23158,8 +23307,8 @@ public:
                 if (var->m_storage == ASR::storage_typeType::Parameter) {
                     ASR::expr_t* parameter_value = var->m_value ?
                         var->m_value : var->m_symbolic_value;
-                    value = ASRUtils::get_struct_member_value_from_constant(
-                        parameter_value, tmp2_m_m_ext);
+                    value = get_struct_member_value_from_constant_array(
+                        parameter_value, tmp2_m_m_ext, tmp2_mem_type);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 
@@ -23176,8 +23325,8 @@ public:
                 ASR::StructInstanceMember_t* v =
                     ASR::down_cast<ASR::StructInstanceMember_t>(ASRUtils::EXPR(tmp));
                 if (v->m_value) {
-                    value = ASRUtils::get_struct_member_value_from_constant(
-                        v->m_value, tmp2_m_m_ext);
+                    value = get_struct_member_value_from_constant_array(
+                        v->m_value, tmp2_m_m_ext, tmp2_mem_type);
                     ASR::symbol_t* mem_sym =
                         ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
 

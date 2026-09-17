@@ -8261,6 +8261,24 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             new_char[len] = '\0';
             return '\"' + std::string(new_char) + '\"';
         }
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr: {
+            ASR::expr_t* value = ((ASR::expr_t**)data)[i];
+            if (value == nullptr) {
+                return "()";
+            }
+            switch (value->type) {
+                case ASR::exprType::StructConstant: {
+                    return "StructConstant";
+                }
+                case ASR::exprType::PointerNullConstant: {
+                    return "PointerNullConstant";
+                }
+                default: {
+                    return "Constant";
+                }
+            }
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
@@ -8351,6 +8369,11 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,
                                 s2c(al, str), type));
+            return value;
+        }
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr: {
+            value = ((ASR::expr_t**)data)[i];
             return value;
         }
         default:
