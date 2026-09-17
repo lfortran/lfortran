@@ -18421,7 +18421,7 @@ public:
             llvm::Value* unit_val, llvm::Value* iostat) {
         llvm::Function* read_fn = get_read_function(elem_type);
         if (ASRUtils::is_logical(*elem_type)) {
-            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(
                 llvm::Type::getInt1Ty(context));
             builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
             int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -18453,9 +18453,9 @@ public:
             llvm_arr_type, descriptor);
 
         llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
-        llvm::Value* size_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+        llvm::Value* size_ptr = llvm_utils->CreateAlloca(i32_type,
             nullptr, "desc_read_size");
-        llvm::Value* size_dim_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+        llvm::Value* size_dim_ptr = llvm_utils->CreateAlloca(i32_type,
             nullptr, "desc_read_size_dim");
         builder->CreateStore(llvm::ConstantInt::get(i32_type, 1), size_ptr);
         builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), size_dim_ptr);
@@ -18487,7 +18487,7 @@ public:
         builder->SetInsertPoint(size_end);
         array_size = builder->CreateLoad(i32_type, size_ptr);
 
-        llvm::Value* idx_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+        llvm::Value* idx_ptr = llvm_utils->CreateAlloca(i32_type,
             nullptr, "desc_read_idx");
         builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), idx_ptr);
 
@@ -18505,11 +18505,11 @@ public:
         builder->CreateCondBr(cond, loop_body, loop_end);
 
         builder->SetInsertPoint(loop_body);
-        llvm::Value* remaining_ptr = llvm_utils->CreateAlloca(*builder, i64_type,
+        llvm::Value* remaining_ptr = llvm_utils->CreateAlloca(i64_type,
             nullptr, "desc_read_remaining");
-        llvm::Value* offset_ptr = llvm_utils->CreateAlloca(*builder, i64_type,
+        llvm::Value* offset_ptr = llvm_utils->CreateAlloca(i64_type,
             nullptr, "desc_read_offset");
-        llvm::Value* dim_idx_ptr = llvm_utils->CreateAlloca(*builder, i32_type,
+        llvm::Value* dim_idx_ptr = llvm_utils->CreateAlloca(i32_type,
             nullptr, "desc_read_dim");
         builder->CreateStore(builder->CreateSExt(cur_idx, i64_type), remaining_ptr);
         builder->CreateStore(llvm::ConstantInt::get(i64_type, 0), offset_ptr);
@@ -18555,7 +18555,7 @@ public:
             llvm::BasicBlock* store_block = llvm::BasicBlock::Create(
                 context, "desc_read.store", parent_fn);
             if (ASRUtils::is_logical(*elem_type)) {
-                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                llvm::Value* tmp_bool = llvm_utils->CreateAlloca(
                     llvm::Type::getInt1Ty(context));
                 int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                 llvm::Value* cur_val = llvm_utils->CreateLoad2(
@@ -18576,7 +18576,7 @@ public:
                     llvm_utils->getIntType(kind));
                 builder->CreateStore(widened, elem_ptr);
             } else {
-                llvm::Value* tmp_elem_ptr = llvm_utils->CreateAlloca(*builder,
+                llvm::Value* tmp_elem_ptr = llvm_utils->CreateAlloca(
                     llvm_elem_type, nullptr, "desc_read_elem");
                 builder->CreateStore(
                     llvm_utils->CreateLoad2(llvm_elem_type, elem_ptr),
