@@ -8531,6 +8531,22 @@ inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) 
     return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
 }
 
+inline int64_t get_ArrayConstant_data_size(ASR::ttype_t* array_type) {
+    int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
+    LCOMPILERS_ASSERT(array_size >= 0);
+    return get_ArrayConstant_data_size(
+        array_size, ASRUtils::type_get_past_array(array_type));
+}
+
+inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al,
+        const Location &loc, void *data, ASR::ttype_t* array_type,
+        ASR::arraystorageType storage_format) {
+    int64_t n_data = get_ArrayConstant_data_size(array_type);
+    LCOMPILERS_ASSERT(n_data == 0 || data != nullptr);
+    return ASR::make_ArrayConstant_t(
+        al, loc, n_data, data, array_type, storage_format);
+}
+
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
     if (x != nullptr) {
         // this is array constant, we have it's data available
@@ -8646,9 +8662,8 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
             dims.p, dims.n, a_type_->m_physical_type, a_type_->m_memory_space));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
-        int64_t n_data = ASRUtils::get_ArrayConstant_data_size(
-            curr_idx, a_type_->m_type);
-        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
+        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+            al, a_loc, data, new_type, a_storage_format));
     }
 
     if (is_array_item_constant && all_expr_evaluated) {
@@ -8730,8 +8745,8 @@ inline ASR::expr_t* broadcast_scalar_constant_to_array(Allocator& al,
     }
     array_type = ASRUtils::duplicate_type(al, array_type);
     if (size == 0) {
-        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
-            0, nullptr, array_type, ASR::arraystorageType::ColMajor));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+            nullptr, array_type, ASR::arraystorageType::ColMajor));
     }
     Vec<ASR::expr_t*> elements;
     elements.reserve(al, size);

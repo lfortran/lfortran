@@ -26,12 +26,24 @@ if (elem_from_grid%h /= 4 .or. grid_h /= 4) error stop 9
 if (shifted_h /= 9 .or. shifted_grid_h /= 14) error stop 10
 if (local_grid_elem%h /= 24 .or. local_grid_h /= 24) error stop 11
 if (local_shifted_h /= 32) error stop 12
+if (grid_order(1,1)%h /= 41 .or. grid_order(2,1)%h /= 43) error stop 17
+if (grid_order(1,2)%h /= 42 .or. grid_order(2,2)%h /= 44) error stop 18
+if (grid_order_h /= 43) error stop 19
+if (grid_pad(1,1)%h /= 45 .or. grid_pad(2,1)%h /= 46) error stop 20
+if (grid_pad(1,2)%h /= 47 .or. grid_pad(2,2)%h /= 48) error stop 21
+if (grid_pad_h /= 47) error stop 22
+if (cube(1,1,1)%h /= 51 .or. cube(2,1,1)%h /= 52) error stop 23
+if (cube(1,2,1)%h /= 53 .or. cube(2,2,2)%h /= 58) error stop 24
+if (cube_h /= 58) error stop 25
 char_copy = char_params
 if (char_params(1)%s /= "abc" .or. char_params(2)%s /= "def") error stop 13
 if (char_copy(1)%s /= "abc" .or. char_copy(2)%s /= "def") error stop 14
 char_copy(1)%s = "xyz"
 if (char_copy(1)%s /= "xyz" .or. char_copy(2)%s /= "def") error stop 15
 if (char_params(1)%s /= "abc" .or. char_params(2)%s /= "def") error stop 16
+if (char_grid(1,1)%s /= "abc" .or. char_grid(2,1)%s /= "ghi") error stop 26
+if (char_grid(1,2)%s /= "def" .or. char_grid(2,2)%s /= "jkl") error stop 27
 q = cptrs(1)
 call check_cptr(q)
+call check_cptr_grid()
 end program derived_types_170
