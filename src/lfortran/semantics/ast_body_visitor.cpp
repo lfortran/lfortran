@@ -2432,33 +2432,18 @@ public:
             overload_args.push_back(al, a_values_vec[0]);
             overload_args.push_back(al, a_unit);
             if (formatted) {
+                std::vector<int64_t> v_list;
                 if (a_fmt) {
                     // For user-defined derived-type I/O, the iotype argument
                     // should be "DT" (or "DT<suffix>"), not the full format
-                    // string like "(dt)" or "(dt'suffix')".
+                    // string like "(dt)" or "(dt'suffix'(1,2))"; the v-list
+                    // is passed separately in the v_list argument.
                     ASR::expr_t* iotype_arg = a_fmt;
                     if (ASR::is_a<ASR::StringConstant_t>(*a_fmt)) {
-                        std::string fmt_str = ASR::down_cast<ASR::StringConstant_t>(a_fmt)->m_s;
-                        // Strip outer parentheses if present
-                        if (fmt_str.size() >= 2 && fmt_str[0] == '(' && fmt_str.back() == ')') {
-                            fmt_str = fmt_str.substr(1, fmt_str.size() - 2);
-                        }
-                        // Check if the format descriptor is "dt" (case-insensitive)
-                        if (fmt_str.size() >= 2 &&
-                            (fmt_str[0] == 'd' || fmt_str[0] == 'D') &&
-                            (fmt_str[1] == 't' || fmt_str[1] == 'T')) {
-                            std::string iotype_str = "DT";
-                            // Extract optional suffix (e.g., dt"mysuffix" or dt'mysuffix')
-                            if (fmt_str.size() > 2) {
-                                std::string suffix = fmt_str.substr(2);
-                                // Remove surrounding quotes if present
-                                if (suffix.size() >= 2 &&
-                                    ((suffix[0] == '\'' && suffix.back() == '\'') ||
-                                     (suffix[0] == '"' && suffix.back() == '"'))) {
-                                    suffix = suffix.substr(1, suffix.size() - 2);
-                                }
-                                iotype_str += suffix;
-                            }
+                        std::string iotype_str;
+                        if (ASRUtils::parse_dt_edit_descriptor(
+                                ASR::down_cast<ASR::StringConstant_t>(a_fmt)->m_s,
+                                iotype_str, v_list)) {
                             ASR::ttype_t* char_type = ASRUtils::TYPE(
                                 ASR::make_String_t(
                                     al, loc, 1,
@@ -2491,12 +2476,16 @@ public:
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
-                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v_list.size(), int_type));
                 dims.push_back(al, dim);
                 ASR::ttype_t* arr_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, int_type,
                     dims.p, dims.n, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                 Vec<ASR::expr_t*> arr_args;
-                arr_args.reserve(al, 0);
+                arr_args.reserve(al, v_list.size());
+                for (int64_t v : v_list) {
+                    arr_args.push_back(al, ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, v, int_type)));
+                }
                 overload_args.push_back(al, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
                     al, loc, arr_args.p, arr_args.n, arr_type, ASR::arraystorageType::ColMajor)));
             }
