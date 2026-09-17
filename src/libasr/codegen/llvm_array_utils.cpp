@@ -2178,6 +2178,14 @@ namespace LCompilers {
             llvm::Value* data_field = get_pointer_to_data(llvm_desc_type, desc_ptr);
             llvm::Value* data_ptr_val = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), 
                                         data_field);
+            llvm::Value* char_len = nullptr;
+            int64_t char_kind = 1;
+            if (ASR::is_a<ASR::String_t>(*val_type)) {
+                ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
+                std::tie(data_ptr_val, char_len) =
+                    llvm_utils->get_string_length_data(str_type, data_ptr_val);
+                char_kind = str_type->m_kind;
+            }
             data_ptr_val = builder->CreateBitCast(data_ptr_val, 
                                     llvm::Type::getInt8Ty(context)->getPointerTo());
             llvm::Value* n_elems = get_array_size(llvm_desc_type, desc_ptr, nullptr, 4);
@@ -2190,7 +2198,7 @@ namespace LCompilers {
             if (ASR::is_a<ASR::Integer_t>(*val_type)){
                 type_code_val = (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
             } else if (ASR::is_a<ASR::String_t>(*val_type)) {
-                type_code_val = 0;
+                type_code_val = (ASR::down_cast<ASR::String_t>(val_type)->m_kind > 1) ? 8 : 0;
             } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
                 type_code_val = 1;
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
@@ -2213,6 +2221,12 @@ namespace LCompilers {
                 stride_val = builder->CreateTrunc(stride_val, i32_type);
             }
             args.push_back(stride_val);
+            if (ASR::is_a<ASR::String_t>(*val_type)) {
+                args.push_back(char_len);
+                if (char_kind > 1) {
+                    args.push_back(llvm::ConstantInt::get(i32_type, char_kind));
+                }
+            }
     }
 
     } // LLVMArrUtils

@@ -11086,25 +11086,29 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
     return true;
 }
 
-static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx)
-{
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    // descriptor-array path for A not yet supported
-    // TODO: Add support for read into descriptor-arrays for character reads
-    (void)is_descriptor_array;
-    int32_t type_code = va_arg(*args, int32_t);
-    char** str_data_ptr = va_arg(*args, char**);
-    int64_t str_len = va_arg(*args, int64_t);
-    // Type code 8 marks a destination of character kind > 1; it carries the
-    // kind after the length.
-    int32_t char_kind = 1;
-    if (type_code == 8) {
-        char_kind = va_arg(*args, int32_t);
-    }
-    (*arg_idx)++;
+// Tracks pending array elements for one-element-per-format-item reading.
+// In Fortran, each array element consumes its own format edit descriptor,
+// so we read one element per handler call and return to the format processor.
+typedef struct {
+    bool active;
+    void* data_ptr;
+    int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
+    int32_t n_elems;
+    int32_t stride;
+    int32_t current_idx;
+    bool is_complex;
+    bool reading_imag;    // for complex: true when next read is the imaginary part
+    size_t component_sz;
+    size_t elem_sz;
+    bool is_char;
+    int32_t char_kind;
+    int64_t char_len;
+} ArrayReadCont;
 
-    char* str_data = str_data_ptr ? *str_data_ptr : NULL;
+static bool read_character_target(InputSource *inputSource, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no,
+        char* str_data, int64_t str_len, int32_t char_kind)
+{
     if (str_data == NULL) {
         printf("Runtime Error: Unallocated string in formatted read\n");
         exit(1);
@@ -11129,6 +11133,82 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
 
     internal_free(buffer);
     return true;
+}
+
+static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
+        ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active) {
+        if (!arr_cont->is_char) {
+            if (iostat) *iostat = 5010;
+            arr_cont->active = false;
+            return false;
+        }
+        int32_t i = arr_cont->current_idx;
+        size_t elem_bytes = (size_t)arr_cont->char_len * (size_t)arr_cont->char_kind;
+        char* str_data = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * elem_bytes;
+        if (!read_character_target(inputSource, width, advance_no, iostat, chunk,
+                consumed_newline, pad_no, str_data, arr_cont->char_len,
+                arr_cont->char_kind)) {
+            arr_cont->active = false;
+            return false;
+        }
+        arr_cont->current_idx++;
+        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        return true;
+    }
+
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    int32_t type_code = va_arg(*args, int32_t);
+    int32_t char_kind = 1;
+    if (is_descriptor_array) {
+        char* data_ptr = va_arg(*args, char*);
+        int32_t n_elems = va_arg(*args, int32_t);
+        int32_t stride = va_arg(*args, int32_t);
+        int64_t str_len = va_arg(*args, int64_t);
+        if (type_code == 8) {
+            char_kind = va_arg(*args, int32_t);
+        }
+        (*arg_idx)++;
+
+        if (data_ptr == NULL) {
+            printf("Runtime Error: Unallocated string in formatted read\n");
+            exit(1);
+        }
+        if (n_elems <= 0) {
+            return true;
+        }
+        if (!read_character_target(inputSource, width, advance_no, iostat, chunk,
+                consumed_newline, pad_no, data_ptr, str_len, char_kind)) {
+            return false;
+        }
+        arr_cont->data_ptr = data_ptr;
+        arr_cont->elem_tc = type_code;
+        arr_cont->n_elems = n_elems;
+        arr_cont->stride = stride;
+        arr_cont->current_idx = 1;
+        arr_cont->is_complex = false;
+        arr_cont->reading_imag = false;
+        arr_cont->component_sz = 0;
+        arr_cont->elem_sz = (size_t)str_len * (size_t)char_kind;
+        arr_cont->is_char = true;
+        arr_cont->char_kind = char_kind;
+        arr_cont->char_len = str_len;
+        arr_cont->active = (n_elems > 1);
+        return true;
+    }
+
+    char** str_data_ptr = va_arg(*args, char**);
+    int64_t str_len = va_arg(*args, int64_t);
+    if (type_code == 8) {
+        char_kind = va_arg(*args, int32_t);
+    }
+    (*arg_idx)++;
+
+    char* str_data = str_data_ptr ? *str_data_ptr : NULL;
+    return read_character_target(inputSource, width, advance_no, iostat, chunk,
+        consumed_newline, pad_no, str_data, str_len, char_kind);
 }
 
 static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
@@ -11159,28 +11239,12 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-// Tracks pending array elements for one-element-per-format-item reading.
-// In Fortran, each array element consumes its own format edit descriptor,
-// so we read one element per handler call and return to the format processor.
-typedef struct {
-    bool active;
-    void* data_ptr;
-    int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
-    int32_t n_elems;
-    int32_t stride;
-    int32_t current_idx;
-    bool is_complex;
-    bool reading_imag;    // for complex: true when next read is the imaginary part
-    size_t component_sz;
-    size_t elem_sz;
-} ArrayReadCont;
-
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx, int blank_mode,
         ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -11216,6 +11280,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         arr_cont->stride = stride;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = esz;
         arr_cont->elem_sz = esz;
         int read_width = (width > 0) ? width : 10;
@@ -11261,7 +11326,7 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         int blank_mode, int base, ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -11297,6 +11362,7 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         arr_cont->stride = stride;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = esz;
         arr_cont->elem_sz = esz;
         int read_width = (width > 0) ? width : 10;
@@ -11397,7 +11463,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (read_width < 0) read_width = 0;
 
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 4 && arr_cont->elem_tc != 5) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 4 && arr_cont->elem_tc != 5)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -11455,6 +11521,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         arr_cont->current_idx = 0;
         arr_cont->is_complex = is_complex;
         arr_cont->reading_imag = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = component_sz;
         arr_cont->elem_sz = elem_sz;
 
@@ -11731,13 +11798,14 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 }
 
 // Type codes for _lfortran_formatted_read:
-// 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
+// 0 = character (followed by ptr, str_len). For scalar strings, `ptr` is `char**`
 // (pointer to the data pointer inside a string descriptor).
 // 1 = logical (followed by ptr)
 // 2 = int32 (followed by ptr)
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
+// 8 = wide character (same as character, followed by char kind after str_len)
 // Variadic protocol for _lfortran_formatted_read / _lfortran_string_formatted_read:
 // Each read target is introduced by a bool flag `is_descriptor_array` (passed as int32_t):
 //
@@ -11749,10 +11817,12 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 //
 // Descriptor array (is_descriptor_array == 1):
 //     int32_t is_descriptor_array = 1
-//     int32_t elem_type_code  (same codes as above, non-char)
+//     int32_t elem_type_code  (same codes as above)
 //     void*   data_ptr        (i8* / void* to first element)
 //     int32_t n_elems         (total number of elements)
 //     int32_t stride_elems    (stride in elements between consecutive items)
+//     int64_t elem_len        (character only)
+//     int32_t char_kind       (wide character only)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
@@ -12006,7 +12076,8 @@ static void process_fmt_items_read(InputSource *inputSource,
                 break;
             case 'A':
                 if (!handle_read_A(inputSource, args, width, advance_no,
-                        iostat, chunk, consumed_newline, pad_no, arg_idx)) {
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        arr_cont)) {
                     return;
                 }
                 break;
@@ -12108,7 +12179,7 @@ static void common_formatted_read(InputSource *inputSource,
     }
     
     int scale_factor = 0;
-    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, false, 0, 0};
+    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, false, 0, 0, false, 1, 0};
 
     while ((arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;
