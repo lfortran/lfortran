@@ -11094,7 +11094,9 @@ typedef struct {
     void* data_ptr;
     int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
     int32_t n_elems;
-    int32_t stride;
+    int32_t rank;
+    int32_t* extents;
+    int32_t* strides;
     int32_t current_idx;
     bool is_complex;
     bool reading_imag;    // for complex: true when next read is the imaginary part
@@ -11104,6 +11106,20 @@ typedef struct {
     int32_t char_kind;
     int64_t char_len;
 } ArrayReadCont;
+
+static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
+{
+    int64_t offset = 0;
+    int32_t remaining = idx;
+    for (int32_t d = 0; d < arr_cont->rank; d++) {
+        int32_t extent = arr_cont->extents[d];
+        if (extent <= 0) return 0;
+        int32_t dim_idx = remaining % extent;
+        remaining /= extent;
+        offset += (int64_t)dim_idx * (int64_t)arr_cont->strides[d];
+    }
+    return offset;
+}
 
 static bool read_character_target(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no,
@@ -11147,7 +11163,8 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         }
         int32_t i = arr_cont->current_idx;
         size_t elem_bytes = (size_t)arr_cont->char_len * (size_t)arr_cont->char_kind;
-        char* str_data = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * elem_bytes;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        char* str_data = (char*)arr_cont->data_ptr + offset * (int64_t)elem_bytes;
         if (!read_character_target(inputSource, width, advance_no, iostat, chunk,
                 consumed_newline, pad_no, str_data, arr_cont->char_len,
                 arr_cont->char_kind)) {
@@ -11165,7 +11182,9 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
     if (is_descriptor_array) {
         char* data_ptr = va_arg(*args, char*);
         int32_t n_elems = va_arg(*args, int32_t);
-        int32_t stride = va_arg(*args, int32_t);
+        int32_t rank = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         int64_t str_len = va_arg(*args, int64_t);
         if (type_code == 8) {
             char_kind = va_arg(*args, int32_t);
@@ -11186,7 +11205,9 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = type_code;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 1;
         arr_cont->is_complex = false;
         arr_cont->reading_imag = false;
@@ -11212,13 +11233,77 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
 }
 
 static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx)
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
+        ArrayReadCont *arr_cont)
 {
+    if (arr_cont->active) {
+        if (arr_cont->is_char || arr_cont->elem_tc != 1) {
+            if (iostat) *iostat = 5010;
+            arr_cont->active = false;
+            return false;
+        }
+        int32_t i = arr_cont->current_idx;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        int32_t* log_ptr = (int32_t*)((char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz);
+
+        int read_width = (width > 0) ? width : 1;
+        if (read_width < 0) read_width = 0;
+
+        char* buffer = NULL;
+        int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                consumed_newline, &buffer, &field_len, pad_no)) {
+            arr_cont->active = false;
+            return false;
+        }
+
+        parse_logical_from_buffer(buffer, field_len, log_ptr);
+        internal_free(buffer);
+        arr_cont->current_idx++;
+        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        return true;
+    }
+
     int32_t is_descriptor_array = va_arg(*args, int32_t);
-    // descriptor-array path for L not yet supported
-    // TODO: Add support for read into descriptor-arrays for logical reads
-    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        void* data_ptr = va_arg(*args, void*);
+        int32_t n_elems = va_arg(*args, int32_t);
+        int32_t rank = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
+        (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
+        int read_width = (width > 0) ? width : 1;
+        if (read_width < 0) read_width = 0;
+
+        char* buffer = NULL;
+        int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                consumed_newline, &buffer, &field_len, pad_no)) {
+            return false;
+        }
+
+        parse_logical_from_buffer(buffer, field_len, (int32_t*)data_ptr);
+        internal_free(buffer);
+
+        arr_cont->data_ptr = data_ptr;
+        arr_cont->elem_tc = type_code;
+        arr_cont->n_elems = n_elems;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
+        arr_cont->current_idx = 1;
+        arr_cont->is_complex = false;
+        arr_cont->reading_imag = false;
+        arr_cont->is_char = false;
+        arr_cont->component_sz = sizeof(int32_t);
+        arr_cont->elem_sz = sizeof(int32_t);
+        arr_cont->active = (n_elems > 1);
+        return true;
+    }
     (void)type_code;
     int32_t* log_ptr = va_arg(*args, int32_t*);
     (*arg_idx)++;
@@ -11251,7 +11336,8 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         }
         int read_width = (width > 0) ? width : 10;
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         char* buffer = NULL; int field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
                         consumed_newline, &buffer, &field_len, pad_no)) {
@@ -11271,13 +11357,20 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
         arr_cont->is_char = false;
@@ -11333,7 +11426,8 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         }
         int read_width = (width > 0) ? width : 10;
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         char* buffer = NULL; int field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
                         consumed_newline, &buffer, &field_len, pad_no)) {
@@ -11353,13 +11447,20 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
         arr_cont->is_char = false;
@@ -11469,7 +11570,8 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
             return false;
         }
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         if (arr_cont->is_complex && arr_cont->reading_imag) {
             void* imag_ptr = (char*)elem_ptr + arr_cont->component_sz;
             if (!read_and_parse_real_field(inputSource, imag_ptr, arr_cont->elem_tc,
@@ -11505,8 +11607,13 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         bool is_complex = (elem_tc == 6 || elem_tc == 7);
         int32_t component_tc = elem_tc;
         if (component_tc == 6) component_tc = 4;
@@ -11517,7 +11624,9 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = component_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = is_complex;
         arr_cont->reading_imag = false;
@@ -11820,7 +11929,9 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 //     int32_t elem_type_code  (same codes as above)
 //     void*   data_ptr        (i8* / void* to first element)
 //     int32_t n_elems         (total number of elements)
-//     int32_t stride_elems    (stride in elements between consecutive items)
+//     int32_t rank
+//     int32_t* extents        (rank extents; dim 0 varies fastest)
+//     int32_t* strides        (rank stride multipliers in elements)
 //     int64_t elem_len        (character only)
 //     int32_t char_kind       (wide character only)
 LFORTRAN_API void _lfortran_formatted_read(
@@ -12083,7 +12194,8 @@ static void process_fmt_items_read(InputSource *inputSource,
                 break;
             case 'L':
                 if (!handle_read_L(inputSource, args, width, advance_no,
-                        iostat, chunk, consumed_newline, pad_no, arg_idx)) {
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        arr_cont)) {
                     return;
                 }
                 break;
@@ -12179,7 +12291,7 @@ static void common_formatted_read(InputSource *inputSource,
     }
     
     int scale_factor = 0;
-    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, false, 0, 0, false, 1, 0};
+    ArrayReadCont arr_cont = {0};
 
     while ((arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;

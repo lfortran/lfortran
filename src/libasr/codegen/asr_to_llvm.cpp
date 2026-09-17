@@ -19556,59 +19556,6 @@ public:
         return ASR::is_a<ASR::Complex_t>(*val_type) ? 2 : 1;
     }
 
-    int32_t get_formatted_read_descriptor_type_code(ASR::ttype_t* val_type,
-            ASR::expr_t* val_expr) {
-        if (ASR::is_a<ASR::Integer_t>(*val_type)){
-            return (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
-        } else if (ASR::is_a<ASR::String_t>(*val_type)) {
-            return (ASR::down_cast<ASR::String_t>(val_type)->m_kind > 1) ? 8 : 0;
-        } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
-            return 1;
-        } else if (ASR::is_a<ASR::Real_t>(*val_type)){
-            return (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
-        } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
-            return (ASR::down_cast<ASR::Complex_t>(val_type)->m_kind == 4) ? 6 : 7;
-        } else {
-            throw CodeGenError("Not implemented: read into allocatable targets for dtype "
-                + ASRUtils::type_to_str_python_expr(val_type, val_expr));
-        }
-    }
-
-    void add_formatted_read_descriptor_arg(std::vector<llvm::Value*>& args,
-            ASR::ttype_t* val_type, ASR::expr_t* val_expr, llvm::Value* data_ptr,
-            llvm::Value* n_elems, llvm::Value* stride) {
-        llvm::Value* char_len = nullptr;
-        int64_t char_kind = 1;
-        if (ASR::is_a<ASR::String_t>(*val_type)) {
-            ASR::String_t* str_type = ASRUtils::get_string_type(val_type);
-            std::tie(data_ptr, char_len) =
-                llvm_utils->get_string_length_data(str_type, data_ptr);
-            char_kind = str_type->m_kind;
-        }
-        data_ptr = builder->CreateBitCast(data_ptr,
-            llvm::Type::getInt8Ty(context)->getPointerTo());
-        llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
-        if (n_elems->getType() != i32_type) {
-            n_elems = builder->CreateIntCast(n_elems, i32_type, true);
-        }
-        if (stride->getType() != i32_type) {
-            stride = builder->CreateIntCast(stride, i32_type, true);
-        }
-        args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-        args.push_back(llvm::ConstantInt::get(i32_type,
-            get_formatted_read_descriptor_type_code(val_type, val_expr)));
-        args.push_back(data_ptr);
-        args.push_back(n_elems);
-        args.push_back(stride);
-        if (ASR::is_a<ASR::String_t>(*val_type)) {
-            args.push_back(char_len);
-            if (char_kind > 1) {
-                args.push_back(llvm::ConstantInt::get(i32_type, char_kind));
-            }
-        }
-    }
-
-
     void emit_seek_record(llvm::Value* unit_val, llvm::Value* rec_val, llvm::Value* iostat) {
         llvm::Value *unit_i32 = unit_val;
         if (unit_i32->getType()->isPointerTy()) {
@@ -19726,11 +19673,27 @@ public:
                 add_formatted_read_arg(single_args, val_type, elem_ptr);
             }
         } else if (ASRUtils::is_array(expr_type_full)) {
-            // DescriptorArray target: push is_descriptor_array=1, elem_tc, data_ptr, n_elems, stride
+            single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             single_args.push_back(pad_data);
             single_args.push_back(pad_len);
-            arr_descr->push_descriptor_array_args(val_expr, expr_type_full, 
-                    val_type, var_ptr, module.get(), single_args);
+            ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(expr_type_full);
+            if (ASR::is_a<ASR::Var_t>(*val_expr) &&
+                    (phys_type == ASR::array_physical_typeType::PointerArray ||
+                     phys_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                    !ASRUtils::is_allocatable_or_pointer(expr_type_full)) {
+                ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(
+                    al, val_expr->base.loc, 4));
+                ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
+                    ASR::make_ArraySize_t(al, val_expr->base.loc,
+                        val_expr, nullptr, type32, nullptr));
+                visit_ArraySize(*array_size);
+                arr_descr->push_data_array_args(val_type, val_expr, var_ptr, tmp,
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1),
+                    single_args);
+            } else {
+                arr_descr->push_descriptor_array_args(val_expr, expr_type_full,
+                        val_type, var_ptr, module.get(), single_args);
+            }
         } else {
             // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
@@ -20200,32 +20163,20 @@ public:
                     add_formatted_read_arg(args, val_type, elem_ptr);
                 }
             } else if (ASRUtils::is_array(expr_type_full)) {
-                // DescriptorArray target: push is_descriptor_array=1, elem_tc,
-                // data_ptr, n_elems, stride
                 ASR::array_physical_typeType phys_type = ASRUtils::extract_physical_type(expr_type_full);
-                bool var_ptr_is_array_descriptor = false;
-                if (llvm::PointerType* ptr_type = llvm::dyn_cast<llvm::PointerType>(var_ptr->getType())) {
-                    if (llvm::StructType* struct_type = llvm::dyn_cast<llvm::StructType>(
-                            ptr_type->getElementType())) {
-                        var_ptr_is_array_descriptor =
-                            struct_type->getNumElements() > 8 &&
-                            llvm::isa<llvm::ArrayType>(struct_type->getElementType(8));
-                    }
-                }
                 if (ASR::is_a<ASR::Var_t>(*val_expr) &&
-                        (phys_type == ASR::array_physical_typeType::DescriptorArray ||
-                         phys_type == ASR::array_physical_typeType::PointerArray) &&
-                        !ASRUtils::is_allocatable_or_pointer(expr_type_full) &&
-                        !var_ptr_is_array_descriptor) {
+                        (phys_type == ASR::array_physical_typeType::PointerArray ||
+                         phys_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                        !ASRUtils::is_allocatable_or_pointer(expr_type_full)) {
                     ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(
                         al, val_expr->base.loc, 4));
                     ASR::ArraySize_t* array_size = ASR::down_cast2<ASR::ArraySize_t>(
                         ASR::make_ArraySize_t(al, val_expr->base.loc,
                             val_expr, nullptr, type32, nullptr));
                     visit_ArraySize(*array_size);
-                    add_formatted_read_descriptor_arg(args, val_type, val_expr,
-                        var_ptr, tmp, llvm::ConstantInt::get(
-                            llvm::Type::getInt32Ty(context), 1));
+                    arr_descr->push_data_array_args(val_type, val_expr, var_ptr,
+                        tmp, llvm::ConstantInt::get(
+                            llvm::Type::getInt32Ty(context), 1), args);
                 } else {
                     arr_descr->push_descriptor_array_args(val_expr, expr_type_full,
                                 val_type, var_ptr, module.get(), args);
