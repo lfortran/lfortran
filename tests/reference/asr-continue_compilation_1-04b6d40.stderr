@@ -2439,7 +2439,7 @@ semantic error: type mismatch in structure constructor: a null value of type typ
 1477 |     v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
      |                                                 ^^^^^^^^^^ 
 
-semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'r' of type real(4)
     --> tests/errors/continue_compilation_1.f90:1478:54
      |
 1478 |     v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
@@ -2452,201 +2452,207 @@ semantic error: type mismatch in structure constructor: a null value of type typ
      |                                ^^^^^^^^^^ 
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1460:9
+    --> tests/errors/continue_compilation_1.f90:1529:9
      |
-1460 |         q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+1529 |         q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
      |
-1459 |        associate (q => pb)
+1528 |        associate (q => pb)
      |        ~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1461 |        end associate
+1530 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1464:9
+    --> tests/errors/continue_compilation_1.f90:1533:9
      |
-1464 |         q%a%x = 5  ! {Error} Cannot assign to a constant variable
+1533 |         q%a%x = 5  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^ assignment here
      |
-1463 |        associate (q => pb)
+1532 |        associate (q => pb)
      |        ~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1465 |        end associate
+1534 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1468:9
+    --> tests/errors/continue_compilation_1.f90:1537:9
      |
-1468 |         r%x = 6  ! {Error} Cannot assign to a constant variable
+1537 |         r%x = 6  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^ assignment here
      |
-1467 |        associate (r => pb%a)
+1536 |        associate (r => pb%a)
      |        ~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1469 |        end associate
+1538 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1472:9
+    --> tests/errors/continue_compilation_1.f90:1541:9
      |
-1472 |         q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+1541 |         q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^ assignment here
      |
-1471 |        associate (q => pba)
+1540 |        associate (q => pba)
      |        ~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1473 |        end associate
+1542 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1490:13
+    --> tests/errors/continue_compilation_1.f90:1559:13
      |
-1490 |             r%y = 88  ! {Error} Cannot assign to a constant variable
+1559 |             r%y = 88  ! {Error} Cannot assign to a constant variable
      |             ^^^^^^^^ assignment here
      |
-1489 |            associate (r => q)
+1558 |            associate (r => q)
      |            ~~~~~~~~~~~~~~~~~~...
 ...
      |
-1491 |            end associate
+1560 |            end associate
      | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1496:13
+    --> tests/errors/continue_compilation_1.f90:1565:13
      |
-1496 |             r%x = 99  ! {Error} Cannot assign to a constant variable
+1565 |             r%x = 99  ! {Error} Cannot assign to a constant variable
      |             ^^^^^^^^ assignment here
      |
-1495 |            associate (r => q%a)
+1564 |            associate (r => q%a)
      |            ~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1497 |            end associate
+1566 |            end associate
      | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1502:13
+    --> tests/errors/continue_compilation_1.f90:1571:13
      |
-1502 |             r = 77  ! {Error} Cannot assign to a constant variable
+1571 |             r = 77  ! {Error} Cannot assign to a constant variable
      |             ^^^^^^ assignment here
      |
-1501 |            associate (r => q%a%x)
+1570 |            associate (r => q%a%x)
      |            ~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1503 |            end associate
+1572 |            end associate
      | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1508:13
+    --> tests/errors/continue_compilation_1.f90:1577:13
      |
-1508 |             r%a%x = 66  ! {Error} Cannot assign to a constant variable
+1577 |             r%a%x = 66  ! {Error} Cannot assign to a constant variable
      |             ^^^^^^^^^^ assignment here
      |
-1507 |            associate (r => q(1))
+1576 |            associate (r => q(1))
      |            ~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1509 |            end associate
+1578 |            end associate
      | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1515:17
+    --> tests/errors/continue_compilation_1.f90:1584:17
      |
-1515 |                 s%y = 55  ! {Error} Cannot assign to a constant variable
+1584 |                 s%y = 55  ! {Error} Cannot assign to a constant variable
      |                 ^^^^^^^^ assignment here
      |
-1514 |                associate (s => r)
+1583 |                associate (s => r)
      |                ~~~~~~~~~~~~~~~~~~...
 ...
      |
-1516 |                end associate
+1585 |                end associate
      | ...~~~~~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1538:9
+    --> tests/errors/continue_compilation_1.f90:1607:9
      |
-1538 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+1607 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
      |
-1537 |        associate (r => pba(1))
+1606 |        associate (r => pba(1))
      |        ~~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1539 |        end associate
+1608 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1542:9
+    --> tests/errors/continue_compilation_1.f90:1611:9
      |
-1542 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+1611 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
      |
-1541 |        associate (r => pba(i))
+1610 |        associate (r => pba(i))
      |        ~~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1543 |        end associate
+1612 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1546:9
+    --> tests/errors/continue_compilation_1.f90:1615:9
      |
-1546 |         r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+1615 |         r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
      |
-1545 |        associate (r => pba(1:2))
+1614 |        associate (r => pba(1:2))
      |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1547 |        end associate
+1616 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1550:9
+    --> tests/errors/continue_compilation_1.f90:1619:9
      |
-1550 |         r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+1619 |         r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
      |
-1549 |        associate (r => pba(1)%a)
+1618 |        associate (r => pba(1)%a)
      |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1551 |        end associate
+1620 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Cannot assign to a constant variable
-    --> tests/errors/continue_compilation_1.f90:1554:9
+    --> tests/errors/continue_compilation_1.f90:1623:9
      |
-1554 |         r = 1  ! {Error} Cannot assign to a constant variable
+1623 |         r = 1  ! {Error} Cannot assign to a constant variable
      |         ^^^^^ assignment here
      |
-1553 |        associate (r => pba(1)%a%x)
+1622 |        associate (r => pba(1)%a%x)
      |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~...
 ...
      |
-1555 |        end associate
+1624 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
 
 semantic error: Type mismatch in assignment, the types must be compatible
-    --> tests/errors/continue_compilation_1.f90:1528:5
+    --> tests/errors/continue_compilation_1.f90:1637:5
      |
-1528 |     fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+1637 |     cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^ type mismatch (type(c_ptr) and type(c_funptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1638:5
+     |
+1638 |     fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
      |     ^^   ^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
 
 semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
-    --> tests/errors/continue_compilation_1.f90:1529:23
+    --> tests/errors/continue_compilation_1.f90:1639:23
      |
-1529 |     v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+1639 |     v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
      |                       ^^^^^^^^^^^^^ 
 
 semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
-    --> tests/errors/continue_compilation_1.f90:1530:35
+    --> tests/errors/continue_compilation_1.f90:1640:35
      |
-1530 |     v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+1640 |     v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
      |                                   ^^^^^^^^^^ 
