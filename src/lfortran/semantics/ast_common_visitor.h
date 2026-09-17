@@ -2679,7 +2679,8 @@ public:
                 ASR::down_cast<ASR::StructInstanceMember_t>(expr);
             ASR::Variable_t* member_var = get_variable_from_symbol(member->m_m);
             if (member_var != nullptr && (ASRUtils::is_pointer(member_var->m_type)
-                    || member_var->m_target_attr)) {
+                    || member_var->m_target_attr
+                    || get_procedure_pointer_component_type(member_var) != nullptr)) {
                 return true;
             }
             return is_valid_pointer_assignment_target(member->m_v);
@@ -2704,6 +2705,54 @@ public:
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
         }
         return ASRUtils::is_pointer(ASRUtils::expr_type(expr));
+    }
+
+    ASR::FunctionType_t* get_procedure_type_from_expr(ASR::expr_t* expr) {
+        if (expr == nullptr) {
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            if (ASR::is_a<ASR::Function_t>(*sym)
+                    || ASRUtils::is_symbol_procedure_variable(sym)) {
+                return ASRUtils::get_FunctionType(sym);
+            }
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+            if (ASRUtils::is_symbol_procedure_variable(sym)) {
+                return ASRUtils::get_FunctionType(sym);
+            }
+            return nullptr;
+        }
+        ASR::ttype_t* expr_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(expr));
+        if (ASR::is_a<ASR::FunctionType_t>(*expr_type)) {
+            return ASR::down_cast<ASR::FunctionType_t>(expr_type);
+        }
+        return nullptr;
+    }
+
+    ASR::FunctionType_t* get_procedure_pointer_component_type(
+            ASR::Variable_t* member_var) {
+        if (member_var == nullptr) {
+            return nullptr;
+        }
+        ASR::ttype_t* target_type = ASRUtils::type_get_past_pointer(
+            member_var->m_type);
+        if (ASR::is_a<ASR::FunctionType_t>(*target_type)) {
+            return ASR::down_cast<ASR::FunctionType_t>(target_type);
+        }
+        return nullptr;
+    }
+
+    bool is_procedure_pointer_value(ASR::Variable_t* member_var,
+            ASR::expr_t* value) {
+        return get_procedure_pointer_component_type(member_var) != nullptr
+            && get_procedure_type_from_expr(value) != nullptr;
     }
 
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
@@ -12137,7 +12186,8 @@ public:
                 continue;
             }
             if (ASRUtils::is_pointer(member_var->m_type)
-                    && !ASRUtils::is_pointer(ASRUtils::expr_type(vals[i].m_value))) {
+                    && !ASRUtils::is_pointer(ASRUtils::expr_type(vals[i].m_value))
+                    && !is_procedure_pointer_value(member_var, vals[i].m_value)) {
                 diag.add(Diagnostic("the value of pointer component '"
                     + std::string(member_var->m_name)
                     + "' must be a pointer, a target or null()",
@@ -12183,6 +12233,27 @@ public:
             }
             ASR::expr_t* arg = vals[i].m_value;
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
+            ASR::FunctionType_t* member_func_type =
+                get_procedure_pointer_component_type(member_var);
+            ASR::FunctionType_t* arg_func_type = get_procedure_type_from_expr(arg);
+            if (member_func_type != nullptr && arg_func_type != nullptr) {
+                bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
+                bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
+                if (member_is_subroutine != arg_is_subroutine) {
+                    diag.add(Diagnostic("type mismatch in structure constructor: value of type "
+                        + expr_type_to_str_with_kind(arg)
+                        + " cannot be the value of pointer component '"
+                        + std::string(member_var->m_name) + "' of type "
+                        + struct_component_type_to_str(member_var),
+                        Level::Error, Stage::Semantic, {
+                            Label("", {arg->base.loc})}));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    vals.p[i].m_value = nullptr;
+                }
+                continue;
+            }
             if (!is_valid_pointer_assignment_target(arg)) {
                 diag.add(Diagnostic("the value of pointer component '"
                     + std::string(member_var->m_name)
