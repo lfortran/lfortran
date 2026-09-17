@@ -12296,6 +12296,8 @@ static void common_formatted_read(InputSource *inputSource,
     while ((arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;
         bool cont_before = arr_cont.active;
+        int32_t cont_idx_before = arr_cont.current_idx;
+        bool cont_imag_before = arr_cont.reading_imag;
         fchar *cycle_fmt;
         int64_t cycle_len;
         if (first_cycle) {
@@ -12309,7 +12311,9 @@ static void common_formatted_read(InputSource *inputSource,
             cycle_fmt, cycle_len, no_of_args, args,
             &arg_idx, &blank_mode, &scale_factor, &consumed_newline, pad_no, &decimal_mode,
             &arr_cont);
-        bool made_progress = (arg_idx > args_before) || (cont_before && !arr_cont.active);
+        bool made_progress = (arg_idx > args_before) ||
+            (cont_before && (arr_cont.current_idx != cont_idx_before ||
+                arr_cont.reading_imag != cont_imag_before || !arr_cont.active));
         if (made_progress && (arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
             if (!consumed_newline) {
                 int c = 0;
