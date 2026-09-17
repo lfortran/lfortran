@@ -15446,20 +15446,6 @@ public:
             int64_t length;
             len_compiletime = ASRUtils::extract_value(str->m_len, length) ? 
             make_ConstantWithType(make_IntegerConstant_t, length, type, loc) : nullptr;
-            // TODO: If possible try to use m_len of `character(len=m_len)`
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(v_type);
-            Vec<ASR::array_index_t> lbs; lbs.reserve(al, n_dims);
-            for( int i = 0; i < n_dims; i++ ) {
-                ASR::array_index_t index;
-                index.loc = loc;
-                index.m_left = nullptr;
-                index.m_right = ASRUtils::get_bound<SemanticAbort>(v, i + 1, "lbound", al, diag);
-                index.m_step = nullptr;
-                lbs.push_back(al, index);
-            }
-            v = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, v, lbs.p, lbs.size(),
-                    ASRUtils::extract_type(v_type),
-                        ASR::arraystorageType::ColMajor, nullptr));
         } else if(ASR::is_a<ASR::ArrayItem_t>(*v)) {
             ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(v);
                 if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
