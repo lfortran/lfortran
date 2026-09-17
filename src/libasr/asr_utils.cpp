@@ -4396,6 +4396,11 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*
         ASRUtils::type_get_past_allocatable_pointer(array_type)));
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+        ASRUtils::type_get_past_allocatable_pointer(array_type));
+    if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+        return nullptr;
+    }
     int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
     if(array_size != -1){
             return ASRUtils::EXPR(
