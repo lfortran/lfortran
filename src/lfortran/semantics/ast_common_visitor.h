@@ -5601,14 +5601,8 @@ public:
         ASR::ttype_t* element_type = ASRUtils::type_get_past_array(src->m_type);
         void* new_data = ASRUtils::set_ArrayConstant_data(
             section_values.p, section_values.size(), element_type);
-        int64_t n_data = section_values.size() *
-            ASRUtils::extract_kind_from_ttype_t(element_type);
-        if (ASRUtils::is_character(*element_type)) {
-            int len = 0;
-            ASRUtils::extract_value(
-                ASR::down_cast<ASR::String_t>(element_type)->m_len, len);
-            n_data = section_values.size() * len;
-        }
+        int64_t n_data = ASRUtils::get_ArrayConstant_data_size(
+            section_values.size(), element_type);
         ASR::ttype_t* int_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 4));
         Vec<ASR::dimension_t> dims;
@@ -12972,15 +12966,8 @@ public:
                             
                     void* new_data = ASRUtils::set_ArrayConstant_data(
                         sliced_elements.p, sliced_elements.size(), ASRUtils::type_get_past_array(type));
-                    int64_t n_data = sliced_elements.size();
-                    if (ASRUtils::is_character(*type)) {
-                        int len = 0;
-                        ASRUtils::extract_value(
-                            ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type))->m_len, len);
-                        n_data = sliced_elements.size() * len;
-                    } else {
-                        n_data *= ASRUtils::extract_kind_from_ttype_t(ASRUtils::type_get_past_array(type));
-                    }
+                    int64_t n_data = ASRUtils::get_ArrayConstant_data_size(
+                        sliced_elements.size(), ASRUtils::type_get_past_array(type));
                     
                     arr_ref_val = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
                         n_data, new_data, type, ASR::arraystorageType::ColMajor));

@@ -8516,6 +8516,21 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
     }
 }
 
+inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) {
+    if (ASRUtils::is_character(*a_type)) {
+        int len = 0;
+        if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
+        return n_args * len;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*a_type)) {
+        return n_args * sizeof(ASR::expr_t*);
+    }
+    if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
+        return n_args * sizeof(void*);
+    }
+    return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
+}
+
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
     if (x != nullptr) {
         // this is array constant, we have it's data available
@@ -8631,20 +8646,8 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
             dims.p, dims.n, a_type_->m_physical_type, a_type_->m_memory_space));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
-        // data is always allocated to n_data bytes
-        int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
-        if (is_character(*a_type_->m_type)) {
-            int len = 0;
-            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
-            n_data = curr_idx * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
-            // For struct types, n_data represents the number of struct constant pointers
-            n_data = curr_idx * sizeof(ASR::expr_t*);
-        } else if (ASR::is_a<ASR::CPtr_t>(*a_type_->m_type)) {
-            // C_PTR and C_FUNPTR are pointer-sized opaque handles. extract_kind returns -1 for CPtr
-            // (it has no fortran 'kind' parameter), so compute the byte size explicitly
-            n_data = curr_idx * sizeof(void*);
-        }   
+        int64_t n_data = ASRUtils::get_ArrayConstant_data_size(
+            curr_idx, a_type_->m_type);
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
