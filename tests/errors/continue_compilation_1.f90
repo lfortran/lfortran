@@ -1424,3 +1424,22 @@ subroutine derived_type_scalar_broadcast_parameter_array_oob()
     integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
     integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
 end subroutine
+
+module scalar_struct_array_shape_errors_1
+    implicit none
+contains
+    subroutine scalar_struct_array_assumed_size(a)
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+
+    subroutine scalar_struct_array_nonconstant_extent(n)
+        integer, intent(in) :: n
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+end module
