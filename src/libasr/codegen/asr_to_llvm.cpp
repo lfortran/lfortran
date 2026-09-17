@@ -9532,6 +9532,8 @@ public:
             llvm::Type::getInt1Ty(context), nullptr, "is_associated");
         ASR::ttype_t* p_type = ASRUtils::expr_type(x.m_ptr);
         llvm::Value *ptr, *nptr;
+        llvm::Type* ptr_array_inner_type = nullptr;
+        bool ptr_is_unlimited_polymorphic_array = false;
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         visit_expr_wrapper(x.m_ptr, false);
@@ -9546,7 +9548,15 @@ public:
                         x.m_ptr, p_type, module.get());
                     ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
                 }
-                if (x.m_tgt) {
+                if (ASRUtils::extract_physical_type(p_type) ==
+                    ASR::array_physical_typeType::DescriptorArray) {
+                    llvm::Type* string_type = llvm_utils->get_StringType(
+                        ASRUtils::extract_type(p_type))->getPointerTo();
+                    ptr = llvm_utils->CreateLoad2(string_type,
+                        arr_descr->get_pointer_to_data(x.m_ptr,
+                            ASRUtils::type_get_past_allocatable_pointer(p_type),
+                            ptr, module.get()));
+                } else if (x.m_tgt) {
                     ptr = llvm_utils->get_stringArray_data(p_type, ptr);
                 } else {
                     llvm::Type* string_type = llvm_utils->get_StringType(
@@ -9577,13 +9587,11 @@ public:
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*p_type));
             ptr = arr_descr->get_pointer_to_data(x.m_ptr,
                 ASRUtils::type_get_past_allocatable_pointer(p_type), ptr, module.get());
-            llvm::Type* array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
+            ptr_array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
                 ASRUtils::extract_type(p_type), module.get());
-            ptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), ptr);
-            if (x.m_tgt && ASRUtils::is_unlimited_polymorphic_type(x.m_ptr)) { // {VTable*, i8*} -- Check equality on data field
-                ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(array_inner_type, ptr, 1));
-            }
+            ptr = llvm_utils->CreateLoad2(ptr_array_inner_type->getPointerTo(), ptr);
+            ptr_is_unlimited_polymorphic_array =
+                x.m_tgt && ASRUtils::is_unlimited_polymorphic_type(x.m_ptr);
         }
         ptr_loads = ptr_loads_copy;
         auto to_int64 = [&](llvm::Value* v) {
@@ -9687,6 +9695,10 @@ public:
                                     ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
                         }
                     }
+                }
+                if (ptr_is_unlimited_polymorphic_array) { // {VTable*, i8*} -- Check equality on data field
+                    ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(ptr_array_inner_type, ptr, 1));
                 }
                 if (!ASRUtils::is_array(p_type) &&
                     ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
