@@ -1549,6 +1549,9 @@ ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
 ASR::expr_t* get_struct_member_value_from_constant_array(Allocator &al,
         const Location& loc, ASR::expr_t* value, ASR::symbol_t* member,
         ASR::ttype_t* result_type) {
+    if (value == nullptr) {
+        return nullptr;
+    }
     ASR::expr_t* scalar_value = get_struct_member_value_from_constant(value, member);
     if (scalar_value) {
         if (ASRUtils::is_array(result_type)
