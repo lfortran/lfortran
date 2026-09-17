@@ -7052,11 +7052,15 @@ public:
                             ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
                             element_type, module.get());
                         if(ASRUtils::is_character(*v->m_type)){
-                            llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
-                            builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
-                            ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
-                            if (str_type->m_len) {
-                                setup_string_length(str_desc, str_type, str_type->m_len);
+                            if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
+                                arr_descr->reset_is_allocated_flag(type_, arr, data_type);
+                            } else {
+                                llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(data_type);
+                                builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, arr));
+                                ASR::String_t* str_type = ASRUtils::get_string_type(v->m_type);
+                                if (str_type->m_len) {
+                                    setup_string_length(str_desc, str_type, str_type->m_len);
+                                }
                             }
                         } else {
                             arr_descr->reset_is_allocated_flag(type_, arr, data_type);
