@@ -5699,7 +5699,9 @@ public:
         }
         llvm::Constant* init_value = nullptr;
         llvm::Constant* alias_target = nullptr;
+        bool pointer_null_array_init = has_pointer_null_array_initializer(&x);
         if (x.m_symbolic_value != nullptr &&
+            !pointer_null_array_init &&
             !ASRUtils::is_string_only(x.m_type)){
             ASR::expr_t* alias_init = x.m_symbolic_value;
             if (ASR::is_a<ASR::BitCast_t>(*alias_init)) {
@@ -6731,6 +6733,25 @@ public:
         return false;
     }
 
+    bool has_pointer_null_array_initializer(const ASR::Variable_t* v) {
+        return ASR::is_a<ASR::Pointer_t>(*v->m_type) &&
+            ASRUtils::is_array(v->m_type) &&
+            ((v->m_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value)) ||
+             (v->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value)));
+    }
+
+    bool has_pointer_null_array_initializer(ASR::expr_t* expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr)) {
+            return false;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        return has_pointer_null_array_initializer(ASR::down_cast<ASR::Variable_t>(sym));
+    }
+
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false,
@@ -6750,11 +6771,16 @@ public:
         // Use the array element *storage* type (e.g. logical arrays are i8-backed).
         llvm::Type* llvm_data_type = llvm_utils->get_el_type(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
+        bool pointer_null_array_init = has_pointer_null_array_initializer(expr);
         if( is_malloc_array_type && !is_list && !is_data_only ) {
             ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
             if(ASRUtils::is_character(*m_type)){
-                llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
-                builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
+                if (pointer_null_array_init) {
+                    arr_descr->reset_is_allocated_flag(type_, ptr_, llvm_data_type);
+                } else {
+                    llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
+                    builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
+                }
             } else if (ASRUtils::non_unlimited_polymorphic_class(m_type)){ 
                 // For polymorphic allocatable arrays, set data pointer to NULL initially.
                 // The wrapper will be allocated when `allocate` is called.
@@ -6803,7 +6829,8 @@ public:
                 }
             }
         }
-        const bool special_array_type = ASRUtils::is_character(*m_type) || ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
+        const bool special_array_type = ASRUtils::is_character(*m_type) ||
+            ASRUtils::non_unlimited_polymorphic_class(m_type); // already Nullified
         if( is_array_type && is_malloc_array_type &&
             !is_list && !is_data_only && !special_array_type) {
             // Set allocatable arrays as unallocated
@@ -7555,12 +7582,15 @@ public:
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
-        if (v->m_value != nullptr) {
-            this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
-        } else {
-            this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
+        bool pointer_null_array_init = has_pointer_null_array_initializer(v);
+        if (!pointer_null_array_init) {
+            if (v->m_value != nullptr) {
+                this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
+            } else {
+                this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
+            }
         }
-        llvm::Value *init_value = tmp;
+        llvm::Value *init_value = pointer_null_array_init ? nullptr : tmp;
         auto is_array_const_or_ctor = [](ASR::expr_t* e) {
             return e && (ASR::is_a<ASR::ArrayConstant_t>(*e) ||
                          ASR::is_a<ASR::ArrayConstructor_t>(*e));
@@ -7623,29 +7653,28 @@ public:
                 strings_to_be_deallocated.push_back(al, llvm_utils->CreateLoad2(v_llvm_type, target_var, v->m_is_volatile));
             }
         } else if(ASRUtils::is_array(v->m_type) &&
-                (ASR::is_a<ASR::PointerNullConstant_t>(*v->m_symbolic_value) ||
-                (v->m_value && ASR::is_a<ASR::PointerNullConstant_t>(*v->m_value)))){
+                pointer_null_array_init){
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*v->m_type));
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
                 if (v->m_storage == ASR::storage_typeType::Save) {
-                    // Save pointer arrays are globals initialized to null,
-                    // which already represents "pointer not associated".
-                    // Attempting to dereference the null pointer to set
-                    // the descriptor's data field would segfault.
-                } else {
-                    llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
-                        ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
-                        ASRUtils::type_get_past_allocatable_pointer(v->m_type),
-                        llvm_utils->get_el_type(
-                            ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
-                            ASRUtils::extract_type(v->m_type),
-                            module.get()),
-                        false);
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(
-                        array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
-                    builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
+                    return;
                 }
+                llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
+                    ASRUtils::type_get_past_allocatable_pointer(v->m_type),
+                    llvm_utils->get_el_type(
+                        ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                        ASRUtils::extract_type(v->m_type),
+                        module.get()),
+                    false);
+                llvm::Type* const data_type = llvm_utils->get_el_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
+                    ASRUtils::extract_type(v->m_type),
+                    module.get());
+                arr_descr->reset_is_allocated_flag(array_desc_type,
+                    llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var),
+                    data_type);
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
                 && v->m_value
