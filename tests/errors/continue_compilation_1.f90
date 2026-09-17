@@ -1409,3 +1409,18 @@ subroutine structure_constructor_null_component_6()
     v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
     a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
 end subroutine
+
+subroutine derived_type_scalar_broadcast_parameter_array_oob()
+    implicit none
+    type :: t_scalar_broadcast_oob
+        integer :: h
+    end type
+    type(t_scalar_broadcast_oob), parameter :: a(2) = t_scalar_broadcast_oob(7)
+    type(t_scalar_broadcast_oob), parameter :: b(0:1) = t_scalar_broadcast_oob(8)
+    type(t_scalar_broadcast_oob), parameter :: c(0:1, -2:-1) = t_scalar_broadcast_oob(9)
+    integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+    integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+end subroutine

@@ -29,6 +29,10 @@ integer, parameter :: pz_h = pz(2, 1)%h
 real, parameter :: pz_r = pz(1, 2)%r
 integer, parameter :: pz_hs(2, 2) = pz%h
 integer, parameter :: pz_h_plus = pz_h + 1
+type(t), parameter :: pz_lb(0:1, -2:-1) = t(13, 8.5)
+integer, parameter :: pz_lb_h1 = pz_lb(0, -2)%h
+integer, parameter :: pz_lb_h2 = pz_lb(1, -1)%h
+real, parameter :: pz_lb_r = pz_lb(1, -2)%r
 type(nested_outer), parameter :: pnest(3) = nested_outer(nested_mid(nested_leaf(31, "fox")))
 integer, parameter :: pnest_h = pnest(2)%mid%leaf%h
 character(len=3), parameter :: pnest_tag = pnest(3)%mid%leaf%tag
@@ -109,6 +113,9 @@ if (pz_h /= 11) error stop 27
 if (abs(pz_r - 6.5) > 1.e-6) error stop 28
 if (any(pz_hs /= 11)) error stop 29
 if (pz_h_plus /= 12) error stop 30
+if (pz_lb_h1 /= 13) error stop 31
+if (pz_lb_h2 /= 13) error stop 37
+if (abs(pz_lb_r - 8.5) > 1.e-6) error stop 38
 if (pnest_h /= 31) error stop 32
 if (pnest_tag /= "fox") error stop 33
 if (any(pnest_hs /= 31)) error stop 34

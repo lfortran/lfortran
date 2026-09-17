@@ -742,6 +742,36 @@ semantic error: null() cannot be the value of component 'p' of type type(c_ptr),
 1345 |     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
      |                                                                       ^^^^^^ 
 
+semantic error: Array index 3 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1421:32
+     |
+1421 |     integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1422:32
+     |
+1422 |     integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1423:32
+     |
+1423 |     integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (0 to 1) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1424:32
+     |
+1424 |     integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (-2 to -1) in dimension 2
+    --> tests/errors/continue_compilation_1.f90:1425:32
+     |
+1425 |     integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+     |                                ^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
