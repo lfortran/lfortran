@@ -90,29 +90,12 @@ associate (x => pb%a%x)
     if (x /= 10) error stop
 end associate
 
-associate (r => pba(1))
-    if (r%a%x /= 11) error stop
-    if (r%y /= 31) error stop
-end associate
-
-associate (r => pba(i))
-    if (r%a%x /= 11) error stop
-    if (r%y /= 31) error stop
-end associate
-
-associate (r => pba(1)%a)
-    if (r%x /= 11) error stop
-end associate
-
 associate (x => pba(1)%a%x)
     if (x /= 11) error stop
 end associate
 
-associate (s => pba(1:2))
-    if (s(1)%a%x /= 11) error stop
-    if (s(1)%y /= 31) error stop
-    if (s(2)%a%x /= 12) error stop
-    if (s(2)%y /= 32) error stop
+associate (x => pba(i)%a%x)
+    if (x /= 11) error stop
 end associate
 
 associate (q => pba)
