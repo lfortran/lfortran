@@ -1,5 +1,5 @@
 ! Test derived type declared inside procedures with component default initializers (Issue #13108)
-module derived_type_with_default_init_08_mod
+module derived_type_with_default_init_09_mod
     implicit none
 contains
 
@@ -13,7 +13,7 @@ contains
         obj%val = obj%val + 1
     end function test_func
 
-end module derived_type_with_default_init_08_mod
+end module derived_type_with_default_init_09_mod
 
 subroutine test_sub(res)
     implicit none
@@ -26,8 +26,8 @@ subroutine test_sub(res)
     obj%count = obj%count + 10
 end subroutine test_sub
 
-program derived_type_with_default_init_08
-    use derived_type_with_default_init_08_mod
+program derived_type_with_default_init_09
+    use derived_type_with_default_init_09_mod
     implicit none
 
     interface
@@ -68,4 +68,4 @@ contains
         obj%num = obj%num + 1
     end subroutine test_internal
 
-end program derived_type_with_default_init_08
+end program derived_type_with_default_init_09
