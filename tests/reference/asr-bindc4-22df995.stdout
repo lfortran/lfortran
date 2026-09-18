@@ -154,7 +154,9 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     2 c_ptr
                                     Source
                                     Public
@@ -176,15 +178,21 @@
                                     [c_ptr]
                                     Local
                                     (PointerNullConstant
-                                        (CPtr)
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Var 2 c_ptr)
                                     )
                                     (PointerNullConstant
-                                        (CPtr)
+                                        (CPtr
+                                            CPointer
+                                        )
                                         (Var 2 c_ptr)
                                     )
                                     Default
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     2 c_ptr
                                     Source
                                     Public
@@ -461,7 +469,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -492,7 +502,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -575,7 +587,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -617,7 +631,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -700,7 +716,9 @@
                                                 )
                                                 ()
                                             )
-                                            (CPtr)
+                                            (CPtr
+                                                CPointer
+                                            )
                                             ()
                                         )
                                         (IntegerConstant 0 (Integer 8) Decimal)
@@ -743,7 +761,9 @@
                                         )
                                         ()
                                     )
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (Logical 4)
@@ -764,7 +784,9 @@
                                 (Var 2 queries)
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (Logical 4)
@@ -784,7 +806,9 @@
                             (Var 2 queries)
                             (PointerToCPtr
                                 (Var 2 y)
-                                (CPtr)
+                                (CPtr
+                                    CPointer
+                                )
                                 ()
                             )
                             (Logical 4)
@@ -811,7 +835,9 @@
                     (Assignment
                         (Var 2 queries)
                         (PointerNullConstant
-                            (CPtr)
+                            (CPtr
+                                CPointer
+                            )
                             (Var 2 c_null_ptr)
                         )
                         ()

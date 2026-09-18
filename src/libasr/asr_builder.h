@@ -176,7 +176,7 @@ class ASRBuilder {
     }
 
     ASR::ttype_t* CPtr() {
-        return TYPE(ASR::make_CPtr_t(al, loc));
+        return TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
     }
 
     // Expressions -------------------------------------------------------------

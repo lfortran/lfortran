@@ -7221,18 +7221,6 @@ public:
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
         ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(value));
-        if (!cptr_expr_type_declarations_match(target, value)) {
-            std::string ltype = ASRUtils::type_to_str_fortran_expr(
-                ASRUtils::expr_type(target), target);
-            std::string rtype = ASRUtils::type_to_str_fortran_expr(
-                ASRUtils::expr_type(value), value);
-            diag.semantic_error_label(
-                "Type mismatch in assignment, the types must be compatible",
-                {target->base.loc, value->base.loc},
-                "type mismatch (" + ltype + " and " + rtype + ")"
-            );
-            throw SemanticAbort();
-        }
         // Shape conformance is a rule of intrinsic assignment only. A defined
         // assignment passes both sides as actual arguments, so the value may be
         // an array constructor assigned to a scalar, or an array of a different
@@ -8950,18 +8938,6 @@ public:
                             }
                         }
                         // Check if types are equal
-                        if (!skip_check && !cptr_expr_type_declarations_match(
-                                f->m_args[i + offset], passed_arg)) {
-                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
-                            diag.add(diag::Diagnostic(
-                                "Type mismatch in argument `" + std::string(v->m_name) +
-                                "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                        diag::Label("", {passed_arg->base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
                         if (!skip_check && !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset])) {
                             std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
                             std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);

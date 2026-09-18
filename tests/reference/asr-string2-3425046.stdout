@@ -197,7 +197,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
+                                                    (CPtr
+                                                        CPointer
+                                                    )
                                                     2 c_ptr
                                                     Source
                                                     Public
@@ -221,7 +223,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
+                                                    (CPtr
+                                                        CPointer
+                                                    )
                                                     2 c_ptr
                                                     Source
                                                     Public
@@ -443,7 +447,9 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (CPtr)
+                                                                    (CPtr
+                                                                        CPointer
+                                                                    )
                                                                     4 c_ptr
                                                                     BindC
                                                                     Public
@@ -461,7 +467,9 @@
                                                         })
                                                     c_strlen
                                                     (FunctionType
-                                                        [(CPtr)]
+                                                        [(CPtr
+                                                            CPointer
+                                                        )]
                                                         (Integer 8)
                                                         BindC
                                                         Interface
@@ -493,7 +501,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
+                                                    (CPtr
+                                                        CPointer
+                                                    )
                                                     4 c_ptr
                                                     Source
                                                     Public
@@ -561,7 +571,9 @@
                                         })
                                     f_string_cptr
                                     (FunctionType
-                                        [(CPtr)]
+                                        [(CPtr
+                                            CPointer
+                                        )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )
@@ -628,7 +640,9 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (CPtr)
+                                                    (CPtr
+                                                        CPointer
+                                                    )
                                                     4 c_ptr
                                                     Source
                                                     Public
@@ -694,7 +708,9 @@
                                         })
                                     f_string_cptr_n
                                     (FunctionType
-                                        [(CPtr)
+                                        [(CPtr
+                                            CPointer
+                                        )
                                         (Integer 8)]
                                         (String 1 (FunctionParam
                                             1

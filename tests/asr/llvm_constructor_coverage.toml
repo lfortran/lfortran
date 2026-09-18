@@ -63,6 +63,7 @@
 "ttype.Dict" = "helper:LLVM type lowering"
 "ttype.Pointer" = "helper:LLVM type lowering"
 "ttype.Allocatable" = "helper:LLVM type lowering"
+"ttype.CPtr" = "helper:LLVM type lowering"
 "ttype.TypeParameter" = "helper:LLVM type lowering"
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"

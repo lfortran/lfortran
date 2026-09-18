@@ -100,7 +100,9 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     2 c_ptr
                                     Source
                                     Public

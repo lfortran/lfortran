@@ -484,8 +484,6 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::StringConstant:
         case ASR::exprType::IntegerConstant:
         case ASR::exprType::LogicalConstant:
-        case ASR::exprType::PointerNullConstant:
-        case ASR::exprType::ArrayConstant:
         case ASR::exprType::UnsignedIntegerConstant:
         case ASR::exprType::ComplexConstant:
         {
@@ -691,6 +689,91 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
         }
     }
 
+}
+
+ASR::cptr_kindType get_cptr_kind_from_type(ASR::ttype_t* type)
+{
+    if (type == nullptr) {
+        return ASR::cptr_kindType::CPtrUnspecified;
+    }
+    ASR::ttype_t* scalar = ASRUtils::extract_type(type);
+    if (!ASR::is_a<ASR::CPtr_t>(*scalar)) {
+        return ASR::cptr_kindType::CPtrUnspecified;
+    }
+    return ASR::down_cast<ASR::CPtr_t>(scalar)->m_kind;
+}
+
+ASR::symbol_t* get_cptr_type_declaration_from_expr(ASR::expr_t* expression)
+{
+    if (expression == nullptr) {
+        return nullptr;
+    }
+    switch (expression->type) {
+        case ASR::exprType::PointerNullConstant: {
+            ASR::PointerNullConstant_t* pnc =
+                ASR::down_cast<ASR::PointerNullConstant_t>(expression);
+            return get_cptr_type_declaration_from_expr(pnc->m_var_expr);
+        }
+        case ASR::exprType::PointerToCPtr: {
+            return nullptr;
+        }
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym =
+                ASR::down_cast<ASR::Var_t>(expression)->m_v;
+            ASR::symbol_t* sym_orig = ASRUtils::symbol_get_past_external(sym);
+            if (ASR::is_a<ASR::Struct_t>(*sym_orig)) {
+                return sym_orig;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*sym_orig)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym_orig);
+                return ASRUtils::symbol_get_past_external(var->m_type_declaration);
+            }
+            if (ASR::is_a<ASR::Function_t>(*sym_orig)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym_orig);
+                return func->m_return_var != nullptr
+                    ? get_cptr_type_declaration_from_expr(func->m_return_var)
+                    : nullptr;
+            }
+            return nullptr;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(expression);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(member->m_m);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            return ASRUtils::symbol_get_past_external(var->m_type_declaration);
+        }
+        case ASR::exprType::ArrayItem: {
+            return get_cptr_type_declaration_from_expr(
+                ASR::down_cast<ASR::ArrayItem_t>(expression)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return get_cptr_type_declaration_from_expr(
+                ASR::down_cast<ASR::ArraySection_t>(expression)->m_v);
+        }
+        case ASR::exprType::Cast: {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expression);
+            return get_cptr_type_declaration_from_expr(cast->m_arg);
+        }
+        case ASR::exprType::ArrayPhysicalCast: {
+            return get_cptr_type_declaration_from_expr(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression)->m_arg);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call =
+                ASR::down_cast<ASR::FunctionCall_t>(expression);
+            ASR::Function_t* func = get_function(func_call->m_name);
+            return func != nullptr && func->m_return_var != nullptr
+                ? get_cptr_type_declaration_from_expr(func->m_return_var)
+                : nullptr;
+        }
+        default: {
+            return nullptr;
+        }
+    }
 }
 
 ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression)

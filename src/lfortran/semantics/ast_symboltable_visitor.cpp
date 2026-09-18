@@ -2285,10 +2285,10 @@ public:
                     }
                     if (is_iso_c_ptr_type_symbol(v)) {
                         type_decl = v;
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                        type = make_cptr_type(x.base.base.loc, v);
                     } else if (is_iso_c_funptr_type_symbol(v)) {
                         type_decl = v;
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                        type = make_cptr_type(x.base.base.loc, v);
                     } else {
                         type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                         type_decl = v;

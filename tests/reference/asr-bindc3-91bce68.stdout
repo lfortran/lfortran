@@ -80,7 +80,9 @@
                                     ()
                                     ()
                                     Default
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     2 c_ptr
                                     Source
                                     Public
@@ -160,7 +162,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -192,7 +196,9 @@
                             [(BitCast
                                 (PointerToCPtr
                                     (Var 2 x)
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)
@@ -209,7 +215,9 @@
                                         )
                                         ()
                                     )
-                                    (CPtr)
+                                    (CPtr
+                                        CPointer
+                                    )
                                     ()
                                 )
                                 (IntegerConstant 0 (Integer 8) Decimal)

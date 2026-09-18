@@ -106,6 +106,8 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
+ASR::cptr_kindType get_cptr_kind_from_type(ASR::ttype_t* type);
+ASR::symbol_t* get_cptr_type_declaration_from_expr(ASR::expr_t* expression);
 
 // Resolve type-bound assignment(=) (~assign) on a struct or its ancestors.
 // Returns the CustomOperator symbol, or nullptr if none is found.
@@ -1308,6 +1310,14 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind == ASR::cptr_kindType::CFunPointer) {
+                return "type(c_funptr)";
+            }
+            if (kind == ASR::cptr_kindType::CPointer) {
+                return "type(c_ptr)";
+            }
             if (struct_sym != nullptr) {
                 return "type(" + std::string(ASRUtils::symbol_name(
                     ASRUtils::symbol_get_past_external(struct_sym))) + ")";
@@ -1357,25 +1367,10 @@ static inline std::string type_to_str_fortran_expr(const ASR::ttype_t* t, ASR::e
         LCOMPILERS_ASSERT_MSG(expr != nullptr, "`expr` should be non-null for `StructType`");
         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
     } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
-                   const_cast<ASR::ttype_t*>(t))) && expr != nullptr) {
-        if (ASR::is_a<ASR::Var_t>(*expr)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(expr)->m_v);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-            }
-        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-            }
-        } else if (ASR::is_a<ASR::PointerNullConstant_t>(*expr)) {
-            ASR::PointerNullConstant_t* pnc =
-                ASR::down_cast<ASR::PointerNullConstant_t>(expr);
-            if (pnc->m_var_expr != nullptr) {
-                return type_to_str_fortran_expr(t, pnc->m_var_expr);
-            }
+                   const_cast<ASR::ttype_t*>(t)))) {
+        if (ASRUtils::get_cptr_kind_from_type(const_cast<ASR::ttype_t*>(t))
+                == ASR::cptr_kindType::CPtrUnspecified && expr != nullptr) {
+            struct_sym = ASRUtils::get_cptr_type_declaration_from_expr(expr);
         }
     }
 
@@ -1394,25 +1389,10 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
             struct_sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
         }
     } else if (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(
-                   const_cast<ASR::ttype_t*>(t))) && expr != nullptr) {
-        if (ASR::is_a<ASR::Var_t>(*expr)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(expr)->m_v);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-            }
-        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                struct_sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-            }
-        } else if (ASR::is_a<ASR::PointerNullConstant_t>(*expr)) {
-            ASR::PointerNullConstant_t* pnc =
-                ASR::down_cast<ASR::PointerNullConstant_t>(expr);
-            if (pnc->m_var_expr != nullptr) {
-                return type_to_str_with_kind(t, pnc->m_var_expr);
-            }
+                   const_cast<ASR::ttype_t*>(t)))) {
+        if (ASRUtils::get_cptr_kind_from_type(const_cast<ASR::ttype_t*>(t))
+                == ASR::cptr_kindType::CPtrUnspecified && expr != nullptr) {
+            struct_sym = ASRUtils::get_cptr_type_declaration_from_expr(expr);
         }
     }
 
@@ -2574,6 +2554,13 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
                                            encode_dimensions_, set_dimensional_hint) + "]";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind != ASR::cptr_kindType::CPtrUnspecified) {
+                std::string name = kind == ASR::cptr_kindType::CFunPointer
+                    ? "c_funptr" : "c_ptr";
+                return use_underscore_sep ? "CPtr_" + name + "_" : "CPtr[" + name + "]";
+            }
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
@@ -2746,6 +2733,12 @@ static inline std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::
             return "list[" + type_to_str_python_symbol(l->m_type, nullptr) + "]";
         }
         case ASR::ttypeType::CPtr: {
+            ASR::cptr_kindType kind = ASRUtils::get_cptr_kind_from_type(
+                const_cast<ASR::ttype_t*>(t));
+            if (kind != ASR::cptr_kindType::CPtrUnspecified) {
+                return kind == ASR::cptr_kindType::CFunPointer
+                    ? "CPtr[c_funptr]" : "CPtr[c_ptr]";
+            }
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
@@ -4204,6 +4197,26 @@ static inline ASR::symbol_t* import_type_declaration(Allocator &al,
     return imported;
 }
 
+static inline void set_cptr_type_declaration(ASR::ttype_t* type,
+        ASR::symbol_t* type_declaration) {
+    if (type == nullptr || type_declaration == nullptr) {
+        return;
+    }
+    ASR::ttype_t* scalar = ASRUtils::extract_type(type);
+    if (ASR::is_a<ASR::CPtr_t>(*scalar)) {
+        ASR::CPtr_t* cptr = ASR::down_cast<ASR::CPtr_t>(scalar);
+        if (cptr->m_kind == ASR::cptr_kindType::CPtrUnspecified) {
+            std::string name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(type_declaration));
+            if (name == "c_funptr") {
+                cptr->m_kind = ASR::cptr_kindType::CFunPointer;
+            } else if (name == "c_ptr") {
+                cptr->m_kind = ASR::cptr_kindType::CPointer;
+            }
+        }
+    }
+}
+
 inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
@@ -4215,6 +4228,7 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
 ) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
+    set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
@@ -4513,7 +4527,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         }
         case ASR::ttypeType::CPtr: {
             ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
-            return ASRUtils::TYPE(ASR::make_CPtr_t(al, ptr->base.base.loc));
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, ptr->base.base.loc, ptr->m_kind));
         }
         case ASR::ttypeType::List: {
             ASR::List_t* l = ASR::down_cast<ASR::List_t>(t);
@@ -4860,7 +4874,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, loc, tp->m_param));
         }
         case ASR::ttypeType::CPtr: {
-            return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::CPtr_t* ptr = ASR::down_cast<ASR::CPtr_t>(t);
+            return ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ptr->m_kind));
         }
         default : throw LCompilersException("Not implemented " + std::to_string(t->type));
     }
@@ -5316,6 +5331,26 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
 
+static inline bool cptr_type_declarations_match(ASR::ttype_t* left_type,
+        ASR::ttype_t* right_type, ASR::expr_t* left_expr,
+        ASR::expr_t* right_expr) {
+    ASR::cptr_kindType left_kind = ASRUtils::get_cptr_kind_from_type(left_type);
+    ASR::cptr_kindType right_kind = ASRUtils::get_cptr_kind_from_type(right_type);
+    if (left_kind != ASR::cptr_kindType::CPtrUnspecified
+            && right_kind != ASR::cptr_kindType::CPtrUnspecified) {
+        return left_kind == right_kind;
+    }
+    ASR::symbol_t* left = left_expr != nullptr
+        ? ASRUtils::get_cptr_type_declaration_from_expr(left_expr) : nullptr;
+    ASR::symbol_t* right = right_expr != nullptr
+        ? ASRUtils::get_cptr_type_declaration_from_expr(right_expr) : nullptr;
+    if (left == nullptr || right == nullptr) {
+        return true;
+    }
+    return ASRUtils::symbol_get_past_external(left)
+        == ASRUtils::symbol_get_past_external(right);
+}
+
 // Compares two ASR types for structural equality.
 //
 // Parameters:
@@ -5401,7 +5436,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return (a2->m_kind == b2->m_kind);
             }
             case ASR::ttypeType::CPtr: {
-                return true;
+                return cptr_type_declarations_match(a, b, a_expr, b_expr);
             }
             case ASR::ttypeType::SymbolicExpression: {
                 return true;
@@ -5605,7 +5640,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 return (a2->m_kind == b2->m_kind);
             }
             case ASR::ttypeType::CPtr: {
-                return true;
+                return cptr_type_declarations_match(a, b, a_expr, b_expr);
             }
             case ASR::ttypeType::SymbolicExpression: {
                 return true;
@@ -6271,6 +6306,7 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
+        ASR::ttype_t* pnc_type = pnc->m_type;
         if (pnc->m_var_expr != nullptr) {
             // The var_expr references a type-identity symbol in another scope
             // which may not be accessible from the current scope. Replace it
@@ -6283,12 +6319,15 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
                     ASR::expr_t* new_var_expr = ASRUtils::EXPR(
                         ASR::make_Var_t(al, init_expr->base.loc, resolved));
                     return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
-                        al, init_expr->base.loc, pnc->m_type, new_var_expr));
+                        al, init_expr->base.loc, pnc_type, new_var_expr));
                 }
             }
             // If we can't resolve, strip var_expr to avoid scope violations
             return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
-                al, init_expr->base.loc, pnc->m_type, nullptr));
+                al, init_expr->base.loc, pnc_type, nullptr));
+        } else if (pnc_type != pnc->m_type) {
+            return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, init_expr->base.loc, pnc_type, nullptr));
         }
     }
 
@@ -9061,7 +9100,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
                         ASR::asr_t* get_pointer = ASR::make_GetPointer_t(al, arg->base.loc, arg, pointer_type_, nullptr);
 
-                        ASR::ttype_t* cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, arg->base.loc));
+                        ASR::ttype_t* cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, arg->base.loc, ASR::cptr_kindType::CPtrUnspecified));
 
                         ASR::asr_t* pointer_to_cptr = ASR::make_PointerToCPtr_t(al, arg->base.loc, ASRUtils::EXPR(get_pointer), cptr, nullptr);
 
