@@ -5258,7 +5258,13 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if(x.m_items[i]->type == AST::decl_stmtType::Template){
-                visit_decl_stmt(*x.m_items[i]);
+                try {
+                    visit_decl_stmt(*x.m_items[i]);
+                } catch (const SemanticAbort &a) {
+                    if (!compiler_options.continue_compilation) {
+                        throw a;
+                    }
+                }
             }
         }
 
@@ -5476,7 +5482,13 @@ public:
 
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            visit_decl_stmt(*x.m_items[i]);
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         Vec<ASR::stmt_t*> body;

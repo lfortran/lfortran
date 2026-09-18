@@ -2053,7 +2053,11 @@ public:
             }
             if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
                 // See the comment in visit_Subroutine
-                check_experimental_templates(x.m_items[i]->base.loc);
+                try {
+                    check_experimental_templates(x.m_items[i]->base.loc);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
             } else {
                 visit_decl_stmt(*x.m_items[i]);
             }
@@ -2783,6 +2787,7 @@ public:
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
+        Location deferred_loc = x.base.base.loc;
         bool is_bindc = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
@@ -2806,7 +2811,10 @@ public:
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
                     if (!is_abstract) is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
-                    if (!is_deferred) is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
+                    if (!is_deferred && simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
+                        is_deferred = true;
+                        deferred_loc = simple_attr->base.base.loc;
+                    }
                 }
                 default:
                     break;
@@ -2817,7 +2825,7 @@ public:
             // `deferred` attribute of a type bound procedure is standard
             // Fortran and is a different AST node (DerivedTypeProc), so it is
             // not affected here.
-            check_experimental_templates(x.base.base.loc);
+            check_experimental_templates(deferred_loc);
         }
         if ((is_requirement || is_template) && is_deferred) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));

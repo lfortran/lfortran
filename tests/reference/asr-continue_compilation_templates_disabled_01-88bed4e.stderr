@@ -1,17 +1,35 @@
 semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
-  --> tests/errors/continue_compilation_templates_disabled_01.f90:10:1
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:12:1
    |
-10 | template add_t(t)
+12 | template add_t(t)
    | ^ pass `--enable-experimental-feature templates` to enable them
 
 semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
-  --> tests/errors/continue_compilation_templates_disabled_01.f90:17:5
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:19:5
    |
-17 |     require :: add_r(integer)
+19 |     require :: add_r(integer)
    |     ^ pass `--enable-experimental-feature templates` to enable them
 
 semantic error: Derived type `nosuchtype` is not defined
-  --> tests/errors/continue_compilation_templates_disabled_01.f90:24:5
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:31:5
    |
-24 |     type(nosuchtype) :: v
+31 |     type(nosuchtype) :: v
    |     ^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:41:1
+   |
+41 | instantiate add_t(integer)
+   | ^ pass `--enable-experimental-feature templates` to enable them
+
+semantic error: Function 'nosuchfunction1' not found (not user defined nor intrinsic)
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:26:9
+   |
+26 |     x = nosuchfunction1(x)
+   |         ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'nosuchfunction2' not found (not user defined nor intrinsic)
+  --> tests/errors/continue_compilation_templates_disabled_01.f90:42:5
+   |
+42 | i = nosuchfunction2(1)
+   |     ^^^^^^^^^^^^^^^^^^ 

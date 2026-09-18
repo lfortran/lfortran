@@ -3,7 +3,9 @@
 ! `--continue-compilation` each rejected construct must be reported exactly
 ! once (it is checked while the ASR is built, and both the symbol table and the
 ! body visitor reach some of them), and compilation must carry on and still
-! report the ordinary errors that follow.
+! report the ordinary errors that follow, both in declarations and in
+! executable statements, including statements of the very program unit that
+! contains the rejected construct.
 module continue_compilation_templates_disabled_01_mod
 implicit none
 
@@ -19,6 +21,11 @@ contains
     f = x + 1
     end function
 
+    subroutine h(x)
+    integer, intent(inout) :: x
+    x = nosuchfunction1(x)
+    end subroutine
+
     integer function g(x)
     integer, intent(in) :: x
     type(nosuchtype) :: v
@@ -30,4 +37,7 @@ end module
 program continue_compilation_templates_disabled_01
 use continue_compilation_templates_disabled_01_mod
 implicit none
+integer :: i
+instantiate add_t(integer)
+i = nosuchfunction2(1)
 end program
