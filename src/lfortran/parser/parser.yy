@@ -410,6 +410,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <vec_ast> deferred_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -768,6 +769,12 @@ derived_type_decl
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+// F2028 R1616: DEFERRED TYPE :: deferred-arg-name-list
+deferred_type_decl
+    : KW_DEFERRED KW_TYPE "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
     ;
 
 
@@ -1722,6 +1729,7 @@ sep_one
 
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    | decl_statements deferred_type_decl { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;

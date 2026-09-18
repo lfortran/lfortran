@@ -2869,6 +2869,39 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         nullptr, 0, nullptr, 0);
 }
 
+// A `deferred type :: t1, t2` statement (F2028 R1616) declares one deferred
+// type argument per name, each of which becomes its own DerivedType node with
+// the `deferred` attribute. Each node is located at its own name, so that
+// diagnostics about one declared type (a redeclaration, for example) point at
+// that name only, exactly like the individual names of an `integer :: a, b`
+// declaration. The `deferred` attribute and the trivia (the comments following
+// the statement) belong to the statement as a whole: the attribute keeps the
+// statement location and the trivia is attached to the last node only.
+Vec<ast_t*> DEFERRED_TYPES(Allocator &al,
+        const Vec<ast_t*> &names,
+        const ast_t *trivia,
+        Location &l) {
+    Vec<ast_t*> types;
+    types.reserve(al, names.size());
+    for (size_t i = 0; i < names.size(); i++) {
+        const ast_t *t = (i + 1 == names.size()) ? trivia : nullptr;
+        types.push_back(al, TYPEPARAMETER0(al,
+            make_SimpleAttribute_t(al, l, simple_attributeType::AttrDeferred),
+            names[i], t, names[i]->loc));
+    }
+    return types;
+}
+
+// Appends all `items` at the end of `list`; used by declaration statements
+// that expand into more than one AST node.
+Vec<ast_t*> LIST_EXTEND(Allocator &al, Vec<ast_t*> list,
+        const Vec<ast_t*> &items) {
+    for (size_t i = 0; i < items.size(); i++) {
+        list.push_back(al, items[i]);
+    }
+    return list;
+}
+
 ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         char** a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_contains, size_t n_contains,
