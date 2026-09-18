@@ -272,6 +272,22 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             }
             return nullptr; // If no struct symbol found in arguments or value
         }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* array_constant =
+                ASR::down_cast<ASR::ArrayConstant_t>(expression);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(array_constant->m_type))) {
+                return nullptr;
+            }
+            if (ASRUtils::get_fixed_size_of_array(array_constant->m_type) < 1) {
+                return nullptr;
+            }
+            ASR::expr_t* first = ((ASR::expr_t**)array_constant->m_data)[0];
+            if (first == nullptr) {
+                return nullptr;
+            }
+            return ASRUtils::get_struct_sym_from_struct_expr(first);
+        }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
             return ASRUtils::get_struct_sym_from_struct_expr(array_item->m_v);
@@ -468,7 +484,6 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::StringConstant:
         case ASR::exprType::IntegerConstant:
         case ASR::exprType::LogicalConstant:
-        case ASR::exprType::ArrayConstant: 
         case ASR::exprType::PointerNullConstant:
         case ASR::exprType::UnsignedIntegerConstant:
         case ASR::exprType::ComplexConstant:
@@ -1531,6 +1546,82 @@ ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
     return stc->m_args[i].m_value;
 }
 
+ASR::expr_t* get_struct_member_value_from_constant_array(Allocator &al,
+        const Location& loc, ASR::expr_t* value, ASR::symbol_t* member,
+        ASR::ttype_t* result_type) {
+    if (value == nullptr) {
+        return nullptr;
+    }
+    ASR::expr_t* scalar_value = get_struct_member_value_from_constant(value, member);
+    if (scalar_value) {
+        if (ASRUtils::is_array(result_type)
+                && !ASRUtils::is_array(ASRUtils::expr_type(scalar_value))) {
+            ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
+                al, scalar_value->base.loc, scalar_value, result_type);
+            if (broadcast) {
+                return broadcast;
+            }
+        }
+        return scalar_value;
+    }
+
+    ASR::expr_t* expr_value = ASRUtils::expr_value(value);
+    if (expr_value && expr_value != value) {
+        value = expr_value;
+    }
+
+    Vec<ASR::expr_t*> elements;
+    if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        ASR::ArrayConstant_t* array_constant =
+            ASR::down_cast<ASR::ArrayConstant_t>(value);
+        if (!ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_array(array_constant->m_type))) {
+            return nullptr;
+        }
+        int64_t size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+        if (size < 0) {
+            return nullptr;
+        }
+        elements.reserve(al, size);
+        for (int64_t i = 0; i < size; i++) {
+            ASR::expr_t* element =
+                ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+            ASR::expr_t* member_value =
+                get_struct_member_value_from_constant(element, member);
+            if (member_value == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(al, member_value);
+        }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
+        ASR::ArrayConstructor_t* array_constructor =
+            ASR::down_cast<ASR::ArrayConstructor_t>(value);
+        elements.reserve(al, array_constructor->n_args);
+        for (size_t i = 0; i < array_constructor->n_args; i++) {
+            ASR::expr_t* element =
+                ASRUtils::expr_value(array_constructor->m_args[i]);
+            if (element == nullptr) {
+                element = array_constructor->m_args[i];
+            }
+            ASR::expr_t* member_value =
+                get_struct_member_value_from_constant(element, member);
+            if (member_value == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(al, member_value);
+        }
+    } else {
+        return nullptr;
+    }
+
+    if (!ASRUtils::is_array(result_type)) {
+        return nullptr;
+    }
+    return ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+        elements.p, elements.size(), result_type,
+        ASR::arraystorageType::ColMajor));
+}
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
@@ -1579,22 +1670,46 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 member_type = ASRUtils::make_Array_t_util(al, loc, member_type_, m_dims, n_dims);
             }
         }
+        ASR::symbol_t* base_symbol = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+        bool base_is_parameter = base_symbol != nullptr &&
+            ASR::is_a<ASR::Variable_t>(*base_symbol) &&
+            ASR::down_cast<ASR::Variable_t>(base_symbol)->m_storage ==
+                ASR::storage_typeType::Parameter;
+        ASR::ttype_t* base_expr_type = ASRUtils::expr_type(ASRUtils::EXPR(v_var));
+        if (base_is_parameter && ASRUtils::is_array(base_expr_type) &&
+                !ASRUtils::is_array(member_type)) {
+            n_dims = ASRUtils::extract_dimensions_from_ttype(base_expr_type, m_dims);
+            Vec<ASR::dimension_t> m_dims_vec;
+            m_dims_vec.from_pointer_n(m_dims, n_dims);
+            member_type = ASRUtils::duplicate_type(al, member_type, &m_dims_vec);
+        }
 
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
         ASR::expr_t* value = nullptr;
-        v = ASRUtils::symbol_get_past_external(v);
-        if (v != nullptr &&
-            ASR::down_cast<ASR::Variable_t>(v)->m_storage == ASR::storage_typeType::Parameter) {
-            if (member_variable->m_symbolic_value != nullptr) {
-                value = expr_value(member_variable->m_symbolic_value);
-            }
+        ASR::expr_t* base_value = base_is_parameter ?
+            ASRUtils::expr_value(ASRUtils::EXPR(v_var)) : nullptr;
+        if (base_is_parameter && base_value != nullptr) {
+            value = get_struct_member_value_from_constant_array(
+                al, loc, base_value, member, member_type);
+        }
+        v = base_symbol;
+        if (base_is_parameter) {
             ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
             ASR::expr_t* parameter_value = v_variable_s->m_value ?
                 v_variable_s->m_value : v_variable_s->m_symbolic_value;
-            ASR::expr_t* init_value = get_struct_member_value_from_constant(
-                parameter_value, member);
-            if (init_value != nullptr) {
-                value = init_value;
+            if (value == nullptr) {
+                ASR::expr_t* init_value = get_struct_member_value_from_constant_array(
+                    al, loc, parameter_value, member, member_type);
+                if (init_value != nullptr) {
+                    value = init_value;
+                }
+            }
+            if (value == nullptr && member_variable->m_symbolic_value != nullptr) {
+                value = expr_value(member_variable->m_symbolic_value);
+            }
+            if (value != nullptr && ASRUtils::is_array(ASRUtils::expr_type(value))
+                    && ASRUtils::is_character(*ASRUtils::expr_type(value))) {
+                value = nullptr;
             }
         }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),

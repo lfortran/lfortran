@@ -2999,6 +2999,57 @@ serialization_overrides = {
             },
         },
     },
+    "ArrayConstant": {
+        "order": ["n_data", "type", "data", "storage_format"],
+        "fields": {
+            "data": {
+                "write": """ASR::ttype_t* element_type = x.m_type;
+        while (ASR::is_a<ASR::Allocatable_t>(*element_type) ||
+                ASR::is_a<ASR::Array_t>(*element_type)) {
+            if (ASR::is_a<ASR::Allocatable_t>(*element_type)) {
+                element_type = ASR::down_cast<ASR::Allocatable_t>(element_type)->m_type;
+            } else {
+                element_type = ASR::down_cast<ASR::Array_t>(element_type)->m_type;
+            }
+        }
+        bool pointer_backed_constant =
+            ASR::is_a<ASR::StructType_t>(*element_type) ||
+            ASR::is_a<ASR::CPtr_t>(*element_type);
+        self().write_bool(pointer_backed_constant);
+        if (pointer_backed_constant) {
+            int64_t n_exprs = x.m_n_data / sizeof(ASR::expr_t*);
+            self().write_int64(n_exprs);
+            ASR::expr_t** data = (ASR::expr_t**)x.m_data;
+            for (int64_t i = 0; i < n_exprs; i++) {
+                self().write_bool(data[i] != nullptr);
+                if (data[i] != nullptr) {
+                    self().visit_expr(*data[i]);
+                }
+            }
+        } else {
+            self().write_void(x.m_data, x.m_n_data);
+        }""",
+                "read": """void *m_data = nullptr;
+        bool pointer_backed_constant = self().read_bool();
+        if (pointer_backed_constant) {
+            int64_t n_exprs = self().read_int64();
+            Vec<ASR::expr_t*> data;
+            data.reserve(al, n_exprs);
+            for (int64_t i = 0; i < n_exprs; i++) {
+                ASR::expr_t* value = nullptr;
+                if (self().read_bool()) {
+                    value = ASR::down_cast<ASR::expr_t>(self().deserialize_expr());
+                }
+                data.push_back(al, value);
+            }
+            m_data = data.p;
+            m_n_data = n_exprs * sizeof(ASR::expr_t*);
+        } else {
+            m_data = self().read_void(m_n_data);
+        }""",
+            },
+        },
+    },
 }
 
 
