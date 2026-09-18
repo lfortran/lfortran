@@ -1,0 +1,13 @@
+{
+    "basename": "ast-deferred_type_syntax_1-e541a41",
+    "cmd": "lfortran --continue-compilation --show-ast --no-color {infile}",
+    "infile": "tests/errors/deferred_type_syntax_1.f90",
+    "infile_hash": "6189f2b8212a82db127d7954eb64c88b8216ff4917b583cfc7b59df7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-deferred_type_syntax_1-e541a41.stdout",
+    "stdout_hash": "6b46f6b2d86a144f463766b7a24fb89ee046b5276d9661ac5d49fc9b",
+    "stderr": "ast-deferred_type_syntax_1-e541a41.stderr",
+    "stderr_hash": "352cd17a22781f752ed78d778132c6ce4f31d3bdb27fcf537e233f39",
+    "returncode": 1
+}

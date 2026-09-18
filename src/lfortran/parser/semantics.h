@@ -2846,9 +2846,6 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(attr, decl_attribute), attr.size(),  \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
-#define DERIVED_TYPE2(name, attr, trivia, l) \
-        TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
-
 
 #define UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
         name2char(name), \
