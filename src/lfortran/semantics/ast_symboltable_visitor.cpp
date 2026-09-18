@@ -1291,12 +1291,17 @@ public:
         in_Subroutine = true;
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                try {
+            try {
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    // A `require` of a templated procedure is consumed by the
+                    // templated branch above; every other one is dropped, so
+                    // this is the last point of ASR creation that sees it.
+                    check_experimental_templates(x.m_items[i]->base.loc);
+                } else {
                     visit_decl_stmt(*x.m_items[i]);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
                 }
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
         }
         in_Subroutine = old_in_Subroutine;
@@ -1368,6 +1373,7 @@ public:
         // would wrongly be seen as having no interface.
         std::vector<std::string> saved_external_procedures = external_procedures;
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             is_template = true;
 
             SetChar temp_args;
@@ -1484,12 +1490,17 @@ public:
                     }
                 }
             }
-            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                try {
+            try {
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    // A `require` of a templated procedure is consumed by the
+                    // templated branch above; every other one is dropped, so
+                    // this is the last point of ASR creation that sees it.
+                    check_experimental_templates(x.m_items[i]->base.loc);
+                } else {
                     visit_decl_stmt(*x.m_items[i]);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
                 }
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
             is_Function = false;
         }
@@ -1928,6 +1939,7 @@ public:
         std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
 
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             is_template = true;
 
             SetChar temp_args;
@@ -2039,7 +2051,14 @@ public:
                     }
                 }
             }
-            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
+            if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                // See the comment in visit_Subroutine
+                try {
+                    check_experimental_templates(x.m_items[i]->base.loc);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            } else {
                 visit_decl_stmt(*x.m_items[i]);
             }
             is_Function = false;
@@ -2768,6 +2787,7 @@ public:
         dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
+        Location deferred_loc = x.base.base.loc;
         bool is_bindc = false;
         AST::AttrExtends_t *attr_extend = nullptr;
         for( size_t i = 0; i < x.n_attrtype; i++ ) {
@@ -2791,11 +2811,21 @@ public:
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
                     if (!is_abstract) is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
-                    if (!is_deferred) is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
+                    if (!is_deferred && simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
+                        is_deferred = true;
+                        deferred_loc = simple_attr->base.base.loc;
+                    }
                 }
                 default:
                     break;
             }
+        }
+        if (is_deferred) {
+            // `deferred type :: t` declares a deferred (template) type. The
+            // `deferred` attribute of a type bound procedure is standard
+            // Fortran and is a different AST node (DerivedTypeProc), so it is
+            // not affected here.
+            check_experimental_templates(deferred_loc);
         }
         if ((is_requirement || is_template) && is_deferred) {
             ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
@@ -4746,6 +4776,7 @@ public:
     }
 
     void visit_Requirement(const AST::Requirement_t &x) {
+        check_experimental_templates(x.base.base.loc);
         is_requirement = true;
 
         SymbolTable *parent_scope = current_scope;
@@ -4852,6 +4883,7 @@ public:
     }
 
     void visit_Require(const AST::Require_t &x) {
+        check_experimental_templates(x.base.base.loc);
         for (size_t i=0; i<x.n_reqs; i++) {
             visit_unit_require(*x.m_reqs[i]);
         }
@@ -4957,6 +4989,7 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        check_experimental_templates(x.base.base.loc);
         is_template = true;
         std::string template_name = to_lower(std::string(x.m_name));
         ASR::accessType dflt_access_copy = dflt_access;
@@ -5030,6 +5063,7 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
+        check_experimental_templates(x.base.base.loc);
         std::string template_name = x.m_name;
 
         // check if the template exists

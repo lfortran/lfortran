@@ -100,6 +100,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--apply-fortran-mangling`: Mangle symbols with Fortran supported syntax
 - `--mangle-underscore`: Mangles with underscore
 - `--legacy-array-sections`: Enables passing array items as sections if required
+- `--enable-experimental-feature TEXT`: Enable an experimental, unstable prototype feature (available: `templates`). May be repeated. Experimental features are prototypes of proposed language features, they are not part of any standard and are disabled by default
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate memory for arrays on stack
 

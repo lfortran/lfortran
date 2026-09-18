@@ -1,0 +1,5 @@
+semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
+  --> tests/errors/template_disabled_09.f90:15:1
+   |
+15 | call swap_generic{integer}(a, b)
+   | ^ pass `--enable-experimental-feature templates` to enable them

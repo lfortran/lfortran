@@ -2962,6 +2962,7 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
+        check_experimental_templates(x.base.base.loc);
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
 
@@ -5257,7 +5258,13 @@ public:
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if(x.m_items[i]->type == AST::decl_stmtType::Template){
-                visit_decl_stmt(*x.m_items[i]);
+                try {
+                    visit_decl_stmt(*x.m_items[i]);
+                } catch (const SemanticAbort &a) {
+                    if (!compiler_options.continue_compilation) {
+                        throw a;
+                    }
+                }
             }
         }
 
@@ -5475,7 +5482,13 @@ public:
 
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            visit_decl_stmt(*x.m_items[i]);
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (const SemanticAbort &a) {
+                if (!compiler_options.continue_compilation) {
+                    throw a;
+                }
+            }
         }
 
         Vec<ASR::stmt_t*> body;
@@ -6207,6 +6220,7 @@ public:
         }
 
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
         }
 
@@ -6316,6 +6330,7 @@ public:
         }
 
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             t = ASRUtils::symbol_symtab(t)->get_symbol(to_lower(x.m_name));
         }
 
@@ -8224,6 +8239,7 @@ public:
             }
         }
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
             sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
@@ -10299,12 +10315,12 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
-    void visit_Requirement(const AST::Requirement_t /*&x*/) {
-
+    void visit_Requirement(const AST::Requirement_t &x) {
+        check_experimental_templates(x.base.base.loc);
     }
 
-    void visit_Require(const AST::Require_t /*&x*/) {
-
+    void visit_Require(const AST::Require_t &x) {
+        check_experimental_templates(x.base.base.loc);
     }
 
     void collect_omp_body(ASR::omp_region_typeType region_type) {
@@ -10761,6 +10777,7 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        check_experimental_templates(x.base.base.loc);
         is_template = true;
 
         SymbolTable* old_scope = current_scope;

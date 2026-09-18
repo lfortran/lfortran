@@ -1,0 +1,5 @@
+semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
+  --> tests/errors/template_disabled_04.f90:10:1
+   |
+10 | instantiate add_t(integer), only: add_integer => add_generic
+   | ^ pass `--enable-experimental-feature templates` to enable them

@@ -1,0 +1,5 @@
+semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
+  --> tests/errors/template_disabled_05.f90:11:1
+   |
+11 | deferred type :: t
+   | ^ pass `--enable-experimental-feature templates` to enable them

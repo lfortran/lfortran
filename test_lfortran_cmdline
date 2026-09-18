@@ -115,4 +115,12 @@ cd $(mktemp -d)
 echo "Testing invalid command-line usage"
 ! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"
 
+if [[ $FC != "gfortran" ]]; then
+    cd $(mktemp -d)
+    echo "Testing an unknown experimental feature"
+    ! $FC --enable-experimental-feature nosuchfeature $f  # ensure this fails
+    $FC --enable-experimental-feature nosuchfeature $f 2>&1 \
+        | grep "available features: templates"
+fi
+
 echo "All tests succeeded"

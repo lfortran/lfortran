@@ -1,5 +1,11 @@
 # Programming with Generics in LFortran
 
+**Experimental.** Generics (templates) are a prototype of a feature proposed
+to the Fortran standard. They are not part of any standard yet and are disabled
+by default: compile with `--enable-experimental-feature templates` to use them,
+otherwise every template construct is rejected with an error. The syntax and
+semantics may change or be removed without notice.
+
 In this page we will explore how to write generics in LFortran.
 
 ## Prerequisite
