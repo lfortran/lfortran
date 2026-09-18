@@ -1,8 +1,8 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index dfd2a89352..1cce5f32be 100644
+index 865f2ac703..de8ef8826a 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2610,178 +2610,4 @@ id_opt
+@@ -2644,178 +2644,4 @@ id_opt
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
