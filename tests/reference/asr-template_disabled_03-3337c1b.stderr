@@ -1,0 +1,5 @@
+semantic error: templates are an experimental prototype of a proposed Fortran feature and are disabled by default
+  --> tests/errors/template_disabled_03.f90:13:5
+   |
+13 |     require :: add_r(integer)
+   |     ^ pass `--enable-experimental-feature templates` to enable them

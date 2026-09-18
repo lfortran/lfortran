@@ -562,10 +562,44 @@ filename = "errors/template_error_09.f90"
 asr = true
 options = "--enable-experimental-feature templates"
 
-# Deliberately without `options`: templates must be rejected when
-# `--enable-experimental-feature templates` is not passed.
+# Deliberately without `options`: every construct of the templates prototype
+# must be rejected when `--enable-experimental-feature templates` is not
+# passed. The check is made where each construct is turned into ASR, so there
+# is one test per construct.
 [[test]]
 filename = "errors/template_disabled_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_03.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_04.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_05.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_06.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_07.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_08.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_disabled_09.f90"
 asr = true
 
 
@@ -5850,6 +5884,12 @@ run = true
 filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
 options = "--enable-experimental-feature templates"
+
+# Deliberately without `options`: each rejected construct must be reported
+# exactly once and compilation must carry on.
+[[test]]
+filename = "errors/continue_compilation_templates_disabled_01.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "coarray_collectives_01.f90"

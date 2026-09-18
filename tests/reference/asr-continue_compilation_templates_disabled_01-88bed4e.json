@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_templates_disabled_01-88bed4e",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_templates_disabled_01.f90",
+    "infile_hash": "6b4f726c797ffd63a0259f6f61a029e38a81d5d96b1c1527729211c3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_templates_disabled_01-88bed4e.stderr",
+    "stderr_hash": "7f9dc440d4226f4fbc804b69e1d0c39f508f2b30215fdf725ddcf553",
+    "returncode": 1
+}

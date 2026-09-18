@@ -19528,6 +19528,7 @@ public:
         }
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
+            check_experimental_templates(x.base.base.loc);
             ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
             var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
@@ -20699,6 +20700,46 @@ public:
             asr = ASR::make_OverloadedBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value, overloaded);
         }
 
+    }
+
+    /*
+        Templates (generics) are a prototype of a feature proposed to the
+        Fortran standard. They are not part of any standard yet, so every
+        template construct is rejected unless
+        `--enable-experimental-feature templates` is passed.
+
+        The keywords involved (`template`, `requirement`, `require`,
+        `instantiate`, `deferred`) are not reserved words in Fortran, so they
+        cannot be rejected by the grammar without breaking programs that use
+        them as ordinary identifiers. Only the AST node of the construct (or a
+        non-empty `temp_args` list) tells the two apart, so this is called from
+        the handler that turns each template construct into ASR. Code that uses
+        no template construct never reaches any of those handlers and so pays
+        nothing for the check.
+    */
+    void check_experimental_templates(const Location &loc) {
+        if (compiler_options.experimental_templates) return;
+        const std::string message = "templates are an experimental prototype "
+            "of a proposed Fortran feature and are disabled by default";
+        // Point at the start of the construct only: a template can span many
+        // lines and the rest of the span carries no extra information here.
+        Location start_loc;
+        start_loc.first = loc.first;
+        start_loc.last = loc.first;
+        // Report each construct once. Under `--continue-compilation` the abort
+        // below is swallowed, and the body visitor then reaches a construct
+        // the symbol table visitor has already reported; the two visitors
+        // share this `Diagnostics`.
+        for (const Diagnostic &d: diag.diagnostics) {
+            if (d.message == message && d.labels.size() == 1
+                    && d.labels[0].spans.size() == 1
+                    && d.labels[0].spans[0].loc.first == start_loc.first) {
+                throw SemanticAbort();
+            }
+        }
+        diag.semantic_error_label(message, {start_loc},
+            "pass `--enable-experimental-feature templates` to enable them");
+        throw SemanticAbort();
     }
 
     // TODO: extract commonality with visit_Instantiate
