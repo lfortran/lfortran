@@ -117,7 +117,7 @@ public:
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
-        // `type, deferred :: T` declares a deferred (generic) type. The same
+        // `deferred type :: T` declares a deferred (generic) type. The same
         // `deferred` attribute on a type bound procedure is standard Fortran
         // and is a different AST node, so it is not affected here.
         for (size_t i = 0; i < x.n_attrtype; i++) {

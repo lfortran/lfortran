@@ -794,7 +794,7 @@ TEST_CASE("FortranEvaluator templates are experimental") {
 implicit none
 
 requirement add_r(t, add_f)
-    type, deferred :: t
+    deferred type :: t
     pure function add_f(x, y) result(z)
         type(t), intent(in) :: x, y
         type(t) :: z

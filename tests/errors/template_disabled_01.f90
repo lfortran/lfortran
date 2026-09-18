@@ -5,7 +5,7 @@ module template_disabled_01_m
 implicit none
 
 template add_t(t)
-    type, deferred :: t
+    deferred type :: t
 contains
     function add_generic(x, y) result(z)
         type(t), intent(in) :: x, y
