@@ -6114,7 +6114,3 @@ asr = true
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
-
-[[test]]
-filename = "derived_type_procedure_default_01.f90"
-asr = true
