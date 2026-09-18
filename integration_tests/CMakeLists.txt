@@ -3552,6 +3552,7 @@ RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enab
 RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
 RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran EXTRA_ARGS --enable-experimental-feature templates)
 RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_deferred_type_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
 RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
 RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)             # FIXME: add visit_OverloadedBinOp to wasm
 RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
