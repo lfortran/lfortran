@@ -1116,6 +1116,7 @@ RUN(NAME reduce_03 LABELS  llvm llvm_wasm llvm_wasm_emcc )
 RUN(NAME reserved_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME reserved_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME reserved_03 LABELS gfortran llvm fortran)
+RUN(NAME reserved_04 LABELS gfortran llvm fortran)
 
 RUN(NAME namelist_01 LABELS gfortran llvm fortran)
 RUN(NAME namelist_02 LABELS gfortran llvm fortran)
@@ -3544,31 +3545,31 @@ RUN(NAME assign_to3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 
 RUN(NAME conv_complex2real LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
-RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
+RUN(NAME template_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
-# RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran)
-RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc)             # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_add_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_add_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_add_04 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_nested LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_travel_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_travel_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_travel_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_triple LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_array_01 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME template_array_02 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
-RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
+# RUN(NAME template_04 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_05 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_06 LABELS llvm llvm_wasm llvm_wasm_emcc wasm fortran EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_07 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_add_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_add_01b LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)             # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_add_01c LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_add_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_add_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_add_04 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_nested LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_travel_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_travel_01b LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_travel_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_triple LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_array_01 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_array_02 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_array_03 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_array_04 LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm EXTRA_ARGS --enable-experimental-feature templates)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
-# RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME template_matrix_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
 # DISABLED: #8115 - ASR verify: FunctionType contains types tied to scope after template instantiation
 # RUN(NAME template_matrix_test LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
 #     template_semigroup.f90
@@ -3577,20 +3578,21 @@ RUN(NAME template_array_04b LABELS llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 #     template_unitring.f90
 #     template_field.f90
 #     template_matrix.f90
+#     EXTRA_ARGS --enable-experimental-feature templates
 #     )
-RUN(NAME template_struct_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_simple_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_simple_04 LABELS llvm llvm_wasm llvm_wasm_emcc)                      # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)                   # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)                    # FIXME: add visit_OverloadedBinOp to wasm
-RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_simple_03 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_simple_04 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)                      # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_sort_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_sort_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_lapack_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)                   # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)                    # FIXME: add visit_OverloadedBinOp to wasm
+RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
+RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --enable-experimental-feature templates)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

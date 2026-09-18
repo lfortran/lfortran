@@ -786,6 +786,76 @@ TEST_CASE("FortranEvaluator 6") {
     diagnostics.diagnostics.clear();
 }
 
+// The interactive path (the REPL and the Jupyter kernel) compiles through
+// FortranEvaluator, so templates must be gated there too, and enabling the
+// experimental feature in CompilerOptions must make them available again.
+TEST_CASE("FortranEvaluator templates are experimental") {
+    std::string code = R"(module template_gate_m
+implicit none
+
+requirement add_r(t, add_f)
+    type, deferred :: t
+    pure function add_f(x, y) result(z)
+        type(t), intent(in) :: x, y
+        type(t) :: z
+    end function
+end requirement
+
+contains
+
+pure function add_generic {t, add_f} (x, y) result(z)
+    require :: add_r(t, add_f)
+    type(t), intent(in) :: x, y
+    type(t) :: z
+    z = add_f(x, y)
+end function
+
+end module
+)";
+
+    std::string gate_error = "templates are an experimental prototype";
+
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+
+    {
+        FortranEvaluator e(cu);
+        LCompilers::Result<std::string> r = e.get_asr(code, lm, diagnostics);
+        CHECK(!r.ok);
+        REQUIRE(diagnostics.diagnostics.size() >= 1);
+        CHECK(diagnostics.diagnostics[0].stage == LCompilers::diag::Stage::Semantic);
+        CHECK(diagnostics.diagnostics[0].message.find(gate_error)
+            != std::string::npos);
+        diagnostics.diagnostics.clear();
+    }
+
+    {
+        // Enabling the feature removes the gate. Interactive compilation of a
+        // template has its own pre-existing limitations (the evaluator cannot
+        // duplicate a Requirement symbol into the persistent symbol table
+        // yet), so only the absence of the gate error is checked here.
+        cu.experimental_templates = true;
+        FortranEvaluator e(cu);
+        try {
+            e.get_asr(code, lm, diagnostics);
+        } catch (const LCompilers::LCompilersException &) {
+        }
+        for (auto &d : diagnostics.diagnostics) {
+            CHECK(d.message.find(gate_error) == std::string::npos);
+        }
+        CHECK(diagnostics.diagnostics.empty());
+    }
+}
+
 TEST_CASE("FortranEvaluator 6 importing modules") {
     CompilerOptions cu;
     cu.interactive = true;

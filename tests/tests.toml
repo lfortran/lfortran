@@ -37,146 +37,180 @@ julia = true
 [[test]]
 filename = "../integration_tests/template_add_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_add_01b.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_add_01c.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_add_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_add_03.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_add_04.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_nested.f90"
 ast = true
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_travel_01.f90"
 ast = true
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_travel_01b.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_travel_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_triple.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_array_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_array_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_array_03.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_array_04.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_array_04b.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 # TODO: StructType - Uncomment after fixing symbol outside scope error for ttype
 # [[test]]
 # filename = "../integration_tests/template_array_05.f90"
 # asr = true
+# options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_02.f90"
 asr = true
 ast = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_03.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_03b.f90"
 ast = true
 asr = true
+options = "--enable-experimental-feature templates"
 
 # TODO: StructType - Uncomment after fixing symbol outside scope error for ttype
 # [[test]]
 # filename = "../integration_tests/template_04.f90"
 # asr = true
+# options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_05.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_struct_01.f90"
 asr = true
 ast = true
+options = "--enable-experimental-feature templates"
 
 # TODO: StructType - Uncomment after fixing symbol outside scope error for ttype
 # [[test]]
 # filename = "../integration_tests/template_matrix_01.f90"
 # asr = true
+# options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_vector.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_simple_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_simple_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_simple_03.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_simple_04.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_sort_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_sort_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_lapack_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_interface_01.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/template_commutative.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "../integration_tests/test_backspace_01.f90"
@@ -466,53 +500,72 @@ asr_preprocess = true
 [[test]]
 filename = "errors/template_error_01a.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_01b.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_02.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_03.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_04.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_05.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_06.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_07a.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_07b.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_07c.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_08.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_07.f90"
 asr = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "errors/template_error_09.f90"
+asr = true
+options = "--enable-experimental-feature templates"
+
+# Deliberately without `options`: templates must be rejected when
+# `--enable-experimental-feature templates` is not passed.
+[[test]]
+filename = "errors/template_disabled_01.f90"
 asr = true
 
 
@@ -5796,6 +5849,7 @@ run = true
 [[test]]
 filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
+options = "--enable-experimental-feature templates"
 
 [[test]]
 filename = "coarray_collectives_01.f90"

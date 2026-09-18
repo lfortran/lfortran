@@ -267,6 +267,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing")->group(group_language_options);
         app.add_flag("--fixed-form-infer", opts.fixed_form_infer, "Use heuristics to infer if a file is in fixed form")->group(group_language_options);
         app.add_option("--std", opts.arg_standard, "Select standard conformance (lf, f23, legacy)")->group(group_language_options);
+        app.add_option("--enable-experimental-feature", opts.arg_experimental_features, "Enable an experimental, unstable prototype feature (available: templates)")->allow_extra_args(false)->group(group_language_options);
         app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing")->group(group_language_options);
         app.add_flag("--disable-implicit-typing", opts.disable_implicit_typing, "Disable implicit typing")->group(group_language_options);
         app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface")->group(group_language_options);
@@ -428,6 +429,17 @@ namespace LCompilers::CommandLineInterface {
             if (!disable_warnings) {
                 std::cerr << "warning: `--generate-object-code` is deprecated and will be "
                           << "removed in a future release; use `--separate-compilation` instead.\n";
+            }
+        }
+
+        for (const std::string &feature : opts.arg_experimental_features) {
+            if (feature == "templates") {
+                compiler_options.experimental_templates = true;
+            } else {
+                throw lc::LCompilersException(
+                    "The option `--enable-experimental-feature " + feature
+                    + "` is not supported, available features: templates"
+                );
             }
         }
 

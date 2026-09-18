@@ -189,6 +189,13 @@ struct CompilerOptions {
     std::vector<std::string> import_paths;
     Platform platform;
     bool detect_leaks = false;
+    /*
+        Experimental, unstable prototype features. These are prototypes of
+        features proposed to the language standard; they are not part of any
+        standard yet and are therefore disabled by default. Each one is
+        enabled individually by `--enable-experimental-feature <name>`.
+    */
+    bool experimental_templates = false;
 
     CompilerOptions () : platform{get_platform()} {};
 };

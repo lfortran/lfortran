@@ -117,7 +117,8 @@ namespace LCompilers::LFortran {
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : compiler_options{}, e{compiler_options} {
+        custom_interpreter(const CompilerOptions &compiler_options_)
+                : compiler_options{compiler_options_}, e{compiler_options} {
             e.compiler_options.interactive = true;
             e.compiler_options.po.runtime_library_dir =
                 LCompilers::LFortran::get_runtime_library_dir();
@@ -514,10 +515,12 @@ namespace LCompilers::LFortran {
     }
 #endif
 
-    int run_kernel(const std::string &connection_filename)
+    int run_kernel(const std::string &connection_filename,
+        const CompilerOptions &compiler_options)
     {
 #ifdef __EMSCRIPTEN__
         (void)connection_filename;
+        (void)compiler_options;
         throw LCompilersException("run_kernel() is not available in the WASM build");
         return 1;
 #else
@@ -525,7 +528,8 @@ namespace LCompilers::LFortran {
 
         // Create interpreter instance
         using interpreter_ptr = std::unique_ptr<custom_interpreter>;
-        interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter());
+        interpreter_ptr interpreter = interpreter_ptr(
+            new custom_interpreter(compiler_options));
 
         using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
         history_manager_ptr hist = xeus::make_in_memory_history_manager();
@@ -565,7 +569,9 @@ namespace LCompilers::LFortran {
 namespace {
     LCompilers::LFortran::custom_interpreter* make_interpreter(emscripten::val /*js_args*/)
     {
-        return new LCompilers::LFortran::custom_interpreter();
+        // The WASM kernel has no command line, so it uses the defaults
+        return new LCompilers::LFortran::custom_interpreter(
+            LCompilers::CompilerOptions());
     }
 }
 
