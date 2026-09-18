@@ -2058,7 +2058,8 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
             return true;
         } case ASR::exprType::ArrayBroadcast: {
             ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
-            return is_value_constant(array_broadcast->m_value);
+            return is_value_constant(array_broadcast->m_value) ||
+                is_value_constant(array_broadcast->m_array);
         } case ASR::exprType::Var: {
             ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
             if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
@@ -3220,6 +3221,9 @@ static inline bool is_const(ASR::expr_t *x) {
     }
     return false;
 }
+
+ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
+                            ASR::symbol_t* member);
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
@@ -8257,6 +8261,24 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
             new_char[len] = '\0';
             return '\"' + std::string(new_char) + '\"';
         }
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr: {
+            ASR::expr_t* value = ((ASR::expr_t**)data)[i];
+            if (value == nullptr) {
+                return "()";
+            }
+            switch (value->type) {
+                case ASR::exprType::StructConstant: {
+                    return "StructConstant";
+                }
+                case ASR::exprType::PointerNullConstant: {
+                    return "PointerNullConstant";
+                }
+                default: {
+                    return "Constant";
+                }
+            }
+        }
         default:
             throw LCompilersException("Unsupported type for array constant.");
     }
@@ -8347,6 +8369,11 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,
                                 s2c(al, str), type));
+            return value;
+        }
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr: {
+            value = ((ASR::expr_t**)data)[i];
             return value;
         }
         default:
@@ -8489,6 +8516,37 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
     }
 }
 
+inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) {
+    if (ASRUtils::is_character(*a_type)) {
+        int len = 0;
+        if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
+        return n_args * len;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*a_type)) {
+        return n_args * sizeof(ASR::expr_t*);
+    }
+    if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
+        return n_args * sizeof(void*);
+    }
+    return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
+}
+
+inline int64_t get_ArrayConstant_data_size(ASR::ttype_t* array_type) {
+    int64_t array_size = ASRUtils::get_fixed_size_of_array(array_type);
+    LCOMPILERS_ASSERT(array_size >= 0);
+    return get_ArrayConstant_data_size(
+        array_size, ASRUtils::type_get_past_array(array_type));
+}
+
+inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al,
+        const Location &loc, void *data, ASR::ttype_t* array_type,
+        ASR::arraystorageType storage_format) {
+    int64_t n_data = get_ArrayConstant_data_size(array_type);
+    LCOMPILERS_ASSERT(n_data == 0 || data != nullptr);
+    return ASR::make_ArrayConstant_t(
+        al, loc, n_data, data, array_type, storage_format);
+}
+
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
     if (x != nullptr) {
         // this is array constant, we have it's data available
@@ -8604,21 +8662,8 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
         ASR::ttype_t* new_type = ASRUtils::TYPE(ASR::make_Array_t(al, a_type->base.loc, a_type_->m_type,
             dims.p, dims.n, a_type_->m_physical_type, a_type_->m_memory_space));
         void *data = set_ArrayConstant_data(a_args_values.p, curr_idx, a_type_->m_type);
-        // data is always allocated to n_data bytes
-        int64_t n_data = curr_idx * extract_kind_from_ttype_t(a_type_->m_type);
-        if (is_character(*a_type_->m_type)) {
-            int len = 0;
-            if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
-            n_data = curr_idx * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*a_type_->m_type)) {
-            // For struct types, n_data represents the number of struct constant pointers
-            n_data = curr_idx * sizeof(ASR::expr_t*);
-        } else if (ASR::is_a<ASR::CPtr_t>(*a_type_->m_type)) {
-            // C_PTR and C_FUNPTR are pointer-sized opaque handles. extract_kind returns -1 for CPtr
-            // (it has no fortran 'kind' parameter), so compute the byte size explicitly
-            n_data = curr_idx * sizeof(void*);
-        }   
-        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
+        value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+            al, a_loc, data, new_type, a_storage_format));
     }
 
     if (is_array_item_constant && all_expr_evaluated) {
@@ -8700,8 +8745,8 @@ inline ASR::expr_t* broadcast_scalar_constant_to_array(Allocator& al,
     }
     array_type = ASRUtils::duplicate_type(al, array_type);
     if (size == 0) {
-        return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
-            0, nullptr, array_type, ASR::arraystorageType::ColMajor));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+            nullptr, array_type, ASR::arraystorageType::ColMajor));
     }
     Vec<ASR::expr_t*> elements;
     elements.reserve(al, size);
@@ -9697,11 +9742,21 @@ class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArra
     public:
 
     Allocator& al;
+    bool preserve_struct_array_broadcast;
 
     RemoveArrayProcessingNodeReplacer(Allocator& al_): al(al_) {
+        preserve_struct_array_broadcast = false;
     }
 
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
+        if (preserve_struct_array_broadcast
+                && ASRUtils::is_array(x->m_type)
+                && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(x->m_type))) {
+            ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::
+                replace_ArrayBroadcast(x);
+            return;
+        }
         *current_expr = x->m_array;
     }
 
@@ -9731,6 +9786,25 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
     }
 
     RemoveArrayProcessingNodeVisitor(Allocator& al_): replacer(al_) {}
+
+    void visit_Variable(const ASR::Variable_t& x) {
+        ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        bool preserve_copy = replacer.preserve_struct_array_broadcast;
+        replacer.preserve_struct_array_broadcast = true;
+        if (xx.m_symbolic_value != nullptr) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(xx.m_symbolic_value);
+            call_replacer();
+            current_expr = current_expr_copy;
+        }
+        if (xx.m_value != nullptr) {
+            ASR::expr_t** current_expr_copy = current_expr;
+            current_expr = &(xx.m_value);
+            call_replacer();
+            current_expr = current_expr_copy;
+        }
+        replacer.preserve_struct_array_broadcast = preserve_copy;
+    }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         if( x.m_new == ASR::array_physical_typeType::SIMDArray ) {

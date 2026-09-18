@@ -742,6 +742,48 @@ semantic error: null() cannot be the value of component 'p' of type type(c_ptr),
 1345 |     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
      |                                                                       ^^^^^^ 
 
+semantic error: Array index 3 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1421:32
+     |
+1421 |     integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1422:32
+     |
+1422 |     integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1423:32
+     |
+1423 |     integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index -1 is out of bounds (0 to 1) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:1424:32
+     |
+1424 |     integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+     |                                ^^^^^^^ 
+
+semantic error: Array index 0 is out of bounds (-2 to -1) in dimension 2
+    --> tests/errors/continue_compilation_1.f90:1425:32
+     |
+1425 |     integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+     |                                ^^^^^^^^^ 
+
+semantic error: array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    --> tests/errors/continue_compilation_1.f90:1435:40
+     |
+1435 |         type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+     |                                        ^^^^^^^^^^^^^^^^^ 
+
+semantic error: array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    --> tests/errors/continue_compilation_1.f90:1443:40
+     |
+1443 |         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+     |                                        ^^^^^^^^^^^^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2330,3 +2372,185 @@ semantic error: type mismatch in structure constructor: a null value of type typ
      |
 1410 |     a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
      |                                ^^^^^^^^^^ 
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1460:9
+     |
+1460 |         q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1459 |        associate (q => pb)
+     |        ~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1461 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1464:9
+     |
+1464 |         q%a%x = 5  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^ assignment here
+     |
+1463 |        associate (q => pb)
+     |        ~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1465 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1468:9
+     |
+1468 |         r%x = 6  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^ assignment here
+     |
+1467 |        associate (r => pb%a)
+     |        ~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1469 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1472:9
+     |
+1472 |         q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^ assignment here
+     |
+1471 |        associate (q => pba)
+     |        ~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1473 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1490:13
+     |
+1490 |             r%y = 88  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1489 |            associate (r => q)
+     |            ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1491 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1496:13
+     |
+1496 |             r%x = 99  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^ assignment here
+     |
+1495 |            associate (r => q%a)
+     |            ~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1497 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1502:13
+     |
+1502 |             r = 77  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^ assignment here
+     |
+1501 |            associate (r => q%a%x)
+     |            ~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1503 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1508:13
+     |
+1508 |             r%a%x = 66  ! {Error} Cannot assign to a constant variable
+     |             ^^^^^^^^^^ assignment here
+     |
+1507 |            associate (r => q(1))
+     |            ~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1509 |            end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1515:17
+     |
+1515 |                 s%y = 55  ! {Error} Cannot assign to a constant variable
+     |                 ^^^^^^^^ assignment here
+     |
+1514 |                associate (s => r)
+     |                ~~~~~~~~~~~~~~~~~~...
+...
+     |
+1516 |                end associate
+     | ...~~~~~~~~~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1538:9
+     |
+1538 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1537 |        associate (r => pba(1))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1539 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1542:9
+     |
+1542 |         r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1541 |        associate (r => pba(i))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1543 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1546:9
+     |
+1546 |         r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1545 |        associate (r => pba(1:2))
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1547 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1550:9
+     |
+1550 |         r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+1549 |        associate (r => pba(1)%a)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1551 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:1554:9
+     |
+1554 |         r = 1  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^ assignment here
+     |
+1553 |        associate (r => pba(1)%a%x)
+     |        ~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+1555 |        end associate
+     | ...~~~~~~~~~~~~~~~~~ associated with constant selector

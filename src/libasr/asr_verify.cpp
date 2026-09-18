@@ -1206,6 +1206,20 @@ public:
                     || x.m_type == nullptr) {
                 continue;
             }
+            bool scalar_struct_initializer =
+                ASR::is_a<ASR::StructConstant_t>(*initial)
+                || ASR::is_a<ASR::StructConstructor_t>(*initial);
+            if (ASRUtils::is_array(x.m_type)
+                    && !ASRUtils::is_array(initial_type)
+                    && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_array(x.m_type))
+                    && scalar_struct_initializer) {
+                require_id(false,
+                    "asr.verify.variable.array_struct_initializer_is_array",
+                    "Variable '" + std::string(x.m_name) +
+                        "' is an array of derived type, so its initializer "
+                        "must be an array expression");
+            }
             ASR::ttype_t *declared = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(x.m_type));
             ASR::ttype_t *actual = ASRUtils::type_get_past_array(
@@ -2998,19 +3012,12 @@ public:
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstant must be an array");
 
-        int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* inner = ASRUtils::type_get_past_array(x.m_type);
-        if (ASRUtils::is_character(*x.m_type)) {
-            ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
+        if (ASRUtils::is_character(*inner)) {
             int64_t len;
-            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
-        } else if (ASR::is_a<ASR::StructType_t>(*inner)) {
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(ASR::expr_t*);
-        } else if (ASR::is_a<ASR::CPtr_t>(*inner)) {
-          // C_PTR and C_FUNPTR have no fortran kind parameter.
-          n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * sizeof(void*);
+            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(inner)->m_len, len), "Constant array of strings should have constant string length");
         }
+        int64_t n_data = ASRUtils::get_ArrayConstant_data_size(x.m_type);
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
     }

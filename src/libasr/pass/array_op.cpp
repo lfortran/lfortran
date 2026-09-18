@@ -15,6 +15,28 @@
 
 namespace LCompilers {
 
+bool is_parameter_designator(ASR::expr_t* expr) {
+    while (expr != nullptr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                    ASR::storage_typeType::Parameter;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            expr = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressReplacer> {
 
     public:
@@ -2058,6 +2080,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::ArrayReshape_t* ar = ASR::down_cast<ASR::ArrayReshape_t>(xx.m_value);
             if ( ar->m_value != nullptr ) {
                 xx.m_value = ar->m_value;
+            }
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_value)) {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(xx.m_value);
+            if (member->m_value != nullptr &&
+                    is_parameter_designator(member->m_v) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
+                    ASRUtils::is_value_constant(member->m_value)) {
+                xx.m_value = member->m_value;
             }
         }
         if( !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ||
