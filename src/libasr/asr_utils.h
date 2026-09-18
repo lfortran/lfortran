@@ -108,6 +108,32 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 ASR::cptr_kindType get_cptr_kind_from_type(ASR::ttype_t* type);
 ASR::symbol_t* get_cptr_type_declaration_from_expr(ASR::expr_t* expression);
+ASR::symbol_t* get_iso_c_binding_symbol(SymbolTable* scope,
+        const std::string &original_name);
+bool is_iso_c_binding_symbol(SymbolTable* scope, ASR::symbol_t* sym,
+        const std::string &original_name);
+bool is_iso_c_null_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
+        ASR::symbol_t* type_decl);
+ASR::ttype_t* make_cptr_type(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::symbol_t* type_decl);
+ASR::expr_t* make_iso_c_null_constant(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::symbol_t* null_sym);
+void anchor_cptr_null_constant_to_type_declaration(Allocator& al,
+        ASR::expr_t* expr, ASR::Variable_t* var);
+ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym);
+ASR::FunctionType_t* get_procedure_type_from_expr(ASR::expr_t* expr);
+ASR::FunctionType_t* get_procedure_pointer_component_type(
+        ASR::Variable_t* member_var);
+bool is_procedure_pointer_value(ASR::Variable_t* member_var,
+        ASR::expr_t* value);
+bool is_valid_pointer_assignment_target(ASR::expr_t* expr);
+void set_null_context_from_variable(Allocator& al, const Location& loc,
+        SymbolTable* scope, ASR::Variable_t* var,
+        ASR::ttype_t*& current_variable_type,
+        ASR::expr_t*& current_struct_type_var_expr);
 
 // Resolve type-bound assignment(=) (~assign) on a struct or its ancestors.
 // Returns the CustomOperator symbol, or nullptr if none is found.
