@@ -4,7 +4,7 @@ module template_lapack_01_m
     public :: test_template
 
     requirement gemm_r(T, gemm)
-        type, deferred :: T
+        deferred type :: T
         subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
             character, intent(in) :: transa, transb
             integer, intent(in) :: m, n, k, lda, ldb, ldc
@@ -14,8 +14,8 @@ module template_lapack_01_m
     end requirement
 
     requirement cast_r(T, U, cast)
-        type, deferred :: T
-        type, deferred :: U
+        deferred type :: T
+        deferred type :: U
         pure elemental function cast(arg) result(res)
             type(T), intent(in) :: arg
             type(U) :: res

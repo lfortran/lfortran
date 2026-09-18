@@ -15,7 +15,7 @@ Requirements declare deferred types (generic types) and its associated functions
 ```fortran
 requirement monoid(T, op)
   ! declaring a deferred type (generic type)
-  type, deferred :: T
+  deferred type :: T
   ! declaring a function associated with the deferred type
   function op(x, y) result(z)
     type(T), intent(in) :: x, y

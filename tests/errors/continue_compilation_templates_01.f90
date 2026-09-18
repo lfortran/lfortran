@@ -3,7 +3,7 @@ module continue_compilation_templates_01_mod
 
     ! Duplicate parameter name in requirement's namelist
     requirement dup_param_req(T, T, op_func)
-        type, deferred :: T
+        deferred type :: T
         interface
             function op_func(x) result(y)
                 type(T), intent(in) :: x
@@ -16,8 +16,8 @@ module continue_compilation_templates_01_mod
     ! compilation continues past the first error above and still
     ! reports this one too.
     requirement dup_param_req2(V, V, W, comp_func)
-        type, deferred :: V
-        type, deferred :: W
+        deferred type :: V
+        deferred type :: W
         interface
             function comp_func(x, y) result(z)
                 type(V), intent(in) :: x

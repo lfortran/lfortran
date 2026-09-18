@@ -27,9 +27,9 @@ module template_apply_m_template_07
     public :: apply_t
 
     requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function op_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(U), intent(in) :: rhs

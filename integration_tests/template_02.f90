@@ -2,7 +2,7 @@ module template_02_m
   implicit none
 
   requirement eq(t, ne)
-    type, deferred :: t
+    deferred type :: t
     function ne(lhs, rhs)
       type(t), intent(in) :: lhs, rhs
       logical :: ne

@@ -4,7 +4,7 @@ module template_01_m
     public :: op_t
 
     requirement semigroup(t, combine)
-        type, deferred :: t
+        deferred type :: t
     end requirement
 
   contains

@@ -21,9 +21,9 @@ module template_sort_02_m
     implicit none
 
     requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function op_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(T), intent(in) :: rhs
@@ -34,7 +34,7 @@ module template_sort_02_m
 contains
     
     subroutine swap {T} (lhs, rhs)
-        type, deferred :: T
+        deferred type :: T
         type(T), intent(inout) :: lhs
         type(T), intent(inout) :: rhs
 

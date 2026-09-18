@@ -23,9 +23,9 @@ module template_sort_01_m
     public :: sort_t
 
     requirement op_r(T, U, V, op_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function op_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(T), intent(in) :: rhs
