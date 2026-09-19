@@ -32,6 +32,14 @@ end type single_score
 type(single_score) :: setup
 type(date) :: local_var = DATE(26, 2014)
 
+! The derived type `date_t` is defined in derived_types_176_m and imported here,
+! so a constructor spelled for it in this program unit resolves to an
+! ExternalSymbol that has to be unwrapped after the (now case insensitive)
+! lookup.  Same three shapes as above, for the imported type.
+type(date_t), parameter :: ext_const = DATE_T(27, 2015)
+type(date_t), parameter :: ext_arr(2) = [DATE_T(28, 2016), Date_T(29, 2017)]
+type(date_t) :: ext_var = DATE_T(30, 2018)
+
 ! The explicitly given component value must override the component default.
 if (today%year /= 2009) error stop 1
 if (today%day /= 21) error stop 2
@@ -65,6 +73,16 @@ if (mod_arr(2)%year /= 2013) error stop 28
 if (mod_arr(2)%day /= 25) error stop 29
 if (mod_var%year /= 2014) error stop 30
 if (mod_var%day /= 26) error stop 31
+
+! The imported derived type, constructed here with a non lowercase spelling.
+if (ext_const%year /= 2015) error stop 32
+if (ext_const%day /= 27) error stop 33
+if (ext_arr(1)%year /= 2016) error stop 34
+if (ext_arr(1)%day /= 28) error stop 35
+if (ext_arr(2)%year /= 2017) error stop 36
+if (ext_arr(2)%day /= 29) error stop 37
+if (ext_var%year /= 2018) error stop 38
+if (ext_var%day /= 30) error stop 39
 
 call check_from_module()
 
