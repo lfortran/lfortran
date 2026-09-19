@@ -1051,7 +1051,12 @@ public:
         } else if (x.m_value && !ASR::is_a<ASR::ArrayReshape_t>(*x.m_symbolic_value)) {
             ASR::ttype_t *base_type_value = ASRUtils::type_get_past_allocatable_pointer(x.m_type);
             bool is_c_ptr = ASR::is_a<ASR::CPtr_t>(*base_type_value);
-            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) && !is_c_ptr) {
+            // `p => tgt` and `p => null()` are both pointer assignments and
+            // are spelled with an arrow; a c pointer is an ordinary value.
+            bool is_pointer_init = ASRUtils::is_pointer(x.m_type)
+                && ASR::is_a<ASR::Var_t>(*x.m_value);
+            if ((ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) || is_pointer_init)
+                    && !is_c_ptr) {
                 r += " => ";
             } else {
                 r += " = ";
