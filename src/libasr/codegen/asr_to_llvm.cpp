@@ -1057,19 +1057,22 @@ public:
         the callee sees the right data pointer and length. Returns `value`
         unchanged when it is not such a member.
 
-        Only scalar members are wrapped: a whole inline character *array*
-        member is passed as an array, not as one string descriptor.
+        A whole inline character *array* member is wrapped the same way: an
+        array of strings is represented by a single descriptor whose data
+        points at the contiguous element bytes and whose length is the
+        element length, which is exactly the blob's layout.
     */
     llvm::Value* inline_char_member_as_string_descriptor(ASR::expr_t* arg,
             llvm::Value* value, std::string name) {
-        if (!ASRUtils::is_string_only(expr_type(arg))
-                || ASRUtils::get_string_type(expr_type(arg))->m_physical_type
+        ASR::ttype_t* arg_type = expr_type(arg);
+        if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))
+                || ASRUtils::get_string_type(arg_type)->m_physical_type
                     != ASR::DescriptorString
                 || !ASRUtils::is_inline_character_struct_member(arg)) {
             return value;
         }
         int64_t len = 1;
-        ASR::String_t* str_type = ASRUtils::get_string_type(expr_type(arg));
+        ASR::String_t* str_type = ASRUtils::get_string_type(arg_type);
         if (str_type->m_len) {
             ASRUtils::extract_value(str_type->m_len, len);
         }
