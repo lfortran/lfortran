@@ -2392,6 +2392,11 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    // The body that holds the outermost `where` construct being visited, or
+    // `nullptr` outside one. A statement that a masked assignment needs but
+    // which has to run whatever the mask selects belongs there rather than in
+    // the masked body.
+    Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
     struct PendingProcPtrInit {
@@ -23188,7 +23193,12 @@ public:
     // expression belongs to an implied do loop, whose iterations the
     // surrounding body does not run.
     ASR::expr_t* evaluate_into_temporary(ASR::expr_t* value) {
-        if( current_body == nullptr || idl_nesting_level > 0 ) {
+        // A `where` body runs only for the elements the mask selects, while
+        // the value assigned there is evaluated once whatever the mask is, so
+        // the assignment belongs to the body that holds the `where`.
+        Vec<ASR::stmt_t*>* body = body_enclosing_where != nullptr
+            ? body_enclosing_where : current_body;
+        if( body == nullptr || idl_nesting_level > 0 ) {
             return nullptr;
         }
         const Location& loc = value->base.loc;
@@ -23209,7 +23219,7 @@ public:
                 ASR::presenceType::Required, false));
         current_scope->add_symbol(tmp_name, tmp_sym);
         ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
-        current_body->push_back(al, ASRUtils::STMT(
+        body->push_back(al, ASRUtils::STMT(
             ASRUtils::make_Assignment_t_util(al, loc, tmp_var, value, nullptr,
                 compiler_options.po.realloc_lhs_arrays, false)));
         return tmp_var;

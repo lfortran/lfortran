@@ -43,7 +43,7 @@ program structure_constructor_args_12
     type(b_t) :: b_one(1)
     type(b_t) :: b_two(2)
     type(c_t) :: c
-    integer :: i
+    integer :: i, msk(3)
 
     if (p_parent%x /= 11 .or. p_parent%r /= 2.5 .or. p_parent%y /= 12) error stop
     if (p_nested%x /= 21 .or. p_nested%r /= 3.5) error stop
@@ -108,6 +108,25 @@ program structure_constructor_args_12
         if (b_arr(i)%x /= i * 10 .or. b_arr(i)%r /= real(i)) error stop
         if (b_arr(i)%y /= i) error stop
     end do
+
+    ! a masked assignment evaluates its value once, whatever the mask selects
+    n_calls = 0
+    msk = [1, 0, 1]
+    b_arr = b_t(a_t=a_t(0, 0.0), y=0)
+    where (msk == 1)
+        b_arr = b_t(a_t=make_a(), y=162)
+    end where
+    if (n_calls /= 1) error stop
+    if (b_arr(1)%x /= 121 .or. b_arr(1)%y /= 162) error stop
+    if (b_arr(2)%x /= 0 .or. b_arr(2)%y /= 0) error stop
+    if (b_arr(3)%x /= 121 .or. b_arr(3)%y /= 162) error stop
+
+    n_calls = 0
+    msk = [0, 0, 0]
+    where (msk == 1)
+        b_arr = b_t(a_t=make_a(), y=172)
+    end where
+    if (n_calls /= 1) error stop
 
     call check_local()
     call check_param_in_procedure()

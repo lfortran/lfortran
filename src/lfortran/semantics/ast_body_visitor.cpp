@@ -9324,12 +9324,21 @@ public:
     void visit_Where(const AST::Where_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        // The bodies below run only for the elements the mask selects, so a
+        // statement they need which must run whatever the mask selects is
+        // emitted into the body that holds this construct. A nested `where`
+        // is masked too, so the outermost one is the one to remember.
+        Vec<ASR::stmt_t*>* body_enclosing_where_copy = body_enclosing_where;
+        if (body_enclosing_where == nullptr) {
+            body_enclosing_where = current_body;
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        body_enclosing_where = body_enclosing_where_copy;
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
             if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(ASRUtils::expr_type(test)))) {
                 // verify that `test` is *not* the ttype of an expression as we then
