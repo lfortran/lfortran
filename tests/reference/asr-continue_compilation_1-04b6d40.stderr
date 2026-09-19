@@ -2674,3 +2674,39 @@ semantic error: Expected logical expression in if statement, but recieved type(c
      |
 1638 |     if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
      |         ^ type(c_funptr) expression, expected logical
+
+semantic error: component 'x' is already specified by the parent component 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1672:9
+     |
+1672 |     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1672:5
+     |
+1672 |     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+     |     ^                                        ^ type mismatch (pck_e_t and integer)
+
+semantic error: component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1673:9
+     |
+1673 |     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1673:5
+     |
+1673 |     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+     |     ^                           ^^^^^^^^^^^^^^ type mismatch (pck_e_t and pck_base_t)
+
+semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type pck_base_t, not integer(4)
+    --> tests/errors/continue_compilation_1.f90:1674:28
+     |
+1674 |     e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type pck_base_t, not integer(4)
+     |                            ^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1674:5
+     |
+1674 |     e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type pck_base_t, not integer(4)
+     |     ^                      ^^ type mismatch (pck_e_t and integer)

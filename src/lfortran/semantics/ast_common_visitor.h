@@ -23155,6 +23155,85 @@ public:
         }
     }
 
+    // The parent component of an extended type is a component whose name is
+    // the name of the parent type (F2018 7.5.7.2), so a structure constructor
+    // may give it by keyword: `e_t(base_t=base_t(1), z=2)`. A constructor
+    // carries one argument per component, the components inherited from the
+    // parent first, so the parent's value is spread over those leading
+    // arguments, and `n_parent_args` reports how many of them were filled.
+    // Returns false if `name` does not name the parent component.
+    bool set_parent_component_kwarg(Vec<ASR::call_arg_t>& args,
+            const std::vector<ASR::symbol_t*>& constructor_arg_syms,
+            ASR::symbol_t* struct_sym, const std::string& name,
+            AST::expr_t* value, const Location& loc, diag::Diagnostics& diag,
+            size_t& n_parent_args) {
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        if( struct_type->m_parent == nullptr ||
+            to_lower(ASRUtils::symbol_name(struct_type->m_parent)) != name ) {
+            return false;
+        }
+        ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
+            struct_type->m_parent);
+        n_parent_args = get_struct_constructor_info(parent_sym).members.size();
+        LCOMPILERS_ASSERT(n_parent_args <= args.size());
+        this->visit_expr(*value);
+        ASR::expr_t* parent_value = ASRUtils::EXPR(tmp);
+        ASR::call_arg_t* parent_args = nullptr;
+        size_t n_args = 0;
+        ASR::symbol_t* value_sym = nullptr;
+        if( ASR::is_a<ASR::StructConstructor_t>(*parent_value) ) {
+            ASR::StructConstructor_t* constructor =
+                ASR::down_cast<ASR::StructConstructor_t>(parent_value);
+            value_sym = constructor->m_dt_sym;
+            parent_args = constructor->m_args;
+            n_args = constructor->n_args;
+        } else if( ASR::is_a<ASR::StructConstant_t>(*parent_value) ) {
+            ASR::StructConstant_t* constant =
+                ASR::down_cast<ASR::StructConstant_t>(parent_value);
+            value_sym = constant->m_dt_sym;
+            parent_args = constant->m_args;
+            n_args = constant->n_args;
+        } else if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                ASRUtils::expr_type(parent_value))) ) {
+            value_sym = ASRUtils::get_struct_sym_from_struct_expr(parent_value);
+        }
+        if( value_sym == nullptr ||
+            ASRUtils::symbol_get_past_external(value_sym) != parent_sym ||
+            ASRUtils::is_array(ASRUtils::expr_type(parent_value)) ) {
+            diag.add(Diagnostic("type mismatch in structure constructor: the "
+                "parent component '" + name + "' requires a scalar value of "
+                "type " + name + ", not " + ASRUtils::type_to_str_with_kind(
+                    ASRUtils::expr_type(parent_value), parent_value),
+                Level::Error, Stage::Semantic, {
+                    Label("", {parent_value->base.loc})}));
+            throw SemanticAbort();
+        }
+        for( size_t i = 0; i < n_parent_args; i++ ) {
+            if( args[i].m_value != nullptr ) {
+                diag.add(Diagnostic("component '" + std::string(
+                    ASRUtils::symbol_name(constructor_arg_syms[i])) + "' is "
+                    "already specified, it cannot also be given by the parent "
+                    "component '" + name + "'",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+        for( size_t i = 0; i < n_parent_args; i++ ) {
+            if( parent_args != nullptr && n_args == n_parent_args ) {
+                args.p[i] = parent_args[i];
+                continue;
+            }
+            ASR::symbol_t* member = ASRUtils::import_struct_instance_member(
+                al, constructor_arg_syms[i], current_scope);
+            args.p[i].loc = parent_value->base.loc;
+            args.p[i].m_value = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                al, parent_value->base.loc, parent_value, member,
+                ASRUtils::symbol_type(constructor_arg_syms[i]), nullptr));
+        }
+        return true;
+    }
+
     // `null_args`, if given, has an entry for each positional argument in
     // `args`; it is extended to every component and records whether each
     // keyword argument is a reference to the intrinsic `null()`.
@@ -23191,11 +23270,22 @@ public:
             null_args->resize(args.size(), NullReference::none);
         }
 
+        // The leading arguments filled by a parent component keyword, if one
+        // was given, and the name of that parent component.
+        size_t n_parent_component_args = 0;
+        std::string parent_component_name;
         for (size_t i = 0; i < n; i++) {
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
+                size_t n_filled = 0;
+                if (set_parent_component_kwarg(args, constructor_arg_syms, fn,
+                        name, kwargs[i].m_value, loc, diag, n_filled)) {
+                    n_parent_component_args = n_filled;
+                    parent_component_name = name;
+                    continue;
+                }
                 diag.semantic_error_label(
                     "Keyword argument not found",
                     {loc},
@@ -23213,6 +23303,13 @@ public:
             current_struct_type_var_expr = prev_struct_type_var_expr;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (args[idx].m_value != nullptr) {
+                if (idx < n_parent_component_args) {
+                    diag.add(Diagnostic("component '" + name + "' is already "
+                        "specified by the parent component '"
+                        + parent_component_name + "'",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
                     {loc},

@@ -1659,3 +1659,17 @@ subroutine null_initializer_nonpointer_component()
         integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
     end type
 end subroutine
+
+subroutine parent_component_keyword_conflicts()
+    implicit none
+    type :: pck_base_t
+        integer :: x
+    end type
+    type, extends(pck_base_t) :: pck_e_t
+        integer :: z
+    end type
+    type(pck_e_t) :: e
+    e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+    e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+    e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type pck_base_t, not integer(4)
+end subroutine
