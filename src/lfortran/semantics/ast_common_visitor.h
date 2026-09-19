@@ -2389,6 +2389,7 @@ public:
     std::map<ASR::symbol_t*, SelectTypeCastInfo> select_type_casts_map;
     // global save variable
     bool is_global_save_enabled = false;
+    std::set<std::string> explicit_save_symbols;
 
     // implied do loop nesting
     int idl_nesting_level = 0;
@@ -5183,16 +5184,31 @@ public:
 
     template <typename T>
     void check_if_global_save_is_enabled(T &x) {
+        is_global_save_enabled = false;
+        explicit_save_symbols.clear();
         for ( size_t i = 0; i < x.n_items; i++ ) {
             if ( AST::is_a<AST::Declaration_t>(*x.m_items[i]) ) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                if ( decl->n_attributes > 0 && decl->n_syms == 0 &&
-                    decl->m_trivia == nullptr &&
-                    AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[0]) ) {
-                    AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(decl->m_attributes[0]);
-                    if ( attr->m_attr == AST::simple_attributeType::AttrSave ) {
+                bool has_save = false;
+                for (size_t a = 0; a < decl->n_attributes; a++) {
+                    if (AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[a])) {
+                        AST::SimpleAttribute_t* attr = AST::down_cast<AST::SimpleAttribute_t>(decl->m_attributes[a]);
+                        if (attr->m_attr == AST::simple_attributeType::AttrSave) {
+                            has_save = true;
+                            break;
+                        }
+                    }
+                }
+                if (has_save) {
+                    if (decl->n_syms == 0) {
                         is_global_save_enabled = true;
                         break;
+                    } else {
+                        for (size_t j = 0; j < decl->n_syms; j++) {
+                            if (decl->m_syms[j].m_sym != AST::symbolType::Slash && decl->m_syms[j].m_name) {
+                                explicit_save_symbols.insert(to_lower(decl->m_syms[j].m_name));
+                            }
+                        }
                     }
                 }
             }
@@ -7858,19 +7874,19 @@ public:
             // Example
             // real(dp), private :: x, y(3), z
             for (size_t i=0; i<x.n_syms; i++) {
-                bool is_save = false;
+                AST::var_sym_t &s = x.m_syms[i];
+                std::string sym = to_lower(s.m_name);
+                bool is_save = (explicit_save_symbols.find(sym) != explicit_save_symbols.end());
                 bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;
                 bool is_dimension_star = false;
                 bool is_assumed_rank = false;
-                AST::var_sym_t &s = x.m_syms[i];
-                std::string sym = to_lower(s.m_name);
                 bool is_external = check_is_external(sym);
                 bool is_attr_external = false;
                 ASR::accessType s_access = dflt_access;
                 ASR::presenceType s_presence = dflt_presence;
-                ASR::storage_typeType storage_type = dflt_storage;
+                ASR::storage_typeType storage_type = is_save ? ASR::storage_typeType::Save : dflt_storage;
                 bool target_attr = false;
                 bool contig_attr = false;
                 bool value_attr = false;
