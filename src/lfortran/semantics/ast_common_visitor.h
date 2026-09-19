@@ -23351,14 +23351,18 @@ public:
         if( !is_designator(base) ) {
             ASR::expr_t* base_tmp = evaluate_into_temporary(base);
             if( base_tmp == nullptr ) {
+                bool in_implied_do = idl_nesting_level > 0;
                 diag.add(Diagnostic("the value given for the parent component "
-                    "'" + name + "' " + (idl_nesting_level > 0
-                        ? "must be a variable inside an implied do loop"
-                        : "must be a constant or a variable here") + ", it "
-                    "would otherwise be evaluated once for every component of "
-                    "'" + name + "'",
+                    "'" + name + "' must be a constant or a variable " +
+                    (in_implied_do ? "inside an implied do loop" : "here") +
+                    ", it would otherwise be evaluated once for every "
+                    "component of '" + name + "'",
                     Level::Error, Stage::Semantic, {
-                        Label("", {parent_value->base.loc})}));
+                        Label(in_implied_do
+                            ? "help: assign it to a variable before the array "
+                              "constructor and give that variable here"
+                            : "help: give a named constant here",
+                            {parent_value->base.loc})}));
                 if( !compiler_options.continue_compilation ) {
                     throw SemanticAbort();
                 }

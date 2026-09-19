@@ -2705,8 +2705,8 @@ semantic error: type mismatch in structure constructor: the parent component 'pc
 1683 |     e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
      |                            ^ 
 
-semantic error: the value given for the parent component 'pck_base_t' must be a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+semantic error: the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
     --> tests/errors/continue_compilation_1.f90:1684:32
      |
-1684 |     ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
-     |                                ^^^^^^^^^^^ 
+1684 |     ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+     |                                ^^^^^^^^^^^ help: assign it to a variable before the array constructor and give that variable here
