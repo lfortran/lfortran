@@ -1860,6 +1860,7 @@ RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale w
 RUN(NAME intrinsics_477 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # right-padding of character args for LGT/LLT/LGE/LLE
 RUN(NAME intrinsics_478 LABELS gfortran llvm) # blank padding of character operands in LGE/LGT/LLE/LLT at run time
 RUN(NAME intrinsics_479 LABELS gfortran llvm) # date_and_time: VALUES(4) agrees with ZONE
+RUN(NAME intrinsics_480 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cshift on deferred-length character dummy array (#12392)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
