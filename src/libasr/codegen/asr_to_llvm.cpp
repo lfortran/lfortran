@@ -391,6 +391,7 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    int64_t null_array_descriptor_count;
     int64_t global_deep_count;
 
     CompilerOptions &compiler_options;
@@ -568,6 +569,7 @@ public:
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
     global_array_count(0),
+    null_array_descriptor_count(0),
     global_deep_count(0),
     compiler_options(compiler_options_),
     location_manager{lm},
@@ -5462,6 +5464,54 @@ public:
         current_der_type_name = get_type_key(x.m_dt_sym);
     }
 
+    // A descriptor array pointer is represented at run time as a pointer to an
+    // array descriptor, and that pointer is never null: an unassociated pointer
+    // points at a valid descriptor whose data pointer is null, because every
+    // reader of it dereferences the descriptor pointer unconditionally. Static
+    // data cannot run the usual runtime descriptor setup, so it gets a zeroed
+    // companion descriptor global instead. This is the single place that builds
+    // one; `desc_type` is the descriptor structure type of the array. The
+    // descriptor is mutable storage, so exactly one object may point at the
+    // result; see `create_single_use_null_array_descriptor_global` below for
+    // what that rules out.
+    llvm::GlobalVariable* create_null_array_descriptor_global(
+            llvm::Type* desc_type, const std::string& name) {
+        return new llvm::GlobalVariable(*module, desc_type, false,
+            llvm::GlobalVariable::InternalLinkage,
+            llvm::ConstantAggregateZero::get(desc_type), name);
+    }
+
+    // The same, for a `null()` value of type `array_type` appearing inside a
+    // static initializer, where no variable global exists to name it after.
+    //
+    // A fresh descriptor is minted on every call, and the returned constant is
+    // valid for ONE object only. A descriptor is mutable: pointer assignment
+    // writes the target's data pointer and bounds into it. So a constant
+    // holding this descriptor must not be used to initialize more than one
+    // object; broadcasting it over an array of structures, for example, would
+    // give every element the same descriptor, and a pointer assignment to one
+    // element would silently associate all of them. A caller that needs one
+    // descriptor per element must call this once per element. The emitted
+    // global is named `..._single_use_<n>` to keep that contract visible in the
+    // IR.
+    llvm::Constant* create_single_use_null_array_descriptor_global(
+            ASR::expr_t* var_expr, ASR::ttype_t* array_type) {
+        // `var_expr` names the variable the null belongs to, and it is what
+        // makes the descriptor type match that variable's own type: without it
+        // a StructType element is laid out as an anonymous struct, which keys a
+        // different `%array.N`, and that is an element type mismatch in the
+        // enclosing constant. It is required, so the caller must pass a
+        // resolved expression rather than an optional one straight out of ASR.
+        LCOMPILERS_ASSERT(var_expr != nullptr);
+        llvm::Type* el_type = llvm_utils->get_el_type(var_expr,
+            ASRUtils::extract_type(array_type), module.get());
+        llvm::Type* desc_type = llvm_utils->arr_api->get_array_type(var_expr,
+            ASRUtils::type_get_past_allocatable_pointer(array_type), el_type, false);
+        return create_null_array_descriptor_global(desc_type,
+            "null_array_descriptor_single_use_"
+                + std::to_string(null_array_descriptor_count++));
+    }
+
     // Builds the constant of type `struct_` from `args`, which hold the
     // members of its parent types first and then its own members. The
     // parent type is the first element of the LLVM structure, so the
@@ -5491,9 +5541,11 @@ public:
             llvm::Constant* initializer = nullptr;
             llvm::Type* type = nullptr;
             ASR::symbol_t* member_sym = struct_->m_symtab->get_symbol(struct_->m_members[i]);
+            // The member's declared type, when the member resolves to a
+            // variable. Null for the rare member kinds that do not.
+            ASR::ttype_t* member_type = nullptr;
             if (member_sym && ASR::is_a<ASR::Variable_t>(*member_sym)) {
-                ASR::ttype_t* member_type =
-                    ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
+                member_type = ASR::down_cast<ASR::Variable_t>(member_sym)->m_type;
                 if (ASRUtils::is_inline_character_struct_member(
                         struct_, member_type)) {
                     // Inline character member: flat [count*len x i8] byte blob.
@@ -5547,6 +5599,35 @@ public:
                 } else {
                     throw CodeGenError("Non-constant value found in struct initialization");
                 }
+            } else if (member_type != nullptr &&
+                       ASR::is_a<ASR::PointerNullConstant_t>(*value) &&
+                       ASRUtils::is_array(member_type) &&
+                       ASRUtils::extract_physical_type(member_type) ==
+                           ASR::array_physical_typeType::DescriptorArray) {
+                // Both the guard and the descriptor use the member's own
+                // declared type, never the null constant's: this constant
+                // initializes the member's field, and `getStructType` laid
+                // that field out from `member->m_type` with the same synthetic
+                // `Var(member)`, so that is the type that has to match. For
+                // conforming Fortran the two types agree -- `null()` takes the
+                // component's type and a `null(mold)` mold has to match it --
+                // so this only decides which type is authoritative when they
+                // do not.
+                //
+                // `PointerNullConstant::var_expr` cannot be used for this. It
+                // is optional and frequently absent: every path that builds a
+                // structure constructor's arguments fills it in only for a
+                // `StructType` or `FunctionType` element type, so it is null
+                // by construction for every intrinsic element type that
+                // reaches here, and `externalize_struct_refs_in_init` strips
+                // it whenever the struct symbol it names cannot be imported
+                // into the scope being initialized. Without it a derived type
+                // element is laid out as an anonymous struct, which keys a
+                // different descriptor type than the field already has.
+                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(member_sym);
+                initializer = create_single_use_null_array_descriptor_global(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, member->base.base.loc, &member->base)),
+                    member->m_type);
             } else {
                 visit_expr_wrapper(value);
                 initializer = llvm::dyn_cast<llvm::Constant>(tmp);
@@ -6347,14 +6428,9 @@ public:
                     // In separate compilation, main() cannot initialize
                     // submodule-private variables, so we need a valid
                     // descriptor from the start.
-                    std::string desc_name = llvm_var_name + "_descriptor__";
-                    llvm::GlobalVariable *desc_global = new llvm::GlobalVariable(
-                        *module, type_, false,
-                        llvm::GlobalVariable::InternalLinkage,
-                        llvm::ConstantAggregateZero::get(type_),
-                        desc_name);
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            desc_global);
+                            create_null_array_descriptor_global(type_,
+                                llvm_var_name + "_descriptor__"));
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
