@@ -8667,7 +8667,10 @@ public:
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
-                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
+                        // Fortran is case insensitive and symbols are stored
+                        // lowercased, so the name must be lowered before lookup
+                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(
+                            to_lower(func_call->m_func));
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -8859,8 +8862,12 @@ public:
                                 } else {
                                     is_correct_type_implieddoloop = false;
                             }
+                            // Fortran is case insensitive, so the structure
+                            // constructor name must be compared to the type
+                            // name without regard to case
                             if ((!is_correct_type_func && !is_correct_type_implieddoloop && !is_correct_type_name) ||
-                                (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0)) {
+                                (func_call != nullptr &&
+                                 to_lower(func_call->m_func) != to_lower(sym_type->m_name))) {
                                 diag.add(Diagnostic(
                                     "Array members must me of the same type as the struct",
                                     Level::Error, Stage::Semantic, {
@@ -13226,8 +13233,10 @@ public:
                 AST::FuncCallOrArray_t* func_call =
                     AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
                 if (func_call->m_func != nullptr) {
+                    // Fortran is case insensitive and symbols are stored
+                    // lowercased, so the name must be lowered before lookup
                     ASR::symbol_t* sym_found =
-                        current_scope->resolve_symbol(func_call->m_func);
+                        current_scope->resolve_symbol(to_lower(func_call->m_func));
                     if (sym_found != nullptr && ASR::is_a<ASR::Struct_t>(
                             *ASRUtils::symbol_get_past_external(sym_found))) {
                         expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
