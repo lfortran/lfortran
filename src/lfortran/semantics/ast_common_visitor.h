@@ -11576,32 +11576,39 @@ public:
         return ASRUtils::check_equal_type(member_scalar, value_scalar, nullptr, nullptr);
     }
 
+    // `type` as written in a diagnostic, such as `integer(4)`,
+    // `real(8), dimension(2)` or `type(a_t), dimension(:)`.
+    // `type_declaration` names the derived type when `type` is one.
+    std::string fortran_type_to_str(ASR::ttype_t* type,
+            ASR::symbol_t* type_declaration) {
+        ASR::ttype_t* scalar = ASRUtils::extract_type(type);
+        std::string type_str = ASRUtils::type_to_str_fortran_symbol(
+            scalar, type_declaration, true);
+        if (ASR::is_a<ASR::StructType_t>(*scalar)) {
+            type_str = "type(" + type_str + ")";
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t d = 0; d < rank; d++) {
+            type_str += d == 0 ? ", dimension(" : ", ";
+            int64_t extent = 0;
+            if (dims[d].m_length != nullptr && ASRUtils::extract_value(
+                    ASRUtils::expr_value(dims[d].m_length), extent)) {
+                type_str += std::to_string(extent);
+            } else {
+                type_str += ":";
+            }
+            if (d + 1 == rank) {
+                type_str += ")";
+            }
+        }
+        return type_str;
+    }
+
     // The type of the component `member` as written in a diagnostic, such as
     // `integer(4)` or `real(8), dimension(2)`.
     std::string struct_component_type_to_str(ASR::Variable_t* member) {
-        ASR::ttype_t* member_scalar = ASRUtils::extract_type(member->m_type);
-        std::string member_type = ASRUtils::type_to_str_fortran_symbol(
-            member_scalar, member->m_type_declaration, true);
-        if (ASR::is_a<ASR::StructType_t>(*member_scalar)) {
-            member_type = "type(" + member_type + ")";
-        }
-        ASR::dimension_t* member_dims = nullptr;
-        size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
-            member->m_type, member_dims);
-        for (size_t d = 0; d < member_rank; d++) {
-            member_type += d == 0 ? ", dimension(" : ", ";
-            int64_t extent = 0;
-            if (member_dims[d].m_length != nullptr && ASRUtils::extract_value(
-                    ASRUtils::expr_value(member_dims[d].m_length), extent)) {
-                member_type += std::to_string(extent);
-            } else {
-                member_type += ":";
-            }
-            if (d + 1 == member_rank) {
-                member_type += ")";
-            }
-        }
-        return member_type;
+        return fortran_type_to_str(member->m_type, member->m_type_declaration);
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -23155,6 +23162,17 @@ public:
         }
     }
 
+    // What `set_parent_component_kwarg()` did with a keyword argument.
+    enum class ParentComponentKwarg {
+        // The keyword does not name the parent component.
+        not_parent,
+        // The parent's arguments were filled from the keyword's value.
+        filled,
+        // The keyword names the parent component but the value could not be
+        // used; the error was reported and the parent's arguments are unset.
+        error,
+    };
+
     // True if reading `e` several times reads the same storage every time, so
     // that taking each of its components separately evaluates nothing twice.
     static bool is_designator(ASR::expr_t* e) {
@@ -23202,18 +23220,18 @@ public:
     // may give it by keyword: `e_t(base_t=base_t(1), z=2)`. A constructor
     // carries one argument per component, the components inherited from the
     // parent first, so the parent's value is spread over those leading
-    // arguments, and `n_parent_args` reports how many of them were filled.
-    // Returns false if `name` does not name the parent component.
-    bool set_parent_component_kwarg(Vec<ASR::call_arg_t>& args,
+    // arguments, and `n_parent_args` reports how many of them the parent
+    // component owns (whether or not they could be filled).
+    ParentComponentKwarg set_parent_component_kwarg(Vec<ASR::call_arg_t>& args,
             const std::vector<ASR::symbol_t*>& constructor_arg_syms,
             ASR::symbol_t* struct_sym, const std::string& name,
-            AST::expr_t* value, const Location& loc, diag::Diagnostics& diag,
+            AST::expr_t* value, diag::Diagnostics& diag,
             size_t& n_parent_args) {
         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(struct_sym));
         if( struct_type->m_parent == nullptr ||
             to_lower(ASRUtils::symbol_name(struct_type->m_parent)) != name ) {
-            return false;
+            return ParentComponentKwarg::not_parent;
         }
         ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
             struct_type->m_parent);
@@ -23245,11 +23263,14 @@ public:
             ASRUtils::is_array(ASRUtils::expr_type(parent_value)) ) {
             diag.add(Diagnostic("type mismatch in structure constructor: the "
                 "parent component '" + name + "' requires a scalar value of "
-                "type " + name + ", not " + ASRUtils::type_to_str_with_kind(
-                    ASRUtils::expr_type(parent_value), parent_value),
+                "type type(" + name + "), not " + fortran_type_to_str(
+                    ASRUtils::expr_type(parent_value), value_sym),
                 Level::Error, Stage::Semantic, {
                     Label("", {parent_value->base.loc})}));
-            throw SemanticAbort();
+            if( !compiler_options.continue_compilation ) {
+                throw SemanticAbort();
+            }
+            return ParentComponentKwarg::error;
         }
         for( size_t i = 0; i < n_parent_args; i++ ) {
             if( args[i].m_value != nullptr ) {
@@ -23257,8 +23278,12 @@ public:
                     ASRUtils::symbol_name(constructor_arg_syms[i])) + "' is "
                     "already specified, it cannot also be given by the parent "
                     "component '" + name + "'",
-                    Level::Error, Stage::Semantic, {Label("", {loc})}));
-                throw SemanticAbort();
+                    Level::Error, Stage::Semantic, {
+                        Label("", {parent_value->base.loc})}));
+                if( !compiler_options.continue_compilation ) {
+                    throw SemanticAbort();
+                }
+                return ParentComponentKwarg::error;
             }
         }
         if( parent_args != nullptr ) {
@@ -23268,7 +23293,7 @@ public:
             for( size_t i = 0; i < n_parent_args; i++ ) {
                 args.p[i] = parent_args[i];
             }
-            return true;
+            return ParentComponentKwarg::filled;
         }
         // Any other expression is read component by component. It must be
         // evaluated exactly once, so anything that is not a designator is
@@ -23292,7 +23317,7 @@ public:
                     parent_value->base.loc, &base_i->base, base_sym,
                     constructor_arg_syms[i], current_scope));
         }
-        return true;
+        return ParentComponentKwarg::filled;
     }
 
     // `null_args`, if given, has an entry for each positional argument in
@@ -23331,20 +23356,27 @@ public:
             null_args->resize(args.size(), NullReference::none);
         }
 
-        // The leading arguments filled by a parent component keyword, if one
-        // was given, and the name of that parent component.
+        // The leading arguments owned by a parent component keyword, if one
+        // was given, and the name of that parent component. When the keyword
+        // was rejected those arguments stay unset and are not reported again
+        // as missing.
         size_t n_parent_component_args = 0;
+        bool parent_component_rejected = false;
         std::string parent_component_name;
         for (size_t i = 0; i < n; i++) {
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
-                size_t n_filled = 0;
-                if (set_parent_component_kwarg(args, constructor_arg_syms, fn,
-                        name, kwargs[i].m_value, loc, diag, n_filled)) {
-                    n_parent_component_args = n_filled;
+                size_t n_owned = 0;
+                ParentComponentKwarg parent_result = set_parent_component_kwarg(
+                    args, constructor_arg_syms, fn, name, kwargs[i].m_value,
+                    diag, n_owned);
+                if (parent_result != ParentComponentKwarg::not_parent) {
+                    n_parent_component_args = n_owned;
                     parent_component_name = name;
+                    parent_component_rejected |=
+                        parent_result == ParentComponentKwarg::error;
                     continue;
                 }
                 diag.semantic_error_label(
@@ -23368,8 +23400,12 @@ public:
                     diag.add(Diagnostic("component '" + name + "' is already "
                         "specified by the parent component '"
                         + parent_component_name + "'",
-                        Level::Error, Stage::Semantic, {Label("", {loc})}));
-                    throw SemanticAbort();
+                        Level::Error, Stage::Semantic, {
+                            Label("", {expr->base.loc})}));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    continue;
                 }
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
@@ -23387,6 +23423,12 @@ public:
         // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
+                if( parent_component_rejected && i < n_parent_component_args ) {
+                    // The parent component keyword owns this argument; its
+                    // error was already reported, so do not report the
+                    // argument as missing too.
+                    continue;
+                }
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
                 LCOMPILERS_ASSERT(arg_sym != nullptr);
                 bool is_kind_param = std::find(info.kind_indices.begin(),

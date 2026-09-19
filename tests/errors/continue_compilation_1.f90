@@ -1668,8 +1668,15 @@ subroutine parent_component_keyword_conflicts()
     type, extends(pck_base_t) :: pck_e_t
         integer :: z
     end type
+    type, extends(pck_e_t) :: pck_f_t
+        integer :: w
+    end type
     type(pck_e_t) :: e
+    type(pck_base_t) :: arr(2)
+    type(pck_f_t) :: f
     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
-    e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type pck_base_t, not integer(4)
+    e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+    e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+    e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
 end subroutine
