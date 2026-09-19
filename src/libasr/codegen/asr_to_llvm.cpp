@@ -7398,11 +7398,14 @@ public:
                 // Inline character members (bind(C)/SEQUENCE/COMMON) are stored
                 // as a flat [count*len x i8] blob in place: there is no string
                 // descriptor to allocate or initialize at runtime (scalars and
-                // arrays alike), so skip all per-member setup for them.
+                // arrays alike), so skip all per-member setup for them. Only
+                // the initial value is stored: either the constructor default
+                // of the enclosing member or, for a plain variable, the
+                // component's own default.
                 if (ASR::is_a<ASR::Variable_t>(*sym)
                         && ASRUtils::is_inline_character_struct_member(
                             struct_type_t, symbol_type)) {
-                    if (init_sc && member_init) {
+                    if (apply_init && member_init) {
                         builder->CreateStore(
                             get_inline_char_member_constant(symbol_type, member_init),
                             llvm_utils->create_gep2(name2dertype[struct_type_name], ptr,
