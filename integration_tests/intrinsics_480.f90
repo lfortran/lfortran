@@ -1,4 +1,4 @@
-program issue12392
+program intrinsics_480
 implicit none
 character(len=5) :: names(4)
 names(1) = "aaaaa"
