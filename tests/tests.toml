@@ -519,6 +519,10 @@ asr = true
 filename = "errors/deferred_type_syntax_1.f90"
 syntax_only_cc = true
 
+[[test]]
+filename = "errors/requirement_syntax_1.f90"
+syntax_only_cc = true
+
 
 [[test]]
 filename = "errors/maskl_incorrect_bit_size.f90"

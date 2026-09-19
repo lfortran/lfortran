@@ -5,16 +5,16 @@ module monoid_m
     private
     public :: monoid, extended_monoid, derive_extended_monoid
 
-    requirement monoid(T, combine, empty)
-        require :: semigroup(T, combine)
+    requirement monoid {T, combine, empty}
+        require :: semigroup {T, combine}
         pure function empty()
             type(T) :: empty
         end function
     end requirement
 
-    requirement extended_monoid(T, combine, sconcat, stimes, empty, mconcat)
-        require :: extended_semigroup(T, combine, sconcat, stimes)
-        require :: monoid(T, combine, empty)
+    requirement extended_monoid {T, combine, sconcat, stimes, empty, mconcat}
+        require :: extended_semigroup {T, combine, sconcat, stimes}
+        require :: monoid {T, combine, empty}
         pure function mconcat(list) result(combined)
             type(T), intent(in) :: list(:)
             type(T) :: combined
@@ -22,7 +22,7 @@ module monoid_m
     end requirement
 
     template derive_extended_monoid(T, combine, empty)
-        require :: monoid(T, combine, empty)
+        require :: monoid {T, combine, empty}
 
         private
         public :: stimes, mconcat

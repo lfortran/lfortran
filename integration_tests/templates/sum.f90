@@ -2,7 +2,7 @@ module sum_m
     private
     public :: sum_t
 
-    requirement R(T, Tadd, Tzero)
+    requirement R {T, Tadd, Tzero}
         type :: T; end type
         function Tadd(x, y) result(z)
             type(T), intent(in) :: x, y
@@ -14,7 +14,7 @@ module sum_m
     end requirement
 
     template sum_t(T, Tadd, Tzero)
-        require :: R(T, Tadd, Tzero)
+        require :: R {T, Tadd, Tzero}
         private
         public :: sum_generic
     contains

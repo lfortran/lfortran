@@ -4,7 +4,7 @@ module template_matrix_01_m
     private
     public :: matrix_t
 
-    requirement elemental_op(t, op)
+    requirement elemental_op {t, op}
         deferred type :: t
         pure elemental function op(l, r) result(rs)
             type(t), intent(in) :: l, r
@@ -13,7 +13,7 @@ module template_matrix_01_m
     end requirement
 
     template matrix_t(t, plus, times, n)
-        require :: elemental_op(t, plus), elemental_op(t, times)
+        require :: elemental_op {t, plus}, elemental_op {t, times}
         integer :: n
         
         private

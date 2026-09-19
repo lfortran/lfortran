@@ -3,7 +3,7 @@ module sort_m
     private
     public :: sort_tmpl
 
-    requirement comparable(T, lt, gt)
+    requirement comparable {T, lt, gt}
         deferred type :: T
         elemental function lt(lhs, rhs)
             type(T), intent(in) :: lhs, rhs
@@ -19,7 +19,7 @@ module sort_m
         private
         public :: sorted_order, sorted, sort
 
-        require :: comparable(T, lt, gt)
+        require :: comparable {T, lt, gt}
 
         generic :: operator(<) => lt
         generic :: operator(>) => gt

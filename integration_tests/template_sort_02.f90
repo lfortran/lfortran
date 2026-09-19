@@ -20,7 +20,7 @@ module template_sort_02_m
     use template_sort_02_type
     implicit none
 
-    requirement op_r(T, U, V, op_func)
+    requirement op_r {T, U, V, op_func}
         deferred type :: T
         deferred type :: U
         deferred type :: V
@@ -47,7 +47,7 @@ contains
 
     ! non-generic reference
     recursive subroutine quicksort {T, lt} (arr, low, high)
-        require :: op_r(T, T, logical, lt)
+        require :: op_r {T, T, logical, lt}
         type(T), intent(inout) :: arr(:)
         integer, intent(in) :: low, high
         

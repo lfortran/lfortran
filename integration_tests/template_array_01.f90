@@ -4,12 +4,12 @@ module template_array_01_m
     private
     public :: test_template
 
-    requirement r(t)
+    requirement r {t}
         deferred type :: t
     end requirement
 
     template array_tmpl(t)
-        require :: r(t)
+        require :: r {t}
         private
         public :: insert_t
     contains

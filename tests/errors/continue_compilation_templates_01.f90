@@ -2,7 +2,7 @@ module continue_compilation_templates_01_mod
     implicit none
 
     ! Duplicate parameter name in requirement's namelist
-    requirement dup_param_req(T, T, op_func)
+    requirement dup_param_req {T, T, op_func}
         deferred type :: T
         interface
             function op_func(x) result(y)
@@ -15,7 +15,7 @@ module continue_compilation_templates_01_mod
     ! A second, independent duplicate-parameter requirement, to verify
     ! compilation continues past the first error above and still
     ! reports this one too.
-    requirement dup_param_req2(V, V, W, comp_func)
+    requirement dup_param_req2 {V, V, W, comp_func}
         deferred type :: V
         deferred type :: W
         interface

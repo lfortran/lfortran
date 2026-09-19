@@ -3,12 +3,12 @@ module reverse_m
     private
     public :: reverse_tmpl, test_reverse
 
-    requirement default_behavior(t)
+    requirement default_behavior {t}
         deferred type :: t
     end requirement
 
     template reverse_tmpl(t)
-        require :: default_behavior(t)
+        require :: default_behavior {t}
         private
         public :: reverse
     contains
