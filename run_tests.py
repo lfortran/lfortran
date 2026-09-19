@@ -114,6 +114,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "global_init",
+                        "global_init_wire",
                         "where",
                         "nested_vars", "intent_out_deallocate", "openmp",
                         "array_struct_temporary", "coarray"] and
