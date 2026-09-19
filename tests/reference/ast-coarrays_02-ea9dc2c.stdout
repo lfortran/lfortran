@@ -192,6 +192,7 @@
             [(If
                 0
                 ()
+                0
                 (> (FuncCallOrArray
                     nc
                     []
@@ -238,6 +239,7 @@
                 (If
                     0
                     ()
+                    0
                     (/= status 0)
                     [(Exit
                         0
@@ -264,6 +266,7 @@
             (If
                 0
                 ()
+                0
                 (> (FuncCallOrArray
                     parent
                     []
@@ -318,6 +321,7 @@
                 (If
                     0
                     ()
+                    0
                     (/= status 0)
                     [(Exit
                         0

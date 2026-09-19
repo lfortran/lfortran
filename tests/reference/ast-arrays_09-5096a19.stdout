@@ -47,6 +47,7 @@
         (If
             0
             ()
+            0
             (/= (FuncCallOrArray
                 a
                 []
