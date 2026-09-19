@@ -2232,25 +2232,38 @@ class PRIFInterface {
             emit_allocate_call(var, nullptr, 0, hexpr, dexpr, alloc_sub,
                 handle_struct, int64, loc, body);
 
-            // If the saved coarray had an initial value (e.g. x[*] = 0),
-            // bind the data pointer to a local variable and assign the value.
-            if (sc.init_value) {
+            // Bind the Fortran pointer to the storage just allocated. The
+            // coarray itself is bound when this initializer can see it — the
+            // initializer of the unit that declares it — so that anything
+            // else the same initializer runs, such as `ptr => co_var`, finds
+            // it already associated. An initializer that cannot see the
+            // variable, the translation unit's own, binds a local of its own
+            // instead and only to give the coarray its initial value.
+            bool declared_here =
+                ASRUtils::symbol_parent_symtab(&var->base) == scope->parent;
+            if (!declared_here && sc.init_value == nullptr) return;
+
+            ASR::expr_t *bound = nullptr;
+            if (declared_here) {
+                bound = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &var->base));
+            } else {
                 std::string local_name = scope->get_unique_name(
                     std::string(var->m_name) + "__init_ptr");
-                ASR::symbol_t *local_sym = declare_variable(
-                    scope, loc, local_name, var->m_type, // already Pointer_t
-                    ASR::intentType::Local, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Required, false);
-                ASR::expr_t *local_expr = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, local_sym));
-                ASR::ttype_t *orig_type = original_types[&var->base];
+                bound = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    declare_variable(scope, loc, local_name,
+                        var->m_type, // already Pointer_t
+                        ASR::intentType::Local, nullptr,
+                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::presenceType::Required, false)));
+            }
+            ASR::ttype_t *orig_type = original_types[&var->base];
+            body.push_back(al, ASRUtils::STMT(
+                ASR::make_CPtrToPointer_t(al, loc, dexpr, bound,
+                    create_shape_expr(loc, orig_type),
+                    create_lbound_expr(loc, orig_type))));
+            if (sc.init_value) {
                 body.push_back(al, ASRUtils::STMT(
-                    ASR::make_CPtrToPointer_t(al, loc, dexpr, local_expr,
-                        create_shape_expr(loc, orig_type),
-                        create_lbound_expr(loc, orig_type))));
-                body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, local_expr, sc.init_value,
+                    ASR::make_Assignment_t(al, loc, bound, sc.init_value,
                         nullptr, false, false)));
             }
         }
@@ -2284,9 +2297,12 @@ class PRIFInterface {
                     emit_saved_coarray_init(saved_coarrays.p[i], fn->m_symtab,
                         loc, body);
                 }
-                for (size_t j = 0; j < body.n; j++) {
-                    ASRUtils::global_init_append_stmt(al, fn, body[j]);
-                }
+                // Ahead of whatever the initializer already holds: an
+                // initialization can read a coarray, as `integer, pointer ::
+                // ptr => co_var` does, so the storage has to exist first.
+                std::vector<ASR::stmt_t*> stmts;
+                for (size_t j = 0; j < body.n; j++) stmts.push_back(body[j]);
+                ASRUtils::global_init_prepend_stmts(al, fn, stmts);
             }
         }
 

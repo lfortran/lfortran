@@ -5828,7 +5828,9 @@ options = "--coarray=true"
 [[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass, so the reference shows who calls each saved
+# coarray's allocation as well as where it ended up.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
