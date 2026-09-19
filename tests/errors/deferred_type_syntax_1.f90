@@ -13,7 +13,7 @@
 
 module deferred_type_syntax_1
 
-    requirement r(t)
+    requirement r {t}
         type, deferred :: t  ! {Error} Token 'deferred' is unexpected here
     end requirement
 

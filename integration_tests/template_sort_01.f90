@@ -22,7 +22,7 @@ module template_sort_01_m
     private
     public :: sort_t
 
-    requirement op_r(T, U, V, op_func)
+    requirement op_r {T, U, V, op_func}
         deferred type :: T
         deferred type :: U
         deferred type :: V
@@ -34,7 +34,7 @@ module template_sort_01_m
     end requirement
 
     template qsort_t(T, lt)
-        require :: op_r(T, T, logical, lt)
+        require :: op_r {T, T, logical, lt}
         private
         public :: qsort
     contains

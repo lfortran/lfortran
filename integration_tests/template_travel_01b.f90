@@ -4,7 +4,7 @@ module template_travel_01b_m
     private
     public :: travel_tmpl, test_template
 
-    requirement operation(A, B, C, op)
+    requirement operation {A, B, C, op}
         deferred type :: A
         deferred type :: B
         deferred type :: C
@@ -17,10 +17,10 @@ module template_travel_01b_m
     end requirement
 
     template travel_tmpl(D, T, S, plus_D, plus_T, D_divided_by_T, D_divided_by_S)
-        require :: operation(D, D, D, plus_D)
-        require :: operation(T, T, T, plus_T)
-        require :: operation(D, T, S, D_divided_by_T)
-        require :: operation(D, S, T, D_divided_by_S)
+        require :: operation {D, D, D, plus_D}
+        require :: operation {T, T, T, plus_T}
+        require :: operation {D, T, S, D_divided_by_T}
+        require :: operation {D, S, T, D_divided_by_S}
         private
         public :: avg_S_from_T, avg_S_from_S
     contains

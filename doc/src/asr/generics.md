@@ -13,7 +13,7 @@ From a high-level perspective generics are supported in LFortran by three main e
 Requirements declare deferred types (generic types) and its associated functions, similar to *typeclasses* in Haskell and *traits* in Rust. For example, the signature for a generic monoid of any type can be represented by the following requirement:
 
 ```fortran
-requirement monoid(T, op)
+requirement monoid {T, op}
   ! declaring a deferred type (generic type)
   deferred type :: T
   ! declaring a function associated with the deferred type
@@ -44,13 +44,13 @@ As a running example, we will consider a generic function for n-times multiplica
 ```fortran
 module generics_example
   ! same requirement as before
-  requirement monoid(T, op, empty)
+  requirement monoid {T, op, empty}
     ...
   end requirement
 
   ! the template starts from here
   template array_t(S, op_temp, empty_temp)
-    require :: monoid(S, op_temp, empty_temp)
+    require :: monoid {S, op_temp, empty_temp}
   contains
     ! below is the generic function
     function array_sum(arr) result(r)
@@ -72,7 +72,7 @@ end module
 
 The template `array_t` contains the generic function `array_sum` that takes an array `arr` of type `S`. The template later on will be added to the parent symbol table as a `Template` symbol with the name `array_t`.
 
-Typing context has to be obtained to type the parameter `arr` and the addition operation `op_temp(r, arr(i))`. Such typing context can be made available within the scope of the template by using a requirement. Here, the `Require` statement `require :: monoid(S, op_temp, empty_temp)` builds the types of the template's parameters `S`, `op_temp`, and `empty_temp` based on the types of the symbols in `monoid`.
+Typing context has to be obtained to type the parameter `arr` and the addition operation `op_temp(r, arr(i))`. Such typing context can be made available within the scope of the template by using a requirement. Here, the `Require` statement `require :: monoid {S, op_temp, empty_temp}` builds the types of the template's parameters `S`, `op_temp`, and `empty_temp` based on the types of the symbols in `monoid`.
 
 This corresponds to the `visit_UnitRequire` that can be found in `visit_Template` during symbol table visit. Calling a require statement copies the symbols from the requiremement and replaces their names with the argument names given by the require statement. In this case, the symbol `T`, `op`, and `empty` from the requirement `monoid` are replaced by `S`, `op_temp`, and `empty_temp` that are passed as arguments. This replacement is done by the function `rename_symbol`.
 
