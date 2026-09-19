@@ -2029,19 +2029,11 @@ public:
             }
         }
 
-        // Register coarray per-TU init functions in @llvm.global_ctors
-        // so saved coarray allocations run before main() in separate compilation
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
-                std::string name = item.first;
-                if (name.find("__lfortran_coarray_init") == 0) {
-                    llvm::Function *init_fn = module->getFunction(name);
-                    if (init_fn) {
-                        llvm::appendToGlobalCtors(*module, init_fn, 65535);
-                    }
-                }
-            }
-        }
+        // An initializer this translation unit owns belongs to no program
+        // unit, so nothing in ASR calls it: it is the target's own startup
+        // that has to. A module or program initializer needs nothing here —
+        // the ASR already calls those where Fortran says they run.
+        emit_global_init_ctor(x);
 
         // Metal has no separate device object file, so the shader source this
         // translation unit generated is embedded here and registered under
@@ -2051,6 +2043,14 @@ public:
 
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
+    }
+
+    // Run the translation unit's own startup initializer before main().
+    void emit_global_init_ctor(const ASR::TranslationUnit_t &x) {
+        if (x.m_global_init == nullptr) return;
+        llvm::Function *init_fn = module->getFunction(x.m_global_init);
+        if (init_fn == nullptr) return;
+        llvm::appendToGlobalCtors(*module, init_fn, 65535);
     }
 
     void emit_gpu_metal_source_registration(const ASR::TranslationUnit_t &x) {
@@ -6079,36 +6079,6 @@ public:
         }
     }
 
-    void append_struct_array_broadcast_global_ctor(const std::string& name,
-            ASR::ArrayBroadcast_t* broadcast, llvm::GlobalVariable* global,
-            ASR::expr_t* target_expr, ASR::ttype_t* target_type) {
-        llvm::BasicBlock* saved_block = builder->GetInsertBlock();
-        llvm::FunctionType* function_type = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context), {}, false);
-        llvm::Function* init_fn = llvm::Function::Create(function_type,
-            llvm::Function::InternalLinkage,
-            "__lfortran_broadcast_init_" + name + "_" +
-                std::to_string(global_deep_count++),
-            module.get());
-        llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", init_fn);
-        builder->SetInsertPoint(entry);
-        // Set the elements' members up before broadcasting into them, as is
-        // done for a save variable of the same shape. The static initializer
-        // zeroed the global, so an array descriptor member of an element has
-        // no descriptor to be copied into yet; this gives each element one of
-        // its own, which also keeps the elements independent of each other.
-        if (needs_struct_array_member_init(target_expr, target_type)) {
-            allocate_array_members_of_struct_arrays(target_expr, global, target_type);
-        }
-        store_array_broadcast_to_target(broadcast, global, target_expr,
-            target_type, false);
-        builder->CreateRetVoid();
-        llvm::appendToGlobalCtors(*module, init_fn, 65535);
-        if (saved_block != nullptr) {
-            builder->SetInsertPoint(saved_block);
-        }
-    }
-
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -6298,17 +6268,6 @@ public:
                          if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
                              module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 llvm::ConstantArray::getNullValue(type));
-                          } else if (ASR::ArrayBroadcast_t* broadcast =
-                                     get_struct_array_broadcast(value)) {
-                             llvm::GlobalVariable* global =
-                                 module->getNamedGlobal(llvm_var_name);
-                             global->setInitializer(llvm::ConstantArray::getNullValue(type));
-                             ASR::expr_t* target_expr = ASRUtils::EXPR(
-                                 ASR::make_Var_t(al, x.base.base.loc,
-                                     const_cast<ASR::symbol_t*>(&x.base)));
-                             append_struct_array_broadcast_global_ctor(
-                                 llvm_var_name, broadcast, global, target_expr,
-                                 x.m_type);
                           } else {
                              llvm::Constant* initializer = get_const_array(value, type->getArrayElementType());
                              module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);

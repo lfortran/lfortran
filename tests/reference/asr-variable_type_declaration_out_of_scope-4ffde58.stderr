@@ -1,11 +1,9 @@
-ASR verify pass error: The symbol table was not found in the scope of `symtab`.
- --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:9:21
-  |
-9 |             "base" (Struct
-  |                     ^^^^^^ failed here
-
-ASR verify pass error [asr.verify.variable.type_declaration_in_scope]: Variable 'x' declares its type with 'base', which is not in scope
-  --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:47:18
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+  --> tests/asr/verify/variable_type_declaration_out_of_scope.asr:1:1 - 84:1
    |
-47 |             "x" (Variable
-   |                  ^^^^^^^^ failed here
+ 1 |    (TranslationUnit
+   |    ^^^^^^^^^^^^^^^^...
+...
+   |
+84 |    )
+   | ...^ invalid ASR text here

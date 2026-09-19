@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.struct.sequence_type_not_extended]: 'derived' extends 'base', which is a sequence type
-  --> tests/asr/verify/sequence_type_extended.asr:34:24
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+  --> tests/asr/verify/sequence_type_extended.asr:1:1 - 80:1
    |
-34 |             "derived" (Struct
-   |                        ^^^^^^ failed here
+ 1 |    (TranslationUnit
+   |    ^^^^^^^^^^^^^^^^...
+...
+   |
+80 |    )
+   | ...^ invalid ASR text here

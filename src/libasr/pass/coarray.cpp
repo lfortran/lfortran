@@ -2193,8 +2193,8 @@ class PRIFInterface {
         }
 
         // Generate a per-TU init function that allocates all saved coarrays.
-        // Registered via @llvm.global_ctors by the LLVM backend so it runs
-        // automatically before main(), making saved coarray allocation work
+        // It becomes the translation unit's startup initializer, which every
+        // backend runs before main(), making saved coarray allocation work
         // across separate compilation units.
         void generate_tu_init_function(const Location &loc) {
             if (saved_coarrays.n == 0) return;
@@ -2273,6 +2273,10 @@ class PRIFInterface {
                 false, false, false, nullptr);
 
             global_scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
+            // Nothing in Fortran calls this, so the translation unit names it
+            // as its startup initializer and each backend runs it the way
+            // that target starts up.
+            unit.m_global_init = s2c(al, fn_name);
         }
 
         ASR::expr_t* make_prif_get_call(const Location &loc,

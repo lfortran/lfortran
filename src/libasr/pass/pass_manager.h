@@ -20,6 +20,7 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_select_case.h>
@@ -119,6 +120,7 @@ namespace LCompilers {
             {"subroutine_from_function", &pass_create_subroutine_from_function},
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
+            {"global_init", &pass_global_init},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -270,6 +272,11 @@ namespace LCompilers {
             _passes = {
                 "global_stmts",
                 "init_expr",
+                // A declaration initializer no target can lay out as static
+                // data becomes an executable statement of a startup
+                // initializer here, which the passes below lower like any
+                // other procedure body.
+                "global_init",
                 "function_call_in_declaration",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower

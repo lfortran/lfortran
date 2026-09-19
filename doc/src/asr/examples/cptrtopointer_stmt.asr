@@ -133,8 +133,10 @@
             :lower_bounds nil
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

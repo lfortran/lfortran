@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.struct.deferred_binding_overridden]: 'derived' is not abstract but does not override the deferred type bound procedure 'meth'
-   --> tests/asr/verify/deferred_binding_not_overridden.asr:109:24
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/deferred_binding_not_overridden.asr:1:1 - 155:1
     |
-109 |             "derived" (Struct
-    |                        ^^^^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+155 |    )
+    | ...^ invalid ASR text here

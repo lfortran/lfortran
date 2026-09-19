@@ -581,7 +581,7 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al,
                 "lcompilers_user_defined_functions"));
             ASR::symbol_t* module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al,
                 fn->base.base.loc, module_scope, module_name, nullptr, nullptr, 0,
-                false, false, false));
+                false, false, false, nullptr));
             tu_scope->add_symbol(module_name, module);
             module_scope->add_symbol(fn->m_name, moved);
             // Recorded before the copy's body is visited, which can refer to
@@ -1774,7 +1774,7 @@ class ParallelRegionVisitor :
             
             ASR::symbol_t* thread_data_module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al, loc,
                                                 current_scope, s2c(al, thread_data_module_name), nullptr,
-                                                module_dependencies.p, module_dependencies.n, false, false, false));
+                                                module_dependencies.p, module_dependencies.n, false, false, false, nullptr));
             current_scope->parent->add_symbol(thread_data_module_name, thread_data_module);
             current_scope = current_scope_copy;
             return {thread_data_module_name, thread_data_struct};

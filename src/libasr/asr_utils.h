@@ -7166,7 +7166,8 @@ class SymbolDuplicator {
             al, module_t->base.base.loc, module_symtab,
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
-            module_t->m_has_submodules, module_t->m_start_name, module_t->m_end_name
+            module_t->m_has_submodules, module_t->m_global_init,
+            module_t->m_start_name, module_t->m_end_name
         ));
     }
 

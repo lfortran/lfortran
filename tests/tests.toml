@@ -6118,3 +6118,7 @@ asr = true
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
+
+[[test]]
+filename = "../integration_tests/global_init_01.f90"
+pass = "global_init"

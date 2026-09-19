@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.gpu_kernel_launch.argument_count]: GpuKernelLaunch passes 0 arguments to kernel '__lfortran_gpu_kernel_0', which declares 1
-   --> tests/asr/verify/gpu_kernel_launch_argument_count.asr:157:12
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/gpu_kernel_launch_argument_count.asr:1:1 - 181:1
     |
-157 |           (GpuKernelLaunch
-    |            ^^^^^^^^^^^^^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+181 |    )
+    | ...^ invalid ASR text here
