@@ -32,6 +32,20 @@ end type single_score
 type(single_score) :: setup
 type(date) :: local_var = DATE(26, 2014)
 
+! Keyword arguments in a non lowercase structure constructor, including the
+! out of order form where the keywords do not follow component declaration
+! order, and the mixed positional/keyword form.
+type(date), parameter :: kw_upper = DATE(year=2020, day=9)
+type(date), parameter :: kw_mixed = Date(10, year=2021)
+type(date) :: kw_var = DATE(year=2022, day=11)
+
+! A nested structure constructor: a component of `single_score` is itself a
+! derived type, so the inner constructor has to be folded recursively before
+! the outer one can become a compile time constant.
+type(single_score), parameter :: nested_upper = SINGLE_SCORE(DATE(7, 2019), 42)
+type(single_score), parameter :: nested_arr(2) = &
+    [SINGLE_SCORE(DATE(5, 2017), 1), Single_Score(Date(4, 2016), 2)]
+
 ! The derived type `date_t` is defined in derived_types_176_m and imported here,
 ! so a constructor spelled for it in this program unit resolves to an
 ! ExternalSymbol that has to be unwrapped after the (now case insensitive)
@@ -83,6 +97,25 @@ if (ext_arr(2)%year /= 2017) error stop 36
 if (ext_arr(2)%day /= 29) error stop 37
 if (ext_var%year /= 2018) error stop 38
 if (ext_var%day /= 30) error stop 39
+
+! Keyword arguments, out of order and mixed with a positional argument.
+if (kw_upper%year /= 2020) error stop 40
+if (kw_upper%day /= 9) error stop 41
+if (kw_mixed%year /= 2021) error stop 42
+if (kw_mixed%day /= 10) error stop 43
+if (kw_var%year /= 2022) error stop 44
+if (kw_var%day /= 11) error stop 45
+
+! Nested structure constructors, scalar and array.
+if (nested_upper%play_day%year /= 2019) error stop 46
+if (nested_upper%play_day%day /= 7) error stop 47
+if (nested_upper%score /= 42) error stop 48
+if (nested_arr(1)%play_day%year /= 2017) error stop 49
+if (nested_arr(1)%play_day%day /= 5) error stop 50
+if (nested_arr(1)%score /= 1) error stop 51
+if (nested_arr(2)%play_day%year /= 2016) error stop 52
+if (nested_arr(2)%play_day%day /= 4) error stop 53
+if (nested_arr(2)%score /= 2) error stop 54
 
 call check_from_module()
 
