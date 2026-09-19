@@ -42,9 +42,9 @@ end module
 program template_02
   use template_02_m
   implicit none
-  instantiate change_positions_tmpl(integer, operator(/=)), &
+  instantiate change_positions_tmpl {integer, operator(/=)}, &
     only: change_positions_int => change_positions_t
-  instantiate change_positions_tmpl(character, operator(/=)), &
+  instantiate change_positions_tmpl {character, operator(/=)}, &
     only: change_positions_chr => change_positions_t
   print *, change_positions_int([3, 3, 6, 2, 2, 2, 1])
   print *, change_positions_chr(["a", "a", "b", "p", "p", "p", "o"])

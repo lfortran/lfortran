@@ -33,7 +33,7 @@ module template_03_m
     
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
-        instantiate axpy_tmpl(real, integer, real, real, operator(+), operator(*))
+        instantiate axpy_tmpl {real, integer, real, real, operator(+), operator(*)}
         real :: a
         integer :: x(3)
         real :: y(3)

@@ -10,7 +10,7 @@ module matrix_m
 
     template matrix_tmpl(T, plus_t, zero_t, times_t, one_t, n)
         require :: semiring {T, plus_t, zero_t, times_t, one_t}
-        instantiate derive_extended_monoid(T, plus_t, zero_t), only: sum => mconcat
+        instantiate derive_extended_monoid {T, plus_t, zero_t}, only: sum => mconcat
         integer :: n
 
         private
@@ -45,7 +45,7 @@ module matrix_m
             end interface
 
             template gaussian_solver_tmpl(div_t)
-                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
+                instantiate derive_unit_ring_from_minus {T, plus_t, zero_t, times_t, one_t, minus_t}, only: negate
                 require :: field_only_division {T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t}
 
                 private

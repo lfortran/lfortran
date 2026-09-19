@@ -36,7 +36,7 @@ contains
     end function
 
     subroutine test_template()
-        instantiate add_t(real, func_arg_real), only: add_real => call_add_generic
+        instantiate add_t {real, func_arg_real}, only: add_real => call_add_generic
         real :: x, y
         integer :: a, b
         x = 5.1

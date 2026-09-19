@@ -32,7 +32,7 @@ module template_array_01_m
 contains
 
     subroutine test_template()
-        instantiate array_tmpl(integer), only: insert_int => insert_t, insert_int_n => insert_t_n
+        instantiate array_tmpl {integer}, only: insert_int => insert_t, insert_int_n => insert_t_n
         integer :: a(1), i, r
         a(1) = 0
         i = 1

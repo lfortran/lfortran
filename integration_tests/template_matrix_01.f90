@@ -58,7 +58,7 @@ use template_matrix_01_m
 integer, parameter :: n = 2
 integer :: i, j
 
-instantiate matrix_t(integer, operator(+), operator(*), n), &
+instantiate matrix_t {integer, operator(+), operator(*), n}, &
     only: int_matrix => matrix, &
           int_add_matrix => add_matrix, &
           int_mul_matrix => mul_matrix

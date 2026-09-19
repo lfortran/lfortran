@@ -54,7 +54,7 @@ contains
 
     subroutine f()
         integer, parameter :: sp = kind(1.0), dp = kind(1.d0)
-        instantiate axpy_tmpl(real(sp), integer, real(dp), real(sp), operator(+), operator(*))
+        instantiate axpy_tmpl {real(sp), integer, real(dp), real(sp), operator(+), operator(*)}
         real(sp) :: a
         integer :: x(3)
         real(dp) :: y(3)

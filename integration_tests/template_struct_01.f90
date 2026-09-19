@@ -36,10 +36,10 @@ module template_struct_01_m
 contains
 
   subroutine test_template()
-      instantiate struct_t(integer), &
+      instantiate struct_t {integer}, &
           only: int_tuple => tuple, get_int_fst => get_fst, &
                 get_int_snd => get_snd
-      instantiate struct_t(real), &
+      instantiate struct_t {real}, &
           only: real_tuple => tuple, get_real_fst => get_fst, &
                 get_real_snd => get_snd
       type(int_tuple) :: ti

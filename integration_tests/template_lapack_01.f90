@@ -92,9 +92,9 @@ contains
 
     subroutine test_template()
         integer, parameter :: dp = kind(1.d0)
-        instantiate external_matmul_t(real, my_gemm_real, my_cast_to_real), &
+        instantiate external_matmul_t {real, my_gemm_real, my_cast_to_real}, &
             only: nonsimple_external_matmul_real => nonsimple_external_matmul
-        instantiate external_matmul_t(real(dp), my_gemm_double, my_cast_to_double), &
+        instantiate external_matmul_t {real(dp), my_gemm_double, my_cast_to_double}, &
             only: nonsimple_external_matmul_double => nonsimple_external_matmul
         
         real :: asp(2,2), bsp(2,2), csp(2,2)

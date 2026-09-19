@@ -108,7 +108,7 @@ contains
         arr(1,2) = 1
         arr(2,1) = 0
         arr(2,2) = 1
-        instantiate array_tmpl(integer, add_integer, zero_integer, mult_integer), &
+        instantiate array_tmpl {integer, add_integer, zero_integer, mult_integer}, &
             only: mymatmul_int => mymatmul_t
         call mymatmul_int(2, 2, 2, arr, arr, r)
         print *, r(1,1)

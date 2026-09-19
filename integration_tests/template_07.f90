@@ -24,7 +24,7 @@ end module
 module template_apply_m_template_07
     implicit none
     private
-    public :: apply_t
+    public :: apply_t, no_args_t
 
     ! R1633: the deferred-arg-name-list of a REQUIREMENT is optional
     requirement no_args_r {}
@@ -55,13 +55,26 @@ module template_apply_m_template_07
             res = all ( lt(lhs,rhs) )
         end function
     end template
+
+    ! R1602: the deferred-arg-name-list of a TEMPLATE is optional
+    template no_args_t()
+        private
+        public :: answer
+    contains
+        pure function answer() result(res)
+            integer :: res
+            res = 42
+        end function
+    end template
 end module
 
 program template_07
         use lt_m_template_07
         use template_apply_m_template_07
 
-        instantiate apply_t(my_type,operator(<)), only : my_apply => apply_lt
+        ! R1625: the :: is optional and the instantiation-arg-spec-list may be empty
+        instantiate :: apply_t {my_type,operator(<)}, only : my_apply => apply_lt
+        instantiate :: no_args_t {}
 
 
         type(my_type) :: a(5), b(5)
@@ -81,4 +94,7 @@ program template_07
 
         print *, my_apply(a,b)
         if (.not. my_apply(a, b)) error stop
+
+        print *, answer()
+        if (answer() /= 42) error stop
 end program

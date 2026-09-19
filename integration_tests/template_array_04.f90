@@ -33,7 +33,7 @@ module reverse_m
 contains
 
     subroutine test_reverse()
-        instantiate reverse_tmpl(integer), &
+        instantiate reverse_tmpl {integer}, &
             only: ireverse => reverse
         integer :: a(5)
         a = [1,2,3,4,5]

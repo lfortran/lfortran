@@ -94,9 +94,9 @@ contains
         integer :: xi(10), i
         real :: xr(10)
         type(my_type) :: xm(10)
-        instantiate qsort_t(integer, lt_integer), only: qsort_integer => qs
-        instantiate qsort_t(real, lt_real), only: qsort_real => qs
-        instantiate qsort_t(my_type, lt_my_type), only: qsort_my_type => qs
+        instantiate qsort_t {integer, lt_integer}, only: qsort_integer => qs
+        instantiate qsort_t {real, lt_real}, only: qsort_real => qs
+        instantiate qsort_t {my_type, lt_my_type}, only: qsort_my_type => qs
         xi = [2,4,1,5,6,24,51,3,42,2]
         xr = [2,4,1,5,6,24,51,3,42,2]
         do i = 1, 10
