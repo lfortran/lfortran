@@ -34,7 +34,9 @@ opposite direction needs a shape supplied explicitly.
   :arg (Var
     :v (SymbolRef 1 "p")
   )
-  :type (CPtr)
+  :type (CPtr
+    :kind :CPtrUnspecified
+  )
   :value nil
 )
 ```

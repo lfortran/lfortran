@@ -2283,10 +2283,15 @@ public:
                         throw SemanticAbort();
 
                     }
-                    if (ASRUtils::is_c_ptr(v, derived_type_name)) {
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
-                    } else if (ASRUtils::is_c_funptr(v, derived_type_name)) {
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    if (ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
+                        type_decl = v;
+                        type = ASRUtils::make_cptr_type(
+                            al, x.base.base.loc, current_scope, v);
+                    } else if (ASRUtils::is_iso_c_funptr_type_symbol(
+                            current_scope, v)) {
+                        type_decl = v;
+                        type = ASRUtils::make_cptr_type(
+                            al, x.base.base.loc, current_scope, v);
                     } else {
                         type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                         type_decl = v;

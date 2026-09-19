@@ -1103,7 +1103,7 @@ class ParallelRegionVisitor :
             ASRUtils::ASRBuilder b(al, func->base.base.loc);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = al.make_new<SymbolTable>(current_scope);
-            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, func->base.base.loc)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, func->base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, data_expr);
             ASR::symbol_t* interface_function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, func->base.base.loc,
@@ -1587,7 +1587,7 @@ class ParallelRegionVisitor :
                 ASR::expr_t* array_ref, ASR::expr_t* address, ASR::ttype_t* view_type) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::ttype_t* cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t* cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_ref));
             ASR::expr_t* view = b.Variable(current_scope, current_scope->get_unique_name("task_view_" + name),
                 view_type, ASR::intentType::Local);
@@ -2259,7 +2259,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
 
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
             
             // create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym, true))),
@@ -2484,7 +2484,7 @@ class ParallelRegionVisitor :
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, current_scope->get_unique_name("tdata"), ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), ASR::intentType::Local);
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, current_scope->get_unique_name("tdata"), ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
             std::vector<std::string> array_variables;
@@ -2511,7 +2511,7 @@ class ParallelRegionVisitor :
             ASR::expr_t* c_funloc = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc,
                                     ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
                                     b.Var(lcompilers_interface), ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, lcompilers_interface_func->m_function_signature)), nullptr)),
-                                    ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+                                    ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), nullptr));
 
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
             ASR::call_arg_t arg1; arg1.loc = x.base.base.loc; arg1.m_value = c_funloc;
@@ -3047,7 +3047,7 @@ class ParallelRegionVisitor :
             
             // Create task pointer variable
             ASR::expr_t* task_ptr_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data_ptr"), 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Local);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::Local);
             
             // Pack data
             std::vector<std::string> array_variables;
@@ -3075,7 +3075,7 @@ class ParallelRegionVisitor :
                                     ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc,
                                     b.Var(task_interface), ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, 
                                     task_interface_func->m_function_signature)), nullptr)),
-                                    ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
+                                    ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), nullptr));
             
             // Constants for GOMP_task call
             // GOMP_task copies arg_size bytes of the task data, so the size
@@ -3092,7 +3092,7 @@ class ParallelRegionVisitor :
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
             task_call_args.reserve(al, 8);
-            ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_, nullptr));
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = c_funloc;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = task_ptr_expr;
@@ -3152,7 +3152,7 @@ class ParallelRegionVisitor :
             
             // Create data parameter
             ASR::expr_t* data_expr = b.Variable(current_scope, "task_data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
             
             // Create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "task_data_ptr", 
@@ -3514,7 +3514,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("teams_thread_data" + thread_data_module_name.substr(24));
             
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
             
             // Create tdata variable
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", 
@@ -3675,7 +3675,7 @@ class ParallelRegionVisitor :
             
             ASR::expr_t* tdata_expr = b.Variable(current_scope, 
                 current_scope->get_unique_name("teams_tdata"), 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), 
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)),
                 ASR::intentType::Local);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
             
@@ -3708,7 +3708,7 @@ class ParallelRegionVisitor :
                     b.Var(lcompilers_interface), 
                     ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, 
                         lcompilers_interface_func->m_function_signature)), nullptr)),
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), nullptr));
             
             // Call gomp_teams
             Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);

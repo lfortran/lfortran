@@ -23,7 +23,7 @@ ttype
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)
-    | CPtr()
+    | CPtr(cptr_kind kind)
     | SymbolicExpression()
     | TypeParameter(identifier param)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)

@@ -1344,7 +1344,7 @@ subroutine structure_constructor_null_component_3()
     end type
     type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
     type(t_null_c_component) :: v1
-    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
 end subroutine
 
 ! The same for a parameterized derived type and for an extended type, whose
@@ -1553,4 +1553,109 @@ subroutine associate_parameter_array_selector_assignment()
     associate (r => pba(1)%a%x)
         r = 1  ! {Error} Cannot assign to a constant variable
     end associate
+end subroutine
+
+subroutine cptr_funptr_mismatch()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    type :: cptr_funptr_t
+        type(c_ptr) :: p
+        type(c_funptr) :: f
+    end type
+    type(cptr_funptr_t) :: v
+    cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+end subroutine
+
+subroutine cptr_funptr_intrinsic_result_mismatch()
+    use iso_c_binding, only: c_int, c_ptr, c_funptr, c_loc, c_funloc
+    implicit none
+    interface
+        subroutine cptr_funptr_bindc_target() bind(c)
+            import
+        end subroutine
+        function returns_c_ptr_for_mismatch() result(r)
+            import c_ptr
+            type(c_ptr) :: r
+        end function
+    end interface
+    integer(c_int), target :: x
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    fp = c_loc(x)  ! {Error} Type mismatch in assignment, the types must be compatible
+    cp = c_funloc(cptr_funptr_bindc_target)  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = returns_c_ptr_for_mismatch()  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine
+
+subroutine null_assignment_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p
+    p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+end subroutine
+
+subroutine pointer_component_constructor_target()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: cptr_pointer_component_t
+        type(c_ptr), pointer :: cp
+    end type
+    type :: integer_pointer_component_t
+        integer, pointer :: ip
+    end type
+    integer :: v
+    type(cptr_pointer_component_t) :: a
+    type(integer_pointer_component_t) :: b
+    a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+    b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+    b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+end subroutine
+
+subroutine cptr_component_constructor_type_mismatch()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type :: payload_t
+        integer :: k
+    end type
+    type :: cptr_component_t
+        type(c_ptr) :: p
+    end type
+    type(payload_t), parameter :: payload = payload_t(1)
+    type(cptr_component_t) :: a
+    a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+    a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+end subroutine
+
+subroutine cfunptr_diagnostic_type_name()
+    use iso_c_binding, only: c_funptr
+    implicit none
+    type(c_funptr) :: f
+    call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+    if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+contains
+    subroutine takes_integer(x)
+        integer, intent(in) :: x
+    end subroutine
+end subroutine
+
+subroutine null_initializer_nonpointer_integer()
+    implicit none
+    integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_component()
+    implicit none
+    type :: null_init_t
+        integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+    end type
 end subroutine

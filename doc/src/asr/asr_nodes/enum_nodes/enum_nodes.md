@@ -15,6 +15,7 @@ arraystorage
 binop
 cmpop
 codimension_type
+cptr_kind
 deftype
 enumtype
 exec_space

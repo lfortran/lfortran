@@ -270,7 +270,7 @@ class PRIFInterface {
 
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
 
             ASR::expr_t *coarray_handle = make_struct_var(
@@ -373,7 +373,7 @@ class PRIFInterface {
 
             ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             ASR::symbol_t *handle_sym = get_or_create_prif_coarray_handle_struct(loc);
 
             ASR::expr_t *coarray_handle = make_struct_var(
@@ -464,7 +464,7 @@ class PRIFInterface {
         }
 
         ASR::expr_t* make_cptr_from_expr(const Location &loc, ASR::expr_t *expr) {
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             ASR::ttype_t *ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
             return ASRUtils::EXPR(ASR::make_PointerToCPtr_t(
                 al, loc,
@@ -844,7 +844,7 @@ class PRIFInterface {
             SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             // lcobounds: integer(8), dimension(:), intent(in)
             Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
             ASR::dimension_t d; d.loc = loc; d.m_start = nullptr; d.m_length = nullptr;
@@ -1582,7 +1582,7 @@ class PRIFInterface {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *int32_type = int32;
             // Define c_ptr type and size_in_bytes type (integer 8 / c_size_t)
-            ASR::ttype_t *c_ptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *c_ptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
             ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
 
             ASR::symbol_t *a_ptr_sym = declare_variable(
@@ -1638,7 +1638,7 @@ class PRIFInterface {
             }
 
             ASR::ttype_t *int8_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            ASR::ttype_t *cptr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPtrUnspecified));
 
             ASR::expr_t *payload_cptr = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(
                 al, loc, payload, cptr_type, nullptr));

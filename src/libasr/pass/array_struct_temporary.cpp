@@ -3034,7 +3034,9 @@ class ReplaceModuleVarWithValue:
 
     public:
 
-    ReplaceModuleVarWithValue(Allocator& al_): al(al_) {}
+    SymbolTable* current_scope;
+
+    ReplaceModuleVarWithValue(Allocator& al_): al(al_), current_scope(nullptr) {}
 
     void replace_Var(ASR::Var_t* x) {
         if( !ASR::is_a<ASR::Variable_t>(
@@ -3070,6 +3072,10 @@ class ReplaceModuleVarWithValue:
         }
 
         *current_expr = expr_duplicator.duplicate_expr(value);
+        if (current_scope != nullptr) {
+            *current_expr = ASRUtils::externalize_struct_refs_in_init(
+                al, *current_expr, current_scope);
+        }
         replace_expr(*current_expr);
     }
 
@@ -3092,6 +3098,7 @@ class TransformVariableInitialiser:
 
     void call_replacer() {
         replacer.current_expr = current_expr;
+        replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
     }
 

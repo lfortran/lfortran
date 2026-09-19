@@ -784,6 +784,24 @@ semantic error: array of derived type initialized with a scalar structure constr
 1443 |         type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
      |                                        ^^^^^^^^^^^^^^^^^ 
 
+semantic error: null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1647:20
+     |
+1647 |     integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+     |                    ^^^^^^ 
+
+semantic error: null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1653:24
+     |
+1653 |     type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+     |                        ^^^^^^ 
+
+semantic error: null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:1659:24
+     |
+1659 |         integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+     |                        ^^^^^^ 
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -1788,7 +1806,7 @@ semantic error: Type mismatch in assignment, the types must be compatible
 617 |     base_var = derived_var
     |     ^^^^^^^^   ^^^^^^^^^^^ type mismatch (base and derived)
 
-semantic error: Type mismatch in argument `this`: expected `derived_type` but got `integer(4)`
+semantic error: Type mismatch in argument `this`: expected `myclass` but got `integer(4)`
    --> tests/errors/continue_compilation_1.f90:628:21
     |
 628 |     call set_caller(1)
@@ -2307,10 +2325,10 @@ semantic error: null() cannot be the value of component 'ins' of type type(t_nul
 1332 |     v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
      |                                            ^^^^^^ 
 
-semantic error: null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+semantic error: null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
     --> tests/errors/continue_compilation_1.f90:1347:46
      |
-1347 |     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_ptr), which is neither a pointer nor allocatable
+1347 |     v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
      |                                              ^^^^^^ 
 
 semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
@@ -2361,7 +2379,7 @@ semantic error: type mismatch in structure constructor: a null value of type typ
 1408 |     v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
      |                                                 ^^^^^^^^^^ 
 
-semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'r' of type real(4)
     --> tests/errors/continue_compilation_1.f90:1409:54
      |
 1409 |     v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
@@ -2554,3 +2572,105 @@ semantic error: Cannot assign to a constant variable
      |
 1555 |        end associate
      | ...~~~~~~~~~~~~~~~~~ associated with constant selector
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1568:5
+     |
+1568 |     cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^ type mismatch (type(c_ptr) and type(c_funptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1569:5
+     |
+1569 |     fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1570:23
+     |
+1570 |     v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+     |                       ^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+    --> tests/errors/continue_compilation_1.f90:1571:35
+     |
+1571 |     v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+     |                                   ^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1589:5
+     |
+1589 |     fp = c_loc(x)  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1590:5
+     |
+1590 |     cp = c_funloc(cptr_funptr_bindc_target)  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (type(c_ptr) and type(c_funptr))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1591:5
+     |
+1591 |     fp = returns_c_ptr_for_mismatch()  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (type(c_funptr) and type(c_ptr))
+
+semantic error: null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+    --> tests/errors/continue_compilation_1.f90:1598:9
+     |
+1598 |     p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+     |         ^^^^^^ 
+
+semantic error: the value of pointer component 'cp' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1613:34
+     |
+1613 |     a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+     |                                  ^^^^^^^^^^ 
+
+semantic error: the value of pointer component 'ip' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1614:37
+     |
+1614 |     b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+     |                                     ^ 
+
+semantic error: the value of pointer component 'ip' must be a pointer, a target or null()
+    --> tests/errors/continue_compilation_1.f90:1615:37
+     |
+1615 |     b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+     |                                     ^ 
+
+semantic error: type mismatch in structure constructor: value of type payload_t cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1629:26
+     |
+1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+     |                          ^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1629:5
+     |
+1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+     |     ^                    ^^^^^^^ type mismatch (cptr_component_t and payload_t)
+
+semantic error: type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+    --> tests/errors/continue_compilation_1.f90:1630:26
+     |
+1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+     |                          ^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:1630:5
+     |
+1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+     |     ^                    ^ type mismatch (cptr_component_t and integer)
+
+semantic error: Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+    --> tests/errors/continue_compilation_1.f90:1637:24
+     |
+1637 |     call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+     |                        ^ 
+
+semantic error: Expected logical expression in if statement, but recieved type(c_funptr) instead
+    --> tests/errors/continue_compilation_1.f90:1638:9
+     |
+1638 |     if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+     |         ^ type(c_funptr) expression, expected logical
