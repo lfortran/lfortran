@@ -23186,7 +23186,15 @@ public:
         bool found = false;
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            found = true;
+            // Running a pure function a second time computes the same result
+            // and changes nothing the program can observe, so it does not make
+            // the expression one that must be evaluated once. Its arguments
+            // are walked all the same: one of them may call something impure.
+            ASR::symbol_t* fn_sym = ASRUtils::symbol_get_past_external(x.m_name);
+            if( !ASR::is_a<ASR::Function_t>(*fn_sym) ||
+                !ASRUtils::get_FunctionType(fn_sym)->m_pure ) {
+                found = true;
+            }
             ASR::BaseWalkVisitor<CallFinder>::visit_FunctionCall(x);
         }
 

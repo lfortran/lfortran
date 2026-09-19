@@ -35,6 +35,14 @@ contains
         n_idx_calls = n_idx_calls + 1
         res = 2
     end function
+    ! a `pure` function may be called once per component without the program
+    ! being able to tell, so it does not stop a reference from being read
+    ! component by component
+    pure function pure_idx(i) result(res)
+        integer, intent(in) :: i
+        integer :: res
+        res = i
+    end function
 end module
 
 program structure_constructor_args_12
@@ -167,6 +175,14 @@ program structure_constructor_args_12
     if (b_arr(1)%x /= 121 .or. b_arr(1)%r /= 11.5 .or. b_arr(1)%y /= 181) error stop
     if (b_arr(2)%x /= 0 .or. b_arr(2)%y /= 0) error stop
     if (b_arr(3)%x /= 184 .or. b_arr(3)%r /= 14.5 .or. b_arr(3)%y /= 185) error stop
+
+    ! a subscript which only calls a `pure` function still reads the same
+    ! storage for every component, so it is read component by component
+    b_two = [ (b_t(a_t=a_src(pure_idx(i)), y=i), i = 1, 2) ]
+    do i = 1, 2
+        if (b_two(i)%x /= i * 10 .or. b_two(i)%r /= real(i)) error stop
+        if (b_two(i)%y /= i) error stop
+    end do
 
     call check_local()
     call check_param_in_procedure()
