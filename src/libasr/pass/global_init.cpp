@@ -273,9 +273,22 @@ class GlobalInitVisitor {
         // it in that object file, as a declaration, so a call from here
         // resolves to the one definition at link time.
         void name_external_global_init(ASR::Module_t *m) {
-            if (runtime_init_vars(m->m_symtab).empty()) return;
+            std::vector<ASR::Variable_t*> vars = runtime_init_vars(m->m_symtab);
+            if (vars.empty()) return;
             ASRUtils::get_or_create_global_init(al, unit, (ASR::asr_t*)&m->base,
                 true);
+            // Drop the initializers here as well. This translation unit only
+            // declares these variables; the object file that defines them is
+            // the one that initializes them, through the initializer just
+            // named. Leaving them on would tell this unit that the variables
+            // are initialized where they are declared, which is what decides
+            // whether a backend sets an element's members up at start up: it
+            // would then leave that to an initializer that is not in this
+            // unit and is not emitted by the unit that is.
+            for (ASR::Variable_t *v : vars) {
+                v->m_symbolic_value = nullptr;
+                v->m_value = nullptr;
+            }
         }
 
         // Move every declaration initializer of `owner`'s scope that needs
