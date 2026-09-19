@@ -4,7 +4,7 @@ module sort_m
     public :: sort_tmpl
 
     requirement comparable(T, lt, gt)
-        type, deferred :: T
+        deferred type :: T
         elemental function lt(lhs, rhs)
             type(T), intent(in) :: lhs, rhs
             logical :: lt

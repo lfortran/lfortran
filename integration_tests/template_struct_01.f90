@@ -4,7 +4,7 @@ module template_struct_01_m
   public :: struct_t, test_template
 
   requirement r(t)
-      type, deferred :: t
+      deferred type :: t
   end requirement
 
   template struct_t(t)

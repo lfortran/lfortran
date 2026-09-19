@@ -4,7 +4,7 @@ module template_error_02_m
     public :: add_t
 
     requirement R(T, F) 
-        type, deferred :: T
+        deferred type :: T
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
             type(T) :: z

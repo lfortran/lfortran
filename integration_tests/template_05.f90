@@ -1,7 +1,7 @@
 module template_05_m
 
     requirement req(T, op)
-        type, deferred :: t
+        deferred type :: t
         elemental function op(x, y) result(r)
             type(T), intent(in) :: x, y
             type(T) :: r

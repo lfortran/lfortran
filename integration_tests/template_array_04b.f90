@@ -4,7 +4,7 @@ module template_array_04b_m
     public :: test_reverse
 
     requirement default_behavior(t)
-        type, deferred :: t
+        deferred type :: t
     end requirement
 
 contains

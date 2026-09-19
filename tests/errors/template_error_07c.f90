@@ -4,7 +4,7 @@ module template_01_m
     public :: op_t
 
     requirement semigroup(t, combine)
-        type, deferred :: t
+        deferred type :: t
         elemental function combine(x, y) result(combined)
             type(t), intent(in) :: x, y
             type(t) :: combined

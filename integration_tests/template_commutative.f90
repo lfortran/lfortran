@@ -3,7 +3,7 @@ module template_commutative_m
     public
 
     requirement magma_r(T, bin, equal)
-        type, deferred :: T
+        deferred type :: T
         pure elemental function bin(x, y) result(bin)
             type(T), intent(in) :: x
             type(T), intent(in) :: y

@@ -1,9 +1,9 @@
 module template_03_m
 
     requirement op(T, U, V, op)
-      type, deferred :: T
-      type, deferred :: U
-      type, deferred :: V
+      deferred type :: T
+      deferred type :: U
+      deferred type :: V
       interface
         elemental function op(a, b)
           type(T), intent(in) :: a

@@ -1,9 +1,9 @@
 program template_03
 
     requirement op(T, U, V, op)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         elemental function op(a, b) result(op)
             type(T), intent(in) :: a
             type(U), intent(in) :: b

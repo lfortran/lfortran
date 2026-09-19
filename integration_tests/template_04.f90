@@ -5,7 +5,7 @@ module template_04_semigroup
     public :: semigroup, extended_semigroup, derive_extended_semigroup
 
     requirement semigroup(T, combine)
-        type, deferred :: T
+        deferred type :: T
         elemental function combine(x, y) result(combined)
             type(T), intent(in) :: x, y
             type(T) :: combined

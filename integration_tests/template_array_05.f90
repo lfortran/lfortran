@@ -5,7 +5,7 @@ module template_array_05_m
     public :: vector_t, matrix_t
 
     requirement op(t, plus_t)
-        type, deferred :: t
+        deferred type :: t
         pure elemental function plus_t(l, r) result(rs)
             type(t), intent(in) :: l, r
             type(t) :: rs
