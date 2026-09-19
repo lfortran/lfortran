@@ -606,6 +606,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             math_real_m:
                 (Module
@@ -1334,6 +1335,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             template_triple:
                 (Program
@@ -1547,6 +1549,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             triple_m:
                 (Module
@@ -2098,6 +2101,7 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 ),
             use_triple_m:
                 (Module
@@ -3260,7 +3264,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.variable.initializer_type_matches]: Variable 'k' initializer type i16 does not match declared type i32
- --> tests/asr/verify/variable_initializer_kind_mismatch.asr:9:18
-  |
-9 |             "k" (Variable
-  |                  ^^^^^^^^ failed here
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+  --> tests/asr/verify/variable_initializer_kind_mismatch.asr:1:1 - 92:1
+   |
+ 1 |    (TranslationUnit
+   |    ^^^^^^^^^^^^^^^^...
+...
+   |
+92 |    )
+   | ...^ invalid ASR text here

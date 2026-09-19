@@ -1,0 +1,13 @@
+{
+    "basename": "pass_global_init_global_init_wire-global_init_01-7c1b4f3",
+    "cmd": "lfortran --pass=global_init,global_init_wire --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/global_init_01.f90",
+    "infile_hash": "78c5ad618ca0ac38dfe6e371b412bd6e6e2c64d546cdc9ccbb2243df",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_global_init_global_init_wire-global_init_01-7c1b4f3.stdout",
+    "stdout_hash": "02592f0cfe1d8861cc25cc4c35e88635324f76ed5d450e795f388e56",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

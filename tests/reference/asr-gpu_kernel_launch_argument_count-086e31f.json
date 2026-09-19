@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-gpu_kernel_launch_argument_count-086e31f.stderr",
-    "stderr_hash": "c54ca36772460abb661dda4703f888ed6ccc6fe85cc60aa371cf636c",
+    "stderr_hash": "3d0fb1a9d8ffd9a7122e8657e79faca563427650e4a84c67f303894c",
     "returncode": 2
 }

@@ -384,7 +384,7 @@ def scope(symtab_id, symbols):
 def program(symtab_id, name, symbols, body):
     return (
         f"(Program :symtab {scope(symtab_id, symbols)} :name {string(name)} "
-        f":dependencies [] :body [{' '.join(body)}])"
+        f":dependencies [] :body [{' '.join(body)}] :global_init nil)"
     )
 
 
@@ -392,7 +392,7 @@ def global_unit(symbols, items=()):
     """A TranslationUnit whose global scope holds `symbols` verbatim."""
     return (
         f"(TranslationUnit :symtab {scope(GLOBAL_SYMTAB, symbols)} "
-        f":items [{' '.join(items)}])\n"
+        f":items [{' '.join(items)}] :global_init nil)\n"
     )
 
 
@@ -410,7 +410,8 @@ def module(symtab_id, name, symbols, dependencies=(), parent_module=None,
         f":parent_module {string(parent_module) if parent_module else 'nil'} "
         f":dependencies [{names}] :loaded_from_mod false "
         f":intrinsic false "
-        f":has_submodules {'true' if has_submodules else 'false'})"
+        f":has_submodules {'true' if has_submodules else 'false'} "
+        f":global_init nil)"
     )
 
 

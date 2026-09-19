@@ -218,6 +218,15 @@ public:
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        // A translation unit initializer has to run before main, which only
+        // a target with a startup hook of its own can arrange. Nothing that
+        // reaches this backend sets one today — it comes from a saved coarray
+        // of an external procedure — so say so rather than quietly dropping
+        // the initialization on the floor.
+        if (x.m_global_init != nullptr) {
+            throw CodeGenError("a startup initializer of the translation unit "
+                "is not supported by this backend");
+        }
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:

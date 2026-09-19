@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-unary_op_assumed_rank_operand-2a0fea5.stderr",
-    "stderr_hash": "2be77ca63ea28e67d43be87c67ef9d0a6c599ba7b4d4f184d0dd13ef",
+    "stderr_hash": "0ec4b44cdf74a5c2338876b105f5f71f5f31fd4d415d5818496b39bb",
     "returncode": 2
 }

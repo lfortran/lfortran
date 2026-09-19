@@ -127,7 +127,7 @@ public:
         // ASRUtils::get_tu_symtab() can be used, which has an assert
         // for asr_owner.
         ASR::asr_t *tmp0 = ASR::make_TranslationUnit_t(al, x.base.base.loc,
-            current_scope, nullptr, 0);
+            current_scope, nullptr, 0, nullptr);
 
         for (size_t i=0; i<x.n_items; i++) {
             AST::astType t = x.m_items[i]->type;
@@ -366,7 +366,7 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false, false);
+                                                false, false, false, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -413,7 +413,7 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false, false);
+                                                false, false, false, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {
@@ -725,6 +725,7 @@ public:
             current_module_dependencies.size(),
             /* a_body */ nullptr,
             /* n_body */ 0,
+            /* a_global_init */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
             /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr);
         std::string sym_name = to_lower(x.m_name);
@@ -4684,7 +4685,7 @@ public:
                 ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
                 ASR::TranslationUnit_t *tu
                     = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, x.base.base.loc,
-                        tu_symtab, nullptr, 0));
+                        tu_symtab, nullptr, 0, nullptr));
 
                 // Fix all external symbols and update dependencies
                 ASRUtils::fix_translation_unit(al, tu, tu_symtab, true);

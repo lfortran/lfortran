@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.array_item.type_matches_element]: ArrayItem type i32 does not match array element type i16
-  --> tests/asr/verify/array_item_element_kind_mismatch.asr:62:14
-   |
-62 |             (ArrayItem
-   |              ^^^^^^^^^ failed here
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/array_item_element_kind_mismatch.asr:1:1 - 101:1
+    |
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+101 |    )
+    | ...^ invalid ASR text here

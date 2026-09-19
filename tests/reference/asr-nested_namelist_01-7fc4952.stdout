@@ -27,6 +27,7 @@
                         ()
                         .false.
                     )]
+                    ()
                 ),
             nested_namelist_01_mod:
                 (Module
@@ -220,7 +221,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

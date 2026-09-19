@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.variable.array_struct_initializer_is_array]: Variable 'pz' is an array of derived type, so its initializer must be an array expression
- --> tests/asr/verify/struct_array_scalar_initializer.asr:9:19
-  |
-9 |             "pz" (Variable
-  |                   ^^^^^^^^ failed here
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/struct_array_scalar_initializer.asr:1:1 - 164:1
+    |
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+164 |    )
+    | ...^ invalid ASR text here

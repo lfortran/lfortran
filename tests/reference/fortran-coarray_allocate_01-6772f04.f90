@@ -12,15 +12,11 @@ end type prif_coarray_handle
 program coarray_allocate_01
 implicit none
 integer(4), pointer :: a
-type(c_ptr) :: a__coarray_data
-type(prif_coarray_handle) :: a__coarray_handle
 integer(4), dimension(:), pointer, save :: b
 character(len=100, kind=1) :: errmsg
 integer(4) :: stat
 integer(4) :: stat1
 integer(4), pointer :: x
-type(c_ptr) :: x__coarray_data
-type(prif_coarray_handle) :: x__coarray_handle
 call __module_prif_prif_init(stat1)
 call __module_prif_prif_sync_all()
 call __module_prif_prif_allocate_coarray([int(1, kind=8)], [integer(8) :: ], 4_8, null(), a__coarray_handle,&
