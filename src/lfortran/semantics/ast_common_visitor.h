@@ -8921,6 +8921,13 @@ public:
                         ASR::expr_t* static_init = nullptr;
                         if (ASR::is_a<ASR::StructType_t>(*type)) {
                             static_init = get_static_struct_initializer(init_expr);
+                        } else if (ASR::is_a<ASR::StructType_t>(
+                                    *ASRUtils::type_get_past_array(type)) &&
+                                ASR::is_a<ASR::ArrayBroadcast_t>(*init_expr)) {
+                            // `type(t) :: a(3) = t(...)`, broadcast above: the
+                            // element is stored once, so the array has the
+                            // save attribute for the same reason a scalar does.
+                            static_init = init_expr;
                         } else if (ASR::is_a<ASR::CPtr_t>(*type) &&
                                 ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
                             static_init = init_expr;
