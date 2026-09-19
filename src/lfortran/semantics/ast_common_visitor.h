@@ -2784,7 +2784,7 @@ public:
                                 current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, body.p, body.n,
                                 return_var_expr, ASR::abiType::Source,
                                 ASR::accessType::Public, ASR::deftypeType::Implementation,
-                                nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
+                                nullptr, false, true, false, false, false, nullptr, 0, false, false, true, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
 
@@ -11813,15 +11813,25 @@ public:
                     || ASRUtils::is_array(ASRUtils::expr_type(arg))) {
                 continue;
             }
-            if (value == nullptr || !(ASR::is_a<ASR::IntegerConstant_t>(*value)
+            if (value == nullptr) {
+                continue;
+            }
+            // A null constant is an ordinary value only for a C pointer
+            // component; for a pointer or an allocatable component it is an
+            // association status, and those components are skipped above.
+            bool is_c_pointer_null = ASR::is_a<ASR::PointerNullConstant_t>(*value)
+                && ASR::is_a<ASR::CPtr_t>(*element_type);
+            if (!(ASR::is_a<ASR::IntegerConstant_t>(*value)
                     || ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)
                     || ASR::is_a<ASR::RealConstant_t>(*value)
                     || ASR::is_a<ASR::ComplexConstant_t>(*value)
                     || ASR::is_a<ASR::LogicalConstant_t>(*value)
-                    || ASR::is_a<ASR::StringConstant_t>(*value))) {
+                    || ASR::is_a<ASR::StringConstant_t>(*value)
+                    || is_c_pointer_null)) {
                 continue;
             }
-            // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`.
+            // Case: `t(5.0)` for `real :: x(3)`, like `real :: x(3) = 5.0`,
+            // and `t(c_null_ptr)` for `type(c_ptr) :: p(2)`.
             ASR::expr_t* broadcast = ASRUtils::broadcast_scalar_constant_to_array(
                 al, arg->base.loc, value, member_type);
             if (broadcast != nullptr) {
