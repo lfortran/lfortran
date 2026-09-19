@@ -361,9 +361,10 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
 }
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& loc,
-    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type, ASR::expr_t* value = nullptr) {
-    ASR::symbol_t* type_decl = nullptr;
-    if (value) {
+    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type,
+    ASR::expr_t* value = nullptr, ASR::symbol_t* type_declaration = nullptr) {
+    ASR::symbol_t* type_decl = type_declaration;
+    if (type_decl == nullptr && value) {
         type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
     }
 
@@ -1399,6 +1400,16 @@ bool is_temporary_needed(ASR::expr_t* value) {
         && is_non_empty_fixed_size_array;
 }
 
+// Returns true if `value` is the null pointer constant and its type is an
+// array of rank >= 1, i.e. a value which is represented by an array
+// descriptor rather than by a plain address.
+bool is_array_null_pointer_constant(ASR::expr_t* value) {
+    if( !value ) { return false; }
+    ASR::expr_t* value_no_cast = ASRUtils::get_past_array_physical_cast(value);
+    return ASR::is_a<ASR::PointerNullConstant_t>(*value_no_cast) &&
+        ASRUtils::is_array(ASRUtils::expr_type(value_no_cast));
+}
+
 ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
     switch( expr->type ) {
         case ASR::exprType::Var: {
@@ -1574,6 +1585,25 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
+    // Declares a temporary pointer variable of the same type as `null_constant`,
+    // associates it with `null_constant` and returns it. The temporary gives the
+    // null pointer constant the array descriptor its uses require. The null
+    // pointer constant carries no type declaration of its own, so for a struct
+    // element type the declaration of the dummy argument it is bound to is used.
+    ASR::expr_t* create_and_associate_null_pointer_temporary(
+        ASR::expr_t* null_constant, ASR::symbol_t* type_declaration,
+        const std::string& name_hint) {
+        ASR::expr_t* null_constant_no_cast = ASRUtils::get_past_array_physical_cast(null_constant);
+        const Location& loc = null_constant_no_cast->base.loc;
+        ASR::expr_t* null_pointer_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint,
+            ASRUtils::expr_type(null_constant_no_cast), null_constant_no_cast,
+            type_declaration);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+            al, loc, null_pointer_temporary, null_constant_no_cast)));
+        return null_pointer_temporary;
+    }
+
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
         size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
@@ -1582,6 +1612,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             if (orig_args &&
                 (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (orig_variable && ASRUtils::is_pointer(orig_variable->m_type) &&
+                    is_array_null_pointer_constant(x_m_args[i].m_value)) {
+                    // An argument of rank >= 1 bound to a pointer dummy is passed as
+                    // the address of an array descriptor. The null pointer constant
+                    // carries no descriptor, so associate it with a temporary pointer
+                    // variable and pass that variable instead.
+                    ASR::expr_t* null_pointer_temporary =
+                        create_and_associate_null_pointer_temporary(
+                            x_m_args[i].m_value, orig_variable->m_type_declaration, name_hint);
+                    ASR::call_arg_t call_arg;
+                    call_arg.loc = null_pointer_temporary->base.loc;
+                    call_arg.m_value = null_pointer_temporary;
+                    x_m_args_vec.push_back(al, call_arg);
+                    continue;
+                }
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
                      orig_variable->m_intent == ASRUtils::intent_inout ||
@@ -3361,8 +3406,9 @@ class VerifySimplifierASROutput:
     template <typename T>
     void visit_Call(const T& x) {
         ASR::expr_t **orig_args = nullptr;
-        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
-            orig_args = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_args;
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
         }
         traverse_call_args(x.m_args, x.n_args, orig_args);
     }
