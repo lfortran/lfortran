@@ -38,7 +38,8 @@ namespace {
     // name no other object file can produce, which is why the coarray pass
     // builds its own out of the names of the coarrays it allocates instead of
     // asking for one here.
-    std::string owner_name(ASR::TranslationUnit_t &unit, ASR::asr_t *owner) {
+    std::string owner_name([[maybe_unused]] ASR::TranslationUnit_t &unit,
+            ASR::asr_t *owner) {
         LCOMPILERS_ASSERT(owner != (ASR::asr_t*)&unit);
         return ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(owner));
     }
@@ -96,7 +97,8 @@ namespace {
 } // anonymous namespace
 
 ASR::Function_t* get_or_create_global_init(Allocator &al,
-        ASR::TranslationUnit_t &unit, ASR::asr_t *owner) {
+        ASR::TranslationUnit_t &unit, ASR::asr_t *owner,
+        bool defined_elsewhere) {
     SymbolTable *scope = owner_symtab(unit, owner);
     char **global_init = owner_global_init(unit, owner);
     if (*global_init != nullptr) {
@@ -119,11 +121,20 @@ ASR::Function_t* get_or_create_global_init(Allocator &al,
     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
     body.push_back(al, b.If(b.Not(guard), {mark_run_stmt(al, guard, loc)}, {}));
 
+    // A module procedure, when a module owns it: that is what gives the
+    // declaration of one defined in another object file the same link name as
+    // the definition there.
+    bool in_module = owner != (ASR::asr_t*)&unit
+        && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner));
     ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab,
-        s2c(al, fn_name), nullptr, 0, nullptr, 0, body.p, body.n, nullptr,
-        ASR::abiType::Source, ASR::accessType::Public,
-        ASR::deftypeType::Implementation, nullptr,
-        false, false, false, false, false, nullptr, 0,
+        s2c(al, fn_name), nullptr, 0, nullptr, 0,
+        defined_elsewhere ? nullptr : body.p,
+        defined_elsewhere ? 0 : body.n, nullptr,
+        defined_elsewhere ? ASR::abiType::ExternalUndefined : ASR::abiType::Source,
+        ASR::accessType::Public,
+        defined_elsewhere ? ASR::deftypeType::Interface
+                          : ASR::deftypeType::Implementation, nullptr,
+        false, false, in_module, false, false, nullptr, 0,
         false, false, false, nullptr);
     scope->add_symbol(fn_name, ASR::down_cast<ASR::symbol_t>(fn));
     *global_init = s2c(al, fn_name);
@@ -185,11 +196,16 @@ class GlobalInitVisitor {
 
         Allocator &al;
         ASR::TranslationUnit_t &unit;
+        // Each module is compiled into an object file of its own, so a module
+        // read back from a `.mod` file is initialized by that object file and
+        // not here.
+        bool separate_compilation;
 
     public:
 
-        GlobalInitVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_):
-            al(al_), unit(unit_) {}
+        GlobalInitVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_,
+                bool separate_compilation_):
+            al(al_), unit(unit_), separate_compilation(separate_compilation_) {}
 
         // A declaration initializer that no target can lay out as static data
         // and that therefore has to be assigned by executable statements.
@@ -250,6 +266,16 @@ class GlobalInitVisitor {
             v->m_symbolic_value = nullptr;
             v->m_value = nullptr;
             return stmt;
+        }
+
+        // A module compiled into an object file of its own initializes itself
+        // there. Give it the same initializer name this pass would have given
+        // it in that object file, as a declaration, so a call from here
+        // resolves to the one definition at link time.
+        void name_external_global_init(ASR::Module_t *m) {
+            if (runtime_init_vars(m->m_symtab).empty()) return;
+            ASRUtils::get_or_create_global_init(al, unit, (ASR::asr_t*)&m->base,
+                true);
         }
 
         // Move every declaration initializer of `owner`'s scope that needs
@@ -326,9 +352,16 @@ class GlobalInitVisitor {
                 ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
                 if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
                 ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
-                // A module read back from a `.mod` file is lowered too: its
-                // variables are emitted into every translation unit that uses
-                // it, so the initializer has to be available there as well.
+                if (separate_compilation && m->m_loaded_from_mod) {
+                    // The module's own object file initializes it. Name the
+                    // initializer so it can be called from here, but leave
+                    // the one definition where it is.
+                    name_external_global_init(m);
+                    continue;
+                }
+                // Otherwise the module's variables are emitted into every
+                // translation unit that uses it, so the initializer has to be
+                // defined in each of them as well.
                 lower_scope((ASR::asr_t*)sym, m->m_symtab);
             }
 
@@ -483,8 +516,8 @@ class GlobalInitWireVisitor {
 } // anonymous namespace
 
 void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &/*pass_options*/) {
-    GlobalInitVisitor v(al, unit);
+        const PassOptions &pass_options) {
+    GlobalInitVisitor v(al, unit, pass_options.separate_compilation);
     v.visit_TranslationUnit();
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
