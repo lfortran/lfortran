@@ -6807,6 +6807,16 @@ public:
                 if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
                      AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
+                    // The elements are visited again only to measure the shape
+                    // of the value, and everything built here is thrown away.
+                    // A statement that visit needed goes with it: it belongs
+                    // to the expression already built for this assignment, and
+                    // keeping it would run that expression a second time. So
+                    // does anything it reports: the visit that built the
+                    // expression reported it already.
+                    size_t n_body_before_measuring = current_body != nullptr
+                        ? current_body->size() : 0;
+                    size_t n_diagnostics_before_measuring = diag.diagnostics.size();
                     for(size_t i=0; i < temp_array->n_args; i++){
                         this->visit_expr(*temp_array->m_args[i]);
                         ASR::expr_t *temp = ASRUtils::EXPR(tmp);
@@ -6834,6 +6844,12 @@ public:
                             }
                         }
                     }
+                    if (current_body != nullptr) {
+                        current_body->n = n_body_before_measuring;
+                    }
+                    diag.diagnostics.erase(
+                        diag.diagnostics.begin() + n_diagnostics_before_measuring,
+                        diag.diagnostics.end());
                 }
                 if(!is_array_concat){
                     for (size_t i = 0; i < target_rank; i++) {

@@ -40,6 +40,8 @@ program structure_constructor_args_12
     type(a_t) :: a
     type(b_t) :: b
     type(b_t) :: b_arr(3)
+    type(b_t) :: b_one(1)
+    type(b_t) :: b_two(2)
     type(c_t) :: c
     integer :: i
 
@@ -78,6 +80,26 @@ program structure_constructor_args_12
     b = b_t(a_t=make_a(), y=122)
     if (b%x /= 121 .or. b%r /= 11.5 .or. b%y /= 122) error stop
     if (n_calls /= 1) error stop
+
+    ! an array constructor evaluates the parent component value of each of its
+    ! elements exactly once
+    n_calls = 0
+    b_one = [ b_t(a_t=make_a(), y=142) ]
+    if (b_one(1)%x /= 121 .or. b_one(1)%r /= 11.5 .or. b_one(1)%y /= 142) error stop
+    if (n_calls /= 1) error stop
+
+    n_calls = 0
+    b_two = [ b_t(a_t=make_a(), y=143), b_t(a_t=make_a(), y=144) ]
+    if (b_two(1)%x /= 121 .or. b_two(1)%r /= 11.5 .or. b_two(1)%y /= 143) error stop
+    if (b_two(2)%x /= 121 .or. b_two(2)%r /= 11.5 .or. b_two(2)%y /= 144) error stop
+    if (n_calls /= 2) error stop
+
+    ! a real loop evaluates it once per iteration
+    n_calls = 0
+    do i = 1, 3
+        b_arr(i) = b_t(a_t=make_a(), y=i)
+    end do
+    if (n_calls /= 3) error stop
 
     ! inside an array constructor the parent component value belongs to each
     ! iteration of the implied do loop
