@@ -2676,31 +2676,37 @@ semantic error: Expected logical expression in if statement, but recieved type(c
      |         ^ type(c_funptr) expression, expected logical
 
 semantic error: component 'x' is already specified by the parent component 'pck_base_t'
-    --> tests/errors/continue_compilation_1.f90:1677:46
+    --> tests/errors/continue_compilation_1.f90:1679:46
      |
-1677 |     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+1679 |     e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
      |                                              ^ 
 
 semantic error: component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
-    --> tests/errors/continue_compilation_1.f90:1678:33
+    --> tests/errors/continue_compilation_1.f90:1680:33
      |
-1678 |     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+1680 |     e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
      |                                 ^^^^^^^^^^^^^^ 
 
 semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
-    --> tests/errors/continue_compilation_1.f90:1679:28
+    --> tests/errors/continue_compilation_1.f90:1681:28
      |
-1679 |     e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+1681 |     e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
      |                            ^^ 
 
 semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
-    --> tests/errors/continue_compilation_1.f90:1680:28
+    --> tests/errors/continue_compilation_1.f90:1682:28
      |
-1680 |     e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+1682 |     e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
      |                            ^^^ 
 
 semantic error: type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
-    --> tests/errors/continue_compilation_1.f90:1681:28
+    --> tests/errors/continue_compilation_1.f90:1683:28
      |
-1681 |     e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
+1683 |     e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
      |                            ^ 
+
+semantic error: the value given for the parent component 'pck_base_t' must be a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+    --> tests/errors/continue_compilation_1.f90:1684:32
+     |
+1684 |     ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+     |                                ^^^^^^^^^^^ 

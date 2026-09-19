@@ -21,16 +21,19 @@ module structure_constructor_args_12_m
     ! counts the calls to `make_a()`, to check the parent component value is
     ! evaluated exactly once however many components the parent has
     integer :: n_calls = 0
+    ! counts the calls to `next_idx()`, to check a subscript of the parent
+    ! component value is evaluated exactly once as well
+    integer :: n_idx_calls = 0
 contains
     function make_a() result(res)
         type(a_t) :: res
         n_calls = n_calls + 1
         res = a_t(121, 11.5)
     end function
-    function make_a_i(i) result(res)
-        integer, intent(in) :: i
-        type(a_t) :: res
-        res = a_t(i * 10, real(i))
+    function next_idx() result(res)
+        integer :: res
+        n_idx_calls = n_idx_calls + 1
+        res = 2
     end function
 end module
 
@@ -38,12 +41,18 @@ program structure_constructor_args_12
     use structure_constructor_args_12_m
     implicit none
     type(a_t) :: a
+    type(a_t) :: a_src(3)
     type(b_t) :: b
     type(b_t) :: b_arr(3)
     type(b_t) :: b_one(1)
     type(b_t) :: b_two(2)
+    type(b_t) :: b_mat(4)
     type(c_t) :: c
-    integer :: i, msk(3)
+    integer :: i, j, msk(3)
+
+    do i = 1, 3
+        a_src(i) = a_t(i * 10, real(i))
+    end do
 
     if (p_parent%x /= 11 .or. p_parent%r /= 2.5 .or. p_parent%y /= 12) error stop
     if (p_nested%x /= 21 .or. p_nested%r /= 3.5) error stop
@@ -103,11 +112,27 @@ program structure_constructor_args_12
 
     ! inside an array constructor the parent component value belongs to each
     ! iteration of the implied do loop
-    b_arr = [ (b_t(a_t=make_a_i(i), y=i), i = 1, 3) ]
+    b_arr = [ (b_t(a_t=a_src(i), y=i), i = 1, 3) ]
     do i = 1, 3
         if (b_arr(i)%x /= i * 10 .or. b_arr(i)%r /= real(i)) error stop
         if (b_arr(i)%y /= i) error stop
     end do
+
+    ! and the same in a nested implied do loop
+    b_mat = [ ((b_t(a_t=a_src(i), y=10 * j + i), i = 1, 2), j = 1, 2) ]
+    do j = 1, 2
+        do i = 1, 2
+            if (b_mat(2 * (j - 1) + i)%x /= i * 10) error stop
+            if (b_mat(2 * (j - 1) + i)%r /= real(i)) error stop
+            if (b_mat(2 * (j - 1) + i)%y /= 10 * j + i) error stop
+        end do
+    end do
+
+    ! a subscript of the parent component value is evaluated exactly once too
+    n_idx_calls = 0
+    b = b_t(a_t=a_src(next_idx()), y=152)
+    if (b%x /= 20 .or. b%r /= 2.0 .or. b%y /= 152) error stop
+    if (n_idx_calls /= 1) error stop
 
     ! a masked assignment evaluates its value once, whatever the mask selects
     n_calls = 0

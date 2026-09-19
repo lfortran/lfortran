@@ -23178,20 +23178,46 @@ public:
         error,
     };
 
-    // True if reading `e` several times reads the same storage every time, so
-    // that taking each of its components separately evaluates nothing twice.
+    // Records whether the expression it walks calls a procedure, so that an
+    // expression which is read more than once can be told from one whose
+    // second reading would run a procedure a second time.
+    class CallFinder : public ASR::BaseWalkVisitor<CallFinder> {
+        public:
+        bool found = false;
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            found = true;
+            ASR::BaseWalkVisitor<CallFinder>::visit_FunctionCall(x);
+        }
+
+        void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+            found = true;
+            ASR::BaseWalkVisitor<CallFinder>::visit_IntrinsicImpureFunction(x);
+        }
+    };
+
+    // True if reading `e` several times reads the same storage every time and
+    // runs nothing on the way, so that taking each of its components
+    // separately evaluates nothing twice. A subscript or a base that calls a
+    // procedure would be evaluated once per component, so it disqualifies the
+    // whole reference.
     static bool is_designator(ASR::expr_t* e) {
-        return ASR::is_a<ASR::Var_t>(*e)
-            || ASR::is_a<ASR::StructInstanceMember_t>(*e)
-            || ASR::is_a<ASR::ArrayItem_t>(*e);
+        if( !ASR::is_a<ASR::Var_t>(*e) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*e) &&
+            !ASR::is_a<ASR::ArrayItem_t>(*e) ) {
+            return false;
+        }
+        CallFinder call_finder;
+        call_finder.visit_expr(*e);
+        return !call_finder.found;
     }
 
     // `value` assigned to a fresh local variable, so that an expression which
     // must be evaluated exactly once can afterwards be read as many times as
     // there are components. Returns `nullptr` when the assignment cannot be
     // emitted: there is no body, as in a declaration's initializer, or the
-    // expression belongs to an implied do loop, whose iterations the
-    // surrounding body does not run.
+    // expression belongs to an implied do loop, which is an expression and so
+    // has no body of its own to evaluate it once per iteration in.
     ASR::expr_t* evaluate_into_temporary(ASR::expr_t* value) {
         // A `where` body runs only for the elements the mask selects, while
         // the value assigned there is evaluated once whatever the mask is, so
@@ -23309,12 +23335,28 @@ public:
         // evaluated exactly once, so anything that is not a designator is
         // assigned to a temporary first, and each component reference gets
         // its own copy of the base so that no node is shared between slots.
+        // Where the temporary cannot be assigned the value has to be rejected:
+        // reading the expression once per component would evaluate it several
+        // times, and every component could then come from a different
+        // evaluation.
         ASR::expr_t* base = parent_value;
         if( !is_designator(base) ) {
             ASR::expr_t* base_tmp = evaluate_into_temporary(base);
-            if( base_tmp != nullptr ) {
-                base = base_tmp;
+            if( base_tmp == nullptr ) {
+                diag.add(Diagnostic("the value given for the parent component "
+                    "'" + name + "' " + (idl_nesting_level > 0
+                        ? "must be a variable inside an implied do loop"
+                        : "must be a constant or a variable here") + ", it "
+                    "would otherwise be evaluated once for every component of "
+                    "'" + name + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {parent_value->base.loc})}));
+                if( !compiler_options.continue_compilation ) {
+                    throw SemanticAbort();
+                }
+                return ParentComponentKwarg::error;
             }
+            base = base_tmp;
         }
         ASR::symbol_t* base_sym = ASR::is_a<ASR::Var_t>(*base)
             ? ASR::down_cast<ASR::Var_t>(base)->m_v : nullptr;
