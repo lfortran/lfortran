@@ -23155,6 +23155,48 @@ public:
         }
     }
 
+    // True if reading `e` several times reads the same storage every time, so
+    // that taking each of its components separately evaluates nothing twice.
+    static bool is_designator(ASR::expr_t* e) {
+        return ASR::is_a<ASR::Var_t>(*e)
+            || ASR::is_a<ASR::StructInstanceMember_t>(*e)
+            || ASR::is_a<ASR::ArrayItem_t>(*e);
+    }
+
+    // `value` assigned to a fresh local variable, so that an expression which
+    // must be evaluated exactly once can afterwards be read as many times as
+    // there are components. Returns `nullptr` when the assignment cannot be
+    // emitted: there is no body, as in a declaration's initializer, or the
+    // expression belongs to an implied do loop, whose iterations the
+    // surrounding body does not run.
+    ASR::expr_t* evaluate_into_temporary(ASR::expr_t* value) {
+        if( current_body == nullptr || idl_nesting_level > 0 ) {
+            return nullptr;
+        }
+        const Location& loc = value->base.loc;
+        ASR::ttype_t* type = ASRUtils::expr_type(value);
+        ASR::symbol_t* type_declaration = ASRUtils::import_struct_type(al,
+            ASRUtils::get_struct_sym_from_struct_expr(value), current_scope);
+        std::string tmp_name = current_scope->get_unique_name("lfortran_tmp");
+        SetChar tmp_deps;
+        tmp_deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, tmp_deps, type, nullptr,
+            nullptr, tmp_name);
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, tmp_name), tmp_deps.p, tmp_deps.n,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, type, type_declaration,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+        current_body->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al, loc, tmp_var, value, nullptr,
+                compiler_options.po.realloc_lhs_arrays, false)));
+        return tmp_var;
+    }
+
     // The parent component of an extended type is a component whose name is
     // the name of the parent type (F2018 7.5.7.2), so a structure constructor
     // may give it by keyword: `e_t(base_t=base_t(1), z=2)`. A constructor
@@ -23219,17 +23261,36 @@ public:
                 throw SemanticAbort();
             }
         }
-        for( size_t i = 0; i < n_parent_args; i++ ) {
-            if( parent_args != nullptr && n_args == n_parent_args ) {
+        if( parent_args != nullptr ) {
+            // A parent constructor already carries one argument per component
+            // of the parent, in the same order as the leading arguments here.
+            LCOMPILERS_ASSERT(n_args == n_parent_args);
+            for( size_t i = 0; i < n_parent_args; i++ ) {
                 args.p[i] = parent_args[i];
-                continue;
             }
-            ASR::symbol_t* member = ASRUtils::import_struct_instance_member(
-                al, constructor_arg_syms[i], current_scope);
+            return true;
+        }
+        // Any other expression is read component by component. It must be
+        // evaluated exactly once, so anything that is not a designator is
+        // assigned to a temporary first, and each component reference gets
+        // its own copy of the base so that no node is shared between slots.
+        ASR::expr_t* base = parent_value;
+        if( !is_designator(base) ) {
+            ASR::expr_t* base_tmp = evaluate_into_temporary(base);
+            if( base_tmp != nullptr ) {
+                base = base_tmp;
+            }
+        }
+        ASR::symbol_t* base_sym = ASR::is_a<ASR::Var_t>(*base)
+            ? ASR::down_cast<ASR::Var_t>(base)->m_v : nullptr;
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        for( size_t i = 0; i < n_parent_args; i++ ) {
+            ASR::expr_t* base_i = expr_duplicator.duplicate_expr(base);
             args.p[i].loc = parent_value->base.loc;
-            args.p[i].m_value = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
-                al, parent_value->base.loc, parent_value, member,
-                ASRUtils::symbol_type(constructor_arg_syms[i]), nullptr));
+            args.p[i].m_value = ASRUtils::EXPR(
+                ASRUtils::getStructInstanceMember_t(al,
+                    parent_value->base.loc, &base_i->base, base_sym,
+                    constructor_arg_syms[i], current_scope));
         }
         return true;
     }
