@@ -1393,9 +1393,16 @@ bool is_temporary_needed(ASR::expr_t* value) {
     bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
         (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
         ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
+    // A null pointer value carries no array data, so copying it into an array
+    // temporary is meaningless: the temporary would be read as a descriptor and
+    // dereferenced. Leave it as is so that the null value reaches its
+    // consumer (e.g. `Associate`) unchanged.
+    bool is_null_pointer = ASR::is_a<ASR::PointerNullConstant_t>(
+        *ASRUtils::get_past_array_physical_cast(value));
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
         && !is_directly_addressable_expr(value)
+        && !is_null_pointer
         && is_non_empty_fixed_size_array;
 }
 
