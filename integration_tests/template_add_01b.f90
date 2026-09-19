@@ -4,7 +4,7 @@ module template_add_01b_m
     public :: add_t, test_template
 
     requirement R(T, F)
-        type, deferred :: T
+        deferred type :: T
         interface operator (+)
             procedure F
         end interface

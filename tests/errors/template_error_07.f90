@@ -4,7 +4,7 @@ module template_error_07_m
     public :: tmp
 
     requirement r(t, f)
-        type, deferred :: t
+        deferred type :: t
         function f(x, y) result(z)
             type(t), intent(in) :: x, y
             type(t) :: z

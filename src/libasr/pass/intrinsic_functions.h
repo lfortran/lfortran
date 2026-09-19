@@ -6102,9 +6102,9 @@ namespace StringConcat {
                     ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arr_arg)));
                 ASR::ttype_t* result_arr_type = ASRUtils::TYPE(ASR::make_Array_t(
                     al, loc, return_type, arr_t->m_dims, arr_t->n_dims, arr_t->m_physical_type, arr_t->m_memory_space));
-                value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(
-                    al, loc, n * result_elem_len, (void*)result_buf,
-                    result_arr_type, ASR::arraystorageType::ColMajor));
+                value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+                    al, loc, (void*)result_buf, result_arr_type,
+                    ASR::arraystorageType::ColMajor));
             }
         } else {
             // Fall back to computing return type from argument types

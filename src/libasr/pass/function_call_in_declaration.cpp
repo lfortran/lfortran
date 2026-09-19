@@ -545,6 +545,11 @@ public:
     }
 
     void set_type_of_result_var(const ASR::FunctionType_t &x, ASR::Function_t* func) {
+        if (func->m_return_var == nullptr) {
+            // A function that only declares a procedure type, such as the
+            // interface of an opaque procedure, has no result variable.
+            return;
+        }
         if( ASR::is_a<ASR::Array_t>(*x.m_return_var_type) ) {
             ASR::ttype_t* return_type_copy = ASRUtils::duplicate_type(al, x.m_return_var_type);
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(return_type_copy);

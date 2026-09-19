@@ -4,7 +4,7 @@ module template_error_06_m
   public :: struct_t
 
   requirement r(t)
-      type, deferred :: t
+      deferred type :: t
   end requirement
 
   template struct_t(t)

@@ -5,7 +5,7 @@ module template_array_01_m
     public :: test_template
 
     requirement r(t)
-        type, deferred :: t
+        deferred type :: t
     end requirement
 
     template array_tmpl(t)

@@ -410,6 +410,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
+%type <vec_ast> deferred_type_decl
 %type <ast> template_decl
 %type <ast> requirement_decl
 %type <ast> require_decl
@@ -760,14 +761,18 @@ enum_var_modifiers
     ;
 
 derived_type_decl
-    : KW_TYPE "," KW_DEFERRED "::" id sep {
-            $$ = DERIVED_TYPE2($5, SIMPLE_ATTR(Deferred, @$), TRIVIA_AFTER($6, @$), @$); }
-    | KW_TYPE var_modifiers id sep var_decl_star
+    : KW_TYPE var_modifiers id sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
+    ;
+
+// F2028 R1616: DEFERRED TYPE :: deferred-arg-name-list
+deferred_type_decl
+    : KW_DEFERRED KW_TYPE "::" id_list sep {
+            $$ = DEFERRED_TYPES(p.m_a, $4, TRIVIA_AFTER($5, @$), @$); }
     ;
 
 
@@ -1607,12 +1612,18 @@ var_type
     : declaration_type_spec { $$ = $1; }
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_PROCEDURE "(" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
-    | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE(Procedure, @$); }
+    | KW_PROCEDURE "(" KW_INTEGER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE_KIND(Integer, $5, @$), @$); }
+    | KW_PROCEDURE "(" KW_REAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE_KIND(Real, $5, @$), @$); }
+    | KW_PROCEDURE "(" KW_DOUBLE KW_PRECISION ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE(DoublePrecision, @$), @$); }
+    | KW_PROCEDURE "(" KW_COMPLEX "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE_KIND(Complex, $5, @$), @$); }
+    | KW_PROCEDURE "(" KW_LOGICAL "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE_KIND(Logical, $5, @$), @$); }
+    | KW_PROCEDURE "(" KW_CHARACTER "(" kind_arg_list ")" ")" { $$ = ATTR_TYPE_ATTR(
+        Procedure, ATTR_TYPE_KIND(Character, $5, @$), @$); }
     ;
 
 var_sym_decl_list
@@ -1716,6 +1727,7 @@ sep_one
 
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
+    | decl_statements deferred_type_decl { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;

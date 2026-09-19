@@ -4,7 +4,7 @@ module reverse_m
     public :: reverse_tmpl, test_reverse
 
     requirement default_behavior(t)
-        type, deferred :: t
+        deferred type :: t
     end requirement
 
     template reverse_tmpl(t)

@@ -45,6 +45,80 @@ bool is_vectorise_able(ASR::expr_t* x) {
     }
 }
 
+bool struct_type_has_character_member(ASR::Struct_t* struct_type,
+        std::vector<ASR::Struct_t*> seen = {}) {
+    while (struct_type) {
+        if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
+            return false;
+        }
+        seen.push_back(struct_type);
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_character(*member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_type_has_character_member(nested, seen)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
+bool struct_type_has_array_member(ASR::Struct_t* struct_type,
+        std::vector<ASR::Struct_t*> seen = {}) {
+    while (struct_type) {
+        if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
+            return false;
+        }
+        seen.push_back(struct_type);
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_array(member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_type_has_array_member(nested, seen)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
 enum targetType {
     GeneratedTarget,
     OriginalTarget,
@@ -287,9 +361,10 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
 }
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& loc,
-    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type, ASR::expr_t* value = nullptr) {
-    ASR::symbol_t* type_decl = nullptr;
-    if (value) {
+    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type,
+    ASR::expr_t* value = nullptr, ASR::symbol_t* type_declaration = nullptr) {
+    ASR::symbol_t* type_decl = type_declaration;
+    if (type_decl == nullptr && value) {
         type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
     }
 
@@ -811,6 +886,10 @@ bool set_allocation_size(
                         allocate_dim.m_length = size_i;
                         allocate_dims.push_back(al, allocate_dim);
                     }
+                    if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+                        ASRUtils::ASRBuilder b(al, loc);
+                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
+                    }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread): {
@@ -1319,10 +1398,27 @@ bool is_temporary_needed(ASR::expr_t* value) {
     bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
         (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
         ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
+    // A null pointer value carries no array data, so copying it into an array
+    // temporary is meaningless: the temporary would be read as a descriptor and
+    // dereferenced. Leave it as is so that the null value reaches its
+    // consumer (e.g. `Associate`) unchanged.
+    bool is_null_pointer = ASR::is_a<ASR::PointerNullConstant_t>(
+        *ASRUtils::get_past_array_physical_cast(value));
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
         && !is_directly_addressable_expr(value)
+        && !is_null_pointer
         && is_non_empty_fixed_size_array;
+}
+
+// Returns true if `value` is the null pointer constant and its type is an
+// array of rank >= 1, i.e. a value which is represented by an array
+// descriptor rather than by a plain address.
+bool is_array_null_pointer_constant(ASR::expr_t* value) {
+    if( !value ) { return false; }
+    ASR::expr_t* value_no_cast = ASRUtils::get_past_array_physical_cast(value);
+    return ASR::is_a<ASR::PointerNullConstant_t>(*value_no_cast) &&
+        ASRUtils::is_array(ASRUtils::expr_type(value_no_cast));
 }
 
 ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
@@ -1500,6 +1596,25 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
+    // Declares a temporary pointer variable of the same type as `null_constant`,
+    // associates it with `null_constant` and returns it. The temporary gives the
+    // null pointer constant the array descriptor its uses require. The null
+    // pointer constant carries no type declaration of its own, so for a struct
+    // element type the declaration of the dummy argument it is bound to is used.
+    ASR::expr_t* create_and_associate_null_pointer_temporary(
+        ASR::expr_t* null_constant, ASR::symbol_t* type_declaration,
+        const std::string& name_hint) {
+        ASR::expr_t* null_constant_no_cast = ASRUtils::get_past_array_physical_cast(null_constant);
+        const Location& loc = null_constant_no_cast->base.loc;
+        ASR::expr_t* null_pointer_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint,
+            ASRUtils::expr_type(null_constant_no_cast), null_constant_no_cast,
+            type_declaration);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+            al, loc, null_pointer_temporary, null_constant_no_cast)));
+        return null_pointer_temporary;
+    }
+
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
         size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
@@ -1508,6 +1623,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             if (orig_args &&
                 (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (orig_variable && ASRUtils::is_pointer(orig_variable->m_type) &&
+                    is_array_null_pointer_constant(x_m_args[i].m_value)) {
+                    // An argument of rank >= 1 bound to a pointer dummy is passed as
+                    // the address of an array descriptor. The null pointer constant
+                    // carries no descriptor, so associate it with a temporary pointer
+                    // variable and pass that variable instead.
+                    ASR::expr_t* null_pointer_temporary =
+                        create_and_associate_null_pointer_temporary(
+                            x_m_args[i].m_value, orig_variable->m_type_declaration, name_hint);
+                    ASR::call_arg_t call_arg;
+                    call_arg.loc = null_pointer_temporary->base.loc;
+                    call_arg.m_value = null_pointer_temporary;
+                    x_m_args_vec.push_back(al, call_arg);
+                    continue;
+                }
                 if (orig_variable &&
                     (orig_variable->m_intent == ASRUtils::intent_out ||
                      orig_variable->m_intent == ASRUtils::intent_inout ||
@@ -2051,6 +2181,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.n_args = x_m_args.size();
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+        // Its arguments are constants emitted as static data, not temporaries
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
         visit_Call(x, "_subroutine_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
@@ -2380,6 +2514,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_struct_constructor_");
     }
 
+    void replace_StructConstant(ASR::StructConstant_t* /*x*/) {
+        // A StructConstant is emitted as static data, so its arguments
+        // must stay constants and are never replaced by temporaries
+    }
+
     void replace_EnumConstructor(ASR::EnumConstructor_t* x) {
         replace_current_expr(x, "_enum_constructor_");
     }
@@ -2678,6 +2817,10 @@ class ReplaceExprWithTemporaryVisitor:
         // Do nothing
     }
 
+    void visit_StructConstant(const ASR::StructConstant_t& /*x*/) {
+        // Its arguments are constants emitted as static data, not temporaries
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         if( inside_where ) {
             transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
@@ -2947,7 +3090,9 @@ class ReplaceModuleVarWithValue:
 
     public:
 
-    ReplaceModuleVarWithValue(Allocator& al_): al(al_) {}
+    SymbolTable* current_scope;
+
+    ReplaceModuleVarWithValue(Allocator& al_): al(al_), current_scope(nullptr) {}
 
     void replace_Var(ASR::Var_t* x) {
         if( !ASR::is_a<ASR::Variable_t>(
@@ -2983,6 +3128,10 @@ class ReplaceModuleVarWithValue:
         }
 
         *current_expr = expr_duplicator.duplicate_expr(value);
+        if (current_scope != nullptr) {
+            *current_expr = ASRUtils::externalize_struct_refs_in_init(
+                al, *current_expr, current_scope);
+        }
         replace_expr(*current_expr);
     }
 
@@ -3005,6 +3154,7 @@ class TransformVariableInitialiser:
 
     void call_replacer() {
         replacer.current_expr = current_expr;
+        replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
     }
 
@@ -3027,19 +3177,38 @@ class TransformVariableInitialiser:
                 }
             }
         }
+        bool parameter_struct_type = false;
+        bool parameter_value_is_array = false;
+        bool parameter_struct_has_character_member = false;
+        bool parameter_struct_has_array_member = false;
+        if (value != nullptr &&
+                x.m_storage == ASR::storage_typeType::Parameter &&
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(value)))) {
+            parameter_struct_type = true;
+            parameter_value_is_array = ASRUtils::is_array(ASRUtils::expr_type(value));
+            ASR::symbol_t* struct_sym = x.m_type_declaration;
+            if (struct_sym == nullptr) {
+                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
+            }
+            if (struct_sym != nullptr) {
+                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(struct_sym));
+                parameter_struct_has_character_member =
+                    struct_type_has_character_member(struct_type);
+                parameter_struct_has_array_member =
+                    struct_type_has_array_member(struct_type);
+            }
+        }
+        bool skip_parameter_constant = x.m_storage == ASR::storage_typeType::Parameter &&
+            ASRUtils::is_value_constant(value) &&
+            (!parameter_struct_type || parameter_value_is_array ||
+                (parameter_struct_has_array_member &&
+                    !parameter_struct_has_character_member));
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
-            ( x.m_storage == ASR::storage_typeType::Parameter &&
-                // this condition ensures that currently constants
-                // not evaluated at compile time like
-                // real(4), parameter :: z(1) = [x % y]
-                // are converted to an assignment for now
-                ASRUtils::is_value_constant(value) &&
-                !ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(ASRUtils::expr_type(value))
-                )
-            ) || (
+            skip_parameter_constant || (
                 x.m_storage == ASR::storage_typeType::Save &&
                 value &&
                 ASRUtils::is_value_constant(value)
@@ -3248,8 +3417,9 @@ class VerifySimplifierASROutput:
     template <typename T>
     void visit_Call(const T& x) {
         ASR::expr_t **orig_args = nullptr;
-        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
-            orig_args = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_args;
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
         }
         traverse_call_args(x.m_args, x.n_args, orig_args);
     }

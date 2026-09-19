@@ -23,7 +23,7 @@ As we can see here, we need to define the functions associated with the deferred
 
 ```fortran
 requirement number_type(T, add_element, set_to_zero)
-  type, deferred :: T
+  deferred type :: T
   function add_element(x, y) result(z)
     type(T), intent(in) :: x, y
     type(T) :: z
@@ -260,7 +260,7 @@ LFortran also supports generic derived types. Let's say we want a generic tuple.
 template derived_type_t(T)
     ! for brevity we have the deferred type
     ! declared directly inside the template
-    type, deferred :: T
+    deferred type :: T
     public :: tuple
 
     type :: tuple
@@ -274,7 +274,7 @@ We can also define generic functions accessing this generic tuple as:
 
 ```fortran
 template derived_type_t(T)
-    type, deferred :: T
+    deferred type :: T
     public :: tuple
 
     type :: tuple

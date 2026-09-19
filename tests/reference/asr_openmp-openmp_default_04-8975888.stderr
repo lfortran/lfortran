@@ -1,0 +1,5 @@
+semantic error: the default clause expects one of shared, none, private or firstprivate
+ --> tests/errors/openmp_default_04.f90:4:1
+  |
+4 | !$omp parallel do default() shared(a)
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

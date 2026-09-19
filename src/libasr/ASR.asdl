@@ -93,7 +93,6 @@ stmt
     | Expr(expr expression)
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
-    | GpuOffload(symbol kernel, stmt* body, stmt* fallback)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -177,7 +176,7 @@ expr
     | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
-    | FunctionPointerCast(expr arg, symbol to, ttype type, expr? value)
+    | FunctionPointerCast(expr arg, symbol? to, ttype type, expr? value)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
     | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumStaticMember(expr v, symbol m, ttype type, expr? value)
@@ -233,13 +232,14 @@ ttype
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)
-    | CPtr()
+    | CPtr(cptr_kind kind)
     | SymbolicExpression()
     | TypeParameter(identifier param)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
+cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 storage_type = Default | Save | Parameter
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified

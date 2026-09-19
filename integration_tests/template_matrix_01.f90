@@ -5,7 +5,7 @@ module template_matrix_01_m
     public :: matrix_t
 
     requirement elemental_op(t, op)
-        type, deferred :: t
+        deferred type :: t
         pure elemental function op(l, r) result(rs)
             type(t), intent(in) :: l, r
             type(t) :: rs

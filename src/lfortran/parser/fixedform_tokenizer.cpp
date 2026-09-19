@@ -1148,7 +1148,7 @@ struct FixedFormRecursiveDescent {
             t.cur = cur;
             tokenize_until(do_pos);
             cur = do_pos;
-            lex_dowhile(cur);
+            lex_dowhile(cur, continue_compilation);
             return true;
         }
         if (is_named_do_loop(cur, do_pos)) {
@@ -1163,6 +1163,25 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "type::")) {
             lex_derived_type(cur);
             return true;
+        }
+        // handle the bare `TYPE name` derived-type-def opener (no `::`),
+        // e.g. `TYPE GT`. This must be disambiguated from:
+        //  - `TYPE(...)`, a declaration-type-spec using a derived type,
+        //    e.g. `TYPE(GT), SAVE :: DAT(10)` (must NOT be routed here)
+        //  - a plain identifier that merely starts with "type", e.g.
+        //    `TYPEX = 5` (must NOT be routed here)
+        // `TYPE, EXTENDS(parent) :: name` (attr-list form) is not handled
+        // by this check either, matching the pre-existing `type::` check's
+        // scope.
+        // A bare derived-type-def statement is exactly `TYPE type-name`
+        // with nothing else on the line, so require a NAME immediately
+        // after `type` followed immediately by end-of-line.
+        if (next_is(cur, "type") && !next_is(cur, "type(")) {
+            unsigned char *name_end = cur + 4;
+            if (try_name(name_end) && next_is_eol(name_end)) {
+                lex_derived_type(cur);
+                return true;
+            }
         }
 
         if (lex_declaration(cur)) {
@@ -1193,7 +1212,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (next_is(cur, "dowhile(")) {
-            lex_dowhile(cur);
+            lex_dowhile(cur, continue_compilation);
             return true;
         }
 
@@ -1691,14 +1710,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
-    void lex_dowhile(unsigned char *&cur) {
+    void lex_dowhile(unsigned char *&cur, bool continue_compilation = false) {
         auto end = cur; next_line(end);
         push_token_advance(cur, "do");
         push_token_advance(cur, "while");
         tokenize_line(cur); // tokenize rest of line where `do while` starts
         // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
         while (!next_is(cur, "enddo")) {
-            lex_body_statement(cur);
+            // With --continue-compilation an unrecognized body statement is
+            // tokenized as a plain line (and reported by the parser); the
+            // error below is then only reached at end of file or at a
+            // stray `end`/`contains`/`subroutine`/`function`.
+            if (!lex_body_statement(cur, continue_compilation)) {
+                Location loc;
+                loc.first = cur-string_start;
+                loc.last = cur-string_start;
+                diag.add(diag::Diagnostic(
+                    "Expected an executable statement inside a do while loop",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
         }
         push_token_advance(cur, "enddo");
         tokenize_line(cur);

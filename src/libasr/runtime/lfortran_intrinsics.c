@@ -6825,10 +6825,32 @@ _lfortran_open(int32_t unit_num,
             return (int64_t) already_open;
         }
         FILE* fd = fopen(f_name_c, access_mode);
-        if (!fd && iostat == NULL) {
-            printf("Runtime error: Error in opening the file!\n");
-            perror(f_name_c);
-            exit(1);
+        if (!fd) {
+            if (iostat == NULL) {
+                printf("Runtime error: Error in opening the file!\n");
+                perror(f_name_c);
+                exit(1);
+            } else {
+                *iostat = 2; // file open error
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
+                    char* temp = "Error in opening the file.";
+                    snprintf(iomsg, iomsg_len + 1, "%s", temp);
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+                }
+                internal_free(f_name_c);
+                internal_free(status_c);
+                internal_free(form_c);
+                internal_free(access_c);
+                internal_free(action_c);
+                internal_free(delim_c);
+                internal_free(blank_c);
+                internal_free(encoding_c);
+                internal_free(sign_c);
+                internal_free(decimal_c);
+                internal_free(round_c);
+                internal_free(pad_c);
+                return 0;
+            }
         }
         // Handle position='append': seek to end of file
         if (fd && position != NULL && position_len > 0) {
@@ -8078,6 +8100,150 @@ static bool read_next_nonblank_stdin_line(char *buffer, size_t bufsize, int32_t 
 
         if (nonblank) {
             return true;
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat)
+{
+    char lsep = list_directed_separator(unit_num);
+    if (iostat) *iostat = 0;
+    if (unit_num == -1) {
+        char buffer[100];
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
+            return;
+        }
+
+        char *token = buffer;
+        if (token == NULL) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t.\n");
+            exit(1);
+        }
+
+        char *endptr = NULL;
+        errno = 0;
+        long long_val = strtol(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t.\n");
+            exit(1);
+        }
+
+        if (errno == ERANGE || long_val < INT8_MIN || long_val > INT8_MAX) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Value %ld is out of integer(1) range.\n", long_val);
+            exit(1);
+        }
+
+        *p = (int8_t)long_val;
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_mode;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_mode == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for int8_t.\n");
+                exit(1);
+            }
+            if (find_unit(unit_num)->seq_unf_pending < (int32_t)sizeof(int8_t)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for int8_t.\n");
+                exit(1);
+            }
+            if (fread(p, sizeof(int8_t), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int8_t from sequential binary file.\n");
+                exit(1);
+            }
+            find_unit(unit_num)->seq_unf_pending -= (int32_t)sizeof(int8_t);
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker while reading int8_t.\n");
+                exit(1);
+            }
+        } else {
+            if (fread(p, sizeof(*p), 1, filep) != 1) {
+                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read int8_t from binary file.\n");
+                exit(1);
+            }
+        }
+    } else {
+        if (list_directed_check_null_repeat(unit_num)) {
+            return;
+        }
+        int c;
+        while ((c = fgetc(filep)) != EOF && isspace(c)) {}
+        if (c == EOF) {
+            if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Invalid int8_t input from file (EOF).\n");
+            exit(1);
+        }
+        if (c == lsep) {
+            return;
+        }
+        if (c == '/') {
+            ungetc(c, filep);
+            return;
+        }
+        char buffer[40];
+        int len = 0;
+        do {
+            if (len < 39) buffer[len++] = (char)c;
+            c = fgetc(filep);
+        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
+        buffer[len] = '\0';
+        if (c == lsep) {
+        } else if (c != EOF) {
+            ungetc(c, filep);
+        }
+        int null_count = list_directed_parse_null_repeat(buffer);
+        if (null_count > 0) {
+            struct UNIT_FILE *uf_ = find_unit(unit_num);
+            if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
+            return;
+        }
+        char *endptr = NULL;
+        errno = 0;
+        long temp = strtol(buffer, &endptr, 10);
+        if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for int8_t from file.\n");
+            exit(1);
+        }
+
+        if (temp < INT8_MIN || temp > INT8_MAX) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Value %ld is out of integer(1) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int8_t)temp;
+        if (c != lsep) {
+            skip_trailing_comma(filep, lsep);
         }
     }
 }
@@ -10519,17 +10685,10 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
             }
         }
     } else {
-        char length_format[23];
-        sprintf(length_format, "%%%" PRId64, length);
-        strcat(length_format, "s");
         for (int i = 0; i < array_size; i++) {
-            int scan_ret = fscanf(filep, length_format, p + (i * length));
-            if (scan_ret != 1) {
-                if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid read (scan)\n");
-                exit(1);
-            }
-            (void)!fscanf(filep, "%*[^\n \t]");
+            char *elem = p + ((int64_t)i * length);
+            _lfortran_read_char(&elem, length, unit_num, iostat);
+            if (iostat && *iostat != 0) return;
         }
     }
 }
@@ -10660,7 +10819,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
 - Not case sensitive.
 - Not null dependent.
 */
-LFORTRAN_API bool is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len){
+LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len){
     if(s1_len != s2_len) return false;
     for(int64_t i = 0; i < s1_len; i++){
         if(tolower(s1[i]) != tolower((s2[i]))) return false;
@@ -11064,25 +11223,95 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
     return true;
 }
 
-static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx)
+// Tracks pending array elements for one-element-per-format-item reading.
+// In Fortran, each array element consumes its own format edit descriptor,
+// so we read one element per handler call and return to the format processor.
+typedef struct {
+    bool active;
+    void* data_ptr;
+    int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
+    int32_t n_elems;
+    int32_t rank;
+    int32_t* extents;
+    int32_t* strides;
+    int32_t current_idx;
+    bool is_complex;
+    bool reading_imag;    // for complex: true when next read is the imaginary part
+    size_t component_sz;
+    size_t elem_sz;
+    bool is_char;
+    int32_t char_kind;
+    int64_t char_len;
+} ArrayReadCont;
+
+static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
+        int *arg_idx)
 {
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    // descriptor-array path for A not yet supported
-    // TODO: Add support for read into descriptor-arrays for character reads
-    (void)is_descriptor_array;
-    int32_t type_code = va_arg(*args, int32_t);
-    char** str_data_ptr = va_arg(*args, char**);
-    int64_t str_len = va_arg(*args, int64_t);
-    // Type code 8 marks a destination of character kind > 1; it carries the
-    // kind after the length.
-    int32_t char_kind = 1;
-    if (type_code == 8) {
-        char_kind = va_arg(*args, int32_t);
+    if (*arg_idx >= no_of_args) {
+        return false;
+    }
+
+    va_list probe;
+    va_copy(probe, *args);
+    int32_t is_descriptor_array = va_arg(probe, int32_t);
+    if (!is_descriptor_array) {
+        va_end(probe);
+        return false;
+    }
+
+    int32_t elem_tc = va_arg(probe, int32_t);
+    (void)va_arg(probe, void*);
+    int32_t n_elems = va_arg(probe, int32_t);
+    (void)va_arg(probe, int32_t);
+    (void)va_arg(probe, int32_t*);
+    (void)va_arg(probe, int32_t*);
+    if (elem_tc == 0 || elem_tc == 8) {
+        (void)va_arg(probe, int64_t);
+        if (elem_tc == 8) {
+            (void)va_arg(probe, int32_t);
+        }
+    }
+    va_end(probe);
+
+    if (n_elems > 0) {
+        return false;
+    }
+
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, void*);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t);
+    (void)va_arg(*args, int32_t*);
+    (void)va_arg(*args, int32_t*);
+    if (elem_tc == 0 || elem_tc == 8) {
+        (void)va_arg(*args, int64_t);
+        if (elem_tc == 8) {
+            (void)va_arg(*args, int32_t);
+        }
     }
     (*arg_idx)++;
+    return true;
+}
 
-    char* str_data = str_data_ptr ? *str_data_ptr : NULL;
+static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
+{
+    int64_t offset = 0;
+    int32_t remaining = idx;
+    for (int32_t d = 0; d < arr_cont->rank; d++) {
+        int32_t extent = arr_cont->extents[d];
+        if (extent <= 0) return 0;
+        int32_t dim_idx = remaining % extent;
+        remaining /= extent;
+        offset += (int64_t)dim_idx * (int64_t)arr_cont->strides[d];
+    }
+    return offset;
+}
+
+static bool read_character_target(InputSource *inputSource, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no,
+        char* str_data, int64_t str_len, int32_t char_kind)
+{
     if (str_data == NULL) {
         printf("Runtime Error: Unallocated string in formatted read\n");
         exit(1);
@@ -11109,14 +11338,159 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
-        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx)
+static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
+        ArrayReadCont *arr_cont)
 {
+    if (arr_cont->active) {
+        if (!arr_cont->is_char) {
+            if (iostat) *iostat = 5010;
+            arr_cont->active = false;
+            return false;
+        }
+        int32_t i = arr_cont->current_idx;
+        size_t elem_bytes = (size_t)arr_cont->char_len * (size_t)arr_cont->char_kind;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        char* str_data = (char*)arr_cont->data_ptr + offset * (int64_t)elem_bytes;
+        if (!read_character_target(inputSource, width, advance_no, iostat, chunk,
+                consumed_newline, pad_no, str_data, arr_cont->char_len,
+                arr_cont->char_kind)) {
+            arr_cont->active = false;
+            return false;
+        }
+        arr_cont->current_idx++;
+        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        return true;
+    }
+
     int32_t is_descriptor_array = va_arg(*args, int32_t);
-    // descriptor-array path for L not yet supported
-    // TODO: Add support for read into descriptor-arrays for logical reads
-    (void)is_descriptor_array;
     int32_t type_code = va_arg(*args, int32_t);
+    int32_t char_kind = 1;
+    if (is_descriptor_array) {
+        char* data_ptr = va_arg(*args, char*);
+        int32_t n_elems = va_arg(*args, int32_t);
+        int32_t rank = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
+        int64_t str_len = va_arg(*args, int64_t);
+        if (type_code == 8) {
+            char_kind = va_arg(*args, int32_t);
+        }
+        (*arg_idx)++;
+
+        if (data_ptr == NULL) {
+            printf("Runtime Error: Unallocated string in formatted read\n");
+            exit(1);
+        }
+        if (n_elems <= 0) {
+            return true;
+        }
+        if (!read_character_target(inputSource, width, advance_no, iostat, chunk,
+                consumed_newline, pad_no, data_ptr, str_len, char_kind)) {
+            return false;
+        }
+        arr_cont->data_ptr = data_ptr;
+        arr_cont->elem_tc = type_code;
+        arr_cont->n_elems = n_elems;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
+        arr_cont->current_idx = 1;
+        arr_cont->is_complex = false;
+        arr_cont->reading_imag = false;
+        arr_cont->component_sz = 0;
+        arr_cont->elem_sz = (size_t)str_len * (size_t)char_kind;
+        arr_cont->is_char = true;
+        arr_cont->char_kind = char_kind;
+        arr_cont->char_len = str_len;
+        arr_cont->active = (n_elems > 1);
+        return true;
+    }
+
+    char** str_data_ptr = va_arg(*args, char**);
+    int64_t str_len = va_arg(*args, int64_t);
+    if (type_code == 8) {
+        char_kind = va_arg(*args, int32_t);
+    }
+    (*arg_idx)++;
+
+    char* str_data = str_data_ptr ? *str_data_ptr : NULL;
+    return read_character_target(inputSource, width, advance_no, iostat, chunk,
+        consumed_newline, pad_no, str_data, str_len, char_kind);
+}
+
+static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
+        ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active) {
+        if (arr_cont->is_char || arr_cont->elem_tc != 1) {
+            if (iostat) *iostat = 5010;
+            arr_cont->active = false;
+            return false;
+        }
+        int32_t i = arr_cont->current_idx;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        int32_t* log_ptr = (int32_t*)((char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz);
+
+        int read_width = (width > 0) ? width : 1;
+        if (read_width < 0) read_width = 0;
+
+        char* buffer = NULL;
+        int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                consumed_newline, &buffer, &field_len, pad_no)) {
+            arr_cont->active = false;
+            return false;
+        }
+
+        parse_logical_from_buffer(buffer, field_len, log_ptr);
+        internal_free(buffer);
+        arr_cont->current_idx++;
+        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+        return true;
+    }
+
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    int32_t type_code = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        void* data_ptr = va_arg(*args, void*);
+        int32_t n_elems = va_arg(*args, int32_t);
+        int32_t rank = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
+        (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
+        int read_width = (width > 0) ? width : 1;
+        if (read_width < 0) read_width = 0;
+
+        char* buffer = NULL;
+        int field_len = 0;
+        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                consumed_newline, &buffer, &field_len, pad_no)) {
+            return false;
+        }
+
+        parse_logical_from_buffer(buffer, field_len, (int32_t*)data_ptr);
+        internal_free(buffer);
+
+        arr_cont->data_ptr = data_ptr;
+        arr_cont->elem_tc = type_code;
+        arr_cont->n_elems = n_elems;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
+        arr_cont->current_idx = 1;
+        arr_cont->is_complex = false;
+        arr_cont->reading_imag = false;
+        arr_cont->is_char = false;
+        arr_cont->component_sz = sizeof(int32_t);
+        arr_cont->elem_sz = sizeof(int32_t);
+        arr_cont->active = (n_elems > 1);
+        return true;
+    }
     (void)type_code;
     int32_t* log_ptr = va_arg(*args, int32_t*);
     (*arg_idx)++;
@@ -11137,35 +11511,20 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-// Tracks pending array elements for one-element-per-format-item reading.
-// In Fortran, each array element consumes its own format edit descriptor,
-// so we read one element per handler call and return to the format processor.
-typedef struct {
-    bool active;
-    void* data_ptr;
-    int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
-    int32_t n_elems;
-    int32_t stride;
-    int32_t current_idx;
-    bool is_complex;
-    bool reading_imag;    // for complex: true when next read is the imaginary part
-    size_t component_sz;
-    size_t elem_sz;
-} ArrayReadCont;
-
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx, int blank_mode,
         ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
         int read_width = (width > 0) ? width : 10;
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         char* buffer = NULL; int field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
                         consumed_newline, &buffer, &field_len, pad_no)) {
@@ -11185,15 +11544,23 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = esz;
         arr_cont->elem_sz = esz;
         int read_width = (width > 0) ? width : 10;
@@ -11239,14 +11606,15 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         int blank_mode, int base, ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
         int read_width = (width > 0) ? width : 10;
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         char* buffer = NULL; int field_len = 0;
         if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
                         consumed_newline, &buffer, &field_len, pad_no)) {
@@ -11266,15 +11634,23 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = esz;
         arr_cont->elem_sz = esz;
         int read_width = (width > 0) ? width : 10;
@@ -11375,13 +11751,14 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (read_width < 0) read_width = 0;
 
     if (arr_cont->active) {
-        if (arr_cont->elem_tc != 4 && arr_cont->elem_tc != 5) {
+        if (arr_cont->is_char || (arr_cont->elem_tc != 4 && arr_cont->elem_tc != 5)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
         int32_t i = arr_cont->current_idx;
-        void* elem_ptr = (char*)arr_cont->data_ptr + (size_t)i * (size_t)arr_cont->stride * arr_cont->elem_sz;
+        int64_t offset = get_array_read_offset(arr_cont, i);
+        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
         if (arr_cont->is_complex && arr_cont->reading_imag) {
             void* imag_ptr = (char*)elem_ptr + arr_cont->component_sz;
             if (!read_and_parse_real_field(inputSource, imag_ptr, arr_cont->elem_tc,
@@ -11417,8 +11794,13 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
-        int32_t stride   = va_arg(*args, int32_t);
+        int32_t rank     = va_arg(*args, int32_t);
+        int32_t* extents = va_arg(*args, int32_t*);
+        int32_t* strides = va_arg(*args, int32_t*);
         (*arg_idx)++;
+        if (n_elems <= 0) {
+            return true;
+        }
         bool is_complex = (elem_tc == 6 || elem_tc == 7);
         int32_t component_tc = elem_tc;
         if (component_tc == 6) component_tc = 4;
@@ -11429,10 +11811,13 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = component_tc;
         arr_cont->n_elems = n_elems;
-        arr_cont->stride = stride;
+        arr_cont->rank = rank;
+        arr_cont->extents = extents;
+        arr_cont->strides = strides;
         arr_cont->current_idx = 0;
         arr_cont->is_complex = is_complex;
         arr_cont->reading_imag = false;
+        arr_cont->is_char = false;
         arr_cont->component_sz = component_sz;
         arr_cont->elem_sz = elem_sz;
 
@@ -11653,7 +12038,7 @@ LFORTRAN_API void _lfortran_string_formatted_read(
     va_start(args, pad_len);
     
     bool pad_no = false;
-    if (pad && pad_len > 0 && is_streql_NCS(pad, pad_len, "no", 2)) {
+    if (pad && pad_len > 0 && _lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
         pad_no = true;
     }
     // Internal files have no connection, so only a DECIMAL= specifier on the
@@ -11696,7 +12081,7 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
     va_start(args, pad_len);
 
     bool pad_no = false;
-    if (pad && pad_len > 0 && is_streql_NCS(pad, pad_len, "no", 2)) {
+    if (pad && pad_len > 0 && _lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
         pad_no = true;
     }
     int decimal_mode = _lfortran_get_decimal_mode(-1);
@@ -11709,13 +12094,14 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 }
 
 // Type codes for _lfortran_formatted_read:
-// 0 = character (followed by ptr, str_len). For strings, `ptr` is `char**`
+// 0 = character (followed by ptr, str_len). For scalar strings, `ptr` is `char**`
 // (pointer to the data pointer inside a string descriptor).
 // 1 = logical (followed by ptr)
 // 2 = int32 (followed by ptr)
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
+// 8 = wide character (same as character, followed by char kind after str_len)
 // Variadic protocol for _lfortran_formatted_read / _lfortran_string_formatted_read:
 // Each read target is introduced by a bool flag `is_descriptor_array` (passed as int32_t):
 //
@@ -11727,10 +12113,14 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 //
 // Descriptor array (is_descriptor_array == 1):
 //     int32_t is_descriptor_array = 1
-//     int32_t elem_type_code  (same codes as above, non-char)
+//     int32_t elem_type_code  (same codes as above)
 //     void*   data_ptr        (i8* / void* to first element)
 //     int32_t n_elems         (total number of elements)
-//     int32_t stride_elems    (stride in elements between consecutive items)
+//     int32_t rank
+//     int32_t* extents        (rank extents; dim 0 varies fastest)
+//     int32_t* strides        (rank stride multipliers in elements)
+//     int64_t elem_len        (character only)
+//     int32_t char_kind       (wide character only)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
@@ -11781,7 +12171,7 @@ LFORTRAN_API void _lfortran_formatted_read(
 
     bool pad_no = false;
     if (pad && pad_len > 0) {
-        if (is_streql_NCS(pad, pad_len, "no", 2)) {
+        if (_lfortran_is_streql_NCS(pad, pad_len, "no", 2)) {
             pad_no = true;
         }
     } else if (unit_num != -1) {
@@ -11934,7 +12324,18 @@ static void process_fmt_items_read(InputSource *inputSource,
         if (spec == 'F' || spec == 'E' || spec == 'D' || spec == 'G') {
             decimal_places = parse_decimals(fmt, fmt_len, &fmt_pos);
         }
+        bool is_data_descriptor = (spec == 'A' || spec == 'L' || spec == 'I' ||
+            spec == 'O' || spec == 'Z' || spec == 'F' || spec == 'E' ||
+            spec == 'D' || spec == 'G' || (spec == 'B' && width > 0));
         for (int rep = 0; rep < repeat_count; rep++)  {
+            if (is_data_descriptor) {
+                while (!arr_cont->active && *arg_idx < no_of_args &&
+                        skip_empty_descriptor_read_target(args, no_of_args, arg_idx)) {
+                }
+                if (*arg_idx >= no_of_args && !arr_cont->active) {
+                    return;
+                }
+            }
             switch (spec) {
             case 'B':
                 // Bw: binary integer descriptor on read; otherwise BN/BZ blank mode
@@ -11984,13 +12385,15 @@ static void process_fmt_items_read(InputSource *inputSource,
                 break;
             case 'A':
                 if (!handle_read_A(inputSource, args, width, advance_no,
-                        iostat, chunk, consumed_newline, pad_no, arg_idx)) {
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        arr_cont)) {
                     return;
                 }
                 break;
             case 'L':
                 if (!handle_read_L(inputSource, args, width, advance_no,
-                        iostat, chunk, consumed_newline, pad_no, arg_idx)) {
+                        iostat, chunk, consumed_newline, pad_no, arg_idx,
+                        arr_cont)) {
                     return;
                 }
                 break;
@@ -12040,7 +12443,7 @@ static void common_formatted_read(InputSource *inputSource,
     }
     if (chunk) *chunk = 0;
     if (iostat) *iostat = 0;
-    const bool advance_no = is_streql_NCS((char*)advance, advance_length, "no", 2);
+    const bool advance_no = _lfortran_is_streql_NCS((char*)advance, advance_length, "no", 2);
 
     int64_t start_pos = 0;
     if (fmt_len > 0 && fmt[0] == '(') start_pos = 1;
@@ -12086,11 +12489,13 @@ static void common_formatted_read(InputSource *inputSource,
     }
     
     int scale_factor = 0;
-    ArrayReadCont arr_cont = {false, NULL, 0, 0, 0, 0, false, false, 0, 0};
+    ArrayReadCont arr_cont = {0};
 
     while ((arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
         int args_before = arg_idx;
         bool cont_before = arr_cont.active;
+        int32_t cont_idx_before = arr_cont.current_idx;
+        bool cont_imag_before = arr_cont.reading_imag;
         fchar *cycle_fmt;
         int64_t cycle_len;
         if (first_cycle) {
@@ -12104,7 +12509,9 @@ static void common_formatted_read(InputSource *inputSource,
             cycle_fmt, cycle_len, no_of_args, args,
             &arg_idx, &blank_mode, &scale_factor, &consumed_newline, pad_no, &decimal_mode,
             &arr_cont);
-        bool made_progress = (arg_idx > args_before) || (cont_before && !arr_cont.active);
+        bool made_progress = (arg_idx > args_before) ||
+            (cont_before && (arr_cont.current_idx != cont_idx_before ||
+                arr_cont.reading_imag != cont_imag_before || !arr_cont.active));
         if (made_progress && (arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
             if (!consumed_newline) {
                 int c = 0;

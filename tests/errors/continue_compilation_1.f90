@@ -1229,9 +1229,438 @@ contains
     end subroutine
 end module
 
+! A `type(...)` entity can only be initialized with a value of its own type.
+module init_type_mismatch_1
+    implicit none
+    type :: init_mismatch_a_t
+        integer :: h = 0
+    end type
+    type :: init_mismatch_b_t
+        integer :: h = 0
+    end type
+    type(init_mismatch_a_t), parameter :: init_mismatch_pa = init_mismatch_a_t(1)
+    integer, parameter :: init_mismatch_ip = 3
+    type(init_mismatch_b_t) :: init_mismatch_mv = init_mismatch_pa  ! {Error} type mismatch in initialization
+contains
+    subroutine init_type_mismatch_local()
+        type(init_mismatch_b_t) :: x = init_mismatch_pa  ! {Error} type mismatch in initialization
+        type(init_mismatch_a_t) :: y = init_mismatch_ip  ! {Error} type mismatch in initialization
+        type(integer) :: i = init_mismatch_pa  ! {Error} type mismatch in initialization
+    end subroutine
+end module
+
+! Initializing an entity from an imported parameter does not make a module
+! export the parameter's type, whether it was imported under another name or
+! only inside a procedure.
+module imported_init_export_a
+    implicit none
+    type :: imported_init_t
+        integer :: i = 0
+    end type
+    type(imported_init_t), parameter :: imported_init_z = imported_init_t(7)
+end module
+
+module imported_init_export_b
+    use imported_init_export_a, only: imported_init_u => imported_init_t, imported_init_z
+    implicit none
+    type(imported_init_u) :: imported_init_mv = imported_init_z
+contains
+    integer function imported_init_local()
+        use imported_init_export_a, only: imported_init_t, imported_init_z
+        type(imported_init_t) :: x = imported_init_z
+        imported_init_local = x%i
+    end function
+end module
+
+subroutine imported_init_no_export()
+    use imported_init_export_b
+    implicit none
+    type(imported_init_t) :: y  ! {Error} derived type `imported_init_t` is not defined
+end subroutine
+
+! A structure constructor argument is the value of its component, so an array
+! argument must have the component's rank and extents.
+subroutine structure_constructor_argument_shape_1()
+    implicit none
+    type :: t_constructor_shape
+        integer :: a(3)
+        integer :: s
+        integer :: m(2, 2)
+    end type
+    type(t_constructor_shape), parameter :: p1 = &
+        t_constructor_shape([1, 2], 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    type(t_constructor_shape) :: v1 = t_constructor_shape([1, 2, 3], [1, 2], reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 's' has rank 0, but the structure constructor argument has rank 1
+    type(t_constructor_shape) :: v2
+    integer :: b(2), c(3, 2)
+    b = 1
+    c = 1
+    v2 = t_constructor_shape(b, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has extent 3 in dimension 1, but the structure constructor argument has extent 2
+    v2 = t_constructor_shape([1, 2, 3], 1, c)  ! {Error} component 'm' has extent 2 in dimension 1, but the structure constructor argument has extent 3
+    v2 = t_constructor_shape(c, 1, reshape([1, 2, 3, 4], [2, 2]))  ! {Error} component 'a' has rank 1, but the structure constructor argument has rank 2
+end subroutine
+
+! `null()` is a disassociated pointer or an unallocated allocatable, so it
+! cannot be the value of a component that is neither.
+subroutine structure_constructor_null_component_1()
+    implicit none
+    type :: t_null_inner
+        integer :: k
+    end type
+    type :: t_null_component
+        integer :: x
+        type(t_null_inner) :: in
+        character(len=2) :: c
+        integer, pointer :: p
+    end type
+    type(t_null_component), parameter :: p1 = t_null_component(null(), t_null_inner(1), "ab", null())  ! {Error} null() cannot be the value of component 'x' of type integer(4), which is neither a pointer nor allocatable
+    type(t_null_component) :: v1 = t_null_component(1, null(), "ab", null())  ! {Error} null() cannot be the value of component 'in' of type type(t_null_inner), which is neither a pointer nor allocatable
+    type(t_null_component) :: v2
+    v2 = t_null_component(1, t_null_inner(1), c=null(), p=null())  ! {Error} null() cannot be the value of component 'c' of type character(len=2), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine structure_constructor_null_component_2()
+    implicit none
+    type :: t_null_inner_2
+        integer :: k
+    end type
+    type :: t_null_array_component
+        real(8) :: x(2)
+        type(t_null_inner_2) :: ins(3, 2)
+    end type
+    type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+    type(t_null_array_component) :: v2
+    v2 = t_null_array_component(1.0d0, ins=null())  ! {Error} null() cannot be the value of component 'ins' of type type(t_null_inner_2), dimension(3, 2), which is neither a pointer nor allocatable
+end subroutine
+
+! `c_null_ptr` and `c_null_funptr` are valid for a plain `type(c_ptr)` or
+! `type(c_funptr)` component, but `null()` is not.
+subroutine structure_constructor_null_component_3()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_c_component
+        integer :: h
+        type(c_ptr) :: p = c_null_ptr
+        type(c_funptr) :: f = c_null_funptr
+    end type
+    type(t_null_c_component), parameter :: p1 = t_null_c_component(1, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    type(t_null_c_component) :: v1
+    v1 = t_null_c_component(1, c_null_ptr, f=null())  ! {Error} null() cannot be the value of component 'f' of type type(c_funptr), which is neither a pointer nor allocatable
+end subroutine
+
+! The same for a parameterized derived type and for an extended type, whose
+! parent components come first.
+subroutine structure_constructor_null_component_4()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: t_null_c_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        type(c_ptr) :: p = c_null_ptr
+    end type
+    type :: t_null_c_base
+        integer :: h
+        type(c_ptr) :: q = c_null_ptr
+    end type
+    type, extends(t_null_c_base) :: t_null_c_ext
+        type(c_ptr) :: p
+    end type
+    type(t_null_c_pdt(4)) :: a
+    type(t_null_c_ext) :: e
+    a = t_null_c_pdt(4)(h=1, p=null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+    e = t_null_c_ext(1, c_null_ptr, null())  ! {Error} null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+! `null()` for an integer component of a parameterized derived type.
+subroutine structure_constructor_null_component_5()
+    implicit none
+    type :: t_null_int_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+        integer :: j
+    end type
+    type(t_null_int_pdt(4)) :: a
+    a = t_null_int_pdt(4)(null(), 2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+    a = t_null_int_pdt(4)(h=null(), j=2)  ! {Error} null() cannot be the value of component 'h' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+! A null constant whose type the component does not accept: `c_null_ptr` for
+! an integer or real component, and `null(mold)` with a mold of another type.
+subroutine structure_constructor_null_component_6()
+    use iso_c_binding, only: c_null_ptr, c_null_funptr
+    implicit none
+    type :: t_null_mismatch
+        integer, pointer :: ip
+        integer, allocatable :: ia(:)
+        real, pointer :: rp
+        integer :: h
+        real :: r
+    end type
+    type :: t_null_mismatch_pdt(k)
+        integer, kind :: k
+        integer(k) :: h
+    end type
+    type(t_null_mismatch) :: v
+    type(t_null_mismatch_pdt(4)) :: a
+    integer, pointer :: ip
+    v = t_null_mismatch(c_null_ptr, null(), null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ip' of type integer(4)
+    v = t_null_mismatch(null(), c_null_ptr, null(), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'ia' of type integer(4), dimension(:)
+    v = t_null_mismatch(null(), null(), null(ip), 1, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type integer(4) cannot be the value of component 'rp' of type real(4)
+    v = t_null_mismatch(null(), null(), null(), c_null_ptr, 1.0)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+    v = t_null_mismatch(null(), null(), null(), 1, r=c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'r' of type real(4)
+    a = t_null_mismatch_pdt(4)(c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'h' of type integer(4)
+end subroutine
+
+subroutine derived_type_scalar_broadcast_parameter_array_oob()
+    implicit none
+    type :: t_scalar_broadcast_oob
+        integer :: h
+    end type
+    type(t_scalar_broadcast_oob), parameter :: a(2) = t_scalar_broadcast_oob(7)
+    type(t_scalar_broadcast_oob), parameter :: b(0:1) = t_scalar_broadcast_oob(8)
+    type(t_scalar_broadcast_oob), parameter :: c(0:1, -2:-1) = t_scalar_broadcast_oob(9)
+    integer, parameter :: k1 = a(3)%h  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k2 = a(0)%h  ! {Error} Array index 0 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k3 = a(-1)%h  ! {Error} Array index -1 is out of bounds (1 to 2) in dimension 1
+    integer, parameter :: k4 = b(-1)%h  ! {Error} Array index -1 is out of bounds (0 to 1) in dimension 1
+    integer, parameter :: k5 = c(0, 0)%h  ! {Error} Array index 0 is out of bounds (-2 to -1) in dimension 2
+end subroutine
+
+module scalar_struct_array_shape_errors_1
+    implicit none
+contains
+    subroutine scalar_struct_array_assumed_size(a)
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(*) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+
+    subroutine scalar_struct_array_nonconstant_extent(n)
+        integer, intent(in) :: n
+        type :: scalar_shape_t
+            integer :: i
+        end type
+        type(scalar_shape_t) :: a(n) = scalar_shape_t(1)  ! {Error} array of derived type initialized with a scalar structure constructor must have constant explicit shape
+    end subroutine
+end module
+
+subroutine associate_constant_selector_assignment()
+    implicit none
+    type :: associate_const_a_t
+        integer :: x
+    end type
+    type :: associate_const_b_t
+        type(associate_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_const_b_t), parameter :: pb = associate_const_b_t(associate_const_a_t(10), 30)
+    type(associate_const_b_t), parameter :: pba(1) = [associate_const_b_t(associate_const_a_t(11), 31)]
+
+    associate (q => pb)
+        q = associate_const_b_t(associate_const_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pb)
+        q%a%x = 5  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pb%a)
+        r%x = 6  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (q => pba)
+        q(1)%a%x = 7  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
+
+subroutine associate_nested_constant_selector_assignment()
+    implicit none
+    type :: associate_nested_const_a_t
+        integer :: x
+    end type
+    type :: associate_nested_const_b_t
+        type(associate_nested_const_a_t) :: a
+        integer :: y
+    end type
+    type(associate_nested_const_b_t), parameter :: pb = associate_nested_const_b_t(associate_nested_const_a_t(10), 30)
+    type(associate_nested_const_b_t), parameter :: pba(1) = [associate_nested_const_b_t(associate_nested_const_a_t(11), 31)]
+
+    associate (q => pb)
+        associate (r => q)
+            r%y = 88  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a)
+            r%x = 99  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q%a%x)
+            r = 77  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pba)
+        associate (r => q(1))
+            r%a%x = 66  ! {Error} Cannot assign to a constant variable
+        end associate
+    end associate
+
+    associate (q => pb)
+        associate (r => q)
+            associate (s => r)
+                s%y = 55  ! {Error} Cannot assign to a constant variable
+            end associate
+        end associate
+    end associate
+end subroutine
+
+subroutine associate_parameter_array_selector_assignment()
+    implicit none
+    type :: associate_param_array_a_t
+        integer :: x
+    end type
+    type :: associate_param_array_b_t
+        type(associate_param_array_a_t) :: a
+        integer :: y
+    end type
+    type(associate_param_array_b_t), parameter :: pba(2) = [ &
+        associate_param_array_b_t(associate_param_array_a_t(11), 31), &
+        associate_param_array_b_t(associate_param_array_a_t(12), 32)]
+    integer :: i
+
+    i = 1
+
+    associate (r => pba(1))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(i))
+        r = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1:2))
+        r(1) = associate_param_array_b_t(associate_param_array_a_t(1), 2)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a)
+        r = associate_param_array_a_t(1)  ! {Error} Cannot assign to a constant variable
+    end associate
+
+    associate (r => pba(1)%a%x)
+        r = 1  ! {Error} Cannot assign to a constant variable
+    end associate
+end subroutine
+
+subroutine cptr_funptr_mismatch()
+    use iso_c_binding, only: c_ptr, c_funptr, c_null_ptr, c_null_funptr
+    implicit none
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    type :: cptr_funptr_t
+        type(c_ptr) :: p
+        type(c_funptr) :: f
+    end type
+    type(cptr_funptr_t) :: v
+    cp = c_null_funptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = c_null_ptr  ! {Error} Type mismatch in assignment, the types must be compatible
+    v = cptr_funptr_t(c_null_funptr, c_null_funptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_funptr) cannot be the value of component 'p' of type type(c_ptr)
+    v = cptr_funptr_t(c_null_ptr, c_null_ptr)  ! {Error} type mismatch in structure constructor: a null value of type type(c_ptr) cannot be the value of component 'f' of type type(c_funptr)
+end subroutine
+
+subroutine cptr_funptr_intrinsic_result_mismatch()
+    use iso_c_binding, only: c_int, c_ptr, c_funptr, c_loc, c_funloc
+    implicit none
+    interface
+        subroutine cptr_funptr_bindc_target() bind(c)
+            import
+        end subroutine
+        function returns_c_ptr_for_mismatch() result(r)
+            import c_ptr
+            type(c_ptr) :: r
+        end function
+    end interface
+    integer(c_int), target :: x
+    type(c_ptr) :: cp
+    type(c_funptr) :: fp
+    fp = c_loc(x)  ! {Error} Type mismatch in assignment, the types must be compatible
+    cp = c_funloc(cptr_funptr_bindc_target)  ! {Error} Type mismatch in assignment, the types must be compatible
+    fp = returns_c_ptr_for_mismatch()  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine
+
+subroutine null_assignment_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p
+    p = null()  ! {Error} null() cannot be assigned to an entity of type type(c_ptr), which is not a pointer
+end subroutine
+
+subroutine pointer_component_constructor_target()
+    use iso_c_binding, only: c_ptr, c_null_ptr
+    implicit none
+    type :: cptr_pointer_component_t
+        type(c_ptr), pointer :: cp
+    end type
+    type :: integer_pointer_component_t
+        integer, pointer :: ip
+    end type
+    integer :: v
+    type(cptr_pointer_component_t) :: a
+    type(integer_pointer_component_t) :: b
+    a = cptr_pointer_component_t(c_null_ptr)  ! {Error} the value of pointer component 'cp' must be a pointer, a target or null()
+    b = integer_pointer_component_t(1)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+    b = integer_pointer_component_t(v)  ! {Error} the value of pointer component 'ip' must be a pointer, a target or null()
+end subroutine
+
+subroutine cptr_component_constructor_type_mismatch()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type :: payload_t
+        integer :: k
+    end type
+    type :: cptr_component_t
+        type(c_ptr) :: p
+    end type
+    type(payload_t), parameter :: payload = payload_t(1)
+    type(cptr_component_t) :: a
+    a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
+    a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
+end subroutine
+
+subroutine cfunptr_diagnostic_type_name()
+    use iso_c_binding, only: c_funptr
+    implicit none
+    type(c_funptr) :: f
+    call takes_integer(f)  ! {Error} Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
+    if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
+contains
+    subroutine takes_integer(x)
+        integer, intent(in) :: x
+    end subroutine
+end subroutine
+
+subroutine null_initializer_nonpointer_integer()
+    implicit none
+    integer :: i = null()  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_cptr()
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr) :: p = null()  ! {Error} null() cannot initialize 'p' of type type(c_ptr), which is neither a pointer nor allocatable
+end subroutine
+
+subroutine null_initializer_nonpointer_component()
+    implicit none
+    type :: null_init_t
+        integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
+    end type
+end subroutine
 subroutine non_dummy_intent_statement(x)
     implicit none
     integer :: x, y
     intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
 end subroutine non_dummy_intent_statement
-

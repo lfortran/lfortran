@@ -3,9 +3,9 @@ module template_interface_01_m
     public :: test_template
 
     requirement operator_r(T, U, V, binary_func)
-        type, deferred :: T
-        type, deferred :: U
-        type, deferred :: V
+        deferred type :: T
+        deferred type :: U
+        deferred type :: V
         pure elemental function binary_func(lhs, rhs) result(res)
             type(T), intent(in) :: lhs
             type(U), intent(in) :: rhs
@@ -14,7 +14,7 @@ module template_interface_01_m
     end requirement
 
     requirement cast_r(T, cast)
-        type, deferred :: T
+        deferred type :: T
         pure elemental function cast(arg) result(res)
             integer, intent(in) :: arg
             type(T) :: res

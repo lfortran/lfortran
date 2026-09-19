@@ -35,7 +35,9 @@ type and no shape, so nothing can be read through it until
   :arg (Var
     :v (SymbolRef 1 "target")
   )
-  :type (CPtr)
+  :type (CPtr
+    :kind :CPtrUnspecified
+  )
   :value nil
 )
 ```

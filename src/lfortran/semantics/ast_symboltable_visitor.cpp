@@ -2291,10 +2291,15 @@ public:
                         throw SemanticAbort();
 
                     }
-                    if (ASRUtils::is_c_ptr(v, derived_type_name)) {
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
-                    } else if (ASRUtils::is_c_funptr(v, derived_type_name)) {
-                        type = ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc));
+                    if (ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
+                        type_decl = v;
+                        type = ASRUtils::make_cptr_type(
+                            al, x.base.base.loc, current_scope, v);
+                    } else if (ASRUtils::is_iso_c_funptr_type_symbol(
+                            current_scope, v)) {
+                        type_decl = v;
+                        type = ASRUtils::make_cptr_type(
+                            al, x.base.base.loc, current_scope, v);
                     } else {
                         type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                         type_decl = v;
@@ -3543,6 +3548,7 @@ public:
         Vec<ASR::stmt_t*> block_data_body;
         block_data_body.reserve(al, x.n_items);
         current_body = &block_data_body;
+        current_body_scope = current_scope;
         in_block_data = true;
         // Visit DataStmt and set the constant values in the Struct_t symbol
         for (size_t i=0; i<x.n_items; i++) {
@@ -4347,11 +4353,64 @@ public:
         return false;
     }
 
+    class PlaceholderVarReplacer : public ASR::BaseExprReplacer<PlaceholderVarReplacer> {
+    public:
+        const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real;
+
+        PlaceholderVarReplacer(
+                const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real_)
+            : placeholder_to_real(placeholder_to_real_) {}
+
+        void replace_Var(ASR::Var_t *x) {
+            auto it = placeholder_to_real.find(x->m_v);
+            if (it != placeholder_to_real.end()) {
+                x->m_v = it->second;
+            }
+        }
+    };
+
+    // A procedure pointer `null()` in an initializer, such as a constructor
+    // argument or a component default filled into a constructor, refers to
+    // the interface of its component. If the interface is a procedure
+    // defined later, that is the placeholder, so refer to the procedure in
+    // the initializers of `scope` and its nested scopes instead. All
+    // placeholders are replaced in a single walk.
+    void replace_placeholder_in_initializers(SymbolTable *scope,
+            PlaceholderVarReplacer &replacer) {
+        for (auto &[sym_name, sym] : scope->get_scope()) {
+            if (replacer.placeholder_to_real.count(sym) > 0) continue;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                replacer.current_expr = &var->m_symbolic_value;
+                replacer.replace_expr(var->m_symbolic_value);
+                replacer.current_expr = &var->m_value;
+                replacer.replace_expr(var->m_value);
+            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                replace_placeholder_in_initializers(
+                    ASR::down_cast<ASR::Struct_t>(sym)->m_symtab, replacer);
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                replace_placeholder_in_initializers(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab, replacer);
+            }
+        }
+    }
+
     void resolve_proc_pointer_placeholders() {
         // After all interfaces/functions have been processed, update
         // m_type_declaration and m_type for procedure pointer variables
         // inside structs and function parameters that still reference
         // a placeholder Function_t.
+        std::map<ASR::symbol_t*, ASR::symbol_t*> placeholder_to_real;
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+            ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
+            if (!real_sym || real_sym == placeholder_sym) continue;
+            if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(real_sym))) continue;
+            placeholder_to_real[placeholder_sym] = real_sym;
+        }
+        if (!placeholder_to_real.empty()) {
+            PlaceholderVarReplacer replacer(placeholder_to_real);
+            replace_placeholder_in_initializers(current_scope, replacer);
+        }
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
             if (!real_sym || real_sym == placeholder_sym) continue;

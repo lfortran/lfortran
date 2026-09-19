@@ -5,9 +5,9 @@ module template_travel_01b_m
     public :: travel_tmpl, test_template
 
     requirement operation(A, B, C, op)
-        type, deferred :: A
-        type, deferred :: B
-        type, deferred :: C
+        deferred type :: A
+        deferred type :: B
+        deferred type :: C
 
         pure function op(l, r) result(res)
             type(A), intent(in) :: l

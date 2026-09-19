@@ -4,7 +4,7 @@ module template_vector_m
     public :: vector_t, main
 
     template vector_t(T)
-        type, deferred :: T
+        deferred type :: T
         public :: Vector
 
         type :: Vector

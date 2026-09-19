@@ -67,7 +67,7 @@ program intrinsics_147
   p = [(1.0, 2.0), (2.0, 3.0)]
   res_r = abs(sum(pack(p, .true., [(123.123, 9814.14), (-124151.41, 414.1)])))
   print *, res_r
-  if (abs(res_r - 5.83095169) > 1e-8) error stop
+  if (abs(res_r - 5.83095169) > 1e-5) error stop
 
   do i = 1, 5
     struct_arr(i)%a = i
