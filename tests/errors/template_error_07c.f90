@@ -3,7 +3,7 @@ module template_01_m
     private
     public :: op_t
 
-    requirement semigroup(t, combine)
+    requirement semigroup {t, combine}
         deferred type :: t
         elemental function combine(x, y) result(combined)
             type(t), intent(in) :: x, y
@@ -11,8 +11,8 @@ module template_01_m
         end function
     end requirement
   
-    requirement extended_semigroup(t, combine, sconcat, stimes)
-        require :: semigroup(t, scombine)
+    requirement extended_semigroup {t, combine, sconcat, stimes}
+        require :: semigroup {t, scombine}
         pure function sconcat(list) result(combined)
             type(t), intent(in) :: list(:)
             type(t) :: combined

@@ -1,7 +1,7 @@
 module template_intrinsic_func_01_m
     implicit none
 
-    requirement op_R(T, V, op_func)
+    requirement op_R {T, V, op_func}
         deferred type :: T
         deferred type :: V
         pure elemental function op_func(lhs, rhs) result(res)
@@ -12,7 +12,7 @@ module template_intrinsic_func_01_m
     end requirement
 
     template op_t(T, V, op_func)
-        require :: op_R(T, V, op_func)
+        require :: op_R {T, V, op_func}
     contains
         pure elemental function call_op_func(x, y) result(res)
             type(V) :: res

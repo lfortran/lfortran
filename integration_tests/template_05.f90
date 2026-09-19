@@ -1,6 +1,6 @@
 module template_05_m
 
-    requirement req(T, op)
+    requirement req {T, op}
         deferred type :: t
         elemental function op(x, y) result(r)
             type(T), intent(in) :: x, y
@@ -9,17 +9,17 @@ module template_05_m
     end requirement
 
     template tmp(T, plus)
-        require :: req(T, plus)
+        require :: req {T, plus}
 
         template tmp_minus(minus)
-            require :: req(T, minus)
-            require :: req(T, plus)
+            require :: req {T, minus}
+            require :: req {T, plus}
 
             template tmp_mult(mult)
-                require :: req(T, mult)
+                require :: req {T, mult}
 
                 template tmp_div(div)
-                    require :: req(T, div)
+                    require :: req {T, div}
                 end template
 
             end template

@@ -417,6 +417,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> unit_require_plus
 %type <ast> unit_require
 %type <vec_ast> instantiate_symbol_list
+%type <vec_ast> instantiate_symbol_list_opt
 %type <ast> instantiate_symbol
 %type <ast> enum_decl
 %type <ast> program
@@ -788,7 +789,7 @@ template_decl
     ;
 
 requirement_decl
-    : KW_REQUIREMENT id "(" id_list ")" sep decl_statements
+    : KW_REQUIREMENT id "{" id_list_opt "}" sep decl_statements
         sub_or_func_star KW_END KW_REQUIREMENT sep {
             $$ = REQUIREMENT($2, $4, $7, $8, @$); }
     ;
@@ -796,6 +797,8 @@ requirement_decl
 require_decl
     : KW_REQUIRE "::" unit_require_plus sep {
         $$ = REQUIRE($3, @$); }
+    | KW_REQUIRE unit_require_plus sep {
+        $$ = REQUIRE($2, @$); }
     ;
 
 unit_require_plus
@@ -804,7 +807,7 @@ unit_require_plus
     ;
 
 unit_require
-    : id "(" instantiate_symbol_list ")" { $$ = UNIT_REQUIRE($1, $3, @$); }
+    : id "{" instantiate_symbol_list_opt "}" { $$ = UNIT_REQUIRE($1, $3, @$); }
     ;
 
 instantiate
@@ -817,6 +820,10 @@ instantiate
 instantiate_symbol_list
     : instantiate_symbol_list "," instantiate_symbol { $$ = $1; LIST_ADD($$, $3); }
     | instantiate_symbol { LIST_NEW($$); LIST_ADD($$, $1); }
+
+instantiate_symbol_list_opt
+    : instantiate_symbol_list
+    | %empty { LIST_NEW($$); }
 
 instantiate_symbol
     : var_type %dprec 2 { $$ = $1; }
