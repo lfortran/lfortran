@@ -9815,20 +9815,7 @@ public:
     // parameter of the parameterized derived type being declared, i.e. the
     // type is not instantiated with a concrete kind yet.
     static bool has_pdt_kind_placeholder(ASR::ttype_t* type) {
-        if (!type) return false;
-        ASR::ttype_t* base_type = ASRUtils::extract_type(type);
-        switch (base_type->type) {
-            case ASR::ttypeType::Integer:
-                return ASR::down_cast<ASR::Integer_t>(base_type)->m_kind >= PDT_SENTINEL;
-            case ASR::ttypeType::Real:
-                return ASR::down_cast<ASR::Real_t>(base_type)->m_kind >= PDT_SENTINEL;
-            case ASR::ttypeType::Complex:
-                return ASR::down_cast<ASR::Complex_t>(base_type)->m_kind >= PDT_SENTINEL;
-            case ASR::ttypeType::Logical:
-                return ASR::down_cast<ASR::Logical_t>(base_type)->m_kind >= PDT_SENTINEL;
-            default:
-                return false;
-        }
+        return ASRUtils::extract_kind_from_ttype_t(type) >= PDT_SENTINEL;
     }
 
     // Replace sentinel kind values in a type with actual values.
