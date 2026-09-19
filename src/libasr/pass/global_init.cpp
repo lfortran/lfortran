@@ -60,6 +60,32 @@ namespace {
         }
     }
 
+    // A saved logical of `scope`, false until the initialization it guards
+    // has run. It is created together with what it guards, so it can never
+    // clash with a user symbol of that scope.
+    ASR::expr_t* make_run_once_guard(Allocator &al, SymbolTable *scope,
+            const Location &loc, const std::string &name) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::symbol_t *guard_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, name),
+                nullptr, 0, ASR::intentType::Local, b.bool_t(false, logical_type),
+                b.bool_t(false, logical_type), ASR::storage_typeType::Save,
+                logical_type, nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+        scope->add_symbol(name, guard_sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, guard_sym));
+    }
+
+    // Mark the guard as taken, so whatever follows it inside the guarded
+    // block runs exactly once.
+    ASR::stmt_t* mark_run_stmt(Allocator &al, ASR::expr_t *guard,
+            const Location &loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        return ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, guard,
+            b.bool_t(true, ASRUtils::expr_type(guard)), nullptr, false, false));
+    }
+
     // The guard `if` is the only statement of the body, so it is where every
     // later statement is added.
     ASR::If_t* guard_of(ASR::Function_t *fn) {
@@ -85,24 +111,13 @@ ASR::Function_t* get_or_create_global_init(Allocator &al,
         global_init_prefix + owner_name(unit, owner), false);
     SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
 
-    // The guard is a saved local of the initializer itself, so it is created
-    // and named together with the initializer and can never clash with a
-    // user symbol of the owning scope.
-    ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
-    ASR::symbol_t *guard_sym = ASR::down_cast<ASR::symbol_t>(
-        ASRUtils::make_Variable_t_util(al, loc, fn_symtab,
-            s2c(al, global_init_guard_name), nullptr, 0,
-            ASR::intentType::Local, b.bool_t(false, logical_type),
-            b.bool_t(false, logical_type), ASR::storage_typeType::Save,
-            logical_type, nullptr, ASR::abiType::Source, ASR::accessType::Private,
-            ASR::presenceType::Required, false));
-    fn_symtab->add_symbol(global_init_guard_name, guard_sym);
-    ASR::expr_t *guard = ASRUtils::EXPR(ASR::make_Var_t(al, loc, guard_sym));
+    // The guard is a saved local of the initializer itself, so it can never
+    // clash with a user symbol of the owning scope.
+    ASR::expr_t *guard = make_run_once_guard(al, fn_symtab, loc,
+        global_init_guard_name);
 
-    ASR::stmt_t *mark_run = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-        al, loc, guard, b.bool_t(true, logical_type), nullptr, false, false));
     Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-    body.push_back(al, b.If(b.Not(guard), {mark_run}, {}));
+    body.push_back(al, b.If(b.Not(guard), {mark_run_stmt(al, guard, loc)}, {}));
 
     ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab,
         s2c(al, fn_name), nullptr, 0, nullptr, 0, body.p, body.n, nullptr,
@@ -197,30 +212,94 @@ class GlobalInitVisitor {
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(type));
         }
 
-        // Move every declaration initializer of `owner`'s scope that needs
-        // executable code into `owner`'s initializer, in declaration order so
-        // that an initializer reading another variable of the same scope sees
-        // it already set.
-        void lower_scope(ASR::asr_t *owner, SymbolTable *scope) {
-            std::vector<std::string> order =
-                ASRUtils::determine_variable_declaration_order(scope);
-            ASR::Function_t *fn = nullptr;
-            for (auto &name : order) {
+        // The variables of `scope` that need executable initialization, in
+        // declaration order so that an initializer reading another variable
+        // of the same scope sees it already set.
+        std::vector<ASR::Variable_t*> runtime_init_vars(SymbolTable *scope) {
+            std::vector<ASR::Variable_t*> vars;
+            for (auto &name : ASRUtils::determine_variable_declaration_order(scope)) {
                 ASR::symbol_t *sym = scope->get_symbol(name);
                 if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if (!needs_runtime_init(*v)) continue;
+                if (needs_runtime_init(*v)) vars.push_back(v);
+            }
+            return vars;
+        }
+
+        // Take the declaration initializer off `v` and return it as the
+        // assignment that replaces it.
+        ASR::stmt_t* take_initializer(ASR::Variable_t *v) {
+            ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(
+                al, v->base.base.loc, &v->base));
+            ASR::stmt_t *assign = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(al, v->base.base.loc,
+                    target, v->m_symbolic_value, nullptr, false, false));
+            v->m_symbolic_value = nullptr;
+            v->m_value = nullptr;
+            return assign;
+        }
+
+        // Move every declaration initializer of `owner`'s scope that needs
+        // executable code into `owner`'s initializer.
+        void lower_scope(ASR::asr_t *owner, SymbolTable *scope) {
+            ASR::Function_t *fn = nullptr;
+            for (ASR::Variable_t *v : runtime_init_vars(scope)) {
                 if (fn == nullptr) {
                     fn = ASRUtils::get_or_create_global_init(al, unit, owner);
                 }
-                ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(
-                    al, v->base.base.loc, sym));
-                ASR::stmt_t *assign = ASRUtils::STMT(
-                    ASRUtils::make_Assignment_t_util(al, v->base.base.loc,
-                        target, v->m_symbolic_value, nullptr, false, false));
-                ASRUtils::global_init_append_stmt(al, fn, assign);
-                v->m_symbolic_value = nullptr;
-                v->m_value = nullptr;
+                ASRUtils::global_init_append_stmt(al, fn, take_initializer(v));
+            }
+        }
+
+        // A procedure or a block initializes its own variables at the top of
+        // its own body instead of through an initializer procedure: nothing
+        // outside it can observe them, so there is nobody to call one. The
+        // variables are saved — Fortran gives every initialized local the
+        // save attribute — so the block runs once, the first time control
+        // reaches it.
+        template <typename T>
+        void lower_local_scope(T *owner) {
+            std::vector<ASR::Variable_t*> vars = runtime_init_vars(owner->m_symtab);
+            if (vars.empty()) return;
+            const Location &loc = owner->base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *guard = ASRUtils::make_run_once_guard(al, owner->m_symtab,
+                loc, owner->m_symtab->get_unique_name(
+                    ASRUtils::global_init_guard_name, false));
+            std::vector<ASR::stmt_t*> guarded;
+            guarded.push_back(ASRUtils::mark_run_stmt(al, guard, loc));
+            for (ASR::Variable_t *v : vars) guarded.push_back(take_initializer(v));
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, owner->n_body + 1);
+            body.push_back(al, b.If(b.Not(guard), guarded, {}));
+            for (size_t i = 0; i < owner->n_body; i++) {
+                body.push_back(al, owner->m_body[i]);
+            }
+            owner->m_body = body.p;
+            owner->n_body = body.size();
+        }
+
+        // Every procedure and block of `scope`, however deeply nested.
+        void lower_local_scopes(SymbolTable *scope) {
+            std::vector<ASR::symbol_t*> syms;
+            for (auto &item : scope->get_scope()) syms.push_back(item.second);
+            for (ASR::symbol_t *sym : syms) {
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+                    if (ASRUtils::get_FunctionType(f)->m_deftype
+                            != ASR::deftypeType::Implementation) continue;
+                    lower_local_scope(f);
+                    lower_local_scopes(f->m_symtab);
+                } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    ASR::Block_t *bl = ASR::down_cast<ASR::Block_t>(sym);
+                    lower_local_scope(bl);
+                    lower_local_scopes(bl->m_symtab);
+                } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(sym);
+                    lower_local_scope(ab);
+                    lower_local_scopes(ab->m_symtab);
+                }
             }
         }
 
@@ -293,11 +372,30 @@ class GlobalInitVisitor {
                 ASRUtils::global_init_prepend_stmts(al, fn, calls);
             }
 
+            std::vector<ASR::symbol_t*> programs;
             for (auto &item : unit.m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Program_t>(*item.second)) continue;
-                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
-                lower_scope((ASR::asr_t*)item.second, p->m_symtab);
+                if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                    programs.push_back(item.second);
+                }
+            }
+            for (ASR::symbol_t *sym : programs) {
+                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(sym);
+                lower_scope((ASR::asr_t*)sym, p->m_symtab);
                 wire_program(p, module_order);
+            }
+
+            // Procedures and blocks come last: the initializers created above
+            // own nothing that needs initializing, so walking into them now
+            // costs nothing and the walk sees a settled symbol table.
+            lower_local_scopes(unit.m_symtab);
+            for (auto &item : unit.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    lower_local_scopes(ASR::down_cast<ASR::Module_t>(
+                        item.second)->m_symtab);
+                } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                    lower_local_scopes(ASR::down_cast<ASR::Program_t>(
+                        item.second)->m_symtab);
+                }
             }
         }
 

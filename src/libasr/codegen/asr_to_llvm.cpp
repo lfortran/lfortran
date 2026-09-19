@@ -6153,7 +6153,7 @@ public:
                 }
             }
             
-            if (!alias_target && get_struct_array_broadcast(x.m_symbolic_value) == nullptr) {
+            if (!alias_target) {
                 this->visit_expr_wrapper(x.m_symbolic_value, true);
                 init_value = llvm::dyn_cast<llvm::Constant>(tmp);
             }
@@ -8049,14 +8049,6 @@ public:
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         ASR::expr_t* initial_expr = v->m_value ? v->m_value : v->m_symbolic_value;
-        if (ASR::ArrayBroadcast_t* broadcast =
-                get_struct_array_broadcast(initial_expr)) {
-            ASR::expr_t* target_expr = ASRUtils::EXPR(ASR::make_Var_t(
-                al, v->base.base.loc, &v->base));
-            store_array_broadcast_to_target(broadcast,
-                target_var, target_expr, v->m_type, v->m_is_volatile);
-            return;
-        }
         if (struct_array_constant_needs_deepcopy(initial_expr, v->m_type)) {
             ASR::expr_t* target_expr = ASRUtils::EXPR(ASR::make_Var_t(
                 al, v->base.base.loc, &v->base));
@@ -8581,14 +8573,6 @@ public:
                     if (ASRUtils::extract_physical_type(v->m_type) !=
                             ASR::array_physical_typeType::DescriptorArray) {
                         allocate_array_members_of_struct_arrays(var_expr, ptr, v->m_type);
-                        if (struct_skip_bb != nullptr) {
-                            if (ASR::ArrayBroadcast_t* broadcast =
-                                    get_struct_array_broadcast(init_expr)) {
-                                store_array_broadcast_to_target(broadcast,
-                                    ptr, var_expr, v->m_type, v->m_is_volatile);
-                                save_struct_initialized = true;
-                            }
-                        }
                     }
                 } else {
                     bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);
