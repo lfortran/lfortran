@@ -459,6 +459,12 @@ public:
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
     std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
+    struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
+        ASR::expr_t* expr; // The module variable.
+        llvm::Value* ptr; // Corresponds to variable `expr` in llvm IR.
+        ASR::ttype_t* var_type; // The array type of `expr`.
+    };
+    std::vector<struct_array_global> struct_array_global_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
         ASR::Variable_t* v;
         llvm::Value* target_var; // Corresponds to variable `v` in llvm IR.
@@ -5854,6 +5860,83 @@ public:
         return nullptr;
     }
 
+    // Whether a member of `s`, of one of its parents, or of one of its
+    // derived type members, cannot be described by an all zero static
+    // initializer and so has to be set up at run time by
+    // `allocate_array_members_of_struct`: an array member needs a descriptor
+    // of its own or its dimensions filled in, a string member its data, and a
+    // class member its type pointer. A scalar of an intrinsic type, and a
+    // pointer or allocatable scalar, are fully described by zeros and need
+    // nothing. `visited` stops a type that refers to itself, directly or
+    // through another type, from being examined twice.
+    bool struct_needs_member_init(ASR::Struct_t* s,
+            std::set<ASR::Struct_t*>& visited) {
+        if (!visited.insert(s).second) {
+            return false;
+        }
+        for (ASR::Struct_t* c = s; c != nullptr;
+                c = c->m_parent == nullptr ? nullptr
+                    : ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(c->m_parent))) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    c->m_symtab->get_symbol(c->m_members[i]));
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    continue;
+                }
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (ASRUtils::is_array(v->m_type)) {
+                    return true;
+                }
+                if (ASRUtils::is_character(*v->m_type) &&
+                        !ASRUtils::is_inline_character_struct_member(c, v->m_type)) {
+                    return true;
+                }
+                ASR::ttype_t* member_type = ASRUtils::extract_type(v->m_type);
+                if (ASRUtils::is_class_type(member_type)) {
+                    return true;
+                }
+                // A pointer or allocatable member holds the address of
+                // another object, whose members are not set up from here.
+                if (ASR::is_a<ASR::StructType_t>(*member_type) &&
+                        !LLVM::is_llvm_pointer(*v->m_type)) {
+                    ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+                        v->m_type_declaration);
+                    if (member_struct != nullptr &&
+                            ASR::is_a<ASR::Struct_t>(*member_struct) &&
+                            struct_needs_member_init(ASR::down_cast<ASR::Struct_t>(
+                                member_struct), visited)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // Whether `type` is an array of a (non class) derived type that has a
+    // member needing run time setup, so that the elements' members have to be
+    // set up by `allocate_array_members_of_struct_arrays`. An array of a type
+    // whose members are all described by zeros needs no such loop.
+    bool needs_struct_array_member_init(ASR::expr_t* expr, ASR::ttype_t* type) {
+        if (!ASRUtils::is_array(type)) {
+            return false;
+        }
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::StructType_t>(*el_type) ||
+                ASRUtils::is_class_type(el_type)) {
+            return false;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(expr));
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return false;
+        }
+        std::set<ASR::Struct_t*> visited;
+        return struct_needs_member_init(
+            ASR::down_cast<ASR::Struct_t>(struct_sym), visited);
+    }
+
     ASR::ArrayConstant_t* get_struct_array_constant(ASR::expr_t* expr) {
         if (expr == nullptr) {
             return nullptr;
@@ -6009,6 +6092,14 @@ public:
             module.get());
         llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", init_fn);
         builder->SetInsertPoint(entry);
+        // Set the elements' members up before broadcasting into them, as is
+        // done for a save variable of the same shape. The static initializer
+        // zeroed the global, so an array descriptor member of an element has
+        // no descriptor to be copied into yet; this gives each element one of
+        // its own, which also keeps the elements independent of each other.
+        if (needs_struct_array_member_init(target_expr, target_type)) {
+            allocate_array_members_of_struct_arrays(target_expr, global, target_type);
+        }
         store_array_broadcast_to_target(broadcast, global, target_expr,
             target_type, false);
         builder->CreateRetVoid();
@@ -6229,6 +6320,26 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+            // A zeroed static initializer leaves every element's members in a
+            // state that cannot be described statically: an array descriptor
+            // member needs a descriptor of its own to point at, a string
+            // member its descriptor, and so on. Set them up once at the start
+            // of the program, as is done for a module level scalar of a
+            // derived type. Like the scalar, this is queued whether or not the
+            // global is external here: under separate compilation the
+            // definition and the program are in different translation units,
+            // and only the one that has the program can emit the setup. A
+            // variable that has an initializer is left alone: its members are
+            // either already described by the static initializer, or set up by
+            // the broadcast constructor above.
+            if (x.m_symbolic_value == nullptr && x.m_value == nullptr) {
+                ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                    x.base.base.loc, const_cast<ASR::symbol_t*>(&x.base)));
+                if (needs_struct_array_member_init(var_expr, x.m_type)) {
+                    struct_array_global_members_details.push_back(
+                        { var_expr, ptr, x.m_type });
+                }
+            }
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
             int a_kind = down_cast<ASR::Logical_t>(x.m_type)->m_kind;
             llvm::Type *logical_type = llvm_utils->getIntType(a_kind);
@@ -6953,6 +7064,10 @@ public:
                 st.second, ASRUtils::symbol_type(st.first), false, true);
         }
         allocatable_struct_array_members_details.clear();
+        for(struct_array_global& st : struct_array_global_members_details) {
+            allocate_array_members_of_struct_arrays(st.expr, st.ptr, st.var_type);
+        }
+        struct_array_global_members_details.clear();
         declare_vars(x);
         for(variable_inital_value var_to_initalize : variable_inital_value_vec){
             set_VariableInital_value(var_to_initalize.v, var_to_initalize.target_var);
