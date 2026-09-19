@@ -244,9 +244,9 @@ class GlobalInitVisitor {
         // which is why no target can lay it out as static data. `=> null()`
         // is a value and is deliberately not one of these.
         static bool is_pointer_initializer(const ASR::Variable_t &v) {
-            return v.m_symbolic_value != nullptr
-                && ASRUtils::is_pointer(v.m_type)
-                && ASR::is_a<ASR::Var_t>(*v.m_symbolic_value);
+            return ASRUtils::is_pointer(v.m_type)
+                && ASRUtils::is_pointer_association_initializer(
+                    v.m_symbolic_value);
         }
 
         // Take the declaration initializer off `v` and return it as the

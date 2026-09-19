@@ -1054,7 +1054,7 @@ public:
             // `p => tgt` and `p => null()` are both pointer assignments and
             // are spelled with an arrow; a c pointer is an ordinary value.
             bool is_pointer_init = ASRUtils::is_pointer(x.m_type)
-                && ASR::is_a<ASR::Var_t>(*x.m_value);
+                && ASRUtils::is_pointer_association_initializer(x.m_value);
             if ((ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value) || is_pointer_init)
                     && !is_c_ptr) {
                 r += " => ";
