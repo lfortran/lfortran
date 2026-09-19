@@ -11791,6 +11791,22 @@ public:
         Vec<ASR::call_arg_t> vals;
         // Whether each argument in `vals` is a reference to `null()`.
         std::vector<NullReference> null_args;
+        // The argument counts are checked before the arguments are visited:
+        // an argument that matches no component has no component to give a
+        // `null()` argument its type, so visiting it first would report a
+        // missing `null()` context instead of the extra argument.
+        if (is_pdt && x.n_subargs > 0) {
+            if (x.n_args > info.kind_indices.size()
+                    || x.n_subargs > info.members.size() - info.kind_indices.size()) {
+                diag.semantic_error_label("too many arguments in parameterized derived type constructor",
+                    {loc}, "type parameters and components must be specified in their respective argument lists");
+                throw SemanticAbort();
+            }
+        } else if (x.n_args > info.members.size()) {
+            diag.semantic_error_label("too many arguments in derived type constructor",
+                {loc}, "more positional arguments than components and type parameters");
+            throw SemanticAbort();
+        }
         if (is_pdt && x.n_subargs > 0) {
             std::vector<ASR::symbol_t*> kind_members;
             for (size_t index : info.kind_indices) {
@@ -11801,12 +11817,6 @@ public:
             visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals, null_args);
         }
         if (is_pdt && x.n_subargs > 0) {
-            if (vals.size() > info.kind_indices.size()
-                    || x.n_subargs > info.members.size() - info.kind_indices.size()) {
-                diag.semantic_error_label("too many arguments in parameterized derived type constructor",
-                    {loc}, "type parameters and components must be specified in their respective argument lists");
-                throw SemanticAbort();
-            }
             std::vector<ASR::symbol_t*> component_members;
             for (size_t i = 0; i < info.members.size(); i++) {
                 if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)

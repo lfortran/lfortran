@@ -802,6 +802,12 @@ semantic error: null() cannot initialize 'k' of type integer(4), which is neithe
 1659 |         integer :: k = null()  ! {Error} null() cannot initialize 'k' of type integer(4), which is neither a pointer nor allocatable
      |                        ^^^^^^ 
 
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1672:27
+     |
+1672 |     type(plain_t) :: pv = plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+     |                           ^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
 semantic error: Statement function 'statement_function_name_conflict' conflicts with function name
   --> tests/errors/continue_compilation_1.f90:72:9
    |
@@ -2674,3 +2680,27 @@ semantic error: Expected logical expression in if statement, but recieved type(c
      |
 1638 |     if (f) print *, "bad"  ! {Error} Expected logical expression in if statement, but recieved type(c_funptr) instead
      |         ^ type(c_funptr) expression, expected logical
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1673:14
+     |
+1673 |     print *, plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+     |              ^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1674:14
+     |
+1674 |     print *, parameterized_t(4, 1, null())  ! {Error} too many arguments in derived type constructor
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ more positional arguments than components and type parameters
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1675:14
+     |
+1675 |     print *, parameterized_t(4, null())(1)  ! {Error} too many arguments in parameterized derived type constructor
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
+
+semantic error: too many arguments in parameterized derived type constructor
+    --> tests/errors/continue_compilation_1.f90:1676:14
+     |
+1676 |     print *, parameterized_t(4)(1, null())  ! {Error} too many arguments in parameterized derived type constructor
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type parameters and components must be specified in their respective argument lists
