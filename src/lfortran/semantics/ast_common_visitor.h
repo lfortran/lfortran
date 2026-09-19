@@ -9200,19 +9200,32 @@ public:
                         for (int64_t i = 0; i < size; i++) {
                             args.push_back(al, tmp_init);
                         }
-                        if (size == 0) {
-                            // Zero-size array: create an empty ArrayConstant directly
-                            init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
-                                al, init_expr->base.loc, nullptr, type,
-                                ASR::arraystorageType::ColMajor));
+                        if (has_pdt_kind_placeholder(type)) {
+                            // The element kind is still the placeholder of a
+                            // kind parameter of the parameterized derived type
+                            // being declared, so the elements cannot be packed
+                            // into an ArrayConstant yet.  Keep the initializer
+                            // as an ArrayConstructor; it is evaluated when the
+                            // type is instantiated with a concrete kind.
+                            init_expr = ASRUtils::EXPR(ASR::make_ArrayConstructor_t(
+                                al, init_expr->base.loc, args.p, args.n, type,
+                                nullptr, ASR::arraystorageType::ColMajor, nullptr));
+                            value = nullptr;
                         } else {
-                            init_expr = ASRUtils::expr_value(
-                                ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                    args.p, args.n, type, ASR::arraystorageType::ColMajor))
-                            );
+                            if (size == 0) {
+                                // Zero-size array: create an empty ArrayConstant directly
+                                init_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(
+                                    al, init_expr->base.loc, nullptr, type,
+                                    ASR::arraystorageType::ColMajor));
+                            } else {
+                                init_expr = ASRUtils::expr_value(
+                                    ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                        args.p, args.n, type, ASR::arraystorageType::ColMajor))
+                                );
+                            }
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
+                            value = init_expr;
                         }
-                        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
-                        value = init_expr;
                     }
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
                         && ASR::is_a<ASR::ArrayConstant_t>(*tmp_init)) {
@@ -9597,6 +9610,17 @@ public:
                             }
                         }
                     }
+                    if (value != nullptr && has_pdt_kind_placeholder(type)
+                            && ASRUtils::extract_kind_from_ttype_t(
+                                    ASRUtils::expr_type(value))
+                                != ASRUtils::extract_kind_from_ttype_t(type)) {
+                        // The declared kind is still the placeholder of a kind
+                        // parameter of the parameterized derived type being
+                        // declared, so a value of a different kind cannot be
+                        // stored here.  It is computed from the symbolic value
+                        // when the type is instantiated.
+                        value = nullptr;
+                    }
                     if (storage_type == ASR::storage_typeType::Parameter) {
                         if( ASRUtils::is_array(type) && init_expr &&
                             ASRUtils::is_array(ASRUtils::expr_type(init_expr)) ) {
@@ -9787,6 +9811,13 @@ public:
 
     }
 
+    // True when the kind of `type` is still the placeholder assigned to a kind
+    // parameter of the parameterized derived type being declared, i.e. the
+    // type is not instantiated with a concrete kind yet.
+    static bool has_pdt_kind_placeholder(ASR::ttype_t* type) {
+        return ASRUtils::extract_kind_from_ttype_t(type) >= PDT_SENTINEL;
+    }
+
     // Replace sentinel kind values in a type with actual values.
     static void replace_sentinel_kinds(ASR::ttype_t* type,
         const std::map<int64_t, int64_t>& sentinel_to_actual)
@@ -9908,6 +9939,17 @@ public:
                     &arg, ASRUtils::expr_type(arg), x->m_type, visitor.diag);
                 *this->current_expr = arg;
             }
+        }
+
+        void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+            Base::replace_ArrayConstructor(x);
+            // Every kind is concrete now, so the elements can be packed into
+            // an ArrayConstant.
+            ASR::expr_t* array = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+                visitor.al, x->base.base.loc, x->m_args, x->n_args, x->m_type,
+                x->m_storage_format, x->m_struct_var));
+            ASR::expr_t* array_value = ASRUtils::expr_value(array);
+            *this->current_expr = array_value ? array_value : array;
         }
 
         void replace_StructConstant(ASR::StructConstant_t* x) {
@@ -10085,6 +10127,11 @@ public:
             initializer_replacer.replace_expr(var->m_symbolic_value);
             initializer_replacer.current_expr = &var->m_value;
             initializer_replacer.replace_expr(var->m_value);
+            if (var->m_value == nullptr && var->m_symbolic_value != nullptr) {
+                // Initializers that could not be evaluated against the
+                // placeholder kind of the template are evaluated here.
+                var->m_value = ASRUtils::expr_value(var->m_symbolic_value);
+            }
         }
         current_scope = saved_scope;
 
