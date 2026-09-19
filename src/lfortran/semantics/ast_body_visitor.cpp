@@ -6804,22 +6804,24 @@ public:
                 // raise an error
                 bool is_array_concat = false;
                 int flat_size = 0;
-                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
-                     AST::ArrayInitializer_t *temp_array =
-                            AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
-                    // The elements are visited again only to measure the shape
-                    // of the value, and everything built here is thrown away.
-                    // A statement that visit needed goes with it: it belongs
-                    // to the expression already built for this assignment, and
-                    // keeping it would run that expression a second time. So
-                    // does anything it reports: the visit that built the
-                    // expression reported it already.
-                    size_t n_body_before_measuring = current_body != nullptr
-                        ? current_body->size() : 0;
-                    size_t n_diagnostics_before_measuring = diag.diagnostics.size();
-                    for(size_t i=0; i < temp_array->n_args; i++){
-                        this->visit_expr(*temp_array->m_args[i]);
-                        ASR::expr_t *temp = ASRUtils::EXPR(tmp);
+                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value) &&
+                    ASR::is_a<ASR::ArrayConstructor_t>(*value) ){
+                    // The shape of the value is measured from the expression
+                    // already built for this assignment: the elements of the
+                    // array constructor are its arguments, in source order.
+                    // Visiting the elements a second time would build that
+                    // expression again, and an element which needs a statement
+                    // of its own - the assignment of the temporary a structure
+                    // constructor evaluates its parent component value into,
+                    // for one - would have that statement run twice. An array
+                    // constructor whose elements are all compile time
+                    // constants is folded into a single constant whose type
+                    // carries the flattened size already, and the check on the
+                    // dimensions below covers that.
+                    ASR::ArrayConstructor_t *value_constructor =
+                        ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                    for(size_t i=0; i < value_constructor->n_args; i++){
+                        ASR::expr_t *temp = value_constructor->m_args[i];
                         ASR::ttype_t* temp_type = ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
@@ -6844,12 +6846,6 @@ public:
                             }
                         }
                     }
-                    if (current_body != nullptr) {
-                        current_body->n = n_body_before_measuring;
-                    }
-                    diag.diagnostics.erase(
-                        diag.diagnostics.begin() + n_diagnostics_before_measuring,
-                        diag.diagnostics.end());
                 }
                 if(!is_array_concat){
                     for (size_t i = 0; i < target_rank; i++) {

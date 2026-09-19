@@ -153,6 +153,21 @@ program structure_constructor_args_12
     end where
     if (n_calls /= 1) error stop
 
+    ! an array constructor under a mask evaluates the parent component value of
+    ! each of its elements once as well: measuring the shape of the constructor
+    ! must not evaluate any of them a second time
+    n_calls = 0
+    msk = [1, 0, 1]
+    b_arr = b_t(a_t=a_t(0, 0.0), y=0)
+    where (msk == 1)
+        b_arr = [ b_t(a_t=make_a(), y=181), b_t(a_t=a_t(182, 13.5), y=183), &
+                  b_t(a_t=a_t(184, 14.5), y=185) ]
+    end where
+    if (n_calls /= 1) error stop
+    if (b_arr(1)%x /= 121 .or. b_arr(1)%r /= 11.5 .or. b_arr(1)%y /= 181) error stop
+    if (b_arr(2)%x /= 0 .or. b_arr(2)%y /= 0) error stop
+    if (b_arr(3)%x /= 184 .or. b_arr(3)%r /= 14.5 .or. b_arr(3)%y /= 185) error stop
+
     call check_local()
     call check_param_in_procedure()
     print *, "ok"
