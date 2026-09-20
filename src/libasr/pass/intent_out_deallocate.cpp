@@ -1,3 +1,5 @@
+#include <set>
+
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/exception.h>
@@ -51,21 +53,27 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     }
 
     // The type's components in the order a struct constant's arguments follow
-    // them, which is the inherited ones first.
+    // them, which is the inherited ones first.  A name that does not resolve
+    // is still recorded, so that the position of every later component stays
+    // right; placing a value on it is refused later.  `visited` guards
+    // against a malformed cyclic parent chain.
     static void flatten_members(ASR::Struct_t* dt,
-            std::vector<ASR::symbol_t*>& members) {
+            std::vector<ASR::symbol_t*>& members,
+            std::set<ASR::Struct_t*>& visited) {
+        if (visited.find(dt) != visited.end()) {
+            return;
+        }
+        visited.insert(dt);
         if (dt->m_parent != nullptr) {
             ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
                 dt->m_parent);
             if (ASR::is_a<ASR::Struct_t>(*parent)) {
-                flatten_members(ASR::down_cast<ASR::Struct_t>(parent), members);
+                flatten_members(ASR::down_cast<ASR::Struct_t>(parent), members,
+                    visited);
             }
         }
         for (size_t i = 0; i < dt->n_members; i++) {
-            ASR::symbol_t* member = dt->m_symtab->get_symbol(dt->m_members[i]);
-            if (member != nullptr) {
-                members.push_back(member);
-            }
+            members.push_back(dt->m_symtab->get_symbol(dt->m_members[i]));
         }
     }
 
@@ -97,19 +105,41 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             return false;
         }
         std::vector<ASR::symbol_t*> members;
-        flatten_members(ASR::down_cast<ASR::Struct_t>(dt_sym), members);
+        std::set<ASR::Struct_t*> visited;
+        flatten_members(ASR::down_cast<ASR::Struct_t>(dt_sym), members,
+            visited);
+        // asr_verify requires the same equality of a struct constant, so this
+        // only rejects ASR that would not verify anyway.
         if (members.size() != sc->n_args) {
             return false;
         }
         // Built separately so that a partial expansion is discarded rather
         // than left behind when a later argument cannot be placed.
+        // A hint only: an argument that is itself a struct constant expands
+        // to more than one statement, and `Vec` grows on its own.
         Vec<ASR::stmt_t*> expanded;
         expanded.reserve(al, sc->n_args);
         for (size_t i = 0; i < sc->n_args; i++) {
             ASR::expr_t* arg = sc->m_args[i].m_value;
-            if (arg == nullptr) continue;
-            if (!ASRUtils::check_equal_type(
-                    ASRUtils::symbol_type(members[i]),
+            // Refuse the whole constant rather than placing the rest of it:
+            // a partial expansion is what this is built to avoid.
+            if (arg == nullptr) {
+                return false;
+            }
+            if (members[i] == nullptr ||
+                    !ASR::is_a<ASR::Variable_t>(*members[i])) {
+                return false;
+            }
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(members[i]);
+            // `check_equal_type` compares the element types, so the ranks are
+            // compared here: an array component given a scalar would otherwise
+            // be assigned element-wise after the array passes have run.
+            if (ASRUtils::extract_n_dims_from_ttype(member_type) !=
+                    ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(arg))) {
+                return false;
+            }
+            if (!ASRUtils::check_equal_type(member_type,
                     ASRUtils::expr_type(arg), nullptr, arg)) {
                 return false;
             }
@@ -191,7 +221,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     // emitting the unfolded form here produces a node the
                     // backends cannot lower.
                     if (m_var->m_value == nullptr) continue;
-                    emit_value_assignment(member_expr, m_var->m_value,
+                    // Nothing is pushed when this returns false, so there is
+                    // nothing for the caller to undo.
+                    (void)emit_value_assignment(member_expr, m_var->m_value,
                         current_scope, loc, out_stmts);
                     continue;
                 }
