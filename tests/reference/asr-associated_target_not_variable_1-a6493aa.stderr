@@ -1,5 +1,0 @@
-semantic error: 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
- --> tests/errors/associated_target_not_variable_1.f90:5:9
-  |
-5 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
-  |         ^^^^^^^^^^^^^^^^^ 

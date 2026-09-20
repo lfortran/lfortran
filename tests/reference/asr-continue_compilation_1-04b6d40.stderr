@@ -2746,3 +2746,9 @@ semantic error: NULL() is not permitted as the TARGET= argument to 'associated'
      |
 1715 |     if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
      |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+    --> tests/errors/continue_compilation_1.f90:1724:9
+     |
+1724 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+     |         ^^^^^^^^^^^^^^^^^ 
