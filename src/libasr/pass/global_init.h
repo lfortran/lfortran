@@ -46,8 +46,17 @@ namespace LCompilers {
 
     } // namespace ASRUtils
 
+    // Lower the declaration initializers no target can lay out as static
+    // data into the initializers of the units that own them.
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
+
+    // Connect the initializers: a module's calls its dependencies', and a
+    // program's calls every module's and then runs before the program's first
+    // statement. It is a pass of its own because it has to run after every
+    // pass that can create an initializer, `coarray` among them.
+    void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
+                               const PassOptions &pass_options);
 
 } // namespace LCompilers
 

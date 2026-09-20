@@ -12,12 +12,9 @@ end type prif_coarray_handle
 program coarray_operations_01
 implicit none
 integer(4), pointer :: a
-type(c_ptr) :: a__coarray_data
-type(prif_coarray_handle) :: a__coarray_handle
 integer(4) :: me
 integer(4) :: stat
 call __module_prif_prif_init(stat)
-call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle, a__coarray_data)
 call c_f_pointer(a__coarray_data, a)
 call __module_prif_prif_sync_all()
 me = lcompilers_prif_this_image()
@@ -31,6 +28,18 @@ call __module_prif_prif_sync_all()
 call __module_prif_prif_stop(.false.)
 
 contains
+
+subroutine __lfortran_global_init_coarray_operations_01()
+    logical(4), save :: __lfortran_global_init_done = .false.
+    integer(4) :: stat
+    if (.not. __lfortran_global_init_done) then
+        __lfortran_global_init_done = .true.
+        call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle,&
+         a__coarray_data)
+        call c_f_pointer(a__coarray_data, a)
+    end if
+end subroutine __lfortran_global_init_coarray_operations_01
 
 interface
     subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&

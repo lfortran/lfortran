@@ -5875,13 +5875,18 @@ options = "--coarray=true"
 [[test]]
 filename = "coarray_saved_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass, so the reference shows who calls each saved
+# coarray's allocation as well as where it ended up.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
 filename = "coarray_initialization_01.f90"
 fortran = true
-pass = "coarray"
+# Through the wiring pass as well, as coarray_saved_01 is: this test is
+# about initializers too, so the reference is easier to follow when it
+# shows who calls them.
+pass = "coarray,global_init_wire"
 options = "--coarray=true"
 
 [[test]]
@@ -6180,4 +6185,7 @@ run = true
 
 [[test]]
 filename = "../integration_tests/global_init_01.f90"
-pass = "global_init"
+# Both halves, so the reference output documents the whole shape in one
+# place: the run-once guard, the dependency call, the initialization and the
+# program's single call into the chain.
+pass = "global_init,global_init_wire"

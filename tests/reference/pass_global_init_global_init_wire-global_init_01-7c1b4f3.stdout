@@ -61,6 +61,26 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                ),
+                                            __lfortran_global_init_global_init_01_a:
+                                                (ExternalSymbol
+                                                    9
+                                                    __lfortran_global_init_global_init_01_a
+                                                    2 __lfortran_global_init_global_init_01_a
+                                                    global_init_01_a
+                                                    []
+                                                    __lfortran_global_init_global_init_01_a
+                                                    Private
+                                                ),
+                                            __lfortran_global_init_global_init_01_b:
+                                                (ExternalSymbol
+                                                    9
+                                                    __lfortran_global_init_global_init_01_b
+                                                    4 __lfortran_global_init_global_init_01_b
+                                                    global_init_01_b
+                                                    []
+                                                    __lfortran_global_init_global_init_01_b
+                                                    Private
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01
@@ -96,6 +116,20 @@
                                             )
                                             ()
                                             .false.
+                                            .false.
+                                        )
+                                        (SubroutineCall
+                                            9 __lfortran_global_init_global_init_01_a
+                                            9 __lfortran_global_init_global_init_01_a
+                                            []
+                                            ()
+                                            .false.
+                                        )
+                                        (SubroutineCall
+                                            9 __lfortran_global_init_global_init_01_b
+                                            9 __lfortran_global_init_global_init_01_b
+                                            []
+                                            ()
                                             .false.
                                         )
                                         (Assignment
@@ -154,26 +188,6 @@
                                     .false.
                                     .false.
                                     ()
-                                ),
-                            __lfortran_global_init_global_init_01_a:
-                                (ExternalSymbol
-                                    6
-                                    __lfortran_global_init_global_init_01_a
-                                    2 __lfortran_global_init_global_init_01_a
-                                    global_init_01_a
-                                    []
-                                    __lfortran_global_init_global_init_01_a
-                                    Private
-                                ),
-                            __lfortran_global_init_global_init_01_b:
-                                (ExternalSymbol
-                                    6
-                                    __lfortran_global_init_global_init_01_b
-                                    4 __lfortran_global_init_global_init_01_b
-                                    global_init_01_b
-                                    []
-                                    __lfortran_global_init_global_init_01_b
-                                    Private
                                 ),
                             a_arr:
                                 (ExternalSymbol
@@ -280,20 +294,6 @@
                     [global_init_01_b
                     global_init_01_a]
                     [(SubroutineCall
-                        6 __lfortran_global_init_global_init_01_a
-                        6 __lfortran_global_init_global_init_01_a
-                        []
-                        ()
-                        .false.
-                    )
-                    (SubroutineCall
-                        6 __lfortran_global_init_global_init_01_b
-                        6 __lfortran_global_init_global_init_01_b
-                        []
-                        ()
-                        .false.
-                    )
-                    (SubroutineCall
                         6 __lfortran_global_init_global_init_01
                         6 __lfortran_global_init_global_init_01
                         []

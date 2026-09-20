@@ -5,6 +5,23 @@ integer(4), dimension(:), pointer, save :: y
 
 contains
 
+subroutine __lfortran_global_init_coarray_saved_mod()
+    logical(4), save :: __lfortran_global_init_done = .false.
+    integer(4) :: stat
+    if (.not. __lfortran_global_init_done) then
+        __lfortran_global_init_done = .true.
+        call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle,&
+         x__coarray_data)
+        call c_f_pointer(x__coarray_data, x)
+        x = 666
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle,&
+         y__coarray_data)
+        call c_f_pointer(y__coarray_data, y, [10], [1])
+        y = [1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001]
+    end if
+end subroutine __lfortran_global_init_coarray_saved_mod
+
 subroutine mod_sub()
 end subroutine mod_sub
 
@@ -32,6 +49,7 @@ integer(4), pointer, save :: c
 integer(4), dimension(:), pointer, save :: d
 integer(4) :: me
 integer(4) :: stat
+call __lfortran_global_init_coarray_initialization_01()
 call __module_prif_prif_init(stat)
 call c_f_pointer(x__coarray_data, x)
 call c_f_pointer(y__coarray_data, y, [10], [1])
@@ -52,46 +70,45 @@ call __module_prif_prif_stop(.false.)
 
 contains
 
-subroutine __lfortran_coarray_init_coarray_initialization_01_coarray_saved_mod_coarray_saved_sub()
-    integer(4), pointer :: a__init_ptr
-    integer(4), dimension(:), pointer :: b__init_ptr
-    integer(4), pointer :: c__init_ptr
-    integer(4), dimension(:), pointer :: d__init_ptr
+subroutine __lfortran_global_init_coarray_initialization_01()
+    logical(4), save :: __lfortran_global_init_done = .false.
+    integer(4) :: stat
+    if (.not. __lfortran_global_init_done) then
+        __lfortran_global_init_done = .true.
+        call __lfortran_global_init_coarray_saved_mod()
+        call __module_prif_prif_init(stat)
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle,&
+         a__coarray_data)
+        call c_f_pointer(a__coarray_data, a)
+        a = 5
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), b__coarray_handle,&
+         b__coarray_data)
+        call c_f_pointer(b__coarray_data, b, [10], [1])
+        b = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), c__coarray_handle,&
+         c__coarray_data)
+        call c_f_pointer(c__coarray_data, c)
+        c = 7
+        call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), d__coarray_handle,&
+         d__coarray_data)
+        call c_f_pointer(d__coarray_data, d, [10], [1])
+        d = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+    end if
+end subroutine __lfortran_global_init_coarray_initialization_01
+
+subroutine __lfortran_coarray_init_coarray_saved_sub()
     integer(4) :: stat
     integer(4), pointer :: x__init_ptr
-    integer(4), pointer :: x__init_ptr1
     integer(4), dimension(:), pointer :: y__init_ptr
-    integer(4), dimension(:), pointer :: y__init_ptr1
     call __module_prif_prif_init(stat)
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), a__coarray_handle, a__coarray_data)
-    call c_f_pointer(a__coarray_data, a__init_ptr)
-    a__init_ptr = 5
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), b__coarray_handle,&
-         b__coarray_data)
-    call c_f_pointer(b__coarray_data, b__init_ptr, [10], [1])
-    b__init_ptr = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), c__coarray_handle, c__coarray_data)
-    call c_f_pointer(c__coarray_data, c__init_ptr)
-    c__init_ptr = 7
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), d__coarray_handle,&
-         d__coarray_data)
-    call c_f_pointer(d__coarray_data, d__init_ptr, [10], [1])
-    d__init_ptr = [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle, x__coarray_data)
-    call c_f_pointer(x__coarray_data, x__init_ptr)
-    x__init_ptr = 666
-    call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle,&
-         y__coarray_data)
-    call c_f_pointer(y__coarray_data, y__init_ptr, [10], [1])
-    y__init_ptr = [1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001, 1001]
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8, null(), x__coarray_handle1, x__coarray_data1)
-    call c_f_pointer(x__coarray_data1, x__init_ptr1)
-    x__init_ptr1 = 42
+    call c_f_pointer(x__coarray_data1, x__init_ptr)
+    x__init_ptr = 42
     call __module_prif_prif_allocate_coarray([1_8], [integer(8) :: ], 4_8*int(10, kind=8), null(), y__coarray_handle1,&
          y__coarray_data1)
-    call c_f_pointer(y__coarray_data1, y__init_ptr1, [10], [1])
-    y__init_ptr1 = [43, 43, 43, 43, 43, 43, 43, 43, 43, 43]
-end subroutine __lfortran_coarray_init_coarray_initialization_01_coarray_saved_mod_coarray_saved_sub
+    call c_f_pointer(y__coarray_data1, y__init_ptr, [10], [1])
+    y__init_ptr = [43, 43, 43, 43, 43, 43, 43, 43, 43, 43]
+end subroutine __lfortran_coarray_init_coarray_saved_sub
 
 interface
     subroutine __module_prif_prif_allocate_coarray(lcobounds, ucobounds, size_in_bytes, final_proc,&

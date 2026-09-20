@@ -185,9 +185,6 @@ class GlobalInitVisitor {
 
         Allocator &al;
         ASR::TranslationUnit_t &unit;
-        // One import per (scope, initializer): a scope that calls the same
-        // initializer twice must not gain two external symbols for it.
-        std::map<std::pair<SymbolTable*, ASR::Function_t*>, ASR::symbol_t*> imports;
 
     public:
 
@@ -319,6 +316,69 @@ class GlobalInitVisitor {
             }
         }
 
+        void visit_TranslationUnit() {
+            // Dependency order, computed from ASR and therefore the same on
+            // every image and in every link order.
+            std::vector<std::string> module_order =
+                ASRUtils::determine_module_dependencies(unit);
+
+            for (auto &name : module_order) {
+                ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
+                if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
+                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
+                // A module read back from a `.mod` file is lowered too: its
+                // variables are emitted into every translation unit that uses
+                // it, so the initializer has to be available there as well.
+                lower_scope((ASR::asr_t*)sym, m->m_symtab);
+            }
+
+            std::vector<ASR::symbol_t*> programs;
+            for (auto &item : unit.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                    programs.push_back(item.second);
+                }
+            }
+            for (ASR::symbol_t *sym : programs) {
+                lower_scope((ASR::asr_t*)sym, ASR::down_cast<ASR::Program_t>(
+                    sym)->m_symtab);
+            }
+
+            // Procedures and blocks come last: the initializers created above
+            // own nothing that needs initializing, so walking into them now
+            // costs nothing and the walk sees a settled symbol table.
+            lower_local_scopes(unit.m_symtab);
+            for (auto &item : unit.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                    lower_local_scopes(ASR::down_cast<ASR::Module_t>(
+                        item.second)->m_symtab);
+                } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+                    lower_local_scopes(ASR::down_cast<ASR::Program_t>(
+                        item.second)->m_symtab);
+                }
+            }
+        }
+
+};
+
+
+// Connecting the initializers is a pass of its own, run after everything that
+// can create one. The `coarray` pass creates initializers too, and an
+// initializer nothing calls would never run.
+class GlobalInitWireVisitor {
+
+    private:
+
+        Allocator &al;
+        ASR::TranslationUnit_t &unit;
+        // One import per (scope, initializer): a scope that calls the same
+        // initializer twice must not gain two external symbols for it.
+        std::map<std::pair<SymbolTable*, ASR::Function_t*>, ASR::symbol_t*> imports;
+
+    public:
+
+        GlobalInitWireVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_):
+            al(al_), unit(unit_) {}
+
         // A call to `callee` written in `scope`, importing it if it belongs to
         // another module.
         ASR::stmt_t* call_of(SymbolTable *scope, ASR::Function_t *callee,
@@ -356,16 +416,6 @@ class GlobalInitVisitor {
             std::vector<std::string> module_order =
                 ASRUtils::determine_module_dependencies(unit);
 
-            for (auto &name : module_order) {
-                ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
-                if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
-                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
-                // A module read back from a `.mod` file is lowered too: its
-                // variables are emitted into every translation unit that uses
-                // it, so the initializer has to be available there as well.
-                lower_scope((ASR::asr_t*)sym, m->m_symtab);
-            }
-
             // A module initializer runs the initializers of the modules it
             // uses first. They are idempotent, so this is what orders them,
             // not the link order or the constructor priority of a target.
@@ -388,53 +438,41 @@ class GlobalInitVisitor {
                 ASRUtils::global_init_prepend_stmts(al, fn, calls);
             }
 
-            std::vector<ASR::symbol_t*> programs;
             for (auto &item : unit.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                    programs.push_back(item.second);
-                }
-            }
-            for (ASR::symbol_t *sym : programs) {
-                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(sym);
-                lower_scope((ASR::asr_t*)sym, p->m_symtab);
-                wire_program(p, module_order);
-            }
-
-            // Procedures and blocks come last: the initializers created above
-            // own nothing that needs initializing, so walking into them now
-            // costs nothing and the walk sees a settled symbol table.
-            lower_local_scopes(unit.m_symtab);
-            for (auto &item : unit.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Module_t>(*item.second)) {
-                    lower_local_scopes(ASR::down_cast<ASR::Module_t>(
-                        item.second)->m_symtab);
-                } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                    lower_local_scopes(ASR::down_cast<ASR::Program_t>(
-                        item.second)->m_symtab);
-                }
+                if (!ASR::is_a<ASR::Program_t>(*item.second)) continue;
+                wire_program(ASR::down_cast<ASR::Program_t>(item.second),
+                    module_order);
             }
         }
 
         // Every initializer the program can observe runs before its first
-        // statement, modules first and in dependency order.
+        // statement, modules first and in dependency order. The module calls
+        // go inside the program's own initializer, so the program body gains
+        // exactly one statement however many modules there are.
         void wire_program(ASR::Program_t *p,
                 const std::vector<std::string> &module_order) {
-            std::vector<ASR::stmt_t*> calls;
+            std::vector<ASR::Function_t*> module_inits;
             for (auto &name : module_order) {
                 ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
                 if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
                 ASR::Function_t *fn = global_init_of(sym);
-                if (fn == nullptr) continue;
-                calls.push_back(call_of(p->m_symtab, fn, p->base.base.loc));
+                if (fn != nullptr) module_inits.push_back(fn);
             }
-            ASR::Function_t *own = global_init_of(&p->base);
-            if (own != nullptr) {
-                calls.push_back(call_of(p->m_symtab, own, p->base.base.loc));
+            if (module_inits.empty() && global_init_of(&p->base) == nullptr) {
+                return;
             }
-            if (calls.empty()) return;
+            const Location &loc = p->base.base.loc;
+            ASR::Function_t *own = ASRUtils::get_or_create_global_init(
+                al, unit, (ASR::asr_t*)&p->base);
+            std::vector<ASR::stmt_t*> calls;
+            for (ASR::Function_t *fn : module_inits) {
+                calls.push_back(call_of(own->m_symtab, fn, loc));
+            }
+            ASRUtils::global_init_prepend_stmts(al, own, calls);
+
             Vec<ASR::stmt_t*> body;
-            body.reserve(al, p->n_body + calls.size());
-            for (ASR::stmt_t *s : calls) body.push_back(al, s);
+            body.reserve(al, p->n_body + 1);
+            body.push_back(al, call_of(p->m_symtab, own, loc));
             for (size_t i = 0; i < p->n_body; i++) body.push_back(al, p->m_body[i]);
             p->m_body = body.p;
             p->n_body = body.size();
@@ -447,6 +485,14 @@ class GlobalInitVisitor {
 void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &/*pass_options*/) {
     GlobalInitVisitor v(al, unit);
+    v.visit_TranslationUnit();
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
+}
+
+void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &/*pass_options*/) {
+    GlobalInitWireVisitor v(al, unit);
     v.visit_TranslationUnit();
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

@@ -121,6 +121,7 @@ namespace LCompilers {
             {"transform_optional_argument_functions", &pass_transform_optional_argument_functions},
             {"init_expr", &pass_replace_init_expr},
             {"global_init", &pass_global_init},
+            {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
@@ -301,6 +302,9 @@ namespace LCompilers {
                 "conditional_expr",
                 "array_struct_temporary",
                 "coarray",
+                // Every pass that can create a startup initializer has run,
+                // so the calls that make them run can be put in now.
+                "global_init_wire",
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
