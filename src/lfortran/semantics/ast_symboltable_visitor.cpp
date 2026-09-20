@@ -49,6 +49,32 @@ public:
             class_deferred_procedures.swap(v.class_deferred_procedures);
         }
     };
+    // The kind of scoping unit whose specification part is being visited.
+    // It cannot be read back from `current_scope->asr_owner`: a Program, a
+    // Template, a Function and a Subroutine symbol is only created once its
+    // specification part has been visited, so its symbol table still has no
+    // owner while that specification part is being built, and a main program,
+    // a nested template and a subprogram are indistinguishable there. Track it
+    // explicitly instead, with a guard that restores the enclosing kind even
+    // when a diagnostic aborts the visit.
+    enum class ScopingUnitKind {
+        Other, Module, Submodule, Program, Template,
+    };
+
+    struct ScopingUnitScope {
+        SymbolTableVisitor &v;
+        ScopingUnitKind enclosing;
+
+        ScopingUnitScope(SymbolTableVisitor &v_, ScopingUnitKind kind) : v(v_) {
+            enclosing = v.scoping_unit_kind;
+            v.scoping_unit_kind = kind;
+        }
+
+        ~ScopingUnitScope() {
+            v.scoping_unit_kind = enclosing;
+        }
+    };
+    ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -337,6 +363,9 @@ public:
 
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+        ScopingUnitScope scoping_unit_scope(*this,
+            x.class_type == AST::modType::Submodule
+                ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
@@ -598,6 +627,7 @@ public:
             ));
             return;
         }
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1352,6 +1382,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1909,6 +1940,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -4763,7 +4795,28 @@ public:
     }
 
     void visit_Requirement(const AST::Requirement_t &x) {
+        // The Fortran 2028 working draft (J3/26-007r1) contradicts itself
+        // here, so this is a deliberate choice, not a settled rule. R1605
+        // lists `requirement-construct` as one of the things a template
+        // construct may contain, while C1636 (16.6.1) says a requirement
+        // construct shall only appear in the specification part of a main
+        // program or module. The two cannot both hold. C1636 is followed
+        // because rejecting is reversible, whereas accepting code the
+        // standard may forbid creates a compatibility burden if J3 resolves
+        // it the other way. A submodule and a subprogram are not in C1636's
+        // list either, so a requirement is rejected there as well. If J3
+        // resolves in favour of R1605, allow ScopingUnitKind::Template here.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program) {
+            diag.add(diag::Diagnostic(
+                "a requirement can only be declared in the specification part "
+                "of a main program or a module",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_requirement = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -4975,6 +5028,7 @@ public:
 
     void visit_Template(const AST::Template_t &x){
         is_template = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
         std::string template_name = to_lower(std::string(x.m_name));
         ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
