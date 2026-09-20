@@ -671,21 +671,14 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return nullptr;
         }
 
-        // Follow the recorded pointer associations to the variable `sym`
-        // ultimately designates.  An array section actual argument reaches
-        // this pass as a pointer temporary associated with the section, so
-        // without this the aliasing is no longer visible.
+        // The variable `sym` ultimately designates.  An array section actual
+        // argument reaches this pass as a pointer temporary associated with
+        // the section, so without this the aliasing is no longer visible.
+        // The map is kept already resolved (see record_pointer_association),
+        // so one lookup is enough and no chain can be walked or cycle formed.
         ASR::symbol_t* resolve_pointer_base(ASR::symbol_t *sym) {
-            // The chain is at most a few links long; the counter only stops
-            // a cycle from hanging the compiler.
-            for (int i = 0; i < 8; i++) {
-                auto it = pointer_base_.find(sym);
-                if (it == pointer_base_.end() || it->second == sym) {
-                    break;
-                }
-                sym = it->second;
-            }
-            return sym;
+            auto it = pointer_base_.find(sym);
+            return it == pointer_base_.end() ? sym : it->second;
         }
 
         // True when `a` and `b` may designate overlapping storage, i.e. they
@@ -717,6 +710,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
             ASR::symbol_t *base_sym = value == nullptr
                 ? nullptr : designator_base_symbol(value);
+            // Resolve now, not at lookup time: `p => q` records the variable
+            // `q` designates *at this point*, which is what `p` designates
+            // for the rest of the procedure even if `q` is re-associated
+            // later.
+            if (base_sym != nullptr) {
+                base_sym = resolve_pointer_base(base_sym);
+            }
             if (base_sym == nullptr || base_sym == ptr_sym) {
                 pointer_base_.erase(ptr_sym);
             } else {
@@ -987,6 +987,23 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 remove_original_statement = true;
             }
             return true;
+        }
+
+        // Pointer associations do not carry from one procedure to the next,
+        // and a module variable is the same symbol in every procedure that
+        // uses it, so the map has to start empty for each of them.
+        void visit_Function(const ASR::Function_t &x) {
+            pointer_base_.clear();
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Function(x);
+            pointer_base_.clear();
+        }
+
+        void visit_Program(const ASR::Program_t &x) {
+            pointer_base_.clear();
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Program(x);
+            pointer_base_.clear();
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {

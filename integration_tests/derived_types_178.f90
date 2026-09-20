@@ -8,6 +8,9 @@ implicit none
 
 type(tt) :: t
 type(tt) :: ta(2)
+type(tt), target :: w, z
+type(tt), pointer :: ptr1, ptr2
+type(ts) :: u
 integer :: i
 
 allocate(t%v(3))
@@ -47,5 +50,25 @@ t = g(t%v)
 if (ncalls /= 1) error stop
 if (size(t%v) /= 3) error stop
 if (any(t%v /= [2.0, 4.0, 6.0])) error stop
+
+! a substring of the target's own character component
+u%s = 'abcdefgh'
+u%n = 0
+u = h(u%s(1:5))
+if (u%s /= 'abcde   ') error stop
+if (u%n /= 5) error stop
+
+! reached through a pointer, associated via another pointer that is then
+! re-associated elsewhere: ptr1 still designates w, so w = f(ptr1%v) aliases
+allocate(w%v(3))
+w%v = [1.0, 2.0, 3.0]
+allocate(z%v(2))
+z%v = [9.0, 9.0]
+ptr2 => w
+ptr1 => ptr2
+ptr2 => z
+w = f(ptr1%v)
+if (size(w%v) /= 3) error stop
+if (any(w%v /= [1.0, 2.0, 3.0])) error stop
 
 end program
