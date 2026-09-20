@@ -12,14 +12,14 @@ type(T), intent(in) :: lhs
 type(U), intent(in) :: rhs
 type(V) :: res
 end function binary_func
-end requirement
+end requirement operator_r
 requirement cast_r {T, cast}
 deferred type :: T
 pure elemental function cast(arg) result(res)
 integer, intent(in) :: arg
 type(T) :: res
 end function cast
-end requirement
+end requirement cast_r
 
 contains
 

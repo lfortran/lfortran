@@ -908,6 +908,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end template");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
@@ -943,6 +945,8 @@ public:
         r += syn(gr::UnitHeader);
         r.append("end requirement");
         r += syn();
+        r += " ";
+        r.append(x.m_name);
         r.append("\n");
         s = r;
     }
