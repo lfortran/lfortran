@@ -1,5 +1,43 @@
 ! intent(out) dummy array of a derived type with default initialization must be
 ! default-initialized on entry (F2018 8.5.10), just like the scalar case.
+
+! The type's own module. Its component defaults name a constant declared here
+! and build a structure constructor, neither of which is in scope in the module
+! below, where the reset statements are emitted.
+module intent_out_array_default_init_01_types
+implicit none
+
+integer, parameter :: kdef = 5
+
+type :: cfg_t
+    integer :: a = 1
+    real :: b = 2.0
+end type cfg_t
+
+type :: p_t
+    integer :: k = kdef
+    type(cfg_t) :: cfg = cfg_t(7, 8.0)
+end type p_t
+
+end module intent_out_array_default_init_01_types
+
+module intent_out_array_default_init_01_other
+use intent_out_array_default_init_01_types
+implicit none
+
+contains
+
+    subroutine reset_from_other_module(a)
+        type(p_t), intent(out) :: a(:)
+        if (any(a%k /= 5)) error stop 19
+        if (a(1)%cfg%a /= 7) error stop 20
+        if (a(1)%cfg%b /= 8.0) error stop 21
+        if (a(2)%cfg%a /= 7) error stop 22
+        if (a(2)%cfg%b /= 8.0) error stop 23
+    end subroutine reset_from_other_module
+
+end module intent_out_array_default_init_01_other
+
 module intent_out_array_default_init_01_mod
 implicit none
 
@@ -68,9 +106,12 @@ end module intent_out_array_default_init_01_mod
 
 program intent_out_array_default_init_01
 use intent_out_array_default_init_01_mod
+use intent_out_array_default_init_01_types
+use intent_out_array_default_init_01_other
 implicit none
 
 type(t) :: w(2)
+type(p_t) :: q(2)
 type(t) :: m(2,2)
 type(t), target :: s
 integer, target :: tg = 1
@@ -97,6 +138,13 @@ s%k = 1
 s%b = 1
 s%nest%ii = 1
 call reset_scalar(s)
+
+q%k = 1
+q(1)%cfg%a = 99
+q(1)%cfg%b = 99.0
+q(2)%cfg%a = 99
+q(2)%cfg%b = 99.0
+call reset_from_other_module(q)
 
 print *, "ok"
 
