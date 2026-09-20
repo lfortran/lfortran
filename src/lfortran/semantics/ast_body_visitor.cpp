@@ -6804,12 +6804,24 @@ public:
                 // raise an error
                 bool is_array_concat = false;
                 int flat_size = 0;
-                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value)){
-                     AST::ArrayInitializer_t *temp_array =
-                            AST::down_cast<AST::ArrayInitializer_t>(x.m_value);
-                    for(size_t i=0; i < temp_array->n_args; i++){
-                        this->visit_expr(*temp_array->m_args[i]);
-                        ASR::expr_t *temp = ASRUtils::EXPR(tmp);
+                if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value) &&
+                    ASR::is_a<ASR::ArrayConstructor_t>(*value) ){
+                    // The shape of the value is measured from the expression
+                    // already built for this assignment: the elements of the
+                    // array constructor are its arguments, in source order.
+                    // Visiting the elements a second time would build that
+                    // expression again, and an element which needs a statement
+                    // of its own - the assignment of the temporary a structure
+                    // constructor evaluates its parent component value into,
+                    // for one - would have that statement run twice. An array
+                    // constructor whose elements are all compile time
+                    // constants is folded into a single constant whose type
+                    // carries the flattened size already, and the check on the
+                    // dimensions below covers that.
+                    ASR::ArrayConstructor_t *value_constructor =
+                        ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                    for(size_t i=0; i < value_constructor->n_args; i++){
+                        ASR::expr_t *temp = value_constructor->m_args[i];
                         ASR::ttype_t* temp_type = ASRUtils::type_get_past_allocatable_pointer(
                             ASRUtils::expr_type(temp));
                         if( temp_type->type == ASR::ttypeType::Array ) {
@@ -9308,12 +9320,21 @@ public:
     void visit_Where(const AST::Where_t &x) {
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        // The bodies below run only for the elements the mask selects, so a
+        // statement they need which must run whatever the mask selects is
+        // emitted into the body that holds this construct. A nested `where`
+        // is masked too, so the outermost one is the one to remember.
+        Vec<ASR::stmt_t*>* body_enclosing_where_copy = body_enclosing_where;
+        if (body_enclosing_where == nullptr) {
+            body_enclosing_where = current_body;
+        }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
+        body_enclosing_where = body_enclosing_where_copy;
         if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
             if (ASR::is_a<ASR::Logical_t>(*ASRUtils::extract_type(ASRUtils::expr_type(test)))) {
                 // verify that `test` is *not* the ttype of an expression as we then

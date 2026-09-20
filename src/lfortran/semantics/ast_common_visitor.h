@@ -2392,6 +2392,11 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    // The body that holds the outermost `where` construct being visited, or
+    // `nullptr` outside one. A statement that a masked assignment needs but
+    // which has to run whatever the mask selects belongs there rather than in
+    // the masked body.
+    Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
 
     struct PendingProcPtrInit {
@@ -11630,32 +11635,39 @@ public:
         return ASRUtils::check_equal_type(member_scalar, value_scalar, nullptr, nullptr);
     }
 
+    // `type` as written in a diagnostic, such as `integer(4)`,
+    // `real(8), dimension(2)` or `type(a_t), dimension(:)`.
+    // `type_declaration` names the derived type when `type` is one.
+    std::string fortran_type_to_str(ASR::ttype_t* type,
+            ASR::symbol_t* type_declaration) {
+        ASR::ttype_t* scalar = ASRUtils::extract_type(type);
+        std::string type_str = ASRUtils::type_to_str_fortran_symbol(
+            scalar, type_declaration, true);
+        if (ASR::is_a<ASR::StructType_t>(*scalar)) {
+            type_str = "type(" + type_str + ")";
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t d = 0; d < rank; d++) {
+            type_str += d == 0 ? ", dimension(" : ", ";
+            int64_t extent = 0;
+            if (dims[d].m_length != nullptr && ASRUtils::extract_value(
+                    ASRUtils::expr_value(dims[d].m_length), extent)) {
+                type_str += std::to_string(extent);
+            } else {
+                type_str += ":";
+            }
+            if (d + 1 == rank) {
+                type_str += ")";
+            }
+        }
+        return type_str;
+    }
+
     // The type of the component `member` as written in a diagnostic, such as
     // `integer(4)` or `real(8), dimension(2)`.
     std::string struct_component_type_to_str(ASR::Variable_t* member) {
-        ASR::ttype_t* member_scalar = ASRUtils::extract_type(member->m_type);
-        std::string member_type = ASRUtils::type_to_str_fortran_symbol(
-            member_scalar, member->m_type_declaration, true);
-        if (ASR::is_a<ASR::StructType_t>(*member_scalar)) {
-            member_type = "type(" + member_type + ")";
-        }
-        ASR::dimension_t* member_dims = nullptr;
-        size_t member_rank = ASRUtils::extract_dimensions_from_ttype(
-            member->m_type, member_dims);
-        for (size_t d = 0; d < member_rank; d++) {
-            member_type += d == 0 ? ", dimension(" : ", ";
-            int64_t extent = 0;
-            if (member_dims[d].m_length != nullptr && ASRUtils::extract_value(
-                    ASRUtils::expr_value(member_dims[d].m_length), extent)) {
-                member_type += std::to_string(extent);
-            } else {
-                member_type += ":";
-            }
-            if (d + 1 == member_rank) {
-                member_type += ")";
-            }
-        }
-        return member_type;
+        return fortran_type_to_str(member->m_type, member->m_type_declaration);
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -23262,6 +23274,223 @@ public:
         }
     }
 
+    // What `set_parent_component_kwarg()` did with a keyword argument.
+    enum class ParentComponentKwarg {
+        // The keyword does not name the parent component.
+        not_parent,
+        // The parent's arguments were filled from the keyword's value.
+        filled,
+        // The keyword names the parent component but the value could not be
+        // used; the error was reported and the parent's arguments are unset.
+        error,
+    };
+
+    // Records whether the expression it walks calls a procedure, so that an
+    // expression which is read more than once can be told from one whose
+    // second reading would run a procedure a second time.
+    class CallFinder : public ASR::BaseWalkVisitor<CallFinder> {
+        public:
+        bool found = false;
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            // Running a pure function a second time computes the same result
+            // and changes nothing the program can observe, so it does not make
+            // the expression one that must be evaluated once. Its arguments
+            // are walked all the same: one of them may call something impure.
+            ASR::symbol_t* fn_sym = ASRUtils::symbol_get_past_external(x.m_name);
+            if( !ASR::is_a<ASR::Function_t>(*fn_sym) ||
+                !ASRUtils::get_FunctionType(fn_sym)->m_pure ) {
+                found = true;
+            }
+            ASR::BaseWalkVisitor<CallFinder>::visit_FunctionCall(x);
+        }
+
+        void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+            found = true;
+            ASR::BaseWalkVisitor<CallFinder>::visit_IntrinsicImpureFunction(x);
+        }
+    };
+
+    // True if reading `e` several times reads the same storage every time and
+    // runs nothing on the way, so that taking each of its components
+    // separately evaluates nothing twice. A subscript or a base that calls a
+    // procedure would be evaluated once per component, so it disqualifies the
+    // whole reference.
+    static bool is_designator(ASR::expr_t* e) {
+        if( !ASR::is_a<ASR::Var_t>(*e) &&
+            !ASR::is_a<ASR::StructInstanceMember_t>(*e) &&
+            !ASR::is_a<ASR::ArrayItem_t>(*e) ) {
+            return false;
+        }
+        CallFinder call_finder;
+        call_finder.visit_expr(*e);
+        return !call_finder.found;
+    }
+
+    // `value` assigned to a fresh local variable, so that an expression which
+    // must be evaluated exactly once can afterwards be read as many times as
+    // there are components. Returns `nullptr` when the assignment cannot be
+    // emitted: there is no body, as in a declaration's initializer, or the
+    // expression belongs to an implied do loop, which is an expression and so
+    // has no body of its own to evaluate it once per iteration in.
+    ASR::expr_t* evaluate_into_temporary(ASR::expr_t* value) {
+        // A `where` body runs only for the elements the mask selects, while
+        // the value assigned there is evaluated once whatever the mask is, so
+        // the assignment belongs to the body that holds the `where`.
+        Vec<ASR::stmt_t*>* body = body_enclosing_where != nullptr
+            ? body_enclosing_where : current_body;
+        if( body == nullptr || idl_nesting_level > 0 ) {
+            return nullptr;
+        }
+        const Location& loc = value->base.loc;
+        ASR::ttype_t* type = ASRUtils::expr_type(value);
+        ASR::symbol_t* type_declaration = ASRUtils::import_struct_type(al,
+            ASRUtils::get_struct_sym_from_struct_expr(value), current_scope);
+        std::string tmp_name = current_scope->get_unique_name("lfortran_tmp");
+        SetChar tmp_deps;
+        tmp_deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, tmp_deps, type, nullptr,
+            nullptr, tmp_name);
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, tmp_name), tmp_deps.p, tmp_deps.n,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, type, type_declaration,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+        body->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al, loc, tmp_var, value, nullptr,
+                compiler_options.po.realloc_lhs_arrays, false)));
+        return tmp_var;
+    }
+
+    // The parent component of an extended type is a component whose name is
+    // the name of the parent type (F2018 7.5.7.2), so a structure constructor
+    // may give it by keyword: `e_t(base_t=base_t(1), z=2)`. A constructor
+    // carries one argument per component, the components inherited from the
+    // parent first, so the parent's value is spread over those leading
+    // arguments, and `n_parent_args` reports how many of them the parent
+    // component owns (whether or not they could be filled).
+    ParentComponentKwarg set_parent_component_kwarg(Vec<ASR::call_arg_t>& args,
+            const std::vector<ASR::symbol_t*>& constructor_arg_syms,
+            ASR::symbol_t* struct_sym, const std::string& name,
+            AST::expr_t* value, diag::Diagnostics& diag,
+            size_t& n_parent_args) {
+        ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        if( struct_type->m_parent == nullptr ||
+            to_lower(ASRUtils::symbol_name(struct_type->m_parent)) != name ) {
+            return ParentComponentKwarg::not_parent;
+        }
+        ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(
+            struct_type->m_parent);
+        n_parent_args = get_struct_constructor_info(parent_sym).members.size();
+        LCOMPILERS_ASSERT(n_parent_args <= args.size());
+        this->visit_expr(*value);
+        ASR::expr_t* parent_value = ASRUtils::EXPR(tmp);
+        ASR::call_arg_t* parent_args = nullptr;
+        [[maybe_unused]] size_t n_args = 0;
+        ASR::symbol_t* value_sym = nullptr;
+        if( ASR::is_a<ASR::StructConstructor_t>(*parent_value) ) {
+            ASR::StructConstructor_t* constructor =
+                ASR::down_cast<ASR::StructConstructor_t>(parent_value);
+            value_sym = constructor->m_dt_sym;
+            parent_args = constructor->m_args;
+            n_args = constructor->n_args;
+        } else if( ASR::is_a<ASR::StructConstant_t>(*parent_value) ) {
+            ASR::StructConstant_t* constant =
+                ASR::down_cast<ASR::StructConstant_t>(parent_value);
+            value_sym = constant->m_dt_sym;
+            parent_args = constant->m_args;
+            n_args = constant->n_args;
+        } else if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                ASRUtils::expr_type(parent_value))) ) {
+            value_sym = ASRUtils::get_struct_sym_from_struct_expr(parent_value);
+        }
+        if( value_sym == nullptr ||
+            ASRUtils::symbol_get_past_external(value_sym) != parent_sym ||
+            ASRUtils::is_array(ASRUtils::expr_type(parent_value)) ) {
+            diag.add(Diagnostic("type mismatch in structure constructor: the "
+                "parent component '" + name + "' requires a scalar value of "
+                "type type(" + name + "), not " + fortran_type_to_str(
+                    ASRUtils::expr_type(parent_value), value_sym),
+                Level::Error, Stage::Semantic, {
+                    Label("", {parent_value->base.loc})}));
+            if( !compiler_options.continue_compilation ) {
+                throw SemanticAbort();
+            }
+            return ParentComponentKwarg::error;
+        }
+        for( size_t i = 0; i < n_parent_args; i++ ) {
+            if( args[i].m_value != nullptr ) {
+                diag.add(Diagnostic("component '" + std::string(
+                    ASRUtils::symbol_name(constructor_arg_syms[i])) + "' is "
+                    "already specified, it cannot also be given by the parent "
+                    "component '" + name + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {parent_value->base.loc})}));
+                if( !compiler_options.continue_compilation ) {
+                    throw SemanticAbort();
+                }
+                return ParentComponentKwarg::error;
+            }
+        }
+        if( parent_args != nullptr ) {
+            // A parent constructor already carries one argument per component
+            // of the parent, in the same order as the leading arguments here.
+            LCOMPILERS_ASSERT(n_args == n_parent_args);
+            for( size_t i = 0; i < n_parent_args; i++ ) {
+                args.p[i] = parent_args[i];
+            }
+            return ParentComponentKwarg::filled;
+        }
+        // Any other expression is read component by component. It must be
+        // evaluated exactly once, so anything that is not a designator is
+        // assigned to a temporary first, and each component reference gets
+        // its own copy of the base so that no node is shared between slots.
+        // Where the temporary cannot be assigned the value has to be rejected:
+        // reading the expression once per component would evaluate it several
+        // times, and every component could then come from a different
+        // evaluation.
+        ASR::expr_t* base = parent_value;
+        if( !is_designator(base) ) {
+            ASR::expr_t* base_tmp = evaluate_into_temporary(base);
+            if( base_tmp == nullptr ) {
+                bool in_implied_do = idl_nesting_level > 0;
+                diag.add(Diagnostic("the value given for the parent component "
+                    "'" + name + "' must be a constant or a variable " +
+                    (in_implied_do ? "inside an implied do loop" : "here") +
+                    ", it would otherwise be evaluated once for every "
+                    "component of '" + name + "'",
+                    Level::Error, Stage::Semantic, {
+                        Label(in_implied_do
+                            ? "help: assign it to a variable before the array "
+                              "constructor and give that variable here"
+                            : "help: give a named constant here",
+                            {parent_value->base.loc})}));
+                if( !compiler_options.continue_compilation ) {
+                    throw SemanticAbort();
+                }
+                return ParentComponentKwarg::error;
+            }
+            base = base_tmp;
+        }
+        ASR::symbol_t* base_sym = ASR::is_a<ASR::Var_t>(*base)
+            ? ASR::down_cast<ASR::Var_t>(base)->m_v : nullptr;
+        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+        for( size_t i = 0; i < n_parent_args; i++ ) {
+            ASR::expr_t* base_i = expr_duplicator.duplicate_expr(base);
+            args.p[i].loc = parent_value->base.loc;
+            args.p[i].m_value = ASRUtils::EXPR(
+                ASRUtils::getStructInstanceMember_t(al,
+                    parent_value->base.loc, &base_i->base, base_sym,
+                    constructor_arg_syms[i], current_scope));
+        }
+        return ParentComponentKwarg::filled;
+    }
+
     // `null_args`, if given, has an entry for each positional argument in
     // `args`; it is extended to every component and records whether each
     // keyword argument is a reference to the intrinsic `null()`.
@@ -23296,11 +23525,29 @@ public:
             null_args->resize(args.size(), NullReference::none);
         }
 
+        // The leading arguments owned by a parent component keyword, if one
+        // was given, and the name of that parent component. When the keyword
+        // was rejected those arguments stay unset and are not reported again
+        // as missing.
+        size_t n_parent_component_args = 0;
+        bool parent_component_rejected = false;
+        std::string parent_component_name;
         for (size_t i = 0; i < n; i++) {
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(constructor_args.begin(),
                                     constructor_args.end(), name);
             if (search == constructor_args.end()) {
+                size_t n_owned = 0;
+                ParentComponentKwarg parent_result = set_parent_component_kwarg(
+                    args, constructor_arg_syms, fn, name, kwargs[i].m_value,
+                    diag, n_owned);
+                if (parent_result != ParentComponentKwarg::not_parent) {
+                    n_parent_component_args = n_owned;
+                    parent_component_name = name;
+                    parent_component_rejected |=
+                        parent_result == ParentComponentKwarg::error;
+                    continue;
+                }
                 diag.semantic_error_label(
                     "Keyword argument not found",
                     {loc},
@@ -23318,6 +23565,17 @@ public:
             current_struct_type_var_expr = prev_struct_type_var_expr;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             if (args[idx].m_value != nullptr) {
+                if (idx < n_parent_component_args) {
+                    diag.add(Diagnostic("component '" + name + "' is already "
+                        "specified by the parent component '"
+                        + parent_component_name + "'",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {expr->base.loc})}));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    continue;
+                }
                 diag.semantic_error_label(
                     "Keyword argument is already specified",
                     {loc},
@@ -23334,6 +23592,12 @@ public:
         // If value is not specified in args nor in keyword argument, set to default initializer if it exists
         for( size_t i = 0; i < args.size(); i++ ) {
             if( args[i].m_value == nullptr ) {
+                if( parent_component_rejected && i < n_parent_component_args ) {
+                    // The parent component keyword owns this argument; its
+                    // error was already reported, so do not report the
+                    // argument as missing too.
+                    continue;
+                }
                 ASR::symbol_t* arg_sym = constructor_arg_syms[i];
                 LCOMPILERS_ASSERT(arg_sym != nullptr);
                 bool is_kind_param = std::find(info.kind_indices.begin(),

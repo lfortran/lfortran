@@ -1675,3 +1675,33 @@ subroutine derived_type_constructor_too_many_null_args()
     print *, parameterized_t(4, null())(1)  ! {Error} too many arguments in parameterized derived type constructor
     print *, parameterized_t(4)(1, null())  ! {Error} too many arguments in parameterized derived type constructor
 end subroutine
+
+subroutine parent_component_keyword_conflicts()
+    implicit none
+    type :: pck_base_t
+        integer :: x
+    end type
+    type, extends(pck_base_t) :: pck_e_t
+        integer :: z
+    end type
+    type, extends(pck_e_t) :: pck_f_t
+        integer :: w
+    end type
+    type(pck_e_t) :: e
+    type(pck_e_t) :: ee(2)
+    type(pck_base_t) :: arr(2)
+    type(pck_f_t) :: f
+    integer :: i
+    e = pck_e_t(pck_base_t=pck_base_t(11), x=3, z=51)  ! {Error} component 'x' is already specified by the parent component 'pck_base_t'
+    e = pck_e_t(x=3, pck_base_t=pck_base_t(11), z=51)  ! {Error} component 'x' is already specified, it cannot also be given by the parent component 'pck_base_t'
+    e = pck_e_t(pck_base_t=42, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not integer(4)
+    e = pck_e_t(pck_base_t=arr, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_base_t), dimension(2)
+    e = pck_e_t(pck_base_t=f, z=51)  ! {Error} type mismatch in structure constructor: the parent component 'pck_base_t' requires a scalar value of type type(pck_base_t), not type(pck_f_t)
+    ee = [ (pck_e_t(pck_base_t=pck_make(i), z=i), i = 1, 2) ]  ! {Error} the value given for the parent component 'pck_base_t' must be a constant or a variable inside an implied do loop, it would otherwise be evaluated once for every component of 'pck_base_t'
+contains
+    function pck_make(i) result(res)
+        integer, intent(in) :: i
+        type(pck_base_t) :: res
+        res = pck_base_t(i)
+    end function
+end subroutine

@@ -1065,6 +1065,7 @@ RUN(NAME array_constructor_04 LABELS gfortran llvm fortran EXTRA_ARGS --realloc-
 RUN(NAME array_constructor_05 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_constructor_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_constructor_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME array_constructor_08 LABELS gfortran llvm)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4756,6 +4757,7 @@ RUN(NAME structure_constructor_args_08 LABELS gfortran llvm EXTRAFILES structure
 RUN(NAME structure_constructor_args_09 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_10 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_11 LABELS llvm flang) # `pdt(k)(...)` constructors are not accepted by every supported gfortran
+RUN(NAME structure_constructor_args_12 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
