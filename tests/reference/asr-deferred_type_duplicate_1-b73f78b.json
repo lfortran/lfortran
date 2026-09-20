@@ -1,0 +1,13 @@
+{
+    "basename": "asr-deferred_type_duplicate_1-b73f78b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/deferred_type_duplicate_1.f90",
+    "infile_hash": "7f6dc2906a966969beb6841ea524140172ba45909e3e82ab250ea047",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-deferred_type_duplicate_1-b73f78b.stderr",
+    "stderr_hash": "f529c2cc5c8c8c154d2a35b901cdd30c7748cc0bfdb4129dd55de69a",
+    "returncode": 2
+}
