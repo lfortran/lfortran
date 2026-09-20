@@ -652,11 +652,33 @@ bool set_allocation_size(
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
-                    // The same expression the section's own type carries, so
-                    // that the temporary and the section agree on the extent.
-                    allocate_dim.m_length =
-                        ASRUtils::compute_length_from_start_end_step(
-                            al, start, end, step);
+                    // A section holds `(end - start + step)/step` elements.
+                    // Written as `(end - start)/step + 1`, an empty section
+                    // such as `2:1:2` is counted as one element, because
+                    // integer division truncates towards zero. A unit stride
+                    // is never counted wrong that way, and keeps the
+                    // expression it has always had: the folded extent the
+                    // other form gives it turns the temporary into a fixed
+                    // size array, whose size the GPU backend cannot read back.
+                    ASR::expr_t* step_value = step != nullptr ?
+                        ASRUtils::expr_value(step) : nullptr;
+                    int64_t step_int = 0;
+                    bool is_unit_step = step_value != nullptr &&
+                        ASRUtils::extract_value(step_value, step_int) &&
+                        step_int == 1;
+                    if( is_unit_step ) {
+                        ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
+                        ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
+                            nullptr));
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                            by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
+                    } else {
+                        allocate_dim.m_length =
+                            ASRUtils::compute_length_from_start_end_step(
+                                al, start, end, step);
+                    }
                     allocate_dims.push_back(al, allocate_dim);
                 }
             }
