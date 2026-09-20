@@ -132,6 +132,7 @@ asr = true
 filename = "../integration_tests/template_struct_01.f90"
 asr = true
 ast = true
+ast_f90 = true
 
 # TODO: StructType - Uncomment after fixing symbol outside scope error for ttype
 # [[test]]
@@ -149,6 +150,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_simple_02.f90"
 asr = true
+ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/template_simple_03.f90"
@@ -165,6 +167,7 @@ asr = true
 [[test]]
 filename = "../integration_tests/template_sort_02.f90"
 asr = true
+ast_f90 = true
 
 [[test]]
 filename = "../integration_tests/template_lapack_01.f90"
