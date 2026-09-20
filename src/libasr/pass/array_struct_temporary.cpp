@@ -1216,9 +1216,14 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     }
 }
 
+// `body_after_curr_stmt`, when given, collects the statements a visitor wants
+// emitted right after the statement it is visiting (the copy-out of an
+// argument temporary, for example). They are appended once that statement has
+// been added to the body being built.
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     Vec<ASR::stmt_t*>*& current_body, bool inside_where,
-    std::function<void(const ASR::stmt_t&)> visit_stmt) {
+    std::function<void(const ASR::stmt_t&)> visit_stmt,
+    Vec<ASR::stmt_t*>** body_after_curr_stmt = nullptr) {
     if( inside_where ) {
         for (size_t i = 0; i < n_body; i++) {
             visit_stmt(*m_body[i]);
@@ -1229,8 +1234,21 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
         current_body_vec.reserve(al, n_body);
         current_body = &current_body_vec;
         for (size_t i = 0; i < n_body; i++) {
+            Vec<ASR::stmt_t*>* body_after_curr_stmt_copy = nullptr;
+            Vec<ASR::stmt_t*> body_after_curr_stmt_vec;
+            if( body_after_curr_stmt != nullptr ) {
+                body_after_curr_stmt_vec.reserve(al, 1);
+                body_after_curr_stmt_copy = *body_after_curr_stmt;
+                *body_after_curr_stmt = &body_after_curr_stmt_vec;
+            }
             visit_stmt(*m_body[i]);
             current_body->push_back(al, m_body[i]);
+            if( body_after_curr_stmt != nullptr ) {
+                for (size_t j = 0; j < body_after_curr_stmt_vec.size(); j++) {
+                    current_body->push_back(al, body_after_curr_stmt_vec[j]);
+                }
+                *body_after_curr_stmt = body_after_curr_stmt_copy;
+            }
         }
         m_body = current_body_vec.p; n_body = current_body_vec.size();
         current_body = current_body_copy;
@@ -1391,6 +1409,68 @@ bool is_directly_addressable_expr(ASR::expr_t* value) {
     }
 }
 
+// Returns the variable a designator is rooted at, or nullptr when `value` is
+// not a designator (so it denotes no storage that can be assigned back to).
+ASR::Variable_t* designator_root_variable(ASR::expr_t* value) {
+    while( value != nullptr ) {
+        switch( value->type ) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(value)->m_v);
+                if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                    return nullptr;
+                }
+                return ASR::down_cast<ASR::Variable_t>(sym);
+            }
+            case ASR::exprType::ArraySection: {
+                value = ASR::down_cast<ASR::ArraySection_t>(value)->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                value = ASR::down_cast<ASR::ArrayItem_t>(value)->m_v;
+                break;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                value = ASR::down_cast<ASR::StructInstanceMember_t>(value)->m_v;
+                break;
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// A component of an array of derived type, such as `ps%x` or `ps(1::2)%y`, is
+// a strided section of `ps`: its elements are one struct apart, not one
+// element apart. It therefore has to be gathered into a contiguous temporary
+// before it is handed to a dummy argument, and, when the callee may define the
+// dummy, scattered back into `ps` afterwards. `value` is such a designator.
+bool is_array_struct_member_designator(ASR::expr_t* value) {
+    if( value == nullptr ) {
+        return false;
+    }
+    value = ASRUtils::get_past_array_physical_cast(value);
+    if( !ASR::is_a<ASR::StructInstanceMember_t>(*value) ) {
+        return false;
+    }
+    ASR::ttype_t* member_type = ASRUtils::expr_type(value);
+    if( !ASRUtils::is_array(member_type) ||
+        ASRUtils::is_allocatable(member_type) ||
+        ASRUtils::is_pointer(member_type) ) {
+        return false;
+    }
+    ASR::StructInstanceMember_t* member =
+        ASR::down_cast<ASR::StructInstanceMember_t>(value);
+    if( !ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) ) {
+        return false;
+    }
+    ASR::Variable_t* root = designator_root_variable(member->m_v);
+    return root != nullptr &&
+        root->m_storage != ASR::storage_typeType::Parameter;
+}
+
 bool is_temporary_needed(ASR::expr_t* value) {
     if(!value) { return false; }
     bool is_expr_with_no_type = (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
@@ -1472,6 +1552,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     Allocator& al;
     Vec<ASR::stmt_t*>* current_body;
+    Vec<ASR::stmt_t*>* body_after_curr_stmt;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     ExprsWithTargetType& exprs_with_target;
     ASR::expr_t* lhs_var;
@@ -1481,14 +1562,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), current_body(nullptr), parent_body_for_where(nullptr),
+        al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
+            parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
             inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
-            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
+            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); },
+            &body_after_curr_stmt);
     }
 
     bool var_check(ASR::expr_t* expr) {
@@ -1615,11 +1698,85 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return null_pointer_temporary;
     }
 
+    // Gathers `arg`, a component of an array of derived type, into a
+    // contiguous temporary, passes the temporary in its place, and scatters
+    // the temporary back into the component after the call unless the dummy
+    // is intent(in). Without an interface the callee may define the dummy, so
+    // the component is copied back then as well.
+    // `ps(1::2)%y` reaches its elements through two strides at once, which
+    // neither the gather nor the scatter below can index. The section is
+    // bound to a pointer temporary first, whose descriptor carries the stride
+    // of the section, so that what is left is a component of an array
+    // variable, `ps_section%y`.
+    ASR::expr_t* bind_struct_member_base_to_pointer(ASR::expr_t* designator,
+        const std::string& name_hint) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(designator);
+        if( !ASR::is_a<ASR::ArraySection_t>(*member->m_v) ) {
+            return designator;
+        }
+        ASR::expr_t* section = member->m_v;
+        const Location& loc = section->base.loc;
+        ASR::ttype_t* section_type = ASRUtils::create_array_type_with_empty_dims(al,
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(section)),
+            ASRUtils::expr_type(section));
+        section_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, section_type));
+        ASR::expr_t* section_pointer = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint + "_section_", section_type, section);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+            al, loc, section_pointer, section)));
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+            designator->base.loc, section_pointer, member->m_m,
+            member->m_type, nullptr));
+    }
+
+    void copy_in_copy_out_argument(Vec<ASR::call_arg_t>& x_m_args_vec,
+        ASR::call_arg_t& arg, ASR::Variable_t* dummy, const std::string& name_hint) {
+        ASR::expr_t* designator = bind_struct_member_base_to_pointer(
+            ASRUtils::get_past_array_physical_cast(arg.m_value), name_hint);
+        ASR::expr_t* array_var_temporary = create_and_allocate_temporary_variable_for_array(
+            designator, name_hint, al, current_body, current_scope, exprs_with_target);
+        ASR::call_arg_t call_arg;
+        call_arg.loc = array_var_temporary->base.loc;
+        call_arg.m_value = array_var_temporary;
+        if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg.m_value) ) {
+            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg.m_value);
+            call_arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                al, array_var_temporary->base.loc, array_var_temporary,
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
+                cast->m_new, cast->m_type, nullptr));
+        }
+        x_m_args_vec.push_back(al, call_arg);
+        if( dummy == nullptr || dummy->m_intent != ASRUtils::intent_in ) {
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, designator->base.loc, designator, array_var_temporary,
+                nullptr, exprs_with_target)));
+        }
+    }
+
+    // `is_call` tells whether the arguments are those of a procedure call,
+    // whose callee may define them, rather than of a constructor.
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
+        size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint,
+        bool is_call) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
+            ASR::Variable_t* dummy = (orig_args && x_m_args[i].m_value) ?
+                ASRUtils::expr_to_variable_or_null(orig_args[i]) : nullptr;
+            // A component of an array of derived type cannot be handed over as
+            // it is: it is strided, while a dummy argument is reached either
+            // through a contiguous buffer or through a descriptor built from
+            // the component's own (unit stride) type. It is copied in, and
+            // copied back out when the callee may define the dummy.
+            bool copy_in_copy_out = is_call && body_after_curr_stmt != nullptr &&
+                is_array_struct_member_designator(x_m_args[i].m_value) &&
+                !(dummy && (ASRUtils::is_pointer(dummy->m_type) ||
+                            dummy->m_target_attr));
+            if( copy_in_copy_out ) {
+                copy_in_copy_out_argument(x_m_args_vec, x_m_args[i], dummy, name_hint);
+                continue;
+            }
             if (orig_args &&
                 (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
@@ -1715,6 +1872,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        // Assigning to `ps(1::2)%y` walks the stride of the section and the
+        // stride of the component at once, which the element-wise lowering
+        // cannot index. Binding the section to a pointer first leaves a
+        // component of an array variable behind.
+        if( ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target) &&
+            ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ) {
+            xx.m_target = bind_struct_member_base_to_pointer(
+                xx.m_target, "_assignment_target_");
+        }
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
@@ -2165,7 +2331,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
         }
         traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
-            name_hint + ASRUtils::symbol_name(x.m_name));
+            name_hint + ASRUtils::symbol_name(x.m_name), true);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
@@ -2175,7 +2341,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_StructConstructor(x);
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_call_args(x_m_args, x.m_args, x.n_args, nullptr,
-            std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
+            std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym), false);
         ASR::StructConstructor_t& xx = const_cast<ASR::StructConstructor_t&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
