@@ -1725,6 +1725,24 @@ static inline ASR::symbol_t *get_asr_owner(const ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::symbol_t>(s->asr_owner);
 }
 
+// True if this scope belongs to a procedure of a Template, i.e. a templated
+// reference written here is being compiled as part of the template itself
+// rather than instantiating it.
+//
+// Every link in the chain is optional. A scope owned by a Program has the
+// TranslationUnit as its parent, which is not a symbol, so the walk stops
+// there and the answer is false -- a templated reference in a main program
+// instantiates, it is not inside a template.
+static inline bool is_owned_by_template(const SymbolTable *scope) {
+    if( scope == nullptr || scope->asr_owner == nullptr ||
+        !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ) {
+        return false;
+    }
+    ASR::symbol_t *owner = get_asr_owner(
+        ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+    return owner != nullptr && ASR::is_a<ASR::Template_t>(*owner);
+}
+
 // True if this scope belongs to a TranslationUnit.
 //
 // Interactive evaluation chains one TranslationUnit per cell, each scope
