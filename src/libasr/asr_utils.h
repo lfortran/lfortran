@@ -1948,6 +1948,45 @@ static inline bool is_variable(ASR::expr_t* a_value) {
     }
 }
 
+// `p => tgt` in a declaration associates the pointer with a designator — a
+// whole variable, an array element or section, or a component — instead of
+// giving it a value. An association is not a value, so no target can lay it
+// out as static data: the `global_init` pass turns it into the pointer
+// assignment that runs before any user code observes the pointer.
+//
+// A named constant is not a valid target, so a `parameter` at the base of the
+// designator says no. `=> null()` is a value, not a designator, and is laid
+// out statically as before.
+static inline bool is_pointer_association_initializer(ASR::expr_t* init) {
+    if (init == nullptr) {
+        return false;
+    }
+    switch (init->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(init)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::ArrayItem_t>(init)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::ArraySection_t>(init)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::StructInstanceMember_t>(init)->m_v);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 // Returns true if expression can be safely used as an actual argument for
 // INTENT(OUT/INOUT) dummy arguments.
 static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {

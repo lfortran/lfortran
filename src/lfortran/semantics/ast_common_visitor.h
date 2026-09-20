@@ -8928,6 +8928,16 @@ public:
                         is_local = is_local || ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
                             ASR::is_a<ASR::Block_t>(*asr_owner_sym);
                     }
+                    if (init_expr && is_local && !is_derived_type && is_pointer &&
+                            ASRUtils::is_pointer_association_initializer(init_expr) &&
+                            storage_type != ASR::storage_typeType::Parameter &&
+                            storage_type != ASR::storage_typeType::Save) {
+                        // `integer, pointer :: p => tgt` in a procedure or a
+                        // block. The association is made once, so the pointer
+                        // has the save attribute every initialized local has.
+                        implicit_save = true;
+                        storage_type = ASR::storage_typeType::Save;
+                    }
                     if (init_expr && is_local && !is_derived_type && !is_pointer &&
                             storage_type != ASR::storage_typeType::Parameter) {
                         ASR::expr_t* static_init = nullptr;
@@ -9425,7 +9435,20 @@ public:
                         if ( init_expr && !ASR::is_a<ASR::FunctionType_t>(*
                                 ASRUtils::type_get_past_pointer(
                                     ASRUtils::expr_type(init_expr))) ) {
-                            if( ASRUtils::is_value_constant(value) ) {
+                            if (is_pointer && !is_allocatable &&
+                                    ASRUtils::is_pointer_association_initializer(
+                                        init_expr)) {
+                                // `p => tgt` in a declaration, where `tgt` is
+                                // a designator: a whole variable, an array
+                                // element or section, or a component. An
+                                // association is not a value, so no target can
+                                // lay it out as static data: the `global_init`
+                                // pass turns it into the pointer assignment
+                                // that runs before any user code observes `p`.
+                                // The target is kept as the value as well, as
+                                // the character branch above already does.
+                                value = init_expr;
+                            } else if( ASRUtils::is_value_constant(value) ) {
                             } else if( ASRUtils::is_value_constant(init_expr) ) {
                                 if (ASR::is_a<ASR::Cast_t>(*init_expr)) {
                                     ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(init_expr);

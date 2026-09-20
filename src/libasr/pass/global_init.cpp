@@ -203,6 +203,7 @@ class GlobalInitVisitor {
             if (v.m_symbolic_value == nullptr) return false;
             if (v.m_storage == ASR::storage_typeType::Parameter) return false;
             ASR::expr_t *init = v.m_symbolic_value;
+            if (is_pointer_initializer(v)) return true;
             if (ASR::is_a<ASR::Cast_t>(*init)) {
                 init = ASR::down_cast<ASR::Cast_t>(init)->m_arg;
             }
@@ -226,17 +227,32 @@ class GlobalInitVisitor {
             return vars;
         }
 
+        // `p => tgt` in a declaration: an association rather than a value,
+        // which is why no target can lay it out as static data. `=> null()`
+        // is a value and is deliberately not one of these.
+        static bool is_pointer_initializer(const ASR::Variable_t &v) {
+            return ASRUtils::is_pointer(v.m_type)
+                && ASRUtils::is_pointer_association_initializer(
+                    v.m_symbolic_value);
+        }
+
         // Take the declaration initializer off `v` and return it as the
-        // assignment that replaces it.
+        // statement that replaces it.
         ASR::stmt_t* take_initializer(ASR::Variable_t *v) {
+            const Location &loc = v->base.base.loc;
             ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(
-                al, v->base.base.loc, &v->base));
-            ASR::stmt_t *assign = ASRUtils::STMT(
-                ASRUtils::make_Assignment_t_util(al, v->base.base.loc,
-                    target, v->m_symbolic_value, nullptr, false, false));
+                al, loc, &v->base));
+            ASR::stmt_t *stmt;
+            if (is_pointer_initializer(*v)) {
+                stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, loc, target, v->m_symbolic_value));
+            } else {
+                stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, target, v->m_symbolic_value, nullptr, false, false));
+            }
             v->m_symbolic_value = nullptr;
             v->m_value = nullptr;
-            return assign;
+            return stmt;
         }
 
         // Move every declaration initializer of `owner`'s scope that needs
