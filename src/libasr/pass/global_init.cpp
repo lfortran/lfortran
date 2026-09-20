@@ -462,28 +462,6 @@ class GlobalInitWireVisitor {
             std::vector<std::string> module_order =
                 ASRUtils::determine_module_dependencies(unit);
 
-            // A module initializer runs the initializers of the modules it
-            // uses first. They are idempotent, so this is what orders them,
-            // not the link order or the constructor priority of a target.
-            for (auto &name : module_order) {
-                ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
-                if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
-                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
-                ASR::Function_t *fn = global_init_of(sym);
-                if (fn == nullptr) continue;
-                std::vector<ASR::stmt_t*> calls;
-                for (size_t i = 0; i < m->n_dependencies; i++) {
-                    ASR::symbol_t *dep = unit.m_symtab->get_symbol(
-                        m->m_dependencies[i]);
-                    if (dep == nullptr || !ASR::is_a<ASR::Module_t>(*dep)) continue;
-                    ASR::Function_t *dep_fn = global_init_of(dep);
-                    if (dep_fn == nullptr || dep_fn == fn) continue;
-                    calls.push_back(call_of(fn->m_symtab, dep_fn,
-                        fn->base.base.loc));
-                }
-                ASRUtils::global_init_prepend_stmts(al, fn, calls);
-            }
-
             for (auto &item : unit.m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Program_t>(*item.second)) continue;
                 wire_program(ASR::down_cast<ASR::Program_t>(item.second),

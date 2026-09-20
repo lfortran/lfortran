@@ -19,13 +19,15 @@ namespace LCompilers {
     //
     //     if (.not. already_run) then
     //         already_run = .true.
-    //         <dependency initializer calls>
     //         <initialization statements>
     //     end if
     //
-    // so an initializer stays correct however many times it is called, which
-    // is what lets a module initializer call the initializers of the modules
-    // it uses instead of relying on link order or constructor priority.
+    // so an initializer stays correct however many times it is called. The
+    // program calls each of them once, in `determine_module_dependencies`
+    // order, so neither link order nor a target's constructor priority can
+    // change when they run; the guard is what keeps the translation unit's
+    // own initializer correct, which a target startup hook calls with no
+    // ordering at all.
 
     namespace ASRUtils {
 
@@ -57,10 +59,10 @@ namespace LCompilers {
     void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
                           const PassOptions &pass_options);
 
-    // Connect the initializers: a module's calls its dependencies', and a
-    // program's calls every module's and then runs before the program's first
-    // statement. It is a pass of its own because it has to run after every
-    // pass that can create an initializer, `coarray` among them.
+    // Connect the initializers: a program's calls every module initializer it
+    // can observe, in dependency order, and then runs before the program's
+    // first statement. It is a pass of its own because it has to run after
+    // every pass that can create an initializer, `coarray` among them.
     void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
                                const PassOptions &pass_options);
 
