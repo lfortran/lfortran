@@ -1,6 +1,6 @@
 module template_03_m
 
-    requirement op(T, U, V, op)
+    requirement op {T, U, V, op}
       deferred type :: T
       deferred type :: U
       deferred type :: V
@@ -15,8 +15,8 @@ module template_03_m
     
     template axpy_tmpl(T, U, V, W, plus, times)
       public :: axpy
-      require :: op(V, W, V, plus)
-      require :: op(T, U, W, times)
+      require :: op {V, W, V, plus}
+      require :: op {T, U, W, times}
     contains
       subroutine axpy(a, x, y)
         type(T), intent(in) :: a

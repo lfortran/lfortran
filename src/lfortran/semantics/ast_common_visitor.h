@@ -8667,7 +8667,10 @@ public:
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
                         AST::FuncCallOrArray_t* func_call =
                             AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
-                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(func_call->m_func);
+                        // Fortran is case insensitive and symbols are stored
+                        // lowercased, so the name must be lowered before lookup
+                        ASR::symbol_t *sym_found = current_scope->resolve_symbol(
+                            to_lower(func_call->m_func));
                         if (sym_found == nullptr) {
                             visit_FuncCallOrArray(*func_call);
                             init_expr = ASRUtils::EXPR(tmp);
@@ -8859,8 +8862,12 @@ public:
                                 } else {
                                     is_correct_type_implieddoloop = false;
                             }
+                            // Fortran is case insensitive, so the structure
+                            // constructor name must be compared to the type
+                            // name without regard to case
                             if ((!is_correct_type_func && !is_correct_type_implieddoloop && !is_correct_type_name) ||
-                                (func_call != nullptr && strcmp(func_call->m_func, sym_type->m_name) != 0)) {
+                                (func_call != nullptr &&
+                                 to_lower(func_call->m_func) != to_lower(sym_type->m_name))) {
                                 diag.add(Diagnostic(
                                     "Array members must me of the same type as the struct",
                                     Level::Error, Stage::Semantic, {
@@ -11840,15 +11847,62 @@ public:
         }
     }
 
+    // Reports that a derived type constructor was given more positional
+    // arguments than the type has components and type parameters. `loc` is
+    // the first argument the type has no place for, when it is known, and the
+    // whole constructor otherwise. This never returns.
+    void error_too_many_constructor_args(diag::Diagnostics& diag,
+            const Location& loc) {
+        diag.semantic_error_label("too many arguments in derived type constructor",
+            {loc}, "more positional arguments than components and type parameters");
+        throw SemanticAbort();
+    }
+
+    // The span a "too many arguments" diagnostic points at: the first argument
+    // in `args` the type has no place for, or `constructor_loc` when that
+    // argument is not in the list or is not a plain expression.
+    const Location& extra_argument_loc(AST::fnarg_t* args, size_t n_args,
+            size_t first_extra, const Location& constructor_loc) {
+        if (first_extra >= n_args) {
+            return constructor_loc;
+        }
+        if (args[first_extra].m_end == nullptr) {
+            return args[first_extra].loc;
+        }
+        return args[first_extra].m_end->base.loc;
+    }
+
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
         StructConstructorInfo info = get_struct_constructor_info(v);
         bool is_pdt = !info.kind_indices.empty();
+        // A parameterized derived type constructor with a separate component
+        // list: `t(kind arguments)(component arguments)`.
+        const bool has_component_list = is_pdt && x.n_subargs > 0;
         Vec<ASR::call_arg_t> vals;
         // Whether each argument in `vals` is a reference to `null()`.
         std::vector<NullReference> null_args;
-        if (is_pdt && x.n_subargs > 0) {
+        // The argument counts are checked before the arguments are visited:
+        // an argument that matches no component has no component to give a
+        // `null()` argument its type, so visiting it first would report a
+        // missing `null()` context instead of the extra argument.
+        if (has_component_list) {
+            size_t n_components = info.members.size() - info.kind_indices.size();
+            bool too_many_kinds = x.n_args > info.kind_indices.size();
+            if (too_many_kinds || x.n_subargs > n_components) {
+                const Location& arg_loc = too_many_kinds
+                    ? extra_argument_loc(x.m_args, x.n_args, info.kind_indices.size(), loc)
+                    : extra_argument_loc(x.m_subargs, x.n_subargs, n_components, loc);
+                diag.semantic_error_label("too many arguments in parameterized derived type constructor",
+                    {arg_loc}, "type parameters and components must be specified in their respective argument lists");
+                throw SemanticAbort();
+            }
+        } else if (x.n_args > info.members.size()) {
+            error_too_many_constructor_args(diag,
+                extra_argument_loc(x.m_args, x.n_args, info.members.size(), loc));
+        }
+        if (has_component_list) {
             std::vector<ASR::symbol_t*> kind_members;
             for (size_t index : info.kind_indices) {
                 kind_members.push_back(info.members[index]);
@@ -11857,13 +11911,7 @@ public:
         } else {
             visit_struct_constructor_args(x.m_args, x.n_args, info.members, vals, null_args);
         }
-        if (is_pdt && x.n_subargs > 0) {
-            if (vals.size() > info.kind_indices.size()
-                    || x.n_subargs > info.members.size() - info.kind_indices.size()) {
-                diag.semantic_error_label("too many arguments in parameterized derived type constructor",
-                    {loc}, "type parameters and components must be specified in their respective argument lists");
-                throw SemanticAbort();
-            }
+        if (has_component_list) {
             std::vector<ASR::symbol_t*> component_members;
             for (size_t i = 0; i < info.members.size(); i++) {
                 if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
@@ -13283,8 +13331,10 @@ public:
                 AST::FuncCallOrArray_t* func_call =
                     AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
                 if (func_call->m_func != nullptr) {
+                    // Fortran is case insensitive and symbols are stored
+                    // lowercased, so the name must be lowered before lookup
                     ASR::symbol_t* sym_found =
-                        current_scope->resolve_symbol(func_call->m_func);
+                        current_scope->resolve_symbol(to_lower(func_call->m_func));
                     if (sym_found != nullptr && ASR::is_a<ASR::Struct_t>(
                             *ASRUtils::symbol_get_past_external(sym_found))) {
                         expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
@@ -23228,9 +23278,7 @@ public:
             constructor_args.push_back(ASRUtils::symbol_name(member));
         }
         if (args.size() > constructor_args.size()) {
-            diag.semantic_error_label("too many arguments in derived type constructor",
-                {loc}, "more positional arguments than components and type parameters");
-            throw SemanticAbort();
+            error_too_many_constructor_args(diag, loc);
         }
 
         int n_ = (int) constructor_args.size() - (int) args.size();

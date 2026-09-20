@@ -3,7 +3,7 @@ module template_error_05_m
     private
     public :: add_t
 
-    requirement R(T, F) 
+    requirement R {T, F} 
         deferred type :: T
         function F(x, y) result(z)
             type(T), intent(in) :: x, y
@@ -12,7 +12,7 @@ module template_error_05_m
     end requirement
 
     template add_t(T, F)
-        require :: R(T, F)
+        require :: R {T, F}
         private
         public :: add_generic
     contains

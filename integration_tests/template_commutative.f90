@@ -2,7 +2,7 @@ module template_commutative_m
     implicit none
     public
 
-    requirement magma_r(T, bin, equal)
+    requirement magma_r {T, bin, equal}
         deferred type :: T
         pure elemental function bin(x, y) result(bin)
             type(T), intent(in) :: x
@@ -18,7 +18,7 @@ module template_commutative_m
     end requirement
 
     template commutative_prop(T, bin, equal)
-        require :: magma_r(T, bin, equal)
+        require :: magma_r {T, bin, equal}
       contains
         pure function commutative_p(x, y) result(prop)
             interface operator(==)
@@ -32,7 +32,7 @@ module template_commutative_m
     end template
 
     template alt_commutative_prop(bin, equal)
-        require :: magma_r(integer, bin, equal)
+        require :: magma_r {integer, bin, equal}
       contains
         pure function commutative_p(x, y) result(prop)
             interface operator(==)
