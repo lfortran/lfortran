@@ -2909,6 +2909,19 @@ ast_t* TEMPLATE2(Allocator &al, const Location &l, char* a_name,
         /*contains*/ a_contains, /*n_contains*/ n_contains);
 }
 
+// R1626 `instantiate :: local-name => templated-subp-name {args}`. A templated
+// subprogram is held in an implicit template of the same name, so instantiating
+// it under a local name is the same as instantiating that template while
+// renaming its single subprogram, i.e. `{args}, only: local-name => name`.
+ast_t* INSTANTIATE_SUBP2(Allocator &al, const Location &l, char* a_name,
+        char* a_local_name, decl_attribute_t** a_args, size_t n_args) {
+    Vec<ast_t*> syms;
+    syms.reserve(al, 1);
+    syms.push_back(al, make_UseSymbol_t(al, l, a_name, a_local_name));
+    return make_Instantiate_t(al, l, a_name, a_args, n_args,
+        VEC_CAST(syms, use_symbol), syms.size());
+}
+
 ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_namelist, size_t n_namelist, Vec<ast_t*> decl_stmts,
         program_unit_t** a_funcs, size_t n_funcs,
@@ -2941,6 +2954,9 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         make_Instantiate_t(p.m_a, l, name2char(name), \
         VEC_CAST(args, decl_attribute), args.size(), \
         USE_SYMBOLS(syms), syms.size())
+#define INSTANTIATE_SUBP(name, local_name, args, l) \
+        INSTANTIATE_SUBP2(p.m_a, l, name2char(name), name2char(local_name), \
+        VEC_CAST(args, decl_attribute), args.size())
 
 #define DERIVED_TYPE_PROC(attr, syms, trivia, l) make_DerivedTypeProc_t(p.m_a, l, \
         nullptr, VEC_CAST(attr, decl_attribute), attr.size(), \

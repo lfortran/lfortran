@@ -27,6 +27,18 @@ module continue_compilation_templates_01_mod
         end interface
     end requirement
 
+    ! A recoverable error inside a template body. The symbol table visitor adds
+    ! the Template symbol only after the whole template is built, so letting the
+    ! abort escape left the module without it and the body visitor then looked
+    ! it up and asserted. Two errors, to show the template keeps being processed
+    ! past the first one.
+    template redecl_tmpl(T)
+        deferred type :: T
+        integer :: n
+        real :: n
+        integer :: bad = "abc"
+    end template
+
 end module continue_compilation_templates_01_mod
 
 program continue_compilation_templates_01
