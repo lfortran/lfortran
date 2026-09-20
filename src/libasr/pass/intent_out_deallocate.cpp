@@ -49,7 +49,29 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
                     m.second);
-                if (m_var->m_symbolic_value == nullptr) continue;
+                if (m_var->m_symbolic_value == nullptr) {
+                    // A component of a derived type carries its own type's
+                    // default initialization even when the component itself
+                    // has no default. `StructType_t` here is neither
+                    // allocatable, pointer nor array: those wrap the type.
+                    if (ASR::is_a<ASR::StructType_t>(*m_var->m_type) &&
+                            !ASRUtils::is_class_type(m_var->m_type) &&
+                            m_var->m_type_declaration != nullptr) {
+                        ASR::symbol_t* m_decl_sym =
+                            ASRUtils::symbol_get_past_external(
+                                m_var->m_type_declaration);
+                        if (ASR::is_a<ASR::Struct_t>(*m_decl_sym)) {
+                            ASR::expr_t* nested_expr = ASRUtils::EXPR(
+                                ASRUtils::getStructInstanceMember_t(al, loc,
+                                    (ASR::asr_t*)struct_expr, m.second,
+                                    m.second, current_scope));
+                            emit_struct_default_init_stmts(nested_expr,
+                                ASR::down_cast<ASR::Struct_t>(m_decl_sym),
+                                current_scope, loc, out_stmts);
+                        }
+                    }
+                    continue;
+                }
                 if (ASRUtils::is_allocatable(m_var->m_type)) continue;
 
                 ASR::expr_t* member_expr = ASRUtils::EXPR(
@@ -159,13 +181,14 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
     }
     
-    void emit_array_of_struct_cleanup_stmts(
+    void emit_array_of_struct_entry_stmts(
             ASR::expr_t* arr_expr,
             ASR::Struct_t* struct_type,
             int n_dims,
             SymbolTable* current_scope,
             const Location& loc,
             ASR::ttype_t* logical_type,
+            bool emit_default_init,
             Vec<ASR::stmt_t*>& out_stmts) {
         Vec<ASR::expr_t*> idx_vars;
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, current_scope,
@@ -178,6 +201,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         innermost_body.reserve(al, 1);
         emit_struct_cleanup_stmts(arr_ref, struct_type, current_scope,
             loc, logical_type, innermost_body);
+        if (emit_default_init) {
+            emit_struct_default_init_stmts(arr_ref, struct_type,
+                current_scope, loc, innermost_body);
+        }
 
         if (innermost_body.size() == 0) return;
 
@@ -439,10 +466,25 @@ public:
                 ASR::expr_t* var_expr_full = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, arg_sym));
 
+                // Fortran 2018 8.5.10: an `intent(out)` dummy of a type with
+                // default initialization is default-initialized on entry.
+                // C868 forbids such a type for an assumed-size dummy, whose
+                // last extent is not known here anyway, so that form is left
+                // alone. The dynamic type of a polymorphic dummy decides its
+                // initialization, which this pass cannot see, so it is left
+                // alone as well.
+                bool is_assumed_size = ASRUtils::extract_physical_type(
+                    arg_var->m_type) ==
+                        ASR::array_physical_typeType::UnboundedPointerArray;
+                bool emit_default_init = !is_assumed_size &&
+                    !ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_array(arg_var->m_type));
+
                 Vec<ASR::stmt_t*> cleanup;
                 cleanup.reserve(al, 1);
-                emit_array_of_struct_cleanup_stmts(var_expr_full, struct_type,
-                    n_dims, xx.m_symtab, loc, logical_type, cleanup);
+                emit_array_of_struct_entry_stmts(var_expr_full, struct_type,
+                    n_dims, xx.m_symtab, loc, logical_type, emit_default_init,
+                    cleanup);
 
                 if (cleanup.size() > 0) {
                     ASR::stmt_t* wrapper_block = nullptr;
