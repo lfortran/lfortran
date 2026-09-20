@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.call.subroutine_returns_nothing]: SubroutineCall::m_name 'helper' returns a value, so it cannot be called as a subroutine
-   --> tests/asr/verify/call_statement_names_a_function.asr:166:12
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/call_statement_names_a_function.asr:1:1 - 184:1
     |
-166 |           (SubroutineCall
-    |            ^^^^^^^^^^^^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+184 |    )
+    | ...^ invalid ASR text here

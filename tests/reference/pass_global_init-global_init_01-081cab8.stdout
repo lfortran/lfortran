@@ -1,0 +1,1284 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            global_init_01:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            1_leaf_h:
+                                (ExternalSymbol
+                                    6
+                                    1_leaf_h
+                                    3 h
+                                    global_init_01_a
+                                    [leaf]
+                                    h
+                                    Public
+                                ),
+                            1_leaf_tag:
+                                (ExternalSymbol
+                                    6
+                                    1_leaf_tag
+                                    3 tag
+                                    global_init_01_a
+                                    [leaf]
+                                    tag
+                                    Public
+                                ),
+                            __lfortran_global_init_global_init_01:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    9
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __lfortran_global_init_global_init_01
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (Var 9 __lfortran_global_init_done)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 9 __lfortran_global_init_done)
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 6 p_arr)
+                                            (ArrayBroadcast
+                                                (StructConstant
+                                                    6 leaf
+                                                    [((IntegerConstant 13 (Integer 4) Decimal))
+                                                    ((StringConstant
+                                                        "ppp"
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ))]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                (ArrayConstant
+                                                    4
+                                                    [2]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            __lfortran_global_init_global_init_01_a:
+                                (ExternalSymbol
+                                    6
+                                    __lfortran_global_init_global_init_01_a
+                                    2 __lfortran_global_init_global_init_01_a
+                                    global_init_01_a
+                                    []
+                                    __lfortran_global_init_global_init_01_a
+                                    Private
+                                ),
+                            __lfortran_global_init_global_init_01_b:
+                                (ExternalSymbol
+                                    6
+                                    __lfortran_global_init_global_init_01_b
+                                    4 __lfortran_global_init_global_init_01_b
+                                    global_init_01_b
+                                    []
+                                    __lfortran_global_init_global_init_01_b
+                                    Private
+                                ),
+                            a_arr:
+                                (ExternalSymbol
+                                    6
+                                    a_arr
+                                    2 a_arr
+                                    global_init_01_a
+                                    []
+                                    a_arr
+                                    Public
+                                ),
+                            b_arr:
+                                (ExternalSymbol
+                                    6
+                                    b_arr
+                                    4 b_arr
+                                    global_init_01_b
+                                    []
+                                    b_arr
+                                    Public
+                                ),
+                            check_a:
+                                (ExternalSymbol
+                                    6
+                                    check_a
+                                    4 check_a
+                                    global_init_01_b
+                                    []
+                                    check_a
+                                    Public
+                                ),
+                            i:
+                                (Variable
+                                    6
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            leaf:
+                                (ExternalSymbol
+                                    6
+                                    leaf
+                                    2 leaf
+                                    global_init_01_a
+                                    []
+                                    leaf
+                                    Public
+                                ),
+                            p_arr:
+                                (Variable
+                                    6
+                                    p_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    6 leaf
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                )
+                        })
+                    global_init_01
+                    [global_init_01_b
+                    global_init_01_a]
+                    [(SubroutineCall
+                        6 __lfortran_global_init_global_init_01_a
+                        6 __lfortran_global_init_global_init_01_a
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        6 __lfortran_global_init_global_init_01_b
+                        6 __lfortran_global_init_global_init_01_b
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        6 __lfortran_global_init_global_init_01
+                        6 __lfortran_global_init_global_init_01
+                        []
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        6 check_a
+                        ()
+                        []
+                        ()
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 6 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ())
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 b_arr)
+                                        [(()
+                                        (Var 6 i)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_leaf_h
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 11 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                            )]
+                            []
+                        )
+                        (If
+                            ()
+                            (StringCompare
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 b_arr)
+                                        [(()
+                                        (Var 6 i)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_leaf_tag
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                )
+                                NotEq
+                                (StringConstant
+                                    "bbb"
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 6 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ())
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 p_arr)
+                                        [(()
+                                        (Var 6 i)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_leaf_h
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 13 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                            )]
+                            []
+                        )
+                        (If
+                            ()
+                            (StringCompare
+                                (StructInstanceMember
+                                    (ArrayItem
+                                        (Var 6 p_arr)
+                                        [(()
+                                        (Var 6 i)
+                                        ())]
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        ColMajor
+                                        ()
+                                    )
+                                    6 1_leaf_tag
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                )
+                                NotEq
+                                (StringConstant
+                                    "ppp"
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (IntegerConstant 6 (Integer 4) Decimal)
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 6 a_arr)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Integer 4)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                            )
+                            6 1_leaf_h
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 99 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 6 a_arr)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Integer 4)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                            )
+                            6 1_leaf_tag
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            ()
+                        )
+                        (StringConstant
+                            "zzz"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 6 a_arr)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                6 1_leaf_h
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (StringCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 6 a_arr)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                6 1_leaf_tag
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                            )
+                            NotEq
+                            (StringConstant
+                                "aaa"
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 6 b_arr)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Integer 4)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                            )
+                            6 1_leaf_h
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 98 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (Var 6 b_arr)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                6 1_leaf_h
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 11 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 9 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    __lfortran_global_init_global_init_01
+                ),
+            global_init_01_a:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            __lfortran_global_init_global_init_01_a:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    7
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    __lfortran_global_init_global_init_01_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (Var 7 __lfortran_global_init_done)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 7 __lfortran_global_init_done)
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 2 a_arr)
+                                            (ArrayBroadcast
+                                                (StructConstant
+                                                    2 leaf
+                                                    [((IntegerConstant 7 (Integer 4) Decimal))
+                                                    ((StringConstant
+                                                        "aaa"
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ))]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                (ArrayConstant
+                                                    4
+                                                    [3]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            a_arr:
+                                (Variable
+                                    2
+                                    a_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    2 leaf
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            leaf:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            h:
+                                                (Variable
+                                                    3
+                                                    h
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Save
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            tag:
+                                                (Variable
+                                                    3
+                                                    tag
+                                                    []
+                                                    Local
+                                                    (StringConstant
+                                                        "bad"
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    (StringConstant
+                                                        "bad"
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    )
+                                                    Save
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    leaf
+                                    (StructType
+                                        [(Integer 4)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [h
+                                    tag]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                )
+                        })
+                    global_init_01_a
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    __lfortran_global_init_global_init_01_a
+                ),
+            global_init_01_b:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            __lfortran_global_init_global_init_01_b:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            __lfortran_global_init_done:
+                                                (Variable
+                                                    8
+                                                    __lfortran_global_init_done
+                                                    []
+                                                    Local
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    (LogicalConstant
+                                                        .false.
+                                                        (Logical 4)
+                                                    )
+                                                    Save
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                ),
+                                            __lfortran_global_init_global_init_01_a:
+                                                (ExternalSymbol
+                                                    8
+                                                    __lfortran_global_init_global_init_01_a
+                                                    2 __lfortran_global_init_global_init_01_a
+                                                    global_init_01_a
+                                                    []
+                                                    __lfortran_global_init_global_init_01_a
+                                                    Private
+                                                )
+                                        })
+                                    __lfortran_global_init_global_init_01_b
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (LogicalNot
+                                            (Var 8 __lfortran_global_init_done)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 8 __lfortran_global_init_done)
+                                            (LogicalConstant
+                                                .true.
+                                                (Logical 4)
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )
+                                        (SubroutineCall
+                                            8 __lfortran_global_init_global_init_01_a
+                                            8 __lfortran_global_init_global_init_01_a
+                                            []
+                                            ()
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 4 b_arr)
+                                            (ArrayBroadcast
+                                                (StructConstant
+                                                    4 leaf
+                                                    [((IntegerConstant 11 (Integer 4) Decimal))
+                                                    ((StringConstant
+                                                        "bbb"
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ))]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )
+                                                (ArrayConstant
+                                                    4
+                                                    [2]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            a_arr:
+                                (ExternalSymbol
+                                    4
+                                    a_arr
+                                    2 a_arr
+                                    global_init_01_a
+                                    []
+                                    a_arr
+                                    Public
+                                ),
+                            b_arr:
+                                (Variable
+                                    4
+                                    b_arr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    4 leaf
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                ),
+                            check_a:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_leaf_h:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_leaf_h
+                                                    3 h
+                                                    global_init_01_a
+                                                    [leaf]
+                                                    h
+                                                    Public
+                                                ),
+                                            1_leaf_tag:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_leaf_tag
+                                                    3 tag
+                                                    global_init_01_a
+                                                    [leaf]
+                                                    tag
+                                                    Public
+                                                ),
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                )
+                                        })
+                                    check_a
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(DoLoop
+                                        ()
+                                        ((Var 5 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        ())
+                                        [(If
+                                            ()
+                                            (IntegerCompare
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 4 a_arr)
+                                                        [(()
+                                                        (Var 5 i)
+                                                        ())]
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    5 1_leaf_h
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                NotEq
+                                                (IntegerConstant 7 (Integer 4) Decimal)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                            )]
+                                            []
+                                        )
+                                        (If
+                                            ()
+                                            (StringCompare
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 4 a_arr)
+                                                        [(()
+                                                        (Var 5 i)
+                                                        ())]
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                    )
+                                                    5 1_leaf_tag
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                )
+                                                NotEq
+                                                (StringConstant
+                                                    "aaa"
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                            )]
+                                            []
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            leaf:
+                                (ExternalSymbol
+                                    4
+                                    leaf
+                                    2 leaf
+                                    global_init_01_a
+                                    []
+                                    leaf
+                                    Public
+                                )
+                        })
+                    global_init_01_b
+                    ()
+                    [global_init_01_a]
+                    .false.
+                    .false.
+                    .false.
+                    __lfortran_global_init_global_init_01_b
+                )
+        })
+    []
+    ()
+)

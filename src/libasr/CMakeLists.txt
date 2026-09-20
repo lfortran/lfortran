@@ -50,6 +50,7 @@ set(SRC
     pass/global_stmts.cpp
     pass/select_case.cpp
     pass/init_expr.cpp
+    pass/global_init.cpp
     pass/implied_do_loops.cpp
     pass/array_op.cpp
     pass/subroutine_from_function.cpp

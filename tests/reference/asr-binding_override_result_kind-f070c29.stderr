@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.binding_override.result_kind_matches]: Type bound procedure 'meth' overriding 'base_meth' must be a subroutine
-   --> tests/asr/verify/binding_override_result_kind.asr:113:27
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/binding_override_result_kind.asr:1:1 - 275:1
     |
-113 |                   "meth" (StructMethodDeclaration
-    |                           ^^^^^^^^^^^^^^^^^^^^^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+275 |    )
+    | ...^ invalid ASR text here

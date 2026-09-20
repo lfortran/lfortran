@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.call.actual_pointer_matches_formal]: Actual argument type i32 is not a pointer, but the dummy is Pointer[i32]
-   --> tests/asr/verify/call_pointer_mismatch.asr:112:18
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/call_pointer_mismatch.asr:1:1 - 125:1
     |
-112 |                 (Var
-    |                  ^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+125 |    )
+    | ...^ invalid ASR text here

@@ -6177,3 +6177,7 @@ run = true
 [[test]]
 filename = "errors/realloc_lhs_fn_result_02.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/global_init_01.f90"
+pass = "global_init"

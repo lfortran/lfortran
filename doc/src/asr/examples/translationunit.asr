@@ -51,6 +51,7 @@
         :loaded_from_mod false
         :intrinsic false
         :has_submodules false
+        :global_init nil
       )
       "main" (Program
         :symtab (SymbolTable
@@ -109,8 +110,10 @@
             :move_allocation false
           )
         ]
+        :global_init nil
       )
     }
   )
   :items []
+  :global_init nil
 )

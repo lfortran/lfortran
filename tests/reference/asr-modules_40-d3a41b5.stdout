@@ -17,6 +17,7 @@
                             (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
+                    ()
                 ),
             modules_40_tomlf_de_tokenizer:
                 (Module
@@ -499,7 +500,9 @@
                     .false.
                     .false.
                     .false.
+                    ()
                 )
         })
     []
+    ()
 )

@@ -1,5 +1,9 @@
-ASR verify pass error [asr.verify.namelist.member_is_variable]: Namelist 'nml' member 'helper' must be a variable, not Function
-   --> tests/asr/verify/namelist_member_is_function.asr:111:20
+ASR syntax error: 'TranslationUnit' expects 3 positional fields or exactly 3 named fields
+   --> tests/asr/verify/namelist_member_is_function.asr:1:1 - 127:1
     |
-111 |             "nml" (Namelist
-    |                    ^^^^^^^^ failed here
+  1 |    (TranslationUnit
+    |    ^^^^^^^^^^^^^^^^...
+...
+    |
+127 |    )
+    | ...^ invalid ASR text here
