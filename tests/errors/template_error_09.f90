@@ -2,7 +2,7 @@ module std_prop_m
     implicit none
     public
 
-    requirement magma_r(T, bin)
+    requirement magma_r {T, bin}
         deferred type :: T
         pure elemental function bin(x, y) result(bin)
             type(T), intent(in) :: x
@@ -12,7 +12,7 @@ module std_prop_m
     end requirement
 
     template commutative_prop(T,bin)
-        require :: magma_r(T,bin)
+        require :: magma_r {T,bin}
       contains
         pure function commutative_p(x, y) result(prop)
             type(T), intent(in) :: x, y

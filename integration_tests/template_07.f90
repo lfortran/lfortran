@@ -26,7 +26,11 @@ module template_apply_m_template_07
     private
     public :: apply_t
 
-    requirement op_r(T, U, V, op_func)
+    ! R1633: the deferred-arg-name-list of a REQUIREMENT is optional
+    requirement no_args_r {}
+    end requirement
+
+    requirement op_r {T, U, V, op_func}
         deferred type :: T
         deferred type :: U
         deferred type :: V
@@ -38,7 +42,9 @@ module template_apply_m_template_07
     end requirement
 
     template apply_t(T, lt)
-        require :: op_r(T, T, logical, lt)
+        ! R1636: the :: is optional and the instantiation-arg-spec-list may be empty
+        require no_args_r {}
+        require op_r {T, T, logical, lt}
         private
         public :: apply_lt
     contains

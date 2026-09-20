@@ -1,0 +1,17 @@
+syntax error: Token '(' is unexpected here
+  --> tests/errors/requirement_syntax_1.f90:21:21
+   |
+21 |         require :: r(u)  ! {Error} Token '(' is unexpected here
+   |                     ^ 
+
+syntax error: Token '(' is unexpected here
+  --> tests/errors/requirement_syntax_1.f90:26:24
+   |
+26 |     requirement r_paren(t)  ! {Error} Token '(' is unexpected here
+   |                        ^ 
+
+syntax error: Token 'requirement' is unexpected here
+  --> tests/errors/requirement_syntax_1.f90:28:9
+   |
+28 |     end requirement  ! {Error} Token 'requirement' is unexpected here
+   |         ^^^^^^^^^^^ 

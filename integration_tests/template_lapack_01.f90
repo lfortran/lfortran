@@ -3,7 +3,7 @@ module template_lapack_01_m
     private
     public :: test_template
 
-    requirement gemm_r(T, gemm)
+    requirement gemm_r {T, gemm}
         deferred type :: T
         subroutine gemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
             character, intent(in) :: transa, transb
@@ -13,7 +13,7 @@ module template_lapack_01_m
         end subroutine
     end requirement
 
-    requirement cast_r(T, U, cast)
+    requirement cast_r {T, U, cast}
         deferred type :: T
         deferred type :: U
         pure elemental function cast(arg) result(res)
@@ -23,8 +23,8 @@ module template_lapack_01_m
     end requirement
 
     template external_matmul_t(T, gemm, cast_to_T)
-        require :: gemm_r(T, gemm)
-        require :: cast_r(real, T, cast_to_T)
+        require :: gemm_r {T, gemm}
+        require :: cast_r {real, T, cast_to_T}
         private
     contains
         function nonsimple_external_matmul(a,b) result(c)
@@ -79,8 +79,8 @@ contains
     end function
 
     function simple_external_matmul {T, gemm, cast_to_T} (a, b) result(c)
-        require :: gemm_r(T, gemm)
-        require :: cast_r(real, T, cast_to_T)
+        require :: gemm_r {T, gemm}
+        require :: cast_r {real, T, cast_to_T}
         type(T), intent(in) :: a(:,:), b(:,:)
         type(T) :: c(size(a,1), size(b,2))
         integer :: m, n, k

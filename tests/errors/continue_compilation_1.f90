@@ -1660,6 +1660,22 @@ subroutine null_initializer_nonpointer_component()
     end type
 end subroutine
 
+subroutine derived_type_constructor_too_many_null_args()
+    implicit none
+    type :: plain_t
+        integer :: value
+    end type
+    type :: parameterized_t(k)
+        integer, kind :: k
+        integer :: value
+    end type
+    type(plain_t) :: pv = plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+    print *, plain_t(1, null())  ! {Error} too many arguments in derived type constructor
+    print *, parameterized_t(4, 1, null())  ! {Error} too many arguments in derived type constructor
+    print *, parameterized_t(4, null())(1)  ! {Error} too many arguments in parameterized derived type constructor
+    print *, parameterized_t(4)(1, null())  ! {Error} too many arguments in parameterized derived type constructor
+end subroutine
+
 subroutine parent_component_keyword_conflicts()
     implicit none
     type :: pck_base_t
