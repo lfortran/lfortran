@@ -460,6 +460,16 @@ jobs:
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh
 
+      # Only where the build above left runtime stacktraces off. Caffeine
+      # links with -g, and with -DWITH_RUNTIME_STACKTRACE=yes that sends
+      # every link through dwarf_convert.py, which fails without
+      # llvm-dwarfdump. Those are the same entries that run the other
+      # third-party tests, for the same reason.
+      - name: Test coarray runtime with Caffeine
+        shell: bash -e -l {0}
+        if: ${{ matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos') }}
+        run: ci/test_caffeine.sh
+
   test_llvm_wasm:
     name: Test LLVM 19 WASM (ubuntu-latest)
     runs-on: ubuntu-latest
