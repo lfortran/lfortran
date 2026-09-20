@@ -2089,3 +2089,12 @@ subroutine parameter_nonconstant_init()
     integer, parameter :: pnc_y2 = pnc_bla + 1  ! {Error} Initialization of `pnc_y2` must reduce to a compile time constant.
     print *, pnc_y1, pnc_y2
 end subroutine
+
+! The `target` argument of `associated` must be a pointer or target
+! variable or function, not an arbitrary expression.
+subroutine associated_target_not_variable_in_continue_compilation_1()
+    implicit none
+    integer, pointer :: a(:)
+    a => null()
+    if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+end subroutine
