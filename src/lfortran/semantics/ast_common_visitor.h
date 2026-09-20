@@ -23344,7 +23344,7 @@ public:
         this->visit_expr(*value);
         ASR::expr_t* parent_value = ASRUtils::EXPR(tmp);
         ASR::call_arg_t* parent_args = nullptr;
-        size_t n_args = 0;
+        [[maybe_unused]] size_t n_args = 0;
         ASR::symbol_t* value_sym = nullptr;
         if( ASR::is_a<ASR::StructConstructor_t>(*parent_value) ) {
             ASR::StructConstructor_t* constructor =
