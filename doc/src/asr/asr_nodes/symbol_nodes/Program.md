@@ -60,22 +60,39 @@ pass puts their initialization straight into a guarded block at the top of
 their own body, which is what the save attribute Fortran gives every
 initialized local means.
 
+Where an initializer lives is not a choice between two equally good forms. A
+declaration initializer a target *can* lay out as static data — an integer or
+character constant, `=> null()`, anything on a `parameter` — stays on the
+declaration and is never moved. Only the ones it cannot are moved, and moving
+one means taking it off the declaration: after the pass, a variable carries
+its initializer in exactly one of the two places, never in both. Both places
+being filled is the compiler contradicting itself about who initializes the
+variable, and a backend that then leaves the setup to an initializer it does
+not emit produces a program that reads uninitialized memory.
+
+The two forms do both occur before the pass runs: what semantics produces has
+every initializer on its declaration, which is the state `global_init`
+consumes. The rule above is that pass's postcondition, not something
+`asr_verify` can check on its own, since it cannot know
+which passes have already run.
+
 The body of an initializer is one guarded block, so calling it again does
 nothing:
 
 ```text
 if (.not. already_run) then
     already_run = .true.
-    <calls to the initializers of the modules this one uses>
     <the initialization statements>
 end if
 ```
 
-Ordering is therefore expressed in ASR, not left to a target: a module
-initializer calls the initializers of the modules it uses, and a program's own
-initializer calls every module initializer it can observe, in module
-dependency order, before the program's first statement — which is the single
-call the program body gains. Neither link order nor a constructor priority can
+Ordering is therefore expressed in ASR, not left to a target: a program's own
+initializer calls every module initializer it can observe, once each and in
+module dependency order, before the program's first statement — which is the
+single call the program body gains. That list is complete rather than a list
+of the program's direct dependencies: a module the program reaches only
+through another module is in it too, so no module initializer needs to call
+any other. Neither link order nor a constructor priority can
 change the order Fortran requires, and an initializer defined in another
 object file is called through an [ExternalSymbol](ExternalSymbol.md) like any
 other module procedure. A backend therefore needs no support at all for module
