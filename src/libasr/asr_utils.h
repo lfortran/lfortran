@@ -6901,6 +6901,18 @@ class SymbolDuplicator {
                 new_symbol_name = namelist->m_group_name;
                 break;
             }
+            case ASR::symbolType::Requirement: {
+                ASR::Requirement_t* requirement = ASR::down_cast<ASR::Requirement_t>(symbol);
+                new_symbol = duplicate_Requirement(requirement, destination_symtab);
+                new_symbol_name = requirement->m_name;
+                break;
+            }
+            case ASR::symbolType::Template: {
+                ASR::Template_t* template_sym = ASR::down_cast<ASR::Template_t>(symbol);
+                new_symbol = duplicate_Template(template_sym, destination_symtab);
+                new_symbol_name = template_sym->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -7167,6 +7179,34 @@ class SymbolDuplicator {
             module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
             module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
             module_t->m_has_submodules, module_t->m_start_name, module_t->m_end_name
+        ));
+    }
+
+    // A Requirement and a Template are a scope plus the deferred argument names
+    // and the requirements they pull in. The names and the require_instantiation
+    // nodes hold identifiers only, no symbols, so they are carried over as they
+    // are -- the same way duplicate_Module carries m_dependencies.
+    ASR::symbol_t* duplicate_Requirement(ASR::Requirement_t* requirement_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* requirement_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(requirement_t->m_symtab, requirement_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Requirement_t(
+            al, requirement_t->base.base.loc, requirement_symtab,
+            requirement_t->m_name, requirement_t->m_args, requirement_t->n_args,
+            requirement_t->m_requires, requirement_t->n_requires
+        ));
+    }
+
+    ASR::symbol_t* duplicate_Template(ASR::Template_t* template_t,
+        SymbolTable* destination_symtab) {
+        SymbolTable* template_symtab = al.make_new<SymbolTable>(destination_symtab);
+        duplicate_SymbolTable(template_t->m_symtab, template_symtab);
+
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_Template_t(
+            al, template_t->base.base.loc, template_symtab,
+            template_t->m_name, template_t->m_args, template_t->n_args,
+            template_t->m_requires, template_t->n_requires
         ));
     }
 
