@@ -32,8 +32,14 @@ namespace LCompilers {
         // Return the initializer `owner` names, creating it if `owner` has
         // none yet. `owner` is a `Module_t*`, a `Program_t*` or the
         // `TranslationUnit_t*`.
+        //
+        // `defined_elsewhere` names it without defining it, for a module this
+        // translation unit only uses: the object file the module was compiled
+        // into holds the one definition, and defining a second one here would
+        // clash with it at link time.
         ASR::Function_t* get_or_create_global_init(Allocator &al,
-            ASR::TranslationUnit_t &unit, ASR::asr_t *owner);
+            ASR::TranslationUnit_t &unit, ASR::asr_t *owner,
+            bool defined_elsewhere = false);
 
         // Append `stmt` inside the run-once guard of `fn`.
         void global_init_append_stmt(Allocator &al, ASR::Function_t *fn,
