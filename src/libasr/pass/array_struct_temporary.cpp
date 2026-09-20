@@ -652,14 +652,11 @@ bool set_allocation_size(
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
-                    ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        end, ASR::binopType::Sub, start, ASRUtils::expr_type(end), nullptr));
-                    ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        end_minus_start, ASR::binopType::Div, step, ASRUtils::expr_type(end_minus_start),
-                        nullptr));
-                    ASR::expr_t* length = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        by_step, ASR::binopType::Add, int_one, ASRUtils::expr_type(by_step), nullptr));
-                    allocate_dim.m_length = length;
+                    // The same expression the section's own type carries, so
+                    // that the temporary and the section agree on the extent.
+                    allocate_dim.m_length =
+                        ASRUtils::compute_length_from_start_end_step(
+                            al, start, end, step);
                     allocate_dims.push_back(al, allocate_dim);
                 }
             }
@@ -1747,7 +1744,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 cast->m_new, cast->m_type, nullptr));
         }
         x_m_args_vec.push_back(al, call_arg);
-        if( dummy == nullptr || dummy->m_intent != ASRUtils::intent_in ) {
+        // A `value` dummy is the callee's own copy, so nothing it does to the
+        // dummy reaches the actual argument.
+        if( dummy == nullptr || (dummy->m_intent != ASRUtils::intent_in &&
+                                 !dummy->m_value_attr) ) {
             body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                 al, designator->base.loc, designator, array_var_temporary,
                 nullptr, exprs_with_target)));
@@ -1769,10 +1769,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // through a contiguous buffer or through a descriptor built from
             // the component's own (unit stride) type. It is copied in, and
             // copied back out when the callee may define the dummy.
+            // Inside a WHERE the per-statement list belongs to the enclosing
+            // construct, so a copy-out would land after the whole WHERE
+            // instead of after the call.
             bool copy_in_copy_out = is_call && body_after_curr_stmt != nullptr &&
+                !inside_where &&
                 is_array_struct_member_designator(x_m_args[i].m_value) &&
-                !(dummy && (ASRUtils::is_pointer(dummy->m_type) ||
-                            dummy->m_target_attr));
+                !(dummy && ASRUtils::is_pointer(dummy->m_type));
             if( copy_in_copy_out ) {
                 copy_in_copy_out_argument(x_m_args_vec, x_m_args[i], dummy, name_hint);
                 continue;
@@ -1879,7 +1882,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target) &&
             ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) ) {
             xx.m_target = bind_struct_member_base_to_pointer(
-                xx.m_target, "_assignment_target_");
+                xx.m_target, "assignment_target");
         }
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {

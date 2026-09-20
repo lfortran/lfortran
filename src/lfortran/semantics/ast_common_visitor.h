@@ -23934,7 +23934,7 @@ public:
                         dim.loc = loc;
                         dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
                         // The section is strided, so its extent is
-                        // (end - start)/step + 1, not end - start + 1.
+                        // counted with the step, rather than end - start + 1.
                         dim.m_length = ASRUtils::compute_length_from_start_end_step(al,
                             array_section->m_args[idx].m_left,
                             array_section->m_args[idx].m_right,
