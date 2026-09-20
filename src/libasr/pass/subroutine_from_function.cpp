@@ -674,9 +674,11 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         // The variable `sym` ultimately designates.  An array section actual
         // argument reaches this pass as a pointer temporary associated with
         // the section, so without this the aliasing is no longer visible.
-        // The map is kept already resolved (see record_pointer_association),
-        // so one lookup is enough and no chain can be walked or cycle formed.
-        ASR::symbol_t* resolve_pointer_base(ASR::symbol_t *sym) {
+        // One probe, never a walk: record_pointer_association resolves before
+        // it stores.  The map is not transitively closed for all that — a
+        // symbol that was stored as a value can become a key later — so a
+        // stale chain may survive, and is deliberately left unresolved.
+        ASR::symbol_t* resolve_pointer_base(ASR::symbol_t *sym) const {
             auto it = pointer_base_.find(sym);
             return it == pointer_base_.end() ? sym : it->second;
         }
@@ -989,9 +991,32 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return true;
         }
 
+        // A BLOCK construct's body is transformed while the enclosing
+        // procedure's symbol table is walked, which is before any statement of
+        // the enclosing body. Without this an association written inside the
+        // block would be visible to the statements above it.
+        void visit_Block(const ASR::Block_t &x) {
+            std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> saved =
+                pointer_base_;
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Block(x);
+            pointer_base_ = saved;
+        }
+
+        void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
+            std::unordered_map<ASR::symbol_t*, ASR::symbol_t*> saved =
+                pointer_base_;
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_AssociateBlock(x);
+            pointer_base_ = saved;
+        }
+
         // Pointer associations do not carry from one procedure to the next,
         // and a module variable is the same symbol in every procedure that
-        // uses it, so the map has to start empty for each of them.
+        // uses it, so the map starts empty for each of them. This drops the
+        // associations a callee makes, which the pass cannot see anyway: it
+        // trades a detection that depended on the order the symbol table
+        // happened to be walked in for one that is the same every time.
         void visit_Function(const ASR::Function_t &x) {
             pointer_base_.clear();
             ASR::CallReplacerOnExpressionsVisitor \

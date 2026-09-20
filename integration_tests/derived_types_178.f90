@@ -70,5 +70,8 @@ ptr2 => z
 w = f(ptr1%v)
 if (size(w%v) /= 3) error stop
 if (any(w%v /= [1.0, 2.0, 3.0])) error stop
+! z must not have been mistaken for the root of ptr1
+if (size(z%v) /= 2) error stop
+if (any(z%v /= [9.0, 9.0])) error stop
 
 end program

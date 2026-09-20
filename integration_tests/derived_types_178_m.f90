@@ -20,11 +20,15 @@ contains
         r%v = a
     end function
 
+    ! The result is scribbled over before the argument is read, so if the
+    ! target of the assignment is passed in as the result there is nothing
+    ! left to read.
     pure function h(c) result(r)
         character(len=*), intent(in) :: c
         type(ts) :: r
-        r%s = c
+        r%s = "ZZZZZZZZ"
         r%n = len(c)
+        r%s = c
     end function
 
     function g(a) result(r)
