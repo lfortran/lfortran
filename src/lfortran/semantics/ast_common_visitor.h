@@ -17603,6 +17603,22 @@ public:
                     throw SemanticAbort();
                 }
             }
+            ASR::expr_t* tgt_inner = tgt_;
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*tgt_inner)) {
+                tgt_inner = ASR::down_cast<ASR::ArrayPhysicalCast_t>(tgt_inner)->m_arg;
+            }
+            if (!ASR::is_a<ASR::Var_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::ArrayItem_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::ArraySection_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::FunctionCall_t>(*tgt_inner)) {
+                diag.add(diag::Diagnostic(
+                    "'target' argument of 'associated' intrinsic must be a pointer or "
+                    "target variable or function",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
         }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
