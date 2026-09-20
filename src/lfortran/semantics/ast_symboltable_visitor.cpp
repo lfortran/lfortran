@@ -49,6 +49,33 @@ public:
             class_deferred_procedures.swap(v.class_deferred_procedures);
         }
     };
+    // C1601 (J3/26-007r1, 16.1.1) allows a template construct only in the
+    // specification part of a main program, a module or another template
+    // construct. Which of those is being visited cannot be read back from
+    // `current_scope->asr_owner` at that point: a Program, a Template, a
+    // Function and a Subroutine symbol is only created once its specification
+    // part has been visited, so its symbol table still has no owner while the
+    // specification part is being built. The kind of the scoping unit being
+    // visited is therefore tracked explicitly, with a guard that restores the
+    // enclosing kind even when a diagnostic aborts the visit.
+    enum class ScopingUnitKind {
+        Other, Module, Submodule, Program, Template,
+    };
+
+    struct ScopingUnitScope {
+        SymbolTableVisitor &v;
+        ScopingUnitKind enclosing;
+
+        ScopingUnitScope(SymbolTableVisitor &v_, ScopingUnitKind kind) : v(v_) {
+            enclosing = v.scoping_unit_kind;
+            v.scoping_unit_kind = kind;
+        }
+
+        ~ScopingUnitScope() {
+            v.scoping_unit_kind = enclosing;
+        }
+    };
+    ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -337,6 +364,9 @@ public:
 
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+        ScopingUnitScope scoping_unit_scope(*this,
+            x.class_type == AST::modType::Submodule
+                ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
         SymbolTable *parent_scope = current_scope;
@@ -598,6 +628,7 @@ public:
             ));
             return;
         }
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1352,6 +1383,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -1909,6 +1941,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
@@ -4764,6 +4797,7 @@ public:
 
     void visit_Requirement(const AST::Requirement_t &x) {
         is_requirement = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
 
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -4974,7 +5008,21 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        // C1601 (J3/26-007r1, 16.1.1): a template construct shall only appear
+        // in the specification part of a main program, a module or a template
+        // construct. A submodule is deliberately not in that list.
+        if (scoping_unit_kind != ScopingUnitKind::Module
+                && scoping_unit_kind != ScopingUnitKind::Program
+                && scoping_unit_kind != ScopingUnitKind::Template) {
+            diag.add(diag::Diagnostic(
+                "a template can only be declared in the specification part of "
+                "a main program, a module or another template",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         is_template = true;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
         std::string template_name = to_lower(std::string(x.m_name));
         ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_scope_1-8f6f786",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/template_scope_1.f90",
+    "infile_hash": "03baa0fd1ffcd66c1dd194b1362612b56b73ad367458ebc3cfdcb9ce",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-template_scope_1-8f6f786.stderr",
+    "stderr_hash": "e0b83be6e0da4fd8e8a5b836935ea8c628fd5655a7a44675cc1f29f3",
+    "returncode": 1
+}
