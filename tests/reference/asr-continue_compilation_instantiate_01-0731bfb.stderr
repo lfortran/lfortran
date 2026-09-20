@@ -1,0 +1,25 @@
+semantic error: Use of an unspecified template 'add_unknown_t'
+  --> tests/errors/continue_compilation_instantiate_01.f90:51:5 - 53:37
+   |
+51 |        instantiate add_unknown_t {integer, add_int}, only: add1 => add_generic
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+53 |        ! Unknown instantiation argument
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The function argument add_unknown is not found
+  --> tests/errors/continue_compilation_instantiate_01.f90:54:33
+   |
+54 |     instantiate add_t {integer, add_unknown}, only: add2 => add_generic
+   |                                 ^^^^^^^^^^^ 
+
+semantic error: Number of template arguments don't match
+  --> tests/errors/continue_compilation_instantiate_01.f90:57:5 - 58:1
+   |
+57 |        instantiate add_t {integer}, only: add3 => add_generic
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+58 |    
+   | ...^ 

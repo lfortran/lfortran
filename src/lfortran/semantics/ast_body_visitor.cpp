@@ -2962,8 +2962,21 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
+        // The symbol table visitor has already checked this statement and, for
+        // a bad one, reported the error. Without --continue-compilation that
+        // ended the compilation; with it we are called anyway, and the symbols
+        // this visitor instantiates the bodies of were never created. The
+        // diagnostic is already recorded, so skip whatever is missing instead
+        // of instantiating from a null symbol.
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
-        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
+        if (sym == nullptr) {
+            return;
+        }
+        ASR::symbol_t *template_sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Template_t>(*template_sym)) {
+            return;
+        }
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
         std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
@@ -2973,7 +2986,11 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(s_name), s);
+                    ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
+                    if (new_s == nullptr) {
+                        continue;
+                    }
+                    instantiate_body(al, type_subs, symbol_subs, new_s, s);
                 }
             }
         } else {
@@ -2984,7 +3001,11 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }
-                instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
+                ASR::symbol_t *new_s = current_scope->resolve_symbol(new_s_name);
+                if (s == nullptr || new_s == nullptr) {
+                    continue;
+                }
+                instantiate_body(al, type_subs, symbol_subs, new_s, s);
             }
         }
 
