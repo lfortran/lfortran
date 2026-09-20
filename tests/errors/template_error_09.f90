@@ -26,7 +26,7 @@ end module std_prop_m
 
 program test_intrinsic_p
   use std_prop_m
-  instantiate commutative_prop(integer,operator(+)), only: int_plus_comm => commutative_p
+  instantiate commutative_prop {integer,operator(+)}, only: int_plus_comm => commutative_p
   print *, "test commutative"
   print *, "int_plus_comm: ", int_plus_comm(3,4)
 end program

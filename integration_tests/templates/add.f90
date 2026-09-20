@@ -26,8 +26,8 @@ module template_add_m
 contains
 
     subroutine test_template()
-        instantiate add_t(real, operator(+)), only: add_real => add_generic
-        instantiate add_t(integer, operator(+)), only: add_integer => add_generic
+        instantiate add_t {real, operator(+)}, only: add_real => add_generic
+        instantiate add_t {integer, operator(+)}, only: add_integer => add_generic
         real :: x, y
         integer :: a, b
         x = 5.1

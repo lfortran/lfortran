@@ -783,7 +783,7 @@ union_type_decl
     ;
 
 template_decl
-    : KW_TEMPLATE id "(" id_list ")" sep decl_statements
+    : KW_TEMPLATE id "(" id_list_opt ")" sep decl_statements
         contains_block_opt KW_END KW_TEMPLATE sep {
             $$ = TEMPLATE($2, $4, $7, $8, @$); }
     ;
@@ -811,10 +811,14 @@ unit_require
     ;
 
 instantiate
-    : KW_INSTANTIATE id "(" instantiate_symbol_list ")" sep {
+    : KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" sep {
         $$ = INSTANTIATE1($2, $4, @$); }
-    | KW_INSTANTIATE id "(" instantiate_symbol_list ")" "," KW_ONLY ":" use_symbol_list sep {
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
         $$ = INSTANTIATE2($2, $4, $9, @$); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" sep {
+        $$ = INSTANTIATE1($3, $5, @$); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
+        $$ = INSTANTIATE2($3, $5, $10, @$); }
     ;
 
 instantiate_symbol_list

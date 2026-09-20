@@ -42,9 +42,9 @@ module template_travel_01b_m
 contains
 
     subroutine test_template()
-        instantiate travel_tmpl(real, real, real, operator(+), operator(+), operator(/), operator(/)), &
+        instantiate travel_tmpl {real, real, real, operator(+), operator(+), operator(/), operator(/)}, &
             only: avg_real_S_from_T => avg_S_from_T, avg_real_S_from_S => avg_S_from_S
-        instantiate travel_tmpl(integer, integer, integer, operator(+), operator(+), operator(/), operator(/)), &
+        instantiate travel_tmpl {integer, integer, integer, operator(+), operator(+), operator(/), operator(/)}, &
             only: avg_integer_S_from_T => avg_S_from_T, avg_integer_S_from_S => avg_S_from_S
         real :: s1, s2
         integer :: i1, i2

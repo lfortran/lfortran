@@ -27,7 +27,7 @@ module monoid_m
         private
         public :: stimes, mconcat
 
-        instantiate derive_extended_semigroup(T, combine), only: stimes
+        instantiate derive_extended_semigroup {T, combine}, only: stimes
 
     contains
         pure function mconcat(list) result(combined)

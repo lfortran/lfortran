@@ -58,7 +58,7 @@ module template_vector_m
 contains
 
     subroutine main()
-        instantiate vector_t(integer), only: IntVector => Vector
+        instantiate vector_t {integer}, only: IntVector => Vector
         type(IntVector) :: v
         call v%push_back(10)
         if (v%elements(1) /= 10) error stop

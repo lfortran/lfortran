@@ -52,8 +52,8 @@ contains
     end function
 
     subroutine test_template()
-    instantiate sum_t(real, real_add, real_zero), only: sum_real => sum_generic
-    instantiate sum_t(integer, int_add, int_zero), only: sum_integer => sum_generic
+    instantiate sum_t {real, real_add, real_zero}, only: sum_real => sum_generic
+    instantiate sum_t {integer, int_add, int_zero}, only: sum_integer => sum_generic
     real :: x(10)
     integer :: y(10)
     x = 1

@@ -85,7 +85,7 @@ module template_04_monoid
         require :: monoid {T, combine, empty}
         private
         public :: stimes, mconcat
-        instantiate derive_extended_semigroup(T, combine), only: stimes => stimes
+        instantiate derive_extended_semigroup {T, combine}, only: stimes => stimes
     contains
         pure function mconcat(list) result(combined)
             type(T), intent(in) :: list(:)
@@ -280,7 +280,7 @@ module template_04_matrix
             end interface
 
             template gaussian_solver_tmpl(div_t)
-                instantiate derive_unit_ring_from_minus(T, plus_t, zero_t, times_t, one_t, minus_t), only: negate
+                instantiate derive_unit_ring_from_minus {T, plus_t, zero_t, times_t, one_t, minus_t}, only: negate
                 require :: field_only_division {T, plus_t, zero_t, times_t, one_t, minus_t, negate, div_t}      
             contains
                 pure function row_eschelon(x) result(reduced)
@@ -422,15 +422,15 @@ use template_04_matrix
 use template_04_func
 
 integer, parameter :: n = 2
-instantiate matrix_tmpl(integer, operator(+), zero_integer, operator(*), one_integer, n), &
+instantiate matrix_tmpl {integer, operator(+), zero_integer, operator(*), one_integer, n}, &
     only: integer_matrix => matrix, &
           integer_plus_matrix => plus_matrix, &
           integer_times_matrix => times_matrix, &
           integer_matrix_subtraction_t => matrix_subtraction_t
-instantiate integer_matrix_subtraction_t(operator(-)), &
+instantiate integer_matrix_subtraction_t {operator(-)}, &
     only: integer_minus_matrix => minus_matrix, &
           integer_gaussian_solver_tmpl => gaussian_solver_tmpl
-instantiate integer_gaussian_solver_tmpl(operator(/)), &
+instantiate integer_gaussian_solver_tmpl {operator(/)}, &
     only: integer_div_matrix => div_matrix
 
 type(integer_matrix) :: m1, m2, m3, m4
@@ -452,15 +452,15 @@ m4 = integer_times_matrix(m3, m2)
 print *, m4%elements(1,1), m4%elements(1,2)
 print *, m4%elements(2,1), m4%elements(2,2), achar(10)
 
-instantiate matrix_tmpl(real, operator(+), zero_real, operator(*), one_real, n), &
+instantiate matrix_tmpl {real, operator(+), zero_real, operator(*), one_real, n}, &
     only: real_matrix => matrix, &
           real_plus_matrix => plus_matrix, &
           real_times_matrix => times_matrix, &
           real_matrix_subtraction_t => matrix_subtraction_t
-instantiate real_matrix_subtraction_t(operator(-)), &
+instantiate real_matrix_subtraction_t {operator(-)}, &
     only: real_minus_matrix => minus_matrix, &
           real_gaussian_solver_tmpl => gaussian_solver_tmpl
-instantiate real_gaussian_solver_tmpl(operator(/)), &
+instantiate real_gaussian_solver_tmpl {operator(/)}, &
     only: real_div_matrix => div_matrix
 
 type(real_matrix) :: r1, r2, r3, r4

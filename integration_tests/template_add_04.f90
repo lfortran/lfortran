@@ -42,7 +42,7 @@ contains
 
   subroutine test_template()
       integer, parameter :: n = 10
-      instantiate add_t(real, func_arg_real, n), only: add_real => add_generic
+      instantiate add_t {real, func_arg_real, n}, only: add_real => add_generic
       real :: x, y
       integer :: a, b
       x = 5.1

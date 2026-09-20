@@ -128,7 +128,7 @@ end template
 To use a generic function we first need to instantiate (replace) the generic symbols inside a template with symbols with concrete types. The instantiation is done through the `instantiate` statement. For example, if we want to instantiate 'array_sum' with integer types, the instantiation would be as follows:
 
 ```fortran
-instantiate array_t(integer, add_element_integer, set_to_zero_integer), &
+instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 ```
 
@@ -160,21 +160,21 @@ The main benefit of generics is reuse. We can have different instantiations for 
 
 ```fortran
 ! instantiation with integer type
-instantiate array_t(integer, add_element_integer, set_to_zero_integer), &
+instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 
 ! instantiation with real type
-instantiate array_t(real, add_element_real, set_to_zero_real), &
+instantiate array_t {real, add_element_real, set_to_zero_real}, &
   only: array_sum_real => array_sum
 ```
 
 Also, because a template may contain multiple generic functions, a single instantiation can be used to instantiate multiple functions:
 
 ```fortran
-instantiate array_t(integer, add_element_integer, set_to_zero_integer), &
+instantiate array_t {integer, add_element_integer, set_to_zero_integer}, &
   only: array_sum_integer => array_sum, array_avg_integer => array_avg
 
-instantiate array_t(real, add_element_real, set_to_zero_real), &
+instantiate array_t {real, add_element_real, set_to_zero_real}, &
   only: array_sum_real => array_sum, array_avg_real => array_avg
 ```
 
@@ -238,7 +238,7 @@ sum = array_sum{integer, add_element_integer, set_to_zero_integer}(arr)
 So far to replace the generic addition `add_element` we have used a concrete function `add_element_integer`. To simplify this, it is possible to just pass `operator(+)` without having to define a function separately:
 
 ```fortran
-instantiate array_t(integer, operator(+), set_to_zero_integer), &
+instantiate array_t {integer, operator(+), set_to_zero_integer}, &
   only: array_sum_integer => array_sum
 ```
 
@@ -247,7 +247,7 @@ instantiate array_t(integer, operator(+), set_to_zero_integer), &
 Generic functions can also be instantiated without having to rename each function one-by-one. Suppose we want to instantiate every generic functions inside the template `array_t`, we can shorten the instantiation into:
 
 ```fortran
-instantiate array_t(integer, operator(+), set_to_zero_integer)
+instantiate array_t {integer, operator(+), set_to_zero_integer}
 ```
 
 Doing so would generate the function `array_sum` and `array_avg` without any renaming.
@@ -299,7 +299,7 @@ end template
 The instantiation for derived types are also similar to generic functions. If we want an integer tuple type and its functions, then we can instantiate `derived_type_t` as:
 
 ```fortran
-instantiate derived_type_t(integer), only: &
+instantiate derived_type_t {integer}, only: &
   tuple_int => tuple, get_fst_int => get_fst, get_snd_int => get_snd
 ```
 

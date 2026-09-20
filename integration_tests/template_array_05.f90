@@ -55,7 +55,7 @@ program template_array_05
 use template_array_05_m
 
 integer, parameter :: n = 10
-instantiate vector_t(integer, operator(+), n), &
+instantiate vector_t {integer, operator(+), n}, &
     only: int_vector => vector, &
           int_add_vector => add_vector
 
@@ -70,7 +70,7 @@ end do
 c = int_add_vector(a, b)
 print *, c%elements
 
-instantiate matrix_t(integer, operator(+), n), &
+instantiate matrix_t {integer, operator(+), n}, &
     only: int_matrix => matrix, &
           int_add_matrix => add_matrix
 

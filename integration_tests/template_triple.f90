@@ -132,7 +132,7 @@ module use_triple_m
 contains
 
   subroutine test_add_triples()
-    instantiate triple_tmpl(integer, add_integer), &
+    instantiate triple_tmpl {integer, add_integer}, &
       only: triple_add_l => triple_l, &
             triple_add_r => triple_r
     integer :: tal, tar
@@ -142,7 +142,7 @@ contains
   end subroutine
 
   subroutine test_minus_triples()
-    instantiate triple_tmpl(real, minus_real), &
+    instantiate triple_tmpl {real, minus_real}, &
       only: triple_minus_l => triple_l, &
             triple_minus_r => triple_r
     real :: tml, tmr
@@ -152,7 +152,7 @@ contains
   end subroutine
 
   subroutine test_max_triples()
-    instantiate triple_tmpl(real, max_real), &
+    instantiate triple_tmpl {real, max_real}, &
       only: triple_max_l => triple_l, &
             triple_max_r => triple_r
     real :: tmaxl, tmaxr

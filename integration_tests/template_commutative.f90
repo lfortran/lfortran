@@ -49,10 +49,10 @@ end module template_commutative_m
 
 program test_template_commutative_p
   use template_commutative_m
-  instantiate alt_commutative_prop(operator(+), operator(==)), only: plus_comm => commutative_p
-  instantiate commutative_prop(integer, operator(+), operator(==)), only: int_plus_comm => commutative_p
-  instantiate alt_commutative_prop(operator(-), operator(==)), only: minus_comm => commutative_p
-  instantiate commutative_prop(integer, operator(-), operator(==)), only: int_minus_comm => commutative_p
+  instantiate alt_commutative_prop {operator(+), operator(==)}, only: plus_comm => commutative_p
+  instantiate commutative_prop {integer, operator(+), operator(==)}, only: int_plus_comm => commutative_p
+  instantiate alt_commutative_prop {operator(-), operator(==)}, only: minus_comm => commutative_p
+  instantiate commutative_prop {integer, operator(-), operator(==)}, only: int_minus_comm => commutative_p
   print *, "test commutative"
   print *, "plus_comm: ", plus_comm(3, 4)
   print *, "int_plus_comm: ", int_plus_comm(3, 4)

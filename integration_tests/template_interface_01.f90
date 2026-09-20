@@ -78,8 +78,8 @@ contains
     end function
 
     subroutine test_template()
-        instantiate sum_t(integer, operator(+), cast_integer), only: generic_sum_integer => generic_sum
-        instantiate sum_t(real, operator(+), cast_real), only: generic_sum_real => generic_sum
+        instantiate sum_t {integer, operator(+), cast_integer}, only: generic_sum_integer => generic_sum
+        instantiate sum_t {real, operator(+), cast_real}, only: generic_sum_real => generic_sum
         integer :: ai(10), i, ri
         real :: ar(10), rr
         do i = 1, 10

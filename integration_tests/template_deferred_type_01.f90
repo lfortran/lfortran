@@ -34,7 +34,7 @@ module template_deferred_type_01_m
 contains
 
     subroutine test_deferred_type()
-        instantiate double_tmpl(integer, real, operator(+), operator(+)), &
+        instantiate double_tmpl {integer, real, operator(+), operator(+)}, &
             only: double_both_ir => double_both
         integer :: i
         real :: r

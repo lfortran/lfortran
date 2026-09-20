@@ -77,7 +77,7 @@ module template_travel_02_travel
 
     template travel_tmpl2(T, plus, div)
         require :: operations {T, T, T, plus, plus, div, div}
-        instantiate travel_tmpl(T, T, T, plus, plus, div, div)
+        instantiate travel_tmpl {T, T, T, plus, plus, div, div}
     end template
 
 end module
@@ -91,7 +91,7 @@ module template_travel_02_m
 contains
 
     subroutine test_template()
-        instantiate travel_tmpl2(real, add_real, slash_real), &
+        instantiate travel_tmpl2 {real, add_real, slash_real}, &
             only: avg_real_S_from_S => avg_S_from_S
         real :: s
         s = avg_real_S_from_S(1.1, 0.5, 2.0, 0.75)

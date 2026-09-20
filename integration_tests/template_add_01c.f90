@@ -27,7 +27,7 @@ contains
 
   subroutine test_template()
       integer :: n
-      instantiate add_t(integer, operator(+))
+      instantiate add_t {integer, operator(+)}
       n = add_generic(5, 9)
       print*, "The result is", n
   end subroutine

@@ -34,7 +34,7 @@ contains
         real :: a
         integer :: n, s
 
-        instantiate add_t(integer, func_arg_int), only: add_integer => add_generic
+        instantiate add_t {integer, func_arg_int}, only: add_integer => add_generic
         n = add_integer(5, 9)
         !s = add_integer2(5, 9, 10)
         print*, "The result is", n

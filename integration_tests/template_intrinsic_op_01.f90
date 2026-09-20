@@ -26,11 +26,11 @@ program template_intrinsic_op_01
     use template_intrinsic_op_01_m
     implicit none
 
-    instantiate op_t(integer, integer, operator(+)), only: int_add => call_op_func
-    instantiate op_t(integer, real,    operator(+)), only: int_add_r => call_op_func
-    instantiate op_t(integer, real,    operator(-)), only: int_sub_r => call_op_func
-    instantiate op_t(integer, real,    operator(*)), only: int_mul_r => call_op_func
-    instantiate op_t(integer, real,    operator(/)), only: int_div_r => call_op_func
+    instantiate op_t {integer, integer, operator(+)}, only: int_add => call_op_func
+    instantiate op_t {integer, real,    operator(+)}, only: int_add_r => call_op_func
+    instantiate op_t {integer, real,    operator(-)}, only: int_sub_r => call_op_func
+    instantiate op_t {integer, real,    operator(*)}, only: int_mul_r => call_op_func
+    instantiate op_t {integer, real,    operator(/)}, only: int_div_r => call_op_func
 
     if (int_add(5) /= 10) error stop
     if (abs(int_add_r(5) - 10.0) > 1.0e-6) error stop

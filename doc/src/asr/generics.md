@@ -106,21 +106,21 @@ end module
 program instantiate_template
 use functions, only: add_integer, empty_integer
 
-instantiate array_t(integer, add_integer, empty_integer), &
+instantiate array_t {integer, add_integer, empty_integer}, &
   only: array_sum_integer => array_sum
 
 ! function argument for basic arithmetic operations can be replaced with an operator
-instantiate array_t(integer, operator(+), empty_integer), &
+instantiate array_t {integer, operator(+), empty_integer}, &
   only: array_sum_integer => array_sum
 
 ! eliding function renaming would instantiating all generic functions with the same name
-instantiate array_t(integer, operator(+), empty_integer)
+instantiate array_t {integer, operator(+), empty_integer}
 end program
 ```
 
 This instantiation statement
 ```
-instantiate array_t(integer, add_integer, empty_integer), only: array_sum_integer => array_sum
+instantiate array_t {integer, add_integer, empty_integer}, only: array_sum_integer => array_sum
 ```
 passes the type `integer`, an integer addition function `add_integer`, and a function describing empty integer value `empty_integer` as arguments to template `array_t`, then instantiates the function `array_sum` as a new function named `array_sum_integer`. This instantiation wants to replace `S` in `array_t` with the type `integer`, `op_temp` function calls with `add_integer` function calls, and `empty_temp` function calls with `empty_integer` function calls.
 
@@ -132,7 +132,7 @@ We will explain this in detail through the instantiation example above. The firs
 
 Now, suppose that we have the following instantiation where instead of `integer`, we pass `real` as an argument: 
 ```
-instantiate array_t(real, add_integer, empty_integer), only: array_sum_integer => array_sum
+instantiate array_t {real, add_integer, empty_integer}, only: array_sum_integer => array_sum
 ```
 Here, the first type argument maps `S` to `real` but the second function argument maps `S` to `integer`, resulting in a contradiction. Hence ending in a type error.
 

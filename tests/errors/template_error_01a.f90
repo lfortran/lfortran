@@ -86,9 +86,9 @@ module template_error_01_m
 contains
 
     subroutine test_template()
-        instantiate travel_tmpl(real, real, real, add_real, add_real, slash_real, slash_real), &
+        instantiate travel_tmpl {real, real, real, add_real, add_real, slash_real, slash_real}, &
             only: avg_real_S_from_T => avg_S_from_T
-        instantiate travel_tmpl(real, real, real, add_real, add_real, slash_real, slash_real), &
+        instantiate travel_tmpl {real, real, real, add_real, add_real, slash_real, slash_real}, &
             only: avg_real_S_from_S => avg_S_from_S
         real :: s1, s2
         s1 = avg_real_S_from_T(1.0, 3.0, 1.5, 4.0)
