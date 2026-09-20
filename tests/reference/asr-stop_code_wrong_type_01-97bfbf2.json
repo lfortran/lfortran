@@ -1,0 +1,13 @@
+{
+    "basename": "asr-stop_code_wrong_type_01-97bfbf2",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/stop_code_wrong_type_01.f90",
+    "infile_hash": "043364fe49ca3c3a538bf48db790f8e32dd0b02bf4d27fedac5a3610",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-stop_code_wrong_type_01-97bfbf2.stderr",
+    "stderr_hash": "54163761eb95aa9d47e10f858d53e02445672744f2e8f6bb8089afb7",
+    "returncode": 1
+}
