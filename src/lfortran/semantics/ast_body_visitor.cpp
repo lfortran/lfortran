@@ -10816,10 +10816,19 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        // A template whose specification failed has no symbol: the symbol table
+        // visitor adds it only once the whole template is built, and with
+        // --continue-compilation an error inside it is reported and the abort
+        // swallowed. That diagnostic is already recorded, so there is nothing
+        // to do here but skip the body.
+        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr || !ASR::is_a<ASR::Template_t>(*t)) {
+            return;
+        }
+
         is_template = true;
 
         SymbolTable* old_scope = current_scope;
-        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_items; i++) {
