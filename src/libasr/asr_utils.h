@@ -7547,6 +7547,52 @@ static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::exp
                           nullptr));
 }
 
+// Number of elements of the section `start:end:step`, that is
+// `(end - start)/step + 1`. The result is folded when all three are known at
+// compile time. A unit step is handled by `compute_length_from_start_end`,
+// which simplifies more aggressively.
+static inline ASR::expr_t* compute_length_from_start_end_step(Allocator& al,
+        ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step) {
+    if( start == nullptr || end == nullptr ) {
+        return compute_length_from_start_end(al, start, end);
+    }
+    int64_t step_int = 1;
+    bool step_is_known = true;
+    if( step != nullptr ) {
+        ASR::expr_t* step_value = ASRUtils::expr_value(step);
+        step_is_known = step_value != nullptr &&
+            ASRUtils::extract_value(step_value, step_int);
+    }
+    if( step_is_known && step_int == 1 ) {
+        return compute_length_from_start_end(al, start, end);
+    }
+    ASR::ttype_t* int_type = ASRUtils::expr_type(end);
+    if( step_is_known && step_int != 0 ) {
+        ASR::expr_t* start_value = ASRUtils::expr_value(start);
+        ASR::expr_t* end_value = ASRUtils::expr_value(end);
+        int64_t start_int = 0, end_int = 0;
+        if( start_value != nullptr && end_value != nullptr &&
+            ASRUtils::extract_value(start_value, start_int) &&
+            ASRUtils::extract_value(end_value, end_int) ) {
+            int64_t size = (end_int - start_int) / step_int + 1;
+            if( size < 0 ) {
+                size = 0;
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, end->base.loc,
+                size, int_type));
+        }
+    }
+    ASR::expr_t* end_minus_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+        al, end->base.loc, end, ASR::binopType::Sub, start, int_type, nullptr));
+    ASR::expr_t* by_step = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+        al, end->base.loc, end_minus_start, ASR::binopType::Div, step, int_type,
+        nullptr));
+    ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, end->base.loc, 1, int_type));
+    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, by_step,
+        ASR::binopType::Add, one, int_type, nullptr));
+}
+
 static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
     // BindC interfaces already pass array by data pointer so we don't need to track
     // them and use extra variables for their dimensional information. Only those functions
