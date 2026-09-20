@@ -17611,7 +17611,9 @@ public:
                 !ASR::is_a<ASR::ArrayItem_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::ArraySection_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::StructInstanceMember_t>(*tgt_inner) &&
-                !ASR::is_a<ASR::FunctionCall_t>(*tgt_inner)) {
+                !ASR::is_a<ASR::FunctionCall_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::PointerToCPtr_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::GetPointer_t>(*tgt_inner)) {
                 diag.add(diag::Diagnostic(
                     "'target' argument of 'associated' intrinsic must be a pointer or "
                     "target variable or function",
