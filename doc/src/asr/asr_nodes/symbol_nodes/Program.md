@@ -86,6 +86,13 @@ if (.not. already_run) then
 end if
 ```
 
+Nothing calls one of them twice — see the ordering below — so under `--fast`
+the guard is dropped and the body is the initialization statements
+themselves. The guard at the top of a procedure or block body is kept in
+every mode: that one is the save attribute of an initialized local, so it
+decides what the program does rather than repeating a call that cannot
+happen.
+
 Ordering is therefore expressed in ASR, not left to a target: a program's own
 initializer calls every module initializer it can observe, once each and in
 module dependency order, before the program's first statement — which is the

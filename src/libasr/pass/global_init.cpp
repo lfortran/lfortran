@@ -514,10 +514,61 @@ void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
     u.visit_TranslationUnit(unit);
 }
 
+namespace {
+
+// Under `--fast` the run-once guard of an initializer *function* is dead
+// weight: the program calls every module and program initializer exactly
+// once, in the order this pass just put in, and the translation unit's own is
+// called once by the target's startup hook. Unwrap it, so the body is the
+// initialization statements themselves.
+//
+// The guard at the top of a procedure or block body is a different thing —
+// it is what gives an initialized local the save attribute Fortran requires,
+// so it decides behaviour rather than merely repeating a call that cannot
+// happen. It is never touched here, in any mode.
+void strip_run_once_guard(Allocator &al, ASR::Function_t *fn) {
+    if (fn->n_body != 1 || !ASR::is_a<ASR::If_t>(*fn->m_body[0])) return;
+    ASR::If_t *guard = ASR::down_cast<ASR::If_t>(fn->m_body[0]);
+    // The first statement inside is the one that marks the guard as taken.
+    LCOMPILERS_ASSERT(guard->n_body >= 1);
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, guard->n_body - 1);
+    for (size_t i = 1; i < guard->n_body; i++) body.push_back(al, guard->m_body[i]);
+    fn->m_body = body.p;
+    fn->n_body = body.size();
+    fn->m_symtab->erase_symbol(ASRUtils::global_init_guard_name);
+}
+
+void strip_run_once_guards(ASR::TranslationUnit_t &unit, Allocator &al) {
+    auto strip_of = [&](char *name, SymbolTable *scope) {
+        if (name == nullptr) return;
+        ASR::symbol_t *sym = scope->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        // A declaration of an initializer defined in another object file has
+        // no body to unwrap.
+        if (fn->n_body == 0) return;
+        strip_run_once_guard(al, fn);
+    };
+    strip_of(unit.m_global_init, unit.m_symtab);
+    for (auto &item : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*item.second)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
+            strip_of(m->m_global_init, m->m_symtab);
+        } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+            ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
+            strip_of(p->m_global_init, p->m_symtab);
+        }
+    }
+}
+
+} // anonymous namespace
+
 void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &/*pass_options*/) {
+        const PassOptions &pass_options) {
     GlobalInitWireVisitor v(al, unit);
     v.visit_TranslationUnit();
+    if (pass_options.fast) strip_run_once_guards(unit, al);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
 }

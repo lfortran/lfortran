@@ -28,6 +28,12 @@ namespace LCompilers {
     // change when they run; the guard is what keeps the translation unit's
     // own initializer correct, which a target startup hook calls with no
     // ordering at all.
+    //
+    // Nothing calls any of them twice, so under `--fast` the guard is dropped
+    // and the body is the initialization statements themselves. The guard at
+    // the top of a procedure or block body is a different thing — it is the
+    // save attribute of an initialized local, so it decides behaviour rather
+    // than repeating a call that cannot happen — and is kept in every mode.
 
     namespace ASRUtils {
 
