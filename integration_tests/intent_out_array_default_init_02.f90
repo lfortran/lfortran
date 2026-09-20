@@ -1,8 +1,8 @@
 ! The default of an `intent(out)` dummy array's components must be usable where
 ! the compiler places it: a constant named in the type's own module is not in
 ! scope in the procedure, and a structure constructor is no longer a node the
-! backends lower by the time it is emitted. Kept free of intrinsic calls so the
-! C backend can compile it too.
+! backends lower by the time it is emitted. Kept free of intrinsic calls, so
+! that the only thing between it and the C backend is #13307.
 module intent_out_array_default_init_02_types
 implicit none
 
