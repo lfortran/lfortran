@@ -840,11 +840,40 @@ namespace LCompilers {
             }
             LCOMPILERS_ASSERT(constructor_arg_syms.size() == x->n_args);
 
+            // F2018 7.5.10: a component with no corresponding
+            // component-data-source has, in the value the constructor builds,
+            // the status of an unallocated allocatable. The target of an
+            // assignment takes that value, so such a component must not keep
+            // whatever the target held before. The resets are collected here
+            // and emitted after the components that are given a value, so an
+            // argument can still read the target's previous value.
+            Vec<ASR::stmt_t*> omitted_component_resets;
+            omitted_component_resets.reserve(replacer->al, 0);
+
             for( size_t i = 0; i < x->n_args; i++ ) {
+                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( x->m_args[i].m_value == nullptr ) {
+                    // A variable's initializer is stored, not assigned, so
+                    // there is no previous value to reset there.
+                    if( inside_symtab || !ASRUtils::is_allocatable(
+                            ASRUtils::symbol_type(member)) ) {
+                        continue ;
+                    }
+                    ASR::symbol_t* base_sym = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*replacer->result_var)) {
+                        base_sym = ASR::down_cast<ASR::Var_t>(replacer->result_var)->m_v;
+                    }
+                    ASR::expr_t* omitted_ref = ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
+                        replacer->al, x->base.base.loc, (ASR::asr_t*) replacer->result_var,
+                        base_sym, member, replacer->current_scope));
+                    Vec<ASR::expr_t*> omitted_vars;
+                    omitted_vars.reserve(replacer->al, 1);
+                    omitted_vars.push_back(replacer->al, omitted_ref);
+                    omitted_component_resets.push_back(replacer->al, ASRUtils::STMT(
+                        ASR::make_ImplicitDeallocate_t(replacer->al, x->base.base.loc,
+                            omitted_vars.p, omitted_vars.size())));
                     continue ;
                 }
-                ASR::symbol_t* member = constructor_arg_syms[i];
                 if( ASR::is_a<ASR::StructConstructor_t>(*x->m_args[i].m_value) ) {
                     ASR::expr_t* result_var_copy = replacer->result_var;
                     ASR::symbol_t *v = nullptr;
@@ -886,6 +915,9 @@ namespace LCompilers {
                     }
                     result_vec->push_back(replacer->al, assign);
                 }
+            }
+            for( size_t i = 0; i < omitted_component_resets.size(); i++ ) {
+                result_vec->push_back(replacer->al, omitted_component_resets[i]);
             }
             replacer->result_var = nullptr;
         }
