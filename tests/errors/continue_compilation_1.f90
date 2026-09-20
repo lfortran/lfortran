@@ -1705,3 +1705,12 @@ contains
         res = pck_base_t(i)
     end function
 end subroutine
+
+! `null()` is not permitted as the TARGET= argument to the `associated`
+! intrinsic.
+subroutine associated_null_target_in_continue_compilation_1()
+    implicit none
+    integer, pointer :: a(:)
+    a => null()
+    if (associated(a, null())) print *, "bad"  ! {Error} NULL() is not permitted as the TARGET= argument to 'associated'
+end subroutine

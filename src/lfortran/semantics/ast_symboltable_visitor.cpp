@@ -2803,6 +2803,18 @@ public:
             }
         }
         if ((is_requirement || is_template) && is_deferred) {
+            ASR::symbol_t *orig_decl = current_scope->get_symbol(dt_name);
+            if (orig_decl != nullptr) {
+                // add_symbol asserts the name is free, so report the duplicate
+                // here rather than letting invalid input reach the assertion.
+                diag.add(diag::Diagnostic(
+                    "Symbol is already declared in the same scope",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("redeclaration", {x.base.base.loc}),
+                        diag::Label("original declaration", {orig_decl->base.loc}, false)
+                    }));
+                throw SemanticAbort();
+            }
             ASR::asr_t *tp = ASR::make_TypeParameter_t(al, x.base.base.loc, s2c(al, dt_name));
             tmp = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, dt_name),
                 nullptr, 0, ASRUtils::intent_in, nullptr, nullptr, ASR::storage_typeType::Default,
@@ -4981,22 +4993,36 @@ public:
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
         // For interface and type parameters (derived type)
+        //
+        // Recover per item, as the module visitor does. The Template symbol is
+        // only added at the end of this function, so letting a SemanticAbort
+        // escape would leave the module without it while --continue-compilation
+        // carries on -- and the body visitor would then have no template to
+        // visit the body of.
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
-                for (size_t i=0; i<r->n_reqs; i++) {
-                    visit_unit_require(*r->m_reqs[i]);
-                    reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                    tmp = nullptr;
+            try {
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
+                    for (size_t i=0; i<r->n_reqs; i++) {
+                        visit_unit_require(*r->m_reqs[i]);
+                        reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                        tmp = nullptr;
+                    }
+                } else {
+                    this->visit_decl_stmt(*x.m_items[i]);
                 }
-            } else {
-                this->visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
             }
         }
 
         for (size_t i=0; i<x.n_contains; i++) {
-            this->visit_program_unit(*x.m_contains[i]);
+            try {
+                this->visit_program_unit(*x.m_contains[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
         }
 
         SetChar args;

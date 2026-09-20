@@ -17593,6 +17593,17 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        if (tgt_ != nullptr) {
+            if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
+                if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
+                    diag.add(diag::Diagnostic(
+                        "NULL() is not permitted as the TARGET= argument to 'associated'",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
         ASR::expr_t* associated_value = nullptr;
@@ -19769,8 +19780,8 @@ public:
         }
         std::string var_name = to_lower(x.m_func);
         if (x.n_temp_args > 0) {
-            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            var_name = handle_templated(x.m_func, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
+            var_name = handle_templated(x.m_func,
+                ASRUtils::is_owned_by_template(current_scope),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable *scope = current_scope;

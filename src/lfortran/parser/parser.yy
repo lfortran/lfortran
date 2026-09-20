@@ -406,7 +406,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> end_submodule
 %type <ast> submodule
 %type <ast> block_data
-%type <ast> instantiate
+%type <vec_ast> instantiate
 %type <ast> interface_decl
 %type <ast> interface_stmt
 %type <ast> derived_type_decl
@@ -812,13 +812,21 @@ unit_require
 
 instantiate
     : KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" sep {
-        $$ = INSTANTIATE1($2, $4, @$); }
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
     | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE2($2, $4, $9, @$); }
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $9, @$)); }
+    | KW_INSTANTIATE id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($2, $4, $7, @7));
+        LIST_ADD($$, INSTANTIATE1($2, $4, @$)); }
     | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" sep {
-        $$ = INSTANTIATE1($3, $5, @$); }
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
     | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," KW_ONLY ":" use_symbol_list sep {
-        $$ = INSTANTIATE2($3, $5, $10, @$); }
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $10, @$)); }
+    | KW_INSTANTIATE "::" id "{" instantiate_symbol_list_opt "}" "," use_symbol_list sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE2($3, $5, $8, @8));
+        LIST_ADD($$, INSTANTIATE1($3, $5, @$)); }
+    | KW_INSTANTIATE "::" id "=>" id "{" instantiate_symbol_list_opt "}" sep {
+        LIST_NEW($$); LIST_ADD($$, INSTANTIATE_SUBP($5, $3, $7, @$)); }
     ;
 
 instantiate_symbol_list
@@ -1739,6 +1747,7 @@ sep_one
 decl_statements
     : decl_statements decl_statement { $$ = $1; LIST_ADD($$, $2); }
     | decl_statements deferred_type_decl { $$ = LIST_EXTEND(p.m_a, $1, $2); }
+    | decl_statements instantiate { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | %empty { LIST_NEW($$); }
     | decl_statements error sep_one { $$ = $1; }
     ;
@@ -1752,7 +1761,6 @@ decl_statement
     | statement
     | template_decl
     | requirement_decl
-    | instantiate
     | require_decl
     | use_statement
     | import_statement

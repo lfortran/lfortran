@@ -1,0 +1,8 @@
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/deferred_type_duplicate_1.f90:18:26
+   |
+18 |         deferred type :: t  ! {Error} Symbol is already declared in the same scope
+   |                          ^ redeclaration
+   |
+17 |         deferred type :: t
+   |                          ~ original declaration

@@ -2651,22 +2651,20 @@ public:
                     // expressions, recursively handling nested structs.
                     // Appends the expanded (leaf) expressions to `expanded`.
                     std::function<void(ASR::expr_t*, Vec<ASR::expr_t*>&)> expand_struct_expr;
-                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
-                                             Vec<ASR::expr_t*>& expanded) {
-                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
-                        stype = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(stype));
-                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
-                            expanded.push_back(al, struct_expr);
-                            return;
-                        }
-                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
-                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
-
-                        if (struct_def->n_members == 0) {
-                            expanded.push_back(al, struct_expr);
-                            return;
+                    // Appends the components of `struct_def` held by
+                    // `struct_expr`. The inherited components of an extended
+                    // type come first in component order (F2023 7.5.7.2), so
+                    // the parent is expanded before the type's own members.
+                    std::function<void(ASR::expr_t*, ASR::Struct_t*, Vec<ASR::expr_t*>&)>
+                        expand_struct_components;
+                    expand_struct_components = [&](ASR::expr_t* struct_expr,
+                                                   ASR::Struct_t* struct_def,
+                                                   Vec<ASR::expr_t*>& expanded) {
+                        if (struct_def->m_parent != nullptr) {
+                            ASR::symbol_t *parent_sym = ASRUtils::symbol_get_past_external(
+                                struct_def->m_parent);
+                            expand_struct_components(struct_expr,
+                                ASR::down_cast<ASR::Struct_t>(parent_sym), expanded);
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
@@ -2682,6 +2680,25 @@ public:
                             // Recursively expand if the member is itself a struct
                             expand_struct_expr(member_expr, expanded);
                         }
+                    };
+                    expand_struct_expr = [&](ASR::expr_t* struct_expr,
+                                             Vec<ASR::expr_t*>& expanded) {
+                        ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
+                        stype = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(stype));
+                        if (!ASR::is_a<ASR::StructType_t>(*stype)) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+                        ASR::Struct_t *struct_def = ASR::down_cast<ASR::Struct_t>(struct_sym);
+
+                        if (struct_def->n_members == 0 && struct_def->m_parent == nullptr) {
+                            expanded.push_back(al, struct_expr);
+                            return;
+                        }
+                        expand_struct_components(struct_expr, struct_def, expanded);
                     };
 
                     Vec<ASR::expr_t*> new_values_vec;
@@ -2962,8 +2979,21 @@ public:
     }
 
     void visit_Instantiate(const AST::Instantiate_t &x) {
+        // The symbol table visitor has already checked this statement and, for
+        // a bad one, reported the error. Without --continue-compilation that
+        // ended the compilation; with it we are called anyway, and the symbols
+        // this visitor instantiates the bodies of were never created. The
+        // diagnostic is already recorded, so skip whatever is missing instead
+        // of instantiating from a null symbol.
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
-        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
+        if (sym == nullptr) {
+            return;
+        }
+        ASR::symbol_t *template_sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Template_t>(*template_sym)) {
+            return;
+        }
+        ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(template_sym);
 
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
         std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
@@ -2973,7 +3003,11 @@ public:
                 ASR::symbol_t *s = sym_pair.second;
                 std::string s_name = ASRUtils::symbol_name(s);
                 if (ASR::is_a<ASR::Function_t>(*s) && !ASRUtils::is_template_arg(sym, s_name)) {
-                    instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(s_name), s);
+                    ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
+                    if (new_s == nullptr) {
+                        continue;
+                    }
+                    instantiate_body(al, type_subs, symbol_subs, new_s, s);
                 }
             }
         } else {
@@ -2984,7 +3018,11 @@ public:
                 if (use_symbol->m_local_rename) {
                     new_s_name = to_lower(use_symbol->m_local_rename);
                 }
-                instantiate_body(al, type_subs, symbol_subs, current_scope->resolve_symbol(new_s_name), s);
+                ASR::symbol_t *new_s = current_scope->resolve_symbol(new_s_name);
+                if (s == nullptr || new_s == nullptr) {
+                    continue;
+                }
+                instantiate_body(al, type_subs, symbol_subs, new_s, s);
             }
         }
 
@@ -8249,8 +8287,8 @@ public:
             }
         }
         if (x.n_temp_args > 0) {
-            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            sub_name = handle_templated(x.m_name, ASR::is_a<ASR::Template_t>(*ASRUtils::get_asr_owner(owner_sym)),
+            sub_name = handle_templated(x.m_name,
+                ASRUtils::is_owned_by_template(current_scope),
                 x.m_temp_args, x.n_temp_args, x.base.base.loc);
         }
         SymbolTable* scope = current_scope;
@@ -10795,10 +10833,19 @@ public:
     }
 
     void visit_Template(const AST::Template_t &x){
+        // A template whose specification failed has no symbol: the symbol table
+        // visitor adds it only once the whole template is built, and with
+        // --continue-compilation an error inside it is reported and the abort
+        // swallowed. That diagnostic is already recorded, so there is nothing
+        // to do here but skip the body.
+        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
+        if (t == nullptr || !ASR::is_a<ASR::Template_t>(*t)) {
+            return;
+        }
+
         is_template = true;
 
         SymbolTable* old_scope = current_scope;
-        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         ASR::Template_t* v = ASR::down_cast<ASR::Template_t>(t);
         current_scope = v->m_symtab;
         for (size_t i=0; i<x.n_items; i++) {
